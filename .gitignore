@@ -1,0 +1,30 @@
+# Gradle
+.gradle/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Kotlin/Java build output
+/build/
+**/build/
+
+# Android Studio
+local.properties
+.DS_Store
+
+# Generated files
+captures/
+output.json
+*.log
+*.lock
+*.bin
+
+# OS-specific files
+Thumbs.db
+.DS_Store
