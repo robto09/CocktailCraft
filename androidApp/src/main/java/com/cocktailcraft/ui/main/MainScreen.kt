@@ -249,6 +249,7 @@ fun MainScreen() {
                     onBackClick = { navController.popBackStack() },
                     onAddToCart = { cocktailToAdd ->
                         sharedCartViewModel.addToCart(cocktailToAdd) // Pass the entire cocktail object
+                        navController.navigate(Screen.Cart.route) // Navigate to cart screen after adding item
                     }
                 )
             }
