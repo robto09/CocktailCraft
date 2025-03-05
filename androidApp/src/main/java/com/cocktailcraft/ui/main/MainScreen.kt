@@ -208,7 +208,7 @@ fun MainScreen() {
                 )
             }
             composable(Screen.Profile.route) {
-                ProfileScreen()
+                ProfileScreen(navigationManager = navigationManager)
             }
             composable(Screen.Favorites.route) {
                 FavoritesScreen(
