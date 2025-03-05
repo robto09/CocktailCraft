@@ -19,15 +19,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.navigation.Screen
+import com.cocktailcraft.navigation.NavigationManager
 
 @Composable
 fun OrderListScreen(
     orderViewModel: com.cocktailcraft.viewmodel.OrderViewModel,
-    navController: NavController
+    navigationManager: NavigationManager
 ) {
     val orders by orderViewModel.orders.collectAsState()
     val isLoading by orderViewModel.isLoading.collectAsState()
@@ -95,7 +95,7 @@ fun OrderListScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                     
                     Button(
-                        onClick = { navController.navigate(Screen.Home.route) },
+                        onClick = { navigationManager.navigateToHome() },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AppColors.Primary
                         ),

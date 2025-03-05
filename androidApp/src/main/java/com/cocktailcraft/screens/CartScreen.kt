@@ -41,12 +41,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import com.cocktailcraft.ui.components.CartItemCard
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.CartViewModel
 import com.cocktailcraft.viewmodel.FavoritesViewModel
 import com.cocktailcraft.viewmodel.OrderViewModel
+import com.cocktailcraft.navigation.NavigationManager
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -54,7 +54,7 @@ import java.util.Locale
 fun CartScreen(
     viewModel: CartViewModel,
     orderViewModel: OrderViewModel,
-    navController: NavController,
+    navigationManager: NavigationManager,
     onStartShopping: () -> Unit,
     favoritesViewModel: FavoritesViewModel
 ) {
@@ -261,7 +261,7 @@ fun CartScreen(
                         orderViewModel.placeOrder(cartItems, totalPrice)
                         viewModel.clearCart()
                         showPlaceOrderDialog = false
-                        navController.navigate("orders")
+                        navigationManager.navigateToOrderList()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary),
                     shape = RoundedCornerShape(8.dp)
