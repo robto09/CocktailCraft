@@ -9,8 +9,8 @@
 9        android:targetSdkVersion="34" />
 10
 11    <uses-permission android:name="android.permission.INTERNET" />
-11-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:3:5-67
-11-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:3:22-64
+11-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:3:5-67
+11-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:3:22-64
 12
 13    <permission
 13-->[androidx.core:core:1.12.0] /Users/robto09/.gradle/caches/8.9/transforms/f24837e0cf406c3109f3b71ac9e51788/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
@@ -24,43 +24,43 @@
 17-->[androidx.core:core:1.12.0] /Users/robto09/.gradle/caches/8.9/transforms/f24837e0cf406c3109f3b71ac9e51788/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
 18
 19    <application
-19-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:5:5-22:19
+19-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:5:5-22:19
 20        android:name="com.example.breadapp2.BreadApplication"
-20-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:6:9-41
+20-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:6:9-41
 21        android:allowBackup="true"
-21-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:7:9-35
+21-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:7:9-35
 22        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
 22-->[androidx.core:core:1.12.0] /Users/robto09/.gradle/caches/8.9/transforms/f24837e0cf406c3109f3b71ac9e51788/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
 23        android:debuggable="true"
 24        android:extractNativeLibs="false"
 25        android:icon="@mipmap/ic_launcher"
-25-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:8:9-43
+25-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:8:9-43
 26        android:label="@string/app_name"
-26-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:9:9-41
+26-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:9:9-41
 27        android:roundIcon="@mipmap/ic_launcher_round"
-27-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:10:9-54
+27-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:10:9-54
 28        android:supportsRtl="true"
-28-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:11:9-35
+28-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:11:9-35
 29        android:testOnly="true"
 30        android:theme="@style/Theme.CocktailBar" >
-30-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:12:9-49
+30-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:12:9-49
 31        <activity
-31-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:13:9-21:20
+31-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:13:9-21:20
 32            android:name="com.example.breadapp2.MainActivity"
-32-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:14:13-41
+32-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:14:13-41
 33            android:exported="true"
-33-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:15:13-36
+33-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:15:13-36
 34            android:theme="@style/Theme.CocktailBar" >
-34-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:16:13-53
+34-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:16:13-53
 35            <intent-filter>
-35-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:17:13-20:29
+35-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:17:13-20:29
 36                <action android:name="android.intent.action.MAIN" />
-36-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:18:17-69
-36-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:18:25-66
+36-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:18:17-69
+36-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:18:25-66
 37
 38                <category android:name="android.intent.category.LAUNCHER" />
-38-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:19:17-77
-38-->/Users/robto09/Downloads/BreadApp2_CorrectedProject/androidApp/src/main/AndroidManifest.xml:19:27-74
+38-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:19:17-77
+38-->/Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:19:27-74
 39            </intent-filter>
 40        </activity>
 41        <activity
