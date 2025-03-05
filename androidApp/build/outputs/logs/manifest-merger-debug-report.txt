@@ -150,8 +150,8 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /Users/robto09/.gradle/cach
 	android:theme
 		ADDED from /Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:12:9-49
 	android:name
-		ADDED from /Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:6:9-41
-activity#com.example.breadapp2.MainActivity
+		ADDED from /Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:6:9-49
+activity#com.cocktailcraft.MainActivity
 ADDED from /Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:13:9-21:20
 	android:exported
 		ADDED from /Users/robto09/Downloads/BreadApp2/androidApp/src/main/AndroidManifest.xml:15:13-36
@@ -409,7 +409,7 @@ ADDED from [androidx.core:core:1.12.0] /Users/robto09/.gradle/caches/8.9/transfo
 		ADDED from [androidx.core:core:1.12.0] /Users/robto09/.gradle/caches/8.9/transforms/f24837e0cf406c3109f3b71ac9e51788/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
 	android:name
 		ADDED from [androidx.core:core:1.12.0] /Users/robto09/.gradle/caches/8.9/transforms/f24837e0cf406c3109f3b71ac9e51788/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
-permission#com.example.breadapp2.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+permission#com.cocktailcraft.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.12.0] /Users/robto09/.gradle/caches/8.9/transforms/f24837e0cf406c3109f3b71ac9e51788/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
 	android:protectionLevel
 		ADDED from [androidx.core:core:1.12.0] /Users/robto09/.gradle/caches/8.9/transforms/f24837e0cf406c3109f3b71ac9e51788/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
@@ -419,7 +419,7 @@ uses-permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.12.0] /Users/robto09/.gradle/caches/8.9/transforms/f24837e0cf406c3109f3b71ac9e51788/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.12.0] /Users/robto09/.gradle/caches/8.9/transforms/f24837e0cf406c3109f3b71ac9e51788/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
-uses-permission#com.example.breadapp2.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+uses-permission#com.cocktailcraft.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.12.0] /Users/robto09/.gradle/caches/8.9/transforms/f24837e0cf406c3109f3b71ac9e51788/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
 	android:name
 		ADDED from [androidx.core:core:1.12.0] /Users/robto09/.gradle/caches/8.9/transforms/f24837e0cf406c3109f3b71ac9e51788/transformed/core-1.12.0/AndroidManifest.xml:26:22-94

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.breadapp2.androidApp-mergeDebugResources-68:/values-bs/values-bs.xml",
+            "outputFile": "com.cocktailcraft.androidApp-mergeDebugResources-68:/values-bs/values-bs.xml",
             "map": [
                 {
                     "source": "/Users/robto09/.gradle/caches/8.9/transforms/f24837e0cf406c3109f3b71ac9e51788/transformed/core-1.12.0/res/values-bs/values-bs.xml",

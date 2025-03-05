@@ -1,16 +1,16 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15855199731891789605.xml:2:13-83
-INJECTED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15855199731891789605.xml:2:13-83
+ADDED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest8408070298682416036.xml:2:13-83
+INJECTED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest8408070298682416036.xml:2:13-83
 	package
-		INJECTED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15855199731891789605.xml
+		INJECTED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest8408070298682416036.xml
 	xmlns:android
-		ADDED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15855199731891789605.xml:2:23-81
+		ADDED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest8408070298682416036.xml:2:23-81
 uses-sdk
-INJECTED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15855199731891789605.xml reason: use-sdk injection requested
-INJECTED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15855199731891789605.xml
-INJECTED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15855199731891789605.xml
+INJECTED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest8408070298682416036.xml reason: use-sdk injection requested
+INJECTED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest8408070298682416036.xml
+INJECTED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest8408070298682416036.xml
 	android:targetSdkVersion
-		INJECTED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15855199731891789605.xml
+		INJECTED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest8408070298682416036.xml
 	android:minSdkVersion
-		INJECTED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15855199731891789605.xml
+		INJECTED from /Users/robto09/Downloads/BreadApp2/shared/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest8408070298682416036.xml

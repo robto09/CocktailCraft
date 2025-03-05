@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.example.breadapp2.androidApp-mergeDebugResources-68:/values/values.xml",
+            "outputFile": "com.cocktailcraft.androidApp-mergeDebugResources-68:/values/values.xml",
             "map": [
                 {
                     "source": "/Users/robto09/.gradle/caches/8.9/transforms/f31ab9d7e51a0d1484e5593fe0103296/transformed/coordinatorlayout-1.1.0/res/values/values.xml",
