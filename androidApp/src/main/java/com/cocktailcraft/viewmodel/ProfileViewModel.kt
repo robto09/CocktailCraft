@@ -78,7 +78,7 @@ class ProfileViewModel : ViewModel(), KoinComponent {
         }
     }
     
-    fun signUp(email: String, password: String) {
+    fun signUp(name: String, email: String, password: String) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
@@ -86,6 +86,7 @@ class ProfileViewModel : ViewModel(), KoinComponent {
             try {
                 authRepository.signUp(email, password).collect { success ->
                     if (success) {
+                        updateUserName(name)
                         checkSignInStatus()
                         loadUserProfile()
                     } else {
@@ -141,5 +142,9 @@ class ProfileViewModel : ViewModel(), KoinComponent {
                 _isLoading.value = false
             }
         }
+    }
+    
+    fun clearError() {
+        _error.value = null
     }
 } 
