@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.breadapp2"
+    package="com.cocktailcraft"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -11,13 +11,13 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <permission
-        android:name="com.example.breadapp2.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        android:name="com.cocktailcraft.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         android:protectionLevel="signature" />
 
-    <uses-permission android:name="com.example.breadapp2.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+    <uses-permission android:name="com.cocktailcraft.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
 
     <application
-        android:name="com.example.breadapp2.BreadApplication"
+        android:name="com.cocktailcraft.CocktailCraftApplication"
         android:allowBackup="true"
         android:appComponentFactory="androidx.core.app.CoreComponentFactory"
         android:debuggable="true"
@@ -29,7 +29,7 @@
         android:testOnly="true"
         android:theme="@style/Theme.CocktailBar" >
         <activity
-            android:name="com.example.breadapp2.MainActivity"
+            android:name="com.cocktailcraft.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.CocktailBar" >
             <intent-filter>
@@ -47,7 +47,7 @@
 
         <provider
             android:name="androidx.startup.InitializationProvider"
-            android:authorities="com.example.breadapp2.androidx-startup"
+            android:authorities="com.cocktailcraft.androidx-startup"
             android:exported="false" >
             <meta-data
                 android:name="androidx.emoji2.text.EmojiCompatInitializer"
