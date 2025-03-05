@@ -267,7 +267,6 @@ fun HomeScreen(
                                         onCocktailClick(featuredCocktail) 
                                     },
                                     onAddToCart = { cocktail -> 
-                                        cartViewModel.addToCart(cocktail)
                                         onAddToCart(cocktail)
                                     },
                                     isFavorite = favorites.any { it.id == featuredCocktail.id },
@@ -302,7 +301,6 @@ fun HomeScreen(
                                 onCocktailClick(cocktail) 
                             },
                             onAddToCart = { 
-                                cartViewModel.addToCart(it)
                                 onAddToCart(it)
                             },
                             isFavorite = favorites.any { it.id == cocktail.id },

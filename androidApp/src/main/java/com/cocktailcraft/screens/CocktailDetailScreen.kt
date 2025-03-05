@@ -42,6 +42,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Surface
@@ -55,6 +58,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,6 +79,8 @@ import com.cocktailcraft.viewmodel.CartViewModel
 import com.cocktailcraft.viewmodel.FavoritesViewModel
 import com.cocktailcraft.viewmodel.HomeViewModel
 import com.cocktailcraft.viewmodel.ReviewViewModel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,6 +110,10 @@ fun CocktailDetailScreen(
     // Check if the cocktail is in cart
     val cartItems by cartViewModel.cartItems.collectAsState()
     val isInCart = cocktail?.let { c -> cartItems.any { it.cocktail.id == c.id } } ?: false
+    
+    // Add snackbar state
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
     
     // Update loading state when cocktail data changes
     LaunchedEffect(cocktail) {
@@ -264,7 +274,8 @@ fun CocktailDetailScreen(
                     thickness = 1.dp
                 )
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         // Show loading indicator with animation to prevent flashing
         AnimatedVisibility(
@@ -431,9 +442,15 @@ fun CocktailDetailScreen(
                                 Button(
                                     onClick = { 
                                         cocktailData.let { 
-                                            // Use cartViewModel directly instead of just calling onAddToCart
-                                            cartViewModel.addToCart(it)
-                                            onAddToCart(it) 
+                                            // Only call onAddToCart, which will handle adding to cart
+                                            onAddToCart(it)
+                                            // Show snackbar confirmation
+                                            coroutineScope.launch {
+                                                snackbarHostState.showSnackbar(
+                                                    message = "${cocktailData.name} added to cart",
+                                                    duration = SnackbarDuration.Short
+                                                )
+                                            }
                                         }
                                     },
                                     modifier = Modifier.fillMaxWidth(),
