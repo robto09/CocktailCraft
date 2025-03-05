@@ -11,6 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +30,7 @@ import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.CartViewModel
 import com.cocktailcraft.viewmodel.OrderViewModel
+import com.cocktailcraft.viewmodel.FavoritesViewModel
 import java.text.NumberFormat
 import java.util.*
 
@@ -37,12 +40,14 @@ fun CartScreen(
     viewModel: CartViewModel,
     orderViewModel: OrderViewModel,
     navController: NavController,
-    onStartShopping: () -> Unit
+    onStartShopping: () -> Unit,
+    favoritesViewModel: FavoritesViewModel
 ) {
     val cartItems by viewModel.cartItems.collectAsState()
     val totalPrice by viewModel.totalPrice.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val favorites by favoritesViewModel.favorites.collectAsState()
 
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
     
@@ -100,7 +105,9 @@ fun CartScreen(
                                 viewModel.removeFromCart(item.cocktail.id)
                             }
                         },
-                        onRemove = { viewModel.removeFromCart(item.cocktail.id) }
+                        onRemove = { viewModel.removeFromCart(item.cocktail.id) },
+                        isFavorite = favorites.any { it.id == item.cocktail.id },
+                        onToggleFavorite = { favoritesViewModel.toggleFavorite(item.cocktail) }
                     )
                 }
             }
@@ -295,7 +302,9 @@ fun CartItemCard(
     item: CocktailCartItem,
     onIncreaseQuantity: () -> Unit,
     onDecreaseQuantity: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit
 ) {
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
     
@@ -328,12 +337,32 @@ fun CartItemCard(
                     .weight(1f)
                     .padding(horizontal = 12.dp)
             ) {
-                Text(
-                    text = item.cocktail.name,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = AppColors.TextPrimary
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = item.cocktail.name,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = AppColors.TextPrimary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    // Favorites button
+                    IconButton(
+                        onClick = onToggleFavorite,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                            tint = if (isFavorite) AppColors.Secondary else AppColors.Gray,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 
