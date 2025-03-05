@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors -->
+    <color name="cocktail_primary">#5E2CA5</color>
+    <color name="cocktail_primary_dark">#371A64</color>
+    <color name="cocktail_primary_light">#8A4FD3</color>
+
+    <!-- Secondary Colors -->
+    <color name="cocktail_accent">#FF6B6B</color>
+    <color name="cocktail_accent_light">#FFA5A5</color>
+
+    <!-- Background Colors -->
+    <color name="background_light">#F8F9FA</color>
+    <color name="background_dark">#121212</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary_light">#212529</color>
+    <color name="text_primary_dark">#F8F9FA</color>
+    <color name="text_secondary_light">#495057</color>
+    <color name="text_secondary_dark">#ADB5BD</color>
+
+    <!-- Status Colors -->
+    <color name="success">#4CAF50</color>
+    <color name="error">#F44336</color>
+    <color name="warning">#FFC107</color>
+    <color name="info">#2196F3</color>
+
+    <!-- System Colors -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+</resources> 
