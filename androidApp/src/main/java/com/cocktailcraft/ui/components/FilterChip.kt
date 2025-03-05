@@ -22,12 +22,13 @@ fun FilterChip(
     onClick: () -> Unit,
     label: String,
     selectedColor: Color = AppColors.Primary,
-    unselectedColor: Color = AppColors.ChipBackground
+    unselectedColor: Color = Color.White
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = if (selected) selectedColor else unselectedColor,
         contentColor = if (selected) Color.White else AppColors.TextPrimary,
+        shadowElevation = if (selected) 2.dp else 0.dp,
         modifier = Modifier.height(32.dp)
     ) {
         Box(
@@ -39,7 +40,8 @@ fun FilterChip(
             Text(
                 text = label,
                 fontSize = 14.sp,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                color = if (selected) Color.White else AppColors.Primary
             )
         }
     }
