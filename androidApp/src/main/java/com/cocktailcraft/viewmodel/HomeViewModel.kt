@@ -4,9 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.CocktailRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -34,9 +39,48 @@ class HomeViewModel : ViewModel(), KoinComponent {
     private val _isSearchActive = MutableStateFlow(false)
     val isSearchActive: StateFlow<Boolean> = _isSearchActive.asStateFlow()
     
+    // Add a shared flow for connectivity status changes
+    private val _connectivityStatus = MutableSharedFlow<Boolean>(replay = 1)
+    
+    // Keep track of search job for debouncing
+    private var searchJob: Job? = null
+    
+    // Network error message with retry button
+    private val networkErrorMessage = "Unable to connect to the cocktail database. Please check your internet connection and try again."
+    
     init {
         loadCocktails()
         loadFavorites()
+        monitorConnectivity()
+    }
+    
+    private fun monitorConnectivity() {
+        viewModelScope.launch {
+            _connectivityStatus.emit(checkConnectivity())
+            
+            // Periodically check connectivity when there's an error
+            while (true) {
+                delay(30000) // Check every 30 seconds
+                if (_error.value.isNotBlank()) {
+                    val isConnected = checkConnectivity()
+                    _connectivityStatus.emit(isConnected)
+                    
+                    // If connection restored and we had an error, reload data
+                    if (isConnected && _error.value == networkErrorMessage) {
+                        _error.value = ""
+                        loadCocktails()
+                    }
+                }
+            }
+        }
+    }
+    
+    private suspend fun checkConnectivity(): Boolean {
+        return try {
+            cocktailRepository.checkApiConnectivity().first()
+        } catch (e: Exception) {
+            false
+        }
     }
     
     fun loadCocktails() {
@@ -45,13 +89,23 @@ class HomeViewModel : ViewModel(), KoinComponent {
             _error.value = ""
             
             try {
-                cocktailRepository.getCocktailsSortedByNewest().collect { cocktailList ->
-                    _cocktails.value = cocktailList
+                // First check API connectivity
+                if (!checkConnectivity()) {
+                    _error.value = networkErrorMessage
+                    _isLoading.value = false
+                    return@launch
                 }
+                
+                cocktailRepository.getCocktailsSortedByNewest()
+                    .catch { e -> 
+                        handleError("Failed to load cocktails", e)
+                    }
+                    .collect { cocktailList ->
+                        _cocktails.value = cocktailList
+                        _isLoading.value = false
+                    }
             } catch (e: Exception) {
-                _error.value = "Failed to load cocktails: ${e.message}"
-            } finally {
-                _isLoading.value = false
+                handleError("Failed to load cocktails", e)
             }
         }
     }
@@ -59,16 +113,21 @@ class HomeViewModel : ViewModel(), KoinComponent {
     private fun loadFavorites() {
         viewModelScope.launch {
             try {
-                cocktailRepository.getFavoriteCocktails().collect { cocktailList ->
-                    _favorites.value = cocktailList
-                }
+                cocktailRepository.getFavoriteCocktails()
+                    .catch { e ->
+                        // Don't show error UI for favorites loading, just log
+                        println("Failed to load favorites: ${e.message}")
+                    }
+                    .collect { cocktailList ->
+                        _favorites.value = cocktailList
+                    }
             } catch (e: Exception) {
-                _error.value = "Failed to load favorites: ${e.message}"
+                println("Failed to load favorites: ${e.message}")
             }
         }
     }
     
-    // New function to search cocktails by name
+    // Updated function with debouncing
     fun searchCocktails(query: String) {
         _searchQuery.value = query
         
@@ -77,25 +136,58 @@ class HomeViewModel : ViewModel(), KoinComponent {
             _isSearchActive.value = true
         }
         
+        // Cancel previous search job if it exists
+        searchJob?.cancel()
+        
         if (query.isBlank()) {
+            _isSearchActive.value = false
             loadCocktails() // Reset to all cocktails if query is empty
             return
         }
         
-        viewModelScope.launch {
+        // Create a new search job with debounce
+        searchJob = viewModelScope.launch {
+            delay(300) // Debounce for 300ms
             _isLoading.value = true
             _error.value = ""
             
             try {
-                cocktailRepository.searchCocktailsByName(query).collect { cocktailList ->
-                    _cocktails.value = cocktailList
+                // Check connectivity first
+                if (!checkConnectivity()) {
+                    _error.value = networkErrorMessage
+                    _isLoading.value = false
+                    return@launch
                 }
+                
+                cocktailRepository.searchCocktailsByName(query)
+                    .catch { e ->
+                        handleError("Failed to search cocktails", e)
+                    }
+                    .collect { cocktailList ->
+                        _cocktails.value = cocktailList
+                        _isLoading.value = false
+                    }
             } catch (e: Exception) {
-                _error.value = "Failed to search cocktails: ${e.message}"
-            } finally {
-                _isLoading.value = false
+                handleError("Failed to search cocktails", e)
             }
         }
+    }
+    
+    // Helper function to handle errors consistently
+    private fun handleError(baseMessage: String, e: Throwable) {
+        println("$baseMessage: ${e.message}")
+        
+        val userMessage = when {
+            e.message?.contains("timeout") == true -> 
+                "$baseMessage: The request timed out. Please try again."
+            e.message?.contains("connection") == true || 
+            e.message?.contains("network") == true -> 
+                networkErrorMessage
+            else -> "$baseMessage: ${e.message}"
+        }
+        
+        _error.value = userMessage
+        _isLoading.value = false
     }
     
     // Toggle search mode
@@ -107,13 +199,47 @@ class HomeViewModel : ViewModel(), KoinComponent {
         }
     }
     
+    // Load cocktails filtered by category - add this new method
+    fun loadCocktailsByCategory(category: String?) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = ""
+            
+            try {
+                // Check connectivity first
+                if (!checkConnectivity()) {
+                    _error.value = networkErrorMessage
+                    _isLoading.value = false
+                    return@launch
+                }
+                
+                if (category == null) {
+                    loadCocktails() // Load all if category is null
+                    return@launch
+                }
+                
+                cocktailRepository.filterByCategory(category)
+                    .catch { e ->
+                        handleError("Failed to filter cocktails", e)
+                    }
+                    .collect { cocktailList ->
+                        _cocktails.value = cocktailList
+                        _isLoading.value = false
+                    }
+            } catch (e: Exception) {
+                handleError("Failed to filter cocktails", e)
+            }
+        }
+    }
+    
     fun addToFavorites(cocktail: Cocktail) {
         viewModelScope.launch {
             try {
                 cocktailRepository.addToFavorites(cocktail)
                 loadFavorites() // Refresh favorites after adding
             } catch (e: Exception) {
-                _error.value = "Failed to add to favorites: ${e.message}"
+                println("Failed to add to favorites: ${e.message}")
+                // Don't show UI error for favorite operations
             }
         }
     }
@@ -124,7 +250,8 @@ class HomeViewModel : ViewModel(), KoinComponent {
                 cocktailRepository.removeFromFavorites(cocktail)
                 loadFavorites() // Refresh favorites after removing
             } catch (e: Exception) {
-                _error.value = "Failed to remove from favorites: ${e.message}"
+                println("Failed to remove from favorites: ${e.message}")
+                // Don't show UI error for favorite operations
             }
         }
     }
@@ -139,7 +266,8 @@ class HomeViewModel : ViewModel(), KoinComponent {
                     addToFavorites(cocktail)
                 }
             } catch (e: Exception) {
-                _error.value = "Failed to toggle favorite: ${e.message}"
+                println("Failed to toggle favorite: ${e.message}")
+                // Don't show UI error for favorite operations
             }
         }
     }
@@ -153,14 +281,33 @@ class HomeViewModel : ViewModel(), KoinComponent {
         
         viewModelScope.launch {
             try {
-                cocktailRepository.getCocktailById(id).collect { cocktail ->
-                    cocktailFlow.value = cocktail
+                // Check connectivity first
+                if (!checkConnectivity()) {
+                    _error.value = networkErrorMessage
+                    return@launch
                 }
+                
+                cocktailRepository.getCocktailById(id)
+                    .catch { e ->
+                        println("Failed to get cocktail details: ${e.message}")
+                    }
+                    .collect { cocktail ->
+                        cocktailFlow.value = cocktail
+                    }
             } catch (e: Exception) {
-                _error.value = "Failed to get cocktail details: ${e.message}"
+                println("Failed to get cocktail details: ${e.message}")
             }
         }
         
         return cocktailFlow
     }
-} 
+    
+    // Add a method to retry the last operation
+    fun retry() {
+        if (_searchQuery.value.isNotBlank() && _isSearchActive.value) {
+            searchCocktails(_searchQuery.value)
+        } else {
+            loadCocktails()
+        }
+    }
+}

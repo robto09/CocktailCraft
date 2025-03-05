@@ -199,12 +199,23 @@ class CocktailRepositoryImpl(
 
     override suspend fun getCocktailsSortedByNewest(): Flow<List<Cocktail>> = flow {
         try {
+            println("DEBUG: Attempting to load cocktails by newest...")
+            // First check if API is reachable
+            if (!pingApiInternal()) {
+                throw Exception("API is not reachable. Please check your internet connection.")
+            }
+            
             val cocktails = api.filterByCategory("Cocktail").map { dto ->
                 mapDtoToCocktail(dto)
             }
+            println("DEBUG: Successfully loaded ${cocktails.size} cocktails")
             emit(cocktails.sortedByDescending { it.dateAdded })
         } catch (e: Exception) {
-            emit(emptyList())
+            // Log the detailed error with stack trace
+            println("ERROR loading cocktails: ${e.message}")
+            println("ERROR stack trace: ${e.stackTraceToString()}")
+            // Re-throw with more context
+            throw Exception("Failed to load cocktails: ${e.message}", e)
         }
     }
 
@@ -301,10 +312,37 @@ class CocktailRepositoryImpl(
         return popularity
     }
 
+    // Add a method to get consistent cocktail image URLs with fallbacks
     override fun getCocktailImageUrl(cocktail: Cocktail): String {
-        // First try to use the image URL provided by the API
-        return cocktail.imageUrl ?: 
-            // Otherwise, construct a URL for the ingredient based on the cocktail name
-            "${appConfig.imageBaseUrl}/${appConfig.ingredientsImagePath}/${cocktail.name.replace(" ", "-").lowercase()}.png"
+        // Return the direct imageUrl if available
+        if (!cocktail.imageUrl.isNullOrBlank()) {
+            return cocktail.imageUrl
+        }
+        
+        // If no image URL, construct one from the ID if possible
+        return if (cocktail.id.isNotBlank()) {
+            "${appConfig.imageBaseUrl}/${appConfig.cocktailsImagePath}/${cocktail.id}.jpg"
+        } else {
+            // Return an empty string as fallback - UI will handle displaying a placeholder
+            ""
+        }
+    }
+
+    // Implement the interface method
+    override suspend fun checkApiConnectivity(): Flow<Boolean> = flow {
+        emit(pingApiInternal())
+    }
+
+    // Helper method to check API connectivity
+    private suspend fun pingApiInternal(): Boolean {
+        println("DEBUG: Checking API connectivity...")
+        return try {
+            val isConnected = api.pingApi()
+            println("DEBUG: API connectivity check result: $isConnected")
+            isConnected
+        } catch (e: Exception) {
+            println("ERROR checking API connectivity: ${e.message}")
+            false
+        }
     }
 } 

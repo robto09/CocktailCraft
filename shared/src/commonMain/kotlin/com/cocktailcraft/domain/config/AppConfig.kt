@@ -32,6 +32,21 @@ interface AppConfig {
     val networkTimeoutMs: Long
     
     /**
+     * Initial timeout for first network request attempt
+     */
+    val initialNetworkTimeoutMs: Long
+    
+    /**
+     * Maximum timeout for network requests after retries
+     */
+    val maxNetworkTimeoutMs: Long
+    
+    /**
+     * Maximum number of retries for network operations
+     */
+    val maxRetries: Int
+    
+    /**
      * Key for storing favorites in local storage
      */
     val favoritesStorageKey: String
@@ -40,4 +55,9 @@ interface AppConfig {
      * Key for storing orders in local storage
      */
     val ordersStorageKey: String
+    
+    /**
+     * Expiration time for cached data in milliseconds
+     */
+    val cacheExpirationMs: Long
 } 
