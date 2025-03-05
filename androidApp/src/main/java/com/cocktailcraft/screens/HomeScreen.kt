@@ -263,7 +263,6 @@ fun HomeScreen(
                                 CocktailItem(
                                     cocktail = featuredCocktail,
                                     onClick = { 
-                                        navController.navigate(Screen.CocktailDetail.createRoute(featuredCocktail.id))
                                         onCocktailClick(featuredCocktail) 
                                     },
                                     onAddToCart = { cocktail -> 
@@ -297,7 +296,6 @@ fun HomeScreen(
                         CocktailItem(
                             cocktail = cocktail,
                             onClick = { 
-                                navController.navigate(Screen.CocktailDetail.createRoute(cocktail.id))
                                 onCocktailClick(cocktail) 
                             },
                             onAddToCart = { 

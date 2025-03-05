@@ -18,6 +18,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -25,13 +26,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.cocktailcraft.navigation.NavigationManager
 import com.cocktailcraft.navigation.Screen
 import com.cocktailcraft.screens.CartScreen
 import com.cocktailcraft.screens.CocktailDetailScreen
@@ -50,6 +51,9 @@ import com.cocktailcraft.viewmodel.ReviewViewModel
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
+    // Create the navigation manager
+    val navigationManager = remember { NavigationManager(navController) }
+    
     val items = listOf(
         Screen.Home,
         Screen.Cart,
@@ -130,10 +134,7 @@ fun MainScreen() {
                             },
                             selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                             onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id)
-                                    launchSingleTop = true
-                                }
+                                navigationManager.navigateToBottomNavDestination(screen)
                             },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = AppColors.Primary,
@@ -187,11 +188,11 @@ fun MainScreen() {
                     onAddToCart = { cocktail ->
                         // Add to cart and then navigate to cart
                         sharedCartViewModel.addToCart(cocktail)
-                        navController.navigate(Screen.Cart.route)
+                        navigationManager.navigateToCart()
                     },
                     onCocktailClick = { cocktail ->
                         // Navigate to cocktail detail screen
-                        navController.navigate(Screen.CocktailDetail.createRoute(cocktail.id))
+                        navigationManager.navigateToCocktailDetail(cocktail)
                     }
                 )
             }
@@ -199,12 +200,9 @@ fun MainScreen() {
                 CartScreen(
                     viewModel = sharedCartViewModel,
                     onStartShopping = {
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(navController.graph.findStartDestination().id)
-                            launchSingleTop = true
-                        }
+                        navigationManager.navigateToHome()
                     },
-                    navController = navController,
+                    navigationManager = navigationManager,
                     orderViewModel = sharedOrderViewModel,
                     favoritesViewModel = sharedFavoritesViewModel
                 )
@@ -217,22 +215,19 @@ fun MainScreen() {
                     cartViewModel = sharedCartViewModel,
                     favoritesViewModel = sharedFavoritesViewModel,
                     onBrowseProducts = {
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(navController.graph.findStartDestination().id)
-                            launchSingleTop = true
-                        }
+                        navigationManager.navigateToHome()
                     },
                     onAddToCart = { cocktail ->
                         // Add to cart and then navigate to cart
                         sharedCartViewModel.addToCart(cocktail)
-                        navController.navigate(Screen.Cart.route)
+                        navigationManager.navigateToCart()
                     }
                 )
             }
             composable(Screen.OrderList.route) {
                 OrderListScreen(
                     orderViewModel = sharedOrderViewModel,
-                    navController = navController
+                    navigationManager = navigationManager
                 )
             }
             composable(
@@ -246,10 +241,10 @@ fun MainScreen() {
                     cartViewModel = sharedCartViewModel,
                     reviewViewModel = sharedReviewViewModel,
                     favoritesViewModel = sharedFavoritesViewModel,
-                    onBackClick = { navController.popBackStack() },
+                    onBackClick = { navigationManager.navigateBack() },
                     onAddToCart = { cocktailToAdd ->
                         sharedCartViewModel.addToCart(cocktailToAdd) // Pass the entire cocktail object
-                        navController.navigate(Screen.Cart.route) // Navigate to cart screen after adding item
+                        navigationManager.navigateToCart() // Navigate to cart screen after adding item
                     }
                 )
             }
