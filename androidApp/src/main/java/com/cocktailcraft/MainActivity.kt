@@ -170,6 +170,7 @@ fun CocktailCraft() {
     val sharedCartViewModel: CartViewModel = viewModel()
     val sharedReviewViewModel: ReviewViewModel = viewModel()
     val sharedHomeViewModel: HomeViewModel = viewModel()
+    val sharedFavoritesViewModel: FavoritesViewModel = viewModel()
     
     // Search state management
     val isSearchActive = sharedHomeViewModel.isSearchActive.collectAsState()
@@ -273,7 +274,9 @@ fun CocktailCraft() {
             composable(Screen.Home.route) {
                 HomeScreen(
                     navController = navController,
+                    viewModel = sharedHomeViewModel,
                     cartViewModel = sharedCartViewModel,
+                    favoritesViewModel = sharedFavoritesViewModel,
                     onAddToCart = { cocktail ->
                         // Add to cart and then navigate to cart
                         sharedCartViewModel.addToCart(cocktail)
@@ -295,7 +298,8 @@ fun CocktailCraft() {
                         }
                     },
                     navController = navController,
-                    orderViewModel = sharedOrderViewModel
+                    orderViewModel = sharedOrderViewModel,
+                    favoritesViewModel = sharedFavoritesViewModel
                 )
             }
             composable(Screen.Profile.route) {
@@ -304,7 +308,7 @@ fun CocktailCraft() {
             composable(Screen.Favorites.route) {
                 FavoritesScreen(
                     cartViewModel = sharedCartViewModel,
-                    favoritesViewModel = viewModel(),
+                    favoritesViewModel = sharedFavoritesViewModel,
                     onBrowseProducts = {
                         navController.navigate(Screen.Home.route) {
                             popUpTo(navController.graph.findStartDestination().id)
@@ -331,9 +335,10 @@ fun CocktailCraft() {
                 val cocktailId = backStackEntry.arguments?.getString("cocktailId") ?: ""
                 CocktailDetailScreen(
                     cocktailId = cocktailId,
-                    homeViewModel = viewModel(),
+                    homeViewModel = sharedHomeViewModel,
                     cartViewModel = sharedCartViewModel,
                     reviewViewModel = sharedReviewViewModel,
+                    favoritesViewModel = sharedFavoritesViewModel,
                     onBackClick = { navController.popBackStack() },
                     onAddToCart = { cocktailToAdd ->
                         sharedCartViewModel.addToCart(cocktailToAdd) // Pass the entire cocktail object
@@ -399,17 +404,18 @@ fun WaveHeader(
 @Composable
 fun HomeScreen(
     navController: NavController,
-    viewModel: HomeViewModel = viewModel(),
+    viewModel: HomeViewModel,
     cartViewModel: CartViewModel,
-    onAddToCart: (Cocktail) -> Unit = {},
-    onCocktailClick: (Cocktail) -> Unit = {}
+    favoritesViewModel: FavoritesViewModel,
+    onAddToCart: (Cocktail) -> Unit,
+    onCocktailClick: (Cocktail) -> Unit
 ) {
     val cocktails by viewModel.cocktails.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val isSearchActive by viewModel.isSearchActive.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
-    val favorites by viewModel.favorites.collectAsState()
+    val favorites by favoritesViewModel.favorites.collectAsState()
     
     Column(
         modifier = Modifier
@@ -503,7 +509,7 @@ fun HomeScreen(
                                 homeViewModel = viewModel,
                                 isFavorite = favorites.any { it.id == featuredCocktail.id },
                                 onToggleFavorite = { cocktail -> 
-                                    viewModel.toggleFavorite(cocktail)
+                                    favoritesViewModel.toggleFavorite(cocktail)
                                 }
                             )
                         }
@@ -529,7 +535,7 @@ fun HomeScreen(
                         homeViewModel = viewModel,
                         isFavorite = favorites.any { it.id == cocktail.id },
                         onToggleFavorite = { cocktail -> 
-                            viewModel.toggleFavorite(cocktail)
+                            favoritesViewModel.toggleFavorite(cocktail)
                         }
                     )
                 }
@@ -831,6 +837,7 @@ fun CocktailDetailScreen(
     homeViewModel: HomeViewModel,
     cartViewModel: CartViewModel,
     reviewViewModel: ReviewViewModel,
+    favoritesViewModel: FavoritesViewModel,
     onBackClick: () -> Unit,
     onAddToCart: (Cocktail) -> Unit
 ) {
@@ -845,7 +852,7 @@ fun CocktailDetailScreen(
     val reviewsMap by reviewViewModel.reviews.collectAsState()
     // Safely get reviews for this cocktail
     val reviews = reviewsMap[cocktailId] ?: emptyList()
-    val favorites by homeViewModel.favorites.collectAsState()
+    val favorites by favoritesViewModel.favorites.collectAsState()
     val isFavorite = cocktail?.let { favorites.any { fav -> fav.id == it.id } } ?: false
     
     // Update loading state when cocktail data changes
@@ -1162,7 +1169,7 @@ fun CocktailDetailScreen(
                                     
                                     // Favorite button
                                     IconButton(
-                                        onClick = { cocktailData?.let { homeViewModel.toggleFavorite(it) } },
+                                        onClick = { cocktailData?.let { favoritesViewModel.toggleFavorite(it) } },
                                         modifier = Modifier.size(36.dp)
                                     ) {
                                         Icon(
@@ -1920,38 +1927,37 @@ fun CocktailItem(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(Color.Black.copy(alpha = 0.5f)),
-                            contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Out of Stock",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(4.dp)
+                        )
+                    }
+                }
+                
+                // Category chip - updated to match the app's primary color
+                cocktail.category?.let { category ->
+                    Box(
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .absoluteOffset(x = 0.dp, y = 0.dp)
+                    ) {
+                        Surface(
+                            color = AppColors.Primary.copy(alpha = 0.9f),
+                            shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
-                                text = "Out of Stock",
+                                text = category,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(4.dp)
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium
                             )
-                        }
-                    }
-                    
-                    // Category chip - updated to match the app's primary color
-                    cocktail.category?.let { category ->
-                        Box(
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .absoluteOffset(x = 0.dp, y = 0.dp)
-                        ) {
-                            Surface(
-                                color = AppColors.Primary.copy(alpha = 0.9f),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text(
-                                    text = category,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    color = Color.White,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
                         }
                     }
                 }
@@ -2047,3 +2053,5 @@ fun CocktailItem(
             }
         }
     }
+}
+
