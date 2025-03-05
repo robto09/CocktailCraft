@@ -176,67 +176,85 @@ fun CocktailCraft() {
     val isSearchActive = sharedHomeViewModel.isSearchActive.collectAsState()
     val searchQuery = sharedHomeViewModel.searchQuery.collectAsState()
     
+    // Get the current route for conditional rendering
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val isDetailScreen = currentRoute?.startsWith("cocktail_detail") == true
+    
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    // Normal title without search functionality
-                    Text(
-                        text = when (navController.currentBackStackEntryAsState().value?.destination?.route) {
-                            Screen.Home.route -> "My Bar"
-                            Screen.Cart.route -> "Cart"
-                            Screen.Favorites.route -> "Favorites"
-                            Screen.OrderList.route -> "Recipes"
-                            Screen.Profile.route -> "Profile"
-                            else -> "Cocktail Bar"
+            // Only show the main top bar if we're NOT on the detail screen
+            if (!isDetailScreen) {
+                Column {
+                    TopAppBar(
+                        title = {
+                            // Normal title without search functionality
+                            Text(
+                                text = when (currentRoute) {
+                                    Screen.Home.route -> "My Bar"
+                                    Screen.Cart.route -> "Cart"
+                                    Screen.Favorites.route -> "Favorites"
+                                    Screen.OrderList.route -> "Recipes"
+                                    Screen.Profile.route -> "Profile"
+                                    else -> "Cocktail Bar"
+                                },
+                                color = Color.White,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         },
-                        color = Color.White,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                actions = {
-                    // Removed search button/functionality
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = AppColors.Primary,
-                    titleContentColor = Color.White,
-                    actionIconContentColor = Color.White
-                )
-            )
-        },
-        bottomBar = {
-            NavigationBar(
-                containerColor = AppColors.Surface,
-                contentColor = AppColors.Primary,
-                tonalElevation = 8.dp
-            ) {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentDestination = navBackStackEntry?.destination
-                
-                items.forEach { screen ->
-                    NavigationBarItem(
-                        icon = { 
-                            Icon(screen.icon, contentDescription = screen.title)
+                        actions = {
+                            // Removed search button/functionality
                         },
-                        label = { 
-                            Text(screen.title, fontSize = 12.sp)
-                        },
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id)
-                                launchSingleTop = true
-                            }
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = AppColors.Primary,
-                            selectedTextColor = AppColors.Primary,
-                            indicatorColor = AppColors.Surface,
-                            unselectedIconColor = AppColors.Gray,
-                            unselectedTextColor = AppColors.Gray
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = AppColors.Primary,
+                            titleContentColor = Color.White,
+                            actionIconContentColor = Color.White
                         )
                     )
+                    
+                    // Add a divider to create separation between top bar and content
+                    HorizontalDivider(
+                        color = Color.White.copy(alpha = 0.2f),
+                        thickness = 1.dp
+                    )
+                }
+            }
+        },
+        bottomBar = {
+            // Only show the bottom navigation bar if we're NOT on the detail screen
+            if (!isDetailScreen) {
+                NavigationBar(
+                    containerColor = AppColors.Surface,
+                    contentColor = AppColors.Primary,
+                    tonalElevation = 8.dp
+                ) {
+                    val currentDestination = navBackStackEntry?.destination
+                    
+                    items.forEach { screen ->
+                        NavigationBarItem(
+                            icon = { 
+                                Icon(screen.icon, contentDescription = screen.title)
+                            },
+                            label = { 
+                                Text(screen.title, fontSize = 12.sp)
+                            },
+                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                            onClick = {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id)
+                                    launchSingleTop = true
+                                }
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = AppColors.Primary,
+                                selectedTextColor = AppColors.Primary,
+                                indicatorColor = AppColors.Surface,
+                                unselectedIconColor = AppColors.Gray,
+                                unselectedTextColor = AppColors.Gray
+                            )
+                        )
+                    }
                 }
             }
         },
@@ -982,30 +1000,38 @@ fun CocktailDetailScreen(
     
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        text = cocktail?.name ?: "Cocktail Details",
-                        color = Color.White,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
+            Column {
+                TopAppBar(
+                    title = { 
+                        Text(
+                            text = cocktail?.name ?: "Cocktail Detail",
+                            color = Color.White,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
                         )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = AppColors.Primary,
-                    titleContentColor = Color.White
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = AppColors.Primary,
+                        titleContentColor = Color.White
+                    )
                 )
-            )
+                
+                // Add a divider to create separation between top bar and content
+                HorizontalDivider(
+                    color = Color.White.copy(alpha = 0.2f),
+                    thickness = 1.dp
+                )
+            }
         }
     ) { paddingValues ->
         // Show loading indicator with animation to prevent flashing
@@ -1061,7 +1087,7 @@ fun CocktailDetailScreen(
                                 contentScale = ContentScale.Crop
                             )
                             
-                            // Gradient overlay
+                            // Gradient overlay at the bottom only (not the top)
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -1076,12 +1102,12 @@ fun CocktailDetailScreen(
                                     )
                             )
                             
-                            // Cocktail category chip - updated to match top bar color
+                            // Move category chip to the bottom right to avoid looking like a navigation element
                             cocktailData.category?.let { category ->
                                 Box(
                                     modifier = Modifier
                                         .padding(16.dp)
-                                        .absoluteOffset(x = 0.dp, y = 0.dp)
+                                        .align(Alignment.BottomEnd)
                                 ) {
                                     Surface(
                                         color = AppColors.Primary.copy(alpha = 0.9f),
@@ -1114,58 +1140,18 @@ fun CocktailDetailScreen(
                             Column(
                                 modifier = Modifier.padding(20.dp)
                             ) {
-                                // Name and price
+                                // Price and favorite row
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = cocktailData.name,
-                                        fontSize = 24.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = AppColors.TextPrimary,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    
-                                    Text(
                                         text = "$${String.format("%.2f", cocktailData.price)}",
-                                        fontSize = 22.sp,
+                                        fontSize = 24.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = AppColors.Primary
                                     )
-                                }
-                                
-                                Spacer(modifier = Modifier.height(8.dp))
-                                
-                                // Add favorite button and stock status in the same row
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    // Stock status
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        val inStock = cocktailData.stockCount > 0
-                                        Box(
-                                            modifier = Modifier
-                                                .size(10.dp)
-                                                .background(
-                                                    if (inStock) Color(0xFF4CAF50) else Color(0xFFE57373),
-                                                    CircleShape
-                                                )
-                                        )
-                                        
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        
-                                        Text(
-                                            text = if (inStock) "In Stock (${cocktailData.stockCount} available)" else "Out of Stock",
-                                            fontSize = 14.sp,
-                                            color = if (inStock) Color(0xFF4CAF50) else Color(0xFFE57373),
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    }
                                     
                                     // Favorite button
                                     IconButton(
@@ -1179,6 +1165,32 @@ fun CocktailDetailScreen(
                                             modifier = Modifier.size(24.dp)
                                         )
                                     }
+                                }
+                                
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                // Stock status
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val inStock = cocktailData.stockCount > 0
+                                    Box(
+                                        modifier = Modifier
+                                            .size(10.dp)
+                                            .background(
+                                                if (inStock) Color(0xFF4CAF50) else Color(0xFFE57373),
+                                                CircleShape
+                                            )
+                                    )
+                                    
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    
+                                    Text(
+                                        text = if (inStock) "In Stock (${cocktailData.stockCount} available)" else "Out of Stock",
+                                        fontSize = 14.sp,
+                                        color = if (inStock) Color(0xFF4CAF50) else Color(0xFFE57373),
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 }
                                 
                                 Spacer(modifier = Modifier.height(24.dp))
@@ -1945,7 +1957,7 @@ fun CocktailItem(
                     Box(
                         modifier = Modifier
                             .padding(8.dp)
-                            .absoluteOffset(x = 0.dp, y = 0.dp)
+                            .align(Alignment.BottomEnd)
                     ) {
                         Surface(
                             color = AppColors.Primary.copy(alpha = 0.9f),
