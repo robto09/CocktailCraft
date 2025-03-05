@@ -1,7 +1,7 @@
-# Coffee Store App
+# CocktailCraft App
 
-## Project Overview
-This is a Kotlin Multiplatform project for a Coffee Store app, designed to run on both Android and iOS platforms. It uses Ktor for networking, Koin for dependency injection, and supports serialization and coroutines.
+## Overview
+This is a Kotlin Multiplatform project for a Cocktail Crafting app, designed to run on both Android and iOS platforms. It uses Ktor for networking, Koin for dependency injection, and supports serialization and coroutines.
 
 ## Prerequisites
 - **Java Development Kit (JDK)**: Version 17 or higher

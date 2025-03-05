@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.breadapp2"
+    namespace = "com.cocktailcraft"
     compileSdk = 34
     defaultConfig {
         minSdk = 24
