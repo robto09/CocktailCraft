@@ -15,9 +15,20 @@ class AppConfigImpl : AppConfig {
     
     override val cocktailsImagePath: String = "media/k/drinks"
     
+    // Timeouts for network requests - generous defaults
     override val networkTimeoutMs: Long = 30000 // 30 seconds
     
-    override val favoritesStorageKey: String = "favorite_cocktails"
+    // Progressive timeouts for retries
+    override val initialNetworkTimeoutMs: Long = 10000 // 10 seconds for first attempt
+    override val maxNetworkTimeoutMs: Long = 60000 // 60 seconds max timeout
     
+    // Number of retries for network operations
+    override val maxRetries: Int = 3
+    
+    // Storage keys
+    override val favoritesStorageKey: String = "favorite_cocktails"
     override val ordersStorageKey: String = "orders_data"
+    
+    // Cache configuration
+    override val cacheExpirationMs: Long = 3600000 // 1 hour cache expiration
 } 

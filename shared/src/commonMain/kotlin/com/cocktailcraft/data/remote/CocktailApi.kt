@@ -18,6 +18,9 @@ interface CocktailApi {
     suspend fun getGlasses(): List<GlassDto>
     suspend fun getIngredients(): List<IngredientDto>
     suspend fun getAlcoholicFilters(): List<AlcoholicFilterDto>
+    
+    // New method to check API connectivity
+    suspend fun pingApi(): Boolean
 }
 
 class CocktailApiImpl(
@@ -118,6 +121,18 @@ class CocktailApiImpl(
         }.body<AlcoholicFilterResponse>()
         
         return response.filters ?: emptyList()
+    }
+    
+    // Implement the ping method
+    override suspend fun pingApi(): Boolean {
+        return try {
+            // Use a lightweight endpoint for checking connectivity
+            val response = client.get("$BASE_URL/random.php")
+            response.status.isSuccess()
+        } catch (e: Exception) {
+            println("API ping failed: ${e.message}")
+            false
+        }
     }
     
     companion object {

@@ -28,4 +28,7 @@ interface CocktailRepository {
     
     // New method for getting image URL
     fun getCocktailImageUrl(cocktail: Cocktail): String
+    
+    // New method to check API connectivity
+    suspend fun checkApiConnectivity(): Flow<Boolean>
 } 
