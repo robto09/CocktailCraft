@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.example.breadapp2.androidApp-mergeReleaseResources-63:/values-v18/values-v18.xml",
+            "map": [
+                {
+                    "source": "/Users/robto09/.gradle/caches/8.9/transforms/a32457157c8aa46274096ae82fecd471/transformed/appcompat-1.6.1/res/values-v18/values-v18.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "48",
+                        "endOffsets": "99"
+                    }
+                }
+            ]
+        }
+    ]
+}
