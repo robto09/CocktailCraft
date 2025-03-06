@@ -11,8 +11,16 @@ import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-class ProfileViewModel : ViewModel(), KoinComponent {
-    private val authRepository: AuthRepository by inject()
+class ProfileViewModel(
+    private val authRepository: AuthRepository? = null
+) : ViewModel(), KoinComponent {
+    
+    // Use injected repository if not provided in constructor (for production)
+    private val injectedAuthRepository: AuthRepository by inject()
+    
+    // Use the provided repository or the injected one
+    private val repository: AuthRepository
+        get() = authRepository ?: injectedAuthRepository
     
     private val _user = MutableStateFlow<User?>(null)
     val user: StateFlow<User?> = _user.asStateFlow()
@@ -33,7 +41,7 @@ class ProfileViewModel : ViewModel(), KoinComponent {
     
     private fun checkSignInStatus() {
         viewModelScope.launch {
-            authRepository.isUserSignedIn().collect { isSignedIn ->
+            repository.isUserSignedIn().collect { isSignedIn ->
                 _isSignedIn.value = isSignedIn
             }
         }
@@ -45,7 +53,7 @@ class ProfileViewModel : ViewModel(), KoinComponent {
             _error.value = null
             
             try {
-                authRepository.getCurrentUser().collect { user ->
+                repository.getCurrentUser().collect { user ->
                     _user.value = user
                 }
             } catch (e: Exception) {
@@ -62,7 +70,7 @@ class ProfileViewModel : ViewModel(), KoinComponent {
             _error.value = null
             
             try {
-                authRepository.signIn(email, password).collect { success ->
+                repository.signIn(email, password).collect { success ->
                     if (success) {
                         checkSignInStatus()
                         loadUserProfile()
@@ -84,7 +92,7 @@ class ProfileViewModel : ViewModel(), KoinComponent {
             _error.value = null
             
             try {
-                authRepository.signUp(email, password).collect { success ->
+                repository.signUp(email, password).collect { success ->
                     if (success) {
                         updateUserName(name)
                         checkSignInStatus()
@@ -107,7 +115,7 @@ class ProfileViewModel : ViewModel(), KoinComponent {
             _error.value = null
             
             try {
-                authRepository.signOut().collect { success ->
+                repository.signOut().collect { success ->
                     if (success) {
                         _user.value = null
                         checkSignInStatus()
@@ -129,7 +137,7 @@ class ProfileViewModel : ViewModel(), KoinComponent {
             _error.value = null
             
             try {
-                authRepository.updateUserName(name).collect { success ->
+                repository.updateUserName(name).collect { success ->
                     if (success) {
                         loadUserProfile()
                     } else {

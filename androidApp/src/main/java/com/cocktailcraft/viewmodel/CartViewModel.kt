@@ -12,8 +12,16 @@ import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-class CartViewModel : ViewModel(), KoinComponent {
-    private val cartRepository: CartRepository by inject()
+class CartViewModel(
+    private val cartRepository: CartRepository? = null
+) : ViewModel(), KoinComponent {
+    
+    // Use injected repository if not provided in constructor (for production)
+    private val injectedCartRepository: CartRepository by inject()
+    
+    // Use the provided repository or the injected one
+    private val repository: CartRepository
+        get() = cartRepository ?: injectedCartRepository
     
     private val _cartItems = MutableStateFlow<List<CocktailCartItem>>(emptyList())
     val cartItems: StateFlow<List<CocktailCartItem>> = _cartItems.asStateFlow()
@@ -37,11 +45,11 @@ class CartViewModel : ViewModel(), KoinComponent {
             _error.value = null
             
             try {
-                cartRepository.getCartItems().collect { items ->
+                repository.getCartItems().collect { items ->
                     _cartItems.value = items
                 }
                 
-                cartRepository.getCartTotal().collect { total ->
+                repository.getCartTotal().collect { total ->
                     _totalPrice.value = total
                 }
             } catch (e: Exception) {
@@ -56,7 +64,7 @@ class CartViewModel : ViewModel(), KoinComponent {
         viewModelScope.launch {
             try {
                 val cartItem = CocktailCartItem(cocktail, quantity)
-                cartRepository.addToCart(cartItem)
+                repository.addToCart(cartItem)
                 loadCartItems()
             } catch (e: Exception) {
                 _error.value = "Failed to add to cart: ${e.message}"
@@ -67,7 +75,7 @@ class CartViewModel : ViewModel(), KoinComponent {
     fun removeFromCart(cocktailId: String) {
         viewModelScope.launch {
             try {
-                cartRepository.removeFromCart(cocktailId)
+                repository.removeFromCart(cocktailId)
                 loadCartItems()
             } catch (e: Exception) {
                 _error.value = "Failed to remove from cart: ${e.message}"
@@ -78,7 +86,7 @@ class CartViewModel : ViewModel(), KoinComponent {
     fun updateQuantity(cocktailId: String, quantity: Int) {
         viewModelScope.launch {
             try {
-                cartRepository.updateQuantity(cocktailId, quantity)
+                repository.updateQuantity(cocktailId, quantity)
                 loadCartItems()
             } catch (e: Exception) {
                 _error.value = "Failed to update quantity: ${e.message}"
@@ -89,7 +97,7 @@ class CartViewModel : ViewModel(), KoinComponent {
     fun clearCart() {
         viewModelScope.launch {
             try {
-                cartRepository.clearCart()
+                repository.clearCart()
                 loadCartItems()
             } catch (e: Exception) {
                 _error.value = "Failed to clear cart: ${e.message}"

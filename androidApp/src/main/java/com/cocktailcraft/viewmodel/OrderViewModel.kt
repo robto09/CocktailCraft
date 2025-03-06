@@ -20,9 +20,21 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class OrderViewModel : ViewModel(), KoinComponent {
-    private val orderRepository: OrderRepository by inject()
-    private val placeOrderUseCase: PlaceOrderUseCase by inject()
+class OrderViewModel(
+    private val orderRepository: OrderRepository? = null,
+    private val placeOrderUseCase: PlaceOrderUseCase? = null
+) : ViewModel(), KoinComponent {
+    
+    // Use injected repositories if not provided in constructor (for production)
+    private val injectedOrderRepository: OrderRepository by inject()
+    private val injectedPlaceOrderUseCase: PlaceOrderUseCase by inject()
+    
+    // Use the provided repositories or the injected ones
+    private val repository: OrderRepository
+        get() = orderRepository ?: injectedOrderRepository
+    
+    private val useCase: PlaceOrderUseCase
+        get() = placeOrderUseCase ?: injectedPlaceOrderUseCase
     
     private val _orders = MutableStateFlow<List<Order>>(emptyList())
     val orders: StateFlow<List<Order>> = _orders.asStateFlow()
@@ -43,7 +55,7 @@ class OrderViewModel : ViewModel(), KoinComponent {
             _error.value = null
             
             try {
-                orderRepository.getOrderHistory().collect { orderList ->
+                repository.getOrderHistory().collect { orderList ->
                     _orders.value = orderList
                 }
             } catch (e: Exception) {
@@ -57,7 +69,7 @@ class OrderViewModel : ViewModel(), KoinComponent {
     fun addOrder(order: Order) {
         viewModelScope.launch {
             try {
-                orderRepository.addOrder(order)
+                repository.addOrder(order)
                 loadOrders() // Refresh the orders list
             } catch (e: Exception) {
                 _error.value = "Failed to add order: ${e.message}"
@@ -92,7 +104,7 @@ class OrderViewModel : ViewModel(), KoinComponent {
                     status = "Processing"
                 )
                 
-                orderRepository.placeOrder(order).collect { success ->
+                repository.placeOrder(order).collect { success ->
                     if (success) {
                         loadOrders() // Refresh orders list on success
                     } else {
@@ -112,7 +124,7 @@ class OrderViewModel : ViewModel(), KoinComponent {
             _isLoading.value = true
             _error.value = null
             
-            placeOrderUseCase(cartItems, totalPrice).collect { result ->
+            useCase(cartItems, totalPrice).collect { result ->
                 when (result) {
                     is Result.Success -> {
                         loadOrders() // Refresh the orders list
@@ -132,7 +144,7 @@ class OrderViewModel : ViewModel(), KoinComponent {
     fun updateOrderStatus(orderId: String, status: String) {
         viewModelScope.launch {
             try {
-                orderRepository.updateOrderStatus(orderId, status)
+                repository.updateOrderStatus(orderId, status)
                 loadOrders() // Refresh the orders list
             } catch (e: Exception) {
                 _error.value = "Failed to update order status: ${e.message}"
@@ -143,7 +155,7 @@ class OrderViewModel : ViewModel(), KoinComponent {
     fun cancelOrder(orderId: String) {
         viewModelScope.launch {
             try {
-                orderRepository.cancelOrder(orderId).collect { success ->
+                repository.cancelOrder(orderId).collect { success ->
                     if (success) {
                         loadOrders() // Refresh orders list on success
                     } else {
@@ -164,7 +176,7 @@ class OrderViewModel : ViewModel(), KoinComponent {
                     emit(it) 
                 } ?: run {
                     // Try to load from repository if not found in current list
-                    orderRepository.getOrderById(orderId).collect { order ->
+                    repository.getOrderById(orderId).collect { order ->
                         emit(order)
                     }
                 }

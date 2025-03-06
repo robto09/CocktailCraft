@@ -1,6 +1,7 @@
 package com.cocktailcraft.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
@@ -19,25 +20,31 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -62,16 +69,20 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.ui.components.RatingBar
@@ -81,6 +92,7 @@ import com.cocktailcraft.viewmodel.HomeViewModel
 import com.cocktailcraft.viewmodel.ReviewViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
+import com.cocktailcraft.navigation.NavigationManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,22 +102,23 @@ fun CocktailDetailScreen(
     cartViewModel: CartViewModel,
     reviewViewModel: ReviewViewModel,
     favoritesViewModel: FavoritesViewModel,
+    navigationManager: NavigationManager,
     onBackClick: () -> Unit,
     onAddToCart: (Cocktail) -> Unit
 ) {
     // Add a loading state to track when data is being fetched
     var isLoading by remember { mutableStateOf(true) }
     
-    // Use remember to prevent unnecessary recompositions
-    val cocktailState = remember { homeViewModel.getCocktailById(cocktailId) }
-    val cocktail by cocktailState.collectAsState(initial = null)
+    // Use collectAsState instead of collectAsStateWithLifecycle
+    val cocktailFlow = remember { homeViewModel.getCocktailById(cocktailId) }
+    val cocktail by cocktailFlow.collectAsState(initial = null)
     
     // Properly collect reviews as a state
     val reviewsMap by reviewViewModel.reviews.collectAsState()
     // Safely get reviews for this cocktail
     val reviews = reviewsMap[cocktailId] ?: emptyList()
     val favorites by favoritesViewModel.favorites.collectAsState()
-    val isFavorite = cocktail?.let { favorites.any { fav -> fav.id == it.id } } ?: false
+    val isFavorite = cocktail?.let { c -> favorites.any { fav -> fav.id == c.id } } ?: false
     
     // Check if the cocktail is in cart
     val cartItems by cartViewModel.cartItems.collectAsState()
@@ -269,7 +282,7 @@ fun CocktailDetailScreen(
                 )
                 
                 // Add a divider to create separation between top bar and content
-                HorizontalDivider(
+                Divider(
                     color = Color.White.copy(alpha = 0.2f),
                     thickness = 1.dp
                 )
@@ -398,11 +411,11 @@ fun CocktailDetailScreen(
                                     
                                     // Favorite button
                                     IconButton(
-                                        onClick = { cocktailData?.let { favoritesViewModel.toggleFavorite(it) } },
+                                        onClick = { favoritesViewModel.toggleFavorite(cocktailData) },
                                         modifier = Modifier.size(36.dp)
                                     ) {
                                         Icon(
-                                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                                             contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
                                             tint = if (isFavorite) AppColors.Secondary else AppColors.Gray,
                                             modifier = Modifier.size(24.dp)
@@ -520,26 +533,58 @@ fun CocktailDetailScreen(
                                 
                                 Spacer(modifier = Modifier.height(12.dp))
                                 
-                                cocktailData.ingredients.forEach { ingredient ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Box(
+                                // Handle different types of ingredients list
+                                if (cocktailData.ingredients is List<*>) {
+                                    (cocktailData.ingredients as? List<CocktailIngredient>)?.forEach { ingredient ->
+                                        Row(
                                             modifier = Modifier
-                                                .size(8.dp)
-                                                .background(AppColors.Secondary, CircleShape)
-                                        )
-                                        
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        
-                                        Text(
-                                            text = "${ingredient.measure} ${ingredient.name}",
-                                            fontSize = 15.sp,
-                                            color = AppColors.TextPrimary
-                                        )
+                                                .fillMaxWidth()
+                                                .padding(vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            // Ingredient bullet point
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .background(AppColors.Primary, CircleShape)
+                                            )
+                                            
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            
+                                            // Ingredient name and measure
+                                            Text(
+                                                text = "${ingredient.name} ${ingredient.measure}",
+                                                fontSize = 16.sp,
+                                                color = AppColors.TextSecondary
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    // Handle as a generic list
+                                    val ingredientsList = cocktailData.ingredients as? List<*>
+                                    ingredientsList?.forEach { ingredient ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            // Ingredient bullet point
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .background(AppColors.Primary, CircleShape)
+                                            )
+                                            
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            
+                                            // Ingredient name
+                                            Text(
+                                                text = ingredient.toString(),
+                                                fontSize = 16.sp,
+                                                color = AppColors.TextSecondary
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -674,10 +719,10 @@ fun CocktailDetailScreen(
                                 } else {
                                     // Use forEachIndexed instead of a for loop for better safety
                                     reviews.take(3).forEachIndexed { index, review ->
-                                        ReviewItem(review = review)
+                                        CocktailReviewItem(review = review)
                                         
                                         if (index < reviews.take(3).size - 1) {
-                                            HorizontalDivider(
+                                            Divider(
                                                 modifier = Modifier.padding(vertical = 12.dp),
                                                 color = AppColors.LightGray.copy(alpha = 0.5f)
                                             )
@@ -686,7 +731,12 @@ fun CocktailDetailScreen(
                                     
                                     if (reviews.size > 3) {
                                         TextButton(
-                                            onClick = {},
+                                            onClick = {
+                                                // Navigate to all reviews screen
+                                                cocktailData?.id?.let { cocktailId ->
+                                                    navigationManager.navigateToReviews(cocktailId)
+                                                }
+                                            },
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(top = 8.dp),
@@ -713,7 +763,7 @@ fun CocktailDetailScreen(
 }
 
 @Composable
-fun ReviewItem(review: Review) {
+fun CocktailReviewItem(review: Review) {
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {

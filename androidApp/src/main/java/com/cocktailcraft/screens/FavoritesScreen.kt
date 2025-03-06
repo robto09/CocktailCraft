@@ -130,6 +130,7 @@ fun FavoritesScreen(
                         cocktail = cocktail,
                         onClick = { /* Navigate to detail */ },
                         onAddToCart = { cocktail -> 
+                            cartViewModel.addToCart(cocktail)
                             onAddToCart(cocktail)
                         },
                         isFavorite = true,

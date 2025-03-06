@@ -23,6 +23,7 @@ import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.navigation.Screen
 import com.cocktailcraft.navigation.NavigationManager
+import androidx.compose.material3.Divider
 
 @Composable
 fun OrderListScreen(
@@ -193,7 +194,7 @@ fun OrderItem(order: Order) {
                 }
             }
             
-            HorizontalDivider(
+            Divider(
                 modifier = Modifier.padding(vertical = 12.dp),
                 color = AppColors.LightGray
             )
