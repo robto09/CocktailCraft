@@ -1,7 +1,7 @@
 # CocktailCraft App
 
 ## Overview
-CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail ordering and discovery application, designed to run on both Android paltform. The app allows users to browse, search, and order various cocktails, manage their shopping cart, track orders, and maintain a profile. It leverages modern mobile app development practices including MVVM architecture, reactive programming, and dependency injection.
+CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail ordering and discovery application, designed to run in Android platform. The app allows users to browse, search, and order various cocktails, manage their shopping cart, track orders, and maintain a profile. It leverages modern mobile app development practices including MVVM architecture, reactive programming, and dependency injection.
 
 ![CocktailCraft App Screenshot](docs/images/Screenshot_20250305_184420.png)
 
@@ -166,11 +166,6 @@ The application includes comprehensive test coverage:
 4. **Run on Android**:
    - Select the `androidApp` configuration
    - Choose an emulator or device
-   - Click Run
-
-5. **Run on iOS** (requires macOS):
-   - Open the `iosApp.xcworkspace` in Xcode
-   - Select a simulator or device
    - Click Run
 
 ## Development Setup
