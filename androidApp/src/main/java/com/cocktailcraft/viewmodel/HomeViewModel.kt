@@ -16,8 +16,16 @@ import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-class HomeViewModel : ViewModel(), KoinComponent {
-    private val cocktailRepository: CocktailRepository by inject()
+class HomeViewModel(
+    private val cocktailRepository: CocktailRepository? = null
+) : ViewModel(), KoinComponent {
+    
+    // Use injected repository if not provided in constructor (for production)
+    private val injectedCocktailRepository: CocktailRepository by inject()
+    
+    // Use the provided repository or the injected one
+    private val repository: CocktailRepository
+        get() = cocktailRepository ?: injectedCocktailRepository
     
     private val _cocktails = MutableStateFlow<List<Cocktail>>(emptyList())
     val cocktails: StateFlow<List<Cocktail>> = _cocktails.asStateFlow()
@@ -77,7 +85,7 @@ class HomeViewModel : ViewModel(), KoinComponent {
     
     private suspend fun checkConnectivity(): Boolean {
         return try {
-            cocktailRepository.checkApiConnectivity().first()
+            repository.checkApiConnectivity().first()
         } catch (e: Exception) {
             false
         }
@@ -96,7 +104,7 @@ class HomeViewModel : ViewModel(), KoinComponent {
                     return@launch
                 }
                 
-                cocktailRepository.getCocktailsSortedByNewest()
+                repository.getCocktailsSortedByNewest()
                     .catch { e -> 
                         handleError("Failed to load cocktails", e)
                     }
@@ -113,7 +121,7 @@ class HomeViewModel : ViewModel(), KoinComponent {
     private fun loadFavorites() {
         viewModelScope.launch {
             try {
-                cocktailRepository.getFavoriteCocktails()
+                repository.getFavoriteCocktails()
                     .catch { e ->
                         // Don't show error UI for favorites loading, just log
                         println("Failed to load favorites: ${e.message}")
@@ -159,7 +167,7 @@ class HomeViewModel : ViewModel(), KoinComponent {
                     return@launch
                 }
                 
-                cocktailRepository.searchCocktailsByName(query)
+                repository.searchCocktailsByName(query)
                     .catch { e ->
                         handleError("Failed to search cocktails", e)
                     }
@@ -218,7 +226,7 @@ class HomeViewModel : ViewModel(), KoinComponent {
                     return@launch
                 }
                 
-                cocktailRepository.filterByCategory(category)
+                repository.filterByCategory(category)
                     .catch { e ->
                         handleError("Failed to filter cocktails", e)
                     }
@@ -235,7 +243,7 @@ class HomeViewModel : ViewModel(), KoinComponent {
     fun addToFavorites(cocktail: Cocktail) {
         viewModelScope.launch {
             try {
-                cocktailRepository.addToFavorites(cocktail)
+                repository.addToFavorites(cocktail)
                 loadFavorites() // Refresh favorites after adding
             } catch (e: Exception) {
                 println("Failed to add to favorites: ${e.message}")
@@ -244,10 +252,25 @@ class HomeViewModel : ViewModel(), KoinComponent {
         }
     }
     
+    // Add retry functionality to reload data based on current state
+    fun retry() {
+        if (_isSearchActive.value && _searchQuery.value.isNotEmpty()) {
+            // If in search mode, retry the search
+            searchCocktails(_searchQuery.value)
+        } else if (_isSearchActive.value && _searchQuery.value.isEmpty()) {
+            // If search is active but query is empty, reset to normal mode
+            toggleSearchMode(false)
+        } else {
+            // Otherwise retry loading based on selected category
+            // This will be handled by the LaunchedEffect in the UI
+            loadCocktails()
+        }
+    }
+    
     fun removeFromFavorites(cocktail: Cocktail) {
         viewModelScope.launch {
             try {
-                cocktailRepository.removeFromFavorites(cocktail)
+                repository.removeFromFavorites(cocktail)
                 loadFavorites() // Refresh favorites after removing
             } catch (e: Exception) {
                 println("Failed to remove from favorites: ${e.message}")
@@ -256,58 +279,105 @@ class HomeViewModel : ViewModel(), KoinComponent {
         }
     }
     
+    fun isFavorite(cocktailId: String): Boolean {
+        return favorites.value.any { it.id == cocktailId }
+    }
+    
     fun toggleFavorite(cocktail: Cocktail) {
+        if (isFavorite(cocktail.id)) {
+            removeFromFavorites(cocktail)
+        } else {
+            addToFavorites(cocktail)
+        }
+    }
+    
+    fun sortByPrice(ascending: Boolean) {
         viewModelScope.launch {
+            _isLoading.value = true
+            
             try {
-                val isFav = _favorites.value.any { it.id == cocktail.id }
-                if (isFav) {
-                    removeFromFavorites(cocktail)
+                val sortedList = if (ascending) {
+                    _cocktails.value.sortedBy { it.price }
                 } else {
-                    addToFavorites(cocktail)
+                    _cocktails.value.sortedByDescending { it.price }
                 }
+                _cocktails.value = sortedList
             } catch (e: Exception) {
-                println("Failed to toggle favorite: ${e.message}")
-                // Don't show UI error for favorite operations
+                handleError("Failed to sort cocktails", e)
+            } finally {
+                _isLoading.value = false
             }
         }
     }
     
-    fun getCocktailImageUrl(cocktail: Cocktail): String {
-        return cocktailRepository.getCocktailImageUrl(cocktail)
+    fun sortByRating() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            
+            try {
+                val sortedList = _cocktails.value.sortedByDescending { it.rating }
+                _cocktails.value = sortedList
+            } catch (e: Exception) {
+                handleError("Failed to sort cocktails", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
     
-    fun getCocktailById(id: String): StateFlow<Cocktail?> {
-        val cocktailFlow = MutableStateFlow<Cocktail?>(null)
-        
+    fun sortByPopularity() {
         viewModelScope.launch {
+            _isLoading.value = true
+            
             try {
-                // Check connectivity first
-                if (!checkConnectivity()) {
-                    _error.value = networkErrorMessage
-                    return@launch
+                val sortedList = _cocktails.value.sortedByDescending { it.popularity }
+                _cocktails.value = sortedList
+            } catch (e: Exception) {
+                handleError("Failed to sort cocktails", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+    
+    fun getCategories(): List<String> {
+        return _cocktails.value
+            .mapNotNull { it.category }
+            .distinct()
+            .filterNot { it.isBlank() }
+            .sorted()
+    }
+    
+    fun clearError() {
+        _error.value = ""
+    }
+    
+    // Add method to get cocktail by ID
+    fun getCocktailById(id: String): kotlinx.coroutines.flow.Flow<Cocktail?> {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = ""
+        }
+        
+        return kotlinx.coroutines.flow.flow {
+            try {
+                // First check if the cocktail is in the current list
+                val cocktailFromList = _cocktails.value.find { it.id == id }
+                if (cocktailFromList != null) {
+                    emit(cocktailFromList)
+                    _isLoading.value = false
+                    return@flow
                 }
                 
-                cocktailRepository.getCocktailById(id)
-                    .catch { e ->
-                        println("Failed to get cocktail details: ${e.message}")
-                    }
-                    .collect { cocktail ->
-                        cocktailFlow.value = cocktail
-                    }
+                // If not found in the current list, fetch from repository
+                repository.getCocktailById(id).collect { cocktail ->
+                    emit(cocktail)
+                    _isLoading.value = false
+                }
             } catch (e: Exception) {
-                println("Failed to get cocktail details: ${e.message}")
+                handleError("Failed to load cocktail details", e)
+                emit(null)
             }
-        }
-        
-        return cocktailFlow
-    }
-    
-    // Add a method to retry the last operation
-    fun retry() {
-        if (_searchQuery.value.isNotBlank() && _isSearchActive.value) {
-            searchCocktails(_searchQuery.value)
-        } else {
-            loadCocktails()
         }
     }
 }

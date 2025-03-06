@@ -7,7 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -40,6 +40,7 @@ import com.cocktailcraft.screens.FavoritesScreen
 import com.cocktailcraft.screens.HomeScreen
 import com.cocktailcraft.screens.OrderListScreen
 import com.cocktailcraft.screens.ProfileScreen
+import com.cocktailcraft.screens.ReviewsScreen
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.CartViewModel
 import com.cocktailcraft.viewmodel.FavoritesViewModel
@@ -59,7 +60,8 @@ fun MainScreen() {
         Screen.Cart,
         Screen.Favorites,
         Screen.OrderList,
-        Screen.Profile
+        Screen.Profile,
+        Screen.Reviews
     )
     
     // Create shared ViewModels for the entire app
@@ -89,6 +91,7 @@ fun MainScreen() {
                                     Screen.Favorites.route -> "Favorites"
                                     Screen.OrderList.route -> "Recipes"
                                     Screen.Profile.route -> "Profile"
+                                    Screen.Reviews.route -> "Reviews"
                                     else -> "Cocktail Bar"
                                 },
                                 color = Color.White,
@@ -107,7 +110,7 @@ fun MainScreen() {
                     )
                     
                     // Add a divider to create separation between top bar and content
-                    HorizontalDivider(
+                    Divider(
                         color = Color.White.copy(alpha = 0.2f),
                         thickness = 1.dp
                     )
@@ -241,11 +244,23 @@ fun MainScreen() {
                     cartViewModel = sharedCartViewModel,
                     reviewViewModel = sharedReviewViewModel,
                     favoritesViewModel = sharedFavoritesViewModel,
+                    navigationManager = navigationManager,
                     onBackClick = { navigationManager.navigateBack() },
                     onAddToCart = { cocktailToAdd ->
                         sharedCartViewModel.addToCart(cocktailToAdd) // Pass the entire cocktail object
                         navigationManager.navigateToCart() // Navigate to cart screen after adding item
                     }
+                )
+            }
+            composable(
+                route = Screen.Reviews.route,
+                arguments = listOf(navArgument("cocktailId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val cocktailId = backStackEntry.arguments?.getString("cocktailId") ?: ""
+                ReviewsScreen(
+                    cocktailId = cocktailId,
+                    reviewViewModel = sharedReviewViewModel,
+                    onBackClick = { navigationManager.navigateBack() }
                 )
             }
         }
