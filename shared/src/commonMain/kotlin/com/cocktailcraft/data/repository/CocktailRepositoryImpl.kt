@@ -41,20 +41,16 @@ class CocktailRepositoryImpl(
 
     override suspend fun getCocktailById(id: String): Flow<Cocktail?> = flow {
         try {
-            println("REPOSITORY: Getting cocktail by ID: $id")
             // Make a direct API call to get full cocktail details
             val dto = api.getCocktailById(id)
             
             if (dto != null) {
                 val cocktail = mapDtoToCocktail(dto)
-                println("REPOSITORY: Successfully mapped cocktail ${dto.name}, has instructions: ${!dto.instructions.isNullOrBlank()}")
                 emit(cocktail)
             } else {
-                println("REPOSITORY: API returned null for cocktail ID $id")
                 emit(null)
             }
         } catch (e: Exception) {
-            println("REPOSITORY ERROR: Failed to get cocktail by ID $id: ${e.message}")
             emit(null)
         }
     }
@@ -206,7 +202,6 @@ class CocktailRepositoryImpl(
 
     override suspend fun getCocktailsSortedByNewest(): Flow<List<Cocktail>> = flow {
         try {
-            println("DEBUG: Attempting to load cocktails by newest...")
             // First check if API is reachable
             if (!pingApiInternal()) {
                 throw Exception("API is not reachable. Please check your internet connection.")
@@ -215,12 +210,8 @@ class CocktailRepositoryImpl(
             val cocktails = api.filterByCategory("Cocktail").map { dto ->
                 mapDtoToCocktail(dto)
             }
-            println("DEBUG: Successfully loaded ${cocktails.size} cocktails")
             emit(cocktails.sortedByDescending { it.dateAdded })
         } catch (e: Exception) {
-            // Log the detailed error with stack trace
-            println("ERROR loading cocktails: ${e.message}")
-            println("ERROR stack trace: ${e.stackTraceToString()}")
             // Re-throw with more context
             throw Exception("Failed to load cocktails: ${e.message}", e)
         }
@@ -271,9 +262,6 @@ class CocktailRepositoryImpl(
     }
 
     private fun mapDtoToCocktail(dto: CocktailDto): Cocktail {
-        // Debug logging for instructions field
-        println("DEBUG: Mapping instructions for ${dto.name}, instructions=${dto.instructions ?: "null"}")
-        
         return Cocktail(
             id = dto.id,
             name = dto.name,
@@ -341,13 +329,10 @@ class CocktailRepositoryImpl(
 
     // Helper method to check API connectivity
     private suspend fun pingApiInternal(): Boolean {
-        println("DEBUG: Checking API connectivity...")
         return try {
             val isConnected = api.pingApi()
-            println("DEBUG: API connectivity check result: $isConnected")
             isConnected
         } catch (e: Exception) {
-            println("ERROR checking API connectivity: ${e.message}")
             false
         }
     }

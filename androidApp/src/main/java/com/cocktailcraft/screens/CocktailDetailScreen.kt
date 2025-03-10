@@ -417,7 +417,6 @@ fun CocktailDetailScreen(
                                         
                                         // Add debug print to console to verify instructions are available
                                         val instructionsText = cocktailData.instructions ?: ""
-                                        println("DEBUG: Cocktail instructions for ${cocktailData.name}: $instructionsText")
                                         
                                         if (instructionsText.isNotBlank()) {
                                             Text(
