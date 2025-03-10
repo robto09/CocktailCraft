@@ -717,7 +717,6 @@ fun CocktailDetailScreen(
                                         )
                                     }
                                 } else {
-                                    // Use forEachIndexed instead of a for loop for better safety
                                     reviews.take(3).forEachIndexed { index, review ->
                                         CocktailReviewItem(review = review)
                                         
@@ -726,25 +725,6 @@ fun CocktailDetailScreen(
                                                 modifier = Modifier.padding(vertical = 12.dp),
                                                 color = AppColors.LightGray.copy(alpha = 0.5f)
                                             )
-                                        }
-                                    }
-                                    
-                                    if (reviews.size > 3) {
-                                        TextButton(
-                                            onClick = {
-                                                // Navigate to all reviews screen
-                                                cocktailData?.id?.let { cocktailId ->
-                                                    navigationManager.navigateToReviews(cocktailId)
-                                                }
-                                            },
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(top = 8.dp),
-                                            colors = ButtonDefaults.textButtonColors(
-                                                contentColor = AppColors.Primary
-                                            )
-                                        ) {
-                                            Text("View All Reviews (${reviews.size})")
                                         }
                                     }
                                 }

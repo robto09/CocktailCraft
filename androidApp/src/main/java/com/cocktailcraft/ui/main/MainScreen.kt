@@ -40,7 +40,6 @@ import com.cocktailcraft.screens.FavoritesScreen
 import com.cocktailcraft.screens.HomeScreen
 import com.cocktailcraft.screens.OrderListScreen
 import com.cocktailcraft.screens.ProfileScreen
-import com.cocktailcraft.screens.ReviewsScreen
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.CartViewModel
 import com.cocktailcraft.viewmodel.FavoritesViewModel
@@ -60,8 +59,7 @@ fun MainScreen() {
         Screen.Cart,
         Screen.Favorites,
         Screen.OrderList,
-        Screen.Profile,
-        Screen.Reviews
+        Screen.Profile
     )
     
     // Create shared ViewModels for the entire app
@@ -91,7 +89,6 @@ fun MainScreen() {
                                     Screen.Favorites.route -> "Favorites"
                                     Screen.OrderList.route -> "Recipes"
                                     Screen.Profile.route -> "Profile"
-                                    Screen.Reviews.route -> "Reviews"
                                     else -> "Cocktail Bar"
                                 },
                                 color = Color.White,
@@ -211,7 +208,9 @@ fun MainScreen() {
                 )
             }
             composable(Screen.Profile.route) {
-                ProfileScreen(navigationManager = navigationManager)
+                ProfileScreen(
+                    navigationManager = navigationManager
+                )
             }
             composable(Screen.Favorites.route) {
                 FavoritesScreen(
@@ -247,20 +246,9 @@ fun MainScreen() {
                     navigationManager = navigationManager,
                     onBackClick = { navigationManager.navigateBack() },
                     onAddToCart = { cocktailToAdd ->
-                        sharedCartViewModel.addToCart(cocktailToAdd) // Pass the entire cocktail object
-                        navigationManager.navigateToCart() // Navigate to cart screen after adding item
+                        sharedCartViewModel.addToCart(cocktailToAdd)
+                        navigationManager.navigateToCart()
                     }
-                )
-            }
-            composable(
-                route = Screen.Reviews.route,
-                arguments = listOf(navArgument("cocktailId") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val cocktailId = backStackEntry.arguments?.getString("cocktailId") ?: ""
-                ReviewsScreen(
-                    cocktailId = cocktailId,
-                    reviewViewModel = sharedReviewViewModel,
-                    onBackClick = { navigationManager.navigateBack() }
                 )
             }
         }
