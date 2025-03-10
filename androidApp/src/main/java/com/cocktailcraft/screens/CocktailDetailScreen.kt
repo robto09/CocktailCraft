@@ -260,28 +260,6 @@ fun CocktailDetailScreen(
                                         )
                                     )
                             )
-                            
-                            // Move category chip to the bottom right to avoid looking like a navigation element
-                            cocktailData.category?.let { category ->
-                                Box(
-                                    modifier = Modifier
-                                        .padding(16.dp)
-                                        .align(Alignment.BottomEnd)
-                                ) {
-                                    Surface(
-                                        color = AppColors.Primary.copy(alpha = 0.9f),
-                                        shape = RoundedCornerShape(16.dp)
-                                    ) {
-                                        Text(
-                                            text = category,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                            color = Color.White,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    }
-                                }
-                            }
                         }
                     }
                     
@@ -325,6 +303,22 @@ fun CocktailDetailScreen(
                                         )
                                     }
                                 }
+                                
+                                Spacer(modifier = Modifier.height(4.dp))
+                                
+                                // Category and alcoholic info subtitle
+                                Text(
+                                    text = buildString {
+                                        append(cocktailData.alcoholic ?: "Unknown")
+                                        cocktailData.category?.let {
+                                            append(" • ")
+                                            append(it)
+                                        }
+                                    },
+                                    fontSize = 16.sp,
+                                    color = AppColors.TextSecondary,
+                                    fontWeight = FontWeight.Medium
+                                )
                                 
                                 Spacer(modifier = Modifier.height(8.dp))
                                 

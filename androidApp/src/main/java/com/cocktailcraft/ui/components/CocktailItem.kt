@@ -117,28 +117,6 @@ fun CocktailItem(
                         )
                     }
                 }
-                
-                // Category chip - updated to match the app's primary color
-                cocktail.category?.let { category ->
-                    Box(
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .align(Alignment.BottomEnd)
-                    ) {
-                        Surface(
-                            color = AppColors.Primary.copy(alpha = 0.9f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = category,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
             }
             
             Spacer(modifier = Modifier.width(12.dp))
@@ -158,9 +136,15 @@ fun CocktailItem(
                 
                 Spacer(modifier = Modifier.height(4.dp))
                 
-                // Using safe operator for alcoholic field that might be null
+                // Display alcoholic info with category info
                 Text(
-                    text = cocktail.alcoholic ?: "Unknown",
+                    text = buildString {
+                        append(cocktail.alcoholic ?: "Unknown")
+                        cocktail.category?.let {
+                            append(" • ")
+                            append(it)
+                        }
+                    },
                     fontSize = 14.sp,
                     color = AppColors.TextSecondary,
                     maxLines = 1,
