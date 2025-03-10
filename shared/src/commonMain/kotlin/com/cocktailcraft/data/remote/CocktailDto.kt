@@ -2,6 +2,7 @@ package com.cocktailcraft.data.remote
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import com.cocktailcraft.domain.model.CocktailIngredient
 
 @Serializable
 data class CocktailResponse(
@@ -143,33 +144,47 @@ data class CocktailDto(
     @SerialName("dateModified")
     val dateModified: String? = null
 ) {
-    fun getIngredients(): List<Ingredient> {
-        val ingredients = mutableListOf<Ingredient>()
+    fun getIngredients(): List<CocktailIngredient> {
+        val ingredients = mutableListOf<CocktailIngredient>()
         
-        if (!ingredient1.isNullOrBlank()) ingredients.add(Ingredient(ingredient1, measure1 ?: ""))
-        if (!ingredient2.isNullOrBlank()) ingredients.add(Ingredient(ingredient2, measure2 ?: ""))
-        if (!ingredient3.isNullOrBlank()) ingredients.add(Ingredient(ingredient3, measure3 ?: ""))
-        if (!ingredient4.isNullOrBlank()) ingredients.add(Ingredient(ingredient4, measure4 ?: ""))
-        if (!ingredient5.isNullOrBlank()) ingredients.add(Ingredient(ingredient5, measure5 ?: ""))
-        if (!ingredient6.isNullOrBlank()) ingredients.add(Ingredient(ingredient6, measure6 ?: ""))
-        if (!ingredient7.isNullOrBlank()) ingredients.add(Ingredient(ingredient7, measure7 ?: ""))
-        if (!ingredient8.isNullOrBlank()) ingredients.add(Ingredient(ingredient8, measure8 ?: ""))
-        if (!ingredient9.isNullOrBlank()) ingredients.add(Ingredient(ingredient9, measure9 ?: ""))
-        if (!ingredient10.isNullOrBlank()) ingredients.add(Ingredient(ingredient10, measure10 ?: ""))
-        if (!ingredient11.isNullOrBlank()) ingredients.add(Ingredient(ingredient11, measure11 ?: ""))
-        if (!ingredient12.isNullOrBlank()) ingredients.add(Ingredient(ingredient12, measure12 ?: ""))
-        if (!ingredient13.isNullOrBlank()) ingredients.add(Ingredient(ingredient13, measure13 ?: ""))
-        if (!ingredient14.isNullOrBlank()) ingredients.add(Ingredient(ingredient14, measure14 ?: ""))
-        if (!ingredient15.isNullOrBlank()) ingredients.add(Ingredient(ingredient15, measure15 ?: ""))
+        // Helper function to get ingredient and measure by index
+        fun getIngredientAndMeasure(index: Int): Pair<String?, String?> {
+            return when (index) {
+                1 -> ingredient1 to measure1
+                2 -> ingredient2 to measure2
+                3 -> ingredient3 to measure3
+                4 -> ingredient4 to measure4
+                5 -> ingredient5 to measure5
+                6 -> ingredient6 to measure6
+                7 -> ingredient7 to measure7
+                8 -> ingredient8 to measure8
+                9 -> ingredient9 to measure9
+                10 -> ingredient10 to measure10
+                11 -> ingredient11 to measure11
+                12 -> ingredient12 to measure12
+                13 -> ingredient13 to measure13
+                14 -> ingredient14 to measure14
+                15 -> ingredient15 to measure15
+                else -> null to null
+            }
+        }
+        
+        // Collect all non-null ingredients with their measures
+        (1..15).forEach { index ->
+            val (ingredient, measure) = getIngredientAndMeasure(index)
+            if (!ingredient.isNullOrBlank()) {
+                ingredients.add(
+                    CocktailIngredient(
+                        name = ingredient.trim(),
+                        measure = measure?.trim() ?: ""
+                    )
+                )
+            }
+        }
         
         return ingredients
     }
 }
-
-data class Ingredient(
-    val name: String,
-    val measure: String
-)
 
 @Serializable
 data class CategoryResponse(

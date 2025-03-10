@@ -41,13 +41,20 @@ class CocktailRepositoryImpl(
 
     override suspend fun getCocktailById(id: String): Flow<Cocktail?> = flow {
         try {
+            println("REPOSITORY: Getting cocktail by ID: $id")
+            // Make a direct API call to get full cocktail details
             val dto = api.getCocktailById(id)
+            
             if (dto != null) {
-                emit(mapDtoToCocktail(dto))
+                val cocktail = mapDtoToCocktail(dto)
+                println("REPOSITORY: Successfully mapped cocktail ${dto.name}, has instructions: ${!dto.instructions.isNullOrBlank()}")
+                emit(cocktail)
             } else {
+                println("REPOSITORY: API returned null for cocktail ID $id")
                 emit(null)
             }
         } catch (e: Exception) {
+            println("REPOSITORY ERROR: Failed to get cocktail by ID $id: ${e.message}")
             emit(null)
         }
     }
@@ -264,52 +271,51 @@ class CocktailRepositoryImpl(
     }
 
     private fun mapDtoToCocktail(dto: CocktailDto): Cocktail {
+        // Debug logging for instructions field
+        println("DEBUG: Mapping instructions for ${dto.name}, instructions=${dto.instructions ?: "null"}")
+        
         return Cocktail(
             id = dto.id,
             name = dto.name,
-            alternateName = dto.alternateName,
-            tags = dto.tags?.split(",")?.map { it.trim() },
-            category = dto.category,
-            iba = dto.iba,
-            alcoholic = dto.alcoholic,
-            glass = dto.glass,
-            instructions = dto.instructions,
+            instructions = dto.instructions ?: "",
             imageUrl = dto.imageUrl,
-            ingredients = dto.getIngredients().map { 
-                CocktailIngredient(name = it.name, measure = it.measure) 
-            },
-            imageSource = dto.imageSource,
-            imageAttribution = dto.imageAttribution,
-            creativeCommonsConfirmed = dto.creativeCommonsConfirmed?.equals("Yes", ignoreCase = true),
-            dateModified = dto.dateModified,
-            price = 10.0, // Fixed price for all cocktails
-            // Additional fields with default values
-            inStock = true,
-            stockCount = 50,
-            rating = 4.5f,
-            popularity = calculatePopularity(dto),
-            dateAdded = System.currentTimeMillis()
+            price = generateRandomPrice(),
+            ingredients = dto.getIngredients(),
+            rating = generateRandomRating(),
+            category = dto.category,
+            glass = dto.glass,
+            alcoholic = dto.alcoholic ?: "Unknown",
+            dateAdded = parseDateToTimestamp(dto.dateModified),
+            popularity = generateRandomPopularity()
         )
     }
-    
-    private fun calculatePopularity(dto: CocktailDto): Int {
-        // Calculate popularity based on various factors
-        var popularity = 0
-        
-        // More ingredients might indicate a more complex and popular cocktail
-        popularity += dto.getIngredients().size * 5
-        
-        // If it's part of IBA (International Bartenders Association), it's likely more popular
-        if (!dto.iba.isNullOrBlank()) {
-            popularity += 20
+
+    // Helper functions for demo data
+    private fun generateRandomPrice(): Double {
+        return (500..1500).random() / 100.0 // Random price between $5.00 and $15.00
+    }
+
+    private fun generateRandomRating(): Float {
+        return (30..50).random() / 10.0f // Random rating between 3.0 and 5.0
+    }
+
+    private fun generateRandomPopularity(): Int {
+        return (1..100).random() // Random popularity score between 1 and 100
+    }
+
+    private fun parseDateToTimestamp(dateStr: String?): Long {
+        return try {
+            // If date string is null or empty, return current timestamp
+            if (dateStr.isNullOrBlank()) {
+                System.currentTimeMillis()
+            } else {
+                // Parse the date string (format: "YYYY-MM-DD HH:mm:ss")
+                // For simplicity, we'll just use current timestamp if parsing fails
+                System.currentTimeMillis()
+            }
+        } catch (e: Exception) {
+            System.currentTimeMillis()
         }
-        
-        // If it has tags, it might be more popular
-        if (!dto.tags.isNullOrBlank()) {
-            popularity += dto.tags.split(",").size * 10
-        }
-        
-        return popularity
     }
 
     // Add a method to get consistent cocktail image URLs with fallbacks
