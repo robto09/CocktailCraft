@@ -361,15 +361,6 @@ class HomeViewModel(
         
         return kotlinx.coroutines.flow.flow {
             try {
-                // First check if the cocktail is in the current list
-                val cocktailFromList = _cocktails.value.find { it.id == id }
-                if (cocktailFromList != null) {
-                    emit(cocktailFromList)
-                    _isLoading.value = false
-                    return@flow
-                }
-                
-                // If not found in the current list, fetch from repository
                 repository.getCocktailById(id).collect { cocktail ->
                     emit(cocktail)
                     _isLoading.value = false
@@ -377,6 +368,36 @@ class HomeViewModel(
             } catch (e: Exception) {
                 handleError("Failed to load cocktail details", e)
                 emit(null)
+            }
+        }
+    }
+    
+    // Add method to force refresh cocktail details
+    fun forceRefreshCocktailDetails(id: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = ""
+            
+            try {
+                println("REFRESH: Force refreshing cocktail details for ID: $id")
+                // Clear any cached data for this cocktail
+                _cocktails.value = _cocktails.value.filter { it.id != id }
+                
+                // Force a new API call
+                repository.getCocktailById(id).collect { cocktail ->
+                    if (cocktail != null) {
+                        println("REFRESH: Successfully refreshed cocktail ${cocktail.name}")
+                        // Add the refreshed cocktail to the list
+                        _cocktails.value = _cocktails.value + cocktail
+                    } else {
+                        println("REFRESH: Failed to refresh cocktail with ID $id")
+                        _error.value = "Could not refresh cocktail details. Please try again."
+                    }
+                    _isLoading.value = false
+                }
+            } catch (e: Exception) {
+                handleError("Failed to refresh cocktail details", e)
+                _isLoading.value = false
             }
         }
     }

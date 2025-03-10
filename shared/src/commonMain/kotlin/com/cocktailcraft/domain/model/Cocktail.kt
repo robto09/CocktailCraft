@@ -20,17 +20,9 @@ data class Cocktail(
     val creativeCommonsConfirmed: Boolean? = null,
     val dateModified: String? = null,
     val price: Double = 10.0,
-    // Additional fields for UI requirements
     val inStock: Boolean = true,
     val stockCount: Int = 50,
     val rating: Float = 4.5f,
-    val popularity: Int = 0,  // For sorting
-    val dateAdded: Long = System.currentTimeMillis()  // For "newest" sorting
+    val popularity: Int = 0,
+    val dateAdded: Long = System.currentTimeMillis()
 )
-
-@Serializable
-data class CocktailIngredient(
-    val name: String,
-    val measure: String
-)
-
