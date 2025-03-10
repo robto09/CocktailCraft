@@ -93,6 +93,7 @@ import com.cocktailcraft.viewmodel.ReviewViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import com.cocktailcraft.navigation.NavigationManager
+import com.cocktailcraft.ui.components.WriteReviewDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -136,122 +137,24 @@ fun CocktailDetailScreen(
     }
     
     var showReviewDialog by remember { mutableStateOf(false) }
-    var userRating by remember { mutableStateOf(0f) }
-    var userComment by remember { mutableStateOf("") }
-    var userName by remember { mutableStateOf("") }
     
-    if (showReviewDialog) {
-        AlertDialog(
-            onDismissRequest = { showReviewDialog = false },
-            title = { Text("Write a Review") },
-            text = {
-                Column {
-                    // Name input
-                    OutlinedTextField(
-                        value = userName,
-                        onValueChange = { userName = it },
-                        label = { Text("Your Name") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = AppColors.Primary,
-                            unfocusedBorderColor = AppColors.LightGray
-                        )
-                    )
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    // Rating selector
-                    Text(
-                        text = "Your Rating",
-                        fontSize = 16.sp,
-                        color = AppColors.TextPrimary
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Row {
-                        repeat(5) { index ->
-                            IconButton(
-                                onClick = { userRating = index + 1f },
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Star,
-                                    contentDescription = "Rate ${index + 1}",
-                                    tint = if (index < userRating) AppColors.Secondary else AppColors.LightGray,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-                        }
-                    }
-                    
-                    // Review text
-                    OutlinedTextField(
-                        value = userComment,
-                        onValueChange = { userComment = it },
-                        label = { Text("Your Review") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                            .height(120.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = AppColors.Primary,
-                            unfocusedBorderColor = AppColors.LightGray
-                        )
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        if (userName.isNotBlank() && userRating > 0) {
-                            try {
-                                // Use the safer method instead of creating Review directly
-                                reviewViewModel.createAndAddReview(
-                                    cocktailId = cocktailId,
-                                    userName = userName,
-                                    rating = userRating,
-                                    comment = userComment
-                                )
-                                
-                                showReviewDialog = false
-                                
-                                // Reset fields
-                                userName = ""
-                                userRating = 0f
-                                userComment = ""
-                            } catch (e: Exception) {
-                                // Handle any exceptions that might still occur
-                                e.printStackTrace()
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AppColors.Primary
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Submit")
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = { showReviewDialog = false },
-                    border = BorderStroke(1.dp, AppColors.Primary),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = AppColors.Primary
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Cancel")
-                }
-            },
-            containerColor = AppColors.Surface,
-            shape = RoundedCornerShape(16.dp)
-        )
-    }
+    WriteReviewDialog(
+        showDialog = showReviewDialog,
+        onDismiss = { showReviewDialog = false },
+        onSubmit = { userName, rating, comment ->
+            try {
+                reviewViewModel.createAndAddReview(
+                    cocktailId = cocktailId,
+                    userName = userName,
+                    rating = rating,
+                    comment = comment
+                )
+                showReviewDialog = false
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    )
     
     Scaffold(
         topBar = {
