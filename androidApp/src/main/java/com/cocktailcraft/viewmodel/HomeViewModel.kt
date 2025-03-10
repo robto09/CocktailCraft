@@ -379,18 +379,15 @@ class HomeViewModel(
             _error.value = ""
             
             try {
-                println("REFRESH: Force refreshing cocktail details for ID: $id")
                 // Clear any cached data for this cocktail
                 _cocktails.value = _cocktails.value.filter { it.id != id }
                 
                 // Force a new API call
                 repository.getCocktailById(id).collect { cocktail ->
                     if (cocktail != null) {
-                        println("REFRESH: Successfully refreshed cocktail ${cocktail.name}")
                         // Add the refreshed cocktail to the list
                         _cocktails.value = _cocktails.value + cocktail
                     } else {
-                        println("REFRESH: Failed to refresh cocktail with ID $id")
                         _error.value = "Could not refresh cocktail details. Please try again."
                     }
                     _isLoading.value = false
