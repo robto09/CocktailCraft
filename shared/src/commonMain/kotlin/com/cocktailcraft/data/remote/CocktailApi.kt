@@ -2,6 +2,7 @@ package com.cocktailcraft.data.remote
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.*
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.*
 import io.ktor.http.*
 
@@ -44,11 +45,33 @@ class CocktailApiImpl(
     }
     
     override suspend fun getCocktailById(id: String): CocktailDto? {
-        val response = client.get("$BASE_URL/lookup.php") {
-            parameter("i", id)
-        }.body<CocktailResponse>()
-        
-        return response.drinks?.firstOrNull()
+        println("DEBUG: Fetching cocktail details for ID: $id")
+        try {
+            // Force API call to specifically use the lookup endpoint for full details
+            val response = client.get("$BASE_URL/lookup.php") {
+                parameter("i", id)
+                // Add a timeout to ensure the request doesn't hang
+                timeout {
+                    requestTimeoutMillis = 10000
+                }
+            }.body<CocktailResponse>()
+            
+            val cocktail = response.drinks?.firstOrNull()
+            
+            if (cocktail == null) {
+                println("ERROR: API returned null for cocktail ID $id")
+                return null
+            }
+            
+            println("SUCCESS: API response for cocktail ID $id: ${cocktail.name}")
+            println("DEBUG: Instructions: ${cocktail.instructions?.take(50) ?: "null"}...")
+            println("DEBUG: Ingredients count: ${cocktail.getIngredients().size}")
+            
+            return cocktail
+        } catch (e: Exception) {
+            println("ERROR: Failed to fetch cocktail details for ID $id: ${e.message}")
+            throw e
+        }
     }
     
     override suspend fun getRandomCocktail(): CocktailDto? {
@@ -76,11 +99,23 @@ class CocktailApiImpl(
     }
     
     override suspend fun filterByCategory(category: String): List<CocktailDto> {
-        val response = client.get("$BASE_URL/filter.php") {
-            parameter("c", category)
-        }.body<CocktailResponse>()
-        
-        return response.drinks ?: emptyList()
+        println("DEBUG: Filtering cocktails by category: $category")
+        try {
+            // First get the list of cocktails in this category (only ID, name, and thumbnail)
+            val response = client.get("$BASE_URL/filter.php") {
+                parameter("c", category)
+            }.body<CocktailResponse>()
+            
+            val basicCocktails = response.drinks ?: emptyList()
+            println("DEBUG: Found ${basicCocktails.size} basic cocktails in category $category")
+            
+            // If we need full details (with instructions) for these cocktails later,
+            // we'll need to fetch them individually using lookup.php
+            return basicCocktails
+        } catch (e: Exception) {
+            println("ERROR: Failed to filter cocktails by category $category: ${e.message}")
+            return emptyList()
+        }
     }
     
     override suspend fun filterByGlass(glass: String): List<CocktailDto> {

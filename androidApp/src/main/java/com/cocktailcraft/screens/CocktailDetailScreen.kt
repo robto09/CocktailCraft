@@ -395,21 +395,71 @@ fun CocktailDetailScreen(
                                 Spacer(modifier = Modifier.height(24.dp))
                                 
                                 // Instructions
-                                Text(
-                                    text = "Instructions",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AppColors.TextPrimary
-                                )
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 8.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = AppColors.Surface.copy(alpha = 0.8f)),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp)
+                                    ) {
+                                        Text(
+                                            text = "How to Prepare",
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = AppColors.TextPrimary
+                                        )
+                                        
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        
+                                        // Add debug print to console to verify instructions are available
+                                        val instructionsText = cocktailData.instructions ?: ""
+                                        println("DEBUG: Cocktail instructions for ${cocktailData.name}: $instructionsText")
+                                        
+                                        if (instructionsText.isNotBlank()) {
+                                            Text(
+                                                text = instructionsText,
+                                                fontSize = 15.sp,
+                                                color = AppColors.TextPrimary,
+                                                lineHeight = 24.sp
+                                            )
+                                        } else {
+                                            Column(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalAlignment = Alignment.CenterHorizontally
+                                            ) {
+                                                Text(
+                                                    text = "No instructions available for this cocktail.",
+                                                    fontSize = 15.sp,
+                                                    color = AppColors.TextSecondary,
+                                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                                    textAlign = TextAlign.Center
+                                                )
+                                                
+                                                Spacer(modifier = Modifier.height(8.dp))
+                                                
+                                                OutlinedButton(
+                                                    onClick = { 
+                                                        // Attempt to reload the data
+                                                        homeViewModel.forceRefreshCocktailDetails(cocktailId)
+                                                    },
+                                                    border = BorderStroke(1.dp, AppColors.Primary),
+                                                    shape = RoundedCornerShape(8.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "Refresh Details",
+                                                        color = AppColors.Primary
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                                 
-                                Spacer(modifier = Modifier.height(8.dp))
-                                
-                                Text(
-                                    text = cocktailData.instructions ?: "No instructions available.",
-                                    fontSize = 15.sp,
-                                    color = AppColors.TextPrimary,
-                                    lineHeight = 24.sp
-                                )
+                                Spacer(modifier = Modifier.height(16.dp))
                             }
                         }
                     }
