@@ -87,11 +87,4 @@ class NavigationManager(private val navController: NavController) {
             launchSingleTop = true
         }
     }
-
-    /**
-     * Navigate to the reviews screen for a specific cocktail
-     */
-    fun navigateToReviews(cocktailId: String) {
-        navController.navigate(Screen.Reviews.createRoute(cocktailId))
-    }
 } 
