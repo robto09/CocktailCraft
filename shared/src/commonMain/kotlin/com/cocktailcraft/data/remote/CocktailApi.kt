@@ -45,7 +45,6 @@ class CocktailApiImpl(
     }
     
     override suspend fun getCocktailById(id: String): CocktailDto? {
-        println("DEBUG: Fetching cocktail details for ID: $id")
         try {
             // Force API call to specifically use the lookup endpoint for full details
             val response = client.get("$BASE_URL/lookup.php") {
@@ -59,17 +58,11 @@ class CocktailApiImpl(
             val cocktail = response.drinks?.firstOrNull()
             
             if (cocktail == null) {
-                println("ERROR: API returned null for cocktail ID $id")
                 return null
             }
             
-            println("SUCCESS: API response for cocktail ID $id: ${cocktail.name}")
-            println("DEBUG: Instructions: ${cocktail.instructions?.take(50) ?: "null"}...")
-            println("DEBUG: Ingredients count: ${cocktail.getIngredients().size}")
-            
             return cocktail
         } catch (e: Exception) {
-            println("ERROR: Failed to fetch cocktail details for ID $id: ${e.message}")
             throw e
         }
     }
@@ -99,7 +92,6 @@ class CocktailApiImpl(
     }
     
     override suspend fun filterByCategory(category: String): List<CocktailDto> {
-        println("DEBUG: Filtering cocktails by category: $category")
         try {
             // First get the list of cocktails in this category (only ID, name, and thumbnail)
             val response = client.get("$BASE_URL/filter.php") {
@@ -107,13 +99,11 @@ class CocktailApiImpl(
             }.body<CocktailResponse>()
             
             val basicCocktails = response.drinks ?: emptyList()
-            println("DEBUG: Found ${basicCocktails.size} basic cocktails in category $category")
             
             // If we need full details (with instructions) for these cocktails later,
             // we'll need to fetch them individually using lookup.php
             return basicCocktails
         } catch (e: Exception) {
-            println("ERROR: Failed to filter cocktails by category $category: ${e.message}")
             return emptyList()
         }
     }
@@ -158,14 +148,13 @@ class CocktailApiImpl(
         return response.filters ?: emptyList()
     }
     
-    // Implement the ping method
+    // Implemented the ping method
     override suspend fun pingApi(): Boolean {
         return try {
             // Use a lightweight endpoint for checking connectivity
             val response = client.get("$BASE_URL/random.php")
             response.status.isSuccess()
         } catch (e: Exception) {
-            println("API ping failed: ${e.message}")
             false
         }
     }
