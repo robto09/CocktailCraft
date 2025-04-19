@@ -48,6 +48,8 @@ The application follows the **Clean Architecture** pattern with **MVVM** (Model-
 - **MVVM Pattern**: Separates UI (View) from business logic (ViewModel) and data management (Model)
 - **Repository Pattern**: Abstracts data sources and provides a clean API for the domain layer
 
+For more detailed architecture diagrams, please see the [Architecture Documentation](docs/README.md) which includes high-level architecture, component diagrams, use case diagrams, and more.
+
 ## Libraries Used
 
 ### Core & Architecture
