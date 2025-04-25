@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.cocktailcraft.test">
+
+    <application
+        android:name="com.cocktailcraft.TestApplication"
+        android:debuggable="true">
+        <uses-library android:name="android.test.runner" />
+    </application>
+
+    <instrumentation
+        android:name="com.cocktailcraft.CocktailCraftTestRunner"
+        android:targetPackage="com.cocktailcraft" />
+
+</manifest>
