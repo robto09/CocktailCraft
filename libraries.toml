@@ -43,6 +43,7 @@ mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatformSettings" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 androidx-compose-material = { group = "androidx.compose.material", name = "material", version.ref = "compose" }
+androidx-ui-test-junit4-android = { group = "androidx.compose.ui", name = "ui-test-junit4-android", version.ref = "uiTestJunit4Android" }
 
 [versions]
 mockk = "1.13.8"
@@ -81,3 +82,4 @@ ktorClientMock = "2.0.0"
 ktorSerializationKotlinxJson = "2.0.0"
 multiplatformSettings = "1.1.1"
 composeMaterial = "1.4.1"
+uiTestJunit4Android = "1.5.4"
