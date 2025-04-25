@@ -4,7 +4,13 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +22,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -54,6 +61,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -63,7 +72,10 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.cocktailcraft.navigation.Screen
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.ui.components.AnimatedCocktailItem
 import com.cocktailcraft.ui.components.CocktailItem
+import com.cocktailcraft.ui.components.CocktailItemShimmer
+import com.cocktailcraft.ui.components.shimmerEffect
 import com.cocktailcraft.ui.components.ErrorBanner
 import com.cocktailcraft.ui.components.ErrorDialog
 import com.cocktailcraft.ui.components.FilterChip
@@ -223,11 +235,29 @@ fun HomeScreen(
                 .pullRefresh(pullRefreshState)
         ) {
             if (isLoading && cocktails.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
+                // Show shimmer loading effect instead of spinner
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp)
                 ) {
-                    CircularProgressIndicator(color = AppColors.Primary)
+                    // Shimmer header
+                    item(key = "shimmer_header") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.5f)
+                                .height(24.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .shimmerEffect()
+                        )
+                    }
+
+                    // Shimmer items
+                    items(5) { index ->
+                        CocktailItemShimmer()
+                    }
                 }
             } else if (legacyErrorString.isNotBlank()) {
                 Box(
@@ -386,7 +416,7 @@ fun HomeScreen(
                         items = cocktails,
                         key = { index, cocktail -> "cocktail_${index}_${cocktail.id}" }
                     ) { index, cocktail ->
-                        CocktailItem(
+                        AnimatedCocktailItem(
                             cocktail = cocktail,
                             onClick = {
                                 onCocktailClick(cocktail)
@@ -397,7 +427,8 @@ fun HomeScreen(
                             isFavorite = favorites.any { it.id == cocktail.id },
                             onToggleFavorite = { cocktailToToggle ->
                                 favoritesViewModel.toggleFavorite(cocktailToToggle)
-                            }
+                            },
+                            index = index // Pass index for staggered animation
                         )
                     }
 
@@ -410,8 +441,17 @@ fun HomeScreen(
                                     .padding(16.dp),
                                 contentAlignment = Alignment.Center
                             ) {
+                                // Use a simple fade-in effect for the loading indicator
+                                val animatedAlpha by animateFloatAsState(
+                                    targetValue = 1f,
+                                    animationSpec = tween(durationMillis = 300),
+                                    label = "loading_alpha"
+                                )
+
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(32.dp),
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .alpha(animatedAlpha),
                                     color = AppColors.Primary
                                 )
                             }
@@ -421,11 +461,33 @@ fun HomeScreen(
                     // Show end of list message when no more data
                     if (!hasMoreData && !isSearchActive && cocktails.isNotEmpty()) {
                         item(key = "end_of_list") {
+                            // Use a simple animation for the end of list message
+                            val animatedOffset by animateFloatAsState(
+                                targetValue = 0f,
+                                animationSpec = tween(
+                                    durationMillis = 500,
+                                    delayMillis = 300,
+                                    easing = FastOutSlowInEasing
+                                ),
+                                label = "end_of_list_offset"
+                            )
+
+                            val animatedAlpha by animateFloatAsState(
+                                targetValue = 1f,
+                                animationSpec = tween(
+                                    durationMillis = 500,
+                                    delayMillis = 300
+                                ),
+                                label = "end_of_list_alpha"
+                            )
+
                             Text(
                                 text = "You've reached the end of the list",
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .padding(16.dp)
+                                    .offset(y = animatedOffset.dp)
+                                    .alpha(animatedAlpha),
                                 textAlign = TextAlign.Center,
                                 color = AppColors.TextSecondary,
                                 fontSize = 14.sp
