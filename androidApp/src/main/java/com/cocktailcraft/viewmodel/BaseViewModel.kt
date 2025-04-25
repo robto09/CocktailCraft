@@ -1,6 +1,5 @@
 package com.cocktailcraft.viewmodel
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.util.ErrorUtils
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -13,9 +12,9 @@ import kotlinx.coroutines.launch
 
 /**
  * Base ViewModel class that provides common functionality for all ViewModels,
- * including standardized error handling and loading state management.
+ * including standardized error handling, loading state management, and Koin integration.
  */
-abstract class BaseViewModel : ViewModel() {
+abstract class BaseViewModel : KoinViewModel() {
 
     // Loading state
     private val _isLoading = MutableStateFlow(false)
