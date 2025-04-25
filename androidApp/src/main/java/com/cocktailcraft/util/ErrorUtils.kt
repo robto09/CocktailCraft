@@ -62,7 +62,7 @@ object ErrorUtils {
                 originalException = exception,
                 errorCode = ErrorCode.NETWORK
             )
-            
+
             // Timeout errors
             is SocketTimeoutException,
             is TimeoutException -> UserFriendlyError(
@@ -73,7 +73,7 @@ object ErrorUtils {
                 originalException = exception,
                 errorCode = ErrorCode.TIMEOUT
             )
-            
+
             // Authentication errors
             is SecurityException -> UserFriendlyError(
                 title = "Authentication Error",
@@ -83,7 +83,7 @@ object ErrorUtils {
                 originalException = exception,
                 errorCode = ErrorCode.UNAUTHORIZED
             )
-            
+
             // Data errors
             is IllegalArgumentException,
             is IllegalStateException -> UserFriendlyError(
@@ -94,34 +94,34 @@ object ErrorUtils {
                 originalException = exception,
                 errorCode = ErrorCode.INVALID_DATA
             )
-            
+
             // Default for unknown errors
             else -> {
                 val message = when {
-                    exception.message?.contains("timeout", ignoreCase = true) == true -> 
+                    exception.message?.contains("timeout", ignoreCase = true) == true ->
                         "The request timed out. Please try again."
-                    exception.message?.contains("connect", ignoreCase = true) == true -> 
+                    exception.message?.contains("connect", ignoreCase = true) == true ->
                         "Unable to connect to the server. Please check your internet connection."
-                    exception.message?.contains("server", ignoreCase = true) == true -> 
+                    exception.message?.contains("server", ignoreCase = true) == true ->
                         "The server encountered an error. Please try again later."
-                    exception.message?.contains("404", ignoreCase = true) == true -> 
+                    exception.message?.contains("404", ignoreCase = true) == true ->
                         "The requested resource was not found."
-                    exception.message?.contains("401", ignoreCase = true) == true || 
-                    exception.message?.contains("403", ignoreCase = true) == true -> 
+                    exception.message?.contains("401", ignoreCase = true) == true ||
+                    exception.message?.contains("403", ignoreCase = true) == true ->
                         "You don't have permission to access this resource."
-                    exception.message?.contains("500", ignoreCase = true) == true -> 
+                    exception.message?.contains("500", ignoreCase = true) == true ->
                         "The server encountered an internal error. Please try again later."
                     else -> defaultMessage
                 }
-                
+
                 val category = when {
-                    message.contains("internet", ignoreCase = true) || 
+                    message.contains("internet", ignoreCase = true) ||
                     message.contains("connect", ignoreCase = true) -> ErrorCategory.NETWORK
                     message.contains("server", ignoreCase = true) -> ErrorCategory.SERVER
                     message.contains("permission", ignoreCase = true) -> ErrorCategory.AUTHENTICATION
                     else -> ErrorCategory.UNKNOWN
                 }
-                
+
                 UserFriendlyError(
                     title = getCategoryTitle(category),
                     message = message,
@@ -132,7 +132,7 @@ object ErrorUtils {
             }
         }
     }
-    
+
     /**
      * Get a user-friendly title for an error category
      */
@@ -146,7 +146,7 @@ object ErrorUtils {
             ErrorCategory.UNKNOWN -> "Error"
         }
     }
-    
+
     /**
      * Get a recovery suggestion based on error category
      */
@@ -160,7 +160,7 @@ object ErrorUtils {
             ErrorCategory.UNKNOWN -> "Please try again or contact support if the issue persists."
         }
     }
-    
+
     /**
      * Get a default recovery action based on error category
      */
@@ -173,7 +173,28 @@ object ErrorUtils {
             ErrorCategory.DATA -> "Refresh"
             ErrorCategory.UNKNOWN -> "Try Again"
         }
-        
+
         return RecoveryAction(label, action)
+    }
+
+    /**
+     * Create a user-friendly error with the given parameters
+     */
+    fun createUserFriendlyError(
+        title: String,
+        message: String,
+        category: ErrorCategory = ErrorCategory.UNKNOWN,
+        recoveryAction: RecoveryAction? = null,
+        originalException: Throwable? = null,
+        errorCode: ErrorCode = ErrorCode.UNKNOWN
+    ): UserFriendlyError {
+        return UserFriendlyError(
+            title = title,
+            message = message,
+            category = category,
+            recoveryAction = recoveryAction,
+            originalException = originalException,
+            errorCode = errorCode
+        )
     }
 }
