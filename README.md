@@ -12,6 +12,9 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Order Management**: Place orders and track order history
 - **Favorites**: Save and manage favorite cocktails
 - **Reviews**: Read and submit reviews for cocktails
+- **Dark Mode Support**: Adaptive UI that supports both light and dark themes with smooth transitions
+- **Offline Mode**: Browse recently viewed cocktails and favorites without internet connection
+- **Robust Error Handling**: User-friendly error messages with recovery options
 - **Cross-Platform**: Same codebase for both Android and iOS platforms
 
 ## Architecture
@@ -142,6 +145,25 @@ For more detailed architecture diagrams, please see the [Architecture Documentat
 - **HomeViewModel**: Manages cocktail listings, categories, and search
 - **CocktailRepository**: Provides cocktail data from remote and local sources
 - **HomeScreen & CocktailDetailScreen**: UI for browsing and viewing cocktail details
+
+### Dark Mode Support
+- **ThemeViewModel**: Manages theme state and preferences
+- **AppTheme**: Provides theme-specific colors and typography
+- **ThemeAwareComponents**: UI components that adapt to the current theme
+- **Smooth Transitions**: Animated transitions between light and dark modes
+- **System Integration**: Option to follow system theme settings
+
+### Offline Mode
+- **NetworkMonitor**: Detects and monitors network connectivity
+- **OfflineRepository**: Caches data for offline access
+- **CocktailRepository**: Provides fallback to cached data when offline
+- **UI Indicators**: Clear indicators of offline status and available actions
+
+### Error Handling
+- **ErrorUtils**: Centralized error handling and categorization
+- **BaseViewModel**: Common error handling for all ViewModels
+- **ErrorDialog & ErrorBanner**: User-friendly error display components
+- **Recovery Actions**: Actionable error messages with recovery options
 
 ## Test Coverage
 The application includes comprehensive test coverage:
