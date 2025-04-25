@@ -6,6 +6,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Android implementation of NetworkMonitor.
@@ -13,6 +14,8 @@ import kotlinx.coroutines.flow.StateFlow
 actual class NetworkMonitor actual constructor(
     private val context: Context
 ) : BaseNetworkMonitor() {
+
+    actual override val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
     private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -39,7 +42,7 @@ actual class NetworkMonitor actual constructor(
         }
     }
 
-    override fun startMonitoring() {
+    actual override fun startMonitoring() {
         val networkRequest = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
@@ -50,7 +53,7 @@ actual class NetworkMonitor actual constructor(
         _isOnline.value = isNetworkAvailable()
     }
 
-    override fun stopMonitoring() {
+    actual override fun stopMonitoring() {
         try {
             connectivityManager.unregisterNetworkCallback(networkCallback)
         } catch (e: Exception) {

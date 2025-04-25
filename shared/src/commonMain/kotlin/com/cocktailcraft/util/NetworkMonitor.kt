@@ -20,7 +20,7 @@ expect class NetworkMonitor(context: Context) {
  */
 abstract class BaseNetworkMonitor {
     protected val _isOnline = MutableStateFlow(true)
-    val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+    open val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 
     abstract fun startMonitoring()
     abstract fun stopMonitoring()
