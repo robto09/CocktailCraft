@@ -1,21 +1,40 @@
 package com.cocktailcraft.data.repository
 
+import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.remote.CocktailApi
 import com.cocktailcraft.data.remote.CocktailDto
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.util.NetworkMonitor
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import com.cocktailcraft.domain.config.AppConfig
+import kotlinx.serialization.json.Json
 
 class CocktailRepositoryImpl(
     private val api: CocktailApi,
     private val settings: Settings,
-    private val appConfig: AppConfig
+    private val appConfig: AppConfig,
+    private val json: Json,
+    private val networkMonitor: NetworkMonitor
 ) : CocktailRepository {
+
+    // Initialize the cocktail cache
+    private val cocktailCache = CocktailCache(settings, json, appConfig)
+
+    // Flag to force offline mode (user preference)
+    private var forceOfflineMode: Boolean
+        get() = settings.getBoolean(appConfig.offlineModeEnabledKey, false)
+        set(value) = settings.putBoolean(appConfig.offlineModeEnabledKey, value)
+
+    // Check if we're currently offline
+    private suspend fun isOffline(): Boolean {
+        return forceOfflineMode || !networkMonitor.isOnline.first()
+    }
 
     override suspend fun searchCocktailsByName(name: String): Flow<List<Cocktail>> = flow {
         try {
@@ -41,17 +60,41 @@ class CocktailRepositoryImpl(
 
     override suspend fun getCocktailById(id: String): Flow<Cocktail?> = flow {
         try {
-            // Make a direct API call to get full cocktail details
+            // First check if we're offline
+            if (isOffline()) {
+                // Try to get from cache
+                val cachedCocktail = cocktailCache.getCachedCocktail(id)
+                if (cachedCocktail != null) {
+                    emit(cachedCocktail)
+                } else {
+                    emit(null)
+                }
+                return@flow
+            }
+
+            // If online, make a direct API call
             val dto = api.getCocktailById(id)
-            
+
             if (dto != null) {
                 val cocktail = mapDtoToCocktail(dto)
+
+                // Cache the cocktail for offline access
+                cocktailCache.cacheCocktail(cocktail)
+
                 emit(cocktail)
+            } else {
+                // If API call returns null, try to get from cache as fallback
+                val cachedCocktail = cocktailCache.getCachedCocktail(id)
+                emit(cachedCocktail)
+            }
+        } catch (e: Exception) {
+            // If there's an error with the API call, try to get from cache
+            val cachedCocktail = cocktailCache.getCachedCocktail(id)
+            if (cachedCocktail != null) {
+                emit(cachedCocktail)
             } else {
                 emit(null)
             }
-        } catch (e: Exception) {
-            emit(null)
         }
     }
 
@@ -155,15 +198,30 @@ class CocktailRepositoryImpl(
             ?: emptyList()
 
         val favoriteCocktails = mutableListOf<Cocktail>()
-        
+
+        // If we're offline, only use cached favorites
+        if (isOffline()) {
+            for (id in favoriteIds) {
+                val cachedCocktail = cocktailCache.getCachedCocktail(id)
+                if (cachedCocktail != null) {
+                    favoriteCocktails.add(cachedCocktail)
+                }
+            }
+            emit(favoriteCocktails)
+            return@flow
+        }
+
+        // If online, get favorites from API and cache them
         for (id in favoriteIds) {
             getCocktailById(id).collect { cocktail ->
                 if (cocktail != null) {
                     favoriteCocktails.add(cocktail)
+                    // Ensure favorites are cached
+                    cocktailCache.cacheCocktail(cocktail)
                 }
             }
         }
-        
+
         emit(favoriteCocktails)
     }
 
@@ -202,18 +260,41 @@ class CocktailRepositoryImpl(
 
     override suspend fun getCocktailsSortedByNewest(): Flow<List<Cocktail>> = flow {
         try {
-            // First check if API is reachable
+            // Check if we're offline
+            if (isOffline()) {
+                // Use cached cocktails when offline
+                val cachedCocktails = cocktailCache.getAllCachedCocktails()
+                emit(cachedCocktails.sortedByDescending { it.dateAdded })
+                return@flow
+            }
+
+            // If online, check if API is reachable
             if (!pingApiInternal()) {
+                // Fall back to cache if API is not reachable
+                val cachedCocktails = cocktailCache.getAllCachedCocktails()
+                if (cachedCocktails.isNotEmpty()) {
+                    emit(cachedCocktails.sortedByDescending { it.dateAdded })
+                    return@flow
+                }
                 throw Exception("API is not reachable. Please check your internet connection.")
             }
-            
+
             val cocktails = api.filterByCategory("Cocktail").map { dto ->
-                mapDtoToCocktail(dto)
+                val cocktail = mapDtoToCocktail(dto)
+                // Cache cocktails for offline access
+                cocktailCache.cacheCocktail(cocktail)
+                cocktail
             }
             emit(cocktails.sortedByDescending { it.dateAdded })
         } catch (e: Exception) {
-            // Re-throw with more context
-            throw Exception("Failed to load cocktails: ${e.message}", e)
+            // Try to use cache as fallback
+            val cachedCocktails = cocktailCache.getAllCachedCocktails()
+            if (cachedCocktails.isNotEmpty()) {
+                emit(cachedCocktails.sortedByDescending { it.dateAdded })
+            } else {
+                // Re-throw with more context if no cached data
+                throw Exception("Failed to load cocktails: ${e.message}", e)
+            }
         }
     }
 
@@ -312,7 +393,7 @@ class CocktailRepositoryImpl(
         if (!cocktail.imageUrl.isNullOrBlank()) {
             return cocktail.imageUrl
         }
-        
+
         // If no image URL, construct one from the ID if possible
         return if (cocktail.id.isNotBlank()) {
             "${appConfig.imageBaseUrl}/${appConfig.cocktailsImagePath}/${cocktail.id}.jpg"
@@ -327,6 +408,28 @@ class CocktailRepositoryImpl(
         emit(pingApiInternal())
     }
 
+    /**
+     * Get recently viewed cocktails.
+     */
+    override suspend fun getRecentlyViewedCocktails(): Flow<List<Cocktail>> = flow {
+        val recentlyViewedCocktails = cocktailCache.getRecentlyViewedCocktails()
+        emit(recentlyViewedCocktails)
+    }
+
+    /**
+     * Set the offline mode preference.
+     */
+    override fun setOfflineMode(enabled: Boolean) {
+        forceOfflineMode = enabled
+    }
+
+    /**
+     * Check if offline mode is enabled.
+     */
+    override fun isOfflineModeEnabled(): Boolean {
+        return forceOfflineMode
+    }
+
     // Helper method to check API connectivity
     private suspend fun pingApiInternal(): Boolean {
         return try {
@@ -336,4 +439,4 @@ class CocktailRepositoryImpl(
             false
         }
     }
-} 
+}

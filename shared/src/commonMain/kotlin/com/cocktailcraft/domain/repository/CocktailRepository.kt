@@ -25,10 +25,15 @@ interface CocktailRepository {
     suspend fun getCocktailsSortedByPriceHighToLow(): Flow<List<Cocktail>>
     suspend fun getCocktailsSortedByPopularity(): Flow<List<Cocktail>>
     suspend fun getCocktailsByPriceRange(minPrice: Double, maxPrice: Double): Flow<List<Cocktail>>
-    
+
     // New method for getting image URL
     fun getCocktailImageUrl(cocktail: Cocktail): String
-    
+
     // New method to check API connectivity
     suspend fun checkApiConnectivity(): Flow<Boolean>
-} 
+
+    // Methods for offline mode
+    suspend fun getRecentlyViewedCocktails(): Flow<List<Cocktail>>
+    fun setOfflineMode(enabled: Boolean)
+    fun isOfflineModeEnabled(): Boolean
+}
