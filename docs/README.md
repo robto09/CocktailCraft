@@ -24,7 +24,11 @@ CocktailCraft follows Clean Architecture principles with a MVVM pattern for the 
 
 ## Additional Documentation
 
-- **[Animations and Transitions](animations.md)**: Documentation of the app's animation system and implementation details
+- **[Animations and Transitions](animations.md)**: Documentation of the app's animation system and implementation details, including:
+  - Animation utilities and reusable components
+  - Shimmer loading effects and micro-interactions
+  - Batched loading mechanism for optimized list animations
+  - Scrolling performance optimizations
 
 ### Key Architectural Layers
 

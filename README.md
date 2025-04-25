@@ -132,6 +132,14 @@ The app features a comprehensive set of animations and transitions to enhance th
 - **Loading States**: Shimmer loading effects for a polished loading experience
 - **Screen Transitions**: Coordinated animations for navigation between screens
 - **Theme Transitions**: Smooth animations when switching between light and dark modes
+- **Optimized Scrolling**: Batched loading mechanism that loads and animates items in small groups
+- **Performance Optimizations**: Techniques to maintain smooth animations during fast scrolling
+
+The animation system is designed for both visual appeal and performance:
+- **Batched Loading**: Items load in groups of 3 with staggered animations for better performance
+- **Predictive Loading**: Preloads items that will soon be visible (3 batches ahead of current view)
+- **Direct Animation Properties**: Uses optimized animation properties for smooth scrolling
+- **Coordinated Animations**: Items within the same batch animate together for a cohesive effect
 
 For detailed information about the animations implementation, see:
 - [Animations Documentation](docs/animations.md) - Overview, implementation details, and best practices

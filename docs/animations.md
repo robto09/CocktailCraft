@@ -29,9 +29,10 @@ AnimatedIconButton(
 - Staggered entry animations for list items
 - Scale animations on hover
 - Coordinated animations for multiple elements
+- Batched loading with smooth animations
 
 ```kotlin
-// Example usage
+// Example usage of animated item
 AnimatedCocktailItem(
     cocktail = cocktail,
     onClick = { /* action */ },
@@ -40,6 +41,30 @@ AnimatedCocktailItem(
     onToggleFavorite = { /* action */ },
     index = index // For staggered animation
 )
+
+// Example of batched loading implementation
+val visibleItemsCount = remember { mutableStateOf(0) }
+
+// Update visible items based on scroll position
+LaunchedEffect(listState.firstVisibleItemIndex) {
+    val targetVisible = minOf(
+        items.size,
+        listState.firstVisibleItemIndex + 12 // Current visible + 3 batches ahead
+    )
+
+    if (targetVisible > visibleItemsCount.value) {
+        // Animate in batches of 3 items
+        val batchSize = 3
+        val currentBatch = visibleItemsCount.value / batchSize
+        val targetBatch = targetVisible / batchSize
+
+        for (batch in currentBatch until targetBatch) {
+            val newCount = minOf((batch + 1) * batchSize, items.size)
+            visibleItemsCount.value = newCount
+            delay(100) // Small delay between batches
+        }
+    }
+}
 ```
 
 ### 2. Loading State Animations
@@ -130,11 +155,66 @@ val scaleInMedium = scaleIn(
 val enterWithFadeAndScale: EnterTransition = fadeInMedium + scaleInMedium
 ```
 
+## Optimized Scrolling Performance
+
+The app implements several techniques to ensure smooth scrolling with animations:
+
+### Batched Loading Mechanism
+
+Instead of loading and animating all items at once, the app uses a batched loading approach:
+
+1. **Visibility Tracking**: Maintains a count of how many items should be visible based on scroll position
+2. **Batch Processing**: Loads items in small batches (3 at a time) with slight delays between batches
+3. **Predictive Loading**: Preloads items that will soon be visible (3 batches ahead of current view)
+4. **Coordinated Animations**: Items within the same batch animate together for a cohesive effect
+
+### Animation Optimization Techniques
+
+1. **Direct Animation Properties**: Uses `animateFloatAsState` for alpha and offset animations
+2. **Simplified Rendering**: Optimizes rendering path for better performance during scrolling
+3. **Efficient Composables**: Extracts and reuses content to minimize recomposition
+4. **Minimal Layout Changes**: Avoids layout changes during animations to reduce jank
+
+```kotlin
+// Example of optimized item rendering with animations
+if (isVisible) {
+    // Calculate animation parameters based on batch
+    val delayMillis = batchIndex * 100
+    val animationDuration = 300
+
+    // Animate alpha and offset for entry
+    val animatedAlpha by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(
+            durationMillis = animationDuration,
+            delayMillis = delayMillis
+        )
+    )
+
+    val animatedOffset by animateFloatAsState(
+        targetValue = 0f,
+        animationSpec = tween(
+            durationMillis = animationDuration,
+            delayMillis = delayMillis
+        )
+    )
+
+    Box(
+        modifier = Modifier
+            .alpha(animatedAlpha)
+            .offset(y = animatedOffset.dp)
+    ) {
+        // Render item content
+    }
+}
+```
+
 ## Best Practices
 
 1. **Performance Considerations**
    - Use lightweight animations for frequently updated components
-   - Avoid animating large components or many items simultaneously
+   - Implement batched loading for list animations
+   - Use direct animation properties instead of complex composables for better performance
    - Consider disabling animations on low-end devices
 
 2. **Accessibility**
