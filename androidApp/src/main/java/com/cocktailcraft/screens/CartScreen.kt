@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.ui.components.CartItemCard
 import com.cocktailcraft.ui.theme.AppColors
+import com.cocktailcraft.ui.theme.ThemeAssets
 import com.cocktailcraft.viewmodel.CartViewModel
 import com.cocktailcraft.viewmodel.FavoritesViewModel
 import com.cocktailcraft.viewmodel.OrderViewModel
@@ -66,9 +67,9 @@ fun CartScreen(
     val favorites by favoritesViewModel.favorites.collectAsState()
 
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
-    
+
     var showPlaceOrderDialog by remember { mutableStateOf(false) }
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -103,7 +104,7 @@ fun CartScreen(
                 color = AppColors.TextPrimary,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
-            
+
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
@@ -115,7 +116,7 @@ fun CartScreen(
                     CartItemCard(
                         item = item,
                         onIncreaseQuantity = { viewModel.updateQuantity(item.cocktail.id, item.quantity + 1) },
-                        onDecreaseQuantity = { 
+                        onDecreaseQuantity = {
                             if (item.quantity > 1) {
                                 viewModel.updateQuantity(item.cocktail.id, item.quantity - 1)
                             } else {
@@ -128,9 +129,9 @@ fun CartScreen(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Order Summary
             Card(
                 modifier = Modifier
@@ -153,9 +154,9 @@ fun CartScreen(
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
                     )
-                    
+
                     Spacer(modifier = Modifier.height(12.dp))
-                    
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -172,9 +173,9 @@ fun CartScreen(
                             color = AppColors.TextPrimary
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -191,11 +192,11 @@ fun CartScreen(
                             color = AppColors.TextPrimary
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.height(12.dp))
                     Divider(thickness = 1.dp, color = AppColors.LightGray)
                     Spacer(modifier = Modifier.height(12.dp))
-                    
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -215,9 +216,9 @@ fun CartScreen(
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             // Checkout Button
             Button(
                 onClick = { showPlaceOrderDialog = true },
@@ -237,24 +238,24 @@ fun CartScreen(
             }
         }
     }
-    
+
     // Order Confirmation Dialog
     if (showPlaceOrderDialog) {
         AlertDialog(
             onDismissRequest = { showPlaceOrderDialog = false },
-            title = { 
+            title = {
                 Text(
                     "Confirm Order",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
-                ) 
+                )
             },
-            text = { 
+            text = {
                 Text(
                     "Are you sure you want to place this order for ${currencyFormatter.format(totalPrice + 5.99)}?",
                     fontSize = 16.sp,
                     lineHeight = 22.sp
-                ) 
+                )
             },
             confirmButton = {
                 Button(
@@ -303,15 +304,15 @@ fun EmptyCartMessage(onStartShopping: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.Delete,
-            contentDescription = null,
-            tint = AppColors.Gray,
-            modifier = Modifier.size(100.dp)
+        // Use theme-specific empty state illustration
+        androidx.compose.foundation.Image(
+            painter = ThemeAssets.emptyStateIllustration(),
+            contentDescription = "Empty Cart",
+            modifier = Modifier.size(120.dp)
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         Text(
             text = "Your cart is empty",
             fontSize = 22.sp,
@@ -319,18 +320,18 @@ fun EmptyCartMessage(onStartShopping: () -> Unit) {
             color = AppColors.TextPrimary,
             textAlign = TextAlign.Center
         )
-        
+
         Spacer(modifier = Modifier.height(12.dp))
-        
+
         Text(
             text = "Add some cocktails to your cart and they will appear here",
             fontSize = 16.sp,
             color = AppColors.TextSecondary,
             textAlign = TextAlign.Center
         )
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         Button(
             onClick = onStartShopping,
             colors = ButtonDefaults.buttonColors(
@@ -346,4 +347,4 @@ fun EmptyCartMessage(onStartShopping: () -> Unit) {
             )
         }
     }
-} 
+}

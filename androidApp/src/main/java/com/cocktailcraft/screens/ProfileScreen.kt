@@ -51,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -62,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cocktailcraft.navigation.NavigationManager
+import com.cocktailcraft.ui.components.AnimatedThemeToggleRow
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.ProfileViewModel
 import com.cocktailcraft.viewmodel.ThemeViewModel
@@ -82,6 +84,7 @@ fun ProfileScreen(
 
     // Get theme data from ThemeViewModel
     val isDarkMode by themeViewModel.isDarkMode.collectAsState()
+    val followSystemTheme by themeViewModel.followSystemTheme.collectAsState()
 
     // Dialog states
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -325,45 +328,31 @@ fun ProfileScreen(
                     onClick = { /* Handle help & support */ }
                 )
 
-                // Dark Mode Toggle with animation
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { themeViewModel.toggleDarkMode() }
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Animated icon that changes based on the theme
-                    val iconTint = if (isDarkMode) AppColors.PrimaryDark else AppColors.TextPrimary
+                // Follow System Theme Toggle with animated switch
+                AnimatedThemeToggleRow(
+                    title = "Follow System Theme",
+                    subtitle = if (followSystemTheme) "On" else "Off",
+                    icon = Icons.Default.DateRange,
+                    isChecked = followSystemTheme,
+                    onToggle = { themeViewModel.toggleFollowSystemTheme() },
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-                    Icon(
-                        imageVector = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
-                        contentDescription = if (isDarkMode) "Switch to Light Mode" else "Switch to Dark Mode",
-                        tint = iconTint,
-                        modifier = Modifier.size(24.dp)
-                    )
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Dark Mode",
-                            fontSize = 16.sp,
-                            color = AppColors.TextPrimary
-                        )
-
-                        Text(
-                            text = if (isDarkMode) "On" else "Off",
-                            fontSize = 12.sp,
-                            color = AppColors.TextSecondary
-                        )
-                    }
-
-                    Switch(
-                        checked = isDarkMode,
-                        onCheckedChange = { themeViewModel.toggleDarkMode() }
-                    )
-                }
+                // Dark Mode Toggle with animated switch (only enabled if not following system theme)
+                AnimatedThemeToggleRow(
+                    title = "Dark Mode",
+                    subtitle = if (followSystemTheme)
+                        "Controlled by system"
+                    else
+                        if (isDarkMode) "On" else "Off",
+                    icon = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+                    isChecked = isDarkMode,
+                    onToggle = {
+                        if (!followSystemTheme) themeViewModel.toggleDarkMode()
+                    },
+                    enabled = !followSystemTheme,
+                    modifier = Modifier.fillMaxWidth()
+                )
 
                 // Only show logout if signed in
                 if (isSignedIn) {
