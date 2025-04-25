@@ -84,4 +84,13 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.22")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     testImplementation("com.russhwolf:multiplatform-settings:1.1.1")
+
+    // Instrumented test dependencies
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation(composeBom)
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("org.mockito:mockito-android:5.3.1")
+    androidTestImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
 }
