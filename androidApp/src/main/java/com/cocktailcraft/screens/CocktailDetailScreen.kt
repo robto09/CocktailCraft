@@ -79,13 +79,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.ui.components.RatingBar
+import com.cocktailcraft.ui.components.OptimizedImage
 import com.cocktailcraft.viewmodel.CartViewModel
 import com.cocktailcraft.viewmodel.FavoritesViewModel
 import com.cocktailcraft.viewmodel.HomeViewModel
@@ -109,35 +108,35 @@ fun CocktailDetailScreen(
 ) {
     // Add a loading state to track when data is being fetched
     var isLoading by remember { mutableStateOf(true) }
-    
+
     // Use collectAsState instead of collectAsStateWithLifecycle
     val cocktailFlow = remember { homeViewModel.getCocktailById(cocktailId) }
     val cocktail by cocktailFlow.collectAsState(initial = null)
-    
+
     // Properly collect reviews as a state
     val reviewsMap by reviewViewModel.reviews.collectAsState()
     // Safely get reviews for this cocktail
     val reviews = reviewsMap[cocktailId] ?: emptyList()
     val favorites by favoritesViewModel.favorites.collectAsState()
     val isFavorite = cocktail?.let { c -> favorites.any { fav -> fav.id == c.id } } ?: false
-    
+
     // Check if the cocktail is in cart
     val cartItems by cartViewModel.cartItems.collectAsState()
     val isInCart = cocktail?.let { c -> cartItems.any { it.cocktail.id == c.id } } ?: false
-    
+
     // Add snackbar state
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    
+
     // Update loading state when cocktail data changes
     LaunchedEffect(cocktail) {
         if (cocktail != null) {
             isLoading = false
         }
     }
-    
+
     var showReviewDialog by remember { mutableStateOf(false) }
-    
+
     WriteReviewDialog(
         showDialog = showReviewDialog,
         onDismiss = { showReviewDialog = false },
@@ -155,12 +154,12 @@ fun CocktailDetailScreen(
             }
         }
     )
-    
+
     Scaffold(
         topBar = {
             Column {
                 TopAppBar(
-                    title = { 
+                    title = {
                         Text(
                             text = cocktail?.name ?: "Cocktail Detail",
                             color = Color.White,
@@ -183,7 +182,7 @@ fun CocktailDetailScreen(
                         titleContentColor = Color.White
                     )
                 )
-                
+
                 // Add a divider to create separation between top bar and content
                 Divider(
                     color = Color.White.copy(alpha = 0.2f),
@@ -208,7 +207,7 @@ fun CocktailDetailScreen(
                 CircularProgressIndicator(color = AppColors.Primary)
             }
         }
-        
+
         // Show content only when cocktail is loaded
         AnimatedVisibility(
             visible = !isLoading && cocktail != null,
@@ -223,7 +222,7 @@ fun CocktailDetailScreen(
                 } else {
                     0f
                 }
-                
+
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -236,16 +235,14 @@ fun CocktailDetailScreen(
                                 .fillMaxWidth()
                                 .height(250.dp)
                         ) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(imageUrl)
-                                    .crossfade(true)
-                                    .build(),
+                            OptimizedImage(
+                                url = imageUrl,
                                 contentDescription = cocktailData.name,
                                 modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
+                                contentScale = ContentScale.Crop,
+                                targetSize = 800 // Higher resolution for detail view
                             )
-                            
+
                             // Gradient overlay at the bottom only (not the top)
                             Box(
                                 modifier = Modifier
@@ -262,7 +259,7 @@ fun CocktailDetailScreen(
                             )
                         }
                     }
-                    
+
                     // Cocktail details
                     item {
                         Card(
@@ -289,7 +286,7 @@ fun CocktailDetailScreen(
                                         fontWeight = FontWeight.Bold,
                                         color = AppColors.Primary
                                     )
-                                    
+
                                     // Favorite button
                                     IconButton(
                                         onClick = { favoritesViewModel.toggleFavorite(cocktailData) },
@@ -303,9 +300,9 @@ fun CocktailDetailScreen(
                                         )
                                     }
                                 }
-                                
+
                                 Spacer(modifier = Modifier.height(4.dp))
-                                
+
                                 // Category and alcoholic info subtitle
                                 Text(
                                     text = buildString {
@@ -319,9 +316,9 @@ fun CocktailDetailScreen(
                                     color = AppColors.TextSecondary,
                                     fontWeight = FontWeight.Medium
                                 )
-                                
+
                                 Spacer(modifier = Modifier.height(8.dp))
-                                
+
                                 // Stock status
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically
@@ -335,9 +332,9 @@ fun CocktailDetailScreen(
                                                 CircleShape
                                             )
                                     )
-                                    
+
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    
+
                                     Text(
                                         text = if (inStock) "In Stock (${cocktailData.stockCount} available)" else "Out of Stock",
                                         fontSize = 14.sp,
@@ -345,13 +342,13 @@ fun CocktailDetailScreen(
                                         fontWeight = FontWeight.Medium
                                     )
                                 }
-                                
+
                                 Spacer(modifier = Modifier.height(24.dp))
-                                
+
                                 // Add to cart button
                                 Button(
-                                    onClick = { 
-                                        cocktailData.let { 
+                                    onClick = {
+                                        cocktailData.let {
                                             // Only call onAddToCart, which will handle adding to cart
                                             onAddToCart(it)
                                             // Show snackbar confirmation
@@ -376,18 +373,18 @@ fun CocktailDetailScreen(
                                         contentDescription = null,
                                         modifier = Modifier.size(20.dp)
                                     )
-                                    
+
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    
+
                                     Text(
                                         text = if (isInCart) "Update Cart" else "Add to Cart",
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
-                                
+
                                 Spacer(modifier = Modifier.height(24.dp))
-                                
+
                                 // Instructions
                                 Card(
                                     modifier = Modifier
@@ -406,12 +403,12 @@ fun CocktailDetailScreen(
                                             fontWeight = FontWeight.Bold,
                                             color = AppColors.TextPrimary
                                         )
-                                        
+
                                         Spacer(modifier = Modifier.height(12.dp))
-                                        
+
                                         // Add debug print to console to verify instructions are available
                                         val instructionsText = cocktailData.instructions ?: ""
-                                        
+
                                         if (instructionsText.isNotBlank()) {
                                             Text(
                                                 text = instructionsText,
@@ -431,11 +428,11 @@ fun CocktailDetailScreen(
                                                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                                                     textAlign = TextAlign.Center
                                                 )
-                                                
+
                                                 Spacer(modifier = Modifier.height(8.dp))
-                                                
+
                                                 OutlinedButton(
-                                                    onClick = { 
+                                                    onClick = {
                                                         // Attempt to reload the data
                                                         homeViewModel.forceRefreshCocktailDetails(cocktailId)
                                                     },
@@ -451,12 +448,12 @@ fun CocktailDetailScreen(
                                         }
                                     }
                                 }
-                                
+
                                 Spacer(modifier = Modifier.height(16.dp))
                             }
                         }
                     }
-                    
+
                     // Ingredients section
                     item {
                         Card(
@@ -476,9 +473,9 @@ fun CocktailDetailScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = AppColors.TextPrimary
                                 )
-                                
+
                                 Spacer(modifier = Modifier.height(12.dp))
-                                
+
                                 // Handle different types of ingredients list
                                 if (cocktailData.ingredients is List<*>) {
                                     (cocktailData.ingredients as? List<CocktailIngredient>)?.forEach { ingredient ->
@@ -494,9 +491,9 @@ fun CocktailDetailScreen(
                                                     .size(8.dp)
                                                     .background(AppColors.Primary, CircleShape)
                                             )
-                                            
+
                                             Spacer(modifier = Modifier.width(12.dp))
-                                            
+
                                             // Ingredient name and measure
                                             Text(
                                                 text = "${ingredient.name} ${ingredient.measure}",
@@ -521,9 +518,9 @@ fun CocktailDetailScreen(
                                                     .size(8.dp)
                                                     .background(AppColors.Primary, CircleShape)
                                             )
-                                            
+
                                             Spacer(modifier = Modifier.width(12.dp))
-                                            
+
                                             // Ingredient name
                                             Text(
                                                 text = ingredient.toString(),
@@ -536,7 +533,7 @@ fun CocktailDetailScreen(
                             }
                         }
                     }
-                    
+
                     // Details chips section
                     item {
                         Card(
@@ -556,9 +553,9 @@ fun CocktailDetailScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = AppColors.TextPrimary
                                 )
-                                
+
                                 Spacer(modifier = Modifier.height(12.dp))
-                                
+
                                 LazyRow(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
@@ -575,7 +572,7 @@ fun CocktailDetailScreen(
                                             )
                                         }
                                     }
-                                    
+
                                     // Glass type chip
                                     cocktailData.glass?.let {
                                         item {
@@ -589,7 +586,7 @@ fun CocktailDetailScreen(
                                             )
                                         }
                                     }
-                                    
+
                                     // Alcoholic chip
                                     item {
                                         SuggestionChip(
@@ -605,7 +602,7 @@ fun CocktailDetailScreen(
                             }
                         }
                     }
-                    
+
                     // Reviews section
                     item {
                         Card(
@@ -630,7 +627,7 @@ fun CocktailDetailScreen(
                                         fontWeight = FontWeight.Bold,
                                         color = AppColors.TextPrimary
                                     )
-                                    
+
                                     TextButton(
                                         onClick = { showReviewDialog = true },
                                         colors = ButtonDefaults.textButtonColors(
@@ -646,9 +643,9 @@ fun CocktailDetailScreen(
                                         Text("Write a Review")
                                     }
                                 }
-                                
+
                                 Spacer(modifier = Modifier.height(12.dp))
-                                
+
                                 if (reviews.isEmpty()) {
                                     Box(
                                         modifier = Modifier
@@ -665,7 +662,7 @@ fun CocktailDetailScreen(
                                 } else {
                                     reviews.take(3).forEachIndexed { index, review ->
                                         CocktailReviewItem(review = review)
-                                        
+
                                         if (index < reviews.take(3).size - 1) {
                                             Divider(
                                                 modifier = Modifier.padding(vertical = 12.dp),
@@ -677,7 +674,7 @@ fun CocktailDetailScreen(
                             }
                         }
                     }
-                    
+
                     // Bottom padding
                     item {
                         Spacer(modifier = Modifier.height(24.dp))
@@ -709,9 +706,9 @@ fun CocktailReviewItem(review: Review) {
                     fontWeight = FontWeight.Bold
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(12.dp))
-            
+
             Column {
                 Text(
                     text = review.userName.takeIf { it.isNotBlank() } ?: "Anonymous",
@@ -719,7 +716,7 @@ fun CocktailReviewItem(review: Review) {
                     color = AppColors.TextPrimary,
                     fontSize = 16.sp
                 )
-                
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -729,7 +726,7 @@ fun CocktailReviewItem(review: Review) {
                         stars = 5,
                         starsColor = AppColors.Secondary
                     )
-                    
+
                     Text(
                         text = review.date.takeIf { it.isNotBlank() } ?: "Unknown date",
                         fontSize = 12.sp,
@@ -738,7 +735,7 @@ fun CocktailReviewItem(review: Review) {
                 }
             }
         }
-        
+
         if (review.comment.isNotBlank()) {
             Text(
                 text = review.comment,
@@ -749,4 +746,4 @@ fun CocktailReviewItem(review: Review) {
             )
         }
     }
-} 
+}
