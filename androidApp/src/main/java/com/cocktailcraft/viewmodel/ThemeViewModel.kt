@@ -1,6 +1,5 @@
 package com.cocktailcraft.viewmodel
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.repository.AuthRepository
@@ -9,12 +8,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
+/**
+ * ViewModel for managing theme preferences.
+ * Supports both constructor injection (for testing) and Koin injection (for production).
+ */
 class ThemeViewModel(
     private val authRepository: AuthRepository? = null
-) : ViewModel(), KoinComponent {
+) : BaseViewModel() {
 
     // Use injected repository if not provided in constructor (for production)
     private val injectedAuthRepository: AuthRepository by inject()
@@ -28,9 +30,6 @@ class ThemeViewModel(
 
     private val _followSystemTheme = MutableStateFlow(true)
     val followSystemTheme: StateFlow<Boolean> = _followSystemTheme.asStateFlow()
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     // Current system dark mode state
     private val _isSystemInDarkMode = MutableStateFlow(false)
@@ -52,7 +51,7 @@ class ThemeViewModel(
 
     private fun loadThemePreference() {
         viewModelScope.launch {
-            _isLoading.value = true
+            setLoading(true)
             try {
                 val preferences = repository.getUserPreferences().first()
                 _followSystemTheme.value = preferences.followSystemTheme
@@ -68,7 +67,7 @@ class ThemeViewModel(
                 _followSystemTheme.value = true
                 _isDarkMode.value = _isSystemInDarkMode.value
             } finally {
-                _isLoading.value = false
+                setLoading(false)
             }
         }
     }
