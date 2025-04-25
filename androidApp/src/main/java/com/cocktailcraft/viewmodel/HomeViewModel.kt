@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.util.NetworkMonitor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
@@ -22,10 +24,19 @@ class HomeViewModel(
 
     // Use injected repository if not provided in constructor (for production)
     private val injectedCocktailRepository: CocktailRepository by inject()
+    private val networkMonitor: NetworkMonitor by inject()
 
     // Use the provided repository or the injected one
     private val repository: CocktailRepository
         get() = cocktailRepository ?: injectedCocktailRepository
+
+    // Track offline mode status
+    private val _isOfflineMode = MutableStateFlow(false)
+    val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
+
+    // Track network availability
+    private val _isNetworkAvailable = MutableStateFlow(true)
+    val isNetworkAvailable: StateFlow<Boolean> = _isNetworkAvailable.asStateFlow()
 
     private val _cocktails = MutableStateFlow<List<Cocktail>>(emptyList())
     val cocktails: StateFlow<List<Cocktail>> = _cocktails.asStateFlow()
@@ -65,9 +76,49 @@ class HomeViewModel(
     private val networkErrorMessage = "Unable to connect to the cocktail database. Please check your internet connection and try again."
 
     init {
+        // Initialize offline mode status
+        _isOfflineMode.value = repository.isOfflineModeEnabled()
+
+        // Start monitoring network connectivity
+        viewModelScope.launch {
+            networkMonitor.startMonitoring()
+            networkMonitor.isOnline.collectLatest { isOnline ->
+                _isNetworkAvailable.value = isOnline
+
+                // If network becomes available and we had an error, retry loading
+                if (isOnline && _error.value.isNotBlank()) {
+                    retry()
+                }
+
+                // If network becomes unavailable and offline mode is not enabled,
+                // automatically enable it
+                if (!isOnline && !_isOfflineMode.value) {
+                    setOfflineMode(true)
+                }
+            }
+        }
+
+        // Monitor offline mode changes from repository
+        viewModelScope.launch {
+            _isOfflineMode.value = repository.isOfflineModeEnabled()
+        }
+
         loadCocktails()
         loadFavorites()
         monitorConnectivity()
+    }
+
+    /**
+     * Set offline mode to a specific value.
+     */
+    fun setOfflineMode(enabled: Boolean) {
+        _isOfflineMode.value = enabled
+        repository.setOfflineMode(enabled)
+
+        // If switching to online mode, reload data
+        if (!enabled && _isNetworkAvailable.value) {
+            retry()
+        }
     }
 
     private fun monitorConnectivity() {
@@ -107,16 +158,24 @@ class HomeViewModel(
             _hasMoreData.value = true // Reset pagination state
 
             try {
-                // First check API connectivity
-                if (!checkConnectivity()) {
-                    _error.value = networkErrorMessage
-                    _isLoading.value = false
-                    return@launch
+                // Check if we're in offline mode (either forced or due to network unavailability)
+                val isOffline = _isOfflineMode.value || !_isNetworkAvailable.value
+
+                // If we're offline, update the repository's offline mode setting
+                if (!_isNetworkAvailable.value && !_isOfflineMode.value) {
+                    repository.setOfflineMode(true)
+                    _isOfflineMode.value = true
                 }
 
+                // The repository will handle returning cached data when in offline mode
                 repository.getCocktailsSortedByNewest()
                     .catch { e ->
-                        handleError("Failed to load cocktails", e)
+                        // If we're offline, don't show an error - just show cached data
+                        if (isOffline) {
+                            _isLoading.value = false
+                        } else {
+                            handleError("Failed to load cocktails", e)
+                        }
                     }
                     .collect { cocktailList ->
                         // Apply pagination
@@ -124,9 +183,30 @@ class HomeViewModel(
                         _cocktails.value = paginatedList
                         _hasMoreData.value = paginatedList.size < cocktailList.size
                         _isLoading.value = false
+
+                        // If we got data while offline, clear any error
+                        if (isOffline && cocktailList.isNotEmpty()) {
+                            _error.value = ""
+                        }
                     }
             } catch (e: Exception) {
-                handleError("Failed to load cocktails", e)
+                // If we're offline, try to get cached data instead of showing an error
+                if (_isOfflineMode.value || !_isNetworkAvailable.value) {
+                    try {
+                        val cachedCocktails = repository.getRecentlyViewedCocktails().first()
+                        if (cachedCocktails.isNotEmpty()) {
+                            _cocktails.value = cachedCocktails
+                            _error.value = ""
+                        } else {
+                            _error.value = "No cached cocktails available offline."
+                        }
+                    } catch (cacheException: Exception) {
+                        handleError("Failed to load cached cocktails", cacheException)
+                    }
+                } else {
+                    handleError("Failed to load cocktails", e)
+                }
+                _isLoading.value = false
             }
         }
     }
