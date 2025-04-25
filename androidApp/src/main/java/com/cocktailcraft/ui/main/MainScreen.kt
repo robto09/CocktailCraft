@@ -46,6 +46,7 @@ import com.cocktailcraft.viewmodel.FavoritesViewModel
 import com.cocktailcraft.viewmodel.HomeViewModel
 import com.cocktailcraft.viewmodel.OrderViewModel
 import com.cocktailcraft.viewmodel.ReviewViewModel
+import com.cocktailcraft.viewmodel.ThemeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,7 +54,7 @@ fun MainScreen() {
     val navController = rememberNavController()
     // Create the navigation manager
     val navigationManager = remember { NavigationManager(navController) }
-    
+
     val items = listOf(
         Screen.Home,
         Screen.Cart,
@@ -61,19 +62,20 @@ fun MainScreen() {
         Screen.OrderList,
         Screen.Profile
     )
-    
+
     // Create shared ViewModels for the entire app
     val sharedOrderViewModel: OrderViewModel = viewModel()
     val sharedCartViewModel: CartViewModel = viewModel()
     val sharedReviewViewModel: ReviewViewModel = viewModel()
     val sharedHomeViewModel: HomeViewModel = viewModel()
     val sharedFavoritesViewModel: FavoritesViewModel = viewModel()
-    
+    val sharedThemeViewModel: ThemeViewModel = viewModel()
+
     // Get the current route for conditional rendering
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val isDetailScreen = currentRoute?.startsWith("cocktail_detail") == true
-    
+
     Scaffold(
         topBar = {
             // Only show the main top bar if we're NOT on the detail screen
@@ -105,7 +107,7 @@ fun MainScreen() {
                             actionIconContentColor = Color.White
                         )
                     )
-                    
+
                     // Add a divider to create separation between top bar and content
                     Divider(
                         color = Color.White.copy(alpha = 0.2f),
@@ -123,13 +125,13 @@ fun MainScreen() {
                     tonalElevation = 8.dp
                 ) {
                     val currentDestination = navBackStackEntry?.destination
-                    
+
                     items.forEach { screen ->
                         NavigationBarItem(
-                            icon = { 
+                            icon = {
                                 Icon(screen.icon, contentDescription = screen.title)
                             },
-                            label = { 
+                            label = {
                                 Text(screen.title, fontSize = 12.sp)
                             },
                             selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
@@ -209,7 +211,8 @@ fun MainScreen() {
             }
             composable(Screen.Profile.route) {
                 ProfileScreen(
-                    navigationManager = navigationManager
+                    navigationManager = navigationManager,
+                    themeViewModel = sharedThemeViewModel
                 )
             }
             composable(Screen.Favorites.route) {
@@ -253,4 +256,4 @@ fun MainScreen() {
             }
         }
     }
-} 
+}
