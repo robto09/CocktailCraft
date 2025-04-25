@@ -79,6 +79,13 @@ class NavigationManager(private val navController: NavController) {
     }
 
     /**
+     * Navigate to the offline mode screen
+     */
+    fun navigateToOfflineMode() {
+        navController.navigate(Screen.OfflineMode.route)
+    }
+
+    /**
      * Navigate to a bottom navigation destination
      */
     fun navigateToBottomNavDestination(screen: Screen) {
@@ -87,4 +94,4 @@ class NavigationManager(private val navController: NavController) {
             launchSingleTop = true
         }
     }
-} 
+}

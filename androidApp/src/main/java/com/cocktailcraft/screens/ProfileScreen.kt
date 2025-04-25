@@ -21,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
@@ -326,6 +327,12 @@ fun ProfileScreen(
                     icon = Icons.Default.Help,
                     title = "Help & Support",
                     onClick = { /* Handle help & support */ }
+                )
+
+                SettingsItem(
+                    icon = Icons.Default.CloudOff,
+                    title = "Offline Mode",
+                    onClick = { navigationManager.navigateToOfflineMode() }
                 )
 
                 // Follow System Theme Toggle with animated switch
