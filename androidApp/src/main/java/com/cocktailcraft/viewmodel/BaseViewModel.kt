@@ -32,14 +32,14 @@ abstract class BaseViewModel : ViewModel() {
     /**
      * Set loading state
      */
-    protected fun setLoading(isLoading: Boolean) {
+    protected open fun setLoading(isLoading: Boolean) {
         _isLoading.value = isLoading
     }
 
     /**
      * Handle an exception and convert it to a user-friendly error
      */
-    protected fun handleException(
+    protected open fun handleException(
         exception: Throwable,
         defaultMessage: String = "Something went wrong. Please try again.",
         showAsEvent: Boolean = false,
@@ -69,7 +69,7 @@ abstract class BaseViewModel : ViewModel() {
     /**
      * Set a user-friendly error directly
      */
-    protected fun setError(
+    protected open fun setError(
         title: String,
         message: String,
         category: ErrorUtils.ErrorCategory = ErrorUtils.ErrorCategory.UNKNOWN,
@@ -102,7 +102,7 @@ abstract class BaseViewModel : ViewModel() {
     /**
      * Execute a suspending operation with automatic error handling
      */
-    protected fun <T> executeWithErrorHandling(
+    protected open fun <T> executeWithErrorHandling(
         operation: suspend () -> T,
         onSuccess: (T) -> Unit,
         onError: ((ErrorUtils.UserFriendlyError) -> Unit)? = null,
@@ -116,25 +116,25 @@ abstract class BaseViewModel : ViewModel() {
                 if (showLoading) {
                     setLoading(true)
                 }
-                
+
                 val result = operation()
                 onSuccess(result)
-                
+
             } catch (e: Exception) {
                 val error = ErrorUtils.getErrorFromException(
                     exception = e,
                     defaultMessage = defaultErrorMessage,
                     recoveryAction = recoveryAction
                 )
-                
+
                 if (showAsEvent) {
                     _errorEvent.emit(error)
                 } else {
                     _error.value = error
                 }
-                
+
                 onError?.invoke(error)
-                
+
             } finally {
                 if (showLoading) {
                     setLoading(false)
