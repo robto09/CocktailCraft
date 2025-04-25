@@ -55,10 +55,12 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlin.math.abs
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -387,7 +389,18 @@ fun HomeScreen(
                     isPastThreshold = past
                 }
 
+                // Detect fast scrolling to optimize rendering
+                val isFastScrolling = remember {
+                    derivedStateOf {
+                        // Consider scrolling fast if moving more than 3 items per frame
+                        listState.isScrollInProgress &&
+                        abs(listState.firstVisibleItemScrollOffset) > 20
+                    }
+                }
+
                 // Main content with optimized list rendering
+                // We're using isFastScrolling to conditionally disable animations during fast scrolling
+                // This significantly improves performance when scrolling quickly
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
@@ -428,7 +441,8 @@ fun HomeScreen(
                             onToggleFavorite = { cocktailToToggle ->
                                 favoritesViewModel.toggleFavorite(cocktailToToggle)
                             },
-                            index = index // Pass index for staggered animation
+                            index = index, // Pass index for staggered animation
+                            isFastScrolling = isFastScrolling.value // Pass fast scrolling state
                         )
                     }
 
