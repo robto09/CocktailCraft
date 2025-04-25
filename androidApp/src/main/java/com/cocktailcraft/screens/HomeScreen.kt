@@ -1,16 +1,24 @@
 package com.cocktailcraft.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -19,9 +27,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AirplanemodeActive
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -78,6 +89,8 @@ fun HomeScreen(
     val isSearchActive by viewModel.isSearchActive.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val favorites by favoritesViewModel.favorites.collectAsState()
+    val isOfflineMode by viewModel.isOfflineMode.collectAsState()
+    val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsState()
 
     // Add state for selected category
     var selectedCategory by remember { mutableStateOf<String?>(null) }
@@ -189,17 +202,21 @@ fun HomeScreen(
                         modifier = Modifier.padding(16.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Error,
+                            imageVector = if (!isNetworkAvailable || isOfflineMode) Icons.Default.WifiOff else Icons.Default.Error,
                             contentDescription = "Error",
-                            tint = Color.Red,
+                            tint = if (!isNetworkAvailable || isOfflineMode) AppColors.Primary else Color.Red,
                             modifier = Modifier.size(48.dp)
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
-                            text = "Unable to load cocktails",
-                            color = Color.Red,
+                            text = when {
+                                isOfflineMode -> "Offline Mode Active"
+                                !isNetworkAvailable -> "Network Unavailable"
+                                else -> "Unable to load cocktails"
+                            },
+                            color = if (!isNetworkAvailable || isOfflineMode) AppColors.Primary else Color.Red,
                             textAlign = TextAlign.Center,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp
@@ -209,20 +226,61 @@ fun HomeScreen(
 
                         // Show error message or a fallback
                         Text(
-                            text = error,
+                            text = when {
+                                isOfflineMode && cocktails.isEmpty() ->
+                                    "No cached cocktails available. Connect to the internet to download cocktails."
+                                !isNetworkAvailable ->
+                                    "You're currently offline. Enable Offline Mode to browse cached cocktails."
+                                else -> error
+                            },
                             color = AppColors.TextSecondary,
                             textAlign = TextAlign.Center
                         )
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        Button(
-                            onClick = { viewModel.retry() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Primary
-                            )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("Retry")
+                            Button(
+                                onClick = { viewModel.retry() },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = AppColors.Primary
+                                )
+                            ) {
+                                Text("Retry")
+                            }
+
+                            when {
+                                // If network is unavailable and offline mode is not enabled
+                                !isNetworkAvailable && !isOfflineMode -> {
+                                    Button(
+                                        onClick = {
+                                            viewModel.setOfflineMode(true)
+                                            viewModel.retry()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = AppColors.Secondary
+                                        )
+                                    ) {
+                                        Text("Enable Offline Mode")
+                                    }
+                                }
+                                // If offline mode is enabled but we want to go back online
+                                isOfflineMode && isNetworkAvailable -> {
+                                    Button(
+                                        onClick = {
+                                            viewModel.setOfflineMode(false)
+                                            viewModel.retry()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = AppColors.Secondary
+                                        )
+                                    ) {
+                                        Text("Go Online")
+                                    }
+                                }
+                            }
                         }
                     }
                 }
