@@ -18,31 +18,62 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Cross-Platform**: Same codebase for both Android and iOS platforms
 
 ## Architecture
-The application follows the **Clean Architecture** pattern with **MVVM** (Model-View-ViewModel) for presentation:
+The application follows the **Clean Architecture** pattern with **MVVM** (Model-View-ViewModel) for presentation, reactive state management, and a modular **Dependency Injection** system:
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                       Presentation                       │
-│  ┌─────────────┐       ┌─────────────┐ ┌─────────────┐  │
-│  │   Screens   │◄─────►│  ViewModels │ │ UI Elements │  │
-│  └─────────────┘       └─────────────┘ └─────────────┘  │
-└───────────────────────────┬─────────────────────────────┘
-                            │
-┌───────────────────────────▼─────────────────────────────┐
-│                        Domain                           │
-│  ┌─────────────┐       ┌─────────────┐ ┌─────────────┐  │
-│  │   Models    │       │  Use Cases  │ │Repositories │  │
-│  └─────────────┘       └─────────────┘ └─────────────┘  │
-└───────────────────────────┬─────────────────────────────┘
-                            │
-┌───────────────────────────▼─────────────────────────────┐
-│                         Data                            │
-│  ┌─────────────┐       ┌─────────────┐ ┌─────────────┐  │
-│  │ Repository  │       │ Data Source │ │   Mappers   │  │
-│  │   Impl      │◄─────►│  Remote/    │ │             │  │
-│  │             │       │   Local     │ │             │  │
-│  └─────────────┘       └─────────────┘ └─────────────┘  │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              Presentation Layer                                  │
+│                                                                                  │
+│  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐          │
+│  │   Screens   │◄─────►│    ViewModels   │◄─────►│    UI Elements    │          │
+│  │  (Compose)  │       │ (KoinViewModel) │       │ (Compose/Material)│          │
+│  └─────────────┘       └─────────────────┘       └───────────────────┘          │
+│         ▲                       ▲                         ▲                      │
+│         │                       │                         │                      │
+│         ▼                       ▼                         ▼                      │
+│  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐          │
+│  │  Navigation │       │  State Handling │       │   Theme Manager   │          │
+│  │  (Compose)  │       │  (StateFlow)    │       │   (Dark Mode)     │          │
+│  └─────────────┘       └─────────────────┘       └───────────────────┘          │
+└─────────────────────────────────┬─────────────────────────────────────────────┘
+                                  │
+┌─────────────────────────────────▼─────────────────────────────────────────────┐
+│                               Domain Layer                                     │
+│                                                                                │
+│  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐        │
+│  │   Models    │       │    Use Cases    │       │    Repositories   │        │
+│  │             │       │                 │       │    (Interfaces)   │        │
+│  └─────────────┘       └─────────────────┘       └───────────────────┘        │
+└─────────────────────────────────┬─────────────────────────────────────────────┘
+                                  │
+┌─────────────────────────────────▼─────────────────────────────────────────────┐
+│                               Data Layer                                       │
+│                                                                                │
+│  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐        │
+│  │ Repository  │       │   Data Sources  │       │      Mappers      │        │
+│  │    Impl     │◄─────►│ Remote / Local  │       │                   │        │
+│  └─────────────┘       └─────────────────┘       └───────────────────┘        │
+│         ▲                       ▲                                              │
+│         │                       │                                              │
+│         ▼                       ▼                                              │
+│  ┌─────────────┐       ┌─────────────────┐                                    │
+│  │   Offline   │       │  Error Handling │                                    │
+│  │   Support   │       │  (ErrorUtils)   │                                    │
+│  └─────────────┘       └─────────────────┘                                    │
+└─────────────────────────────────┬─────────────────────────────────────────────┘
+                                  │
+┌─────────────────────────────────▼─────────────────────────────────────────────┐
+│                         Dependency Injection                                   │
+│                                                                                │
+│  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐        │
+│  │  Network    │       │      Data       │       │      Domain       │        │
+│  │   Module    │       │     Module      │       │      Module       │        │
+│  └─────────────┘       └─────────────────┘       └───────────────────┘        │
+│                                                                                │
+│  ┌─────────────────────────────────────────────────────────────────────┐      │
+│  │                          Platform Module                             │      │
+│  └─────────────────────────────────────────────────────────────────────┘      │
+└────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Architecture Components:
@@ -50,7 +81,46 @@ The application follows the **Clean Architecture** pattern with **MVVM** (Model-
 - **Platform-Specific Apps**: Android and iOS implementations with platform-specific UI and functionality
 - **MVVM Pattern**: Separates UI (View) from business logic (ViewModel) and data management (Model)
 - **Repository Pattern**: Abstracts data sources and provides a clean API for the domain layer
+- **Use Case Pattern**: Encapsulates business logic in single-responsibility classes
 - **Dependency Injection**: Modular Koin setup for better testability and separation of concerns
+
+### Architecture Layers:
+- **Presentation Layer**:
+  - **Screens**: Compose UI components that display data and handle user interactions
+  - **ViewModels**: Manage UI state, process user actions, and communicate with the domain layer
+  - **UI Elements**: Reusable Compose components for consistent UI across the app
+  - **KoinViewModel**: Base class for all ViewModels that provides standardized Koin integration
+  - **Navigation**: Compose Navigation for handling screen transitions and deep linking
+  - **State Handling**: Kotlin StateFlow and SharedFlow for reactive UI updates
+  - **Theme Manager**: Manages light/dark mode and theme preferences with smooth transitions
+
+- **Domain Layer**:
+  - **Models**: Core business entities that represent the application's data structures
+  - **Use Cases**: Business logic operations that orchestrate data flow between UI and data layers
+  - **Repository Interfaces**: Define contracts for data access without implementation details
+  - **Business Rules**: Encapsulate application-specific business logic and validation
+
+- **Data Layer**:
+  - **Repository Implementations**: Concrete implementations of repository interfaces
+  - **Data Sources**: Remote (API) and local (cache/database) data access
+  - **Mappers**: Convert between data models and domain models
+  - **Network Utilities**: Handle API communication, caching, and offline support
+  - **Offline Support**: CocktailCache and NetworkMonitor for offline functionality
+  - **Error Handling**: Centralized error handling with ErrorUtils and recovery options
+
+- **Dependency Injection Layer**:
+  - **Network Module**: Provides HTTP client, API interfaces, and network monitoring
+  - **Data Module**: Provides repositories and caching mechanisms
+  - **Domain Module**: Provides use cases and application configuration
+  - **Platform Module**: Provides platform-specific dependencies
+  - **Test Module**: Provides mock implementations for testing
+
+### Cross-Cutting Concerns:
+- **Error Handling**: Standardized error handling through BaseViewModel with user-friendly messages
+- **Offline Mode**: Network state monitoring and data caching for offline access
+- **Reactive Programming**: Kotlin Flow for asynchronous data streams and UI updates
+- **Dependency Injection**: Modular Koin setup for better testability and separation of concerns
+- **Dark Mode**: System-integrated and user-configurable theme preferences
 
 For more detailed architecture diagrams, please see the [Architecture Documentation](docs/README.md) which includes high-level architecture, component diagrams, use case diagrams, and more.
 
