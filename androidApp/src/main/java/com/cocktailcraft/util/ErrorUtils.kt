@@ -197,4 +197,114 @@ object ErrorUtils {
             errorCode = errorCode
         )
     }
+
+    /**
+     * Create a standard network error
+     */
+    fun createNetworkError(retryAction: (() -> Unit)? = null): UserFriendlyError {
+        return UserFriendlyError(
+            title = "Network Error",
+            message = "Unable to connect to the server. Please check your internet connection and try again.",
+            category = ErrorCategory.NETWORK,
+            recoveryAction = retryAction?.let { RecoveryAction("Retry", it) },
+            errorCode = ErrorCode.NETWORK
+        )
+    }
+
+    /**
+     * Create a standard server error
+     */
+    fun createServerError(retryAction: (() -> Unit)? = null): UserFriendlyError {
+        return UserFriendlyError(
+            title = "Server Error",
+            message = "The server encountered an error. Please try again later.",
+            category = ErrorCategory.SERVER,
+            recoveryAction = retryAction?.let { RecoveryAction("Retry", it) },
+            errorCode = ErrorCode.SERVER_ERROR
+        )
+    }
+
+    /**
+     * Create an error from an exception
+     */
+    fun createErrorFromException(
+        exception: Throwable,
+        defaultTitle: String = "Error",
+        defaultMessage: String = "An unexpected error occurred.",
+        retryAction: (() -> Unit)? = null
+    ): UserFriendlyError {
+        // Check for network-related exceptions
+        if (exception is java.net.UnknownHostException ||
+            exception is java.net.ConnectException ||
+            exception.message?.contains("connect", ignoreCase = true) == true ||
+            exception.message?.contains("network", ignoreCase = true) == true) {
+            return createNetworkError(retryAction)
+        }
+
+        // Check for timeout exceptions
+        if (exception is java.net.SocketTimeoutException ||
+            exception is java.util.concurrent.TimeoutException ||
+            exception.message?.contains("timeout", ignoreCase = true) == true) {
+            return UserFriendlyError(
+                title = "Network Error",
+                message = "The request timed out. Please try again.",
+                category = ErrorCategory.NETWORK,
+                recoveryAction = retryAction?.let { RecoveryAction("Retry", it) },
+                originalException = exception,
+                errorCode = ErrorCode.TIMEOUT
+            )
+        }
+
+        // Default error with the exception message
+        return UserFriendlyError(
+            title = defaultTitle,
+            message = "$defaultMessage: ${exception.message}",
+            category = ErrorCategory.UNKNOWN,
+            recoveryAction = retryAction?.let { RecoveryAction("Retry", it) },
+            originalException = exception,
+            errorCode = ErrorCode.UNKNOWN
+        )
+    }
+
+    /**
+     * Create an error from an error code
+     */
+    fun createErrorFromErrorCode(
+        errorCode: ErrorCode,
+        defaultTitle: String = "Error",
+        defaultMessage: String = "An error occurred",
+        retryAction: (() -> Unit)? = null
+    ): UserFriendlyError {
+        return when (errorCode) {
+            ErrorCode.NETWORK -> createNetworkError(retryAction)
+            ErrorCode.TIMEOUT -> UserFriendlyError(
+                title = "Network Error",
+                message = "The request timed out. Please try again.",
+                category = ErrorCategory.NETWORK,
+                recoveryAction = retryAction?.let { RecoveryAction("Retry", it) },
+                errorCode = errorCode
+            )
+            ErrorCode.UNAUTHORIZED -> UserFriendlyError(
+                title = "Authentication Error",
+                message = "You are not authorized to perform this action. Please sign in and try again.",
+                category = ErrorCategory.AUTHENTICATION,
+                recoveryAction = retryAction?.let { RecoveryAction("Sign In", it) },
+                errorCode = errorCode
+            )
+            ErrorCode.INVALID_DATA -> UserFriendlyError(
+                title = "Data Error",
+                message = "The data provided is invalid. Please check your input and try again.",
+                category = ErrorCategory.DATA,
+                recoveryAction = retryAction?.let { RecoveryAction("Try Again", it) },
+                errorCode = errorCode
+            )
+            else -> UserFriendlyError(
+                title = defaultTitle,
+                message = defaultMessage,
+                category = ErrorCategory.UNKNOWN,
+                recoveryAction = retryAction?.let { RecoveryAction("Try Again", it) },
+                errorCode = errorCode
+            )
+        }
+    }
 }
