@@ -25,10 +25,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.SubcomposeAsyncImage
-import coil.request.ImageRequest
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.ui.theme.AppColors
+import com.cocktailcraft.ui.components.OptimizedImage
 
 @Composable
 fun CocktailItem(
@@ -61,44 +60,15 @@ fun CocktailItem(
                     .clip(RoundedCornerShape(8.dp))
                     .background(AppColors.LightGray)
             ) {
-                // Use SubcomposeAsyncImage for better error handling
-                SubcomposeAsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(cocktail.imageUrl ?: "")
-                        .crossfade(true)
-                        .placeholder(ColorDrawable(AppColors.LightGray.toArgb()))
-                        .error(ColorDrawable(AppColors.LightGray.toArgb()))
-                        .fallback(ColorDrawable(AppColors.LightGray.toArgb()))
-                        .build(),
+                // Use our optimized image component
+                OptimizedImage(
+                    url = cocktail.imageUrl,
                     contentDescription = cocktail.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    loading = {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                color = AppColors.Primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    },
-                    error = {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.LocalBar,
-                                contentDescription = "Image not available",
-                                tint = AppColors.Gray,
-                                modifier = Modifier.size(48.dp)
-                            )
-                        }
-                    }
+                    targetSize = 200 // Target size for better memory usage
                 )
-                
+
                 // Stock badge for out of stock items
                 if (cocktail.stockCount <= 0) {
                     Box(
@@ -118,9 +88,9 @@ fun CocktailItem(
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.width(12.dp))
-            
+
             // Cocktail details
             Column(
                 modifier = Modifier.weight(1f)
@@ -133,9 +103,9 @@ fun CocktailItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 // Display alcoholic info with category info
                 Text(
                     text = buildString {
@@ -150,9 +120,9 @@ fun CocktailItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 // Use safe call for ingredients that might be null or empty
                 Text(
                     text = if (cocktail.ingredients.isNotEmpty()) {
@@ -168,9 +138,9 @@ fun CocktailItem(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
@@ -182,9 +152,9 @@ fun CocktailItem(
                         fontSize = 16.sp,
                         color = AppColors.Primary
                     )
-                    
+
                     Spacer(modifier = Modifier.weight(1f))
-                    
+
                     // Favorite button with actual functionality
                     IconButton(
                         onClick = { onToggleFavorite(cocktail) },
@@ -197,7 +167,7 @@ fun CocktailItem(
                             modifier = Modifier.size(20.dp)
                         )
                     }
-                    
+
                     // Add to cart button
                     IconButton(
                         onClick = { onAddToCart(cocktail) },
@@ -215,4 +185,4 @@ fun CocktailItem(
             }
         }
     }
-} 
+}

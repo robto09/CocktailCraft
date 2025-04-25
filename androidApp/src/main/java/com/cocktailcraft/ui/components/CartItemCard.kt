@@ -24,16 +24,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.ui.theme.AppColors
+import com.cocktailcraft.ui.components.LightweightOptimizedImage
 import java.text.NumberFormat
 import java.util.Locale
 
 /**
  * A reusable card component to display items in the shopping cart.
- * 
+ *
  * @param item The cart item to display
  * @param onIncreaseQuantity Callback when the user increases the quantity
  * @param onDecreaseQuantity Callback when the user decreases the quantity
@@ -69,7 +68,7 @@ fun CartItemCard(
     onClick: (() -> Unit)? = null
 ) {
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -86,19 +85,17 @@ fun CartItemCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Product Image
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(item.cocktail.imageUrl)
-                    .crossfade(true)
-                    .build(),
+            // Product Image - using lightweight optimized image
+            LightweightOptimizedImage(
+                url = item.cocktail.imageUrl,
                 contentDescription = item.cocktail.name,
                 modifier = Modifier
                     .size(imageSize)
                     .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                targetSize = 150 // Target size for better memory usage
             )
-            
+
             // Product Details and Controls
             Column(
                 modifier = Modifier
@@ -120,7 +117,7 @@ fun CartItemCard(
                         maxLines = maxLines,
                         overflow = TextOverflow.Ellipsis
                     )
-                    
+
                     // Favorites button (optional)
                     if (showFavoriteButton) {
                         IconButton(
@@ -136,9 +133,9 @@ fun CartItemCard(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 // Unit Price
                 Text(
                     text = currencyFormatter.format(item.cocktail.price),
@@ -146,7 +143,7 @@ fun CartItemCard(
                     color = AppColors.Primary,
                     fontSize = 14.sp
                 )
-                
+
                 // Optional alcoholic status
                 item.cocktail.alcoholic?.let { alcoholicStatus ->
                     Spacer(modifier = Modifier.height(4.dp))
@@ -156,9 +153,9 @@ fun CartItemCard(
                         color = AppColors.TextSecondary
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(12.dp))
-                
+
                 // Price & Quantity Controls Row
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -183,14 +180,14 @@ fun CartItemCard(
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
-                            
+
                             Text(
                                 text = item.quantity.toString(),
                                 modifier = Modifier.padding(horizontal = 16.dp),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp
                             )
-                            
+
                             IconButton(
                                 onClick = onIncreaseQuantity,
                                 modifier = Modifier
@@ -213,7 +210,7 @@ fun CartItemCard(
                             color = AppColors.TextSecondary
                         )
                     }
-                    
+
                     // Total Price and Remove
                     Row(
                         verticalAlignment = Alignment.CenterVertically
@@ -224,7 +221,7 @@ fun CartItemCard(
                             fontSize = 16.sp,
                             color = AppColors.TextPrimary
                         )
-                        
+
                         // Delete button (optional)
                         if (showDeleteButton) {
                             IconButton(
@@ -246,4 +243,4 @@ fun CartItemCard(
             }
         }
     }
-} 
+}
