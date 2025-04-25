@@ -19,60 +19,68 @@ import org.koin.core.component.inject
 class HomeViewModel(
     private val cocktailRepository: CocktailRepository? = null
 ) : ViewModel(), KoinComponent {
-    
+
     // Use injected repository if not provided in constructor (for production)
     private val injectedCocktailRepository: CocktailRepository by inject()
-    
+
     // Use the provided repository or the injected one
     private val repository: CocktailRepository
         get() = cocktailRepository ?: injectedCocktailRepository
-    
+
     private val _cocktails = MutableStateFlow<List<Cocktail>>(emptyList())
     val cocktails: StateFlow<List<Cocktail>> = _cocktails.asStateFlow()
-    
+
     private val _favorites = MutableStateFlow<List<Cocktail>>(emptyList())
     val favorites: StateFlow<List<Cocktail>> = _favorites.asStateFlow()
-    
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    
+
     private val _error = MutableStateFlow<String>("")
     val error: StateFlow<String> = _error.asStateFlow()
-    
+
+    // Pagination state
+    private val _currentPage = MutableStateFlow(1)
+    private val _hasMoreData = MutableStateFlow(true)
+    val hasMoreData: StateFlow<Boolean> = _hasMoreData.asStateFlow()
+    private val _isLoadingMore = MutableStateFlow(false)
+    val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
+    private val PAGE_SIZE = 10
+
     // Search query state
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-    
+
     // Search active state
     private val _isSearchActive = MutableStateFlow(false)
     val isSearchActive: StateFlow<Boolean> = _isSearchActive.asStateFlow()
-    
+
     // Add a shared flow for connectivity status changes
     private val _connectivityStatus = MutableSharedFlow<Boolean>(replay = 1)
-    
+
     // Keep track of search job for debouncing
     private var searchJob: Job? = null
-    
+
     // Network error message with retry button
     private val networkErrorMessage = "Unable to connect to the cocktail database. Please check your internet connection and try again."
-    
+
     init {
         loadCocktails()
         loadFavorites()
         monitorConnectivity()
     }
-    
+
     private fun monitorConnectivity() {
         viewModelScope.launch {
             _connectivityStatus.emit(checkConnectivity())
-            
+
             // Periodically check connectivity when there's an error
             while (true) {
                 delay(30000) // Check every 30 seconds
                 if (_error.value.isNotBlank()) {
                     val isConnected = checkConnectivity()
                     _connectivityStatus.emit(isConnected)
-                    
+
                     // If connection restored and we had an error, reload data
                     if (isConnected && _error.value == networkErrorMessage) {
                         _error.value = ""
@@ -82,7 +90,7 @@ class HomeViewModel(
             }
         }
     }
-    
+
     private suspend fun checkConnectivity(): Boolean {
         return try {
             repository.checkApiConnectivity().first()
@@ -90,12 +98,14 @@ class HomeViewModel(
             false
         }
     }
-    
+
     fun loadCocktails() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = ""
-            
+            _currentPage.value = 1 // Reset to first page
+            _hasMoreData.value = true // Reset pagination state
+
             try {
                 // First check API connectivity
                 if (!checkConnectivity()) {
@@ -103,13 +113,16 @@ class HomeViewModel(
                     _isLoading.value = false
                     return@launch
                 }
-                
+
                 repository.getCocktailsSortedByNewest()
-                    .catch { e -> 
+                    .catch { e ->
                         handleError("Failed to load cocktails", e)
                     }
                     .collect { cocktailList ->
-                        _cocktails.value = cocktailList
+                        // Apply pagination
+                        val paginatedList = cocktailList.take(PAGE_SIZE)
+                        _cocktails.value = paginatedList
+                        _hasMoreData.value = paginatedList.size < cocktailList.size
                         _isLoading.value = false
                     }
             } catch (e: Exception) {
@@ -117,7 +130,55 @@ class HomeViewModel(
             }
         }
     }
-    
+
+    /**
+     * Load more cocktails for pagination
+     */
+    fun loadMoreCocktails() {
+        // Don't load more if already loading or no more data
+        if (_isLoadingMore.value || !_hasMoreData.value) return
+
+        viewModelScope.launch {
+            _isLoadingMore.value = true
+
+            try {
+                // Increment page
+                val nextPage = _currentPage.value + 1
+
+                repository.getCocktailsSortedByNewest()
+                    .catch { e ->
+                        handleError("Failed to load more cocktails", e)
+                        _isLoadingMore.value = false
+                    }
+                    .collect { allCocktails ->
+                        // Calculate the range for the next page
+                        val startIndex = _currentPage.value * PAGE_SIZE
+                        val endIndex = startIndex + PAGE_SIZE
+
+                        // Get items for the next page
+                        val newItems = allCocktails.drop(startIndex).take(PAGE_SIZE)
+
+                        if (newItems.isNotEmpty()) {
+                            // Append new items to existing list
+                            _cocktails.value = _cocktails.value + newItems
+                            _currentPage.value = nextPage
+
+                            // Check if we have more data
+                            _hasMoreData.value = endIndex < allCocktails.size
+                        } else {
+                            // No more items to load
+                            _hasMoreData.value = false
+                        }
+
+                        _isLoadingMore.value = false
+                    }
+            } catch (e: Exception) {
+                handleError("Failed to load more cocktails", e)
+                _isLoadingMore.value = false
+            }
+        }
+    }
+
     private fun loadFavorites() {
         viewModelScope.launch {
             try {
@@ -134,31 +195,31 @@ class HomeViewModel(
             }
         }
     }
-    
+
     // Updated function with debouncing
     fun searchCocktails(query: String) {
         _searchQuery.value = query
-        
+
         // Automatically activate search mode when query is not empty
         if (query.isNotEmpty() && !_isSearchActive.value) {
             _isSearchActive.value = true
         }
-        
+
         // Cancel previous search job if it exists
         searchJob?.cancel()
-        
+
         if (query.isBlank()) {
             _isSearchActive.value = false
             loadCocktails() // Reset to all cocktails if query is empty
             return
         }
-        
+
         // Create a new search job with debounce
         searchJob = viewModelScope.launch {
             delay(300) // Debounce for 300ms
             _isLoading.value = true
             _error.value = ""
-            
+
             try {
                 // Check connectivity first
                 if (!checkConnectivity()) {
@@ -166,7 +227,7 @@ class HomeViewModel(
                     _isLoading.value = false
                     return@launch
                 }
-                
+
                 repository.searchCocktailsByName(query)
                     .catch { e ->
                         handleError("Failed to search cocktails", e)
@@ -180,24 +241,24 @@ class HomeViewModel(
             }
         }
     }
-    
+
     // Helper function to handle errors consistently
     private fun handleError(baseMessage: String, e: Throwable) {
         println("$baseMessage: ${e.message}")
-        
+
         val userMessage = when {
-            e.message?.contains("timeout") == true -> 
+            e.message?.contains("timeout") == true ->
                 "$baseMessage: The request timed out. Please try again."
-            e.message?.contains("connection") == true || 
-            e.message?.contains("network") == true -> 
+            e.message?.contains("connection") == true ||
+            e.message?.contains("network") == true ->
                 networkErrorMessage
             else -> "$baseMessage: ${e.message}"
         }
-        
+
         _error.value = userMessage
         _isLoading.value = false
     }
-    
+
     // Toggle search mode
     fun toggleSearchMode(active: Boolean) {
         _isSearchActive.value = active
@@ -206,13 +267,13 @@ class HomeViewModel(
             loadCocktails() // Reset to all cocktails when search is deactivated
         }
     }
-    
+
     // Load cocktails filtered by category - add this new method
     fun loadCocktailsByCategory(category: String?) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = ""
-            
+
             try {
                 // Check connectivity first
                 if (!checkConnectivity()) {
@@ -220,12 +281,12 @@ class HomeViewModel(
                     _isLoading.value = false
                     return@launch
                 }
-                
+
                 if (category == null) {
                     loadCocktails() // Load all if category is null
                     return@launch
                 }
-                
+
                 repository.filterByCategory(category)
                     .catch { e ->
                         handleError("Failed to filter cocktails", e)
@@ -239,7 +300,7 @@ class HomeViewModel(
             }
         }
     }
-    
+
     fun addToFavorites(cocktail: Cocktail) {
         viewModelScope.launch {
             try {
@@ -251,7 +312,7 @@ class HomeViewModel(
             }
         }
     }
-    
+
     // Add retry functionality to reload data based on current state
     fun retry() {
         if (_isSearchActive.value && _searchQuery.value.isNotEmpty()) {
@@ -266,7 +327,7 @@ class HomeViewModel(
             loadCocktails()
         }
     }
-    
+
     fun removeFromFavorites(cocktail: Cocktail) {
         viewModelScope.launch {
             try {
@@ -278,11 +339,11 @@ class HomeViewModel(
             }
         }
     }
-    
+
     fun isFavorite(cocktailId: String): Boolean {
         return favorites.value.any { it.id == cocktailId }
     }
-    
+
     fun toggleFavorite(cocktail: Cocktail) {
         if (isFavorite(cocktail.id)) {
             removeFromFavorites(cocktail)
@@ -290,11 +351,11 @@ class HomeViewModel(
             addToFavorites(cocktail)
         }
     }
-    
+
     fun sortByPrice(ascending: Boolean) {
         viewModelScope.launch {
             _isLoading.value = true
-            
+
             try {
                 val sortedList = if (ascending) {
                     _cocktails.value.sortedBy { it.price }
@@ -309,11 +370,11 @@ class HomeViewModel(
             }
         }
     }
-    
+
     fun sortByRating() {
         viewModelScope.launch {
             _isLoading.value = true
-            
+
             try {
                 val sortedList = _cocktails.value.sortedByDescending { it.rating }
                 _cocktails.value = sortedList
@@ -324,11 +385,11 @@ class HomeViewModel(
             }
         }
     }
-    
+
     fun sortByPopularity() {
         viewModelScope.launch {
             _isLoading.value = true
-            
+
             try {
                 val sortedList = _cocktails.value.sortedByDescending { it.popularity }
                 _cocktails.value = sortedList
@@ -339,7 +400,7 @@ class HomeViewModel(
             }
         }
     }
-    
+
     fun getCategories(): List<String> {
         return _cocktails.value
             .mapNotNull { it.category }
@@ -347,18 +408,18 @@ class HomeViewModel(
             .filterNot { it.isBlank() }
             .sorted()
     }
-    
+
     fun clearError() {
         _error.value = ""
     }
-    
+
     // Add method to get cocktail by ID
     fun getCocktailById(id: String): kotlinx.coroutines.flow.Flow<Cocktail?> {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = ""
         }
-        
+
         return kotlinx.coroutines.flow.flow {
             try {
                 repository.getCocktailById(id).collect { cocktail ->
@@ -371,17 +432,17 @@ class HomeViewModel(
             }
         }
     }
-    
+
     // Add method to force refresh cocktail details
     fun forceRefreshCocktailDetails(id: String) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = ""
-            
+
             try {
                 // Clear any cached data for this cocktail
                 _cocktails.value = _cocktails.value.filter { it.id != id }
-                
+
                 // Force a new API call
                 repository.getCocktailById(id).collect { cocktail ->
                     if (cocktail != null) {
