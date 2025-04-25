@@ -13,6 +13,9 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+
+        // Use our custom test runner for instrumented tests
+        testInstrumentationRunner = "com.cocktailcraft.CocktailCraftTestRunner"
     }
 
     buildFeatures {
@@ -30,6 +33,15 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+    }
+}
+
+// Add a configuration for dependency resolution
+configurations.all {
+    resolutionStrategy {
+        // Force a specific version of Espresso to avoid conflicts
+        force("androidx.test.espresso:espresso-core:3.5.0")
+        force("androidx.test.espresso:espresso-idling-resource:3.5.0")
     }
 }
 
@@ -87,9 +99,10 @@ dependencies {
 
     // Instrumented test dependencies
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation(composeBom)
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    // Use the version of Espresso that's compatible with Compose UI test
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.0")
     androidTestImplementation("org.mockito:mockito-android:5.3.1")
     androidTestImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
