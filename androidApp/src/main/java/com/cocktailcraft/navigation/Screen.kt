@@ -17,4 +17,6 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object CocktailDetail : Screen("cocktail_detail/{cocktailId}", "Cocktail Detail", Icons.Filled.Home) {
         fun createRoute(cocktailId: String) = "cocktail_detail/$cocktailId"
     }
-} 
+
+    object OfflineMode : Screen("offline_mode", "Offline Mode", Icons.Filled.CloudOff)
+}

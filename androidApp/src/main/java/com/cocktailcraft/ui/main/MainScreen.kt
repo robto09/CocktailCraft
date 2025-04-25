@@ -38,15 +38,19 @@ import com.cocktailcraft.screens.CartScreen
 import com.cocktailcraft.screens.CocktailDetailScreen
 import com.cocktailcraft.screens.FavoritesScreen
 import com.cocktailcraft.screens.HomeScreen
+import com.cocktailcraft.screens.OfflineModeScreen
 import com.cocktailcraft.screens.OrderListScreen
 import com.cocktailcraft.screens.ProfileScreen
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.CartViewModel
 import com.cocktailcraft.viewmodel.FavoritesViewModel
 import com.cocktailcraft.viewmodel.HomeViewModel
+import com.cocktailcraft.viewmodel.OfflineModeViewModel
 import com.cocktailcraft.viewmodel.OrderViewModel
 import com.cocktailcraft.viewmodel.ReviewViewModel
 import com.cocktailcraft.viewmodel.ThemeViewModel
+import com.cocktailcraft.ui.components.OfflineModeIndicator
+import androidx.compose.runtime.collectAsState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,17 +74,32 @@ fun MainScreen() {
     val sharedHomeViewModel: HomeViewModel = viewModel()
     val sharedFavoritesViewModel: FavoritesViewModel = viewModel()
     val sharedThemeViewModel: ThemeViewModel = viewModel()
+    val sharedOfflineModeViewModel: OfflineModeViewModel = viewModel()
 
     // Get the current route for conditional rendering
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val isDetailScreen = currentRoute?.startsWith("cocktail_detail") == true
 
+    // Get offline mode state
+    val isOfflineModeEnabled by sharedOfflineModeViewModel.isOfflineModeEnabled.collectAsState()
+    val isNetworkAvailable by sharedOfflineModeViewModel.isNetworkAvailable.collectAsState()
+
     Scaffold(
         topBar = {
             // Only show the main top bar if we're NOT on the detail screen
             if (!isDetailScreen) {
                 Column {
+                    // Show offline mode indicator if offline
+                    OfflineModeIndicator(
+                        isOffline = !isNetworkAvailable || isOfflineModeEnabled,
+                        isOfflineModeEnabled = isOfflineModeEnabled,
+                        onClick = {
+                            // Navigate to offline mode settings
+                            navigationManager.navigateToOfflineMode()
+                        }
+                    )
+
                     TopAppBar(
                         title = {
                             // Normal title without search functionality
@@ -235,6 +254,16 @@ fun MainScreen() {
                     navigationManager = navigationManager
                 )
             }
+            composable(Screen.OfflineMode.route) {
+                OfflineModeScreen(
+                    viewModel = sharedOfflineModeViewModel,
+                    onBackClick = { navigationManager.navigateBack() },
+                    onCocktailClick = { cocktail ->
+                        navigationManager.navigateToCocktailDetail(cocktail)
+                    }
+                )
+            }
+
             composable(
                 route = Screen.CocktailDetail.route,
                 arguments = listOf(navArgument("cocktailId") { type = NavType.StringType })
