@@ -78,6 +78,7 @@ import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.ui.components.AnimatedCocktailItem
 import com.cocktailcraft.ui.components.CocktailItem
 import com.cocktailcraft.ui.components.CocktailItemShimmer
+import com.cocktailcraft.ui.components.EmptySearchResultsMessage
 import com.cocktailcraft.ui.components.shimmerEffect
 import com.cocktailcraft.ui.components.ErrorBanner
 import com.cocktailcraft.ui.components.ErrorDialog
@@ -143,6 +144,11 @@ fun HomeScreen(
 
     // Add state for selected category
     var selectedCategory by remember { mutableStateOf<String?>(null) }
+
+    // Function to handle category selection
+    val onCategorySelected: (String?) -> Unit = { category ->
+        selectedCategory = category
+    }
 
     // Add pull-to-refresh state
     val pullRefreshState = rememberPullRefreshState(
@@ -221,7 +227,7 @@ fun HomeScreen(
                     FilterChip(
                         selected = selectedCategory == category || (category == "All" && selectedCategory == null),
                         onClick = {
-                            selectedCategory = if (category == "All") null else category
+                            onCategorySelected(if (category == "All") null else category)
                         },
                         label = category
                     )
@@ -356,22 +362,17 @@ fun HomeScreen(
                     }
                 }
             } else if (cocktails.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (isSearchActive)
-                            "No cocktails found matching \"$searchQuery\""
-                        else if (selectedCategory != null)
-                            "No cocktails found in category \"$selectedCategory\""
-                        else
-                            "No cocktails found",
-                        color = AppColors.TextPrimary,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
+                // Enhanced empty state message with animations
+                EmptySearchResultsMessage(
+                    searchQuery = searchQuery,
+                    selectedCategory = selectedCategory,
+                    onClearSearch = {
+                        viewModel.toggleSearchMode(false)
+                    },
+                    onClearCategory = {
+                        onCategorySelected(null)
+                    }
+                )
             } else {
                 // Remember scroll state for optimizations
                 val listState = rememberLazyListState()
