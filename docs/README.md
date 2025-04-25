@@ -22,6 +22,10 @@ These diagrams provide a comprehensive view of our application architecture, mak
 
 CocktailCraft follows Clean Architecture principles with a MVVM pattern for the UI layer:
 
+## Additional Documentation
+
+- **[Animations and Transitions](animations.md)**: Documentation of the app's animation system and implementation details
+
 ### Key Architectural Layers
 
 1. **UI Layer**:

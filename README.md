@@ -15,6 +15,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Dark Mode Support**: Adaptive UI that supports both light and dark themes with smooth transitions
 - **Offline Mode**: Browse recently viewed cocktails and favorites without internet connection
 - **Robust Error Handling**: User-friendly error messages with recovery options
+- **Polished Animations**: Enhanced user experience with smooth animations and micro-interactions
 - **Cross-Platform**: Same codebase for both Android and iOS platforms
 
 ## Architecture
@@ -124,6 +125,17 @@ The application follows the **Clean Architecture** pattern with **MVVM** (Model-
 
 For more detailed architecture diagrams, please see the [Architecture Documentation](docs/README.md) which includes high-level architecture, component diagrams, use case diagrams, and more.
 
+### Animations and Transitions
+The app features a comprehensive set of animations and transitions to enhance the user experience:
+- **Micro-interactions**: Button animations, hover effects, and feedback animations
+- **List Animations**: Staggered entry animations and smooth item transitions
+- **Loading States**: Shimmer loading effects for a polished loading experience
+- **Screen Transitions**: Coordinated animations for navigation between screens
+- **Theme Transitions**: Smooth animations when switching between light and dark modes
+
+For detailed information about the animations implementation, see:
+- [Animations Documentation](docs/animations.md) - Overview, implementation details, and best practices
+
 ### Dependency Injection
 The app uses Koin for dependency injection with a modular approach:
 - **Modular Structure**: Separate modules for network, data, and domain layers
@@ -150,6 +162,8 @@ For detailed information about the dependency injection implementation, see:
 - **Accompanist**: Compose UI utilities
 - **Navigation Compose**: For handling navigation between screens
 - **Coil & Kamel**: For image loading and caching
+- **Animation Utilities**: Custom animation components and utilities for enhanced UX
+- **Shimmer Effects**: Loading state animations with shimmer effects
 
 ### Testing
 - **JUnit**: For unit testing
