@@ -63,21 +63,14 @@ fun AnimatedCocktailItem(
     isFavorite: Boolean = false,
     onToggleFavorite: (Cocktail) -> Unit = {},
     index: Int = 0,
-    modifier: Modifier = Modifier,
-    isFastScrolling: Boolean = false
+    modifier: Modifier = Modifier
 ) {
     // Animation states
-    val visibleState = remember { MutableTransitionState(false) }
     var isHovered by remember { mutableStateOf(false) }
 
-    // Set visible to trigger the animation
-    LaunchedEffect(Unit) {
-        visibleState.targetState = true
-    }
-
-    // Scale animation for hover effect - only when not fast scrolling
+    // Scale animation for hover effect
     val scale by animateFloatAsState(
-        targetValue = if (isHovered && !isFastScrolling) 1.03f else 1f,
+        targetValue = if (isHovered) 1.03f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -85,76 +78,30 @@ fun AnimatedCocktailItem(
         label = "hover_scale"
     )
 
-    // If fast scrolling, render without complex animations
-    if (isFastScrolling) {
-        Card(
-            modifier = modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = AppColors.Surface
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .clickable(
+                onClick = onClick,
+                onClickLabel = "View ${cocktail.name} details"
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            // Render the cocktail item content without animations
-            CocktailItemContent(
-                cocktail = cocktail,
-                isFavorite = isFavorite,
-                onAddToCart = onAddToCart,
-                onToggleFavorite = onToggleFavorite
-            )
-        }
-    } else {
-        // Staggered entry animation when not fast scrolling
-        AnimatedVisibility(
-            visibleState = visibleState,
-            enter = fadeIn(
-                animationSpec = tween(
-                    durationMillis = AnimationUtils.ANIMATION_DURATION_MEDIUM,
-                    delayMillis = AnimationUtils.calculateStaggeredDelay(index)
-                )
-            ) + slideInVertically(
-                animationSpec = tween(
-                    durationMillis = AnimationUtils.ANIMATION_DURATION_MEDIUM,
-                    delayMillis = AnimationUtils.calculateStaggeredDelay(index)
-                ),
-                initialOffsetY = { it / 2 }
-            ) + scaleIn(
-                animationSpec = tween(
-                    durationMillis = AnimationUtils.ANIMATION_DURATION_MEDIUM,
-                    delayMillis = AnimationUtils.calculateStaggeredDelay(index)
-                ),
-                initialScale = 0.9f
-            ),
-            exit = fadeOut()
-        ) {
-            Card(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .scale(scale)
-                    .clickable(
-                        onClick = onClick,
-                        onClickLabel = "View ${cocktail.name} details"
-                    ),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = AppColors.Surface
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 2.dp,
-                    pressedElevation = 4.dp,
-                    hoveredElevation = 3.dp
-                )
-            ) {
-                CocktailItemContent(
-                    cocktail = cocktail,
-                    isFavorite = isFavorite,
-                    onAddToCart = onAddToCart,
-                    onToggleFavorite = onToggleFavorite
-                )
-            }
-        }
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = AppColors.Surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 4.dp,
+            hoveredElevation = 3.dp
+        )
+    ) {
+        CocktailItemContent(
+            cocktail = cocktail,
+            isFavorite = isFavorite,
+            onAddToCart = onAddToCart,
+            onToggleFavorite = onToggleFavorite
+        )
     }
 }
 

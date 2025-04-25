@@ -61,6 +61,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlin.math.abs
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -389,12 +390,34 @@ fun HomeScreen(
                     isPastThreshold = past
                 }
 
-                // Detect fast scrolling to optimize rendering
-                val isFastScrolling = remember {
-                    derivedStateOf {
-                        // Consider scrolling fast if moving more than 3 items per frame
-                        listState.isScrollInProgress &&
-                        abs(listState.firstVisibleItemScrollOffset) > 20
+                // Track which items have been loaded for batched animation
+                val visibleItemsCount = remember { mutableStateOf(0) }
+
+                // Update visible items based on scroll position
+                LaunchedEffect(listState.firstVisibleItemIndex) {
+                    // Calculate how many items should be visible based on current scroll position
+                    // We add a buffer of 9 items (3 batches of 3) to ensure smooth scrolling
+                    val targetVisible = minOf(
+                        cocktails.size,
+                        listState.firstVisibleItemIndex + 12 // Current visible + 3 batches ahead
+                    )
+
+                    // If we need to show more items, increase the count in batches of 3
+                    if (targetVisible > visibleItemsCount.value) {
+                        // Animate in batches of 3 items
+                        val batchSize = 3
+                        val currentBatch = visibleItemsCount.value / batchSize
+                        val targetBatch = targetVisible / batchSize
+
+                        // For each batch we need to show
+                        for (batch in currentBatch until targetBatch) {
+                            val newCount = minOf((batch + 1) * batchSize, cocktails.size)
+                            visibleItemsCount.value = newCount
+                            delay(100) // Small delay between batches for staggered effect
+                        }
+
+                        // Make sure we show any remaining items
+                        visibleItemsCount.value = targetVisible
                     }
                 }
 
@@ -429,21 +452,60 @@ fun HomeScreen(
                         items = cocktails,
                         key = { index, cocktail -> "cocktail_${index}_${cocktail.id}" }
                     ) { index, cocktail ->
-                        AnimatedCocktailItem(
-                            cocktail = cocktail,
-                            onClick = {
-                                onCocktailClick(cocktail)
-                            },
-                            onAddToCart = {
-                                onAddToCart(it)
-                            },
-                            isFavorite = favorites.any { it.id == cocktail.id },
-                            onToggleFavorite = { cocktailToToggle ->
-                                favoritesViewModel.toggleFavorite(cocktailToToggle)
-                            },
-                            index = index, // Pass index for staggered animation
-                            isFastScrolling = isFastScrolling.value // Pass fast scrolling state
-                        )
+                        // Only show items that have been loaded in our batched approach
+                        val isVisible = index < visibleItemsCount.value
+
+                        // Calculate the animation index based on the batch
+                        // This ensures items within a batch animate together
+                        val batchSize = 3
+                        val batchIndex = index % batchSize
+
+                        // If the item should be visible, show it with animation
+                        if (isVisible) {
+                            // Calculate animation parameters based on batch
+                            val delayMillis = batchIndex * 100
+                            val animationDuration = 300
+
+                            // Animate alpha and offset for entry
+                            val animatedAlpha by animateFloatAsState(
+                                targetValue = 1f,
+                                animationSpec = tween(
+                                    durationMillis = animationDuration,
+                                    delayMillis = delayMillis
+                                ),
+                                label = "item_alpha_$index"
+                            )
+
+                            val animatedOffset by animateFloatAsState(
+                                targetValue = 0f,
+                                animationSpec = tween(
+                                    durationMillis = animationDuration,
+                                    delayMillis = delayMillis
+                                ),
+                                label = "item_offset_$index"
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .alpha(animatedAlpha)
+                                    .offset(y = animatedOffset.dp)
+                            ) {
+                                AnimatedCocktailItem(
+                                    cocktail = cocktail,
+                                    onClick = {
+                                        onCocktailClick(cocktail)
+                                    },
+                                    onAddToCart = {
+                                        onAddToCart(it)
+                                    },
+                                    isFavorite = favorites.any { it.id == cocktail.id },
+                                    onToggleFavorite = { cocktailToToggle ->
+                                        favoritesViewModel.toggleFavorite(cocktailToToggle)
+                                    },
+                                    index = batchIndex // Use batch index for staggered animation within batch
+                                )
+                            }
+                        }
                     }
 
                     // Show loading indicator at the bottom when loading more items
