@@ -7,7 +7,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -33,7 +33,7 @@ fun OrderListScreen(
     val orders by orderViewModel.orders.collectAsState()
     val isLoading by orderViewModel.isLoading.collectAsState()
     val error by orderViewModel.error.collectAsState()
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -69,32 +69,32 @@ fun OrderListScreen(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.List,
+                        imageVector = Icons.Filled.List,
                         contentDescription = null,
                         tint = AppColors.Gray,
                         modifier = Modifier.size(64.dp)
                     )
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     Text(
                         text = "No orders yet",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
                     )
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     Text(
                         text = "Your order history will appear here",
                         fontSize = 14.sp,
                         color = AppColors.TextSecondary,
                         textAlign = TextAlign.Center
                     )
-                    
+
                     Spacer(modifier = Modifier.height(24.dp))
-                    
+
                     Button(
                         onClick = { navigationManager.navigateToHome() },
                         colors = ButtonDefaults.buttonColors(
@@ -124,7 +124,7 @@ fun OrderListScreen(
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                 }
-                
+
                 itemsIndexed(orders) { _, order ->
                     OrderItem(order = order)
                 }
@@ -159,16 +159,16 @@ fun OrderItem(order: Order) {
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary
                 )
-                
+
                 Text(
                     text = order.date,
                     fontSize = 14.sp,
                     color = AppColors.TextSecondary
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             // Order items
             Column {
                 order.items.forEach { item ->
@@ -183,7 +183,7 @@ fun OrderItem(order: Order) {
                             fontSize = 14.sp,
                             color = AppColors.TextPrimary
                         )
-                        
+
                         Text(
                             text = "$${String.format("%.2f", item.price * item.quantity)}",
                             fontSize = 14.sp,
@@ -193,12 +193,12 @@ fun OrderItem(order: Order) {
                     }
                 }
             }
-            
+
             Divider(
                 modifier = Modifier.padding(vertical = 12.dp),
                 color = AppColors.LightGray
             )
-            
+
             // Total row
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -211,7 +211,7 @@ fun OrderItem(order: Order) {
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary
                 )
-                
+
                 Text(
                     text = "$${String.format("%.2f", order.total)}",
                     fontSize = 16.sp,
@@ -219,9 +219,9 @@ fun OrderItem(order: Order) {
                     color = AppColors.Primary
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             // Order status
             Row(
                 verticalAlignment = Alignment.CenterVertically
@@ -238,9 +238,9 @@ fun OrderItem(order: Order) {
                             CircleShape
                         )
                 )
-                
+
                 Spacer(modifier = Modifier.width(8.dp))
-                
+
                 Text(
                     text = order.status,
                     fontSize = 14.sp,
@@ -253,4 +253,4 @@ fun OrderItem(order: Order) {
             }
         }
     }
-} 
+}
