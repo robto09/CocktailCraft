@@ -6,9 +6,12 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -90,15 +93,18 @@ fun MainScreen() {
             // Only show the main top bar if we're NOT on the detail screen
             if (!isDetailScreen) {
                 Column {
-                    // Show offline mode indicator if offline
-                    OfflineModeIndicator(
-                        isOffline = !isNetworkAvailable || isOfflineModeEnabled,
-                        isOfflineModeEnabled = isOfflineModeEnabled,
-                        onClick = {
-                            // Navigate to offline mode settings
-                            navigationManager.navigateToOfflineMode()
-                        }
-                    )
+                    // Show offline mode indicator if offline and not already on the offline mode screen
+                    val currentRoute = navController.currentDestination?.route
+                    if (currentRoute != Screen.OfflineMode.route) {
+                        OfflineModeIndicator(
+                            isOffline = !isNetworkAvailable || isOfflineModeEnabled,
+                            isOfflineModeEnabled = isOfflineModeEnabled,
+                            onClick = {
+                                // Navigate to offline mode settings
+                                navigationManager.navigateToOfflineMode()
+                            }
+                        )
+                    }
 
                     TopAppBar(
                         title = {
@@ -110,12 +116,25 @@ fun MainScreen() {
                                     Screen.Favorites.route -> "Favorites"
                                     Screen.OrderList.route -> "Recipes"
                                     Screen.Profile.route -> "Profile"
+                                    Screen.OfflineMode.route -> "Offline Mode"
                                     else -> "Cocktail Bar"
                                 },
                                 color = Color.White,
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold
                             )
+                        },
+                        navigationIcon = {
+                            // Show back button only for the OfflineMode screen
+                            if (currentRoute == Screen.OfflineMode.route) {
+                                IconButton(onClick = { navigationManager.navigateBack() }) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Back",
+                                        tint = Color.White
+                                    )
+                                }
+                            }
                         },
                         actions = {
                             // Removed search button/functionality
@@ -136,8 +155,9 @@ fun MainScreen() {
             }
         },
         bottomBar = {
-            // Only show the bottom navigation bar if we're NOT on the detail screen
-            if (!isDetailScreen) {
+            // Only show the bottom navigation bar if we're NOT on the detail screen or offline mode screen
+            val currentRoute = navController.currentDestination?.route
+            if (!isDetailScreen && currentRoute != Screen.OfflineMode.route) {
                 NavigationBar(
                     containerColor = AppColors.Surface,
                     contentColor = AppColors.Primary,
