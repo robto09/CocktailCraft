@@ -219,6 +219,7 @@ class AuthRepositoryImpl(
             // Convert UserPreferences to Map<String, String>
             val preferencesMap = mapOf(
                 "darkMode" to preferences.darkMode.toString(),
+                "followSystemTheme" to preferences.followSystemTheme.toString(),
                 "notificationsEnabled" to preferences.notificationsEnabled.toString(),
                 "language" to preferences.language
             )
@@ -238,11 +239,13 @@ class AuthRepositoryImpl(
             // Convert Map<String, String> to UserPreferences
             val prefs = currentUser.preferences
             val darkMode = prefs["darkMode"]?.toBoolean() ?: false
+            val followSystemTheme = prefs["followSystemTheme"]?.toBoolean() ?: true
             val notificationsEnabled = prefs["notificationsEnabled"]?.toBoolean() ?: true
             val language = prefs["language"] ?: "en"
-            
+
             emit(UserPreferences(
                 darkMode = darkMode,
+                followSystemTheme = followSystemTheme,
                 notificationsEnabled = notificationsEnabled,
                 language = language
             ))
@@ -294,4 +297,4 @@ class AuthRepositoryImpl(
         private const val USERS_KEY = "users"
         private const val CURRENT_USER_ID_KEY = "current_user_id"
     }
-} 
+}
