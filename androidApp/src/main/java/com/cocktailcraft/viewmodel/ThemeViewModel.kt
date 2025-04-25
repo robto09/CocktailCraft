@@ -1,9 +1,5 @@
 package com.cocktailcraft.viewmodel
 
-import android.os.Build
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.runtime.Composable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.UserPreferences
