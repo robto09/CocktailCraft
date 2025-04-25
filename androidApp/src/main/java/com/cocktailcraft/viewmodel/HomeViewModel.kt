@@ -1,9 +1,9 @@
 package com.cocktailcraft.viewmodel
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.util.ErrorUtils
 import com.cocktailcraft.util.NetworkMonitor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -20,7 +20,7 @@ import org.koin.core.component.inject
 
 class HomeViewModel(
     private val cocktailRepository: CocktailRepository? = null
-) : ViewModel(), KoinComponent {
+) : BaseViewModel(), KoinComponent {
 
     // Use injected repository if not provided in constructor (for production)
     private val injectedCocktailRepository: CocktailRepository by inject()
@@ -44,11 +44,9 @@ class HomeViewModel(
     private val _favorites = MutableStateFlow<List<Cocktail>>(emptyList())
     val favorites: StateFlow<List<Cocktail>> = _favorites.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
-    private val _error = MutableStateFlow<String>("")
-    val error: StateFlow<String> = _error.asStateFlow()
+    // Legacy error string for backward compatibility
+    private val _errorString = MutableStateFlow<String>("")
+    val errorString: StateFlow<String> = _errorString.asStateFlow()
 
     // Pagination state
     private val _currentPage = MutableStateFlow(1)
@@ -86,7 +84,7 @@ class HomeViewModel(
                 _isNetworkAvailable.value = isOnline
 
                 // If network becomes available and we had an error, retry loading
-                if (isOnline && _error.value.isNotBlank()) {
+                if (isOnline && _errorString.value.isNotBlank()) {
                     retry()
                 }
 
@@ -128,13 +126,14 @@ class HomeViewModel(
             // Periodically check connectivity when there's an error
             while (true) {
                 delay(30000) // Check every 30 seconds
-                if (_error.value.isNotBlank()) {
+                if (_errorString.value.isNotBlank()) {
                     val isConnected = checkConnectivity()
                     _connectivityStatus.emit(isConnected)
 
                     // If connection restored and we had an error, reload data
-                    if (isConnected && _error.value == networkErrorMessage) {
-                        _error.value = ""
+                    if (isConnected && _errorString.value == networkErrorMessage) {
+                        _errorString.value = ""
+                        clearError()
                         loadCocktails()
                     }
                 }
@@ -152,8 +151,9 @@ class HomeViewModel(
 
     fun loadCocktails() {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = ""
+            setLoading(true)
+            clearError() // Clear base class error
+            _errorString.value = "" // Clear legacy error string
             _currentPage.value = 1 // Reset to first page
             _hasMoreData.value = true // Reset pagination state
 
@@ -172,7 +172,7 @@ class HomeViewModel(
                     .catch { e ->
                         // If we're offline, don't show an error - just show cached data
                         if (isOffline) {
-                            _isLoading.value = false
+                            setLoading(false)
                         } else {
                             handleError("Failed to load cocktails", e)
                         }
@@ -182,11 +182,12 @@ class HomeViewModel(
                         val paginatedList = cocktailList.take(PAGE_SIZE)
                         _cocktails.value = paginatedList
                         _hasMoreData.value = paginatedList.size < cocktailList.size
-                        _isLoading.value = false
+                        setLoading(false)
 
                         // If we got data while offline, clear any error
                         if (isOffline && cocktailList.isNotEmpty()) {
-                            _error.value = ""
+                            clearError() // Clear base class error
+                            _errorString.value = "" // Clear legacy error string
                         }
                     }
             } catch (e: Exception) {
@@ -196,9 +197,22 @@ class HomeViewModel(
                         val cachedCocktails = repository.getRecentlyViewedCocktails().first()
                         if (cachedCocktails.isNotEmpty()) {
                             _cocktails.value = cachedCocktails
-                            _error.value = ""
+                            clearError() // Clear base class error
+                            _errorString.value = "" // Clear legacy error string
                         } else {
-                            _error.value = "No cached cocktails available offline."
+                            // Create a user-friendly error for no cached data
+                            setError(
+                                title = "No Cached Data",
+                                message = "No cached cocktails available offline. Connect to the internet to download cocktails.",
+                                category = ErrorUtils.ErrorCategory.DATA,
+                                recoveryAction = ErrorUtils.RecoveryAction("Go Online") {
+                                    if (_isNetworkAvailable.value) {
+                                        setOfflineMode(false)
+                                        retry()
+                                    }
+                                }
+                            )
+                            _errorString.value = "No cached cocktails available offline."
                         }
                     } catch (cacheException: Exception) {
                         handleError("Failed to load cached cocktails", cacheException)
@@ -206,7 +220,7 @@ class HomeViewModel(
                 } else {
                     handleError("Failed to load cocktails", e)
                 }
-                _isLoading.value = false
+                setLoading(false)
             }
         }
     }
@@ -297,14 +311,21 @@ class HomeViewModel(
         // Create a new search job with debounce
         searchJob = viewModelScope.launch {
             delay(300) // Debounce for 300ms
-            _isLoading.value = true
-            _error.value = ""
+            setLoading(true)
+            clearError() // Clear base class error
+            _errorString.value = "" // Clear legacy error string
 
             try {
                 // Check connectivity first
                 if (!checkConnectivity()) {
-                    _error.value = networkErrorMessage
-                    _isLoading.value = false
+                    setError(
+                        title = "Network Error",
+                        message = networkErrorMessage,
+                        category = ErrorUtils.ErrorCategory.NETWORK,
+                        recoveryAction = ErrorUtils.RecoveryAction("Retry") { retry() }
+                    )
+                    _errorString.value = networkErrorMessage
+                    setLoading(false)
                     return@launch
                 }
 
@@ -314,7 +335,7 @@ class HomeViewModel(
                     }
                     .collect { cocktailList ->
                         _cocktails.value = cocktailList
-                        _isLoading.value = false
+                        setLoading(false)
                     }
             } catch (e: Exception) {
                 handleError("Failed to search cocktails", e)
@@ -324,9 +345,20 @@ class HomeViewModel(
 
     // Helper function to handle errors consistently
     private fun handleError(baseMessage: String, e: Throwable) {
-        println("$baseMessage: ${e.message}")
+        // Create a recovery action based on the error
+        val recoveryAction = ErrorUtils.RecoveryAction("Retry") { retry() }
 
-        val userMessage = when {
+        // Determine error category
+        val category = when {
+            e.message?.contains("timeout") == true -> ErrorUtils.ErrorCategory.NETWORK
+            e.message?.contains("connection") == true ||
+            e.message?.contains("network") == true -> ErrorUtils.ErrorCategory.NETWORK
+            e.message?.contains("server") == true -> ErrorUtils.ErrorCategory.SERVER
+            else -> ErrorUtils.ErrorCategory.UNKNOWN
+        }
+
+        // Format the error message
+        val errorMessage = when {
             e.message?.contains("timeout") == true ->
                 "$baseMessage: The request timed out. Please try again."
             e.message?.contains("connection") == true ||
@@ -335,8 +367,19 @@ class HomeViewModel(
             else -> "$baseMessage: ${e.message}"
         }
 
-        _error.value = userMessage
-        _isLoading.value = false
+        // Set the error using the base class method
+        setError(
+            title = if (category == ErrorUtils.ErrorCategory.NETWORK) "Network Error" else "Error",
+            message = errorMessage,
+            category = category,
+            recoveryAction = recoveryAction
+        )
+
+        // Also update the legacy error string for backward compatibility
+        _errorString.value = errorMessage
+
+        // Log the error
+        println("$baseMessage: ${e.message}")
     }
 
     // Toggle search mode
@@ -351,14 +394,21 @@ class HomeViewModel(
     // Load cocktails filtered by category - add this new method
     fun loadCocktailsByCategory(category: String?) {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = ""
+            setLoading(true)
+            clearError() // Clear base class error
+            _errorString.value = "" // Clear legacy error string
 
             try {
                 // Check connectivity first
                 if (!checkConnectivity()) {
-                    _error.value = networkErrorMessage
-                    _isLoading.value = false
+                    setError(
+                        title = "Network Error",
+                        message = networkErrorMessage,
+                        category = ErrorUtils.ErrorCategory.NETWORK,
+                        recoveryAction = ErrorUtils.RecoveryAction("Retry") { retry() }
+                    )
+                    _errorString.value = networkErrorMessage
+                    setLoading(false)
                     return@launch
                 }
 
@@ -373,7 +423,7 @@ class HomeViewModel(
                     }
                     .collect { cocktailList ->
                         _cocktails.value = cocktailList
-                        _isLoading.value = false
+                        setLoading(false)
                     }
             } catch (e: Exception) {
                 handleError("Failed to filter cocktails", e)
@@ -434,7 +484,7 @@ class HomeViewModel(
 
     fun sortByPrice(ascending: Boolean) {
         viewModelScope.launch {
-            _isLoading.value = true
+            setLoading(true)
 
             try {
                 val sortedList = if (ascending) {
@@ -446,14 +496,14 @@ class HomeViewModel(
             } catch (e: Exception) {
                 handleError("Failed to sort cocktails", e)
             } finally {
-                _isLoading.value = false
+                setLoading(false)
             }
         }
     }
 
     fun sortByRating() {
         viewModelScope.launch {
-            _isLoading.value = true
+            setLoading(true)
 
             try {
                 val sortedList = _cocktails.value.sortedByDescending { it.rating }
@@ -461,14 +511,14 @@ class HomeViewModel(
             } catch (e: Exception) {
                 handleError("Failed to sort cocktails", e)
             } finally {
-                _isLoading.value = false
+                setLoading(false)
             }
         }
     }
 
     fun sortByPopularity() {
         viewModelScope.launch {
-            _isLoading.value = true
+            setLoading(true)
 
             try {
                 val sortedList = _cocktails.value.sortedByDescending { it.popularity }
@@ -476,7 +526,7 @@ class HomeViewModel(
             } catch (e: Exception) {
                 handleError("Failed to sort cocktails", e)
             } finally {
-                _isLoading.value = false
+                setLoading(false)
             }
         }
     }
@@ -489,22 +539,25 @@ class HomeViewModel(
             .sorted()
     }
 
-    fun clearError() {
-        _error.value = ""
+    // Override the base clearError to also clear our legacy error string
+    fun clearLegacyError() {
+        clearError() // Call the base class method
+        _errorString.value = "" // Also clear the legacy error string
     }
 
     // Add method to get cocktail by ID
     fun getCocktailById(id: String): kotlinx.coroutines.flow.Flow<Cocktail?> {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = ""
+            setLoading(true)
+            clearError() // Clear base class error
+            _errorString.value = "" // Clear legacy error string
         }
 
         return kotlinx.coroutines.flow.flow {
             try {
                 repository.getCocktailById(id).collect { cocktail ->
                     emit(cocktail)
-                    _isLoading.value = false
+                    setLoading(false)
                 }
             } catch (e: Exception) {
                 handleError("Failed to load cocktail details", e)
@@ -516,8 +569,9 @@ class HomeViewModel(
     // Add method to force refresh cocktail details
     fun forceRefreshCocktailDetails(id: String) {
         viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = ""
+            setLoading(true)
+            clearError() // Clear base class error
+            _errorString.value = "" // Clear legacy error string
 
             try {
                 // Clear any cached data for this cocktail
@@ -529,13 +583,19 @@ class HomeViewModel(
                         // Add the refreshed cocktail to the list
                         _cocktails.value = _cocktails.value + cocktail
                     } else {
-                        _error.value = "Could not refresh cocktail details. Please try again."
+                        setError(
+                            title = "Refresh Failed",
+                            message = "Could not refresh cocktail details. Please try again.",
+                            category = ErrorUtils.ErrorCategory.DATA,
+                            recoveryAction = ErrorUtils.RecoveryAction("Retry") { forceRefreshCocktailDetails(id) }
+                        )
+                        _errorString.value = "Could not refresh cocktail details. Please try again."
                     }
-                    _isLoading.value = false
+                    setLoading(false)
                 }
             } catch (e: Exception) {
                 handleError("Failed to refresh cocktail details", e)
-                _isLoading.value = false
+                setLoading(false)
             }
         }
     }
