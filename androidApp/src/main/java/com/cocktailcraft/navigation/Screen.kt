@@ -19,5 +19,9 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
         fun createRoute(cocktailId: String) = "cocktail_detail/$cocktailId"
     }
 
+    object Reviews : Screen("reviews/{cocktailId}", "Reviews", Icons.AutoMirrored.Filled.List) {
+        fun createRoute(cocktailId: String) = "reviews/$cocktailId"
+    }
+
     object OfflineMode : Screen("offline_mode", "Offline Mode", Icons.Filled.WifiOff)
 }
