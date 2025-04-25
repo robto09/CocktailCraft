@@ -50,8 +50,19 @@ The application follows the **Clean Architecture** pattern with **MVVM** (Model-
 - **Platform-Specific Apps**: Android and iOS implementations with platform-specific UI and functionality
 - **MVVM Pattern**: Separates UI (View) from business logic (ViewModel) and data management (Model)
 - **Repository Pattern**: Abstracts data sources and provides a clean API for the domain layer
+- **Dependency Injection**: Modular Koin setup for better testability and separation of concerns
 
 For more detailed architecture diagrams, please see the [Architecture Documentation](docs/README.md) which includes high-level architecture, component diagrams, use case diagrams, and more.
+
+### Dependency Injection
+The app uses Koin for dependency injection with a modular approach:
+- **Modular Structure**: Separate modules for network, data, and domain layers
+- **Testability**: Easy mocking and test module setup
+- **ViewModel Integration**: Standardized pattern for ViewModel dependency injection
+
+For detailed information about the dependency injection implementation, see:
+- [Dependency Injection Documentation](docs/DependencyInjection.md) - Overview, module structure, and best practices
+- [Dependency Injection Migration Guide](docs/DependencyInjectionMigration.md) - Guide for migrating existing code to the new DI approach
 
 ## Libraries Used
 
@@ -83,7 +94,7 @@ For more detailed architecture diagrams, please see the [Architecture Documentat
 | **Core & Architecture** |  |  |
 | Kotlin | 2.0.21 | Programming language for cross-platform development |
 | Kotlin Coroutines | 1.10.1 | Asynchronous programming framework |
-| Koin | 4.0.1 | Dependency injection framework |
+| Koin | 4.0.1 | Modular dependency injection framework |
 | Ktor | 3.0.3 | HTTP client for API communication |
 | Kotlinx Serialization | 1.7.3 | JSON/data serialization |
 | Multiplatform Settings | 1.1.1 | Cross-platform settings/preferences storage |
@@ -109,8 +120,8 @@ For more detailed architecture diagrams, please see the [Architecture Documentat
 | Turbine | 1.0.0 | Testing library for Kotlin Flow |
 | Espresso | 3.6.1 | UI testing framework for Android |
 | **Dependency Injection** |  |  |
-| Hilt | 2.51.1 | Dependency injection library built on Dagger |
-| Hilt Navigation | 1.2.0 | Integration between Hilt and Jetpack Navigation |
+| Koin | 4.0.1 | Modular dependency injection framework with improved testability |
+| Koin Test | 4.0.1 | Testing utilities for Koin dependency injection |
 
 ## Package Structure
 
