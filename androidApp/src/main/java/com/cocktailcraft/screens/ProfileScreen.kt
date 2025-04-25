@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Help
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -324,28 +325,39 @@ fun ProfileScreen(
                     onClick = { /* Handle help & support */ }
                 )
 
-                // Dark Mode Toggle
+                // Dark Mode Toggle with animation
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clickable { themeViewModel.toggleDarkMode() }
                         .padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Animated icon that changes based on the theme
+                    val iconTint = if (isDarkMode) AppColors.PrimaryDark else AppColors.TextPrimary
+
                     Icon(
-                        imageVector = Icons.Default.DarkMode,
-                        contentDescription = null,
-                        tint = AppColors.TextPrimary,
+                        imageVector = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+                        contentDescription = if (isDarkMode) "Switch to Light Mode" else "Switch to Dark Mode",
+                        tint = iconTint,
                         modifier = Modifier.size(24.dp)
                     )
 
                     Spacer(modifier = Modifier.width(16.dp))
 
-                    Text(
-                        text = "Dark Mode",
-                        fontSize = 16.sp,
-                        color = AppColors.TextPrimary,
-                        modifier = Modifier.weight(1f)
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Dark Mode",
+                            fontSize = 16.sp,
+                            color = AppColors.TextPrimary
+                        )
+
+                        Text(
+                            text = if (isDarkMode) "On" else "Off",
+                            fontSize = 12.sp,
+                            color = AppColors.TextSecondary
+                        )
+                    }
 
                     Switch(
                         checked = isDarkMode,

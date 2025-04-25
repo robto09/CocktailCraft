@@ -11,7 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cocktailcraft.ui.main.MainScreen
-import com.cocktailcraft.ui.theme.CocktailBarTheme
+import com.cocktailcraft.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.viewmodel.ThemeViewModel
 
 class MainActivity : ComponentActivity() {
@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
             val themeViewModel: ThemeViewModel = viewModel()
             val isDarkMode by themeViewModel.isDarkMode.collectAsState()
 
-            CocktailBarTheme(darkTheme = isDarkMode) {
+            AnimatedCocktailBarTheme(darkTheme = isDarkMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
