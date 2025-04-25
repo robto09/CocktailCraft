@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
@@ -52,6 +53,9 @@ import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.ui.components.CocktailItem
 import com.cocktailcraft.ui.components.FilterChip
 import com.cocktailcraft.ui.theme.AppColors
+import com.cocktailcraft.util.ListOptimizations.OnBottomReached
+import com.cocktailcraft.util.ListOptimizations.OnScrollPastThreshold
+import com.cocktailcraft.util.ListOptimizations.itemKey
 import com.cocktailcraft.viewmodel.CartViewModel
 import com.cocktailcraft.viewmodel.FavoritesViewModel
 import com.cocktailcraft.viewmodel.HomeViewModel
@@ -68,33 +72,35 @@ fun HomeScreen(
 ) {
     val cocktails by viewModel.cocktails.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
+    val hasMoreData by viewModel.hasMoreData.collectAsState()
     val error by viewModel.error.collectAsState()
     val isSearchActive by viewModel.isSearchActive.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val favorites by favoritesViewModel.favorites.collectAsState()
-    
+
     // Add state for selected category
     var selectedCategory by remember { mutableStateOf<String?>(null) }
-    
+
     // Add pull-to-refresh state
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isLoading,
         onRefresh = { viewModel.retry() }
     )
-    
+
     // Effect to load cocktails by category when selected category changes
     LaunchedEffect(selectedCategory) {
         if (!isSearchActive) {
             viewModel.loadCocktailsByCategory(selectedCategory)
         }
     }
-    
+
     // Define common cocktail categories
     val categories = listOf(
-        "All", "Cocktail", "Ordinary Drink", "Shot", "Coffee / Tea", 
+        "All", "Cocktail", "Ordinary Drink", "Shot", "Coffee / Tea",
         "Punch / Party Drink", "Homemade Liqueur", "Beer", "Soft Drink"
     )
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -108,12 +114,12 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             placeholder = { Text("Search cocktails...") },
-            leadingIcon = { 
+            leadingIcon = {
                 Icon(
-                    Icons.Filled.Search, 
+                    Icons.Filled.Search,
                     contentDescription = "Search",
                     tint = AppColors.Gray
-                ) 
+                )
             },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
@@ -137,7 +143,7 @@ fun HomeScreen(
             shape = RoundedCornerShape(8.dp),
             singleLine = true
         )
-        
+
         // Add Category Filter Chips - only shown when not searching
         if (!isSearchActive) {
             LazyRow(
@@ -149,7 +155,7 @@ fun HomeScreen(
                 items(categories) { category ->
                     FilterChip(
                         selected = selectedCategory == category || (category == "All" && selectedCategory == null),
-                        onClick = { 
+                        onClick = {
                             selectedCategory = if (category == "All") null else category
                         },
                         label = category
@@ -157,9 +163,9 @@ fun HomeScreen(
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.height(8.dp))
-        
+
         // Main content wrapped in pull-to-refresh
         Box(
             modifier = Modifier
@@ -188,9 +194,9 @@ fun HomeScreen(
                             tint = Color.Red,
                             modifier = Modifier.size(48.dp)
                         )
-                        
+
                         Spacer(modifier = Modifier.height(16.dp))
-                        
+
                         Text(
                             text = "Unable to load cocktails",
                             color = Color.Red,
@@ -198,18 +204,18 @@ fun HomeScreen(
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp
                         )
-                        
+
                         Spacer(modifier = Modifier.height(8.dp))
-                        
+
                         // Show error message or a fallback
                         Text(
                             text = error,
                             color = AppColors.TextSecondary,
                             textAlign = TextAlign.Center
                         )
-                        
+
                         Spacer(modifier = Modifier.height(24.dp))
-                        
+
                         Button(
                             onClick = { viewModel.retry() },
                             colors = ButtonDefaults.buttonColors(
@@ -226,11 +232,11 @@ fun HomeScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (isSearchActive) 
-                            "No cocktails found matching \"$searchQuery\"" 
-                        else if (selectedCategory != null) 
+                        text = if (isSearchActive)
+                            "No cocktails found matching \"$searchQuery\""
+                        else if (selectedCategory != null)
                             "No cocktails found in category \"$selectedCategory\""
-                        else 
+                        else
                             "No cocktails found",
                         color = AppColors.TextPrimary,
                         textAlign = TextAlign.Center,
@@ -238,8 +244,26 @@ fun HomeScreen(
                     )
                 }
             } else {
-                // Main content
+                // Remember scroll state for optimizations
+                val listState = rememberLazyListState()
+
+                // Detect when we're near the bottom to load more items
+                listState.OnBottomReached(buffer = 5) {
+                    // Only load more if not already loading and not searching
+                    if (!isLoading && !isSearchActive) {
+                        viewModel.loadMoreCocktails()
+                    }
+                }
+
+                // Detect scroll position to potentially hide UI elements
+                var isPastThreshold by remember { mutableStateOf(false) }
+                listState.OnScrollPastThreshold(threshold = 1) { past ->
+                    isPastThreshold = past
+                }
+
+                // Main content with optimized list rendering
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
@@ -259,24 +283,24 @@ fun HomeScreen(
                                     color = AppColors.TextPrimary,
                                     modifier = Modifier.padding(bottom = 8.dp)
                                 )
-                                
+
                                 CocktailItem(
                                     cocktail = featuredCocktail,
-                                    onClick = { 
-                                        onCocktailClick(featuredCocktail) 
+                                    onClick = {
+                                        onCocktailClick(featuredCocktail)
                                     },
-                                    onAddToCart = { cocktail -> 
+                                    onAddToCart = { cocktail ->
                                         onAddToCart(cocktail)
                                     },
                                     isFavorite = favorites.any { it.id == featuredCocktail.id },
-                                    onToggleFavorite = { cocktail -> 
+                                    onToggleFavorite = { cocktail ->
                                         favoritesViewModel.toggleFavorite(cocktail)
                                     }
                                 )
                             }
                         }
                     }
-                    
+
                     // All cocktails list or search results or filtered by category
                     item {
                         Text(
@@ -291,25 +315,60 @@ fun HomeScreen(
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
                     }
-                    
-                    itemsIndexed(cocktails) { _, cocktail ->
+
+                    items(
+                        items = cocktails,
+                        key = { cocktail -> itemKey("cocktail", cocktail.id) }
+                    ) { cocktail ->
                         CocktailItem(
                             cocktail = cocktail,
-                            onClick = { 
-                                onCocktailClick(cocktail) 
+                            onClick = {
+                                onCocktailClick(cocktail)
                             },
-                            onAddToCart = { 
+                            onAddToCart = {
                                 onAddToCart(it)
                             },
                             isFavorite = favorites.any { it.id == cocktail.id },
-                            onToggleFavorite = { cocktailToToggle -> 
+                            onToggleFavorite = { cocktailToToggle ->
                                 favoritesViewModel.toggleFavorite(cocktailToToggle)
                             }
                         )
                     }
+
+                    // Show loading indicator at the bottom when loading more items
+                    if (isLoadingMore) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(32.dp),
+                                    color = AppColors.Primary
+                                )
+                            }
+                        }
+                    }
+
+                    // Show end of list message when no more data
+                    if (!hasMoreData && !isSearchActive && cocktails.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = "You've reached the end of the list",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                textAlign = TextAlign.Center,
+                                color = AppColors.TextSecondary,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
                 }
             }
-            
+
             // Pull refresh indicator
             PullRefreshIndicator(
                 refreshing = isLoading,
@@ -320,4 +379,4 @@ fun HomeScreen(
             )
         }
     }
-} 
+}
