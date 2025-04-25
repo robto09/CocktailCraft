@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.AirplanemodeActive
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -28,7 +28,7 @@ import com.cocktailcraft.ui.theme.AppColors
 
 /**
  * A banner that indicates when the app is in offline mode.
- * 
+ *
  * @param isOffline Whether the app is currently offline
  * @param isOfflineModeEnabled Whether offline mode is enabled by user preference
  * @param onClick Optional callback when the banner is clicked
@@ -60,12 +60,12 @@ fun OfflineModeIndicator(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = if (isOfflineModeEnabled) Icons.Default.CloudOff else Icons.Default.WifiOff,
+                    imageVector = if (isOfflineModeEnabled) Icons.Default.AirplanemodeActive else Icons.Default.WifiOff,
                     contentDescription = "Offline",
                     tint = Color.White,
                     modifier = Modifier.padding(end = 8.dp)
                 )
-                
+
                 Text(
                     text = if (isOfflineModeEnabled) "Offline Mode Enabled" else "You are offline",
                     color = Color.White,

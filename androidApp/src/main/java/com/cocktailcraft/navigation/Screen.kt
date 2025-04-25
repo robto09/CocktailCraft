@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
@@ -18,5 +19,5 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
         fun createRoute(cocktailId: String) = "cocktail_detail/$cocktailId"
     }
 
-    object OfflineMode : Screen("offline_mode", "Offline Mode", Icons.Filled.CloudOff)
+    object OfflineMode : Screen("offline_mode", "Offline Mode", Icons.Filled.WifiOff)
 }
