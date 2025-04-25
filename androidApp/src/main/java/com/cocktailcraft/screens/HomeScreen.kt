@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.AirplanemodeActive
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
@@ -54,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -62,14 +64,43 @@ import androidx.navigation.NavController
 import com.cocktailcraft.navigation.Screen
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.ui.components.CocktailItem
+import com.cocktailcraft.ui.components.ErrorBanner
+import com.cocktailcraft.ui.components.ErrorDialog
 import com.cocktailcraft.ui.components.FilterChip
 import com.cocktailcraft.ui.theme.AppColors
+import com.cocktailcraft.util.ErrorUtils
 import com.cocktailcraft.util.ListOptimizations.OnBottomReached
 import com.cocktailcraft.util.ListOptimizations.OnScrollPastThreshold
 import com.cocktailcraft.util.ListOptimizations.itemKey
 import com.cocktailcraft.viewmodel.CartViewModel
 import com.cocktailcraft.viewmodel.FavoritesViewModel
 import com.cocktailcraft.viewmodel.HomeViewModel
+
+/**
+ * Get an appropriate icon for the error category
+ */
+@Composable
+private fun getErrorIcon(category: ErrorUtils.ErrorCategory): ImageVector {
+    return when (category) {
+        ErrorUtils.ErrorCategory.NETWORK -> Icons.Default.WifiOff
+        ErrorUtils.ErrorCategory.SERVER,
+        ErrorUtils.ErrorCategory.CLIENT -> Icons.Default.Warning
+        else -> Icons.Default.Error
+    }
+}
+
+/**
+ * Get an appropriate color for the error category
+ */
+@Composable
+private fun getErrorColor(category: ErrorUtils.ErrorCategory): Color {
+    return when (category) {
+        ErrorUtils.ErrorCategory.NETWORK -> AppColors.Primary
+        ErrorUtils.ErrorCategory.SERVER -> Color(0xFFF57C00) // Orange
+        ErrorUtils.ErrorCategory.AUTHENTICATION -> Color(0xFFD32F2F) // Red
+        else -> AppColors.Error
+    }
+}
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -85,12 +116,15 @@ fun HomeScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val isLoadingMore by viewModel.isLoadingMore.collectAsState()
     val hasMoreData by viewModel.hasMoreData.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val legacyErrorString by viewModel.errorString.collectAsState()
     val isSearchActive by viewModel.isSearchActive.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val favorites by favoritesViewModel.favorites.collectAsState()
     val isOfflineMode by viewModel.isOfflineMode.collectAsState()
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsState()
+
+    // State for error dialog
+    var showErrorDialog by remember { mutableStateOf(false) }
 
     // Add state for selected category
     var selectedCategory by remember { mutableStateOf<String?>(null) }
@@ -119,6 +153,9 @@ fun HomeScreen(
             .fillMaxSize()
             .background(AppColors.Background)
     ) {
+        // For now, we'll skip the error banner since we're using legacy error handling
+        // We'll implement it in the future when we fully migrate to the new error system
+
         // Search Bar
         OutlinedTextField(
             value = searchQuery,
@@ -192,7 +229,7 @@ fun HomeScreen(
                 ) {
                     CircularProgressIndicator(color = AppColors.Primary)
                 }
-            } else if (error.isNotBlank()) {
+            } else if (legacyErrorString.isNotBlank()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -201,6 +238,7 @@ fun HomeScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.padding(16.dp)
                     ) {
+                        // Legacy error handling
                         Icon(
                             imageVector = if (!isNetworkAvailable || isOfflineMode) Icons.Default.WifiOff else Icons.Default.Error,
                             contentDescription = "Error",
@@ -231,7 +269,7 @@ fun HomeScreen(
                                     "No cached cocktails available. Connect to the internet to download cocktails."
                                 !isNetworkAvailable ->
                                     "You're currently offline. Enable Offline Mode to browse cached cocktails."
-                                else -> error
+                                else -> legacyErrorString
                             },
                             color = AppColors.TextSecondary,
                             textAlign = TextAlign.Center
@@ -328,39 +366,8 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp)
                 ) {
-                    // Only show featured section when not searching and not filtering
-                    if (!isSearchActive && selectedCategory == null) {
-                        // Featured section (random cocktail)
-                        val featuredCocktail = cocktails.randomOrNull()
-                        if (featuredCocktail != null) {
-                            item {
-                                Text(
-                                    text = "Featured Cocktail",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AppColors.TextPrimary,
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
-
-                                CocktailItem(
-                                    cocktail = featuredCocktail,
-                                    onClick = {
-                                        onCocktailClick(featuredCocktail)
-                                    },
-                                    onAddToCart = { cocktail ->
-                                        onAddToCart(cocktail)
-                                    },
-                                    isFavorite = favorites.any { it.id == featuredCocktail.id },
-                                    onToggleFavorite = { cocktail ->
-                                        favoritesViewModel.toggleFavorite(cocktail)
-                                    }
-                                )
-                            }
-                        }
-                    }
-
                     // All cocktails list or search results or filtered by category
-                    item {
+                    item(key = "header") {
                         Text(
                             text = when {
                                 isSearchActive -> "Search Results"
@@ -374,10 +381,11 @@ fun HomeScreen(
                         )
                     }
 
-                    items(
+                    // Use the full list for the main items with indexed items to ensure unique keys
+                    itemsIndexed(
                         items = cocktails,
-                        key = { cocktail -> itemKey("cocktail", cocktail.id) }
-                    ) { cocktail ->
+                        key = { index, cocktail -> "cocktail_${index}_${cocktail.id}" }
+                    ) { index, cocktail ->
                         CocktailItem(
                             cocktail = cocktail,
                             onClick = {
@@ -395,7 +403,7 @@ fun HomeScreen(
 
                     // Show loading indicator at the bottom when loading more items
                     if (isLoadingMore) {
-                        item {
+                        item(key = "loading_more") {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -412,7 +420,7 @@ fun HomeScreen(
 
                     // Show end of list message when no more data
                     if (!hasMoreData && !isSearchActive && cocktails.isNotEmpty()) {
-                        item {
+                        item(key = "end_of_list") {
                             Text(
                                 text = "You've reached the end of the list",
                                 modifier = Modifier
