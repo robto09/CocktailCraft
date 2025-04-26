@@ -85,6 +85,29 @@ class CocktailDetailViewModel(
         }
     }
 
+    /**
+     * Set the current cocktail directly without loading from the repository.
+     * This is useful when we already have the cocktail data and want to avoid an extra network call.
+     */
+    fun setCurrentCocktail(cocktail: Cocktail) {
+        _cocktail.value = cocktail
+
+        // Check if this cocktail is a favorite
+        viewModelScope.launch {
+            try {
+                cocktailRepository.isCocktailFavorite(cocktail.id).collect { favorite ->
+                    _isFavorite.value = favorite
+                }
+            } catch (e: Exception) {
+                // Just log the error but don't show to user as this is not critical
+                println("Failed to check favorite status: ${e.message}")
+            }
+        }
+
+        // Load recommendations for this cocktail
+        loadRecommendations(cocktail)
+    }
+
     private fun loadRecommendations(cocktail: Cocktail?) {
         if (cocktail == null) return
 

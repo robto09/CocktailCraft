@@ -64,6 +64,14 @@ class HomeViewModel(
     private val _isSearchActive = MutableStateFlow(false)
     val isSearchActive: StateFlow<Boolean> = _isSearchActive.asStateFlow()
 
+    // Advanced search filters state
+    private val _searchFilters = MutableStateFlow(com.cocktailcraft.domain.model.SearchFilters())
+    val searchFilters: StateFlow<com.cocktailcraft.domain.model.SearchFilters> = _searchFilters.asStateFlow()
+
+    // Advanced search active state
+    private val _isAdvancedSearchActive = MutableStateFlow(false)
+    val isAdvancedSearchActive: StateFlow<Boolean> = _isAdvancedSearchActive.asStateFlow()
+
     // Add a shared flow for connectivity status changes
     private val _connectivityStatus = MutableSharedFlow<Boolean>(replay = 1)
 
@@ -294,6 +302,9 @@ class HomeViewModel(
     fun searchCocktails(query: String) {
         _searchQuery.value = query
 
+        // Update the search filters with the new query
+        _searchFilters.value = _searchFilters.value.copy(query = query)
+
         // Automatically activate search mode when query is not empty
         if (query.isNotEmpty() && !_isSearchActive.value) {
             _isSearchActive.value = true
@@ -302,9 +313,10 @@ class HomeViewModel(
         // Cancel previous search job if it exists
         searchJob?.cancel()
 
-        if (query.isBlank()) {
+        if (query.isBlank() && !_searchFilters.value.hasActiveFilters()) {
             _isSearchActive.value = false
-            loadCocktails() // Reset to all cocktails if query is empty
+            _isAdvancedSearchActive.value = false
+            loadCocktails() // Reset to all cocktails if query is empty and no filters
             return
         }
 
@@ -329,16 +341,105 @@ class HomeViewModel(
                     return@launch
                 }
 
-                repository.searchCocktailsByName(query)
-                    .catch { e ->
-                        handleError("Failed to search cocktails", e)
-                    }
-                    .collect { cocktailList ->
-                        _cocktails.value = cocktailList
-                        setLoading(false)
-                    }
+                // If we have active filters, use advanced search
+                if (_searchFilters.value.hasActiveFilters() || _isAdvancedSearchActive.value) {
+                    performAdvancedSearch()
+                } else {
+                    // Otherwise use basic search
+                    repository.searchCocktailsByName(query)
+                        .catch { e ->
+                            handleError("Failed to search cocktails", e)
+                        }
+                        .collect { cocktailList ->
+                            _cocktails.value = cocktailList
+                            setLoading(false)
+                        }
+                }
             } catch (e: Exception) {
                 handleError("Failed to search cocktails", e)
+            }
+        }
+    }
+
+    /**
+     * Perform advanced search with current filters
+     */
+    private suspend fun performAdvancedSearch() {
+        try {
+            repository.advancedSearch(_searchFilters.value)
+                .catch { e ->
+                    handleError("Failed to perform advanced search", e)
+                }
+                .collect { cocktailList ->
+                    _cocktails.value = cocktailList
+                    setLoading(false)
+                }
+        } catch (e: Exception) {
+            handleError("Failed to perform advanced search", e)
+            setLoading(false)
+        }
+    }
+
+    /**
+     * Update search filters and perform search
+     */
+    fun updateSearchFilters(filters: com.cocktailcraft.domain.model.SearchFilters) {
+        _searchFilters.value = filters
+        _searchQuery.value = filters.query
+
+        // Activate advanced search mode
+        _isAdvancedSearchActive.value = filters.hasActiveFilters()
+
+        // If we have a query or active filters, activate search mode
+        if (filters.hasBasicSearch() || filters.hasActiveFilters()) {
+            _isSearchActive.value = true
+
+            // Cancel previous search job if it exists
+            searchJob?.cancel()
+
+            // Create a new search job with debounce
+            searchJob = viewModelScope.launch {
+                delay(300) // Debounce for 300ms
+                setLoading(true)
+                clearError() // Clear base class error
+                _errorString.value = "" // Clear legacy error string
+
+                performAdvancedSearch()
+            }
+        } else {
+            // If no query and no filters, reset to all cocktails
+            _isSearchActive.value = false
+            _isAdvancedSearchActive.value = false
+            loadCocktails()
+        }
+    }
+
+    /**
+     * Clear all search filters
+     */
+    fun clearSearchFilters() {
+        val clearedFilters = _searchFilters.value.clearAllFilters()
+        updateSearchFilters(clearedFilters)
+    }
+
+    /**
+     * Toggle advanced search mode
+     */
+    fun toggleAdvancedSearchMode(active: Boolean) {
+        _isAdvancedSearchActive.value = active
+
+        if (!active) {
+            // Clear all filters except query when disabling advanced search
+            val query = _searchQuery.value
+            _searchFilters.value = com.cocktailcraft.domain.model.SearchFilters(query = query)
+
+            // If we still have a query, perform basic search
+            if (query.isNotBlank()) {
+                searchCocktails(query)
+            } else {
+                // Otherwise reset to all cocktails
+                _isSearchActive.value = false
+                loadCocktails()
             }
         }
     }
