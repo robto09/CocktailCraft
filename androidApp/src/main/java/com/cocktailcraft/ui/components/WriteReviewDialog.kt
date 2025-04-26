@@ -56,7 +56,7 @@ fun WriteReviewDialog(
                         )
                         OutlinedTextField(
                             value = userName,
-                            onValueChange = { 
+                            onValueChange = {
                                 userName = it
                                 hasError = false
                             },
@@ -82,7 +82,7 @@ fun WriteReviewDialog(
                             )
                         )
                     }
-                    
+
                     // Rating section with enhanced UI
                     Column {
                         Text(
@@ -92,7 +92,7 @@ fun WriteReviewDialog(
                             color = AppColors.Primary,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
-                        
+
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -114,7 +114,7 @@ fun WriteReviewDialog(
                                 }
                             }
                         }
-                        
+
                         if (hasError && userRating == 0f) {
                             Text(
                                 text = "Please select a rating",
@@ -124,9 +124,9 @@ fun WriteReviewDialog(
                             )
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     // Review text with character count
                     Column {
                         Text(
@@ -138,7 +138,7 @@ fun WriteReviewDialog(
                         )
                         OutlinedTextField(
                             value = userComment,
-                            onValueChange = { 
+                            onValueChange = {
                                 if (it.length <= 500) {
                                     userComment = it
                                 }
@@ -154,15 +154,19 @@ fun WriteReviewDialog(
                                 unfocusedContainerColor = AppColors.Surface
                             )
                         )
-                        
-                        Text(
-                            text = "${userComment.length}/500",
-                            fontSize = 12.sp,
-                            color = AppColors.Gray,
-                            modifier = Modifier
-                                .align(Alignment.End)
-                                .padding(top = 4.dp)
-                        )
+
+                        Box(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "${userComment.length}/500",
+                                fontSize = 12.sp,
+                                color = AppColors.Gray,
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .padding(top = 4.dp)
+                            )
+                        }
                     }
                 }
             },
@@ -210,4 +214,4 @@ fun WriteReviewDialog(
             tonalElevation = 8.dp
         )
     }
-} 
+}
