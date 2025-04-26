@@ -36,4 +36,9 @@ interface CocktailRepository {
     suspend fun getRecentlyViewedCocktails(): Flow<List<Cocktail>>
     fun setOfflineMode(enabled: Boolean)
     fun isOfflineModeEnabled(): Boolean
+
+    // Methods for recommendations
+    suspend fun getCocktailsByCategory(category: String): List<Cocktail>
+    suspend fun getCocktailsByIngredient(ingredient: String): List<Cocktail>
+    suspend fun getCocktailsByAlcoholicFilter(alcoholicFilter: String): List<Cocktail>
 }

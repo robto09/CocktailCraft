@@ -12,6 +12,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Order Management**: Place orders and track order history
 - **Favorites**: Save and manage favorite cocktails
 - **Reviews**: Read and submit reviews for cocktails
+- **Personalized Recommendations**: "You might also like" suggestions based on viewing history and preferences
 - **Dark Mode Support**: Adaptive UI that supports both light and dark themes with smooth transitions
 - **Offline Mode**: Browse recently viewed cocktails and favorites without internet connection
 - **Robust Error Handling**: User-friendly error messages with recovery options
@@ -248,6 +249,12 @@ For detailed information about the dependency injection implementation, see:
 - **HomeViewModel**: Manages cocktail listings, categories, and search
 - **CocktailRepository**: Provides cocktail data from remote and local sources
 - **HomeScreen & CocktailDetailScreen**: UI for browsing and viewing cocktail details
+
+### Recommendation System
+- **CocktailRecommendationEngine**: Client-side engine that generates personalized recommendations
+- **RecommendationsSection**: UI component that displays "You might also like" suggestions
+- **Multiple Strategies**: Category-based, ingredient-based, and user preference-based recommendations
+- **Offline Support**: Works with cached data when no internet connection is available
 
 ### Dark Mode Support
 - **ThemeViewModel**: Manages theme state and preferences

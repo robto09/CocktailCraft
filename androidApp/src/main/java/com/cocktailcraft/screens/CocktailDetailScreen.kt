@@ -92,7 +92,10 @@ import com.cocktailcraft.viewmodel.ReviewViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import com.cocktailcraft.navigation.NavigationManager
+import com.cocktailcraft.ui.components.RecommendationsSection
 import com.cocktailcraft.ui.components.WriteReviewDialog
+import com.cocktailcraft.viewmodel.CocktailDetailViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -601,6 +604,26 @@ fun CocktailDetailScreen(
                                 }
                             }
                         }
+                    }
+
+                    // Recommendations section
+                    item {
+                        // Get the CocktailDetailViewModel from Koin
+                        val detailViewModel: CocktailDetailViewModel = koinViewModel()
+
+                        // Load recommendations for this cocktail
+                        LaunchedEffect(cocktailData.id) {
+                            detailViewModel.loadCocktail(cocktailData.id)
+                        }
+
+                        // Display recommendations
+                        RecommendationsSection(
+                            viewModel = detailViewModel,
+                            onCocktailClick = { recommendedCocktail ->
+                                // Navigate to the recommended cocktail
+                                navigationManager.navigateToCocktailDetail(recommendedCocktail.id)
+                            }
+                        )
                     }
 
                     // Reviews section
