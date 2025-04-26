@@ -11,7 +11,7 @@ import org.koin.dsl.module
 val recommendationModule = module {
     // Recommendation Engine
     single { CocktailRecommendationEngine(get(), get()) }
-    
+
     // ViewModels
-    viewModel { CocktailDetailViewModel(get(), get(), get()) }
+    viewModel { CocktailDetailViewModel(get(), get()) }
 }
