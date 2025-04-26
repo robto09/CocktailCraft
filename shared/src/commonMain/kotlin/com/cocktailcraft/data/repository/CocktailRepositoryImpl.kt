@@ -430,6 +430,74 @@ class CocktailRepositoryImpl(
         return forceOfflineMode
     }
 
+    /**
+     * Get cocktails by category for recommendations.
+     * This implementation uses the filterByCategory flow and collects the first result.
+     */
+    override suspend fun getCocktailsByCategory(category: String): List<Cocktail> {
+        return try {
+            // Check if we're offline
+            if (isOffline()) {
+                // Use cached cocktails when offline
+                cocktailCache.getAllCachedCocktails()
+                    .filter { it.category == category }
+                    .take(5)
+            } else {
+                filterByCategory(category).first()
+            }
+        } catch (e: Exception) {
+            // Return empty list on error
+            emptyList()
+        }
+    }
+
+    /**
+     * Get cocktails by ingredient for recommendations.
+     * This implementation uses the filterByIngredient flow and collects the first result.
+     */
+    override suspend fun getCocktailsByIngredient(ingredient: String): List<Cocktail> {
+        return try {
+            // Check if we're offline
+            if (isOffline()) {
+                // Use cached cocktails when offline
+                cocktailCache.getAllCachedCocktails()
+                    .filter { cocktail ->
+                        cocktail.ingredients.any {
+                            it.name.contains(ingredient, ignoreCase = true)
+                        }
+                    }
+                    .take(5)
+            } else {
+                filterByIngredient(ingredient).first()
+            }
+        } catch (e: Exception) {
+            // Return empty list on error
+            emptyList()
+        }
+    }
+
+    /**
+     * Get cocktails by alcoholic filter for recommendations.
+     */
+    override suspend fun getCocktailsByAlcoholicFilter(alcoholicFilter: String): List<Cocktail> {
+        return try {
+            // Check if we're offline
+            if (isOffline()) {
+                // Use cached cocktails when offline
+                cocktailCache.getAllCachedCocktails()
+                    .filter { it.alcoholic == alcoholicFilter }
+                    .take(5)
+            } else {
+                // Use the existing filter method but convert boolean to string filter
+                val isAlcoholic = alcoholicFilter.equals("Alcoholic", ignoreCase = true)
+                filterByAlcoholic(isAlcoholic).first()
+            }
+        } catch (e: Exception) {
+            // Return empty list on error
+            emptyList()
+        }
+    }
+
     // Helper method to check API connectivity
     private suspend fun pingApiInternal(): Boolean {
         return try {

@@ -4,10 +4,12 @@ import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.repository.AuthRepositoryImpl
 import com.cocktailcraft.data.repository.CartRepositoryImpl
 import com.cocktailcraft.data.repository.CocktailRepositoryImpl
+import com.cocktailcraft.data.repository.FavoritesRepositoryImpl
 import com.cocktailcraft.data.repository.OrderRepositoryImpl
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.domain.repository.FavoritesRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
@@ -50,6 +52,14 @@ val dataModule = module {
         OrderRepositoryImpl(
             settings = get(),
             json = get(),
+            appConfig = get()
+        )
+    }
+
+    single<FavoritesRepository> {
+        FavoritesRepositoryImpl(
+            cocktailRepository = get(),
+            settings = get(),
             appConfig = get()
         )
     }

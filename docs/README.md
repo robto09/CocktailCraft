@@ -30,6 +30,12 @@ CocktailCraft follows Clean Architecture principles with a MVVM pattern for the 
   - Batched loading mechanism for optimized list animations
   - Scrolling performance optimizations
 
+- **[Recommendation System](RecommendationSystem.md)**: Documentation of the cocktail recommendation system, including:
+  - API limitations and constraints
+  - Recommendation strategies and algorithms
+  - Implementation approach and optimization techniques
+  - Future enhancement possibilities
+
 ### Key Architectural Layers
 
 1. **UI Layer**:
