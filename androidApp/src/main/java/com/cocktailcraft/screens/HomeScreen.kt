@@ -37,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AirplanemodeActive
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Wifi
@@ -75,6 +76,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.cocktailcraft.navigation.Screen
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.ui.components.AdvancedSearchPanel
 import com.cocktailcraft.ui.components.AnimatedCocktailItem
 import com.cocktailcraft.ui.components.CocktailItem
 import com.cocktailcraft.ui.components.CocktailItemShimmer
@@ -83,6 +85,7 @@ import com.cocktailcraft.ui.components.shimmerEffect
 import com.cocktailcraft.ui.components.ErrorBanner
 import com.cocktailcraft.ui.components.ErrorDialog
 import com.cocktailcraft.ui.components.FilterChip
+import com.cocktailcraft.ui.components.SearchFilterChips
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.util.ErrorUtils
 import com.cocktailcraft.util.ListOptimizations.OnBottomReached
@@ -138,9 +141,14 @@ fun HomeScreen(
     val favorites by favoritesViewModel.favorites.collectAsState()
     val isOfflineMode by viewModel.isOfflineMode.collectAsState()
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsState()
+    val searchFilters by viewModel.searchFilters.collectAsState()
+    val isAdvancedSearchActive by viewModel.isAdvancedSearchActive.collectAsState()
 
     // State for error dialog
     var showErrorDialog by remember { mutableStateOf(false) }
+
+    // State for advanced search panel
+    var showAdvancedSearch by remember { mutableStateOf(false) }
 
     // Add state for selected category
     var selectedCategory by remember { mutableStateOf<String?>(null) }
@@ -177,42 +185,141 @@ fun HomeScreen(
         // For now, we'll skip the error banner since we're using legacy error handling
         // We'll implement it in the future when we fully migrate to the new error system
 
-        // Search Bar
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { viewModel.searchCocktails(it) },
+        // Search Bar with Advanced Search Button
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            placeholder = { Text("Search cocktails...") },
-            leadingIcon = {
-                Icon(
-                    Icons.Filled.Search,
-                    contentDescription = "Search",
-                    tint = AppColors.Gray
-                )
-            },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { viewModel.toggleSearchMode(false) }) {
-                        Icon(
-                            Icons.Filled.Close,
-                            contentDescription = "Clear search",
-                            tint = AppColors.Gray
-                        )
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { viewModel.searchCocktails(it) },
+                modifier = Modifier
+                    .weight(1f),
+                placeholder = { Text("Search cocktails...") },
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.Search,
+                        contentDescription = "Search",
+                        tint = AppColors.Gray
+                    )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.toggleSearchMode(false) }) {
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = "Clear search",
+                                tint = AppColors.Gray
+                            )
+                        }
                     }
+                },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    disabledContainerColor = Color.White,
+                    cursorColor = AppColors.Primary,
+                    focusedIndicatorColor = AppColors.Primary,
+                    focusedLeadingIconColor = AppColors.Primary
+                ),
+                shape = RoundedCornerShape(8.dp),
+                singleLine = true
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Advanced search button
+            val isAdvancedSearchActive by viewModel.isAdvancedSearchActive.collectAsState()
+
+            IconButton(
+                onClick = {
+                    showAdvancedSearch = !showAdvancedSearch
+                    viewModel.toggleAdvancedSearchMode(!isAdvancedSearchActive)
+                },
+                modifier = Modifier
+                    .background(
+                        color = if (isAdvancedSearchActive) AppColors.Primary else AppColors.LightGray,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    .size(48.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.FilterAlt,
+                    contentDescription = "Advanced Search",
+                    tint = if (isAdvancedSearchActive) Color.White else AppColors.TextSecondary
+                )
+            }
+        }
+
+        // Active filters display
+        SearchFilterChips(
+            filters = searchFilters,
+            onClearFilter = { filterType ->
+                // Create a copy of current filters with the specified filter cleared
+                val updatedFilters = when (filterType) {
+                    "category" -> searchFilters.copy(category = null)
+                    "ingredient" -> searchFilters.copy(ingredient = null)
+                    "ingredients" -> searchFilters.copy(ingredients = emptyList())
+                    "excludeIngredients" -> searchFilters.copy(excludeIngredients = emptyList())
+                    "alcoholic" -> searchFilters.copy(alcoholic = null)
+                    "glass" -> searchFilters.copy(glass = null)
+                    "priceRange" -> searchFilters.copy(priceRange = null)
+                    "tasteProfile" -> searchFilters.copy(tasteProfile = null)
+                    "complexity" -> searchFilters.copy(complexity = null)
+                    "preparationTime" -> searchFilters.copy(preparationTime = null)
+                    else -> searchFilters
                 }
+                viewModel.updateSearchFilters(updatedFilters)
             },
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                disabledContainerColor = Color.White,
-                cursorColor = AppColors.Primary,
-                focusedIndicatorColor = AppColors.Primary,
-                focusedLeadingIconColor = AppColors.Primary
-            ),
-            shape = RoundedCornerShape(8.dp),
-            singleLine = true
+            onClearAllFilters = {
+                viewModel.clearSearchFilters()
+            }
+        )
+
+        // Advanced search panel
+
+        // Load filter options
+        var categories by remember { mutableStateOf(listOf("Cocktail", "Ordinary Drink", "Shot", "Coffee / Tea", "Punch / Party Drink", "Homemade Liqueur", "Beer", "Soft Drink")) }
+        var ingredients by remember { mutableStateOf(listOf<String>()) }
+        var glasses by remember { mutableStateOf(listOf<String>()) }
+
+        // Load filter options from repository
+        LaunchedEffect(Unit) {
+            try {
+                viewModel.repository.getCategories().collect { categoryList ->
+                    categories = categoryList
+                }
+
+                viewModel.repository.getIngredients().collect { ingredientList ->
+                    ingredients = ingredientList
+                }
+
+                viewModel.repository.getGlasses().collect { glassList ->
+                    glasses = glassList
+                }
+            } catch (e: Exception) {
+                // Use default values if loading fails
+            }
+        }
+
+        AdvancedSearchPanel(
+            isVisible = showAdvancedSearch,
+            currentFilters = searchFilters,
+            categories = categories,
+            ingredients = ingredients,
+            glasses = glasses,
+            onApplyFilters = { filters ->
+                viewModel.updateSearchFilters(filters)
+                showAdvancedSearch = false
+            },
+            onClearFilters = {
+                viewModel.clearSearchFilters()
+            },
+            onDismiss = {
+                showAdvancedSearch = false
+            }
         )
 
         // Add Category Filter Chips - only shown when not searching
