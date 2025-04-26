@@ -26,6 +26,9 @@ interface CocktailRepository {
     suspend fun getCocktailsSortedByPopularity(): Flow<List<Cocktail>>
     suspend fun getCocktailsByPriceRange(minPrice: Double, maxPrice: Double): Flow<List<Cocktail>>
 
+    // Advanced search and filtering
+    suspend fun advancedSearch(filters: com.cocktailcraft.domain.model.SearchFilters): Flow<List<Cocktail>>
+
     // New method for getting image URL
     fun getCocktailImageUrl(cocktail: Cocktail): String
 
