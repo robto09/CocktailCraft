@@ -6,7 +6,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +31,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.LocalBar
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
@@ -96,6 +99,8 @@ import com.cocktailcraft.ui.components.RecommendationsSection
 import com.cocktailcraft.ui.components.WriteReviewDialog
 import com.cocktailcraft.viewmodel.CocktailDetailViewModel
 import org.koin.androidx.compose.koinViewModel
+import org.koin.core.parameter.parametersOf
+import androidx.compose.animation.core.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -606,24 +611,151 @@ fun CocktailDetailScreen(
                         }
                     }
 
-                    // Recommendations section
+                    // Recommendations section - ONLY SHOW WHEN WE HAVE REAL RECOMMENDATIONS
                     item {
-                        // Get the CocktailDetailViewModel from Koin
-                        val detailViewModel: CocktailDetailViewModel = koinViewModel()
+                        // Get real recommendations based on category
+                        var similarCocktails by remember { mutableStateOf<List<Cocktail>>(emptyList()) }
+                        var isLoadingRecommendations by remember { mutableStateOf(true) }
 
-                        // Load recommendations for this cocktail
-                        LaunchedEffect(cocktailData.id) {
-                            detailViewModel.loadCocktail(cocktailData.id)
+                        // Load recommendations when the cocktail data is available
+                        LaunchedEffect(cocktailData) {
+                            isLoadingRecommendations = true
+                            // Safely extract the category as a local variable
+                            val category = cocktailData.category
+                            if (category != null && category.isNotBlank()) {
+                                // Try to get recommendations from the repository
+                                try {
+                                    val recommendations = homeViewModel.getCocktailsByCategory(category, 5)
+                                        .filter { it.id != cocktailData.id } // Filter out current cocktail
+
+                                    if (recommendations.isNotEmpty()) {
+                                        similarCocktails = recommendations
+                                    }
+                                } catch (e: Exception) {
+                                    // Just log the error, don't show to user
+                                    println("Failed to load recommendations: ${e.message}")
+                                } finally {
+                                    isLoadingRecommendations = false
+                                }
+                            } else {
+                                isLoadingRecommendations = false
+                            }
                         }
 
-                        // Display recommendations
-                        RecommendationsSection(
-                            viewModel = detailViewModel,
-                            onCocktailClick = { recommendedCocktail ->
-                                // Navigate to the recommended cocktail
-                                navigationManager.navigateToCocktailDetail(recommendedCocktail.id)
+                        // Only show the recommendations section if we have actual recommendations
+                        if (!isLoadingRecommendations && similarCocktails.isNotEmpty()) {
+                            // Add a spacer before recommendations
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Display recommendations with a Card wrapper for consistent styling
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(20.dp)
+                                ) {
+                                    // Section title
+                                    Text(
+                                        text = "You might also like",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 18.sp
+                                        ),
+                                        color = AppColors.TextPrimary
+                                    )
+
+                                    Spacer(modifier = Modifier.height(16.dp))
+
+                                    // Show recommendations
+                                    LazyRow(
+                                        contentPadding = PaddingValues(horizontal = 0.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        items(similarCocktails) { recommendation ->
+                                            // Simple recommendation card
+                                            Card(
+                                                modifier = Modifier
+                                                    .width(140.dp)
+                                                    .clickable {
+                                                        navigationManager.navigateToCocktailDetail(recommendation.id)
+                                                    },
+                                                shape = RoundedCornerShape(12.dp),
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = AppColors.Surface
+                                                ),
+                                                elevation = CardDefaults.cardElevation(
+                                                    defaultElevation = 2.dp
+                                                )
+                                            ) {
+                                                Column {
+                                                    // Cocktail image with fallback
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .height(140.dp)
+                                                            .fillMaxWidth()
+                                                            .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                                                            .background(AppColors.LightGray),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        // Show a placeholder icon if image URL is empty
+                                                        if (recommendation.imageUrl.isNullOrEmpty()) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.LocalBar,
+                                                                contentDescription = null,
+                                                                modifier = Modifier.size(48.dp),
+                                                                tint = AppColors.Gray
+                                                            )
+                                                        } else {
+                                                            // Use our optimized image component
+                                                            OptimizedImage(
+                                                                url = recommendation.imageUrl,
+                                                                contentDescription = recommendation.name,
+                                                                modifier = Modifier.fillMaxSize(),
+                                                                contentScale = ContentScale.Crop,
+                                                                targetSize = 200,
+                                                                showLoadingIndicator = true
+                                                            )
+                                                        }
+                                                    }
+
+                                                    // Cocktail details
+                                                    Column(
+                                                        modifier = Modifier.padding(8.dp)
+                                                    ) {
+                                                        // Cocktail name
+                                                        Text(
+                                                            text = recommendation.name,
+                                                            style = MaterialTheme.typography.bodyMedium.copy(
+                                                                fontWeight = FontWeight.Bold
+                                                            ),
+                                                            color = AppColors.TextPrimary,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis
+                                                        )
+
+                                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                                        // Price
+                                                        Text(
+                                                            text = "$${String.format("%.2f", recommendation.price)}",
+                                                            style = MaterialTheme.typography.bodyMedium.copy(
+                                                                fontWeight = FontWeight.Bold
+                                                            ),
+                                                            color = AppColors.Primary
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                        )
+                        }
                     }
 
                     // Reviews section
@@ -706,6 +838,35 @@ fun CocktailDetailScreen(
             }
         }
     }
+}
+
+/**
+ * Extension function to create a shimmer loading effect
+ */
+@Composable
+fun Modifier.shimmerEffect(): Modifier {
+    val transition = rememberInfiniteTransition(label = "shimmer")
+    val alpha = transition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 0.9f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shimmer alpha"
+    ).value
+
+    return this.then(
+        Modifier.background(
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    Color.LightGray.copy(alpha = alpha),
+                    Color.LightGray.copy(alpha = 0.3f),
+                    Color.LightGray.copy(alpha = alpha)
+                )
+            )
+        )
+    )
 }
 
 @Composable
