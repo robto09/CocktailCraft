@@ -27,7 +27,7 @@ class HomeViewModel(
     private val networkMonitor: NetworkMonitor by inject()
 
     // Use the provided repository or the injected one
-    private val repository: CocktailRepository
+    val repository: CocktailRepository
         get() = cocktailRepository ?: injectedCocktailRepository
 
     // Track offline mode status
@@ -480,6 +480,137 @@ class HomeViewModel(
         } else {
             addToFavorites(cocktail)
         }
+    }
+
+    /**
+     * Get cocktails by category - improved version for recommendations
+     * This method returns a list of cocktails based on the provided category
+     * and ensures we always return varied recommendations
+     */
+    fun getCocktailsByCategory(category: String, limit: Int = 3): List<Cocktail> {
+        // First try to get from the current list with exact category match
+        val fromCurrentList = _cocktails.value
+            .filter { it.category == category && it.imageUrl?.isNotBlank() == true }
+            .shuffled() // Add randomness
+            .take(limit)
+
+        if (fromCurrentList.size >= limit) {
+            return fromCurrentList
+        }
+
+        // If we don't have enough from the exact category, try to get any cocktails
+        val anyRecommendations = _cocktails.value
+            .filter { it.category != null && it.imageUrl?.isNotBlank() == true }
+            .shuffled() // Add randomness
+            .take(limit)
+
+        if (anyRecommendations.size >= limit) {
+            return anyRecommendations
+        }
+
+        // If we still don't have enough, trigger a background load
+        viewModelScope.launch {
+            try {
+                repository.getCocktailsSortedByNewest()
+                    .collect { cocktailList ->
+                        if (cocktailList.isNotEmpty()) {
+                            _cocktails.value = cocktailList
+                        }
+                    }
+            } catch (e: Exception) {
+                println("Failed to load recommendations: ${e.message}")
+            }
+        }
+
+        // Return a varied set of fallback cocktails based on the requested category
+        val fallbackCocktails = when (category.lowercase()) {
+            "cocktail" -> listOf(
+                createFallbackCocktail(
+                    "11000", "Mojito", "Cocktail",
+                    "https://www.thecocktaildb.com/images/media/drink/3z6xdi1589574603.jpg"
+                ),
+                createFallbackCocktail(
+                    "11001", "Old Fashioned", "Cocktail",
+                    "https://www.thecocktaildb.com/images/media/drink/vrwquq1478252802.jpg"
+                ),
+                createFallbackCocktail(
+                    "11002", "Long Island Tea", "Cocktail",
+                    "https://www.thecocktaildb.com/images/media/drink/nkwr4c1606770558.jpg"
+                )
+            )
+            "ordinary drink" -> listOf(
+                createFallbackCocktail(
+                    "11007", "Margarita", "Ordinary Drink",
+                    "https://www.thecocktaildb.com/images/media/drink/5noda61589575158.jpg"
+                ),
+                createFallbackCocktail(
+                    "11008", "Manhattan", "Ordinary Drink",
+                    "https://www.thecocktaildb.com/images/media/drink/yk70e31606771240.jpg"
+                ),
+                createFallbackCocktail(
+                    "11009", "Moscow Mule", "Ordinary Drink",
+                    "https://www.thecocktaildb.com/images/media/drink/3pylqc1504370988.jpg"
+                )
+            )
+            "shot" -> listOf(
+                createFallbackCocktail(
+                    "12127", "Jello shots", "Shot",
+                    "https://www.thecocktaildb.com/images/media/drink/l0smzo1504884904.jpg"
+                ),
+                createFallbackCocktail(
+                    "13192", "Kamikaze", "Shot",
+                    "https://www.thecocktaildb.com/images/media/drink/d7mo481504889531.jpg"
+                ),
+                createFallbackCocktail(
+                    "14610", "ACID", "Shot",
+                    "https://www.thecocktaildb.com/images/media/drink/xuxpxt1479209317.jpg"
+                )
+            )
+            else -> listOf(
+                createFallbackCocktail(
+                    "11000", "Mojito", "Cocktail",
+                    "https://www.thecocktaildb.com/images/media/drink/3z6xdi1589574603.jpg"
+                ),
+                createFallbackCocktail(
+                    "11007", "Margarita", "Ordinary Drink",
+                    "https://www.thecocktaildb.com/images/media/drink/5noda61589575158.jpg"
+                ),
+                createFallbackCocktail(
+                    "12127", "Jello shots", "Shot",
+                    "https://www.thecocktaildb.com/images/media/drink/l0smzo1504884904.jpg"
+                )
+            )
+        }
+
+        // Combine any real recommendations with fallbacks to reach the limit
+        val combined = (fromCurrentList + anyRecommendations + fallbackCocktails)
+            .distinctBy { it.id } // Remove duplicates
+            .take(limit)
+
+        return combined
+    }
+
+    /**
+     * Helper method to create fallback cocktails with consistent properties
+     */
+    private fun createFallbackCocktail(
+        id: String,
+        name: String,
+        category: String,
+        imageUrl: String
+    ): Cocktail {
+        return Cocktail(
+            id = id,
+            name = name,
+            category = category,
+            alcoholic = "Alcoholic",
+            glass = "Cocktail glass",
+            instructions = "Mix ingredients and serve.",
+            imageUrl = imageUrl,
+            ingredients = emptyList(),
+            price = 8.99 + (id.hashCode() % 5), // Varied price based on ID
+            stockCount = 10 + (id.hashCode() % 10) // Varied stock based on ID
+        )
     }
 
     fun sortByPrice(ascending: Boolean) {

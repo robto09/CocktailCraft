@@ -613,37 +613,46 @@ fun CocktailDetailScreen(
 
                     // Recommendations section - ONLY SHOW WHEN WE HAVE REAL RECOMMENDATIONS
                     item {
-                        // Get real recommendations based on category
+                        // Get recommendations for this cocktail
                         var similarCocktails by remember { mutableStateOf<List<Cocktail>>(emptyList()) }
                         var isLoadingRecommendations by remember { mutableStateOf(true) }
 
                         // Load recommendations when the cocktail data is available
                         LaunchedEffect(cocktailData) {
                             isLoadingRecommendations = true
-                            // Safely extract the category as a local variable
-                            val category = cocktailData.category
-                            if (category != null && category.isNotBlank()) {
-                                // Try to get recommendations from the repository
-                                try {
-                                    val recommendations = homeViewModel.getCocktailsByCategory(category, 5)
-                                        .filter { it.id != cocktailData.id } // Filter out current cocktail
+                            try {
+                                // Get the category or use a default
+                                val category = cocktailData.category ?: "Cocktail"
+                                val currentId = cocktailData.id
 
-                                    if (recommendations.isNotEmpty()) {
-                                        similarCocktails = recommendations
-                                    }
-                                } catch (e: Exception) {
-                                    // Just log the error, don't show to user
-                                    println("Failed to load recommendations: ${e.message}")
-                                } finally {
-                                    isLoadingRecommendations = false
+                                // Use the repository directly to get recommendations from the API
+                                // This bypasses any caching or filtering in the ViewModel
+                                val apiRecommendations = homeViewModel.repository.getCocktailsByCategory(category)
+                                    .filter { it.id != currentId } // Filter out current cocktail
+                                    .take(3) // Limit to 3 recommendations
+
+                                // If we got recommendations from the API, use them
+                                if (apiRecommendations.isNotEmpty()) {
+                                    similarCocktails = apiRecommendations
+                                } else {
+                                    // If no recommendations from API, try to get any cocktails from the ViewModel
+                                    val viewModelRecommendations = homeViewModel.getCocktailsByCategory("Cocktail", 6)
+                                        .filter { it.id != currentId }
+                                        .take(3)
+
+                                    similarCocktails = viewModelRecommendations
                                 }
-                            } else {
+                            } catch (e: Exception) {
+                                // Just log the error, don't show to user
+                                println("Failed to load recommendations: ${e.message}")
+                                // Use empty list - the UI will handle this
+                                similarCocktails = emptyList()
+                            } finally {
                                 isLoadingRecommendations = false
                             }
                         }
 
-                        // Only show the recommendations section if we have actual recommendations
-                        if (!isLoadingRecommendations && similarCocktails.isNotEmpty()) {
+                        // Always show the recommendations section - we'll have fallback data if needed
                             // Add a spacer before recommendations
                             Spacer(modifier = Modifier.height(16.dp))
 
@@ -659,9 +668,15 @@ fun CocktailDetailScreen(
                                 Column(
                                     modifier = Modifier.padding(20.dp)
                                 ) {
-                                    // Section title
+                                    // Section title with category if available
+                                    val titleText = if (cocktailData.category != null) {
+                                        "More ${cocktailData.category} Cocktails"
+                                    } else {
+                                        "You might also like"
+                                    }
+
                                     Text(
-                                        text = "You might also like",
+                                        text = titleText,
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 18.sp
@@ -671,12 +686,39 @@ fun CocktailDetailScreen(
 
                                     Spacer(modifier = Modifier.height(16.dp))
 
-                                    // Show recommendations
-                                    LazyRow(
-                                        contentPadding = PaddingValues(horizontal = 0.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        items(similarCocktails) { recommendation ->
+                                    // Show loading state or recommendations
+                                    if (isLoadingRecommendations) {
+                                        // Show loading shimmer
+                                        LazyRow(
+                                            contentPadding = PaddingValues(horizontal = 0.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            items(3) {
+                                                // Loading shimmer
+                                                Box(
+                                                    modifier = Modifier
+                                                        .width(140.dp)
+                                                        .height(200.dp)
+                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .shimmerEffect()
+                                                )
+                                            }
+                                        }
+                                    } else if (similarCocktails.isEmpty()) {
+                                        // Show a message if no recommendations
+                                        Text(
+                                            text = "Loading recommendations...",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = AppColors.TextSecondary,
+                                            modifier = Modifier.padding(vertical = 16.dp)
+                                        )
+                                    } else {
+                                        // Show recommendations
+                                        LazyRow(
+                                            contentPadding = PaddingValues(horizontal = 0.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            items(similarCocktails) { recommendation ->
                                             // Simple recommendation card
                                             Card(
                                                 modifier = Modifier
@@ -757,6 +799,7 @@ fun CocktailDetailScreen(
                             }
                         }
                     }
+
 
                     // Reviews section
                     item {
