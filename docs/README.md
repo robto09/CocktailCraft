@@ -36,6 +36,12 @@ CocktailCraft follows Clean Architecture principles with a MVVM pattern for the 
   - Implementation approach and optimization techniques
   - Future enhancement possibilities
 
+- **[Advanced Search and Filtering](AdvancedSearch.md)**: Documentation of the advanced search functionality, including:
+  - Multi-criteria filtering implementation
+  - Filter types and UI components
+  - Search filter data flow
+  - Future enhancements for search capabilities
+
 ### Key Architectural Layers
 
 1. **UI Layer**:
@@ -100,6 +106,6 @@ CocktailCraft provides the following features:
 1. **iOS Support**: Complete iOS implementation using Kotlin Multiplatform
 2. **Backend Integration**: Develop a custom backend for user accounts, orders, and payments
 3. **Offline Support**: Enhance offline capabilities with local caching
-4. **Advanced Search**: Implement advanced search functionality
-5. **Social Features**: Add social sharing and friend recommendations
-6. **Personalization**: Implement personalized recommendations based on user preferences
+4. **Social Features**: Add social sharing and friend recommendations
+5. **Personalization**: Implement personalized recommendations based on user preferences
+6. **Saved Searches**: Allow users to save their favorite search filter combinations
