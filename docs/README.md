@@ -42,6 +42,11 @@ CocktailCraft follows Clean Architecture principles with a MVVM pattern for the 
   - Search filter data flow
   - Future enhancements for search capabilities
 
+- **[Libraries](Libraries.md)**: Detailed information about the libraries used in the application, including:
+  - Versions and purposes
+  - Categorized by functionality
+  - Brief descriptions of each category
+
 ### Key Architectural Layers
 
 1. **UI Layer**:
