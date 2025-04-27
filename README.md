@@ -7,6 +7,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 
 ## Features
 - **Cocktail Discovery**: Browse and search for cocktails with detailed information
+- **Advanced Search & Filtering**: Multi-criteria search with filters for ingredients, taste profiles, complexity, and more
 - **Shopping Cart**: Add cocktails to cart, update quantities, and checkout
 - **User Authentication**: Register, login, and manage user profiles
 - **Order Management**: Place orders and track order history
