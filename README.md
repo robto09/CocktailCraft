@@ -91,7 +91,7 @@ The application follows the **Clean Architecture** pattern with **MVVM** (Model-
 - **Presentation Layer**:
   - **Screens**: Compose UI components that display data and handle user interactions
   - **ViewModels**: Manage UI state, process user actions, and communicate with the domain layer
-  - **UI Elements**: Reusable Compose components for consistent UI across the app
+  - **UI Elements**: Reusable Compose components for consistent UI across the app (see [UI Components Documentation](docs/UI_Components.md))
   - **KoinViewModel**: Base class for all ViewModels that provides standardized Koin integration
   - **Navigation**: Compose Navigation for handling screen transitions and deep linking
   - **State Handling**: Kotlin StateFlow and SharedFlow for reactive UI updates
@@ -182,6 +182,8 @@ For detailed information about the dependency injection implementation, see:
 - **Espresso**: For UI testing
 
 For a detailed list of all libraries with versions and purposes, see the [Libraries Documentation](docs/Libraries.md).
+
+For information about the reusable UI components in the app, see the [UI Components Documentation](docs/UI_Components.md).
 
 ## Package Structure
 
