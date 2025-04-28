@@ -79,6 +79,20 @@ class NavigationManager(private val navController: NavController) {
     }
 
     /**
+     * Navigate to the offline mode screen
+     */
+    fun navigateToOfflineMode() {
+        navController.navigate(Screen.OfflineMode.route)
+    }
+
+    /**
+     * Navigate to the reviews screen for a specific cocktail
+     */
+    fun navigateToReviews(cocktailId: String) {
+        navController.navigate(Screen.Reviews.createRoute(cocktailId))
+    }
+
+    /**
      * Navigate to a bottom navigation destination
      */
     fun navigateToBottomNavDestination(screen: Screen) {
@@ -87,4 +101,4 @@ class NavigationManager(private val navController: NavController) {
             launchSingleTop = true
         }
     }
-} 
+}

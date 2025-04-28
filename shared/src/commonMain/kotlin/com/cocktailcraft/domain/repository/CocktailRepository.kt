@@ -25,10 +25,23 @@ interface CocktailRepository {
     suspend fun getCocktailsSortedByPriceHighToLow(): Flow<List<Cocktail>>
     suspend fun getCocktailsSortedByPopularity(): Flow<List<Cocktail>>
     suspend fun getCocktailsByPriceRange(minPrice: Double, maxPrice: Double): Flow<List<Cocktail>>
-    
+
+    // Advanced search and filtering
+    suspend fun advancedSearch(filters: com.cocktailcraft.domain.model.SearchFilters): Flow<List<Cocktail>>
+
     // New method for getting image URL
     fun getCocktailImageUrl(cocktail: Cocktail): String
-    
+
     // New method to check API connectivity
     suspend fun checkApiConnectivity(): Flow<Boolean>
-} 
+
+    // Methods for offline mode
+    suspend fun getRecentlyViewedCocktails(): Flow<List<Cocktail>>
+    fun setOfflineMode(enabled: Boolean)
+    fun isOfflineModeEnabled(): Boolean
+
+    // Methods for recommendations
+    suspend fun getCocktailsByCategory(category: String): List<Cocktail>
+    suspend fun getCocktailsByIngredient(ingredient: String): List<Cocktail>
+    suspend fun getCocktailsByAlcoholicFilter(alcoholicFilter: String): List<Cocktail>
+}

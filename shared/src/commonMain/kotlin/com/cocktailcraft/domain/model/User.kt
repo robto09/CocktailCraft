@@ -27,6 +27,7 @@ data class Address(
 @Serializable
 data class UserPreferences(
     val darkMode: Boolean = false,
+    val followSystemTheme: Boolean = true,
     val notificationsEnabled: Boolean = true,
     val language: String = "en"
-) 
+)
