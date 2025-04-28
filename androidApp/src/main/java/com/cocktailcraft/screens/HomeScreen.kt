@@ -96,32 +96,6 @@ import com.cocktailcraft.viewmodel.CartViewModel
 import com.cocktailcraft.viewmodel.FavoritesViewModel
 import com.cocktailcraft.viewmodel.HomeViewModel
 
-/**
- * Get an appropriate icon for the error category
- */
-@Composable
-private fun getErrorIcon(category: ErrorUtils.ErrorCategory): ImageVector {
-    return when (category) {
-        ErrorUtils.ErrorCategory.NETWORK -> Icons.Default.WifiOff
-        ErrorUtils.ErrorCategory.SERVER,
-        ErrorUtils.ErrorCategory.CLIENT -> Icons.Default.Warning
-        else -> Icons.Default.Error
-    }
-}
-
-/**
- * Get an appropriate color for the error category
- */
-@Composable
-private fun getErrorColor(category: ErrorUtils.ErrorCategory): Color {
-    return when (category) {
-        ErrorUtils.ErrorCategory.NETWORK -> AppColors.Primary
-        ErrorUtils.ErrorCategory.SERVER -> Color(0xFFF57C00) // Orange
-        ErrorUtils.ErrorCategory.AUTHENTICATION -> Color(0xFFD32F2F) // Red
-        else -> AppColors.Error
-    }
-}
-
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun HomeScreen(
