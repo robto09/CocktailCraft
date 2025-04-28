@@ -2,6 +2,8 @@ package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.domain.util.ErrorCode
+import com.cocktailcraft.domain.util.ErrorHandler
 import com.cocktailcraft.domain.util.Result
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -26,11 +28,11 @@ class GetCocktailDetailsUseCase(
                 if (cocktail != null) {
                     Result.Success(cocktail) 
                 } else {
-                    Result.Error("Cocktail not found")
+                    Result.Error("Cocktail not found", ErrorCode.NOT_FOUND)
                 }
             }
             .catch { e -> 
-                emit(Result.Error(e.message ?: "Unknown error occurred"))
+                emit(ErrorHandler.handleException(e, "Failed to get cocktail details"))
             }
     }
     
@@ -44,11 +46,11 @@ class GetCocktailDetailsUseCase(
                 if (cocktail != null) {
                     Result.Success(cocktail) 
                 } else {
-                    Result.Error("Failed to get random cocktail")
+                    Result.Error("Failed to get random cocktail", ErrorCode.NOT_FOUND)
                 }
             }
             .catch { e -> 
-                emit(Result.Error(e.message ?: "Unknown error occurred"))
+                emit(ErrorHandler.handleException(e, "Failed to get random cocktail"))
             }
     }
     
@@ -60,7 +62,7 @@ class GetCocktailDetailsUseCase(
         return cocktailRepository.getRecentlyViewedCocktails()
             .map { cocktails -> Result.Success(cocktails) as Result<List<Cocktail>> }
             .catch { e -> 
-                emit(Result.Error(e.message ?: "Unknown error occurred"))
+                emit(ErrorHandler.handleException(e, "Failed to get recently viewed cocktails"))
             }
     }
 }

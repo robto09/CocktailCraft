@@ -4,8 +4,9 @@ import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.remote.CocktailApi
 import com.cocktailcraft.data.remote.CocktailDto
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.domain.util.ErrorCode
+import com.cocktailcraft.domain.util.ErrorHandler
 import com.cocktailcraft.util.NetworkMonitor
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.Flow
@@ -15,6 +16,10 @@ import kotlinx.coroutines.flow.first
 import com.cocktailcraft.domain.config.AppConfig
 import kotlinx.serialization.json.Json
 
+/**
+ * Implementation of CocktailRepository that handles data operations related to cocktails.
+ * This class focuses on data operations and delegates business logic to use cases.
+ */
 class CocktailRepositoryImpl(
     private val api: CocktailApi,
     private val settings: Settings,
@@ -36,25 +41,75 @@ class CocktailRepositoryImpl(
         return forceOfflineMode || !networkMonitor.isOnline.first()
     }
 
+    /**
+     * Search cocktails by name
+     * @param name The name to search for
+     * @return Flow of cocktails matching the name
+     */
     override suspend fun searchCocktailsByName(name: String): Flow<List<Cocktail>> = flow {
         try {
+            // Check if we're offline
+            if (isOffline()) {
+                // Use cached cocktails when offline
+                val cachedCocktails = cocktailCache.getAllCachedCocktails()
+                    .filter { it.name.contains(name, ignoreCase = true) }
+                emit(cachedCocktails)
+                return@flow
+            }
+            
             val cocktails = api.searchCocktailsByName(name).map { dto ->
-                mapDtoToCocktail(dto)
+                val cocktail = mapDtoToCocktail(dto)
+                // Cache cocktails for offline access
+                cocktailCache.cacheCocktail(cocktail)
+                cocktail
             }
             emit(cocktails)
         } catch (e: Exception) {
-            emit(emptyList())
+            // Try to use cache as fallback
+            val cachedCocktails = cocktailCache.getAllCachedCocktails()
+                .filter { it.name.contains(name, ignoreCase = true) }
+            
+            if (cachedCocktails.isNotEmpty()) {
+                emit(cachedCocktails)
+            } else {
+                emit(emptyList())
+            }
         }
     }
 
+    /**
+     * Search cocktails by first letter
+     * @param letter The first letter to search for
+     * @return Flow of cocktails starting with the letter
+     */
     override suspend fun searchCocktailsByFirstLetter(letter: Char): Flow<List<Cocktail>> = flow {
         try {
+            // Check if we're offline
+            if (isOffline()) {
+                // Use cached cocktails when offline
+                val cachedCocktails = cocktailCache.getAllCachedCocktails()
+                    .filter { it.name.startsWith(letter, ignoreCase = true) }
+                emit(cachedCocktails)
+                return@flow
+            }
+            
             val cocktails = api.searchCocktailsByFirstLetter(letter).map { dto ->
-                mapDtoToCocktail(dto)
+                val cocktail = mapDtoToCocktail(dto)
+                // Cache cocktails for offline access
+                cocktailCache.cacheCocktail(cocktail)
+                cocktail
             }
             emit(cocktails)
         } catch (e: Exception) {
-            emit(emptyList())
+            // Try to use cache as fallback
+            val cachedCocktails = cocktailCache.getAllCachedCocktails()
+                .filter { it.name.startsWith(letter, ignoreCase = true) }
+            
+            if (cachedCocktails.isNotEmpty()) {
+                emit(cachedCocktails)
+            } else {
+                emit(emptyList())
+            }
         }
     }
 
@@ -500,6 +555,9 @@ class CocktailRepositoryImpl(
 
     /**
      * Advanced search implementation that combines multiple filters
+     * This implementation delegates the filtering logic to the AdvancedFilterUseCase
+     * @param filters The search filters to apply
+     * @return Flow of filtered cocktails
      */
     override suspend fun advancedSearch(filters: com.cocktailcraft.domain.model.SearchFilters): Flow<List<Cocktail>> = flow {
         try {
@@ -507,8 +565,9 @@ class CocktailRepositoryImpl(
             if (isOffline()) {
                 // Use cached cocktails when offline
                 val cachedCocktails = cocktailCache.getAllCachedCocktails()
-                val filteredCocktails = applyFiltersToList(cachedCocktails, filters)
-                emit(filteredCocktails)
+                // Note: The actual filtering is now done in AdvancedFilterUseCase
+                // We're just getting the data here
+                emit(cachedCocktails)
                 return@flow
             }
 
@@ -539,179 +598,22 @@ class CocktailRepositoryImpl(
                     getCocktailsSortedByNewest().first()
             }
 
-            // Apply all remaining filters to the result
-            val filteredCocktails = applyFiltersToList(cocktails, filters)
-
             // Cache the results for offline access
-            filteredCocktails.forEach { cocktail ->
+            cocktails.forEach { cocktail ->
                 cocktailCache.cacheCocktail(cocktail)
             }
 
-            emit(filteredCocktails)
+            emit(cocktails)
         } catch (e: Exception) {
             // Try to use cache as fallback
             val cachedCocktails = cocktailCache.getAllCachedCocktails()
-            val filteredCocktails = applyFiltersToList(cachedCocktails, filters)
-
-            if (filteredCocktails.isNotEmpty()) {
-                emit(filteredCocktails)
+            
+            if (cachedCocktails.isNotEmpty()) {
+                emit(cachedCocktails)
             } else {
                 emit(emptyList())
             }
         }
-    }
-
-    /**
-     * Helper method to apply filters to a list of cocktails
-     */
-    private fun applyFiltersToList(cocktails: List<Cocktail>, filters: com.cocktailcraft.domain.model.SearchFilters): List<Cocktail> {
-        var result = cocktails
-
-        // Apply category filter if not used as primary filter
-        if (filters.category != null && filters.query.isNotBlank()) {
-            result = result.filter { it.category == filters.category }
-        }
-
-        // Apply ingredient filter if not used as primary filter
-        if (filters.ingredient != null && (filters.query.isNotBlank() || filters.category != null)) {
-            result = result.filter { cocktail ->
-                cocktail.ingredients.any { it.name.contains(filters.ingredient, ignoreCase = true) }
-            }
-        }
-
-        // Apply alcoholic filter if not used as primary filter
-        if (filters.alcoholic != null &&
-            (filters.query.isNotBlank() || filters.category != null || filters.ingredient != null)) {
-            val alcoholicString = if (filters.alcoholic) "Alcoholic" else "Non_Alcoholic"
-            result = result.filter { it.alcoholic == alcoholicString }
-        }
-
-        // Apply glass filter if not used as primary filter
-        if (filters.glass != null &&
-            (filters.query.isNotBlank() || filters.category != null ||
-             filters.ingredient != null || filters.alcoholic != null)) {
-            result = result.filter { it.glass == filters.glass }
-        }
-
-        // Apply price range filter
-        if (filters.priceRange != null) {
-            result = result.filter {
-                it.price.toFloat() in filters.priceRange
-            }
-        }
-
-        // Apply multiple ingredients filter
-        if (filters.ingredients.isNotEmpty()) {
-            result = result.filter { cocktail ->
-                filters.ingredients.all { ingredient ->
-                    cocktail.ingredients.any { it.name.contains(ingredient, ignoreCase = true) }
-                }
-            }
-        }
-
-        // Apply excluded ingredients filter
-        if (filters.excludeIngredients.isNotEmpty()) {
-            result = result.filter { cocktail ->
-                filters.excludeIngredients.none { ingredient ->
-                    cocktail.ingredients.any { it.name.contains(ingredient, ignoreCase = true) }
-                }
-            }
-        }
-
-        // Apply taste profile filter (this is more complex and would require ingredient analysis)
-        // For now, we'll use a simplified approach based on common ingredients
-        if (filters.tasteProfile != null) {
-            result = result.filter { cocktail ->
-                when (filters.tasteProfile) {
-                    com.cocktailcraft.domain.model.TasteProfile.SWEET ->
-                        cocktail.ingredients.any {
-                            it.name.contains("sugar", ignoreCase = true) ||
-                            it.name.contains("syrup", ignoreCase = true) ||
-                            it.name.contains("liqueur", ignoreCase = true)
-                        }
-                    com.cocktailcraft.domain.model.TasteProfile.SOUR ->
-                        cocktail.ingredients.any {
-                            it.name.contains("lemon", ignoreCase = true) ||
-                            it.name.contains("lime", ignoreCase = true) ||
-                            it.name.contains("citrus", ignoreCase = true)
-                        }
-                    com.cocktailcraft.domain.model.TasteProfile.BITTER ->
-                        cocktail.ingredients.any {
-                            it.name.contains("bitters", ignoreCase = true) ||
-                            it.name.contains("campari", ignoreCase = true)
-                        }
-                    com.cocktailcraft.domain.model.TasteProfile.SPICY ->
-                        cocktail.ingredients.any {
-                            it.name.contains("pepper", ignoreCase = true) ||
-                            it.name.contains("ginger", ignoreCase = true) ||
-                            it.name.contains("cinnamon", ignoreCase = true)
-                        }
-                    com.cocktailcraft.domain.model.TasteProfile.FRUITY ->
-                        cocktail.ingredients.any {
-                            it.name.contains("fruit", ignoreCase = true) ||
-                            it.name.contains("berry", ignoreCase = true) ||
-                            it.name.contains("apple", ignoreCase = true) ||
-                            it.name.contains("orange", ignoreCase = true) ||
-                            it.name.contains("pineapple", ignoreCase = true)
-                        }
-                    com.cocktailcraft.domain.model.TasteProfile.HERBAL ->
-                        cocktail.ingredients.any {
-                            it.name.contains("herb", ignoreCase = true) ||
-                            it.name.contains("mint", ignoreCase = true) ||
-                            it.name.contains("basil", ignoreCase = true) ||
-                            it.name.contains("rosemary", ignoreCase = true)
-                        }
-                    com.cocktailcraft.domain.model.TasteProfile.CREAMY ->
-                        cocktail.ingredients.any {
-                            it.name.contains("cream", ignoreCase = true) ||
-                            it.name.contains("milk", ignoreCase = true) ||
-                            it.name.contains("coconut", ignoreCase = true)
-                        }
-                    else -> true
-                }
-            }
-        }
-
-        // Apply complexity filter (based on number of ingredients and preparation steps)
-        if (filters.complexity != null) {
-            result = result.filter { cocktail ->
-                val ingredientCount = cocktail.ingredients.size
-                val instructionLength = cocktail.instructions?.length ?: 0
-
-                when (filters.complexity) {
-                    com.cocktailcraft.domain.model.Complexity.EASY ->
-                        ingredientCount <= 3 && instructionLength < 100
-                    com.cocktailcraft.domain.model.Complexity.MEDIUM ->
-                        ingredientCount in 4..6 && instructionLength in 100..200
-                    com.cocktailcraft.domain.model.Complexity.COMPLEX ->
-                        ingredientCount > 6 || instructionLength > 200
-                    else -> true
-                }
-            }
-        }
-
-        // Apply preparation time filter (estimated based on complexity)
-        if (filters.preparationTime != null) {
-            result = result.filter { cocktail ->
-                val ingredientCount = cocktail.ingredients.size
-                val instructionLength = cocktail.instructions?.length ?: 0
-                val hasComplexTechniques = cocktail.instructions?.contains("muddle", ignoreCase = true) == true ||
-                                          cocktail.instructions?.contains("shake", ignoreCase = true) == true ||
-                                          cocktail.instructions?.contains("stir", ignoreCase = true) == true
-
-                when (filters.preparationTime) {
-                    com.cocktailcraft.domain.model.PreparationTime.QUICK ->
-                        ingredientCount <= 3 && !hasComplexTechniques
-                    com.cocktailcraft.domain.model.PreparationTime.MEDIUM ->
-                        ingredientCount in 4..6 || hasComplexTechniques
-                    com.cocktailcraft.domain.model.PreparationTime.LONG ->
-                        ingredientCount > 6 || instructionLength > 300
-                    else -> true
-                }
-            }
-        }
-
-        return result
     }
 
     // Helper method to check API connectivity

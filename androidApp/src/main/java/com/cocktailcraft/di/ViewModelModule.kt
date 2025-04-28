@@ -9,7 +9,7 @@ import org.koin.dsl.module
  * This module provides all ViewModels used in the application.
  */
 val viewModelModule = module {
-    // Original ViewModels
+    // Legacy ViewModels
     viewModel { HomeViewModel() }
     viewModel { CocktailDetailViewModel(get(), get()) }
     viewModel { CartViewModel() }
@@ -20,8 +20,8 @@ val viewModelModule = module {
     viewModel { ThemeViewModel() }
     viewModel { OfflineModeViewModel() }
     
-    // Refactored ViewModels
-    viewModel { RefactoredHomeViewModel() }
-    viewModel { RefactoredCocktailDetailViewModel() }
-    viewModel { RefactoredFavoritesViewModel() }
+    // Enhanced ViewModels with use case architecture
+    viewModel { EnhancedHomeViewModel() }
+    viewModel { EnhancedCocktailDetailViewModel() }
+    viewModel { EnhancedFavoritesViewModel() }
 }

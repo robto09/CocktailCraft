@@ -1,6 +1,7 @@
 package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.domain.util.ErrorHandler
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.NetworkMonitor
 import kotlinx.coroutines.flow.Flow
@@ -23,8 +24,8 @@ class NetworkStatusUseCase(
     suspend fun isApiReachable(): Flow<Result<Boolean>> {
         return cocktailRepository.checkApiConnectivity()
             .map { isReachable -> Result.Success(isReachable) as Result<Boolean> }
-            .catch { e -> 
-                emit(Result.Error(e.message ?: "Unknown error occurred"))
+            .catch { e ->
+                emit(ErrorHandler.handleException(e, "Failed to check API connectivity"))
             }
     }
     

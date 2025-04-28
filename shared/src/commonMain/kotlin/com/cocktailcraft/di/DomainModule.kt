@@ -12,16 +12,23 @@ val domainModule = module {
     // Config
     single<AppConfig> { AppConfigImpl() }
 
-    // Use Cases
+    // Original use cases
     factory { PlaceOrderUseCase(orderRepository = get()) }
     factory { ToggleFavoriteUseCase(cocktailRepository = get()) }
 
-    // New use cases
+    // First wave of use cases
     factory { GetCocktailsUseCase(cocktailRepository = get()) }
-    factory { SearchCocktailsUseCase(cocktailRepository = get()) }
     factory { GetCocktailDetailsUseCase(cocktailRepository = get()) }
     factory { ManageFavoritesUseCase(cocktailRepository = get()) }
     factory { NetworkStatusUseCase(cocktailRepository = get(), networkMonitor = get()) }
     factory { GetFilterOptionsUseCase(cocktailRepository = get()) }
     factory { GetRecommendationsUseCase(cocktailRepository = get()) }
+    
+    // Second wave of use cases - for repository cleanup
+    factory { AdvancedFilterUseCase() }
+    factory { OfflineModeUseCase(cocktailRepository = get(), networkMonitor = get()) }
+    factory { FavoritesUseCase(cocktailRepository = get(), offlineModeUseCase = get()) }
+    
+    // Updated use cases with new dependencies
+    factory { SearchCocktailsUseCase(cocktailRepository = get(), advancedFilterUseCase = get()) }
 }
