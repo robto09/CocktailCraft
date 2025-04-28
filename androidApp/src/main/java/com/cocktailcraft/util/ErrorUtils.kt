@@ -1,6 +1,14 @@
 package com.cocktailcraft.util
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.cocktailcraft.domain.util.ErrorCode
+import com.cocktailcraft.ui.theme.AppColors
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -305,6 +313,32 @@ object ErrorUtils {
                 recoveryAction = retryAction?.let { RecoveryAction("Try Again", it) },
                 errorCode = errorCode
             )
+        }
+    }
+
+    /**
+     * Get an appropriate icon for the error category
+     */
+    @Composable
+    fun getErrorIcon(category: ErrorCategory): ImageVector {
+        return when (category) {
+            ErrorCategory.NETWORK -> Icons.Default.WifiOff
+            ErrorCategory.SERVER,
+            ErrorCategory.CLIENT -> Icons.Default.Warning
+            else -> Icons.Default.Error
+        }
+    }
+
+    /**
+     * Get an appropriate color for the error category
+     */
+    @Composable
+    fun getErrorColor(category: ErrorCategory): Color {
+        return when (category) {
+            ErrorCategory.NETWORK -> AppColors.Primary
+            ErrorCategory.SERVER -> Color(0xFFF57C00) // Orange
+            ErrorCategory.AUTHENTICATION -> Color(0xFFD32F2F) // Red
+            else -> AppColors.Error
         }
     }
 }

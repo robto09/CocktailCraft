@@ -80,14 +80,14 @@ fun ErrorDialog(
             ) {
                 // Error icon based on category
                 Icon(
-                    imageVector = getErrorIcon(error.category),
+                    imageVector = ErrorUtils.getErrorIcon(error.category),
                     contentDescription = "Error",
-                    tint = getErrorColor(error.category),
+                    tint = ErrorUtils.getErrorColor(error.category),
                     modifier = Modifier.size(48.dp)
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // Error title
                 Text(
                     text = error.title,
@@ -95,9 +95,9 @@ fun ErrorDialog(
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 // Error message
                 Text(
                     text = error.message,
@@ -105,9 +105,9 @@ fun ErrorDialog(
                     color = AppColors.TextSecondary,
                     textAlign = TextAlign.Center
                 )
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 // Action buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -119,9 +119,9 @@ fun ErrorDialog(
                     ) {
                         Text("Dismiss")
                     }
-                    
+
                     Spacer(modifier = Modifier.width(8.dp))
-                    
+
                     // Recovery action button
                     if (showRecoveryAction) {
                         if (error.recoveryAction != null) {
@@ -190,14 +190,14 @@ fun ErrorBanner(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = getErrorIcon(it.category),
+                        imageVector = ErrorUtils.getErrorIcon(it.category),
                         contentDescription = "Error",
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
                     )
-                    
+
                     Spacer(modifier = Modifier.width(16.dp))
-                    
+
                     Column(
                         modifier = Modifier.weight(1f)
                     ) {
@@ -206,14 +206,14 @@ fun ErrorBanner(
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
-                        
+
                         Text(
                             text = it.message,
                             color = Color.White.copy(alpha = 0.9f),
                             fontSize = 14.sp
                         )
                     }
-                    
+
                     if (onAction != null && it.recoveryAction != null) {
                         TextButton(
                             onClick = {
@@ -238,40 +238,10 @@ fun ErrorBanner(
 }
 
 /**
- * Get an appropriate icon for the error category
- */
-@Composable
-private fun getErrorIcon(category: ErrorUtils.ErrorCategory): ImageVector {
-    return when (category) {
-        ErrorUtils.ErrorCategory.NETWORK -> Icons.Default.WifiOff
-        ErrorUtils.ErrorCategory.SERVER, 
-        ErrorUtils.ErrorCategory.CLIENT -> Icons.Default.Warning
-        else -> Icons.Default.Error
-    }
-}
-
-/**
- * Get an appropriate color for the error category
- */
-@Composable
-private fun getErrorColor(category: ErrorUtils.ErrorCategory): Color {
-    return when (category) {
-        ErrorUtils.ErrorCategory.NETWORK -> AppColors.Primary
-        ErrorUtils.ErrorCategory.SERVER -> Color(0xFFF57C00) // Orange
-        ErrorUtils.ErrorCategory.AUTHENTICATION -> Color(0xFFD32F2F) // Red
-        else -> AppColors.Error
-    }
-}
-
-/**
  * Get an appropriate background color for the error banner
  */
 @Composable
 private fun getErrorBackgroundColor(category: ErrorUtils.ErrorCategory): Color {
-    return when (category) {
-        ErrorUtils.ErrorCategory.NETWORK -> AppColors.Primary.copy(alpha = 0.9f)
-        ErrorUtils.ErrorCategory.SERVER -> Color(0xFFF57C00).copy(alpha = 0.9f) // Orange
-        ErrorUtils.ErrorCategory.AUTHENTICATION -> Color(0xFFD32F2F).copy(alpha = 0.9f) // Red
-        else -> AppColors.Error.copy(alpha = 0.9f)
-    }
+    // Use the ErrorUtils.getErrorColor function and apply alpha
+    return ErrorUtils.getErrorColor(category).copy(alpha = 0.9f)
 }
