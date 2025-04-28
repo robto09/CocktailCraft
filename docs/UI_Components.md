@@ -15,6 +15,13 @@ This document provides an overview of the reusable UI components in the Cocktail
    - [ConfirmationDialog](#confirmationdialog)
    - [DetailInfoCard](#detailinfocard)
    - [RatingDisplay](#ratingdisplay)
+   - [StatusIndicator](#statusindicator)
+   - [SettingsCard](#settingscard)
+   - [InfoCard](#infocard)
+   - [ToggleSettingItem](#togglesettingitem)
+   - [NetworkStatusCard](#networkstatuscard)
+   - [ProfileCard](#profilecard)
+   - [AuthDialog](#authdialog)
    - [CocktailItem](#cocktailitem)
    - [AnimatedCocktailItem](#animatedcocktailitem)
    - [CartItemCard](#cartitemcard)
@@ -186,6 +193,149 @@ RatingDisplay(
 
 **When to use**: When you need to display a rating with stars and review count, such as in product listings or detail screens.
 
+### StatusIndicator
+
+**Purpose**: Displays a status with a colored dot or icon and text.
+
+**Usage**:
+```kotlin
+StatusIndicator(
+    status = order.status,
+    isActive = order.status == "Completed",
+    activeColor = Color(0xFF4CAF50),
+    icon = Icons.Default.CheckCircle
+)
+```
+
+**When to use**: When you need to display a status indicator, such as order status, network status, or any other state that can be active or inactive.
+
+### SettingsCard
+
+**Purpose**: Provides a consistent card layout for settings sections with a title and content.
+
+**Usage**:
+```kotlin
+SettingsCard(
+    title = "Account Settings",
+    modifier = Modifier.padding(bottom = 16.dp)
+) {
+    // Content goes here
+    SettingsItem(
+        icon = Icons.Default.Person,
+        title = "Edit Profile",
+        onClick = { /* Handle edit profile */ }
+    )
+
+    SettingsItem(
+        icon = Icons.Default.Lock,
+        title = "Change Password",
+        onClick = { /* Handle change password */ }
+    )
+}
+```
+
+**When to use**: For settings screens or any section that needs a consistent card layout with a title and content.
+
+### InfoCard
+
+**Purpose**: Displays information with an icon, title, and content in a card layout.
+
+**Usage**:
+```kotlin
+InfoCard(
+    title = "Cached Cocktails",
+    icon = Icons.Default.Storage,
+    modifier = Modifier.padding(bottom = 16.dp)
+) {
+    // Content goes here
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = "Cocktails available offline:",
+            fontSize = 14.sp,
+            color = AppColors.TextSecondary
+        )
+
+        Text(
+            text = "${recentlyViewedCocktails.size}",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = AppColors.TextPrimary
+        )
+    }
+}
+```
+
+**When to use**: When you need to display information with an icon and title in a card layout, such as in settings screens or information sections.
+
+### ToggleSettingItem
+
+**Purpose**: Displays a setting with a title, description, icon, and toggle switch.
+
+**Usage**:
+```kotlin
+ToggleSettingItem(
+    title = "Offline Mode",
+    description = "When enabled, the app will only use cached data and won't make network requests.",
+    icon = Icons.Default.AirplanemodeActive,
+    isEnabled = isOfflineModeEnabled,
+    onToggle = { viewModel.toggleOfflineMode() }
+)
+```
+
+**When to use**: For settings that can be toggled on or off, such as offline mode, dark mode, or notifications.
+
+### NetworkStatusCard
+
+**Purpose**: Displays the current network status with an appropriate icon and color.
+
+**Usage**:
+```kotlin
+NetworkStatusCard(
+    isNetworkAvailable = isNetworkAvailable,
+    modifier = Modifier.padding(bottom = 16.dp)
+)
+```
+
+**When to use**: When you need to display the current network status, especially in screens related to offline functionality.
+
+### ProfileCard
+
+**Purpose**: Displays user profile information with an avatar, name, email, and sign-in/sign-up buttons if not signed in.
+
+**Usage**:
+```kotlin
+ProfileCard(
+    userName = userName,
+    userEmail = userEmail,
+    isSignedIn = isSignedIn,
+    onSignIn = { showSignInDialog = true },
+    onSignUp = { showSignUpDialog = true }
+)
+```
+
+**When to use**: For profile screens to display user information and authentication options.
+
+### AuthDialog
+
+**Purpose**: Provides a dialog for user authentication (sign-in or sign-up).
+
+**Usage**:
+```kotlin
+AuthDialog(
+    type = AuthDialogType.SIGN_IN,
+    onDismiss = { showSignInDialog = false },
+    onSubmit = { name, email, password ->
+        profileViewModel.signIn(email, password)
+        showSignInDialog = false
+    }
+)
+```
+
+**When to use**: When you need to display a sign-in or sign-up dialog for user authentication.
+
 ### CocktailItem
 
 **Purpose**: Displays a cocktail item in a list with image, name, price, and actions.
@@ -195,12 +345,12 @@ RatingDisplay(
 CocktailItem(
     cocktail = cocktail,
     onClick = { /* Navigate to detail */ },
-    onAddToCart = { cocktail -> 
+    onAddToCart = { cocktail ->
         cartViewModel.addToCart(cocktail)
         onAddToCart(cocktail)
     },
     isFavorite = true,
-    onToggleFavorite = { cocktail -> 
+    onToggleFavorite = { cocktail ->
         favoritesViewModel.toggleFavorite(cocktail)
     }
 )
@@ -217,12 +367,12 @@ CocktailItem(
 AnimatedCocktailItem(
     cocktail = cocktail,
     onClick = { /* Navigate to detail */ },
-    onAddToCart = { cocktail -> 
+    onAddToCart = { cocktail ->
         cartViewModel.addToCart(cocktail)
         onAddToCart(cocktail)
     },
     isFavorite = true,
-    onToggleFavorite = { cocktail -> 
+    onToggleFavorite = { cocktail ->
         favoritesViewModel.toggleFavorite(cocktail)
     },
     index = index
@@ -356,11 +506,22 @@ When refactoring UI code to use reusable components, follow these steps:
 5. **Test thoroughly**: Ensure the refactored code works as expected
 
 Recent refactoring in the CocktailCraft app focused on:
+
+**First Phase:**
 - Creating standardized empty states
 - Extracting header images with gradient overlays
 - Standardizing section headers
 - Creating reusable cards for different types of information
 - Implementing consistent loading states
+
+**Second Phase:**
+- Creating status indicators for order status and network status
+- Extracting settings cards for profile and settings screens
+- Creating info cards for displaying information with icons
+- Implementing toggle setting items for settings screens
+- Creating network status cards for offline functionality
+- Extracting profile cards for user information
+- Implementing authentication dialogs for sign-in and sign-up
 
 ## Best Practices
 
