@@ -30,6 +30,7 @@ This document provides an overview of the reusable UI components in the Cocktail
    - [OptimizedImage](#optimizedimage)
    - [ErrorDialog and ErrorBanner](#errordialog-and-errorbanner)
    - [AnimatedButtons](#animatedbuttons)
+   - [ExpandableAdvancedSearchPanel](#expandableadvancedsearchpanel)
 4. [Refactoring Process](#refactoring-process)
 5. [Best Practices](#best-practices)
 
@@ -494,6 +495,29 @@ AnimatedTextButton(
 ```
 
 **When to use**: When you want to add animations to buttons for a more engaging user experience.
+
+### ExpandableAdvancedSearchPanel
+
+**Purpose**: Provides an expandable panel for advanced search filters that can be integrated directly into a screen.
+
+**Usage**:
+```kotlin
+ExpandableAdvancedSearchPanel(
+    isExpanded = isAdvancedSearchActive,
+    currentFilters = searchFilters,
+    categories = categories,
+    ingredients = ingredients,
+    glasses = glasses,
+    onApplyFilters = { filters ->
+        viewModel.updateSearchFilters(filters)
+    },
+    onClearFilters = {
+        viewModel.clearSearchFilters()
+    }
+)
+```
+
+**When to use**: When you need to provide advanced search functionality that can be expanded and collapsed within a screen, rather than showing a separate dialog.
 
 ## Refactoring Process
 

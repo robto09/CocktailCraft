@@ -77,6 +77,7 @@ import androidx.navigation.NavController
 import com.cocktailcraft.navigation.Screen
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.ui.components.AdvancedSearchPanel
+import com.cocktailcraft.ui.components.ExpandableAdvancedSearchPanel
 import com.cocktailcraft.ui.components.AnimatedCocktailItem
 import com.cocktailcraft.ui.components.CocktailItem
 import com.cocktailcraft.ui.components.CocktailItemShimmer
@@ -235,12 +236,27 @@ fun HomeScreen(
 
             IconButton(
                 onClick = {
-                    showAdvancedSearch = !showAdvancedSearch
-                    viewModel.toggleAdvancedSearchMode(!isAdvancedSearchActive)
+                    // Toggle between dialog mode and expandable panel mode
+                    if (isAdvancedSearchActive) {
+                        // If already expanded, just collapse it
+                        viewModel.toggleAdvancedSearchMode(false)
+                    } else {
+                        // If not expanded, toggle between dialog and expandable panel
+                        if (searchFilters.hasActiveFilters()) {
+                            // If filters are already applied, just expand the panel
+                            viewModel.toggleAdvancedSearchMode(true)
+                        } else {
+                            // If no filters applied, show the dialog for better UX
+                            showAdvancedSearch = true
+                        }
+                    }
                 },
                 modifier = Modifier
                     .background(
-                        color = if (isAdvancedSearchActive) AppColors.Primary else AppColors.LightGray,
+                        color = if (isAdvancedSearchActive || searchFilters.hasActiveFilters())
+                            AppColors.Primary
+                        else
+                            AppColors.LightGray,
                         shape = RoundedCornerShape(8.dp)
                     )
                     .size(48.dp)
@@ -248,7 +264,10 @@ fun HomeScreen(
                 Icon(
                     imageVector = Icons.Default.FilterAlt,
                     contentDescription = "Advanced Search",
-                    tint = if (isAdvancedSearchActive) Color.White else AppColors.TextSecondary
+                    tint = if (isAdvancedSearchActive || searchFilters.hasActiveFilters())
+                        Color.White
+                    else
+                        AppColors.TextSecondary
                 )
             }
         }
@@ -304,21 +323,39 @@ fun HomeScreen(
             }
         }
 
-        AdvancedSearchPanel(
-            isVisible = showAdvancedSearch,
+        // Use the dialog version when in dialog mode
+        if (showAdvancedSearch) {
+            AdvancedSearchPanel(
+                isVisible = true,
+                currentFilters = searchFilters,
+                categories = categories,
+                ingredients = ingredients,
+                glasses = glasses,
+                onApplyFilters = { filters ->
+                    viewModel.updateSearchFilters(filters)
+                    showAdvancedSearch = false
+                },
+                onClearFilters = {
+                    viewModel.clearSearchFilters()
+                },
+                onDismiss = {
+                    showAdvancedSearch = false
+                }
+            )
+        }
+
+        // Use the expandable panel version for inline display
+        ExpandableAdvancedSearchPanel(
+            isExpanded = isAdvancedSearchActive,
             currentFilters = searchFilters,
             categories = categories,
             ingredients = ingredients,
             glasses = glasses,
             onApplyFilters = { filters ->
                 viewModel.updateSearchFilters(filters)
-                showAdvancedSearch = false
             },
             onClearFilters = {
                 viewModel.clearSearchFilters()
-            },
-            onDismiss = {
-                showAdvancedSearch = false
             }
         )
 
