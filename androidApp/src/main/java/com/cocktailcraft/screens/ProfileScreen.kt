@@ -20,10 +20,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Help
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -39,6 +42,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -48,6 +52,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -59,31 +64,38 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cocktailcraft.navigation.NavigationManager
+import com.cocktailcraft.ui.components.AnimatedThemeToggleRow
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.ProfileViewModel
+import com.cocktailcraft.viewmodel.ThemeViewModel
 
 @Composable
 fun ProfileScreen(
     navigationManager: NavigationManager,
-    profileViewModel: ProfileViewModel = viewModel()
+    profileViewModel: ProfileViewModel = viewModel(),
+    themeViewModel: ThemeViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    
+
     // Get user data from ViewModel
     val user by profileViewModel.user.collectAsState()
     val isSignedIn by profileViewModel.isSignedIn.collectAsState()
     val isLoading by profileViewModel.isLoading.collectAsState()
     val error by profileViewModel.error.collectAsState()
-    
+
+    // Get theme data from ThemeViewModel
+    val isDarkMode by themeViewModel.isDarkMode.collectAsState()
+    val followSystemTheme by themeViewModel.followSystemTheme.collectAsState()
+
     // Dialog states
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showSignInDialog by remember { mutableStateOf(false) }
     var showSignUpDialog by remember { mutableStateOf(false) }
-    
+
     // Sample profile data (in a real app, this would come from a ViewModel)
     val userName = user?.name ?: "Guest User"
     val userEmail = user?.email ?: "guest@example.com"
-    
+
     // Sign in dialog state
     if (showSignInDialog) {
         SignInDialog(
@@ -94,7 +106,7 @@ fun ProfileScreen(
             }
         )
     }
-    
+
     // Sign up dialog state
     if (showSignUpDialog) {
         SignUpDialog(
@@ -105,7 +117,7 @@ fun ProfileScreen(
             }
         )
     }
-    
+
     // Logout dialog state
     if (showLogoutDialog) {
         AlertDialog(
@@ -136,7 +148,7 @@ fun ProfileScreen(
             }
         )
     }
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -175,9 +187,9 @@ fun ProfileScreen(
                         color = AppColors.Primary
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // User name
                 Text(
                     text = userName,
@@ -185,27 +197,27 @@ fun ProfileScreen(
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary
                 )
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 // User email
                 Text(
                     text = userEmail,
                     fontSize = 14.sp,
                     color = AppColors.TextSecondary
                 )
-                
+
                 // Show login/signup buttons if not signed in
                 if (!isSignedIn) {
                     Spacer(modifier = Modifier.height(24.dp))
-                    
+
                     Text(
                         text = "Sign in to access your profile",
                         fontSize = 16.sp,
                         color = AppColors.TextSecondary,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    
+
                     Button(
                         onClick = { showSignInDialog = true },
                         colors = ButtonDefaults.buttonColors(
@@ -217,9 +229,9 @@ fun ProfileScreen(
                     ) {
                         Text("Sign In")
                     }
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     OutlinedButton(
                         onClick = { showSignUpDialog = true },
                         modifier = Modifier
@@ -231,7 +243,7 @@ fun ProfileScreen(
                 }
             }
         }
-        
+
         // Only show account settings and logout option if signed in
         if (isSignedIn) {
             // Account settings
@@ -255,25 +267,25 @@ fun ProfileScreen(
                         color = AppColors.TextPrimary,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    
+
                     SettingsItem(
                         icon = Icons.Default.Person,
                         title = "Edit Profile",
                         onClick = { /* Handle edit profile */ }
                     )
-                    
+
                     SettingsItem(
                         icon = Icons.Default.Lock,
                         title = "Change Password",
                         onClick = { /* Handle change password */ }
                     )
-                    
+
                     SettingsItem(
                         icon = Icons.Default.Email,
                         title = "Email Preferences",
                         onClick = { /* Handle email preferences */ }
                     )
-                    
+
                     SettingsItem(
                         icon = Icons.Default.Notifications,
                         title = "Notification Settings",
@@ -282,7 +294,7 @@ fun ProfileScreen(
                 }
             }
         }
-        
+
         // App settings
         Card(
             modifier = Modifier
@@ -304,19 +316,51 @@ fun ProfileScreen(
                     color = AppColors.TextPrimary,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
-                
+
                 SettingsItem(
                     icon = Icons.Default.DateRange,
                     title = "Order History",
                     onClick = { navigationManager.navigateToOrderList() }
                 )
-                
+
                 SettingsItem(
                     icon = Icons.Default.Help,
                     title = "Help & Support",
                     onClick = { /* Handle help & support */ }
                 )
-                
+
+                SettingsItem(
+                    icon = Icons.Default.CloudOff,
+                    title = "Offline Mode",
+                    onClick = { navigationManager.navigateToOfflineMode() }
+                )
+
+                // Follow System Theme Toggle with animated switch
+                AnimatedThemeToggleRow(
+                    title = "Follow System Theme",
+                    subtitle = if (followSystemTheme) "On" else "Off",
+                    icon = Icons.Default.DateRange,
+                    isChecked = followSystemTheme,
+                    onToggle = { themeViewModel.toggleFollowSystemTheme() },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Dark Mode Toggle with animated switch (only enabled if not following system theme)
+                AnimatedThemeToggleRow(
+                    title = "Dark Mode",
+                    subtitle = if (followSystemTheme)
+                        "Controlled by system"
+                    else
+                        if (isDarkMode) "On" else "Off",
+                    icon = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+                    isChecked = isDarkMode,
+                    onToggle = {
+                        if (!followSystemTheme) themeViewModel.toggleDarkMode()
+                    },
+                    enabled = !followSystemTheme,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
                 // Only show logout if signed in
                 if (isSignedIn) {
                     SettingsItem(
@@ -328,7 +372,7 @@ fun ProfileScreen(
                 }
             }
         }
-        
+
         // App information
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -348,24 +392,24 @@ fun ProfileScreen(
                     color = AppColors.TextPrimary,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
-                
+
                 Text(
                     text = "Cocktail Bar App",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     color = AppColors.TextPrimary
                 )
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 Text(
                     text = "Version 1.0.0",
                     fontSize = 14.sp,
                     color = AppColors.TextSecondary
                 )
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 Text(
                     text = "© 2023 Cocktail Bar. All rights reserved.",
                     fontSize = 12.sp,
@@ -374,7 +418,7 @@ fun ProfileScreen(
             }
         }
     }
-    
+
     // Show loading indicator if needed
     if (isLoading) {
         Box(
@@ -386,7 +430,7 @@ fun ProfileScreen(
             CircularProgressIndicator(color = AppColors.Primary)
         }
     }
-    
+
     // Show error message if needed
     error?.let { errorMessage ->
         AlertDialog(
@@ -415,7 +459,7 @@ fun SignInDialog(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Sign In") },
@@ -431,7 +475,7 @@ fun SignInDialog(
                         .padding(vertical = 8.dp),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
                 )
-                
+
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
@@ -481,7 +525,7 @@ fun SignUpDialog(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Create Account") },
@@ -496,7 +540,7 @@ fun SignUpDialog(
                         .fillMaxWidth()
                         .padding(vertical = 8.dp)
                 )
-                
+
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
@@ -507,7 +551,7 @@ fun SignUpDialog(
                         .padding(vertical = 8.dp),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
                 )
-                
+
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
@@ -568,16 +612,16 @@ fun SettingsItem(
             tint = textColor,
             modifier = Modifier.size(24.dp)
         )
-        
+
         Spacer(modifier = Modifier.width(16.dp))
-        
+
         Text(
             text = title,
             fontSize = 16.sp,
             color = textColor,
             modifier = Modifier.weight(1f)
         )
-        
+
         Icon(
             imageVector = Icons.Default.ChevronRight,
             contentDescription = null,
@@ -585,4 +629,4 @@ fun SettingsItem(
             modifier = Modifier.size(20.dp)
         )
     }
-} 
+}

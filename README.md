@@ -7,39 +7,76 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 
 ## Features
 - **Cocktail Discovery**: Browse and search for cocktails with detailed information
+- **Advanced Search & Filtering**: Multi-criteria search with filters for ingredients, taste profiles, complexity, and more
 - **Shopping Cart**: Add cocktails to cart, update quantities, and checkout
 - **User Authentication**: Register, login, and manage user profiles
 - **Order Management**: Place orders and track order history
 - **Favorites**: Save and manage favorite cocktails
 - **Reviews**: Read and submit reviews for cocktails
+- **Personalized Recommendations**: "You might also like" suggestions based on viewing history and preferences
+- **Dark Mode Support**: Adaptive UI that supports both light and dark themes with smooth transitions
+- **Offline Mode**: Browse recently viewed cocktails and favorites without internet connection
+- **Robust Error Handling**: User-friendly error messages with recovery options
+- **Polished Animations**: Enhanced user experience with smooth animations and micro-interactions
 - **Cross-Platform**: Same codebase for both Android and iOS platforms
 
 ## Architecture
-The application follows the **Clean Architecture** pattern with **MVVM** (Model-View-ViewModel) for presentation:
+The application follows the **Clean Architecture** pattern with **MVVM** (Model-View-ViewModel) for presentation, reactive state management, and a modular **Dependency Injection** system:
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                       Presentation                       │
-│  ┌─────────────┐       ┌─────────────┐ ┌─────────────┐  │
-│  │   Screens   │◄─────►│  ViewModels │ │ UI Elements │  │
-│  └─────────────┘       └─────────────┘ └─────────────┘  │
-└───────────────────────────┬─────────────────────────────┘
-                            │
-┌───────────────────────────▼─────────────────────────────┐
-│                        Domain                           │
-│  ┌─────────────┐       ┌─────────────┐ ┌─────────────┐  │
-│  │   Models    │       │  Use Cases  │ │Repositories │  │
-│  └─────────────┘       └─────────────┘ └─────────────┘  │
-└───────────────────────────┬─────────────────────────────┘
-                            │
-┌───────────────────────────▼─────────────────────────────┐
-│                         Data                            │
-│  ┌─────────────┐       ┌─────────────┐ ┌─────────────┐  │
-│  │ Repository  │       │ Data Source │ │   Mappers   │  │
-│  │   Impl      │◄─────►│  Remote/    │ │             │  │
-│  │             │       │   Local     │ │             │  │
-│  └─────────────┘       └─────────────┘ └─────────────┘  │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              Presentation Layer                                  │
+│                                                                                  │
+│  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐          │
+│  │   Screens   │◄─────►│    ViewModels   │◄─────►│    UI Elements    │          │
+│  │  (Compose)  │       │ (KoinViewModel) │       │ (Compose/Material)│          │
+│  └─────────────┘       └─────────────────┘       └───────────────────┘          │
+│         ▲                       ▲                         ▲                      │
+│         │                       │                         │                      │
+│         ▼                       ▼                         ▼                      │
+│  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐          │
+│  │  Navigation │       │  State Handling │       │   Theme Manager   │          │
+│  │  (Compose)  │       │  (StateFlow)    │       │   (Dark Mode)     │          │
+│  └─────────────┘       └─────────────────┘       └───────────────────┘          │
+└─────────────────────────────────┬─────────────────────────────────────────────┘
+                                  │
+┌─────────────────────────────────▼─────────────────────────────────────────────┐
+│                               Domain Layer                                     │
+│                                                                                │
+│  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐        │
+│  │   Models    │       │    Use Cases    │       │    Repositories   │        │
+│  │             │       │                 │       │    (Interfaces)   │        │
+│  └─────────────┘       └─────────────────┘       └───────────────────┘        │
+└─────────────────────────────────┬─────────────────────────────────────────────┘
+                                  │
+┌─────────────────────────────────▼─────────────────────────────────────────────┐
+│                               Data Layer                                       │
+│                                                                                │
+│  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐        │
+│  │ Repository  │       │   Data Sources  │       │      Mappers      │        │
+│  │    Impl     │◄─────►│ Remote / Local  │       │                   │        │
+│  └─────────────┘       └─────────────────┘       └───────────────────┘        │
+│         ▲                       ▲                                              │
+│         │                       │                                              │
+│         ▼                       ▼                                              │
+│  ┌─────────────┐       ┌─────────────────┐                                    │
+│  │   Offline   │       │  Error Handling │                                    │
+│  │   Support   │       │  (ErrorUtils)   │                                    │
+│  └─────────────┘       └─────────────────┘                                    │
+└─────────────────────────────────┬─────────────────────────────────────────────┘
+                                  │
+┌─────────────────────────────────▼─────────────────────────────────────────────┐
+│                         Dependency Injection                                   │
+│                                                                                │
+│  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐        │
+│  │  Network    │       │      Data       │       │      Domain       │        │
+│  │   Module    │       │     Module      │       │      Module       │        │
+│  └─────────────┘       └─────────────────┘       └───────────────────┘        │
+│                                                                                │
+│  ┌─────────────────────────────────────────────────────────────────────┐      │
+│  │                          Platform Module                             │      │
+│  └─────────────────────────────────────────────────────────────────────┘      │
+└────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Architecture Components:
@@ -47,8 +84,77 @@ The application follows the **Clean Architecture** pattern with **MVVM** (Model-
 - **Platform-Specific Apps**: Android and iOS implementations with platform-specific UI and functionality
 - **MVVM Pattern**: Separates UI (View) from business logic (ViewModel) and data management (Model)
 - **Repository Pattern**: Abstracts data sources and provides a clean API for the domain layer
+- **Use Case Pattern**: Encapsulates business logic in single-responsibility classes
+- **Dependency Injection**: Modular Koin setup for better testability and separation of concerns
+
+### Architecture Layers:
+- **Presentation Layer**:
+  - **Screens**: Compose UI components that display data and handle user interactions
+  - **ViewModels**: Manage UI state, process user actions, and communicate with the domain layer
+  - **UI Elements**: Reusable Compose components for consistent UI across the app (see [UI Components Documentation](docs/UI_Components.md))
+  - **KoinViewModel**: Base class for all ViewModels that provides standardized Koin integration
+  - **Navigation**: Compose Navigation for handling screen transitions and deep linking
+  - **State Handling**: Kotlin StateFlow and SharedFlow for reactive UI updates
+  - **Theme Manager**: Manages light/dark mode and theme preferences with smooth transitions
+
+- **Domain Layer**:
+  - **Models**: Core business entities that represent the application's data structures
+  - **Use Cases**: Business logic operations that orchestrate data flow between UI and data layers
+  - **Repository Interfaces**: Define contracts for data access without implementation details
+  - **Business Rules**: Encapsulate application-specific business logic and validation
+
+- **Data Layer**:
+  - **Repository Implementations**: Concrete implementations of repository interfaces
+  - **Data Sources**: Remote (API) and local (cache/database) data access
+  - **Mappers**: Convert between data models and domain models
+  - **Network Utilities**: Handle API communication, caching, and offline support
+  - **Offline Support**: CocktailCache and NetworkMonitor for offline functionality
+  - **Error Handling**: Centralized error handling with ErrorUtils and recovery options
+
+- **Dependency Injection Layer**:
+  - **Network Module**: Provides HTTP client, API interfaces, and network monitoring
+  - **Data Module**: Provides repositories and caching mechanisms
+  - **Domain Module**: Provides use cases and application configuration
+  - **Platform Module**: Provides platform-specific dependencies
+  - **Test Module**: Provides mock implementations for testing
+
+### Cross-Cutting Concerns:
+- **Error Handling**: Standardized error handling through BaseViewModel with user-friendly messages
+- **Offline Mode**: Network state monitoring and data caching for offline access
+- **Reactive Programming**: Kotlin Flow for asynchronous data streams and UI updates
+- **Dependency Injection**: Modular Koin setup for better testability and separation of concerns
+- **Dark Mode**: System-integrated and user-configurable theme preferences
 
 For more detailed architecture diagrams, please see the [Architecture Documentation](docs/README.md) which includes high-level architecture, component diagrams, use case diagrams, and more.
+
+### Animations and Transitions
+The app features a comprehensive set of animations and transitions to enhance the user experience:
+- **Micro-interactions**: Button animations, hover effects, and feedback animations
+- **List Animations**: Staggered entry animations and smooth item transitions
+- **Loading States**: Shimmer loading effects for a polished loading experience
+- **Screen Transitions**: Coordinated animations for navigation between screens
+- **Theme Transitions**: Smooth animations when switching between light and dark modes
+- **Optimized Scrolling**: Batched loading mechanism that loads and animates items in small groups
+- **Performance Optimizations**: Techniques to maintain smooth animations during fast scrolling
+
+The animation system is designed for both visual appeal and performance:
+- **Batched Loading**: Items load in groups of 3 with staggered animations for better performance
+- **Predictive Loading**: Preloads items that will soon be visible (3 batches ahead of current view)
+- **Direct Animation Properties**: Uses optimized animation properties for smooth scrolling
+- **Coordinated Animations**: Items within the same batch animate together for a cohesive effect
+
+For detailed information about the animations implementation, see:
+- [Animations Documentation](docs/animations.md) - Overview, implementation details, and best practices
+
+### Dependency Injection
+The app uses Koin for dependency injection with a modular approach:
+- **Modular Structure**: Separate modules for network, data, and domain layers
+- **Testability**: Easy mocking and test module setup
+- **ViewModel Integration**: Standardized pattern for ViewModel dependency injection
+
+For detailed information about the dependency injection implementation, see:
+- [Dependency Injection Documentation](docs/DependencyInjection.md) - Overview, module structure, and best practices
+- [Dependency Injection Migration Guide](docs/DependencyInjectionMigration.md) - Guide for migrating existing code to the new DI approach
 
 ## Libraries Used
 
@@ -66,6 +172,8 @@ For more detailed architecture diagrams, please see the [Architecture Documentat
 - **Accompanist**: Compose UI utilities
 - **Navigation Compose**: For handling navigation between screens
 - **Coil & Kamel**: For image loading and caching
+- **Animation Utilities**: Custom animation components and utilities for enhanced UX
+- **Shimmer Effects**: Loading state animations with shimmer effects
 
 ### Testing
 - **JUnit**: For unit testing
@@ -73,41 +181,9 @@ For more detailed architecture diagrams, please see the [Architecture Documentat
 - **Turbine**: For testing Flow emissions
 - **Espresso**: For UI testing
 
-### Detailed Libraries Table
+For a detailed list of all libraries with versions and purposes, see the [Libraries Documentation](docs/Libraries.md).
 
-| Library | Version | Purpose |
-|---------|---------|---------|
-| **Core & Architecture** |  |  |
-| Kotlin | 2.0.21 | Programming language for cross-platform development |
-| Kotlin Coroutines | 1.10.1 | Asynchronous programming framework |
-| Koin | 4.0.1 | Dependency injection framework |
-| Ktor | 3.0.3 | HTTP client for API communication |
-| Kotlinx Serialization | 1.7.3 | JSON/data serialization |
-| Multiplatform Settings | 1.1.1 | Cross-platform settings/preferences storage |
-| Kotlinx DateTime | 0.6.0 | Date and time handling |
-| **UI & Navigation** |  |  |
-| Jetpack Compose | 1.2.0-alpha01-dev709 | Modern declarative UI toolkit |
-| Compose Material3 | 1.3.1 | Material Design 3 implementation for Compose |
-| Compose BOM | 2025.02.00 | Bill of Materials for Compose dependencies |
-| Activity Compose | 1.8.0 | Integration between Compose and Activities |
-| Navigation Compose | 2.8.8 | Navigation framework for Compose |
-| Accompanist | 0.32.0 | Utilities for Jetpack Compose |
-| Coil | 2.6.0 | Image loading library for Android |
-| Kamel | 1.0.3 | Multiplatform image loading library |
-| **State Management** |  |  |
-| Lifecycle ViewModel | 2.8.7 | Component to store and manage UI-related data |
-| DataStore | 1.1.3 | Data storage solution (replaces SharedPreferences) |
-| **Security** |  |  |
-| Security Crypto | 1.1.0-alpha06 | Encryption and security utilities |
-| **Testing** |  |  |
-| JUnit | 4.13.2 | Unit testing framework |
-| Mockito | Various | Mocking framework for unit tests |
-| Mockk | 1.13.8 | Kotlin-friendly mocking library |
-| Turbine | 1.0.0 | Testing library for Kotlin Flow |
-| Espresso | 3.6.1 | UI testing framework for Android |
-| **Dependency Injection** |  |  |
-| Hilt | 2.51.1 | Dependency injection library built on Dagger |
-| Hilt Navigation | 1.2.0 | Integration between Hilt and Jetpack Navigation |
+For information about the reusable UI components in the app, see the [UI Components Documentation](docs/UI_Components.md).
 
 ## Package Structure
 
@@ -142,6 +218,31 @@ For more detailed architecture diagrams, please see the [Architecture Documentat
 - **HomeViewModel**: Manages cocktail listings, categories, and search
 - **CocktailRepository**: Provides cocktail data from remote and local sources
 - **HomeScreen & CocktailDetailScreen**: UI for browsing and viewing cocktail details
+
+### Recommendation System
+- **CocktailRecommendationEngine**: Client-side engine that generates personalized recommendations
+- **RecommendationsSection**: UI component that displays "You might also like" suggestions
+- **Multiple Strategies**: Category-based, ingredient-based, and user preference-based recommendations
+- **Offline Support**: Works with cached data when no internet connection is available
+
+### Dark Mode Support
+- **ThemeViewModel**: Manages theme state and preferences
+- **AppTheme**: Provides theme-specific colors and typography
+- **ThemeAwareComponents**: UI components that adapt to the current theme
+- **Smooth Transitions**: Animated transitions between light and dark modes
+- **System Integration**: Option to follow system theme settings
+
+### Offline Mode
+- **NetworkMonitor**: Detects and monitors network connectivity
+- **OfflineRepository**: Caches data for offline access
+- **CocktailRepository**: Provides fallback to cached data when offline
+- **UI Indicators**: Clear indicators of offline status and available actions
+
+### Error Handling
+- **ErrorUtils**: Centralized error handling and categorization
+- **BaseViewModel**: Common error handling for all ViewModels
+- **ErrorDialog & ErrorBanner**: User-friendly error display components
+- **Recovery Actions**: Actionable error messages with recovery options
 
 ## Test Coverage
 The application includes comprehensive test coverage:

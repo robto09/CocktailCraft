@@ -22,6 +22,31 @@ These diagrams provide a comprehensive view of our application architecture, mak
 
 CocktailCraft follows Clean Architecture principles with a MVVM pattern for the UI layer:
 
+## Additional Documentation
+
+- **[Animations and Transitions](animations.md)**: Documentation of the app's animation system and implementation details, including:
+  - Animation utilities and reusable components
+  - Shimmer loading effects and micro-interactions
+  - Batched loading mechanism for optimized list animations
+  - Scrolling performance optimizations
+
+- **[Recommendation System](RecommendationSystem.md)**: Documentation of the cocktail recommendation system, including:
+  - API limitations and constraints
+  - Recommendation strategies and algorithms
+  - Implementation approach and optimization techniques
+  - Future enhancement possibilities
+
+- **[Advanced Search and Filtering](AdvancedSearch.md)**: Documentation of the advanced search functionality, including:
+  - Multi-criteria filtering implementation
+  - Filter types and UI components
+  - Search filter data flow
+  - Future enhancements for search capabilities
+
+- **[Libraries](Libraries.md)**: Detailed information about the libraries used in the application, including:
+  - Versions and purposes
+  - Categorized by functionality
+  - Brief descriptions of each category
+
 ### Key Architectural Layers
 
 1. **UI Layer**:
@@ -86,6 +111,6 @@ CocktailCraft provides the following features:
 1. **iOS Support**: Complete iOS implementation using Kotlin Multiplatform
 2. **Backend Integration**: Develop a custom backend for user accounts, orders, and payments
 3. **Offline Support**: Enhance offline capabilities with local caching
-4. **Advanced Search**: Implement advanced search functionality
-5. **Social Features**: Add social sharing and friend recommendations
-6. **Personalization**: Implement personalized recommendations based on user preferences
+4. **Social Features**: Add social sharing and friend recommendations
+5. **Personalization**: Implement personalized recommendations based on user preferences
+6. **Saved Searches**: Allow users to save their favorite search filter combinations
