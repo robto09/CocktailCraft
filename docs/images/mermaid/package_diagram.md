@@ -277,68 +277,68 @@ graph TD
     IOSDI --> IOSPlatformModule
 
     %% Dependencies between packages
-    Screens -- ViewModel
-    Screens -- Navigation
-    Screens -- UI
+    Screens --> ViewModel
+    Screens --> Navigation
+    Screens --> UI
 
-    Main -- Screens
-    Main -- Navigation
-    Main -- ViewModel
+    Main --> Screens
+    Main --> Navigation
+    Main --> ViewModel
 
-    BaseViewModel -- ErrorUtils
-    HomeViewModel -- BaseViewModel
-    CartViewModel -- BaseViewModel
-    FavoritesViewModel -- BaseViewModel
-    ProfileViewModel -- BaseViewModel
-    OrderViewModel -- BaseViewModel
-    ReviewViewModel -- BaseViewModel
-    ThemeViewModel -- BaseViewModel
-    OfflineModeViewModel -- BaseViewModel
-    CocktailDetailViewModel -- BaseViewModel
+    BaseViewModel --> ErrorUtils
+    HomeViewModel --> BaseViewModel
+    CartViewModel --> BaseViewModel
+    FavoritesViewModel --> BaseViewModel
+    ProfileViewModel --> BaseViewModel
+    OrderViewModel --> BaseViewModel
+    ReviewViewModel --> BaseViewModel
+    ThemeViewModel --> BaseViewModel
+    OfflineModeViewModel --> BaseViewModel
+    CocktailDetailViewModel --> BaseViewModel
 
-    ViewModel -- DomainRepository
-    ViewModel -- UseCase
-    ViewModel -- DomainModel
-    ViewModel -- Recommendation
-    ViewModel -- NetworkMonitor
+    ViewModel --> DomainRepository
+    ViewModel --> UseCase
+    ViewModel --> DomainModel
+    ViewModel --> Recommendation
+    ViewModel --> NetworkMonitor
 
-    ThemeViewModel -- UserPreferences
-    OfflineModeViewModel -- NetworkMonitor
+    ThemeViewModel --> UserPreferences
+    OfflineModeViewModel --> NetworkMonitor
 
-    UseCase -- DomainRepository
-    UseCase -- DomainModel
+    UseCase --> DomainRepository
+    UseCase --> DomainModel
 
-    CocktailRecommendationEngine -- CocktailRepository
-    CocktailRecommendationEngine -- FavoritesRepository
+    CocktailRecommendationEngine --> CocktailRepository
+    CocktailRecommendationEngine --> FavoritesRepository
 
-    DataRepository -- DomainRepository
-    DataRepository -- DomainModel
-    DataRepository -- Remote
-    DataRepository -- Cache
-    DataRepository -- NetworkMonitor
+    DataRepository --> DomainRepository
+    DataRepository --> DomainModel
+    DataRepository --> Remote
+    DataRepository --> Cache
+    DataRepository --> NetworkMonitor
 
-    CocktailCache -- Cocktail
+    CocktailCache --> Cocktail
 
-    DataConfig -- Config
+    DataConfig --> Config
 
-    AppModule -- DataModule
-    AppModule -- DomainModule
-    AppModule -- NetworkModule
+    AppModule --> DataModule
+    AppModule --> DomainModule
+    AppModule --> NetworkModule
 
-    DataModule -- DataRepository
-    DataModule -- Remote
-    DataModule -- Cache
+    DataModule --> DataRepository
+    DataModule --> Remote
+    DataModule --> Cache
 
-    DomainModule -- UseCase
-    DomainModule -- Config
+    DomainModule --> UseCase
+    DomainModule --> Config
 
-    NetworkModule -- Remote
-    NetworkModule -- NetworkMonitor
+    NetworkModule --> Remote
+    NetworkModule --> NetworkMonitor
 
-    RecommendationModule -- Recommendation
-    RecommendationModule -- CocktailDetailViewModel
+    RecommendationModule --> Recommendation
+    RecommendationModule --> CocktailDetailViewModel
 
-    CocktailCraftApplication -- DI
+    CocktailCraftApplication --> DI
 ```
 
 This package diagram shows the organization of the CocktailCraft codebase, including:
