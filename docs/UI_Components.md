@@ -31,6 +31,13 @@ This document provides an overview of the reusable UI components in the Cocktail
    - [ErrorDialog and ErrorBanner](#errordialog-and-errorbanner)
    - [AnimatedButtons](#animatedbuttons)
    - [ExpandableAdvancedSearchPanel](#expandableadvancedsearchpanel)
+   - [CocktailSearchBar](#cocktailsearchbar)
+   - [NetworkErrorStateDisplay](#networkerrordisplay)
+   - [AnimatedCocktailList](#animatedcocktaillist)
+   - [CategoryFilterRow](#categoryfilterrow)
+   - [CocktailLoadingShimmer](#cocktailloadingshimmer)
+   - [EndOfListMessage](#endoflistmessage)
+   - [LoadingMoreIndicator](#loadingmoreindicator)
 4. [Refactoring Process](#refactoring-process)
 5. [Best Practices](#best-practices)
 
@@ -519,6 +526,129 @@ ExpandableAdvancedSearchPanel(
 
 **When to use**: When you need to provide advanced search functionality that can be expanded and collapsed within a screen, rather than showing a separate dialog.
 
+### CocktailSearchBar
+
+**Purpose**: Provides a search bar with an advanced search button for filtering cocktails.
+
+**Usage**:
+```kotlin
+CocktailSearchBar(
+    searchQuery = searchQuery,
+    isAdvancedSearchActive = isAdvancedSearchActive,
+    hasActiveFilters = searchFilters.hasActiveFilters(),
+    onSearchQueryChange = { viewModel.searchCocktails(it) },
+    onClearSearch = { viewModel.toggleSearchMode(false) },
+    onToggleAdvancedSearch = { viewModel.toggleAdvancedSearchMode(!isAdvancedSearchActive) },
+    onShowAdvancedSearchDialog = { showAdvancedSearch = true }
+)
+```
+
+**When to use**: When you need a search bar with advanced filtering capabilities, such as in the home screen or any screen with searchable content.
+
+### NetworkErrorStateDisplay
+
+**Purpose**: Displays network and offline error states with appropriate icons, messages, and action buttons.
+
+**Usage**:
+```kotlin
+NetworkErrorStateDisplay(
+    errorMessage = errorMessage,
+    isOfflineMode = isOfflineMode,
+    isNetworkAvailable = isNetworkAvailable,
+    hasContent = cocktails.isNotEmpty(),
+    onRetry = { viewModel.retry() },
+    onEnableOfflineMode = {
+        viewModel.setOfflineMode(true)
+        viewModel.retry()
+    },
+    onGoOnline = {
+        viewModel.setOfflineMode(false)
+        viewModel.retry()
+    }
+)
+```
+
+**When to use**: When you need to display network-related errors with appropriate recovery options, especially in screens that depend on network connectivity.
+
+### AnimatedCocktailList
+
+**Purpose**: Displays a list of cocktails with animations, pagination, and end-of-list messaging.
+
+**Usage**:
+```kotlin
+AnimatedCocktailList(
+    cocktails = cocktails,
+    isSearchActive = isSearchActive,
+    selectedCategory = selectedCategory,
+    isLoadingMore = isLoadingMore,
+    hasMoreData = hasMoreData,
+    favorites = favorites,
+    onCocktailClick = onCocktailClick,
+    onAddToCart = onAddToCart,
+    onToggleFavorite = { cocktailToToggle ->
+        favoritesViewModel.toggleFavorite(cocktailToToggle)
+    },
+    onLoadMore = {
+        viewModel.loadMoreCocktails()
+    }
+)
+```
+
+**When to use**: When you need to display a list of cocktails with animations and pagination, such as in the home screen, favorites screen, or search results.
+
+### CategoryFilterRow
+
+**Purpose**: Displays a horizontal row of category filter chips for filtering content.
+
+**Usage**:
+```kotlin
+CategoryFilterRow(
+    categories = categories,
+    selectedCategory = selectedCategory,
+    onCategorySelected = onCategorySelected
+)
+```
+
+**When to use**: When you need to display a horizontal list of categories for filtering content, such as in the home screen or browse screen.
+
+### CocktailLoadingShimmer
+
+**Purpose**: Displays a shimmer loading effect for cocktails while content is loading.
+
+**Usage**:
+```kotlin
+CocktailLoadingShimmer()
+```
+
+**When to use**: When you need to display a loading state for cocktails, providing a better user experience than a simple spinner.
+
+### EndOfListMessage
+
+**Purpose**: Displays an animated message when the user reaches the end of a list.
+
+**Usage**:
+```kotlin
+EndOfListMessage(
+    visible = !hasMoreData && !isSearchActive && cocktails.isNotEmpty(),
+    message = "You've reached the end of the list"
+)
+```
+
+**When to use**: When you need to indicate to the user that they have reached the end of a paginated list.
+
+### LoadingMoreIndicator
+
+**Purpose**: Displays a loading indicator when loading more items in a paginated list.
+
+**Usage**:
+```kotlin
+LoadingMoreIndicator(
+    isLoading = isLoadingMore
+)
+```
+
+**When to use**: When you need to indicate that more items are being loaded in a paginated list.
+
 ## Refactoring Process
 
 When refactoring UI code to use reusable components, follow these steps:
@@ -546,6 +676,15 @@ Recent refactoring in the CocktailCraft app focused on:
 - Creating network status cards for offline functionality
 - Extracting profile cards for user information
 - Implementing authentication dialogs for sign-in and sign-up
+
+**Third Phase:**
+- Creating a reusable search bar with advanced search functionality
+- Implementing a network error state display with offline mode support
+- Extracting an animated cocktail list with pagination
+- Creating a category filter row for content filtering
+- Implementing a shimmer loading effect for cocktails
+- Creating end-of-list and loading-more indicators for pagination
+- Extracting filter options loading logic into a utility
 
 ## Best Practices
 
