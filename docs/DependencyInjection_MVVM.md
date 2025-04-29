@@ -197,35 +197,29 @@ class IOSHomeViewModel(
 }
 ```
 
-For iOS, we implement the shared interfaces directly, as there's no need for the delegation pattern used in Android.
+For iOS, we will implement the shared interfaces directly. The Android implementation is already complete in the androidApp module, where each ViewModel extends BaseViewModel and implements the shared interfaces. These implementations use coroutine-based logic with viewModelScope and handleResultFlow for consistent asynchronous operations and error handling.
 
-### ViewModel Factory
+### Implementation Structure
 
-To create ViewModels in a platform-agnostic way, we use a factory pattern:
+The project uses a layered approach for ViewModels:
 
-```kotlin
-// shared/src/commonMain/kotlin/com/cocktailcraft/viewmodel/ViewModelFactory.kt
-interface ViewModelFactory {
-    fun createHomeViewModel(): IHomeViewModel
-    // Other factory methods...
-}
+1. **Shared Interfaces** (in shared/commonMain):
+   - Define the contract that all platforms must implement
+   - Specify state properties and actions
+   - Platform-agnostic, using Kotlin Multiplatform features
 
-expect fun createPlatformViewModelFactory(): ViewModelFactory
-```
+2. **Android Implementation** (in androidApp):
+   - Extends BaseViewModel for common functionality
+   - Implements shared interfaces
+   - Uses coroutine-based logic with viewModelScope
+   - Handles errors consistently with handleResultFlow
+   - Interacts with use cases for business logic
 
-With platform-specific implementations:
+3. **Future iOS Implementation** (to be added in shared/iosMain):
+   - Will implement shared interfaces directly
+   - Will use platform-specific patterns while maintaining the same contract
 
-```kotlin
-// shared/src/androidMain/kotlin/com/cocktailcraft/viewmodel/AndroidViewModelFactory.kt
-actual fun createPlatformViewModelFactory(): ViewModelFactory {
-    return AndroidViewModelFactory()
-}
-
-// shared/src/iosMain/kotlin/com/cocktailcraft/viewmodel/IOSViewModelFactory.kt
-actual fun createPlatformViewModelFactory(): ViewModelFactory {
-    return IOSViewModelFactory()
-}
-```
+This structure ensures consistent behavior across platforms while allowing for platform-specific optimizations.
 
 ## Benefits of This Approach
 
