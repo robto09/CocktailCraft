@@ -5,6 +5,7 @@ import com.cocktailcraft.domain.repository.CocktailRepository
 import com.cocktailcraft.domain.util.Result
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /**
@@ -22,7 +23,7 @@ class FavoritesUseCase(
     suspend fun getFavoriteCocktails(): Flow<Result<List<Cocktail>>> {
         return cocktailRepository.getFavoriteCocktails()
             .map { cocktails -> Result.Success(cocktails) as Result<List<Cocktail>> }
-            .catch { e -> 
+            .catch { e ->
                 emit(Result.Error(e.message ?: "Failed to get favorite cocktails"))
             }
     }
@@ -65,7 +66,7 @@ class FavoritesUseCase(
     suspend fun isCocktailFavorite(id: String): Flow<Result<Boolean>> {
         return cocktailRepository.isCocktailFavorite(id)
             .map { isFavorite -> Result.Success(isFavorite) as Result<Boolean> }
-            .catch { e -> 
+            .catch { e ->
                 emit(Result.Error(e.message ?: "Failed to check if cocktail is favorite"))
             }
     }
@@ -78,9 +79,9 @@ class FavoritesUseCase(
     suspend fun toggleFavorite(cocktail: Cocktail): Flow<Result<Boolean>> = kotlinx.coroutines.flow.flow {
         try {
             emit(Result.Loading)
-            
+
             val isFavorite = cocktailRepository.isCocktailFavorite(cocktail.id).map { it }.catch { false }.first()
-            
+
             if (isFavorite) {
                 cocktailRepository.removeFromFavorites(cocktail)
                 emit(Result.Success(false))

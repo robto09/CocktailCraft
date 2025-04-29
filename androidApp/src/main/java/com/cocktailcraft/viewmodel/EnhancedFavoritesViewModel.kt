@@ -36,21 +36,25 @@ class EnhancedFavoritesViewModel : BaseViewModel() {
             operation = {
                 manageFavoritesUseCase.getFavorites()
             },
-            onSuccess = { result ->
-                when (result) {
-                    is Result.Success -> {
-                        _favorites.value = result.data
-                    }
-                    is Result.Error -> {
-                        setError(
-                            title = "Failed to Load Favorites",
-                            message = result.message,
-                            category = ErrorUtils.ErrorCategory.DATA,
-                            recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadFavorites() }
-                        )
-                    }
-                    is Result.Loading -> {
-                        // Already handled by executeWithErrorHandling
+            onSuccess = { resultFlow ->
+                viewModelScope.launch {
+                    resultFlow.collect { result ->
+                        when (result) {
+                            is Result.Success<List<Cocktail>> -> {
+                                _favorites.value = result.data
+                            }
+                            is Result.Error -> {
+                                setError(
+                                    title = "Failed to Load Favorites",
+                                    message = result.message,
+                                    category = ErrorUtils.ErrorCategory.DATA,
+                                    recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadFavorites() }
+                                )
+                            }
+                            is Result.Loading -> {
+                                // Already handled by executeWithErrorHandling
+                            }
+                        }
                     }
                 }
             },

@@ -6,13 +6,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.cocktailcraft.data.repository.CocktailRepository
+import com.cocktailcraft.domain.repository.CocktailRepository
 
 /**
  * A utility class for loading filter options from the repository.
  */
 object FilterOptionsLoader {
-    
+
     /**
      * A data class representing filter options.
      */
@@ -21,7 +21,7 @@ object FilterOptionsLoader {
         val ingredients: List<String>,
         val glasses: List<String>
     )
-    
+
     /**
      * Loads filter options from the repository and returns them as a state.
      *
@@ -44,25 +44,25 @@ object FilterOptionsLoader {
         var categories by remember { mutableStateOf(defaultCategories) }
         var ingredients by remember { mutableStateOf(defaultIngredients) }
         var glasses by remember { mutableStateOf(defaultGlasses) }
-        
+
         LaunchedEffect(Unit) {
             try {
-                repository.getCategories().collect { categoryList ->
+                repository.getCategories().collect { categoryList: List<String> ->
                     categories = categoryList
                 }
-                
-                repository.getIngredients().collect { ingredientList ->
+
+                repository.getIngredients().collect { ingredientList: List<String> ->
                     ingredients = ingredientList
                 }
-                
-                repository.getGlasses().collect { glassList ->
+
+                repository.getGlasses().collect { glassList: List<String> ->
                     glasses = glassList
                 }
             } catch (e: Exception) {
                 // Use default values if loading fails
             }
         }
-        
+
         return FilterOptions(
             categories = categories,
             ingredients = ingredients,

@@ -99,30 +99,34 @@ class RefactoredHomeViewModel : BaseViewModel() {
                 _hasMoreData.value = true // Reset pagination state
                 getCocktailsUseCase()
             },
-            onSuccess = { result ->
-                when (result) {
-                    is Result.Success -> {
-                        val paginatedList = result.data.take(PAGE_SIZE)
-                        _cocktails.value = paginatedList
-                        _hasMoreData.value = paginatedList.size < result.data.size
-                        
-                        // If we got data while offline, clear any error
-                        if (_isOfflineMode.value && result.data.isNotEmpty()) {
-                            clearError() // Clear base class error
-                            _errorString.value = "" // Clear legacy error string
+            onSuccess = { resultFlow ->
+                viewModelScope.launch {
+                    resultFlow.collect { result ->
+                        when (result) {
+                            is Result.Success<List<Cocktail>> -> {
+                                val paginatedList = result.data.take(PAGE_SIZE)
+                                _cocktails.value = paginatedList
+                                _hasMoreData.value = paginatedList.size < result.data.size
+
+                                // If we got data while offline, clear any error
+                                if (_isOfflineMode.value && result.data.isNotEmpty()) {
+                                    clearError() // Clear base class error
+                                    _errorString.value = "" // Clear legacy error string
+                                }
+                            }
+                            is Result.Error -> {
+                                setError(
+                                    title = "Failed to Load Cocktails",
+                                    message = result.message,
+                                    category = ErrorUtils.ErrorCategory.DATA,
+                                    recoveryAction = ErrorUtils.RecoveryAction("Retry") { retry() }
+                                )
+                                _errorString.value = result.message
+                            }
+                            is Result.Loading -> {
+                                // Already handled by executeWithErrorHandling
+                            }
                         }
-                    }
-                    is Result.Error -> {
-                        setError(
-                            title = "Failed to Load Cocktails",
-                            message = result.message,
-                            category = ErrorUtils.ErrorCategory.DATA,
-                            recoveryAction = ErrorUtils.RecoveryAction("Retry") { retry() }
-                        )
-                        _errorString.value = result.message
-                    }
-                    is Result.Loading -> {
-                        // Already handled by executeWithErrorHandling
                     }
                 }
             },
@@ -231,22 +235,26 @@ class RefactoredHomeViewModel : BaseViewModel() {
                         searchCocktailsUseCase(query)
                     }
                 },
-                onSuccess = { result ->
-                    when (result) {
-                        is Result.Success -> {
-                            _cocktails.value = result.data
-                        }
-                        is Result.Error -> {
-                            setError(
-                                title = "Search Failed",
-                                message = result.message,
-                                category = ErrorUtils.ErrorCategory.DATA,
-                                recoveryAction = ErrorUtils.RecoveryAction("Retry") { searchCocktails(query) }
-                            )
-                            _errorString.value = result.message
-                        }
-                        is Result.Loading -> {
-                            // Already handled by executeWithErrorHandling
+                onSuccess = { resultFlow ->
+                    viewModelScope.launch {
+                        resultFlow.collect { result ->
+                            when (result) {
+                                is Result.Success<List<Cocktail>> -> {
+                                    _cocktails.value = result.data
+                                }
+                                is Result.Error -> {
+                                    setError(
+                                        title = "Search Failed",
+                                        message = result.message,
+                                        category = ErrorUtils.ErrorCategory.DATA,
+                                        recoveryAction = ErrorUtils.RecoveryAction("Retry") { searchCocktails(query) }
+                                    )
+                                    _errorString.value = result.message
+                                }
+                                is Result.Loading -> {
+                                    // Already handled by executeWithErrorHandling
+                                }
+                            }
                         }
                     }
                 },
@@ -281,22 +289,26 @@ class RefactoredHomeViewModel : BaseViewModel() {
                     operation = {
                         searchCocktailsUseCase.advanced(filters)
                     },
-                    onSuccess = { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                _cocktails.value = result.data
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Filter Failed",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA,
-                                    recoveryAction = ErrorUtils.RecoveryAction("Retry") { updateSearchFilters(filters) }
-                                )
-                                _errorString.value = result.message
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
+                    onSuccess = { resultFlow ->
+                        viewModelScope.launch {
+                            resultFlow.collect { result ->
+                                when (result) {
+                                    is Result.Success<List<Cocktail>> -> {
+                                        _cocktails.value = result.data
+                                    }
+                                    is Result.Error -> {
+                                        setError(
+                                            title = "Filter Failed",
+                                            message = result.message,
+                                            category = ErrorUtils.ErrorCategory.DATA,
+                                            recoveryAction = ErrorUtils.RecoveryAction("Retry") { updateSearchFilters(filters) }
+                                        )
+                                        _errorString.value = result.message
+                                    }
+                                    is Result.Loading -> {
+                                        // Already handled by executeWithErrorHandling
+                                    }
+                                }
                             }
                         }
                     },
@@ -365,22 +377,26 @@ class RefactoredHomeViewModel : BaseViewModel() {
                     getCocktailsUseCase.byCategory(category)
                 }
             },
-            onSuccess = { result ->
-                when (result) {
-                    is Result.Success -> {
-                        _cocktails.value = result.data
-                    }
-                    is Result.Error -> {
-                        setError(
-                            title = "Failed to Filter",
-                            message = result.message,
-                            category = ErrorUtils.ErrorCategory.DATA,
-                            recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadCocktailsByCategory(category) }
-                        )
-                        _errorString.value = result.message
-                    }
-                    is Result.Loading -> {
-                        // Already handled by executeWithErrorHandling
+            onSuccess = { resultFlow ->
+                viewModelScope.launch {
+                    resultFlow.collect { result ->
+                        when (result) {
+                            is Result.Success<List<Cocktail>> -> {
+                                _cocktails.value = result.data
+                            }
+                            is Result.Error -> {
+                                setError(
+                                    title = "Failed to Filter",
+                                    message = result.message,
+                                    category = ErrorUtils.ErrorCategory.DATA,
+                                    recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadCocktailsByCategory(category) }
+                                )
+                                _errorString.value = result.message
+                            }
+                            is Result.Loading -> {
+                                // Already handled by executeWithErrorHandling
+                            }
+                        }
                     }
                 }
             },
@@ -397,22 +413,26 @@ class RefactoredHomeViewModel : BaseViewModel() {
             operation = {
                 getCocktailsUseCase.sortedByPrice(ascending)
             },
-            onSuccess = { result ->
-                when (result) {
-                    is Result.Success -> {
-                        _cocktails.value = result.data
-                    }
-                    is Result.Error -> {
-                        setError(
-                            title = "Failed to Sort",
-                            message = result.message,
-                            category = ErrorUtils.ErrorCategory.DATA,
-                            recoveryAction = ErrorUtils.RecoveryAction("Retry") { sortByPrice(ascending) }
-                        )
-                        _errorString.value = result.message
-                    }
-                    is Result.Loading -> {
-                        // Already handled by executeWithErrorHandling
+            onSuccess = { resultFlow ->
+                viewModelScope.launch {
+                    resultFlow.collect { result ->
+                        when (result) {
+                            is Result.Success<List<Cocktail>> -> {
+                                _cocktails.value = result.data
+                            }
+                            is Result.Error -> {
+                                setError(
+                                    title = "Failed to Sort",
+                                    message = result.message,
+                                    category = ErrorUtils.ErrorCategory.DATA,
+                                    recoveryAction = ErrorUtils.RecoveryAction("Retry") { sortByPrice(ascending) }
+                                )
+                                _errorString.value = result.message
+                            }
+                            is Result.Loading -> {
+                                // Already handled by executeWithErrorHandling
+                            }
+                        }
                     }
                 }
             },
@@ -429,22 +449,26 @@ class RefactoredHomeViewModel : BaseViewModel() {
             operation = {
                 getCocktailsUseCase.sortedByPopularity()
             },
-            onSuccess = { result ->
-                when (result) {
-                    is Result.Success -> {
-                        _cocktails.value = result.data
-                    }
-                    is Result.Error -> {
-                        setError(
-                            title = "Failed to Sort",
-                            message = result.message,
-                            category = ErrorUtils.ErrorCategory.DATA,
-                            recoveryAction = ErrorUtils.RecoveryAction("Retry") { sortByPopularity() }
-                        )
-                        _errorString.value = result.message
-                    }
-                    is Result.Loading -> {
-                        // Already handled by executeWithErrorHandling
+            onSuccess = { resultFlow ->
+                viewModelScope.launch {
+                    resultFlow.collect { result ->
+                        when (result) {
+                            is Result.Success<List<Cocktail>> -> {
+                                _cocktails.value = result.data
+                            }
+                            is Result.Error -> {
+                                setError(
+                                    title = "Failed to Sort",
+                                    message = result.message,
+                                    category = ErrorUtils.ErrorCategory.DATA,
+                                    recoveryAction = ErrorUtils.RecoveryAction("Retry") { sortByPopularity() }
+                                )
+                                _errorString.value = result.message
+                            }
+                            is Result.Loading -> {
+                                // Already handled by executeWithErrorHandling
+                            }
+                        }
                     }
                 }
             },

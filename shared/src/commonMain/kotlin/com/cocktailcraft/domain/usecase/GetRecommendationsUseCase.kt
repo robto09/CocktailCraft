@@ -24,13 +24,13 @@ class GetRecommendationsUseCase(
         try {
             val recommendations = cocktailRepository.getCocktailsByCategory(category)
                 .take(limit)
-            
+
             emit(Result.Success(recommendations))
         } catch (e: Exception) {
             emit(Result.Error(e.message ?: "Unknown error occurred"))
         }
     }
-    
+
     /**
      * Get cocktail recommendations based on ingredient.
      * @param ingredient The ingredient to base recommendations on
@@ -41,13 +41,13 @@ class GetRecommendationsUseCase(
         try {
             val recommendations = cocktailRepository.getCocktailsByIngredient(ingredient)
                 .take(limit)
-            
+
             emit(Result.Success(recommendations))
         } catch (e: Exception) {
             emit(Result.Error(e.message ?: "Unknown error occurred"))
         }
     }
-    
+
     /**
      * Get cocktail recommendations based on alcoholic filter.
      * @param alcoholicFilter The alcoholic filter to base recommendations on
@@ -58,13 +58,13 @@ class GetRecommendationsUseCase(
         try {
             val recommendations = cocktailRepository.getCocktailsByAlcoholicFilter(alcoholicFilter)
                 .take(limit)
-            
+
             emit(Result.Success(recommendations))
         } catch (e: Exception) {
             emit(Result.Error(e.message ?: "Unknown error occurred"))
         }
     }
-    
+
     /**
      * Get similar cocktails based on a given cocktail.
      * @param cocktail The cocktail to find similar ones for
@@ -77,30 +77,30 @@ class GetRecommendationsUseCase(
             var recommendations = cocktailRepository.getCocktailsByCategory(cocktail.category ?: "")
                 .filter { it.id != cocktail.id } // Exclude the original cocktail
                 .take(limit)
-            
+
             // If we don't have enough, try by ingredient
             if (recommendations.size < limit && cocktail.ingredients.isNotEmpty()) {
                 val mainIngredient = cocktail.ingredients.first().name
                 val byIngredient = cocktailRepository.getCocktailsByIngredient(mainIngredient)
                     .filter { it.id != cocktail.id } // Exclude the original cocktail
-                
+
                 // Combine and deduplicate
                 recommendations = (recommendations + byIngredient)
                     .distinctBy { it.id }
                     .take(limit)
             }
-            
+
             // If we still don't have enough, try by alcoholic filter
             if (recommendations.size < limit) {
-                val byAlcoholic = cocktailRepository.getCocktailsByAlcoholicFilter(cocktail.alcoholic)
+                val byAlcoholic = cocktailRepository.getCocktailsByAlcoholicFilter(cocktail.alcoholic ?: "Alcoholic")
                     .filter { it.id != cocktail.id } // Exclude the original cocktail
-                
+
                 // Combine and deduplicate
                 recommendations = (recommendations + byAlcoholic)
                     .distinctBy { it.id }
                     .take(limit)
             }
-            
+
             emit(Result.Success(recommendations))
         } catch (e: Exception) {
             emit(Result.Error(e.message ?: "Unknown error occurred"))

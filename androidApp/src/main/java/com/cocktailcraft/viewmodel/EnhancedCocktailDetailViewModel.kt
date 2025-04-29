@@ -44,23 +44,27 @@ class EnhancedCocktailDetailViewModel : BaseViewModel() {
             operation = {
                 getCocktailDetailsUseCase(id)
             },
-            onSuccess = { result ->
-                when (result) {
-                    is Result.Success -> {
-                        _cocktail.value = result.data
-                        checkFavoriteStatus(id)
-                        loadRecommendations(result.data)
-                    }
-                    is Result.Error -> {
-                        setError(
-                            title = "Failed to Load Details",
-                            message = result.message,
-                            category = ErrorUtils.ErrorCategory.DATA,
-                            recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadCocktailDetails(id) }
-                        )
-                    }
-                    is Result.Loading -> {
-                        // Already handled by executeWithErrorHandling
+            onSuccess = { resultFlow ->
+                viewModelScope.launch {
+                    resultFlow.collect { result ->
+                        when (result) {
+                            is Result.Success<Cocktail> -> {
+                                _cocktail.value = result.data
+                                checkFavoriteStatus(id)
+                                loadRecommendations(result.data)
+                            }
+                            is Result.Error -> {
+                                setError(
+                                    title = "Failed to Load Details",
+                                    message = result.message,
+                                    category = ErrorUtils.ErrorCategory.DATA,
+                                    recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadCocktailDetails(id) }
+                                )
+                            }
+                            is Result.Loading -> {
+                                // Already handled by executeWithErrorHandling
+                            }
+                        }
                     }
                 }
             },
@@ -124,8 +128,9 @@ class EnhancedCocktailDetailViewModel : BaseViewModel() {
     private fun loadRecommendations(cocktail: Cocktail) {
         viewModelScope.launch {
             // Try to get recommendations by category first
-            if (!cocktail.category.isNullOrBlank()) {
-                getRecommendationsUseCase.byCategory(cocktail.category, 3).collect { result ->
+            val category = cocktail.category
+            if (category != null && category.isNotBlank()) {
+                getRecommendationsUseCase.byCategory(category, 3).collect { result ->
                     when (result) {
                         is Result.Success -> {
                             if (result.data.isNotEmpty()) {
@@ -180,23 +185,27 @@ class EnhancedCocktailDetailViewModel : BaseViewModel() {
             operation = {
                 getCocktailDetailsUseCase.random()
             },
-            onSuccess = { result ->
-                when (result) {
-                    is Result.Success -> {
-                        _cocktail.value = result.data
-                        checkFavoriteStatus(result.data.id)
-                        loadRecommendations(result.data)
-                    }
-                    is Result.Error -> {
-                        setError(
-                            title = "Failed to Load Random Cocktail",
-                            message = result.message,
-                            category = ErrorUtils.ErrorCategory.DATA,
-                            recoveryAction = ErrorUtils.RecoveryAction("Try Again") { loadRandomCocktail() }
-                        )
-                    }
-                    is Result.Loading -> {
-                        // Already handled by executeWithErrorHandling
+            onSuccess = { resultFlow ->
+                viewModelScope.launch {
+                    resultFlow.collect { result ->
+                        when (result) {
+                            is Result.Success<Cocktail> -> {
+                                _cocktail.value = result.data
+                                checkFavoriteStatus(result.data.id)
+                                loadRecommendations(result.data)
+                            }
+                            is Result.Error -> {
+                                setError(
+                                    title = "Failed to Load Random Cocktail",
+                                    message = result.message,
+                                    category = ErrorUtils.ErrorCategory.DATA,
+                                    recoveryAction = ErrorUtils.RecoveryAction("Try Again") { loadRandomCocktail() }
+                                )
+                            }
+                            is Result.Loading -> {
+                                // Already handled by executeWithErrorHandling
+                            }
+                        }
                     }
                 }
             },
