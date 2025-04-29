@@ -113,31 +113,148 @@ _data.value = newData
 
 ## Error Handling
 
-ViewModels handle errors in a user-friendly way using the BaseViewModel's error handling utilities. Here's how:
+ViewModels implement a comprehensive error handling strategy:
 
-1. **Standardized Error Handling**: Use the `handleResultFlow` method to handle errors consistently across all ViewModels.
-
-2. **User-Friendly Errors**: Errors are converted to user-friendly messages using the ErrorUtils class.
-
-3. **Recovery Actions**: Provide recovery actions that users can take to resolve errors.
-
-Example:
+### 1. Error Types
 
 ```kotlin
-viewModelScope.launch {
-    handleResultFlow(
-        flow = someUseCase.getData(),
-        onSuccess = { data ->
-            _data.value = data
-        },
-        onError = { error ->
-            // Custom error handling if needed
-            // The base error handling is done by handleResultFlow
-        },
-        defaultErrorMessage = "Failed to load data. Please try again.",
-        recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadData() },
-        showAsEvent = true // Show as a one-time event instead of persistent state
-    )
+sealed class ViewError {
+    data class Network(val code: Int, val message: String) : ViewError()
+    data class Business(val code: String, val message: String) : ViewError()
+    data class Validation(val field: String, val message: String) : ViewError()
+    data class System(val exception: Throwable) : ViewError()
+}
+
+data class ErrorState(
+    val error: ViewError?,
+    val recoveryAction: RecoveryAction?,
+    val isRetryable: Boolean = true
+)
+```
+
+### 2. Error Handling Utilities
+
+```kotlin
+abstract class BaseViewModel : ViewModel() {
+    private val _errorState = MutableStateFlow<ErrorState?>(null)
+    val errorState: StateFlow<ErrorState?> = _errorState.asStateFlow()
+
+    private val _errorEvent = MutableSharedFlow<ViewError>()
+    val errorEvent: SharedFlow<ViewError> = _errorEvent.asSharedFlow()
+
+    protected fun handleError(
+        error: Throwable,
+        defaultMessage: String? = null,
+        recoveryAction: RecoveryAction? = null,
+        showAsEvent: Boolean = false
+    ) {
+        val viewError = when (error) {
+            is NetworkException -> ViewError.Network(error.code, error.message)
+            is BusinessException -> ViewError.Business(error.code, error.message)
+            is ValidationException -> ViewError.Validation(error.field, error.message)
+            else -> ViewError.System(error)
+        }
+
+        viewModelScope.launch {
+            if (showAsEvent) {
+                _errorEvent.emit(viewError)
+            } else {
+                _errorState.value = ErrorState(
+                    error = viewError,
+                    recoveryAction = recoveryAction,
+                    isRetryable = error !is ValidationException
+                )
+            }
+        }
+    }
+
+    protected suspend fun <T> handleResultFlow(
+        flow: Flow<Result<T>>,
+        onSuccess: suspend (T) -> Unit,
+        onError: (suspend (ViewError) -> Unit)? = null,
+        defaultErrorMessage: String? = null,
+        recoveryAction: RecoveryAction? = null,
+        showAsEvent: Boolean = false,
+        showLoading: Boolean = true
+    ) {
+        try {
+            if (showLoading) setLoading(true)
+            flow.collect { result ->
+                when (result) {
+                    is Result.Success -> onSuccess(result.data)
+                    is Result.Error -> {
+                        handleError(
+                            error = result.error,
+                            defaultMessage = defaultErrorMessage,
+                            recoveryAction = recoveryAction,
+                            showAsEvent = showAsEvent
+                        )
+                        onError?.invoke(mapToViewError(result.error))
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            handleError(
+                error = e,
+                defaultMessage = defaultErrorMessage,
+                recoveryAction = recoveryAction,
+                showAsEvent = showAsEvent
+            )
+            onError?.invoke(mapToViewError(e))
+        } finally {
+            if (showLoading) setLoading(false)
+        }
+    }
+}
+```
+
+### 3. Usage in ViewModels
+
+```kotlin
+class HomeViewModel(
+    private val getCocktailsUseCase: GetCocktailsUseCase
+) : BaseViewModel() {
+    
+    fun loadCocktails() {
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = getCocktailsUseCase(),
+                onSuccess = { cocktails ->
+                    _cocktails.value = cocktails
+                },
+                defaultErrorMessage = "Failed to load cocktails",
+                recoveryAction = RecoveryAction(
+                    label = "Retry",
+                    action = { loadCocktails() }
+                ),
+                showAsEvent = false // Show as persistent state
+            )
+        }
+    }
+
+    fun handleValidationError(error: ValidationException) {
+        handleError(
+            error = error,
+            showAsEvent = true // Show as one-time event
+        )
+    }
+}
+```
+
+### 4. Error Recovery
+
+```kotlin
+data class RecoveryAction(
+    val label: String,
+    val action: () -> Unit,
+    val type: RecoveryType = RecoveryType.RETRY
+)
+
+enum class RecoveryType {
+    RETRY,
+    REFRESH,
+    NAVIGATE,
+    CUSTOM
 }
 ```
 
@@ -224,3 +341,95 @@ class SomeViewModel(
 9. **Avoid Android Dependencies**: Keep ViewModels free of Android-specific dependencies to make them more testable and portable.
 
 10. **Use Use Cases**: Delegate business logic to use cases instead of implementing it directly in ViewModels.
+
+11. **Testing Best Practices**:
+    ```kotlin
+    class HomeViewModelTest {
+        private lateinit var viewModel: HomeViewModel
+        private val getCocktailsUseCase: GetCocktailsUseCase = mock()
+        private val testDispatcher = StandardTestDispatcher()
+        private val testScope = TestScope(testDispatcher)
+
+        @Before
+        fun setup() {
+            Dispatchers.setMain(testDispatcher)
+            viewModel = HomeViewModel(getCocktailsUseCase)
+        }
+
+        @Test
+        fun `test loading cocktails success`() = testScope.runTest {
+            // Arrange
+            val cocktails = listOf(
+                Cocktail(id = "1", name = "Margarita"),
+                Cocktail(id = "2", name = "Mojito")
+            )
+            whenever(getCocktailsUseCase()).thenReturn(
+                flow { emit(Result.Success(cocktails)) }
+            )
+
+            // Act
+            viewModel.loadCocktails()
+            testScheduler.advanceUntilIdle()
+
+            // Assert
+            assertEquals(cocktails, viewModel.cocktails.value)
+            assertNull(viewModel.errorState.value)
+        }
+
+        @Test
+        fun `test loading cocktails network error`() = testScope.runTest {
+            // Arrange
+            val error = NetworkException(
+                code = 404,
+                message = "Not found"
+            )
+            whenever(getCocktailsUseCase()).thenReturn(
+                flow { emit(Result.Error(error)) }
+            )
+
+            // Act
+            viewModel.loadCocktails()
+            testScheduler.advanceUntilIdle()
+
+            // Assert
+            assertTrue(viewModel.errorState.value?.error is ViewError.Network)
+            assertEquals(404, (viewModel.errorState.value?.error as ViewError.Network).code)
+        }
+
+        @Test
+        fun `test error recovery action`() = testScope.runTest {
+            // Arrange
+            val error = NetworkException(404, "Not found")
+            whenever(getCocktailsUseCase()).thenReturn(
+                flow { emit(Result.Error(error)) }
+            ).thenReturn(
+                flow { emit(Result.Success(emptyList())) }
+            )
+
+            // Act & Assert
+            viewModel.loadCocktails()
+            testScheduler.advanceUntilIdle()
+            
+            // Verify error state
+            assertNotNull(viewModel.errorState.value?.recoveryAction)
+            
+            // Execute recovery action
+            viewModel.errorState.value?.recoveryAction?.action?.invoke()
+            testScheduler.advanceUntilIdle()
+            
+            // Verify error cleared
+            assertNull(viewModel.errorState.value)
+        }
+
+        @After
+        fun tearDown() {
+            Dispatchers.resetMain()
+        }
+    }
+    ```
+
+12. **State Management Best Practices**:
+    - Use sealed classes for UI states
+    - Keep state immutable
+    - Provide atomic state updates
+    - Handle configuration changes properly

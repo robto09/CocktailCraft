@@ -57,25 +57,35 @@ The DI system is organized into the following modules:
 
 ### 1. Domain Module (`domainModule`)
 - Contains domain-level dependencies
-- Includes use cases and domain configurations
+- Includes domain models, interfaces, and business rules
 - Located in `shared/src/commonMain/kotlin/com/cocktailcraft/di/DomainModule.kt`
 
-### 2. Data Module (`dataModule`)
+### 2. UseCase Module (`useCaseModule`)
+- Contains all use case implementations
+- Orchestrates data flow between repositories and ViewModels
+- Located in `shared/src/commonMain/kotlin/com/cocktailcraft/di/UseCaseModule.kt`
+
+### 3. Data Module (`dataModule`)
 - Contains data-layer dependencies
 - Includes repositories and caching mechanisms
 - Located in `shared/src/commonMain/kotlin/com/cocktailcraft/di/DataModule.kt`
 
-### 3. Network Module (`networkModule`)
+### 4. Network Module (`networkModule`)
 - Contains network-related dependencies
 - Includes API clients, HTTP configuration, and network monitoring
 - Located in `shared/src/commonMain/kotlin/com/cocktailcraft/di/NetworkModule.kt`
 
-### 4. Platform Module (`platformModule`)
+### 5. Platform Module (`platformModule`)
 - Contains platform-specific dependencies
 - Implemented differently for Android and iOS
 - Located in platform-specific source sets
 
-### 5. Test Module (`testModule`)
+### 6. ViewModel Module (`viewModelModule`)
+- Contains ViewModel factory methods and dependencies
+- Platform-specific implementations
+- Located in `androidApp/src/main/java/com/cocktailcraft/di/ViewModelModule.kt`
+
+### 7. Test Module (`testModule`)
 - Contains mock implementations for testing
 - Used only in test environments
 - Located in `androidApp/src/test/java/com/cocktailcraft/di/TestModule.kt`
@@ -156,54 +166,166 @@ Each module is implemented as a Koin module with clear responsibilities:
 ```kotlin
 // NetworkModule.kt
 val networkModule = module {
-    // HTTP Client
+    // HTTP Client with improved configuration
     single {
         HttpClient {
-            // HTTP client configuration...
+            install(ContentNegotiation) {
+                json(get())
+            }
+            install(Logging) {
+                level = LogLevel.HEADERS
+            }
+            defaultRequest {
+                contentType(ContentType.Application.Json)
+            }
         }
     }
 
-    // API
-    single<CocktailApi> { CocktailApiImpl(get()) }
+    // API with error handling
+    single<CocktailApi> {
+        CocktailApiImpl(
+            client = get(),
+            errorHandler = get()
+        )
+    }
 
-    // Network monitoring
-    single { NetworkMonitor(get()) }
+    // Enhanced network monitoring
+    single {
+        NetworkMonitor(
+            context = get(),
+            scope = get()
+        )
+    }
+}
+
+// UseCaseModule.kt
+val useCaseModule = module {
+    // Search and filtering
+    factory {
+        AdvancedFilterUseCase(
+            repository = get(),
+            errorHandler = get()
+        )
+    }
+    factory {
+        GetFilterOptionsUseCase(
+            repository = get(),
+            cache = get()
+        )
+    }
+
+    // Order management
+    factory {
+        PlaceOrderUseCase(
+            orderRepository = get(),
+            cartRepository = get(),
+            errorHandler = get()
+        )
+    }
+
+    // User interactions
+    factory {
+        ToggleFavoriteUseCase(
+            repository = get(),
+            authRepository = get()
+        )
+    }
+}
+
+// ViewModelModule.kt
+val viewModelModule = module {
+    // Home screen with advanced filtering
+    viewModel {
+        HomeViewModel(
+            advancedFilterUseCase = get(),
+            getFilterOptionsUseCase = get(),
+            networkStatusUseCase = get()
+        )
+    }
+
+    // Order management
+    viewModel {
+        OrderViewModel(
+            placeOrderUseCase = get(),
+            manageOrdersUseCase = get()
+        )
+    }
+
+    // Theme handling
+    viewModel {
+        ThemeViewModel(
+            themeUseCase = get()
+        )
+    }
 }
 
 // DataModule.kt
 val dataModule = module {
-    // JSON
+    // Enhanced JSON configuration
     single {
         Json {
             ignoreUnknownKeys = true
             isLenient = true
+            prettyPrint = true
+            encodeDefaults = true
         }
     }
 
-    // Cache
-    single { CocktailCache(get(), get(), get()) }
+    // Improved caching with TTL
+    single {
+        CocktailCache(
+            settings = get(),
+            json = get(),
+            timeProvider = get()
+        )
+    }
 
-    // Repositories
+    // Repositories with error handling
     single<CocktailRepository> {
         CocktailRepositoryImpl(
             api = get(),
-            settings = get(),
-            appConfig = get(),
-            json = get(),
-            networkMonitor = get()
+            cache = get(),
+            errorHandler = get(),
+            networkMonitor = get(),
+            dispatchers = get()
         )
     }
-    // Other repositories...
+
+    single<OrderRepository> {
+        OrderRepositoryImpl(
+            api = get(),
+            cache = get(),
+            errorHandler = get()
+        )
+    }
 }
 
 // DomainModule.kt
 val domainModule = module {
-    // Config
-    single<AppConfig> { AppConfigImpl() }
+    // Enhanced configuration
+    single<AppConfig> {
+        AppConfigImpl(
+            environment = get(),
+            settings = get()
+        )
+    }
 
-    // Use Cases
-    factory { PlaceOrderUseCase(orderRepository = get()) }
-    factory { ToggleFavoriteUseCase(cocktailRepository = get()) }
+    // Error handling
+    single {
+        ErrorHandler(
+            networkMonitor = get(),
+            logger = get()
+        )
+    }
+
+    // Dispatchers
+    single {
+        DispatcherProvider(
+            io = Dispatchers.IO,
+            main = Dispatchers.Main,
+            default = Dispatchers.Default
+        )
+    }
 }
 ```
 
@@ -278,11 +400,23 @@ val testModule = module {
 6. **Module Organization**: Group related dependencies in the same module
 7. **Testability**: Design with testing in mind, making it easy to replace real implementations with mocks
 8. **Consistency**: Follow consistent patterns for dependency injection across the codebase
-9. **Coroutine Best Practices**:
-   - Always use `viewModelScope.launch` for coroutines
-   - Use `handleResultFlow` for handling Result-wrapped Flows
-   - Rename unused parameters to underscore (_) to follow Kotlin conventions
-10. **Error Handling**: Use the standardized error handling methods from BaseViewModel
+9. **Cross-Platform Compatibility**:
+   - Use shared interfaces for ViewModels
+   - Keep platform-specific code in appropriate source sets
+   - Use expect/actual declarations for platform-specific implementations
+10. **Error Handling**:
+    - Use the standardized ErrorHandler for consistent error management
+    - Implement recovery actions for common error scenarios
+    - Provide user-friendly error messages
+11. **Coroutine Best Practices**:
+    - Always use `viewModelScope.launch` for coroutines
+    - Use `handleResultFlow` for handling Result-wrapped Flows
+    - Use DispatcherProvider for testable coroutine dispatchers
+    - Rename unused parameters to underscore (_) to follow Kotlin conventions
+12. **Caching and Performance**:
+    - Implement TTL (Time To Live) for cached data
+    - Use appropriate scope for coroutines
+    - Consider memory usage when caching data
 
 ## Benefits of the New Approach
 

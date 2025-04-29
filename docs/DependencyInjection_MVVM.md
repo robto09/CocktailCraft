@@ -184,20 +184,120 @@ This approach allows us to:
 - Implement platform-specific behavior as needed
 - Avoid dependency issues between modules
 
-#### iOS Implementation (Future)
+#### iOS Implementation
+
+The iOS implementation follows similar patterns to Android but uses Swift-friendly approaches:
 
 ```kotlin
-// shared/src/iosMain/kotlin/com/cocktailcraft/viewmodel/IOSViewModelFactory.kt
+// shared/src/iosMain/kotlin/com/cocktailcraft/viewmodel/ios/IOSViewModels.kt
 class IOSHomeViewModel(
     private val getCocktailsUseCase: GetCocktailsUseCase,
     private val searchCocktailsUseCase: SearchCocktailsUseCase,
-    private val networkStatusUseCase: NetworkStatusUseCase
+    private val networkStatusUseCase: NetworkStatusUseCase,
+    private val coroutineScope: CoroutineScope
 ) : IHomeViewModel {
-    // Implementation...
+    // State
+    override val cocktails = MutableStateFlow<List<Cocktail>>(emptyList())
+    override val isLoading = MutableStateFlow(false)
+    override val error = MutableStateFlow<String?>(null)
+
+    // Actions
+    override fun loadCocktails() {
+        coroutineScope.launch {
+            isLoading.value = true
+            try {
+                getCocktailsUseCase()
+                    .catch { e ->
+                        error.value = e.message
+                    }
+                    .collect { result ->
+                        when (result) {
+                            is Result.Success -> cocktails.value = result.data
+                            is Result.Error -> error.value = result.message
+                        }
+                    }
+            } finally {
+                isLoading.value = false
+            }
+        }
+    }
+
+    override fun searchCocktails(query: String) {
+        coroutineScope.launch {
+            isLoading.value = true
+            try {
+                searchCocktailsUseCase(query)
+                    .catch { e ->
+                        error.value = e.message
+                    }
+                    .collect { result ->
+                        when (result) {
+                            is Result.Success -> cocktails.value = result.data
+                            is Result.Error -> error.value = result.message
+                        }
+                    }
+            } finally {
+                isLoading.value = false
+            }
+        }
+    }
+}
+
+// Factory for creating iOS ViewModels
+class IOSViewModelFactory(
+    private val koin: Koin,
+    private val coroutineScope: CoroutineScope
+) {
+    fun createHomeViewModel(): IOSHomeViewModel = IOSHomeViewModel(
+        getCocktailsUseCase = koin.get(),
+        searchCocktailsUseCase = koin.get(),
+        networkStatusUseCase = koin.get(),
+        coroutineScope = coroutineScope
+    )
+
+    fun createOrderViewModel(): IOSOrderViewModel = IOSOrderViewModel(
+        placeOrderUseCase = koin.get(),
+        manageOrdersUseCase = koin.get(),
+        coroutineScope = coroutineScope
+    )
 }
 ```
 
-For iOS, we will implement the shared interfaces directly. The Android implementation is already complete in the androidApp module, where each ViewModel extends BaseViewModel and implements the shared interfaces. These implementations use coroutine-based logic with viewModelScope and handleResultFlow for consistent asynchronous operations and error handling.
+Usage in Swift:
+
+```swift
+// HomeView.swift
+class HomeViewModel: ObservableObject {
+    private let viewModel: IOSHomeViewModel
+    
+    @Published var cocktails: [Cocktail] = []
+    @Published var isLoading: Bool = false
+    @Published var error: String? = nil
+    
+    init(factory: IOSViewModelFactory) {
+        viewModel = factory.createHomeViewModel()
+        
+        // Collect state
+        viewModel.cocktails.watch { [weak self] cocktails in
+            self?.cocktails = cocktails
+        }
+        viewModel.isLoading.watch { [weak self] loading in
+            self?.isLoading = loading
+        }
+        viewModel.error.watch { [weak self] error in
+            self?.error = error
+        }
+    }
+    
+    func loadCocktails() {
+        viewModel.loadCocktails()
+    }
+    
+    func searchCocktails(query: String) {
+        viewModel.searchCocktails(query: query)
+    }
+}
+```
 
 ### Implementation Structure
 
@@ -321,25 +421,59 @@ class HomeViewModel(
 
 ## Related Documentation
 
-For more detailed information on implementing ViewModels, see the [ViewModel Implementation Guide](./ViewModel_Implementation.md), which covers:
+For more detailed information on implementing ViewModels, see:
 
-- Coroutine handling in ViewModels
-- State management with StateFlow
-- Error handling
-- Resource cleanup
-- Cross-platform considerations
-- Best practices
+1. [ViewModel Implementation Guide](./ViewModel_Implementation.md)
+   - Coroutine handling in ViewModels
+   - State management with StateFlow
+   - Error handling
+   - Resource cleanup
+   - Cross-platform considerations
+   - Best practices
+
+2. [Dependency Injection Guide](./DependencyInjection.md)
+   - Module organization
+   - Dependency management
+   - Testing with Koin
+   - Platform-specific implementations
+
+3. [Migration Guide](./DependencyInjectionMigration.md)
+   - Updating existing ViewModels
+   - Testing patterns
+   - Common issues and solutions
 
 ## Conclusion
 
-This dependency injection approach follows MVVM and Clean Architecture principles, with a focus on cross-platform compatibility. It provides a clear separation of concerns, makes the code more testable, and prepares the app for future iOS development.
+This dependency injection approach follows MVVM and Clean Architecture principles, with robust cross-platform support. It provides:
 
-The direct implementation approach in the shared module allows us to:
+1. **Clear Separation of Concerns**:
+   - UI layer is platform-specific
+   - Business logic is shared
+   - Data layer is platform-independent
 
-1. **Avoid Module Dependencies**: The shared module doesn't need to reference the Android module
-2. **Simplify Testing**: Each implementation can be tested independently
-3. **Ensure Consistency**: The same interface is implemented on both platforms
-4. **Enable Platform-Specific Optimizations**: Each platform can optimize its implementation
+2. **Cross-Platform Benefits**:
+   - Shared interfaces ensure consistent behavior
+   - Platform-specific optimizations are possible
+   - Code reuse across platforms
+   - Simplified testing strategy
+
+3. **Development Efficiency**:
+   - Reduced code duplication
+   - Faster feature development
+   - Consistent patterns across platforms
+   - Easier maintenance
+
+4. **Testing Advantages**:
+   - Independent testing of each layer
+   - Mock dependencies for unit tests
+   - Shared test utilities
+   - Platform-specific test support
+
+5. **Future-Proofing**:
+   - Easy to add new platforms
+   - Scalable architecture
+   - Maintainable codebase
+   - Clear upgrade paths
 
 ## Coroutine-Based Logic
 

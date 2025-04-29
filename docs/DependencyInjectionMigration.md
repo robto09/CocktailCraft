@@ -25,30 +25,52 @@ class ExampleViewModel(
 ### After
 
 ```kotlin
-class ExampleViewModel(
-    private val exampleUseCase: ExampleUseCase
-) : BaseViewModel(), IExampleViewModel {
+// Example of a ViewModel using the new advanced filtering use cases
+class HomeViewModel(
+    private val advancedFilterUseCase: AdvancedFilterUseCase,
+    private val getFilterOptionsUseCase: GetFilterOptionsUseCase
+) : BaseViewModel(), IHomeViewModel {
 
-    // State exposed to the UI
-    private val _data = MutableStateFlow<List<ExampleData>>(emptyList())
-    override val data: StateFlow<List<ExampleData>> = _data.asStateFlow()
+    // State for filter options
+    private val _filterOptions = MutableStateFlow<FilterOptions>(FilterOptions())
+    override val filterOptions: StateFlow<FilterOptions> = _filterOptions.asStateFlow()
+
+    // State for filtered cocktails
+    private val _cocktails = MutableStateFlow<List<Cocktail>>(emptyList())
+    override val cocktails: StateFlow<List<Cocktail>> = _cocktails.asStateFlow()
     
     init {
-        loadData()
+        loadFilterOptions()
     }
     
-    override fun loadData() {
+    private fun loadFilterOptions() {
         viewModelScope.launch {
             handleResultFlow(
-                flow = exampleUseCase.getData(),
-                onSuccess = { data ->
-                    _data.value = data
+                flow = getFilterOptionsUseCase.getOptions(),
+                onSuccess = { options ->
+                    _filterOptions.value = options
                 },
                 onError = { _ ->
                     // Error handling is done by handleResultFlow
                 },
-                defaultErrorMessage = "Failed to load data. Please try again.",
-                recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadData() }
+                defaultErrorMessage = "Failed to load filter options. Please try again.",
+                recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadFilterOptions() }
+            )
+        }
+    }
+
+    override fun applyFilters(filters: SearchFilters) {
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = advancedFilterUseCase.filter(filters),
+                onSuccess = { filteredCocktails ->
+                    _cocktails.value = filteredCocktails
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to apply filters. Please try again.",
+                recoveryAction = ErrorUtils.RecoveryAction("Retry") { applyFilters(filters) }
             )
         }
     }
@@ -147,81 +169,286 @@ class ExampleViewModelTest : BaseKoinTest() {
 
 ## Common Issues and Solutions
 
-### Issue: Missing Dependencies in Tests
+### 1. Platform-Specific Dependencies
 
-If tests fail with missing dependencies, ensure the `testModule` provides all required dependencies:
-
-```kotlin
-// Add to TestModule.kt
-single<MissingDependency> { mock() }
-```
-
-### Issue: Conflicting Modules
-
-If you encounter conflicts between test modules and production modules:
+#### Android-Specific Dependencies
 
 ```kotlin
-// In your test setup
-stopKoin() // Ensure Koin is stopped before starting
-startKoin {
-    modules(testModule)
+// Android ViewModel Factory
+class AndroidViewModelFactory(
+    private val koin: Koin
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return when {
+            modelClass.isAssignableFrom(HomeViewModel::class.java) -> {
+                HomeViewModel(
+                    advancedFilterUseCase = koin.get(),
+                    getFilterOptionsUseCase = koin.get(),
+                    networkStatusUseCase = koin.get()
+                ) as T
+            }
+            modelClass.isAssignableFrom(OrderViewModel::class.java) -> {
+                OrderViewModel(
+                    placeOrderUseCase = koin.get(),
+                    manageOrdersUseCase = koin.get()
+                ) as T
+            }
+            else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+        }
+    }
+}
+
+// Android Module
+val androidModule = module {
+    single { AndroidViewModelFactory(get()) }
+    single { NetworkMonitor(get()) }
+    single { ImageLoader(get()) }
 }
 ```
 
-### Issue: ViewModel Not Using Mocked Dependencies
-
-Ensure you're using the ViewModel constructor with the mocked dependencies:
+#### iOS-Specific Dependencies
 
 ```kotlin
-// Incorrect
-viewModel = ExampleViewModel() // Uses Koin-injected dependencies
+// iOS ViewModel Factory
+class IOSViewModelFactory(
+    private val koin: Koin,
+    private val coroutineScope: CoroutineScope
+) {
+    fun createHomeViewModel(): IOSHomeViewModel = IOSHomeViewModel(
+        advancedFilterUseCase = koin.get(),
+        getFilterOptionsUseCase = koin.get(),
+        networkStatusUseCase = koin.get(),
+        coroutineScope = coroutineScope
+    )
 
-// Correct
-viewModel = ExampleViewModel(mockExampleUseCase) // Uses provided mock
-```
+    fun createOrderViewModel(): IOSOrderViewModel = IOSOrderViewModel(
+        placeOrderUseCase = koin.get(),
+        manageOrdersUseCase = koin.get(),
+        coroutineScope = coroutineScope
+    )
+}
 
-### Issue: Coroutine Testing
-
-For testing coroutines, use the `StandardTestDispatcher` and `runTest`:
-
-```kotlin
-@Test
-fun `test loading data`() = runTest {
-    // Arrange
-    whenever(mockExampleUseCase.getData()).thenReturn(flow {
-        emit(Result.Success(testData))
-    })
-    
-    // Act
-    viewModel.loadData()
-    testScheduler.advanceUntilIdle() // Advance the test dispatcher
-    
-    // Assert
-    assertEquals(testData, viewModel.data.value)
+// iOS Module
+val iosModule = module {
+    single { IOSViewModelFactory(get(), get()) }
+    single { IOSNetworkMonitor() }
+    single { IOSImageLoader() }
 }
 ```
 
-### Issue: Flow Testing
+### 2. Advanced Testing Patterns
 
-For testing Flows, collect the Flow in a test coroutine:
+#### Testing with States and Events
 
 ```kotlin
-@Test
-fun `test data flow`() = runTest {
-    // Arrange
-    val collectedValues = mutableListOf<List<ExampleData>>()
-    val job = launch {
-        viewModel.data.collect { collectedValues.add(it) }
+class HomeViewModelTest : BaseKoinTest() {
+    private lateinit var viewModel: HomeViewModel
+    private val testScope = TestScope()
+    private val testDispatcher = StandardTestDispatcher(testScope.testScheduler)
+    
+    @Before
+    override fun setUp() {
+        super.setUp()
+        Dispatchers.setMain(testDispatcher)
+        
+        // Initialize state collectors
+        val states = mutableListOf<HomeViewState>()
+        val events = mutableListOf<HomeViewEvent>()
+        
+        testScope.launch {
+            viewModel.state.collect { states.add(it) }
+        }
+        testScope.launch {
+            viewModel.events.collect { events.add(it) }
+        }
     }
     
-    // Act
-    viewModel.loadData()
+    @Test
+    fun `test state transitions during cocktail loading`() = testScope.runTest {
+        // Given
+        val cocktails = listOf(
+            Cocktail(id = "1", name = "Margarita"),
+            Cocktail(id = "2", name = "Mojito")
+        )
+        whenever(getCocktailsUseCase()).thenReturn(flow {
+            emit(Result.Success(cocktails))
+        })
+        
+        // When
+        viewModel.loadCocktails()
+        testScheduler.advanceUntilIdle()
+        
+        // Then
+        assertEquals(
+            listOf(
+                HomeViewState.Initial,
+                HomeViewState.Loading,
+                HomeViewState.Success(cocktails)
+            ),
+            states
+        )
+    }
+    
+    @Test
+    fun `test error handling with recovery`() = testScope.runTest {
+        // Given
+        val error = NetworkException(404, "Not found")
+        whenever(getCocktailsUseCase())
+            .thenReturn(flow { emit(Result.Error(error)) })
+            .thenReturn(flow { emit(Result.Success(emptyList())) })
+        
+        // When - First attempt fails
+        viewModel.loadCocktails()
+        testScheduler.advanceUntilIdle()
+        
+        // Then - Error state
+        assertTrue(states.last() is HomeViewState.Error)
+        
+        // When - Retry
+        (states.last() as HomeViewState.Error).recoveryAction.invoke()
+        testScheduler.advanceUntilIdle()
+        
+        // Then - Success state
+        assertTrue(states.last() is HomeViewState.Success)
+    }
+}
+```
+
+#### Testing Platform-Specific Features
+
+```kotlin
+// Android-specific test
+class AndroidHomeViewModelTest : BaseKoinTest() {
+    @Test
+    fun `test Android-specific image loading`() = runTest {
+        // Given
+        val imageLoader: ImageLoader = mock()
+        whenever(imageLoader.load(any())).thenReturn(
+            Result.Success(AndroidBitmap())
+        )
+        
+        // When
+        viewModel.loadCocktailImage("test.jpg")
+        
+        // Then
+        verify(imageLoader).load("test.jpg")
+        assertTrue(viewModel.cocktailImage.value is AndroidBitmap)
+    }
+}
+
+// iOS-specific test
+class IOSHomeViewModelTest : BaseKoinTest() {
+    @Test
+    fun `test iOS-specific image loading`() = runTest {
+        // Given
+        val imageLoader: IOSImageLoader = mock()
+        whenever(imageLoader.load(any())).thenReturn(
+            Result.Success(UIImage())
+        )
+        
+        // When
+        viewModel.loadCocktailImage("test.jpg")
+        
+        // Then
+        verify(imageLoader).load("test.jpg")
+        assertTrue(viewModel.cocktailImage.value is UIImage)
+    }
+}
+```
+
+### 3. Testing Utilities
+
+```kotlin
+// Test dispatchers provider
+class TestDispatcherProvider : DispatcherProvider {
+    private val testDispatcher = StandardTestDispatcher()
+    
+    override val main: CoroutineDispatcher = testDispatcher
+    override val io: CoroutineDispatcher = testDispatcher
+    override val default: CoroutineDispatcher = testDispatcher
+}
+
+// Flow test utilities
+fun <T> Flow<T>.test(
+    scope: TestScope,
+    timeout: Duration = 1.seconds
+): FlowTestCollector<T> = FlowTestCollector(this, scope, timeout)
+
+class FlowTestCollector<T>(
+    private val flow: Flow<T>,
+    private val scope: TestScope,
+    private val timeout: Duration
+) {
+    private val values = mutableListOf<T>()
+    
+    suspend fun assertValues(expected: List<T>) {
+        scope.launch {
+            flow.collect { values.add(it) }
+        }
+        scope.testScheduler.advanceTimeBy(timeout)
+        assertEquals(expected, values)
+    }
+    
+    suspend fun assertValue(expected: T) {
+        assertValues(listOf(expected))
+    }
+}
+
+// Example usage
+@Test
+fun `test flow values`() = runTest {
+    viewModel.cocktails.test(this)
+        .assertValues(listOf(
+            emptyList(),
+            listOf(Cocktail("1", "Margarita"))
+        ))
+}
+```
+
+### 4. Error Handling in Tests
+
+```kotlin
+@Test
+fun `test network error handling`() = testScope.runTest {
+    // Given
+    val error = NetworkException(
+        code = 404,
+        message = "Not found"
+    )
+    whenever(getCocktailsUseCase()).thenReturn(flow {
+        emit(Result.Error(error))
+    })
+    
+    // When
+    viewModel.loadCocktails()
     testScheduler.advanceUntilIdle()
     
-    // Assert
-    assertEquals(2, collectedValues.size) // Initial empty list + loaded data
-    assertEquals(testData, collectedValues.last())
+    // Then
+    with(states.last() as HomeViewState.Error) {
+        assertEquals(404, (error as ViewError.Network).code)
+        assertTrue(isRetryable)
+        assertNotNull(recoveryAction)
+    }
     
-    job.cancel() // Clean up
+    assertTrue(events.any { it is HomeViewEvent.ShowError })
+}
+
+@Test
+fun `test validation error handling`() = testScope.runTest {
+    // Given
+    val error = ValidationException(
+        field = "name",
+        message = "Name is required"
+    )
+    
+    // When
+    viewModel.validateInput("")
+    testScheduler.advanceUntilIdle()
+    
+    // Then
+    assertTrue(events.any {
+        it is HomeViewEvent.ShowValidationError &&
+        it.field == "name"
+    })
 }
 ```
