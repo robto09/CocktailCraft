@@ -11,21 +11,13 @@ import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailRepository
 import com.cocktailcraft.domain.repository.FavoritesRepository
 import com.cocktailcraft.domain.repository.OrderRepository
-import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
 /**
  * Koin module for data-related dependencies including repositories and caching.
+ * JSON serialization has been moved to the CommonModule.
  */
 val dataModule = module {
-    // JSON
-    single {
-        Json {
-            ignoreUnknownKeys = true
-            isLenient = true
-        }
-    }
-
     // Cache
     single { CocktailCache(get(), get(), get()) }
 

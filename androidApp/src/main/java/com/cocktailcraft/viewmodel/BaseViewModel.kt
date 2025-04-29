@@ -1,13 +1,18 @@
 package com.cocktailcraft.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.cocktailcraft.domain.util.ErrorHandler
+import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.ErrorUtils
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
@@ -139,6 +144,79 @@ abstract class BaseViewModel : KoinViewModel() {
                     setLoading(false)
                 }
             }
+        }
+    }
+
+    /**
+     * Handle a Flow of Result<T> with automatic error handling
+     */
+    protected open fun <T> handleResultFlow(
+        flow: Flow<Result<T>>,
+        onSuccess: (T) -> Unit,
+        onError: ((ErrorUtils.UserFriendlyError) -> Unit)? = null,
+        onLoading: (() -> Unit)? = null,
+        defaultErrorMessage: String = "Something went wrong. Please try again.",
+        showAsEvent: Boolean = false,
+        showLoading: Boolean = true,
+        recoveryAction: ErrorUtils.RecoveryAction? = null
+    ) {
+        viewModelScope.launch {
+            flow
+                .catch { e ->
+                    // Handle exceptions from the flow
+                    val error = ErrorUtils.getErrorFromException(
+                        exception = e,
+                        defaultMessage = defaultErrorMessage,
+                        recoveryAction = recoveryAction
+                    )
+
+                    if (showAsEvent) {
+                        _errorEvent.emit(error)
+                    } else {
+                        _error.value = error
+                    }
+
+                    onError?.invoke(error)
+
+                    if (showLoading) {
+                        setLoading(false)
+                    }
+                }
+                .collectLatest { result ->
+                    when (result) {
+                        is Result.Success -> {
+                            if (showLoading) {
+                                setLoading(false)
+                            }
+                            onSuccess(result.data)
+                        }
+                        is Result.Error -> {
+                            if (showLoading) {
+                                setLoading(false)
+                            }
+
+                            val error = ErrorUtils.createErrorFromErrorCode(
+                                errorCode = result.errorCode,
+                                defaultMessage = result.message,
+                                retryAction = recoveryAction?.action
+                            )
+
+                            if (showAsEvent) {
+                                _errorEvent.emit(error)
+                            } else {
+                                _error.value = error
+                            }
+
+                            onError?.invoke(error)
+                        }
+                        is Result.Loading -> {
+                            if (showLoading) {
+                                setLoading(true)
+                            }
+                            onLoading?.invoke()
+                        }
+                    }
+                }
         }
     }
 }

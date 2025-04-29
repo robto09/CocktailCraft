@@ -1,6 +1,7 @@
 package com.cocktailcraft.util
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -11,12 +12,18 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * Android implementation of NetworkMonitor.
  */
-actual class NetworkMonitor actual constructor(
+actual class NetworkMonitor(
     private val context: Context
 ) : BaseNetworkMonitor() {
 
-    actual override val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+    override val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
     private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private val prefs: SharedPreferences = context.getSharedPreferences("network_prefs", Context.MODE_PRIVATE)
+
+    init {
+        // Initialize offline mode from preferences
+        _offlineModeEnabled = prefs.getBoolean("offline_mode_enabled", false)
+    }
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
@@ -42,7 +49,7 @@ actual class NetworkMonitor actual constructor(
         }
     }
 
-    actual override fun startMonitoring() {
+    override fun startMonitoring() {
         val networkRequest = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
@@ -53,12 +60,22 @@ actual class NetworkMonitor actual constructor(
         _isOnline.value = isNetworkAvailable()
     }
 
-    actual override fun stopMonitoring() {
+    override fun stopMonitoring() {
         try {
             connectivityManager.unregisterNetworkCallback(networkCallback)
         } catch (e: Exception) {
             // Ignore if not registered
         }
+    }
+
+    override fun isOfflineModeEnabled(): Boolean {
+        return _offlineModeEnabled
+    }
+
+    override fun setOfflineMode(enabled: Boolean) {
+        _offlineModeEnabled = enabled
+        // Save to preferences
+        prefs.edit().putBoolean("offline_mode_enabled", enabled).apply()
     }
 
     private fun isNetworkAvailable(): Boolean {

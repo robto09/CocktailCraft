@@ -1,5 +1,8 @@
 package com.cocktailcraft.domain.util
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+
 /**
  * Standardized error handling utility for the shared module.
  * This class provides consistent error handling across platforms.
@@ -15,10 +18,20 @@ class ErrorHandler {
         fun handleException(exception: Throwable, defaultMessage: String = "An unexpected error occurred"): Result.Error {
             val message = exception.message ?: defaultMessage
             val errorCode = getErrorCodeFromException(exception)
-            
+
             return Result.Error(message, errorCode)
         }
-        
+
+        /**
+         * Handle an exception and convert it to a Flow of Result.Error.
+         * @param exception The exception to handle
+         * @param defaultMessage The default error message to use if the exception doesn't provide one
+         * @return A Flow emitting a Result.Error with the appropriate message and error code
+         */
+        fun <T> handleExceptionAsFlow(exception: Throwable, defaultMessage: String = "An unexpected error occurred"): Flow<Result<T>> = flow {
+            emit(handleException(exception, defaultMessage))
+        }
+
         /**
          * Get an appropriate error code for an exception
          * @param exception The exception to get an error code for
@@ -30,39 +43,39 @@ class ErrorHandler {
                 exception.toString().contains("UnknownHostException") ||
                 exception.toString().contains("ConnectException") ||
                 exception.toString().contains("SocketException") -> ErrorCode.NETWORK
-                
+
                 // Timeout errors
                 exception.toString().contains("SocketTimeoutException") ||
                 exception.toString().contains("TimeoutException") -> ErrorCode.TIMEOUT
-                
+
                 // Authentication errors
                 exception.toString().contains("SecurityException") ||
                 exception.toString().contains("401") ||
                 exception.toString().contains("Unauthorized") -> ErrorCode.UNAUTHORIZED
-                
+
                 // Forbidden errors
                 exception.toString().contains("403") ||
                 exception.toString().contains("Forbidden") -> ErrorCode.FORBIDDEN
-                
+
                 // Not found errors
                 exception.toString().contains("404") ||
                 exception.toString().contains("Not Found") -> ErrorCode.NOT_FOUND
-                
+
                 // Server errors
                 exception.toString().contains("500") ||
                 exception.toString().contains("502") ||
                 exception.toString().contains("503") ||
                 exception.toString().contains("504") -> ErrorCode.SERVER_ERROR
-                
+
                 // Data errors
                 exception is IllegalArgumentException ||
                 exception is IllegalStateException -> ErrorCode.INVALID_DATA
-                
+
                 // Default
                 else -> ErrorCode.UNKNOWN
             }
         }
-        
+
         /**
          * Create a network error
          * @param message The error message
@@ -71,7 +84,7 @@ class ErrorHandler {
         fun createNetworkError(message: String = "Network error. Please check your connection."): Result.Error {
             return Result.Error(message, ErrorCode.NETWORK)
         }
-        
+
         /**
          * Create a server error
          * @param message The error message
@@ -80,7 +93,7 @@ class ErrorHandler {
         fun createServerError(message: String = "Server error. Please try again later."): Result.Error {
             return Result.Error(message, ErrorCode.SERVER_ERROR)
         }
-        
+
         /**
          * Create a data error
          * @param message The error message
@@ -89,7 +102,7 @@ class ErrorHandler {
         fun createDataError(message: String = "Invalid data. Please try again."): Result.Error {
             return Result.Error(message, ErrorCode.INVALID_DATA)
         }
-        
+
         /**
          * Create an authentication error
          * @param message The error message
@@ -98,7 +111,7 @@ class ErrorHandler {
         fun createAuthError(message: String = "Authentication error. Please log in again."): Result.Error {
             return Result.Error(message, ErrorCode.UNAUTHORIZED)
         }
-        
+
         /**
          * Create a not found error
          * @param message The error message
