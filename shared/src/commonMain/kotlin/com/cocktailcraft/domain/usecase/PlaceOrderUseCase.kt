@@ -1,9 +1,6 @@
 package com.cocktailcraft.domain.usecase
 
-import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.model.CocktailCartItem
-import com.cocktailcraft.domain.model.Order
-import com.cocktailcraft.domain.model.OrderItem
+import com.cocktailcraft.domain.model.*
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.util.Result
 import kotlinx.coroutines.flow.Flow
@@ -36,7 +33,7 @@ class PlaceOrderUseCase(
                 date = currentDate,
                 items = orderItems,
                 total = totalPrice,
-                status = "Processing"
+                status = OrderStatus.SAVED
             )
             
             // Add order to repository

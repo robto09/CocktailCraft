@@ -56,7 +56,7 @@ class OrderRepositoryImpl(
         emit(_orders.value.find { it.id == id })
     }
 
-    override suspend fun updateOrderStatus(id: String, status: String) {
+    override suspend fun updateOrderStatus(id: String, status: OrderStatus) {
         val updatedOrders = _orders.value.map { order ->
             if (order.id == id) order.copy(status = status) else order
         }
@@ -99,9 +99,9 @@ class OrderRepositoryImpl(
             
             if (orderIndex != -1) {
                 val order = orders[orderIndex]
-                // Only allow cancellation if the order is still pending or processing
-                if (order.status == "Processing" || order.status == "Pending") {
-                    orders[orderIndex] = order.copy(status = "Cancelled")
+                // Only allow marking as completed if it's not already completed
+                if (order.status == OrderStatus.SAVED) {
+                    orders[orderIndex] = order.copy(status = OrderStatus.COMPLETED)
                     _orders.value = orders
                     saveOrdersToStorage()
                     emit(true)

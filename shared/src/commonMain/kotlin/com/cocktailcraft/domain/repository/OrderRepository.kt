@@ -7,7 +7,7 @@ interface OrderRepository {
     suspend fun getOrders(): Flow<List<Order>>
     suspend fun addOrder(order: Order)
     suspend fun getOrderById(id: String): Flow<Order?>
-    suspend fun updateOrderStatus(id: String, status: String)
+    suspend fun updateOrderStatus(id: String, status: OrderStatus)
     suspend fun deleteOrder(id: String)
     
     // Methods needed by the implementation
