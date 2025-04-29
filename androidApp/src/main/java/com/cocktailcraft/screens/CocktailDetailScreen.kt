@@ -221,13 +221,6 @@ fun CocktailDetailScreen(
             // Only proceed if cocktail is not null
             cocktail?.let { cocktailData ->
                 val imageUrl = cocktailData.imageUrl ?: ""
-                // Calculate average rating for display if needed
-                val ratingDisplay = if (reviews.isNotEmpty()) {
-                    reviews.map { it.rating }.average().toFloat()
-                } else {
-                    0f
-                }
-                // Note: ratingDisplay can be used for UI elements that need to show the average rating
 
                 LazyColumn(
                     modifier = Modifier
@@ -431,8 +424,7 @@ fun CocktailDetailScreen(
                             elevation = 0,
                             content = {
                                 // Handle ingredients list
-                                val ingredients = cocktailData.ingredients
-                                when (ingredients) {
+                                when (val ingredients = cocktailData.ingredients) {
                                     is List<*> -> {
                                         // Try to cast to CocktailIngredient list
                                         (ingredients as? List<CocktailIngredient>)?.forEach { ingredient ->
