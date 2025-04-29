@@ -8,7 +8,7 @@ data class Order(
     val date: String,
     val items: List<OrderItem>,
     val total: Double,
-    val status: OrderStatus = OrderStatus.PENDING
+    val status: OrderStatus = OrderStatus.SAVED
 )
 
 @Serializable
