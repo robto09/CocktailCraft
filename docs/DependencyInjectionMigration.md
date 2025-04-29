@@ -26,17 +26,32 @@ class ExampleViewModel(
 
 ```kotlin
 class ExampleViewModel(
-    private val repository: ExampleRepository? = null
-) : BaseViewModel() {
+    private val exampleUseCase: ExampleUseCase
+) : BaseViewModel(), IExampleViewModel {
 
-    // Use injected repository if not provided in constructor
-    private val injectedRepository: ExampleRepository by inject()
-
-    // Use the provided repository or the injected one
-    private val repository: ExampleRepository
-        get() = repository ?: injectedRepository
-        
-    // ViewModel implementation...
+    // State exposed to the UI
+    private val _data = MutableStateFlow<List<ExampleData>>(emptyList())
+    override val data: StateFlow<List<ExampleData>> = _data.asStateFlow()
+    
+    init {
+        loadData()
+    }
+    
+    override fun loadData() {
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = exampleUseCase.getData(),
+                onSuccess = { data ->
+                    _data.value = data
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to load data. Please try again.",
+                recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadData() }
+            )
+        }
+    }
 }
 ```
 
@@ -101,12 +116,24 @@ class ExampleViewModelTest : BaseKoinTest() {
 1. **Update ViewModel Imports**:
    - Remove `import androidx.lifecycle.ViewModel`
    - Remove `import org.koin.core.component.KoinComponent`
-   - Add `import org.koin.core.component.inject` if not already present
+   - Add `import androidx.lifecycle.viewModelScope`
+   - Add `import kotlinx.coroutines.launch`
+   - Add `import kotlinx.coroutines.flow.MutableStateFlow`
+   - Add `import kotlinx.coroutines.flow.StateFlow`
+   - Add `import kotlinx.coroutines.flow.asStateFlow`
 
 2. **Update ViewModel Inheritance**:
-   - Change `ViewModel(), KoinComponent` to `BaseViewModel()`
+   - Change `ViewModel(), KoinComponent` to `BaseViewModel(), IYourViewModel`
+   - Create an interface for your ViewModel in the shared module if it doesn't exist
 
-3. **Update Tests**:
+3. **Update ViewModel Implementation**:
+   - Replace direct repository access with use cases
+   - Use constructor injection instead of `by inject()`
+   - Use `viewModelScope.launch` for all asynchronous operations
+   - Use `handleResultFlow` for handling Result-wrapped Flows
+   - Rename unused parameters to underscore (_) following Kotlin conventions
+
+4. **Update Tests**:
    - Make test class extend `BaseKoinTest`
    - Override `setUp()` and `tearDown()` methods
    - Call `super.setUp()` at the beginning of `setUp()`
@@ -114,7 +141,7 @@ class ExampleViewModelTest : BaseKoinTest() {
    - Replace manual mocking with Koin injection using `by inject()`
    - Configure mock behavior in `setUp()`
 
-4. **Verify**:
+5. **Verify**:
    - Run tests to ensure they still pass
    - Check for any missing dependencies or configuration issues
 
@@ -143,12 +170,58 @@ startKoin {
 
 ### Issue: ViewModel Not Using Mocked Dependencies
 
-Ensure you're using the ViewModel constructor without parameters to force Koin injection:
+Ensure you're using the ViewModel constructor with the mocked dependencies:
 
 ```kotlin
 // Incorrect
-viewModel = ExampleViewModel(repository) // Uses provided repository, not Koin
+viewModel = ExampleViewModel() // Uses Koin-injected dependencies
 
 // Correct
-viewModel = ExampleViewModel() // Uses Koin-injected repository
+viewModel = ExampleViewModel(mockExampleUseCase) // Uses provided mock
+```
+
+### Issue: Coroutine Testing
+
+For testing coroutines, use the `StandardTestDispatcher` and `runTest`:
+
+```kotlin
+@Test
+fun `test loading data`() = runTest {
+    // Arrange
+    whenever(mockExampleUseCase.getData()).thenReturn(flow {
+        emit(Result.Success(testData))
+    })
+    
+    // Act
+    viewModel.loadData()
+    testScheduler.advanceUntilIdle() // Advance the test dispatcher
+    
+    // Assert
+    assertEquals(testData, viewModel.data.value)
+}
+```
+
+### Issue: Flow Testing
+
+For testing Flows, collect the Flow in a test coroutine:
+
+```kotlin
+@Test
+fun `test data flow`() = runTest {
+    // Arrange
+    val collectedValues = mutableListOf<List<ExampleData>>()
+    val job = launch {
+        viewModel.data.collect { collectedValues.add(it) }
+    }
+    
+    // Act
+    viewModel.loadData()
+    testScheduler.advanceUntilIdle()
+    
+    // Assert
+    assertEquals(2, collectedValues.size) // Initial empty list + loaded data
+    assertEquals(testData, collectedValues.last())
+    
+    job.cancel() // Clean up
+}
 ```

@@ -31,9 +31,9 @@ class SomeViewModel(
     // Dependencies injected via constructor
     private val someUseCase: SomeUseCase,
     private val anotherUseCase: AnotherUseCase
-) : ISomeViewModel {
-    // Coroutine scope for this ViewModel
-    private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+) : BaseViewModel(), ISomeViewModel {
+    // Using viewModelScope from AndroidX ViewModel
+    // This is automatically provided by the BaseViewModel
     
     // State exposed to the UI
     override val someState = MutableStateFlow<SomeType>(initialValue)
@@ -63,35 +63,29 @@ class SomeViewModel(
 
 ViewModels use coroutines to handle asynchronous operations. Here's how:
 
-1. **CoroutineScope**: Each ViewModel creates its own `CoroutineScope` with a `SupervisorJob` to ensure that failures in one coroutine don't affect others.
+1. **viewModelScope**: Each ViewModel uses the `viewModelScope` provided by AndroidX ViewModel, which is automatically canceled when the ViewModel is cleared.
 
 2. **Launching Coroutines**: Use `viewModelScope.launch` to start a new coroutine for asynchronous operations.
 
-3. **Collecting Flows**: Use `collect` or `collectLatest` to collect values from a Flow.
+3. **Handling Result Flows**: Use the `handleResultFlow` helper method from BaseViewModel to handle Result-wrapped Flows consistently.
 
 Example:
 
 ```kotlin
 fun loadData() {
     viewModelScope.launch {
-        isLoading.value = true
-        
-        try {
-            someUseCase.getData()
-                .catch { error ->
-                    // Handle error
-                    isLoading.value = false
-                }
-                .collect { result ->
-                    isLoading.value = false
-                    if (result.isSuccess) {
-                        data.value = result.getOrNull() ?: emptyList()
-                    }
-                }
-        } catch (e: Exception) {
-            // Handle unexpected errors
-            isLoading.value = false
-        }
+        handleResultFlow(
+            flow = someUseCase.getData(),
+            onSuccess = { data ->
+                // Handle success
+                _data.value = data
+            },
+            onError = { _ ->
+                // Error handling is done by handleResultFlow
+            },
+            defaultErrorMessage = "Failed to load data. Please try again.",
+            recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadData() }
+        )
     }
 }
 ```
@@ -119,36 +113,31 @@ _data.value = newData
 
 ## Error Handling
 
-ViewModels handle errors in a user-friendly way. Here's how:
+ViewModels handle errors in a user-friendly way using the BaseViewModel's error handling utilities. Here's how:
 
-1. **Catching Exceptions**: Use `try-catch` blocks to catch exceptions.
+1. **Standardized Error Handling**: Use the `handleResultFlow` method to handle errors consistently across all ViewModels.
 
-2. **Handling Flow Errors**: Use `catch` operator to handle errors in Flows.
+2. **User-Friendly Errors**: Errors are converted to user-friendly messages using the ErrorUtils class.
 
-3. **Updating State**: Update state to reflect errors.
+3. **Recovery Actions**: Provide recovery actions that users can take to resolve errors.
 
 Example:
 
 ```kotlin
 viewModelScope.launch {
-    try {
-        someUseCase.getData()
-            .catch { error ->
-                // Handle specific Flow errors
-                errorState.value = "An error occurred: ${error.message}"
-            }
-            .collect { result ->
-                if (result.isSuccess) {
-                    data.value = result.getOrNull() ?: emptyList()
-                } else {
-                    // Handle Result.failure
-                    errorState.value = "Failed to load data"
-                }
-            }
-    } catch (e: Exception) {
-        // Handle unexpected errors
-        errorState.value = "An unexpected error occurred"
-    }
+    handleResultFlow(
+        flow = someUseCase.getData(),
+        onSuccess = { data ->
+            _data.value = data
+        },
+        onError = { error ->
+            // Custom error handling if needed
+            // The base error handling is done by handleResultFlow
+        },
+        defaultErrorMessage = "Failed to load data. Please try again.",
+        recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadData() },
+        showAsEvent = true // Show as a one-time event instead of persistent state
+    )
 }
 ```
 
@@ -156,15 +145,15 @@ viewModelScope.launch {
 
 ViewModels clean up resources when they're no longer needed. Here's how:
 
-1. **Cancelling Coroutines**: Call `viewModelScope.cancel()` in the `onCleared()` method.
+1. **Automatic Coroutine Cancellation**: The `viewModelScope` is automatically canceled when the ViewModel is cleared.
 
-2. **Closing Resources**: Close any resources that need to be closed.
+2. **Closing Resources**: Override the `onCleared()` method to close any additional resources.
 
 Example:
 
 ```kotlin
-fun onCleared() {
-    viewModelScope.cancel()
+override fun onCleared() {
+    super.onCleared() // This handles coroutine cancellation
     // Close other resources if needed
 }
 ```
@@ -219,15 +208,18 @@ class SomeViewModel(
 
 3. **State Immutability**: Treat state as immutable. Create new state objects instead of modifying existing ones.
 
-4. **Error Handling**: Handle errors gracefully and provide user-friendly error messages.
+4. **Consistent Error Handling**: Use the BaseViewModel's error handling utilities consistently.
 
-5. **Resource Cleanup**: Clean up resources when they're no longer needed.
+5. **Coroutine Best Practices**:
+   - Always use `viewModelScope.launch` for coroutines
+   - Use `handleResultFlow` for handling Result-wrapped Flows
+   - Rename unused parameters to underscore (_) to follow Kotlin conventions
 
-6. **Testing**: Write unit tests for ViewModels to ensure they work correctly.
+6. **Resource Cleanup**: Clean up resources when they're no longer needed.
 
-7. **Documentation**: Document the purpose and behavior of each ViewModel.
+7. **Testing**: Write unit tests for ViewModels to ensure they work correctly.
 
-8. **Consistent Naming**: Use consistent naming conventions for ViewModels and their methods.
+8. **Documentation**: Document the purpose and behavior of each ViewModel.
 
 9. **Avoid Android Dependencies**: Keep ViewModels free of Android-specific dependencies to make them more testable and portable.
 

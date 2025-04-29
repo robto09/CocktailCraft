@@ -40,10 +40,16 @@ These improvements make it easier to write tests that use Koin for dependency in
 We've standardized the ViewModel architecture:
 
 - **KoinViewModel**: A base class that implements `KoinComponent`
-- **BaseViewModel**: Extended to inherit from `KoinViewModel`
-- **Updated ViewModels**: Refactored to use the new base classes
+- **BaseViewModel**: Extended to inherit from `KoinViewModel` and provides common functionality
+- **Updated ViewModels**: Refactored to use the new base classes and consistent coroutine patterns
 
-This approach provides a consistent pattern for dependency injection in ViewModels, making the code more maintainable and easier to understand.
+The BaseViewModel now provides standardized methods for handling asynchronous operations:
+
+- **handleResultFlow**: A method for handling Result-wrapped Flows with consistent error handling
+- **executeWithErrorHandling**: A method for executing suspend functions with error handling
+- **executeWithErrorHandlingFlow**: A method for executing operations that return Flows
+
+This approach provides a consistent pattern for dependency injection and asynchronous operations in ViewModels, making the code more maintainable and easier to understand.
 
 ## Module Structure
 
@@ -79,21 +85,35 @@ The DI system is organized into the following modules:
 ViewModels use a consistent pattern for dependency injection:
 
 1. All ViewModels extend `BaseViewModel` which extends `KoinViewModel`
-2. `KoinViewModel` implements `KoinComponent` to enable Koin injection
-3. ViewModels support both constructor injection (for testing) and Koin injection (for production)
+2. ViewModels receive dependencies via constructor injection
+3. ViewModels use a consistent pattern for handling asynchronous operations
 
 Example:
 ```kotlin
 class ThemeViewModel(
-    private val authRepository: AuthRepository? = null
-) : BaseViewModel() {
+    private val themeUseCase: ThemeUseCase
+) : BaseViewModel(), IThemeViewModel {
 
-    // Use injected repository if not provided in constructor
-    private val injectedAuthRepository: AuthRepository by inject()
+    // State exposed to the UI
+    private val _isDarkMode = MutableStateFlow(false)
+    override val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
 
-    // Use the provided repository or the injected one
-    private val repository: AuthRepository
-        get() = authRepository ?: injectedAuthRepository
+    // Load theme preferences
+    private fun loadThemePreference() {
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = themeUseCase.getUserPreferences(),
+                onSuccess = { preferences ->
+                    _isDarkMode.value = preferences.darkMode
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to load theme preferences",
+                showAsEvent = false
+            )
+        }
+    }
 
     // ViewModel implementation...
 }
@@ -197,7 +217,33 @@ abstract class KoinViewModel : ViewModel(), KoinComponent
 
 // BaseViewModel.kt
 abstract class BaseViewModel : KoinViewModel() {
-    // Common ViewModel functionality...
+    // Loading state
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    // Error state
+    private val _error = MutableStateFlow<ErrorUtils.UserFriendlyError?>(null)
+    val error: StateFlow<ErrorUtils.UserFriendlyError?> = _error.asStateFlow()
+
+    // Error events
+    private val _errorEvent = MutableSharedFlow<ErrorUtils.UserFriendlyError>()
+    val errorEvent: SharedFlow<ErrorUtils.UserFriendlyError> = _errorEvent.asSharedFlow()
+
+    // Handle Result Flow with automatic error handling
+    protected open fun <T> handleResultFlow(
+        flow: Flow<Result<T>>,
+        onSuccess: (T) -> Unit,
+        onError: ((ErrorUtils.UserFriendlyError) -> Unit)? = null,
+        onLoading: (() -> Unit)? = null,
+        defaultErrorMessage: String = "Something went wrong. Please try again.",
+        showAsEvent: Boolean = false,
+        showLoading: Boolean = true,
+        recoveryAction: ErrorUtils.RecoveryAction? = null
+    ) {
+        // Implementation...
+    }
+
+    // Other helper methods...
 }
 ```
 
@@ -225,13 +271,18 @@ val testModule = module {
 ## Best Practices
 
 1. **Separation of Concerns**: Keep modules focused on specific layers or functionality
-2. **Constructor Injection**: Prefer constructor injection for testing
+2. **Constructor Injection**: Use constructor injection for dependencies
 3. **Interface-Based Injection**: Inject interfaces rather than concrete implementations
 4. **Minimal Dependencies**: Keep dependencies minimal and focused
 5. **Documentation**: Document non-obvious dependencies and injection patterns
 6. **Module Organization**: Group related dependencies in the same module
 7. **Testability**: Design with testing in mind, making it easy to replace real implementations with mocks
 8. **Consistency**: Follow consistent patterns for dependency injection across the codebase
+9. **Coroutine Best Practices**:
+   - Always use `viewModelScope.launch` for coroutines
+   - Use `handleResultFlow` for handling Result-wrapped Flows
+   - Rename unused parameters to underscore (_) to follow Kotlin conventions
+10. **Error Handling**: Use the standardized error handling methods from BaseViewModel
 
 ## Benefits of the New Approach
 
@@ -244,3 +295,6 @@ The improved dependency injection setup provides several benefits:
 5. **Easier Maintenance**: Smaller, focused modules are easier to maintain
 6. **Better Scalability**: Easier to add new features without modifying existing modules
 7. **Improved Readability**: Code is more organized and easier to understand
+8. **Consistent Error Handling**: Standardized error handling across all ViewModels
+9. **Efficient Coroutine Usage**: Consistent patterns for using coroutines and handling asynchronous operations
+10. **Better User Experience**: Consistent error handling and recovery options

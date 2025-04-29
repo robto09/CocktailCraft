@@ -160,7 +160,19 @@ class HomeViewModel(
 
     // Actions
     override fun loadCocktails() {
-        // Implementation using use cases
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = getCocktailsUseCase(),
+                onSuccess = { cocktails ->
+                    _cocktails.value = cocktails
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to load cocktails. Please try again.",
+                recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadCocktails() }
+            )
+        }
     }
     // ...
 }
@@ -296,7 +308,19 @@ class HomeViewModel(
     }
 
     override fun loadCocktails() {
-        // Implementation using use cases
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = getCocktailsUseCase(),
+                onSuccess = { cocktails ->
+                    _cocktails.value = cocktails
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to load cocktails. Please try again.",
+                recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadCocktails() }
+            )
+        }
     }
 }
 ```
@@ -323,4 +347,32 @@ The direct implementation approach in the shared module allows us to:
 3. **Ensure Consistency**: The same interface is implemented on both platforms
 4. **Enable Platform-Specific Optimizations**: Each platform can optimize its implementation
 
-This approach provides a clean, maintainable architecture that scales well for cross-platform development.
+## Coroutine-Based Logic
+
+All ViewModels in the CocktailCraft app use a consistent pattern for handling asynchronous operations with coroutines:
+
+1. **viewModelScope**: Each ViewModel uses the `viewModelScope` provided by AndroidX ViewModel, which is automatically canceled when the ViewModel is cleared.
+
+2. **Standardized Flow Handling**: The `handleResultFlow` method from BaseViewModel is used to handle Result-wrapped Flows consistently:
+
+```kotlin
+viewModelScope.launch {
+    handleResultFlow(
+        flow = someUseCase.someOperation(),
+        onSuccess = { result ->
+            // Handle success
+        },
+        onError = { _ ->
+            // Error handling is done by handleResultFlow
+        },
+        defaultErrorMessage = "User-friendly error message",
+        recoveryAction = ErrorUtils.RecoveryAction("Retry") { someAction() }
+    )
+}
+```
+
+3. **Consistent Error Handling**: All ViewModels use the same error handling pattern, making the code more maintainable and providing a consistent user experience.
+
+4. **Kotlin Conventions**: Unused parameters are renamed to underscore (_) following Kotlin conventions.
+
+This approach provides a clean, maintainable architecture that scales well for cross-platform development and ensures consistent handling of asynchronous operations across the app.
