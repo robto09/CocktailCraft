@@ -50,8 +50,7 @@ fun CocktailSearchBar(
     hasActiveFilters: Boolean,
     onSearchQueryChange: (String) -> Unit,
     onClearSearch: () -> Unit,
-    onToggleAdvancedSearch: () -> Unit,
-    onShowAdvancedSearchDialog: () -> Unit,
+    onShowAdvancedSearch: () -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = "Search cocktails...",
     searchIconTint: Color = AppColors.Gray,
@@ -104,23 +103,9 @@ fun CocktailSearchBar(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        // Advanced search button
+        // Advanced search button - always shows dialog
         IconButton(
-            onClick = {
-                if (isAdvancedSearchActive) {
-                    // If already expanded, just collapse it
-                    onToggleAdvancedSearch()
-                } else {
-                    // If not expanded, toggle between dialog and expandable panel
-                    if (hasActiveFilters) {
-                        // If filters are already applied, just expand the panel
-                        onToggleAdvancedSearch()
-                    } else {
-                        // If no filters applied, show the dialog for better UX
-                        onShowAdvancedSearchDialog()
-                    }
-                }
-            },
+            onClick = onShowAdvancedSearch,
             modifier = Modifier
                 .background(
                     color = if (isAdvancedSearchActive || hasActiveFilters)

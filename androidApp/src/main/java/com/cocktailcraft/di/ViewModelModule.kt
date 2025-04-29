@@ -25,7 +25,8 @@ val viewModelModule = module {
         HomeViewModel(
             getCocktailsUseCase = get(),
             searchCocktailsUseCase = get(),
-            networkStatusUseCase = get()
+            networkStatusUseCase = get(),
+            getFilterOptionsUseCase = get()
         )
     }
 

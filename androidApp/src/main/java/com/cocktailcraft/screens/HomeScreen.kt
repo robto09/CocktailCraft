@@ -164,8 +164,7 @@ fun HomeScreen(
             hasActiveFilters = searchFilters.hasActiveFilters(),
             onSearchQueryChange = { viewModel.searchCocktails(it) },
             onClearSearch = { viewModel.toggleSearchMode(false) },
-            onToggleAdvancedSearch = { viewModel.toggleAdvancedSearchMode(!isAdvancedSearchActive) },
-            onShowAdvancedSearchDialog = { showAdvancedSearch = true }
+            onShowAdvancedSearch = { showAdvancedSearch = true }
         )
 
         // Active filters display
@@ -190,21 +189,15 @@ fun HomeScreen(
         )
 
         // Advanced search panel
+        val categories by viewModel.categories.collectAsState()
+        val ingredients by viewModel.ingredients.collectAsState()
 
-        // Load filter options using default values
-        // We can't use the repository directly anymore since we're using use cases
-        val filterCategories = listOf(
-            "Cocktail", "Ordinary Drink", "Shot", "Coffee / Tea",
-            "Punch / Party Drink", "Homemade Liqueur", "Beer", "Soft Drink"
-        )
-        val ingredients = emptyList<String>()
-
-        // Use the dialog version when in dialog mode
+        // Only use the dialog version of advanced search
         if (showAdvancedSearch) {
             AdvancedSearchPanel(
                 isVisible = true,
                 currentFilters = searchFilters,
-                categories = filterCategories,
+                categories = categories,
                 ingredients = ingredients,
                 onApplyFilters = { filters ->
                     viewModel.updateSearchFilters(filters)
@@ -220,22 +213,6 @@ fun HomeScreen(
                 resultCount = advancedSearchResultCount
             )
         }
-
-        // Use the expandable panel version for inline display
-        ExpandableAdvancedSearchPanel(
-            isExpanded = isAdvancedSearchActive,
-            currentFilters = searchFilters,
-            categories = filterCategories,
-            ingredients = ingredients,
-            onApplyFilters = { filters ->
-                viewModel.updateSearchFilters(filters)
-            },
-            onClearFilters = {
-                viewModel.clearSearchFilters()
-            },
-            isLoading = isAdvancedSearchLoading,
-            resultCount = advancedSearchResultCount
-        )
 
         // Add Category Filter Chips - only shown when not searching
         if (!isSearchActive) {
@@ -254,9 +231,38 @@ fun HomeScreen(
                 .fillMaxSize()
                 .pullRefresh(pullRefreshState)
         ) {
-            if (isLoading && cocktails.isEmpty()) {
+            if ((isLoading || isAdvancedSearchLoading) && cocktails.isEmpty()) {
                 // Show shimmer loading effect instead of spinner
                 CocktailLoadingShimmer()
+            } else if (isAdvancedSearchLoading && cocktails.isNotEmpty()) {
+                // Keep showing existing results with loading indicator while filtering
+                Column {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = AppColors.Primary
+                        )
+                    }
+                    AnimatedCocktailList(
+                        cocktails = cocktails,
+                        isSearchActive = isSearchActive,
+                        selectedCategory = selectedCategory,
+                        isLoadingMore = isLoadingMore,
+                        hasMoreData = hasMoreData,
+                        favorites = favorites,
+                        onCocktailClick = onCocktailClick,
+                        onAddToCart = onAddToCart,
+                        onToggleFavorite = { cocktailToToggle ->
+                            favoritesViewModel.toggleFavorite(cocktailToToggle)
+                        },
+                        onLoadMore = {
+                            viewModel.loadMoreCocktails()
+                        }
+                    )
+                }
             } else if (legacyErrorString.isNotBlank()) {
                 NetworkErrorStateDisplay(
                     errorMessage = legacyErrorString,

@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.usecase.GetCocktailsUseCase
+import com.cocktailcraft.domain.usecase.GetFilterOptionsUseCase
 import com.cocktailcraft.domain.usecase.NetworkStatusUseCase
 import com.cocktailcraft.domain.usecase.SearchCocktailsUseCase
 import com.cocktailcraft.domain.util.Result
@@ -32,7 +33,8 @@ import kotlinx.coroutines.launch
 class HomeViewModel(
     private val getCocktailsUseCase: GetCocktailsUseCase,
     private val searchCocktailsUseCase: SearchCocktailsUseCase,
-    private val networkStatusUseCase: NetworkStatusUseCase
+    private val networkStatusUseCase: NetworkStatusUseCase,
+    private val getFilterOptionsUseCase: GetFilterOptionsUseCase
 ) : BaseViewModel(), IHomeViewModel {
 
     // Cocktails state
@@ -73,8 +75,39 @@ class HomeViewModel(
     private val _errorString = MutableStateFlow<String>("")
     val errorString: StateFlow<String> = _errorString.asStateFlow()
 
+    // Filter options state
+    private val _categories = MutableStateFlow<List<String>>(emptyList())
+    val categories: StateFlow<List<String>> = _categories.asStateFlow()
+    private val _ingredients = MutableStateFlow<List<String>>(emptyList())
+    val ingredients: StateFlow<List<String>> = _ingredients.asStateFlow()
+
     // Search job for debouncing
     private var searchJob: Job? = null
+
+    /**
+     * Load filter options for advanced search
+     */
+    suspend fun loadFilterOptions() {
+        handleResultFlow(
+            flow = getFilterOptionsUseCase.getCategories(),
+            onSuccess = { categories ->
+                _categories.value = categories
+            },
+            onError = { error ->
+                _errorString.value = error.message
+            }
+        )
+
+        handleResultFlow(
+            flow = getFilterOptionsUseCase.getIngredients(),
+            onSuccess = { ingredients ->
+                _ingredients.value = ingredients
+            },
+            onError = { error ->
+                _errorString.value = error.message
+            }
+        )
+    }
 
     init {
         // Initialize offline mode status
@@ -99,7 +132,10 @@ class HomeViewModel(
             }
         }
 
-        loadCocktails()
+        viewModelScope.launch {
+            loadFilterOptions()
+            loadCocktails()
+        }
     }
 
     /**
@@ -257,12 +293,17 @@ class HomeViewModel(
                 handleResultFlow(
                     flow = searchCocktailsUseCase.advanced(filters),
                     onSuccess = { cocktails ->
-                        _cocktails.value = cocktails
-                        _advancedSearchResultCount.value = cocktails.size
-                        _isAdvancedSearchLoading.value = false
+                        viewModelScope.launch {
+                            _advancedSearchResultCount.value = cocktails.size
+                            // Small delay to ensure the count is updated before the list
+                            delay(100)
+                            _cocktails.value = cocktails
+                            _isAdvancedSearchLoading.value = false
+                        }
                     },
                     onError = { error ->
                         _errorString.value = error.message
+                        _advancedSearchResultCount.value = 0
                         _isAdvancedSearchLoading.value = false
                     },
                     defaultErrorMessage = "Failed to apply filters. Please try again.",

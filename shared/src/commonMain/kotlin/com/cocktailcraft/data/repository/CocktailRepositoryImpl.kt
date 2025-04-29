@@ -550,53 +550,13 @@ class CocktailRepositoryImpl(
             }
 
             // Get initial results based on text query if present
-            var results = if (filters.query.isNotBlank()) {
+            val results = if (filters.query.isNotBlank()) {
                 searchCocktailsByName(filters.query).first()
             } else {
                 getCocktailsSortedByNewest().first()
             }
 
-            // Apply category filter if present
-            if (filters.category != null) {
-                val categoryResults = filterByCategory(filters.category).first()
-                results = if (filters.query.isNotBlank()) {
-                    // Intersect with previous results if we had a text query
-                    results.filter { cocktail ->
-                        categoryResults.any { it.id == cocktail.id }
-                    }
-                } else {
-                    categoryResults
-                }
-            }
-
-            // Apply alcoholic filter if present
-            if (filters.alcoholic != null) {
-                val alcoholicResults = filterByAlcoholic(filters.alcoholic).first()
-                results = results.filter { cocktail ->
-                    alcoholicResults.any { it.id == cocktail.id }
-                }
-            }
-
-            // Apply ingredient filters using free API
-            if (filters.ingredients.isNotEmpty()) {
-                // Get results for first ingredient
-                var ingredientResults = filterByIngredient(filters.ingredients.first()).first()
-                
-                // For additional ingredients, intersect with previous results
-                filters.ingredients.drop(1).forEach { ingredient ->
-                    val nextIngredientResults = filterByIngredient(ingredient).first()
-                    ingredientResults = ingredientResults.filter { cocktail ->
-                        nextIngredientResults.any { it.id == cocktail.id }
-                    }
-                }
-                
-                // Intersect with previous results
-                results = results.filter { cocktail ->
-                    ingredientResults.any { it.id == cocktail.id }
-                }
-            }
-
-            // Cache the filtered results for offline access
+            // Cache the results for offline access
             results.forEach { cocktail ->
                 cocktailCache.cacheCocktail(cocktail)
             }

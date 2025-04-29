@@ -22,21 +22,20 @@ class AdvancedFilterUseCase {
     fun applyFiltersToList(cocktails: List<Cocktail>, filters: SearchFilters): List<Cocktail> {
         var result = cocktails
 
-        // Apply category filter if not used as primary filter
-        if (filters.category != null && filters.query.isNotBlank()) {
+        // Apply category filter
+        if (filters.category != null) {
             result = result.filter { it.category == filters.category }
         }
 
-        // Apply ingredient filter if not used as primary filter
-        if (filters.ingredient != null && (filters.query.isNotBlank() || filters.category != null)) {
+        // Apply ingredient filter
+        if (filters.ingredient != null) {
             result = result.filter { cocktail ->
                 cocktail.ingredients.any { it.name.contains(filters.ingredient, ignoreCase = true) }
             }
         }
 
-        // Apply alcoholic filter if not used as primary filter
-        if (filters.alcoholic != null &&
-            (filters.query.isNotBlank() || filters.category != null || filters.ingredient != null)) {
+        // Apply alcoholic filter
+        if (filters.alcoholic != null) {
             val alcoholicString = if (filters.alcoholic) "Alcoholic" else "Non_Alcoholic"
             result = result.filter { it.alcoholic == alcoholicString }
         }

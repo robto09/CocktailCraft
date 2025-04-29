@@ -211,7 +211,7 @@ fun AlcoholicFilterContent(
             Switch(
                 checked = alcoholic == true,
                 onCheckedChange = { isChecked ->
-                    onAlcoholicChanged(if (isChecked) true else null)
+                    onAlcoholicChanged(if (isChecked) true else if (alcoholic == false) false else null)
                 }
             )
         }
@@ -228,7 +228,7 @@ fun AlcoholicFilterContent(
             Switch(
                 checked = alcoholic == false,
                 onCheckedChange = { isChecked ->
-                    onAlcoholicChanged(if (isChecked) false else null)
+                    onAlcoholicChanged(if (isChecked) false else if (alcoholic == true) true else null)
                 }
             )
         }
@@ -745,7 +745,10 @@ fun AdvancedSearchPanel(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     Button(
-                        onClick = { onApplyFilters(filters) },
+                        onClick = {
+                            onApplyFilters(filters)
+                            onDismiss()
+                        },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AppColors.Primary
                         ),

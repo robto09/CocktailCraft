@@ -223,9 +223,7 @@ fun MainScreen() {
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(
-                    navController = navController,
                     viewModel = sharedHomeViewModel,
-                    cartViewModel = sharedCartViewModel,
                     favoritesViewModel = sharedFavoritesViewModel,
                     onAddToCart = { cocktail ->
                         // Add to cart and then navigate to cart
