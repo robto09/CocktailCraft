@@ -232,11 +232,8 @@ fun OrderItem(order: Order) {
                         .size(10.dp)
                         .background(
                             when (order.status) {
-                                OrderStatus.DELIVERED -> Color(0xFF4CAF50) // Green
-                                OrderStatus.SHIPPED -> Color(0xFF2196F3)   // Blue
-                                OrderStatus.PROCESSING -> Color(0xFFFFA000) // Orange
-                                OrderStatus.PENDING -> Color(0xFF9E9E9E)   // Gray
-                                OrderStatus.CANCELLED -> Color(0xFFF44336) // Red
+                                OrderStatus.SAVED -> Color(0xFF2196F3)     // Blue
+                                OrderStatus.COMPLETED -> Color(0xFF4CAF50) // Green
                             },
                             CircleShape
                         )
@@ -246,19 +243,13 @@ fun OrderItem(order: Order) {
 
                 Text(
                     text = when (order.status) {
-                        OrderStatus.DELIVERED -> "Delivered"
-                        OrderStatus.SHIPPED -> "Shipped"
-                        OrderStatus.PROCESSING -> "Preparing"
-                        OrderStatus.PENDING -> "Confirmed"
-                        OrderStatus.CANCELLED -> "Cancelled"
+                        OrderStatus.SAVED -> "To Make"
+                        OrderStatus.COMPLETED -> "Made"
                     },
                     fontSize = 14.sp,
                     color = when (order.status) {
-                        OrderStatus.DELIVERED -> Color(0xFF4CAF50)
-                        OrderStatus.SHIPPED -> Color(0xFF2196F3)
-                        OrderStatus.PROCESSING -> Color(0xFFFFA000)
-                        OrderStatus.PENDING -> Color(0xFF9E9E9E)
-                        OrderStatus.CANCELLED -> Color(0xFFF44336)
+                        OrderStatus.SAVED -> Color(0xFF2196F3)
+                        OrderStatus.COMPLETED -> Color(0xFF4CAF50)
                     }
                 )
             }

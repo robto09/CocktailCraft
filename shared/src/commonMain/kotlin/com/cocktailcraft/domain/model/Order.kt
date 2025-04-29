@@ -19,9 +19,6 @@ data class OrderItem(
 )
 
 enum class OrderStatus {
-    PENDING,
-    PROCESSING,
-    SHIPPED,
-    DELIVERED,
-    CANCELLED
-} 
+    SAVED,      // Added to order list
+    COMPLETED   // Made and enjoyed
+}
