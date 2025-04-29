@@ -8,16 +8,21 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.koin.core.component.inject
 
 /**
  * ViewModel for managing theme preferences.
  * Uses use cases instead of directly accessing repositories.
+ *
+ * Following MVVM + Clean Architecture principles, this ViewModel:
+ * - Depends on use cases, not repositories
+ * - Manages UI state for theme preferences (dark mode, system theme)
+ * - Handles user interactions like toggling theme modes
+ * - Provides a clean API for the UI layer
+ * - Implements the IThemeViewModel interface for cross-platform compatibility
  */
-class ThemeViewModel : BaseViewModel() {
-
-    // Use cases
-    private val themeUseCase: ThemeUseCase by inject()
+class ThemeViewModel(
+    private val themeUseCase: ThemeUseCase
+) : BaseViewModel(), IThemeViewModel {
 
     // Theme state
     private val _isDarkMode = MutableStateFlow(false)

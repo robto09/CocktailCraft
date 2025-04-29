@@ -15,12 +15,18 @@ import org.koin.core.component.inject
 /**
  * ViewModel for managing reviews.
  * Uses use cases instead of directly accessing repositories.
+ *
+ * Following MVVM + Clean Architecture principles, this ViewModel:
+ * - Depends on use cases, not repositories
+ * - Manages UI state for reviews
+ * - Handles user interactions like adding reviews
+ * - Provides a clean API for the UI layer
+ * - Implements the IReviewViewModel interface for cross-platform compatibility
  */
-class ReviewViewModel : BaseViewModel() {
+class ReviewViewModel(
+    private val manageReviewsUseCase: ManageReviewsUseCase
+) : BaseViewModel(), IReviewViewModel {
     private val TAG = "ReviewViewModel"
-
-    // Use cases
-    private val manageReviewsUseCase: ManageReviewsUseCase by inject()
 
     // Reviews state
     private val _reviews = MutableStateFlow<Map<String, List<Review>>>(emptyMap())

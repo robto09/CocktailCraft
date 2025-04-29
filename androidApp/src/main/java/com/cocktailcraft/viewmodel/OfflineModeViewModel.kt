@@ -16,14 +16,21 @@ import org.koin.core.component.inject
 /**
  * ViewModel for the offline mode screen.
  * Uses use cases instead of directly accessing repositories.
+ *
+ * Following MVVM + Clean Architecture principles, this ViewModel:
+ * - Depends on use cases, not repositories
+ * - Manages UI state for offline mode and network availability
+ * - Handles user interactions like toggling offline mode
+ * - Provides a clean API for the UI layer
+ * - Implements the IOfflineModeViewModel interface for cross-platform compatibility
  */
-class OfflineModeViewModel : BaseViewModel() {
+class OfflineModeViewModel(
+    private val offlineModeUseCase: OfflineModeUseCase,
+    private val networkStatusUseCase: NetworkStatusUseCase
+) : BaseViewModel(), IOfflineModeViewModel {
 
-    // Use cases
-    private val offlineModeUseCase: OfflineModeUseCase by inject()
-    private val networkStatusUseCase: NetworkStatusUseCase by inject()
-
-    // Cache
+    // Cache - still injected since it's not part of the clean architecture boundary
+    // In a future refactoring, this could be moved to a use case
     private val cocktailCache: CocktailCache by inject()
 
     // Offline mode state

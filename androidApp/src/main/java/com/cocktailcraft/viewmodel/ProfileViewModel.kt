@@ -14,11 +14,17 @@ import org.koin.core.component.inject
 /**
  * ViewModel for the profile screen.
  * Uses use cases instead of directly accessing repositories.
+ *
+ * Following MVVM + Clean Architecture principles, this ViewModel:
+ * - Depends on use cases, not repositories
+ * - Manages UI state for user profile and authentication
+ * - Handles user interactions like signing in/out and updating profile
+ * - Provides a clean API for the UI layer
+ * - Implements the IProfileViewModel interface for cross-platform compatibility
  */
-class ProfileViewModel : BaseViewModel() {
-
-    // Use cases
-    private val authUseCase: AuthUseCase by inject()
+class ProfileViewModel(
+    private val authUseCase: AuthUseCase
+) : BaseViewModel(), IProfileViewModel {
 
     // User state
     private val _user = MutableStateFlow<User?>(null)

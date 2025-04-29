@@ -22,12 +22,18 @@ import java.util.Locale
 /**
  * ViewModel for the order screen.
  * Uses use cases instead of directly accessing repositories.
+ *
+ * Following MVVM + Clean Architecture principles, this ViewModel:
+ * - Depends on use cases, not repositories
+ * - Manages UI state for orders
+ * - Handles user interactions like placing and canceling orders
+ * - Provides a clean API for the UI layer
+ * - Implements the IOrderViewModel interface for cross-platform compatibility
  */
-class OrderViewModel : BaseViewModel() {
-
-    // Use cases
-    private val placeOrderUseCase: PlaceOrderUseCase by inject()
-    private val manageOrdersUseCase: ManageOrdersUseCase by inject()
+class OrderViewModel(
+    private val placeOrderUseCase: PlaceOrderUseCase,
+    private val manageOrdersUseCase: ManageOrdersUseCase
+) : BaseViewModel(), IOrderViewModel {
 
     // Orders state
     private val _orders = MutableStateFlow<List<Order>>(emptyList())

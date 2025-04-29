@@ -11,18 +11,23 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.koin.core.component.inject
 
 /**
  * ViewModel for the cocktail detail screen.
  * Uses use cases instead of directly accessing repositories.
+ *
+ * Following MVVM + Clean Architecture principles, this ViewModel:
+ * - Depends on use cases, not repositories
+ * - Manages UI state for cocktail details, favorites, and recommendations
+ * - Handles user interactions like toggling favorites
+ * - Provides a clean API for the UI layer
+ * - Implements the ICocktailDetailViewModel interface for cross-platform compatibility
  */
-class CocktailDetailViewModel : BaseViewModel() {
-
-    // Use cases
-    private val getCocktailDetailsUseCase: GetCocktailDetailsUseCase by inject()
-    private val getRecommendationsUseCase: GetRecommendationsUseCase by inject()
-    private val manageFavoritesUseCase: ManageFavoritesUseCase by inject()
+class CocktailDetailViewModel(
+    private val getCocktailDetailsUseCase: GetCocktailDetailsUseCase,
+    private val getRecommendationsUseCase: GetRecommendationsUseCase,
+    private val manageFavoritesUseCase: ManageFavoritesUseCase
+) : BaseViewModel(), ICocktailDetailViewModel {
 
     // Cocktail state
     private val _cocktail = MutableStateFlow<Cocktail?>(null)
@@ -189,14 +194,14 @@ class CocktailDetailViewModel : BaseViewModel() {
             recoveryAction = ErrorUtils.RecoveryAction("Try Again") { loadRandomCocktail() }
         )
     }
-    
+
     /**
      * For backward compatibility with code that uses the old API.
      */
     fun loadCocktail(id: String) {
         loadCocktailDetails(id)
     }
-    
+
     /**
      * For backward compatibility with code that uses the old API.
      */

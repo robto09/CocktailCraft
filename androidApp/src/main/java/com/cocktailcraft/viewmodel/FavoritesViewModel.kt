@@ -9,16 +9,21 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.koin.core.component.inject
 
 /**
  * ViewModel for the favorites screen.
  * Uses use cases instead of directly accessing repositories.
+ *
+ * Following MVVM + Clean Architecture principles, this ViewModel:
+ * - Depends on use cases, not repositories
+ * - Manages UI state for favorite cocktails
+ * - Handles user interactions like adding/removing favorites
+ * - Provides a clean API for the UI layer
+ * - Implements the IFavoritesViewModel interface for cross-platform compatibility
  */
-class FavoritesViewModel : BaseViewModel() {
-
-    // Use cases
-    private val manageFavoritesUseCase: ManageFavoritesUseCase by inject()
+class FavoritesViewModel(
+    private val manageFavoritesUseCase: ManageFavoritesUseCase
+) : BaseViewModel(), IFavoritesViewModel {
 
     // Favorites state
     private val _favorites = MutableStateFlow<List<Cocktail>>(emptyList())

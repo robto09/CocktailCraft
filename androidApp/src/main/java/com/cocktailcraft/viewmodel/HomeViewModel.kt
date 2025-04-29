@@ -16,18 +16,23 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import org.koin.core.component.inject
 
 /**
  * HomeViewModel that uses use cases instead of directly accessing repositories.
  * This ViewModel is responsible for the home screen, including cocktail listing, searching, and filtering.
+ *
+ * Following MVVM + Clean Architecture principles, this ViewModel:
+ * - Depends on use cases, not repositories
+ * - Manages UI state
+ * - Handles user interactions
+ * - Provides a clean API for the UI layer
+ * - Implements the IHomeViewModel interface for cross-platform compatibility
  */
-class HomeViewModel : BaseViewModel() {
-
-    // Use cases
-    private val getCocktailsUseCase: GetCocktailsUseCase by inject()
-    private val searchCocktailsUseCase: SearchCocktailsUseCase by inject()
-    private val networkStatusUseCase: NetworkStatusUseCase by inject()
+class HomeViewModel(
+    private val getCocktailsUseCase: GetCocktailsUseCase,
+    private val searchCocktailsUseCase: SearchCocktailsUseCase,
+    private val networkStatusUseCase: NetworkStatusUseCase
+) : BaseViewModel(), IHomeViewModel {
 
     // Cocktails state
     private val _cocktails = MutableStateFlow<List<Cocktail>>(emptyList())

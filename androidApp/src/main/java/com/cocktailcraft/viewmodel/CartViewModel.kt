@@ -10,16 +10,21 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.koin.core.component.inject
 
 /**
  * ViewModel for the cart screen.
  * Uses use cases instead of directly accessing repositories.
+ *
+ * Following MVVM + Clean Architecture principles, this ViewModel:
+ * - Depends on use cases, not repositories
+ * - Manages UI state for cart items and total price
+ * - Handles user interactions like adding/removing items and updating quantities
+ * - Provides a clean API for the UI layer
+ * - Implements the ICartViewModel interface for cross-platform compatibility
  */
-class CartViewModel : BaseViewModel() {
-
-    // Use cases
-    private val manageCartUseCase: ManageCartUseCase by inject()
+class CartViewModel(
+    private val manageCartUseCase: ManageCartUseCase
+) : BaseViewModel(), ICartViewModel {
 
     // Cart state
     private val _cartItems = MutableStateFlow<List<CocktailCartItem>>(emptyList())

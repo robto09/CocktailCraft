@@ -19,6 +19,12 @@ import kotlinx.coroutines.launch
 /**
  * Base ViewModel class that provides common functionality for all ViewModels,
  * including standardized error handling, loading state management, and Koin integration.
+ *
+ * This class follows MVVM + Clean Architecture principles:
+ * - Provides common state management for loading and errors
+ * - Offers standardized error handling methods
+ * - Includes utilities for executing operations with automatic error handling
+ * - Supports both Android and iOS through platform-specific implementations
  */
 abstract class BaseViewModel : KoinViewModel() {
 
