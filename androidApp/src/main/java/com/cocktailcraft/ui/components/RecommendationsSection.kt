@@ -57,7 +57,7 @@ fun RecommendationsSection(
     modifier: Modifier = Modifier
 ) {
     val recommendations by viewModel.recommendations.collectAsState()
-    val isLoading by viewModel.isLoadingRecommendations.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     // Determine visibility based on loading state and recommendations
     val isVisible = isLoading || recommendations.isNotEmpty()

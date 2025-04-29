@@ -204,11 +204,14 @@ fun HomeScreen(
 
         // Advanced search panel
 
-        // Load filter options using the utility
-        val filterOptions = FilterOptionsLoader.rememberFilterOptions(repository = viewModel.repository)
-        val categories = filterOptions.categories
-        val ingredients = filterOptions.ingredients
-        val glasses = filterOptions.glasses
+        // Load filter options using default values
+        // We can't use the repository directly anymore since we're using use cases
+        val categories = listOf(
+            "Cocktail", "Ordinary Drink", "Shot", "Coffee / Tea",
+            "Punch / Party Drink", "Homemade Liqueur", "Beer", "Soft Drink"
+        )
+        val ingredients = emptyList<String>()
+        val glasses = emptyList<String>()
 
         // Use the dialog version when in dialog mode
         if (showAdvancedSearch) {

@@ -46,13 +46,14 @@ fun OrderListScreen(
             ) {
                 CircularProgressIndicator(color = AppColors.Primary)
             }
-        } else if (error?.isNotEmpty() == true) {
+        } else if (error != null) {
+            val errorMessage = error?.message ?: "An unknown error occurred"
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = error ?: "",
+                    text = errorMessage,
                     color = AppColors.Error,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(16.dp)

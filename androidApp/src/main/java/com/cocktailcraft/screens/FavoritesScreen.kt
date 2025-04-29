@@ -45,9 +45,10 @@ fun FavoritesScreen(
 
         // Show error state
         if (!isLoading && error != null) {
+            val errorMessage = error?.message ?: "An unknown error occurred"
             EmptyStateComponent(
                 title = "Error",
-                message = error.message ?: "An unknown error occurred",
+                message = errorMessage,
                 actionButtonText = "Try Again",
                 onActionButtonClick = { /* Add retry logic here */ }
             )

@@ -432,11 +432,11 @@ fun ProfileScreen(
     }
 
     // Show error message if needed
-    error?.let { errorMessage ->
+    error?.let { errorObj ->
         AlertDialog(
             onDismissRequest = { profileViewModel.clearError() },
             title = { Text("Error") },
-            text = { Text(errorMessage) },
+            text = { Text(errorObj.message ?: "An unknown error occurred") },
             confirmButton = {
                 Button(
                     onClick = { profileViewModel.clearError() },
