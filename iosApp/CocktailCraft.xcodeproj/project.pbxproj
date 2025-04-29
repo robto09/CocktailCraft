@@ -1,0 +1,177 @@
+// !$*UTF8*$!
+{
+    archiveVersion = 1;
+    classes = {
+    };
+    objectVersion = 56;
+    objects = {
+        /* Begin PBXBuildFile section */
+        // App
+        1A2B3C4D5E6F7G8H /* CocktailCraftApp.swift */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7G8I /* CocktailCraftApp.swift */; };
+        
+        // UI
+        1A2B3C4D5E6F7G8J /* MainScreen.swift */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7G8K /* MainScreen.swift */; };
+        1A2B3C4D5E6F7G8L /* CocktailCard.swift */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7G8M /* CocktailCard.swift */; };
+        1A2B3C4D5E6F7G8N /* AppTheme.swift */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7G8O /* AppTheme.swift */; };
+        
+        // ViewModels
+        1A2B3C4D5E6F7G8P /* MainViewModel.swift */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7G8Q /* MainViewModel.swift */; };
+        
+        // DI
+        1A2B3C4D5E6F7G8R /* DependencyContainer.swift */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7G8S /* DependencyContainer.swift */; };
+        /* End PBXBuildFile section */
+        
+        /* Begin PBXFileReference section */
+        1A2B3C4D5E6F7G8T /* CocktailCraft.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CocktailCraft.app; sourceTree = BUILT_PRODUCTS_DIR; };
+        1A2B3C4D5E6F7G8I /* CocktailCraftApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailCraftApp.swift; sourceTree = "<group>"; };
+        1A2B3C4D5E6F7G8K /* MainScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainScreen.swift; sourceTree = "<group>"; };
+        1A2B3C4D5E6F7G8M /* CocktailCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailCard.swift; sourceTree = "<group>"; };
+        1A2B3C4D5E6F7G8O /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+        1A2B3C4D5E6F7G8Q /* MainViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewModel.swift; sourceTree = "<group>"; };
+        1A2B3C4D5E6F7G8S /* DependencyContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DependencyContainer.swift; sourceTree = "<group>"; };
+        /* End PBXFileReference section */
+        
+        /* Begin PBXFrameworksBuildPhase section */
+        1A2B3C4D5E6F7G8U /* Frameworks */ = {
+            isa = PBXFrameworksBuildPhase;
+            buildActionMask = 2147483647;
+            files = (
+            );
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+        /* End PBXFrameworksBuildPhase section */
+        
+        /* Begin PBXGroup section */
+        1A2B3C4D5E6F7G8V /* CocktailCraft */ = {
+            isa = PBXGroup;
+            children = (
+                1A2B3C4D5E6F7G8I /* CocktailCraftApp.swift */,
+                1A2B3C4D5E6F7G8W /* UI */,
+                1A2B3C4D5E6F7G8X /* ViewModels */,
+                1A2B3C4D5E6F7G8Y /* DI */,
+            );
+            path = CocktailCraft;
+            sourceTree = "<group>";
+        };
+        
+        1A2B3C4D5E6F7G8W /* UI */ = {
+            isa = PBXGroup;
+            children = (
+                1A2B3C4D5E6F7G8Z /* Screens */,
+                1A2B3C4D5E6F7G9A /* Components */,
+                1A2B3C4D5E6F7G9B /* Theme */,
+            );
+            path = UI;
+            sourceTree = "<group>";
+        };
+        
+        1A2B3C4D5E6F7G8Z /* Screens */ = {
+            isa = PBXGroup;
+            children = (
+                1A2B3C4D5E6F7G8K /* MainScreen.swift */,
+            );
+            path = Screens;
+            sourceTree = "<group>";
+        };
+        
+        1A2B3C4D5E6F7G9A /* Components */ = {
+            isa = PBXGroup;
+            children = (
+                1A2B3C4D5E6F7G8M /* CocktailCard.swift */,
+            );
+            path = Components;
+            sourceTree = "<group>";
+        };
+        
+        1A2B3C4D5E6F7G9B /* Theme */ = {
+            isa = PBXGroup;
+            children = (
+                1A2B3C4D5E6F7G8O /* AppTheme.swift */,
+            );
+            path = Theme;
+            sourceTree = "<group>";
+        };
+        
+        1A2B3C4D5E6F7G8X /* ViewModels */ = {
+            isa = PBXGroup;
+            children = (
+                1A2B3C4D5E6F7G8Q /* MainViewModel.swift */,
+            );
+            path = ViewModels;
+            sourceTree = "<group>";
+        };
+        
+        1A2B3C4D5E6F7G8Y /* DI */ = {
+            isa = PBXGroup;
+            children = (
+                1A2B3C4D5E6F7G8S /* DependencyContainer.swift */,
+            );
+            path = DI;
+            sourceTree = "<group>";
+        };
+        /* End PBXGroup section */
+        
+        /* Begin PBXNativeTarget section */
+        1A2B3C4D5E6F7G9C /* CocktailCraft */ = {
+            isa = PBXNativeTarget;
+            buildConfigurationList = 1A2B3C4D5E6F7G9D;
+            buildPhases = (
+                1A2B3C4D5E6F7G9E /* Sources */,
+                1A2B3C4D5E6F7G8U /* Frameworks */,
+                1A2B3C4D5E6F7G9F /* Resources */,
+            );
+            buildRules = (
+            );
+            dependencies = (
+            );
+            name = CocktailCraft;
+            productName = CocktailCraft;
+            productReference = 1A2B3C4D5E6F7G8T;
+            productType = "com.apple.product-type.application";
+        };
+        /* End PBXNativeTarget section */
+        
+        /* Begin XCBuildConfiguration section */
+        1A2B3C4D5E6F7G9G /* Debug */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+                CODE_SIGN_STYLE = Automatic;
+                CURRENT_PROJECT_VERSION = 1;
+                DEVELOPMENT_ASSET_PATHS = "";
+                ENABLE_PREVIEWS = YES;
+                GENERATE_INFOPLIST_FILE = YES;
+                INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+                INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+                INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+                INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+                INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+                IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+                LD_RUNPATH_SEARCH_PATHS = (
+                    "$(inherited)",
+                    "@executable_path/Frameworks",
+                );
+                MARKETING_VERSION = 1.0;
+                PRODUCT_BUNDLE_IDENTIFIER = com.cocktailcraft;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SWIFT_EMIT_LOC_STRINGS = YES;
+                SWIFT_VERSION = 5.0;
+                TARGETED_DEVICE_FAMILY = "1,2";
+            };
+            name = Debug;
+        };
+        /* End XCBuildConfiguration section */
+        
+        /* Begin XCConfigurationList section */
+        1A2B3C4D5E6F7G9D = {
+            isa = XCConfigurationList;
+            buildConfigurations = (
+                1A2B3C4D5E6F7G9G /* Debug */,
+            );
+            defaultConfigurationIsVisible = 0;
+            defaultConfigurationName = Debug;
+        };
+        /* End XCConfigurationList section */
+    };
+    rootObject = 1A2B3C4D5E6F7G9H;
+}
