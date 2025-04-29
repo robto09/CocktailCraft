@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cocktailcraft.navigation.NavigationManager
+import org.koin.androidx.compose.koinViewModel
 import com.cocktailcraft.ui.components.AnimatedThemeToggleRow
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.ProfileViewModel
@@ -72,8 +73,8 @@ import com.cocktailcraft.viewmodel.ThemeViewModel
 @Composable
 fun ProfileScreen(
     navigationManager: NavigationManager,
-    profileViewModel: ProfileViewModel = viewModel(),
-    themeViewModel: ThemeViewModel = viewModel()
+    profileViewModel: ProfileViewModel = koinViewModel(),
+    themeViewModel: ThemeViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
 
