@@ -34,23 +34,38 @@ class HomeViewModel(
 
     // Actions
     override fun loadCocktails() {
+        isLoading.value = true
         // Implementation would use getCocktailsUseCase
     }
 
     override fun loadMoreCocktails() {
+        if (isLoadingMore.value || !hasMoreData.value) return
+        isLoadingMore.value = true
         // Implementation would use getCocktailsUseCase
     }
 
     override fun searchCocktails(query: String) {
+        searchQuery.value = query
+        isLoading.value = true
         // Implementation would use searchCocktailsUseCase
     }
 
     override fun updateSearchFilters(filters: SearchFilters) {
         searchFilters.value = filters
+
+        // If search is active, re-run the search with the new filters
+        if (isSearchActive.value && searchQuery.value.isNotEmpty()) {
+            searchCocktails(searchQuery.value)
+        }
     }
 
     override fun clearSearchFilters() {
         searchFilters.value = SearchFilters()
+
+        // If search is active, re-run the search with the cleared filters
+        if (isSearchActive.value && searchQuery.value.isNotEmpty()) {
+            searchCocktails(searchQuery.value)
+        }
     }
 
     override fun toggleAdvancedSearchMode(active: Boolean) {
@@ -59,22 +74,47 @@ class HomeViewModel(
 
     override fun toggleSearchMode(active: Boolean) {
         isSearchActive.value = active
+
+        // If search mode is turned off, reload the default cocktails
+        if (!active) {
+            loadCocktails()
+        }
     }
 
     override fun loadCocktailsByCategory(category: String?) {
+        isLoading.value = true
         // Implementation would use getCocktailsUseCase
     }
 
     override fun sortByPrice(ascending: Boolean) {
-        // Implementation would sort cocktails
+        val sortedList = if (ascending) {
+            cocktails.value.sortedBy { it.price }
+        } else {
+            cocktails.value.sortedByDescending { it.price }
+        }
+        cocktails.value = sortedList
     }
 
     override fun sortByPopularity() {
-        // Implementation would sort cocktails
+        val sortedList = cocktails.value.sortedByDescending { it.popularity }
+        cocktails.value = sortedList
     }
 
     override fun setOfflineMode(enabled: Boolean) {
         isOfflineMode.value = enabled
+
+        // If offline mode is enabled, load cached cocktails
+        if (enabled) {
+            loadCachedCocktails()
+        } else {
+            // If offline mode is disabled, reload online cocktails
+            loadCocktails()
+        }
+    }
+
+    private fun loadCachedCocktails() {
+        isLoading.value = true
+        // Implementation would use getCocktailsUseCase
     }
 
     override fun retry() {
@@ -101,9 +141,13 @@ class CocktailDetailViewModel(
     override val recommendations = MutableStateFlow<List<Cocktail>>(emptyList())
     override val isLoading = MutableStateFlow(false)
 
+    // Current cocktail ID
+    private var currentCocktailId: String? = null
+
     // Actions
     override fun loadCocktailDetails(id: String) {
         isLoading.value = true
+        currentCocktailId = id
         // Implementation would use getCocktailDetailsUseCase
     }
 
