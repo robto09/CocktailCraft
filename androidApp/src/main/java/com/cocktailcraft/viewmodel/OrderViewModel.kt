@@ -1,6 +1,7 @@
 package com.cocktailcraft.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
@@ -103,7 +104,7 @@ class OrderViewModel(
             date = currentDate,
             items = orderItems,
             total = totalPrice,
-            status = "Processing"
+            status = OrderStatus.SAVED
         )
 
         viewModelScope.launch {
@@ -149,7 +150,7 @@ class OrderViewModel(
     /**
      * Update the status of an order.
      */
-    override fun updateOrderStatus(orderId: String, status: String) {
+    override fun updateOrderStatus(orderId: String, status: OrderStatus) {
         viewModelScope.launch {
             handleResultFlow(
                 flow = manageOrdersUseCase.updateOrderStatus(orderId, status),

@@ -3,6 +3,7 @@ package com.cocktailcraft.viewmodel
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.model.User
@@ -146,7 +147,7 @@ interface IOrderViewModel {
     fun loadOrders()
     fun addOrder(order: Order)
     fun placeOrder(cartItems: List<CocktailCartItem>, totalPrice: Double)
-    fun updateOrderStatus(orderId: String, status: String)
+    fun updateOrderStatus(orderId: String, status: OrderStatus)
     fun cancelOrder(orderId: String)
     fun getOrderById(orderId: String): Flow<Order?>
 }

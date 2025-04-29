@@ -3,6 +3,7 @@ package com.cocktailcraft.viewmodel.android
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.model.User
@@ -362,7 +363,7 @@ class OrderViewModel(
         // Implementation would use placeOrderUseCase
     }
 
-    override fun updateOrderStatus(orderId: String, status: String) {
+    override fun updateOrderStatus(orderId: String, status: OrderStatus) {
         // Implementation would use manageOrdersUseCase
     }
 

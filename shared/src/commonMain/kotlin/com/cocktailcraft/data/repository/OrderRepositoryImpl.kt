@@ -2,6 +2,7 @@ package com.cocktailcraft.data.repository
 
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.Flow

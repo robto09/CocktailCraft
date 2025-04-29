@@ -1,6 +1,7 @@
 package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.util.Result
 import kotlinx.coroutines.flow.Flow
@@ -20,12 +21,14 @@ class ManageOrdersUseCase(
      * Get all orders.
      * @return Flow of Result containing either a list of orders or an error
      */
-    suspend fun getOrderHistory(): Flow<Result<List<Order>>> {
-        return orderRepository.getOrderHistory()
-            .map { orders -> Result.Success(orders) as Result<List<Order>> }
-            .catch { e -> 
-                emit(Result.Error(e.message ?: "Failed to get order history"))
+    suspend fun getOrderHistory(): Flow<Result<List<Order>>> = flow {
+        try {
+            orderRepository.getOrderHistory().collect { orders ->
+                emit(Result.Success(orders))
             }
+        } catch (e: Exception) {
+            emit(Result.Error(e.message ?: "Failed to get order history"))
+        }
     }
     
     /**
@@ -33,12 +36,14 @@ class ManageOrdersUseCase(
      * @param orderId The ID of the order to retrieve
      * @return Flow of Result containing either the order or an error
      */
-    suspend fun getOrderById(orderId: String): Flow<Result<Order?>> {
-        return orderRepository.getOrderById(orderId)
-            .map { order -> Result.Success(order) as Result<Order?> }
-            .catch { e -> 
-                emit(Result.Error(e.message ?: "Failed to get order details"))
+    suspend fun getOrderById(orderId: String): Flow<Result<Order?>> = flow {
+        try {
+            orderRepository.getOrderById(orderId).collect { order ->
+                emit(Result.Success(order))
             }
+        } catch (e: Exception) {
+            emit(Result.Error(e.message ?: "Failed to get order details"))
+        }
     }
     
     /**
@@ -60,12 +65,14 @@ class ManageOrdersUseCase(
      * @param order The order to place
      * @return Flow of Result containing either a success boolean or an error
      */
-    suspend fun placeOrder(order: Order): Flow<Result<Boolean>> {
-        return orderRepository.placeOrder(order)
-            .map { success -> Result.Success(success) as Result<Boolean> }
-            .catch { e -> 
-                emit(Result.Error(e.message ?: "Failed to place order"))
+    suspend fun placeOrder(order: Order): Flow<Result<Boolean>> = flow {
+        try {
+            orderRepository.placeOrder(order).collect { success ->
+                emit(Result.Success(success))
             }
+        } catch (e: Exception) {
+            emit(Result.Error(e.message ?: "Failed to place order"))
+        }
     }
     
     /**
@@ -74,7 +81,7 @@ class ManageOrdersUseCase(
      * @param status The new status
      * @return Flow of Result containing either a success message or an error
      */
-    suspend fun updateOrderStatus(orderId: String, status: String): Flow<Result<String>> = flow {
+    suspend fun updateOrderStatus(orderId: String, status: OrderStatus): Flow<Result<String>> = flow {
         try {
             orderRepository.updateOrderStatus(orderId, status)
             emit(Result.Success("Order status updated successfully"))
@@ -88,11 +95,13 @@ class ManageOrdersUseCase(
      * @param orderId The ID of the order to cancel
      * @return Flow of Result containing either a success boolean or an error
      */
-    suspend fun cancelOrder(orderId: String): Flow<Result<Boolean>> {
-        return orderRepository.cancelOrder(orderId)
-            .map { success -> Result.Success(success) as Result<Boolean> }
-            .catch { e -> 
-                emit(Result.Error(e.message ?: "Failed to cancel order"))
+    suspend fun cancelOrder(orderId: String): Flow<Result<Boolean>> = flow {
+        try {
+            orderRepository.cancelOrder(orderId).collect { success ->
+                emit(Result.Success(success))
             }
+        } catch (e: Exception) {
+            emit(Result.Error(e.message ?: "Failed to cancel order"))
+        }
     }
 }

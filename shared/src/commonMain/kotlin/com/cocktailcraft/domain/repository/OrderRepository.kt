@@ -1,6 +1,7 @@
 package com.cocktailcraft.domain.repository
 
 import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.OrderStatus
 import kotlinx.coroutines.flow.Flow
 
 interface OrderRepository {
