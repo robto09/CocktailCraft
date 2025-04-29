@@ -28,10 +28,10 @@ class ProfileViewModel(
 
     // User state
     private val _user = MutableStateFlow<User?>(null)
-    val user: StateFlow<User?> = _user.asStateFlow()
+    override val user: StateFlow<User?> = _user.asStateFlow()
 
     private val _isSignedIn = MutableStateFlow(false)
-    val isSignedIn: StateFlow<Boolean> = _isSignedIn.asStateFlow()
+    override val isSignedIn: StateFlow<Boolean> = _isSignedIn.asStateFlow()
 
     init {
         checkSignInStatus()
@@ -111,7 +111,7 @@ class ProfileViewModel(
     /**
      * Sign in with email and password.
      */
-    fun signIn(email: String, password: String) {
+    override fun signIn(email: String, password: String) {
         executeWithErrorHandling(
             operation = {
                 authUseCase.signIn(email, password)
@@ -153,7 +153,7 @@ class ProfileViewModel(
     /**
      * Sign up with name, email, and password.
      */
-    fun signUp(name: String, email: String, password: String) {
+    override fun signUp(name: String, email: String, password: String) {
         executeWithErrorHandling(
             operation = {
                 authUseCase.signUp(email, password)
@@ -196,7 +196,7 @@ class ProfileViewModel(
     /**
      * Sign out the current user.
      */
-    fun signOut() {
+    override fun signOut() {
         executeWithErrorHandling(
             operation = {
                 authUseCase.signOut()
@@ -238,7 +238,7 @@ class ProfileViewModel(
     /**
      * Update the user's name.
      */
-    fun updateUserName(name: String) {
+    override fun updateUserName(name: String) {
         executeWithErrorHandling(
             operation = {
                 authUseCase.updateUserName(name)

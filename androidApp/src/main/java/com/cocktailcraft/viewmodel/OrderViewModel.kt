@@ -37,7 +37,7 @@ class OrderViewModel(
 
     // Orders state
     private val _orders = MutableStateFlow<List<Order>>(emptyList())
-    val orders: StateFlow<List<Order>> = _orders.asStateFlow()
+    override val orders: StateFlow<List<Order>> = _orders.asStateFlow()
 
     init {
         loadOrders()
@@ -46,7 +46,7 @@ class OrderViewModel(
     /**
      * Load all orders.
      */
-    fun loadOrders() {
+    override fun loadOrders() {
         executeWithErrorHandling(
             operation = {
                 manageOrdersUseCase.getOrderHistory()
@@ -81,7 +81,7 @@ class OrderViewModel(
     /**
      * Add an order.
      */
-    fun addOrder(order: Order) {
+    override fun addOrder(order: Order) {
         executeWithErrorHandling(
             operation = {
                 manageOrdersUseCase.addOrder(order)
@@ -177,7 +177,7 @@ class OrderViewModel(
     /**
      * Place an order using the PlaceOrderUseCase.
      */
-    fun placeOrder(cartItems: List<CocktailCartItem>, totalPrice: Double) {
+    override fun placeOrder(cartItems: List<CocktailCartItem>, totalPrice: Double) {
         executeWithErrorHandling(
             operation = {
                 placeOrderUseCase(cartItems, totalPrice)
@@ -210,7 +210,7 @@ class OrderViewModel(
     /**
      * Update the status of an order.
      */
-    fun updateOrderStatus(orderId: String, status: String) {
+    override fun updateOrderStatus(orderId: String, status: String) {
         executeWithErrorHandling(
             operation = {
                 manageOrdersUseCase.updateOrderStatus(orderId, status)
@@ -243,7 +243,7 @@ class OrderViewModel(
     /**
      * Cancel an order.
      */
-    fun cancelOrder(orderId: String) {
+    override fun cancelOrder(orderId: String) {
         executeWithErrorHandling(
             operation = {
                 manageOrdersUseCase.cancelOrder(orderId)
@@ -285,7 +285,7 @@ class OrderViewModel(
      * Get an order by ID.
      * Returns a Flow of Order? for backward compatibility.
      */
-    fun getOrderById(orderId: String): Flow<Order?> {
+    override fun getOrderById(orderId: String): Flow<Order?> {
         return flow {
             setLoading(true)
 

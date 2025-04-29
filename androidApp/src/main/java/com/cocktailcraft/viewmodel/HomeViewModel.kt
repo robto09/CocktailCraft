@@ -36,31 +36,31 @@ class HomeViewModel(
 
     // Cocktails state
     private val _cocktails = MutableStateFlow<List<Cocktail>>(emptyList())
-    val cocktails: StateFlow<List<Cocktail>> = _cocktails.asStateFlow()
+    override val cocktails: StateFlow<List<Cocktail>> = _cocktails.asStateFlow()
 
     // Pagination state
     private val _currentPage = MutableStateFlow(1)
     private val _hasMoreData = MutableStateFlow(true)
-    val hasMoreData: StateFlow<Boolean> = _hasMoreData.asStateFlow()
+    override val hasMoreData: StateFlow<Boolean> = _hasMoreData.asStateFlow()
     private val _isLoadingMore = MutableStateFlow(false)
-    val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
+    override val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
     private val PAGE_SIZE = 10
 
     // Search state
     private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+    override val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
     private val _isSearchActive = MutableStateFlow(false)
-    val isSearchActive: StateFlow<Boolean> = _isSearchActive.asStateFlow()
+    override val isSearchActive: StateFlow<Boolean> = _isSearchActive.asStateFlow()
     private val _searchFilters = MutableStateFlow(SearchFilters())
-    val searchFilters: StateFlow<SearchFilters> = _searchFilters.asStateFlow()
+    override val searchFilters: StateFlow<SearchFilters> = _searchFilters.asStateFlow()
     private val _isAdvancedSearchActive = MutableStateFlow(false)
-    val isAdvancedSearchActive: StateFlow<Boolean> = _isAdvancedSearchActive.asStateFlow()
+    override val isAdvancedSearchActive: StateFlow<Boolean> = _isAdvancedSearchActive.asStateFlow()
 
     // Network state
     private val _isOfflineMode = MutableStateFlow(false)
-    val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
+    override val isOfflineMode: StateFlow<Boolean> = _isOfflineMode.asStateFlow()
     private val _isNetworkAvailable = MutableStateFlow(true)
-    val isNetworkAvailable: StateFlow<Boolean> = _isNetworkAvailable.asStateFlow()
+    override val isNetworkAvailable: StateFlow<Boolean> = _isNetworkAvailable.asStateFlow()
 
     // Legacy error string for backward compatibility
     private val _errorString = MutableStateFlow<String>("")
@@ -98,7 +98,7 @@ class HomeViewModel(
     /**
      * Load cocktails with the newest first.
      */
-    fun loadCocktails() {
+    override fun loadCocktails() {
         _currentPage.value = 1 // Reset to first page
         _hasMoreData.value = true // Reset pagination state
 
@@ -135,7 +135,7 @@ class HomeViewModel(
     /**
      * Load more cocktails for pagination.
      */
-    fun loadMoreCocktails() {
+    override fun loadMoreCocktails() {
         // Don't load more if already loading or no more data
         if (_isLoadingMore.value || !_hasMoreData.value) return
 
@@ -185,7 +185,7 @@ class HomeViewModel(
     /**
      * Search cocktails by name.
      */
-    fun searchCocktails(query: String) {
+    override fun searchCocktails(query: String) {
         _searchQuery.value = query
 
         // Update the search filters with the new query
@@ -241,7 +241,7 @@ class HomeViewModel(
     /**
      * Update search filters and perform search.
      */
-    fun updateSearchFilters(filters: SearchFilters) {
+    override fun updateSearchFilters(filters: SearchFilters) {
         _searchFilters.value = filters
         _searchQuery.value = filters.query
 
@@ -291,7 +291,7 @@ class HomeViewModel(
     /**
      * Clear all search filters.
      */
-    fun clearSearchFilters() {
+    override fun clearSearchFilters() {
         val clearedFilters = _searchFilters.value.clearAllFilters()
         updateSearchFilters(clearedFilters)
     }
@@ -299,7 +299,7 @@ class HomeViewModel(
     /**
      * Toggle advanced search mode.
      */
-    fun toggleAdvancedSearchMode(active: Boolean) {
+    override fun toggleAdvancedSearchMode(active: Boolean) {
         _isAdvancedSearchActive.value = active
 
         if (!active) {
@@ -321,7 +321,7 @@ class HomeViewModel(
     /**
      * Toggle search mode.
      */
-    fun toggleSearchMode(active: Boolean) {
+    override fun toggleSearchMode(active: Boolean) {
         _isSearchActive.value = active
         if (!active) {
             _searchQuery.value = ""
@@ -332,7 +332,7 @@ class HomeViewModel(
     /**
      * Load cocktails filtered by category.
      */
-    fun loadCocktailsByCategory(category: String?) {
+    override fun loadCocktailsByCategory(category: String?) {
         executeWithErrorHandling(
             operation = {
                 if (category == null) {
@@ -362,7 +362,7 @@ class HomeViewModel(
     /**
      * Sort cocktails by price.
      */
-    fun sortByPrice(ascending: Boolean) {
+    override fun sortByPrice(ascending: Boolean) {
         executeWithErrorHandling(
             operation = {
                 getCocktailsUseCase.sortedByPrice(ascending)
@@ -388,7 +388,7 @@ class HomeViewModel(
     /**
      * Sort cocktails by popularity.
      */
-    fun sortByPopularity() {
+    override fun sortByPopularity() {
         executeWithErrorHandling(
             operation = {
                 getCocktailsUseCase.sortedByPopularity()
@@ -414,7 +414,7 @@ class HomeViewModel(
     /**
      * Set offline mode to a specific value.
      */
-    fun setOfflineMode(enabled: Boolean) {
+    override  fun setOfflineMode(enabled: Boolean) {
         _isOfflineMode.value = enabled
         networkStatusUseCase.setOfflineMode(enabled)
 
@@ -427,7 +427,7 @@ class HomeViewModel(
     /**
      * Retry the current operation.
      */
-    fun retry() {
+    override fun retry() {
         if (_isSearchActive.value && _searchQuery.value.isNotEmpty()) {
             // If in search mode, retry the search
             searchCocktails(_searchQuery.value)
@@ -452,7 +452,7 @@ class HomeViewModel(
      * Get a cocktail by ID.
      * This is used by the CocktailDetailScreen.
      */
-    fun getCocktailById(id: String): Flow<Cocktail?> {
+    override fun getCocktailById(id: String): Flow<Cocktail?> {
         return executeWithErrorHandlingFlow(
             operation = {
                 getCocktailsUseCase.getById(id)

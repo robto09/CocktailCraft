@@ -26,10 +26,10 @@ class ThemeViewModel(
 
     // Theme state
     private val _isDarkMode = MutableStateFlow(false)
-    val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
+    override val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
 
     private val _followSystemTheme = MutableStateFlow(true)
-    val followSystemTheme: StateFlow<Boolean> = _followSystemTheme.asStateFlow()
+    override val followSystemTheme: StateFlow<Boolean> = _followSystemTheme.asStateFlow()
 
     // Current system dark mode state
     private val _isSystemInDarkMode = MutableStateFlow(false)
@@ -41,7 +41,7 @@ class ThemeViewModel(
     /**
      * Updates the system dark mode state
      */
-    fun updateSystemDarkMode(isDark: Boolean) {
+    override fun updateSystemDarkMode(isDark: Boolean) {
         _isSystemInDarkMode.value = isDark
         // If following system theme, update the dark mode state
         if (_followSystemTheme.value) {
@@ -92,7 +92,7 @@ class ThemeViewModel(
     /**
      * Toggle dark mode on/off.
      */
-    fun toggleDarkMode() {
+    override fun toggleDarkMode() {
         // Only toggle if not following system theme
         if (!_followSystemTheme.value) {
             val currentValue = _isDarkMode.value
@@ -144,7 +144,7 @@ class ThemeViewModel(
     /**
      * Set dark mode to a specific value.
      */
-    fun setDarkMode(enabled: Boolean) {
+    override fun setDarkMode(enabled: Boolean) {
         if (_isDarkMode.value != enabled) {
             executeWithErrorHandling(
                 operation = {
@@ -189,7 +189,7 @@ class ThemeViewModel(
     /**
      * Toggle whether to follow the system theme.
      */
-    fun toggleFollowSystemTheme() {
+    override fun toggleFollowSystemTheme() {
         val currentValue = _followSystemTheme.value
         val newValue = !currentValue
 

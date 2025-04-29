@@ -35,15 +35,15 @@ class OfflineModeViewModel(
 
     // Offline mode state
     private val _isOfflineModeEnabled = MutableStateFlow(false)
-    val isOfflineModeEnabled: StateFlow<Boolean> = _isOfflineModeEnabled.asStateFlow()
+    override val isOfflineModeEnabled: StateFlow<Boolean> = _isOfflineModeEnabled.asStateFlow()
 
     // Network state
     private val _isNetworkAvailable = MutableStateFlow(true)
-    val isNetworkAvailable: StateFlow<Boolean> = _isNetworkAvailable.asStateFlow()
+    override val isNetworkAvailable: StateFlow<Boolean> = _isNetworkAvailable.asStateFlow()
 
     // Recently viewed cocktails
     private val _recentlyViewedCocktails = MutableStateFlow<List<Cocktail>>(emptyList())
-    val recentlyViewedCocktails: StateFlow<List<Cocktail>> = _recentlyViewedCocktails.asStateFlow()
+    override val recentlyViewedCocktails: StateFlow<List<Cocktail>> = _recentlyViewedCocktails.asStateFlow()
 
     init {
         // Initialize with current offline mode setting
@@ -64,7 +64,7 @@ class OfflineModeViewModel(
     /**
      * Toggle offline mode on/off.
      */
-    fun toggleOfflineMode() {
+    override fun toggleOfflineMode() {
         val newValue = !_isOfflineModeEnabled.value
         _isOfflineModeEnabled.value = newValue
         offlineModeUseCase.setOfflineMode(newValue)
@@ -73,7 +73,7 @@ class OfflineModeViewModel(
     /**
      * Set offline mode to a specific value.
      */
-    fun setOfflineMode(enabled: Boolean) {
+    override fun setOfflineMode(enabled: Boolean) {
         _isOfflineModeEnabled.value = enabled
         offlineModeUseCase.setOfflineMode(enabled)
     }
@@ -81,7 +81,7 @@ class OfflineModeViewModel(
     /**
      * Load recently viewed cocktails.
      */
-    fun loadRecentlyViewedCocktails() {
+    override fun loadRecentlyViewedCocktails() {
         executeWithErrorHandling(
             operation = {
                 offlineModeUseCase.getRecentlyViewedCocktails()
@@ -116,7 +116,7 @@ class OfflineModeViewModel(
     /**
      * Clear the cache of all cocktails.
      */
-    fun clearCache() {
+    override fun clearCache() {
         cocktailCache.clearCache()
         loadRecentlyViewedCocktails()
     }
@@ -124,7 +124,7 @@ class OfflineModeViewModel(
     /**
      * Get the number of cached cocktails.
      */
-    fun getCachedCocktailCount(): Int {
+    override fun getCachedCocktailCount(): Int {
         return cocktailCache.getCachedCocktailCount()
     }
 

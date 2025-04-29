@@ -30,7 +30,7 @@ class ReviewViewModel(
 
     // Reviews state
     private val _reviews = MutableStateFlow<Map<String, List<Review>>>(emptyMap())
-    val reviews: StateFlow<Map<String, List<Review>>> = _reviews.asStateFlow()
+    override val reviews: StateFlow<Map<String, List<Review>>> = _reviews.asStateFlow()
 
     init {
         loadAllReviews()
@@ -74,14 +74,14 @@ class ReviewViewModel(
     /**
      * Get reviews for a specific cocktail.
      */
-    fun getReviewsForCocktail(cocktailId: String): List<Review> {
+    override fun getReviewsForCocktail(cocktailId: String): List<Review> {
         return _reviews.value[cocktailId] ?: emptyList()
     }
 
     /**
      * Add a review.
      */
-    fun addReview(review: Review) {
+    override fun addReview(review: Review) {
         executeWithErrorHandling(
             operation = {
                 manageReviewsUseCase.addReview(review)
@@ -114,7 +114,7 @@ class ReviewViewModel(
     /**
      * Get the average rating for a cocktail.
      */
-    fun getAverageRating(cocktailId: String): Float {
+    override fun getAverageRating(cocktailId: String): Float {
         val cocktailReviews = _reviews.value[cocktailId] ?: return 0f
         if (cocktailReviews.isEmpty()) return 0f
         return cocktailReviews.map { it.rating }.average().toFloat()
@@ -123,7 +123,7 @@ class ReviewViewModel(
     /**
      * Create and add a review.
      */
-    fun createAndAddReview(cocktailId: String, userName: String, rating: Float, comment: String) {
+    override fun createAndAddReview(cocktailId: String, userName: String, rating: Float, comment: String) {
         Log.d(TAG, "Creating review for cocktail: $cocktailId, user: $userName")
 
         executeWithErrorHandling(
