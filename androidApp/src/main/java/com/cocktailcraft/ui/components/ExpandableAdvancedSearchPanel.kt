@@ -6,6 +6,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,10 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.domain.model.Complexity
-import com.cocktailcraft.domain.model.PreparationTime
 import com.cocktailcraft.domain.model.SearchFilters
-import com.cocktailcraft.domain.model.TasteProfile
 import com.cocktailcraft.ui.theme.AppColors
 
 /**
@@ -51,7 +50,6 @@ import com.cocktailcraft.ui.theme.AppColors
  * @param currentFilters The current search filters
  * @param categories List of available categories
  * @param ingredients List of available ingredients
- * @param glasses List of available glasses
  * @param onApplyFilters Callback when filters are applied
  * @param onClearFilters Callback when filters are cleared
  * @param modifier The modifier for the component
@@ -62,10 +60,11 @@ fun ExpandableAdvancedSearchPanel(
     currentFilters: SearchFilters,
     categories: List<String>,
     ingredients: List<String>,
-    glasses: List<String>,
     onApplyFilters: (SearchFilters) -> Unit,
     onClearFilters: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
+    resultCount: Int = 0
 ) {
     AnimatedVisibility(
         visible = isExpanded,
@@ -145,17 +144,6 @@ fun ExpandableAdvancedSearchPanel(
                     )
                 }
 
-                // Glass filter
-                FilterSection(title = "Glass Type") {
-                    GlassSelector(
-                        glasses = glasses,
-                        selectedGlass = filters.glass,
-                        onGlassSelected = { glass: String? ->
-                            filters = filters.copy(glass = glass)
-                        }
-                    )
-                }
-
                 // Price range filter
                 FilterSection(title = "Price Range") {
                     PriceRangeFilterContent(
@@ -166,34 +154,31 @@ fun ExpandableAdvancedSearchPanel(
                     )
                 }
 
-                // Taste profile filter
-                FilterSection(title = "Taste Profile") {
-                    TasteProfileSelector(
-                        selectedProfile = filters.tasteProfile,
-                        onProfileSelected = { profile: TasteProfile? ->
-                            filters = filters.copy(tasteProfile = profile)
-                        }
-                    )
-                }
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Complexity filter
-                FilterSection(title = "Complexity") {
-                    ComplexitySelector(
-                        selectedComplexity = filters.complexity,
-                        onComplexitySelected = { complexity: Complexity? ->
-                            filters = filters.copy(complexity = complexity)
-                        }
-                    )
-                }
-
-                // Preparation time filter
-                FilterSection(title = "Preparation Time") {
-                    PrepTimeSelector(
-                        selectedPrepTime = filters.preparationTime,
-                        onPrepTimeSelected = { prepTime: PreparationTime? ->
-                            filters = filters.copy(preparationTime = prepTime)
-                        }
-                    )
+                // Filter info section
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = AppColors.Primary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Applying filters...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppColors.TextSecondary
+                        )
+                    } else if (filters.hasActiveFilters()) {
+                        Text(
+                            text = "Found $resultCount cocktails matching your filters",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppColors.TextSecondary
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -218,7 +203,8 @@ fun ExpandableAdvancedSearchPanel(
                         onClick = { onApplyFilters(filters) },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AppColors.Primary
-                        )
+                        ),
+                        enabled = !isLoading
                     ) {
                         Text("Apply Filters")
                     }

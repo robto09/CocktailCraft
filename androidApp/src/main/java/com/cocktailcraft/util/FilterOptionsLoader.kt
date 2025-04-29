@@ -18,8 +18,7 @@ object FilterOptionsLoader {
      */
     data class FilterOptions(
         val categories: List<String>,
-        val ingredients: List<String>,
-        val glasses: List<String>
+        val ingredients: List<String>
     )
 
     /**
@@ -28,7 +27,6 @@ object FilterOptionsLoader {
      * @param repository The cocktail repository to load options from
      * @param defaultCategories The default categories to use if loading fails
      * @param defaultIngredients The default ingredients to use if loading fails
-     * @param defaultGlasses The default glasses to use if loading fails
      * @return A FilterOptions object containing the loaded options
      */
     @Composable
@@ -38,12 +36,10 @@ object FilterOptionsLoader {
             "Cocktail", "Ordinary Drink", "Shot", "Coffee / Tea",
             "Punch / Party Drink", "Homemade Liqueur", "Beer", "Soft Drink"
         ),
-        defaultIngredients: List<String> = emptyList(),
-        defaultGlasses: List<String> = emptyList()
+        defaultIngredients: List<String> = emptyList()
     ): FilterOptions {
         var categories by remember { mutableStateOf(defaultCategories) }
         var ingredients by remember { mutableStateOf(defaultIngredients) }
-        var glasses by remember { mutableStateOf(defaultGlasses) }
 
         LaunchedEffect(Unit) {
             try {
@@ -55,9 +51,6 @@ object FilterOptionsLoader {
                     ingredients = ingredientList
                 }
 
-                repository.getGlasses().collect { glassList: List<String> ->
-                    glasses = glassList
-                }
             } catch (e: Exception) {
                 // Use default values if loading fails
             }
@@ -65,8 +58,7 @@ object FilterOptionsLoader {
 
         return FilterOptions(
             categories = categories,
-            ingredients = ingredients,
-            glasses = glasses
+            ingredients = ingredients
         )
     }
 }

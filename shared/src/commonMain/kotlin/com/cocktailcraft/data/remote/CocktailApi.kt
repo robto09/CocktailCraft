@@ -14,9 +14,7 @@ interface CocktailApi {
     suspend fun filterByIngredient(ingredient: String): List<CocktailDto>
     suspend fun filterByAlcoholic(alcoholic: Boolean): List<CocktailDto>
     suspend fun filterByCategory(category: String): List<CocktailDto>
-    suspend fun filterByGlass(glass: String): List<CocktailDto>
     suspend fun getCategories(): List<CategoryDto>
-    suspend fun getGlasses(): List<GlassDto>
     suspend fun getIngredients(): List<IngredientDto>
     suspend fun getAlcoholicFilters(): List<AlcoholicFilterDto>
     
@@ -108,28 +106,12 @@ class CocktailApiImpl(
         }
     }
     
-    override suspend fun filterByGlass(glass: String): List<CocktailDto> {
-        val response = client.get("$BASE_URL/filter.php") {
-            parameter("g", glass)
-        }.body<CocktailResponse>()
-        
-        return response.drinks ?: emptyList()
-    }
-    
     override suspend fun getCategories(): List<CategoryDto> {
         val response = client.get("$BASE_URL/list.php") {
             parameter("c", "list")
         }.body<CategoryResponse>()
         
         return response.categories ?: emptyList()
-    }
-    
-    override suspend fun getGlasses(): List<GlassDto> {
-        val response = client.get("$BASE_URL/list.php") {
-            parameter("g", "list")
-        }.body<GlassResponse>()
-        
-        return response.glasses ?: emptyList()
     }
     
     override suspend fun getIngredients(): List<IngredientDto> {

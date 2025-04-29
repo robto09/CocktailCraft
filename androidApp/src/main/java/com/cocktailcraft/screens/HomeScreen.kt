@@ -105,9 +105,7 @@ import com.cocktailcraft.viewmodel.HomeViewModel
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun HomeScreen(
-    navController: NavController,
     viewModel: HomeViewModel,
-    cartViewModel: CartViewModel,
     favoritesViewModel: FavoritesViewModel,
     onAddToCart: (Cocktail) -> Unit,
     onCocktailClick: (Cocktail) -> Unit
@@ -124,9 +122,8 @@ fun HomeScreen(
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsState()
     val searchFilters by viewModel.searchFilters.collectAsState()
     val isAdvancedSearchActive by viewModel.isAdvancedSearchActive.collectAsState()
-
-    // State for error dialog
-    var showErrorDialog by remember { mutableStateOf(false) }
+    val isAdvancedSearchLoading by viewModel.isAdvancedSearchLoading.collectAsState()
+    val advancedSearchResultCount by viewModel.advancedSearchResultCount.collectAsState()
 
     // State for advanced search panel
     var showAdvancedSearch by remember { mutableStateOf(false) }
@@ -151,12 +148,6 @@ fun HomeScreen(
             viewModel.loadCocktailsByCategory(selectedCategory)
         }
     }
-
-    // Define common cocktail categories
-    val categories = listOf(
-        "All", "Cocktail", "Ordinary Drink", "Shot", "Coffee / Tea",
-        "Punch / Party Drink", "Homemade Liqueur", "Beer", "Soft Drink"
-    )
 
     Column(
         modifier = Modifier
@@ -188,11 +179,7 @@ fun HomeScreen(
                     "ingredients" -> searchFilters.copy(ingredients = emptyList())
                     "excludeIngredients" -> searchFilters.copy(excludeIngredients = emptyList())
                     "alcoholic" -> searchFilters.copy(alcoholic = null)
-                    "glass" -> searchFilters.copy(glass = null)
                     "priceRange" -> searchFilters.copy(priceRange = null)
-                    "tasteProfile" -> searchFilters.copy(tasteProfile = null)
-                    "complexity" -> searchFilters.copy(complexity = null)
-                    "preparationTime" -> searchFilters.copy(preparationTime = null)
                     else -> searchFilters
                 }
                 viewModel.updateSearchFilters(updatedFilters)
@@ -206,21 +193,19 @@ fun HomeScreen(
 
         // Load filter options using default values
         // We can't use the repository directly anymore since we're using use cases
-        val categories = listOf(
+        val filterCategories = listOf(
             "Cocktail", "Ordinary Drink", "Shot", "Coffee / Tea",
             "Punch / Party Drink", "Homemade Liqueur", "Beer", "Soft Drink"
         )
         val ingredients = emptyList<String>()
-        val glasses = emptyList<String>()
 
         // Use the dialog version when in dialog mode
         if (showAdvancedSearch) {
             AdvancedSearchPanel(
                 isVisible = true,
                 currentFilters = searchFilters,
-                categories = categories,
+                categories = filterCategories,
                 ingredients = ingredients,
-                glasses = glasses,
                 onApplyFilters = { filters ->
                     viewModel.updateSearchFilters(filters)
                     showAdvancedSearch = false
@@ -230,7 +215,9 @@ fun HomeScreen(
                 },
                 onDismiss = {
                     showAdvancedSearch = false
-                }
+                },
+                isLoading = isAdvancedSearchLoading,
+                resultCount = advancedSearchResultCount
             )
         }
 
@@ -238,15 +225,16 @@ fun HomeScreen(
         ExpandableAdvancedSearchPanel(
             isExpanded = isAdvancedSearchActive,
             currentFilters = searchFilters,
-            categories = categories,
+            categories = filterCategories,
             ingredients = ingredients,
-            glasses = glasses,
             onApplyFilters = { filters ->
                 viewModel.updateSearchFilters(filters)
             },
             onClearFilters = {
                 viewModel.clearSearchFilters()
-            }
+            },
+            isLoading = isAdvancedSearchLoading,
+            resultCount = advancedSearchResultCount
         )
 
         // Add Category Filter Chips - only shown when not searching

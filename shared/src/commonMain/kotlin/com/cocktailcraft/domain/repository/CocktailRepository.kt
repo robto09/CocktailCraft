@@ -19,11 +19,9 @@ interface CocktailRepository {
     suspend fun filterByIngredient(ingredient: String): Flow<List<Cocktail>>
     suspend fun filterByAlcoholic(alcoholic: Boolean): Flow<List<Cocktail>>
     suspend fun filterByCategory(category: String): Flow<List<Cocktail>>
-    suspend fun filterByGlass(glass: String): Flow<List<Cocktail>>
 
     // Metadata operations
     suspend fun getCategories(): Flow<List<String>>
-    suspend fun getGlasses(): Flow<List<String>>
     suspend fun getIngredients(): Flow<List<String>>
     suspend fun getAlcoholicFilters(): Flow<List<String>>
 

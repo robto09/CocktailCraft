@@ -147,14 +147,6 @@ fun SearchFilterChips(
                         )
                     }
 
-                    // Glass filter
-                    if (filters.glass != null) {
-                        ActiveFilterChip(
-                            label = "Glass: ${filters.glass}",
-                            onClear = { onClearFilter("glass") }
-                        )
-                    }
-
                     // Price range filter
                     if (filters.priceRange != null) {
                         val priceRange = filters.priceRange!! // Safe to use !! here as we've checked for null
@@ -165,29 +157,6 @@ fun SearchFilterChips(
                         )
                     }
 
-                    // Taste profile filter
-                    if (filters.tasteProfile != null) {
-                        ActiveFilterChip(
-                            label = "Taste: ${filters.tasteProfile}",
-                            onClear = { onClearFilter("tasteProfile") }
-                        )
-                    }
-
-                    // Complexity filter
-                    if (filters.complexity != null) {
-                        ActiveFilterChip(
-                            label = "Complexity: ${filters.complexity}",
-                            onClear = { onClearFilter("complexity") }
-                        )
-                    }
-
-                    // Preparation time filter
-                    if (filters.preparationTime != null) {
-                        ActiveFilterChip(
-                            label = "Prep Time: ${filters.preparationTime}",
-                            onClear = { onClearFilter("preparationTime") }
-                        )
-                    }
                 }
             }
         }

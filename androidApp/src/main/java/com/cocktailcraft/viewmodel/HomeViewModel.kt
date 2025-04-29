@@ -56,6 +56,12 @@ class HomeViewModel(
     override val searchFilters: StateFlow<SearchFilters> = _searchFilters.asStateFlow()
     private val _isAdvancedSearchActive = MutableStateFlow(false)
     override val isAdvancedSearchActive: StateFlow<Boolean> = _isAdvancedSearchActive.asStateFlow()
+    
+    // Advanced search state
+    private val _isAdvancedSearchLoading = MutableStateFlow(false)
+    val isAdvancedSearchLoading: StateFlow<Boolean> = _isAdvancedSearchLoading.asStateFlow()
+    private val _advancedSearchResultCount = MutableStateFlow(0)
+    val advancedSearchResultCount: StateFlow<Int> = _advancedSearchResultCount.asStateFlow()
 
     // Network state
     private val _isOfflineMode = MutableStateFlow(false)
@@ -245,14 +251,19 @@ class HomeViewModel(
             // Create a new search job with debounce
             searchJob = viewModelScope.launch {
                 delay(300) // Debounce for 300ms
+                
+                _isAdvancedSearchLoading.value = true
 
                 handleResultFlow(
                     flow = searchCocktailsUseCase.advanced(filters),
                     onSuccess = { cocktails ->
                         _cocktails.value = cocktails
+                        _advancedSearchResultCount.value = cocktails.size
+                        _isAdvancedSearchLoading.value = false
                     },
                     onError = { error ->
                         _errorString.value = error.message
+                        _isAdvancedSearchLoading.value = false
                     },
                     defaultErrorMessage = "Failed to apply filters. Please try again.",
                     recoveryAction = ErrorUtils.RecoveryAction("Retry") { updateSearchFilters(filters) }
@@ -262,6 +273,7 @@ class HomeViewModel(
             // If no query and no filters, reset to all cocktails
             _isSearchActive.value = false
             _isAdvancedSearchActive.value = false
+            _advancedSearchResultCount.value = 0
             loadCocktails()
         }
     }

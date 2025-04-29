@@ -9,6 +9,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,10 +69,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.cocktailcraft.domain.model.Complexity
-import com.cocktailcraft.domain.model.PreparationTime
 import com.cocktailcraft.domain.model.SearchFilters
-import com.cocktailcraft.domain.model.TasteProfile
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.ui.components.FilterChip
 
@@ -192,73 +191,6 @@ fun CategorySelector(
 }
 
 /**
- * Glass selector component
- */
-@Composable
-fun GlassSelector(
-    glasses: List<String>,
-    selectedGlass: String?,
-    onGlassSelected: (String?) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(
-                    width = 1.dp,
-                    color = AppColors.LightGray,
-                    shape = RoundedCornerShape(8.dp)
-                )
-                .clip(RoundedCornerShape(8.dp))
-                .clickable { expanded = true }
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = selectedGlass ?: "Select a glass type",
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (selectedGlass != null) AppColors.TextPrimary else AppColors.TextSecondary
-            )
-
-            Icon(
-                imageVector = Icons.Default.ExpandMore,
-                contentDescription = "Expand",
-                tint = AppColors.TextSecondary
-            )
-        }
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth(0.9f)
-        ) {
-            // Add "All" option to clear the glass filter
-            DropdownMenuItem(
-                text = { Text("All Glass Types") },
-                onClick = {
-                    onGlassSelected(null)
-                    expanded = false
-                }
-            )
-
-            // Add all glass types
-            glasses.forEach { glass ->
-                DropdownMenuItem(
-                    text = { Text(glass) },
-                    onClick = {
-                        onGlassSelected(glass)
-                        expanded = false
-                    }
-                )
-            }
-        }
-    }
-}
-
-/**
  * Alcoholic filter content component
  */
 @Composable
@@ -366,108 +298,6 @@ fun PriceRangeFilterContent(
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
-            }
-        }
-    }
-}
-
-/**
- * Taste profile selector component
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun TasteProfileSelector(
-    selectedProfile: TasteProfile?,
-    onProfileSelected: (TasteProfile?) -> Unit
-) {
-    Column {
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Add "All" option
-            FilterChip(
-                selected = selectedProfile == null,
-                onClick = { onProfileSelected(null) },
-                label = "All"
-            )
-
-            // Add all taste profiles
-            TasteProfile.values().forEach { profile ->
-                FilterChip(
-                    selected = selectedProfile == profile,
-                    onClick = { onProfileSelected(profile) },
-                    label = profile.toString()
-                )
-            }
-        }
-    }
-}
-
-/**
- * Complexity selector component
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun ComplexitySelector(
-    selectedComplexity: Complexity?,
-    onComplexitySelected: (Complexity?) -> Unit
-) {
-    Column {
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Add "All" option
-            FilterChip(
-                selected = selectedComplexity == null,
-                onClick = { onComplexitySelected(null) },
-                label = "All"
-            )
-
-            // Add all complexity levels
-            Complexity.values().forEach { complexity ->
-                FilterChip(
-                    selected = selectedComplexity == complexity,
-                    onClick = { onComplexitySelected(complexity) },
-                    label = complexity.toString()
-                )
-            }
-        }
-    }
-}
-
-/**
- * Preparation time selector component
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun PrepTimeSelector(
-    selectedPrepTime: PreparationTime?,
-    onPrepTimeSelected: (PreparationTime?) -> Unit
-) {
-    Column {
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Add "All" option
-            FilterChip(
-                selected = selectedPrepTime == null,
-                onClick = { onPrepTimeSelected(null) },
-                label = "All"
-            )
-
-            // Add all preparation times
-            PreparationTime.values().forEach { prepTime ->
-                FilterChip(
-                    selected = selectedPrepTime == prepTime,
-                    onClick = { onPrepTimeSelected(prepTime) },
-                    label = prepTime.toString()
-                )
             }
         }
     }
@@ -765,10 +595,11 @@ fun AdvancedSearchPanel(
     currentFilters: SearchFilters,
     categories: List<String>,
     ingredients: List<String>,
-    glasses: List<String>,
     onApplyFilters: (SearchFilters) -> Unit,
     onClearFilters: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    isLoading: Boolean = false,
+    resultCount: Int = 0
 ) {
     if (isVisible) {
         Dialog(onDismissRequest = onDismiss) {
@@ -858,17 +689,6 @@ fun AdvancedSearchPanel(
                     )
                 }
 
-                // Glass filter
-                FilterSection(title = "Glass Type") {
-                    GlassSelector(
-                        glasses = glasses,
-                        selectedGlass = filters.glass,
-                        onGlassSelected = { glass: String? ->
-                            filters = filters.copy(glass = glass)
-                        }
-                    )
-                }
-
                 // Price range filter
                 FilterSection(title = "Price Range") {
                     PriceRangeFilterContent(
@@ -879,34 +699,31 @@ fun AdvancedSearchPanel(
                     )
                 }
 
-                // Taste profile filter
-                FilterSection(title = "Taste Profile") {
-                    TasteProfileSelector(
-                        selectedProfile = filters.tasteProfile,
-                        onProfileSelected = { profile: TasteProfile? ->
-                            filters = filters.copy(tasteProfile = profile)
-                        }
-                    )
-                }
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Complexity filter
-                FilterSection(title = "Complexity") {
-                    ComplexitySelector(
-                        selectedComplexity = filters.complexity,
-                        onComplexitySelected = { complexity: Complexity? ->
-                            filters = filters.copy(complexity = complexity)
-                        }
-                    )
-                }
-
-                // Preparation time filter
-                FilterSection(title = "Preparation Time") {
-                    PrepTimeSelector(
-                        selectedPrepTime = filters.preparationTime,
-                        onPrepTimeSelected = { prepTime: PreparationTime? ->
-                            filters = filters.copy(preparationTime = prepTime)
-                        }
-                    )
+                // Filter info section
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = AppColors.Primary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Applying filters...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppColors.TextSecondary
+                        )
+                    } else if (filters.hasActiveFilters()) {
+                        Text(
+                            text = "Found $resultCount cocktails matching your filters",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = AppColors.TextSecondary
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -931,7 +748,8 @@ fun AdvancedSearchPanel(
                         onClick = { onApplyFilters(filters) },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AppColors.Primary
-                        )
+                        ),
+                        enabled = !isLoading
                     ) {
                         Text("Apply Filters")
                     }

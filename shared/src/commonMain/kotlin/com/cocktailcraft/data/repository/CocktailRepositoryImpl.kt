@@ -199,30 +199,10 @@ class CocktailRepositoryImpl(
         }
     }
 
-    override suspend fun filterByGlass(glass: String): Flow<List<Cocktail>> = flow {
-        try {
-            val cocktails = api.filterByGlass(glass).map { dto ->
-                mapDtoToCocktail(dto)
-            }
-            emit(cocktails)
-        } catch (e: Exception) {
-            emit(emptyList())
-        }
-    }
-
     override suspend fun getCategories(): Flow<List<String>> = flow {
         try {
             val categories = api.getCategories().map { it.name }
             emit(categories)
-        } catch (e: Exception) {
-            emit(emptyList())
-        }
-    }
-
-    override suspend fun getGlasses(): Flow<List<String>> = flow {
-        try {
-            val glasses = api.getGlasses().map { it.name }
-            emit(glasses)
         } catch (e: Exception) {
             emit(emptyList())
         }
@@ -565,54 +545,67 @@ class CocktailRepositoryImpl(
             if (isOffline()) {
                 // Use cached cocktails when offline
                 val cachedCocktails = cocktailCache.getAllCachedCocktails()
-                // Note: The actual filtering is now done in AdvancedFilterUseCase
-                // We're just getting the data here
                 emit(cachedCocktails)
                 return@flow
             }
 
-            // Start with a base list of cocktails
-            val cocktails = when {
-                // If we have a text query, start with that
-                filters.query.isNotBlank() ->
-                    searchCocktailsByName(filters.query).first()
-
-                // If we have a category, start with that
-                filters.category != null ->
-                    filterByCategory(filters.category).first()
-
-                // If we have an ingredient, start with that
-                filters.ingredient != null ->
-                    filterByIngredient(filters.ingredient).first()
-
-                // If we have alcoholic filter, start with that
-                filters.alcoholic != null ->
-                    filterByAlcoholic(filters.alcoholic).first()
-
-                // If we have glass filter, start with that
-                filters.glass != null ->
-                    filterByGlass(filters.glass).first()
-
-                // If no primary filter, get all cocktails
-                else ->
-                    getCocktailsSortedByNewest().first()
+            // Get initial results based on text query if present
+            var results = if (filters.query.isNotBlank()) {
+                searchCocktailsByName(filters.query).first()
+            } else {
+                getCocktailsSortedByNewest().first()
             }
 
-            // Cache the results for offline access
-            cocktails.forEach { cocktail ->
+            // Apply category filter if present
+            if (filters.category != null) {
+                val categoryResults = filterByCategory(filters.category).first()
+                results = if (filters.query.isNotBlank()) {
+                    // Intersect with previous results if we had a text query
+                    results.filter { cocktail ->
+                        categoryResults.any { it.id == cocktail.id }
+                    }
+                } else {
+                    categoryResults
+                }
+            }
+
+            // Apply alcoholic filter if present
+            if (filters.alcoholic != null) {
+                val alcoholicResults = filterByAlcoholic(filters.alcoholic).first()
+                results = results.filter { cocktail ->
+                    alcoholicResults.any { it.id == cocktail.id }
+                }
+            }
+
+            // Apply ingredient filters using free API
+            if (filters.ingredients.isNotEmpty()) {
+                // Get results for first ingredient
+                var ingredientResults = filterByIngredient(filters.ingredients.first()).first()
+                
+                // For additional ingredients, intersect with previous results
+                filters.ingredients.drop(1).forEach { ingredient ->
+                    val nextIngredientResults = filterByIngredient(ingredient).first()
+                    ingredientResults = ingredientResults.filter { cocktail ->
+                        nextIngredientResults.any { it.id == cocktail.id }
+                    }
+                }
+                
+                // Intersect with previous results
+                results = results.filter { cocktail ->
+                    ingredientResults.any { it.id == cocktail.id }
+                }
+            }
+
+            // Cache the filtered results for offline access
+            results.forEach { cocktail ->
                 cocktailCache.cacheCocktail(cocktail)
             }
 
-            emit(cocktails)
+            emit(results)
         } catch (e: Exception) {
             // Try to use cache as fallback
             val cachedCocktails = cocktailCache.getAllCachedCocktails()
-
-            if (cachedCocktails.isNotEmpty()) {
-                emit(cachedCocktails)
-            } else {
-                emit(emptyList())
-            }
+            emit(cachedCocktails)
         }
     }
 

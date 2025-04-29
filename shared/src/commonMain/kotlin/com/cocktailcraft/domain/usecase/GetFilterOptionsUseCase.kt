@@ -20,20 +20,8 @@ class GetFilterOptionsUseCase(
      */
     suspend fun getCategories(): Flow<Result<List<String>>> {
         return cocktailRepository.getCategories()
-            .map { categories -> Result.Success(categories) as Result<List<String>> }
-            .catch { e -> 
-                emit(Result.Error(e.message ?: "Unknown error occurred"))
-            }
-    }
-    
-    /**
-     * Get all available glasses.
-     * @return Flow of Result containing either a list of glasses or an error
-     */
-    suspend fun getGlasses(): Flow<Result<List<String>>> {
-        return cocktailRepository.getGlasses()
-            .map { glasses -> Result.Success(glasses) as Result<List<String>> }
-            .catch { e -> 
+            .map<List<String>, Result<List<String>>> { Result.Success(it) }
+            .catch { e ->
                 emit(Result.Error(e.message ?: "Unknown error occurred"))
             }
     }
@@ -44,8 +32,8 @@ class GetFilterOptionsUseCase(
      */
     suspend fun getIngredients(): Flow<Result<List<String>>> {
         return cocktailRepository.getIngredients()
-            .map { ingredients -> Result.Success(ingredients) as Result<List<String>> }
-            .catch { e -> 
+            .map<List<String>, Result<List<String>>> { Result.Success(it) }
+            .catch { e ->
                 emit(Result.Error(e.message ?: "Unknown error occurred"))
             }
     }
@@ -56,8 +44,8 @@ class GetFilterOptionsUseCase(
      */
     suspend fun getAlcoholicFilters(): Flow<Result<List<String>>> {
         return cocktailRepository.getAlcoholicFilters()
-            .map { filters -> Result.Success(filters) as Result<List<String>> }
-            .catch { e -> 
+            .map<List<String>, Result<List<String>>> { Result.Success(it) }
+            .catch { e ->
                 emit(Result.Error(e.message ?: "Unknown error occurred"))
             }
     }
