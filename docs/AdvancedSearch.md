@@ -20,12 +20,16 @@ The Advanced Search and Filtering system allows users to search for cocktails us
 ### Key Components
 
 1. **SearchFilters Model**
-   - Located in `shared/src/commonMain/kotlin/com/cocktailcraft/domain/model/SearchFilters.kt`
+   ```kotlin
+   // Located in shared/src/commonMain/kotlin/com/cocktailcraft/domain/model/SearchFilters.kt
+   ```
    - Represents all possible filter criteria as a data class
    - Includes helper methods for checking active filters and generating descriptions
 
 2. **AdvancedSearchPanel**
-   - Located in `androidApp/src/main/java/com/cocktailcraft/ui/components/AdvancedSearchPanel.kt`
+   ```kotlin
+   // Located in androidApp/src/main/java/com/cocktailcraft/ui/components/AdvancedSearchPanel.kt
+   ```
    - Provides a comprehensive UI for setting and applying multiple filters
    - Implemented as a modal dialog with collapsible sections for each filter type
 
@@ -41,7 +45,9 @@ The Advanced Search and Filtering system allows users to search for cocktails us
    - `PrepTimeSelector`: Chip-based selector for preparation times
 
 4. **SearchFilterChips**
-   - Located in `androidApp/src/main/java/com/cocktailcraft/ui/components/SearchFilterChips.kt`
+   ```kotlin
+   // Located in androidApp/src/main/java/com/cocktailcraft/ui/components/SearchFilterChips.kt
+   ```
    - Displays active filters as chips for quick visibility and removal
    - Provides a "Clear All" option to reset all filters
 
@@ -89,14 +95,32 @@ The Advanced Search and Filtering system allows users to search for cocktails us
 5. The repository applies the filters to retrieve matching cocktails
 6. Results are displayed to the user with active filters shown as chips
 
-### Repository Implementation
+### Use Case Implementation
 
-The `CocktailRepositoryImpl` class handles the application of filters:
+The filtering logic has been moved from the repository to dedicated use cases:
 
-1. Starts with a base list of cocktails (from search, category, or all cocktails)
-2. Applies each filter sequentially to narrow down results
-3. For complex filters like taste profile, uses heuristics based on ingredients and descriptions
-4. Returns a filtered list of cocktails that match all criteria
+1. **AdvancedFilterUseCase**
+   ```kotlin
+   // Located in shared/src/commonMain/kotlin/com/cocktailcraft/domain/usecase/AdvancedFilterUseCase.kt
+   ```
+   - Handles the application of complex filters to cocktail lists
+   - Uses efficient algorithms to apply multiple filters simultaneously
+   - Maintains separation of concerns by keeping filtering logic out of repositories
+
+2. **GetFilterOptionsUseCase**
+   ```kotlin
+   // Located in shared/src/commonMain/kotlin/com/cocktailcraft/domain/usecase/GetFilterOptionsUseCase.kt
+   ```
+   - Provides available filter options (categories, ingredients, glass types, etc.)
+   - Caches filter options for better performance
+   - Updates options based on current data set
+
+The repository now focuses solely on data operations while the use cases handle the business logic:
+
+1. Repository provides raw data and basic CRUD operations
+2. AdvancedFilterUseCase applies the filtering logic
+3. GetFilterOptionsUseCase manages available filter options
+4. Results are returned through Flow for reactive updates
 
 ## Usage Example
 
@@ -138,7 +162,32 @@ The Advanced Search UI is designed for usability and clarity:
 
 ## Technical Considerations
 
-1. **Performance**: Filters are applied efficiently to minimize processing time
-2. **Caching**: Frequently used filter results are cached to improve performance
-3. **Offline Support**: Basic filtering works offline with cached cocktail data
-4. **Extensibility**: The filter system is designed to be easily extended with new filter types
+1. **Performance**:
+   - Filters are applied efficiently using optimized algorithms in AdvancedFilterUseCase
+   - Filter options are cached by GetFilterOptionsUseCase
+   - Results are streamed using Flow for responsive UI updates
+
+2. **Caching**:
+   - Filter options are cached to reduce API calls
+   - Frequently used filter combinations are cached
+   - Cache is invalidated when underlying data changes
+
+3. **Offline Support**:
+   - Basic filtering works offline with cached cocktail data
+   - FilterOptionsLoader utility manages offline filter options
+   - Graceful degradation of advanced features when offline
+
+4. **Extensibility**:
+   - Use case based architecture makes adding new filters simple
+   - Filter system uses interfaces for easy extension
+   - New filter types can be added without modifying existing code
+
+5. **Error Handling**:
+   - Standardized error handling through Result type
+   - User-friendly error messages for filter-related issues
+   - Automatic retry for transient failures
+
+6. **Testing**:
+   - Use cases are thoroughly unit tested
+   - Mock implementations available for testing
+   - UI components have dedicated test coverage

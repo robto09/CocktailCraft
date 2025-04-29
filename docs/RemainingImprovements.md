@@ -16,19 +16,31 @@ This document outlines the plan for implementing the remaining architectural imp
    - Set up test fixtures and data generators
 
 2. **Add Unit Tests for Use Cases**
-   - Write comprehensive tests for all use cases
-   - Test success, error, and edge cases
-   - Ensure proper error handling is tested
+    - Write comprehensive tests for all use cases
+    - Test success, error, and edge cases
+    - Ensure proper error handling is tested
+    - Add specific tests for:
+        * AdvancedFilterUseCase with complex filter combinations
+        * GetFilterOptionsUseCase with caching behavior
+        * Filter option loading and updating
+        * Error handling and recovery for filter operations
 
 3. **Add Unit Tests for Repositories**
-   - Test repository implementations
-   - Verify caching and offline behavior
-   - Test error handling and recovery
+    - Test repository implementations
+    - Verify caching and offline behavior
+    - Test error handling and recovery
+    - Test integration with FilterOptionsLoader
+    - Verify filter option caching and updates
 
 4. **Add Integration Tests**
-   - Test interactions between components
-   - Verify end-to-end flows
-   - Test UI components with Compose testing
+    - Test interactions between components
+    - Verify end-to-end flows
+    - Test UI components with Compose testing
+    - Test advanced search flow:
+        * Filter option loading
+        * Filter application
+        * UI state updates
+        * Error handling
 
 ## 2. Complete iOS Implementation
 
@@ -47,6 +59,10 @@ This document outlines the plan for implementing the remaining architectural imp
    - Create SwiftUI views for all screens
    - Implement iOS-specific UI components
    - Ensure consistent design language
+   - Implement advanced search UI:
+       * Filter option selection
+       * Search panel expansion/collapse
+       * Filter chip display
 
 3. **Connect to Shared Logic**
    - Integrate shared ViewModels with SwiftUI
@@ -79,3 +95,5 @@ This document outlines the plan for implementing the remaining architectural imp
 - iOS version has feature parity with Android version
 - Shared code works correctly on both platforms
 - Documentation is up-to-date and comprehensive
+- Advanced search functionality works consistently across platforms
+- Filter options are efficiently cached and updated on both platforms

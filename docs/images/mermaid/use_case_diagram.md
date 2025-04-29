@@ -9,51 +9,53 @@ graph LR
         %% Home Screen Use Cases
         UC1[Browse Cocktails]
         UC2[Search Cocktails]
-        UC3[Filter Cocktails]
-        UC4[Sort Cocktails]
-        UC5[View Cocktail Details]
+        UC3[Basic Filter Cocktails]
+        UC4[Advanced Filter Cocktails]
+        UC5[Load Filter Options]
+        UC6[Sort Cocktails]
+        UC7[View Cocktail Details]
 
         %% Cart Use Cases
-        UC6[Add to Cart]
-        UC7[View Cart]
-        UC8[Update Quantity]
-        UC9[Remove from Cart]
-        UC10[Place Order]
+        UC8[Add to Cart]
+        UC9[View Cart]
+        UC10[Update Quantity]
+        UC11[Remove from Cart]
+        UC12[Place Order]
 
         %% Favorites Use Cases
-        UC11[Add to Favorites]
-        UC12[View Favorites]
-        UC13[Remove from Favorites]
+        UC13[Add to Favorites]
+        UC14[View Favorites]
+        UC15[Remove from Favorites]
 
         %% Order Use Cases
-        UC14[View Order History]
-        UC15[View Order Details]
+        UC16[View Order History]
+        UC17[View Order Details]
 
         %% Profile Use Cases
-        UC16[View Profile]
-        UC17[Edit Profile]
-        UC18[Login/Logout]
+        UC18[View Profile]
+        UC19[Edit Profile]
+        UC20[Login/Logout]
 
         %% Review Use Cases
-        UC19[Write Review]
-        UC20[View Reviews]
+        UC21[Write Review]
+        UC22[View Reviews]
 
         %% Theme Use Cases
-        UC21[Toggle Dark Mode]
-        UC22[Toggle System Theme]
+        UC23[Toggle Dark Mode]
+        UC24[Toggle System Theme]
 
         %% Offline Mode Use Cases
-        UC23[Enable/Disable Offline Mode]
-        UC24[View Cached Cocktails]
-        UC25[Clear Cache]
+        UC25[Enable/Disable Offline Mode]
+        UC26[View Cached Cocktails]
+        UC27[Clear Cache]
 
         %% Recommendation Use Cases
-        UC26[View Similar Cocktails]
-        UC27[Get Personalized Recommendations]
+        UC28[View Similar Cocktails]
+        UC29[Get Personalized Recommendations]
 
         %% Error Handling Use Cases
-        UC28[Handle Network Errors]
-        UC29[Retry Failed Operations]
+        UC30[Handle Network Errors]
+        UC31[Retry Failed Operations]
     end
 
     %% User Associations
@@ -61,7 +63,6 @@ graph LR
     User --> UC2
     User --> UC3
     User --> UC4
-    User --> UC5
     User --> UC6
     User --> UC7
     User --> UC8
@@ -83,40 +84,61 @@ graph LR
     User --> UC24
     User --> UC25
     User --> UC26
-    User --> UC29
+    User --> UC27
+    User --> UC28
+    User --> UC31
+
+    %% System handles filter options loading and advanced filtering
+    System --> UC4
+    System --> UC5
 
     %% System Associations
-    System --> UC27
-    System --> UC28
+    System --> UC29
+    System --> UC30
 
     %% Include/Extend Relationships
-    UC5 --> UC6
-    UC5 --> UC11
-    UC5 --> UC19
-    UC5 --> UC20
-    UC5 --> UC26
+    %% Include/Extend Relationships
     UC7 --> UC8
-    UC7 --> UC9
-    UC7 --> UC10
-    UC10 --> UC7
-    UC12 --> UC13
-    UC15 --> UC14
-    UC16 --> UC21
-    UC16 --> UC22
-    UC1 --> UC28
-    UC2 --> UC28
-    UC3 --> UC28
-    UC5 --> UC28
-    UC10 --> UC28
-    UC28 --> UC29
-    UC1 --> UC23
-    UC1 --> UC24
-    UC24 --> UC25
+    UC7 --> UC13
+    UC7 --> UC21
+    UC7 --> UC22
+    UC7 --> UC28
+    UC9 --> UC10
+    UC9 --> UC11
+    UC9 --> UC12
+    UC12 --> UC9
+    UC14 --> UC15
+    UC17 --> UC16
+    UC18 --> UC23
+    UC18 --> UC24
+    UC1 --> UC30
+    UC2 --> UC30
+    UC3 --> UC30
+    UC4 --> UC30
+    UC7 --> UC30
+    UC12 --> UC30
+    UC30 --> UC31
+    UC1 --> UC25
+    UC1 --> UC26
+    UC26 --> UC27
+
+    %% Advanced Search Relationships
+    UC2 --> UC4
+    UC4 --> UC5
+    UC3 --> UC5
 ```
 
 This diagram illustrates the main user interactions with the CocktailCraft system, including:
 
-1. **Core Functionality**: Browsing cocktails, searching, filtering, viewing details, managing cart, placing orders, managing favorites, and writing reviews
+1. **Core Functionality**:
+   - Browsing cocktails
+   - Basic and advanced search/filtering
+   - Loading and managing filter options
+   - Viewing details
+   - Managing cart
+   - Placing orders
+   - Managing favorites
+   - Writing reviews
 2. **Theme Management**: Toggling dark mode and system theme integration
 3. **Offline Mode**: Enabling/disabling offline mode, viewing cached cocktails, and clearing cache
 4. **Recommendations**: Viewing similar cocktails and getting personalized recommendations

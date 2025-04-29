@@ -13,6 +13,7 @@ graph TD
         Detail["CocktailDetailScreen"]
         Offline["OfflineModeScreen"]
         UIComp["UI Components"]
+        SearchComp["Search Components"]
         ErrorComp["Error Components"]
         ThemeComp["Theme Components"]
     end
@@ -50,6 +51,8 @@ graph TD
         subgraph UseCases["Use Cases"]
             PlaceOrderUC["PlaceOrderUseCase"]
             ToggleFavoriteUC["ToggleFavoriteUseCase"]
+            AdvancedFilterUC["AdvancedFilterUseCase"]
+            GetFilterOptionsUC["GetFilterOptionsUseCase"]
         end
 
         subgraph Models["Models"]
@@ -81,6 +84,7 @@ graph TD
         NetworkMonitor["NetworkMonitor"]
         ErrorUtils["ErrorUtils"]
         AppConfig["AppConfig"]
+        FilterLoader["FilterOptionsLoader"]
     end
 
     %% DI
@@ -102,6 +106,7 @@ graph TD
     Main --> Detail
     Main --> Offline
     Home --> UIComp
+    Home --> SearchComp
     Cart --> UIComp
     Favorites --> UIComp
     Detail --> UIComp
@@ -109,6 +114,7 @@ graph TD
     Offline --> UIComp
     UIComp --> ErrorComp
     UIComp --> ThemeComp
+    SearchComp --> UIComp
 
     %% Navigation Relationships
     Main --> NavManager
@@ -137,6 +143,8 @@ graph TD
 
     %% Domain Layer Relationships
     HomeVM --> CocktailRepo
+    HomeVM --> AdvancedFilterUC
+    HomeVM --> GetFilterOptionsUC
     CartVM --> CartRepo
     FavVM --> CocktailRepo
     FavVM --> FavRepo
@@ -151,6 +159,9 @@ graph TD
 
     PlaceOrderUC --> OrderRepo
     ToggleFavoriteUC --> CocktailRepo
+    AdvancedFilterUC --> CocktailRepo
+    GetFilterOptionsUC --> CocktailRepo
+    GetFilterOptionsUC --> FilterLoader
     RecEngine --> CocktailRepo
     RecEngine --> FavRepo
 
@@ -192,6 +203,8 @@ graph TD
 
     DomainModule --> PlaceOrderUC
     DomainModule --> ToggleFavoriteUC
+    DomainModule --> AdvancedFilterUC
+    DomainModule --> GetFilterOptionsUC
     DomainModule --> AppConfig
 
     RecommendationModule --> RecEngine
@@ -203,7 +216,7 @@ graph TD
 This diagram shows the main components of the CocktailCraft application and their relationships, including:
 
 1. **UI Layer**: All screens and UI components, including new components for Error Handling, Theme System (Dark Mode), and Offline Mode
-2. **ViewModel Layer**: All ViewModels, including new ones for Theme management, Offline Mode, and Cocktail Detail with recommendations
+2. **ViewModel Layer**: All ViewModels, including new ones for Theme management, Offline Mode, Advanced Search/Filtering, and Cocktail Detail with recommendations
 3. **Domain Layer**: Repository interfaces, Use Cases, Models, and the new Recommendation System
 4. **Data Layer**: Repository implementations, API interfaces and implementations, Local Storage, Caching System for Offline Mode, Network Monitor, Error Utilities, and App Configuration
 5. **Dependency Injection**: Modular Koin setup with specialized modules for different concerns
