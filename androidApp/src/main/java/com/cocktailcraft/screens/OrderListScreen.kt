@@ -232,9 +232,11 @@ fun OrderItem(order: Order) {
                         .size(10.dp)
                         .background(
                             when (order.status) {
-                                "Completed" -> Color(0xFF4CAF50)
-                                "In Progress" -> Color(0xFFFFA000)
-                                else -> AppColors.Gray
+                                OrderStatus.DELIVERED -> Color(0xFF4CAF50) // Green
+                                OrderStatus.SHIPPED -> Color(0xFF2196F3)   // Blue
+                                OrderStatus.PROCESSING -> Color(0xFFFFA000) // Orange
+                                OrderStatus.PENDING -> Color(0xFF9E9E9E)   // Gray
+                                OrderStatus.CANCELLED -> Color(0xFFF44336) // Red
                             },
                             CircleShape
                         )
@@ -243,12 +245,20 @@ fun OrderItem(order: Order) {
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Text(
-                    text = order.status,
+                    text = when (order.status) {
+                        OrderStatus.DELIVERED -> "Delivered"
+                        OrderStatus.SHIPPED -> "Shipped"
+                        OrderStatus.PROCESSING -> "Preparing"
+                        OrderStatus.PENDING -> "Confirmed"
+                        OrderStatus.CANCELLED -> "Cancelled"
+                    },
                     fontSize = 14.sp,
                     color = when (order.status) {
-                        "Completed" -> Color(0xFF4CAF50)
-                        "In Progress" -> Color(0xFFFFA000)
-                        else -> AppColors.Gray
+                        OrderStatus.DELIVERED -> Color(0xFF4CAF50)
+                        OrderStatus.SHIPPED -> Color(0xFF2196F3)
+                        OrderStatus.PROCESSING -> Color(0xFFFFA000)
+                        OrderStatus.PENDING -> Color(0xFF9E9E9E)
+                        OrderStatus.CANCELLED -> Color(0xFFF44336)
                     }
                 )
             }
