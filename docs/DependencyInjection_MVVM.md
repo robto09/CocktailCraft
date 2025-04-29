@@ -301,6 +301,17 @@ class HomeViewModel(
 }
 ```
 
+## Related Documentation
+
+For more detailed information on implementing ViewModels, see the [ViewModel Implementation Guide](./ViewModel_Implementation.md), which covers:
+
+- Coroutine handling in ViewModels
+- State management with StateFlow
+- Error handling
+- Resource cleanup
+- Cross-platform considerations
+- Best practices
+
 ## Conclusion
 
 This dependency injection approach follows MVVM and Clean Architecture principles, with a focus on cross-platform compatibility. It provides a clear separation of concerns, makes the code more testable, and prepares the app for future iOS development.

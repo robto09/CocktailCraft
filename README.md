@@ -153,9 +153,10 @@ The app uses Koin for dependency injection with a modular approach:
 - **ViewModel Integration**: Standardized pattern for ViewModel dependency injection
 - **Cross-Platform Support**: Shared interfaces and platform-specific implementations
 
-For detailed information about the dependency injection implementation, see:
+For detailed information about the architecture and implementation, see:
 - [Dependency Injection Documentation](docs/DependencyInjection.md) - Overview, module structure, and best practices
 - [MVVM + Clean Architecture DI](docs/DependencyInjection_MVVM.md) - Detailed explanation of DI with MVVM and Clean Architecture for cross-platform support
+- [ViewModel Implementation Guide](docs/ViewModel_Implementation.md) - Detailed guide on implementing ViewModels with coroutines and Flow
 - [Dependency Injection Migration Guide](docs/DependencyInjectionMigration.md) - Guide for migrating existing code to the new DI approach
 
 ## Libraries Used
