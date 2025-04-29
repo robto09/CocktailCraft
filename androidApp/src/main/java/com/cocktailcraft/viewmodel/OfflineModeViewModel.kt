@@ -67,7 +67,9 @@ class OfflineModeViewModel(
     override fun toggleOfflineMode() {
         val newValue = !_isOfflineModeEnabled.value
         _isOfflineModeEnabled.value = newValue
-        offlineModeUseCase.setOfflineMode(newValue)
+        viewModelScope.launch {
+            offlineModeUseCase.setOfflineMode(newValue)
+        }
     }
 
     /**
@@ -75,50 +77,38 @@ class OfflineModeViewModel(
      */
     override fun setOfflineMode(enabled: Boolean) {
         _isOfflineModeEnabled.value = enabled
-        offlineModeUseCase.setOfflineMode(enabled)
+        viewModelScope.launch {
+            offlineModeUseCase.setOfflineMode(enabled)
+        }
     }
 
     /**
      * Load recently viewed cocktails.
      */
     override fun loadRecentlyViewedCocktails() {
-        executeWithErrorHandling(
-            operation = {
-                offlineModeUseCase.getRecentlyViewedCocktails()
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                _recentlyViewedCocktails.value = result.data
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Failed to Load Recent Cocktails",
-                                    message = result.message,
-                                    category = com.cocktailcraft.util.ErrorUtils.ErrorCategory.DATA,
-                                    recoveryAction = com.cocktailcraft.util.ErrorUtils.RecoveryAction("Retry") { loadRecentlyViewedCocktails() }
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
-                    }
-                }
-            },
-            defaultErrorMessage = "Failed to load recently viewed cocktails. Please try again.",
-            recoveryAction = com.cocktailcraft.util.ErrorUtils.RecoveryAction("Retry") { loadRecentlyViewedCocktails() }
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = offlineModeUseCase.getRecentlyViewedCocktails(),
+                onSuccess = { cocktails ->
+                    _recentlyViewedCocktails.value = cocktails
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to load recently viewed cocktails. Please try again.",
+                recoveryAction = com.cocktailcraft.util.ErrorUtils.RecoveryAction("Retry") { loadRecentlyViewedCocktails() }
+            )
+        }
     }
 
     /**
      * Clear the cache of all cocktails.
      */
     override fun clearCache() {
-        cocktailCache.clearCache()
-        loadRecentlyViewedCocktails()
+        viewModelScope.launch {
+            cocktailCache.clearCache()
+            loadRecentlyViewedCocktails()
+        }
     }
 
     /**

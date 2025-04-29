@@ -40,35 +40,19 @@ class ReviewViewModel(
      * Load all reviews.
      */
     private fun loadAllReviews() {
-        executeWithErrorHandling(
-            operation = {
-                manageReviewsUseCase.getAllReviews()
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                _reviews.value = result.data
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Failed to Load Reviews",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA,
-                                    recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadAllReviews() }
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
-                    }
-                }
-            },
-            defaultErrorMessage = "Failed to load reviews. Please try again.",
-            recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadAllReviews() }
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = manageReviewsUseCase.getAllReviews(),
+                onSuccess = { reviewsMap ->
+                    _reviews.value = reviewsMap
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to load reviews. Please try again.",
+                recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadAllReviews() }
+            )
+        }
     }
 
     /**
@@ -82,33 +66,18 @@ class ReviewViewModel(
      * Add a review.
      */
     override fun addReview(review: Review) {
-        executeWithErrorHandling(
-            operation = {
-                manageReviewsUseCase.addReview(review)
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                loadAllReviews() // Refresh reviews after adding
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Failed to Add Review",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
-                    }
-                }
-            },
-            defaultErrorMessage = "Failed to add review. Please try again."
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = manageReviewsUseCase.addReview(review),
+                onSuccess = { _ ->
+                    loadAllReviews() // Refresh reviews after adding
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to add review. Please try again."
+            )
+        }
     }
 
     /**
@@ -126,40 +95,25 @@ class ReviewViewModel(
     override fun createAndAddReview(cocktailId: String, userName: String, rating: Float, comment: String) {
         Log.d(TAG, "Creating review for cocktail: $cocktailId, user: $userName")
 
-        executeWithErrorHandling(
-            operation = {
-                manageReviewsUseCase.createReview(
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = manageReviewsUseCase.createReview(
                     cocktailId = cocktailId,
                     userName = userName,
                     rating = rating,
                     comment = comment
-                )
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                Log.d(TAG, "Successfully created review object")
-                                loadAllReviews() // Refresh reviews after adding
-                                Log.d(TAG, "Successfully added review to the list")
-                            }
-                            is Result.Error -> {
-                                Log.e(TAG, "Error creating review: ${result.message}")
-                                setError(
-                                    title = "Failed to Create Review",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
-                    }
-                }
-            },
-            defaultErrorMessage = "Failed to create review. Please try again."
-        )
+                ),
+                onSuccess = { _ ->
+                    Log.d(TAG, "Successfully created review object")
+                    loadAllReviews() // Refresh reviews after adding
+                    Log.d(TAG, "Successfully added review to the list")
+                },
+                onError = { error ->
+                    Log.e(TAG, "Error creating review: ${error.message}")
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to create review. Please try again."
+            )
+        }
     }
 }

@@ -71,20 +71,19 @@ class CocktailDetailViewModel(
      */
     private fun checkFavoriteStatus(id: String) {
         viewModelScope.launch {
-            manageFavoritesUseCase.isFavorite(id).collect { result ->
-                when (result) {
-                    is Result.Success -> {
-                        _isFavorite.value = result.data
-                    }
-                    is Result.Error -> {
-                        // Don't show error for favorite check
-                        _isFavorite.value = false
-                    }
-                    is Result.Loading -> {
-                        // No action needed
-                    }
-                }
-            }
+            handleResultFlow(
+                flow = manageFavoritesUseCase.isFavorite(id),
+                onSuccess = { isFavorite ->
+                    _isFavorite.value = isFavorite
+                },
+                onError = { _ ->
+                    // Don't show error for favorite check
+                    _isFavorite.value = false
+                },
+                defaultErrorMessage = "Failed to check favorite status",
+                showAsEvent = false,
+                showLoading = false
+            )
         }
     }
 
@@ -95,23 +94,17 @@ class CocktailDetailViewModel(
         val currentCocktail = _cocktail.value ?: return
 
         viewModelScope.launch {
-            manageFavoritesUseCase.toggleFavorite(currentCocktail).collect { result ->
-                when (result) {
-                    is Result.Success -> {
-                        _isFavorite.value = result.data
-                    }
-                    is Result.Error -> {
-                        setError(
-                            title = "Favorite Error",
-                            message = "Failed to update favorite status: ${result.message}",
-                            category = ErrorUtils.ErrorCategory.DATA
-                        )
-                    }
-                    is Result.Loading -> {
-                        // No action needed
-                    }
-                }
-            }
+            handleResultFlow(
+                flow = manageFavoritesUseCase.toggleFavorite(currentCocktail),
+                onSuccess = { isFavorite ->
+                    _isFavorite.value = isFavorite
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to update favorite status",
+                showAsEvent = true
+            )
         }
     }
 
@@ -120,52 +113,64 @@ class CocktailDetailViewModel(
      */
     private fun loadRecommendations(cocktail: Cocktail) {
         viewModelScope.launch {
-            // Try to get recommendations by category first
-            val category = cocktail.category
-            if (category != null && category.isNotBlank()) {
-                getRecommendationsUseCase.byCategory(category, 3).collect { result ->
-                    when (result) {
-                        is Result.Success -> {
-                            if (result.data.isNotEmpty()) {
-                                _recommendations.value = result.data.filter { it.id != cocktail.id }
-                                return@collect
+            try {
+                var recommendationsFound = false
+                
+                // Try to get recommendations by category first
+                val category = cocktail.category
+                if (!recommendationsFound && category != null && category.isNotBlank()) {
+                    handleResultFlow(
+                        flow = getRecommendationsUseCase.byCategory(category, 3),
+                        onSuccess = { recommendations ->
+                            if (recommendations.isNotEmpty()) {
+                                _recommendations.value = recommendations.filter { it.id != cocktail.id }
+                                recommendationsFound = true
                             }
-                        }
-                        else -> { /* Continue to next approach if this fails */ }
-                    }
+                        },
+                        onError = { /* Continue to next approach if this fails */ },
+                        defaultErrorMessage = "",
+                        showAsEvent = false,
+                        showLoading = false
+                    )
                 }
-            }
 
-            // If category recommendations failed or were empty, try by ingredient
-            if (cocktail.ingredients.isNotEmpty()) {
-                val mainIngredient = cocktail.ingredients.first().name
-                getRecommendationsUseCase.byIngredient(mainIngredient, 3).collect { result ->
-                    when (result) {
-                        is Result.Success -> {
-                            if (result.data.isNotEmpty()) {
-                                _recommendations.value = result.data.filter { it.id != cocktail.id }
-                                return@collect
+                // If category recommendations failed or were empty, try by ingredient
+                if (!recommendationsFound && cocktail.ingredients.isNotEmpty()) {
+                    val mainIngredient = cocktail.ingredients.first().name
+                    handleResultFlow(
+                        flow = getRecommendationsUseCase.byIngredient(mainIngredient, 3),
+                        onSuccess = { recommendations ->
+                            if (recommendations.isNotEmpty()) {
+                                _recommendations.value = recommendations.filter { it.id != cocktail.id }
+                                recommendationsFound = true
                             }
-                        }
-                        else -> { /* Continue to next approach if this fails */ }
-                    }
+                        },
+                        onError = { /* Continue to next approach if this fails */ },
+                        defaultErrorMessage = "",
+                        showAsEvent = false,
+                        showLoading = false
+                    )
                 }
-            }
 
-            // If all else fails, try similar cocktails
-            getRecommendationsUseCase.similarTo(cocktail, 3).collect { result ->
-                when (result) {
-                    is Result.Success -> {
-                        _recommendations.value = result.data
-                    }
-                    is Result.Error -> {
-                        // Don't show error for recommendations
-                        _recommendations.value = emptyList()
-                    }
-                    is Result.Loading -> {
-                        // No action needed
-                    }
+                // If all else fails, try similar cocktails
+                if (!recommendationsFound) {
+                    handleResultFlow(
+                        flow = getRecommendationsUseCase.similarTo(cocktail, 3),
+                        onSuccess = { recommendations ->
+                            _recommendations.value = recommendations
+                        },
+                        onError = { _ ->
+                            // Don't show error for recommendations
+                            _recommendations.value = emptyList()
+                        },
+                        defaultErrorMessage = "",
+                        showAsEvent = false,
+                        showLoading = false
+                    )
                 }
+            } catch (e: Exception) {
+                // Fallback in case of any errors
+                _recommendations.value = emptyList()
             }
         }
     }

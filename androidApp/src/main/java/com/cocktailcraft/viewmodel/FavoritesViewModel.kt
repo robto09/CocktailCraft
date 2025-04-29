@@ -37,35 +37,19 @@ class FavoritesViewModel(
      * Load all favorite cocktails.
      */
     override fun loadFavorites() {
-        executeWithErrorHandling(
-            operation = {
-                manageFavoritesUseCase.getFavorites()
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success<List<Cocktail>> -> {
-                                _favorites.value = result.data
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Failed to Load Favorites",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA,
-                                    recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadFavorites() }
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
-                    }
-                }
-            },
-            defaultErrorMessage = "Failed to load favorites. Please try again.",
-            recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadFavorites() }
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = manageFavoritesUseCase.getFavorites(),
+                onSuccess = { favorites ->
+                    _favorites.value = favorites
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to load favorites. Please try again.",
+                recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadFavorites() }
+            )
+        }
     }
 
     /**
@@ -73,23 +57,16 @@ class FavoritesViewModel(
      */
     override fun addToFavorites(cocktail: Cocktail) {
         viewModelScope.launch {
-            manageFavoritesUseCase.addToFavorites(cocktail).collect { result ->
-                when (result) {
-                    is Result.Success -> {
-                        loadFavorites() // Refresh favorites after adding
-                    }
-                    is Result.Error -> {
-                        setError(
-                            title = "Failed to Add Favorite",
-                            message = result.message,
-                            category = ErrorUtils.ErrorCategory.DATA
-                        )
-                    }
-                    is Result.Loading -> {
-                        // No action needed
-                    }
-                }
-            }
+            handleResultFlow(
+                flow = manageFavoritesUseCase.addToFavorites(cocktail),
+                onSuccess = { _ ->
+                    loadFavorites() // Refresh favorites after adding
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to add favorite. Please try again."
+            )
         }
     }
 
@@ -98,23 +75,16 @@ class FavoritesViewModel(
      */
     override fun removeFromFavorites(cocktail: Cocktail) {
         viewModelScope.launch {
-            manageFavoritesUseCase.removeFromFavorites(cocktail).collect { result ->
-                when (result) {
-                    is Result.Success -> {
-                        loadFavorites() // Refresh favorites after removing
-                    }
-                    is Result.Error -> {
-                        setError(
-                            title = "Failed to Remove Favorite",
-                            message = result.message,
-                            category = ErrorUtils.ErrorCategory.DATA
-                        )
-                    }
-                    is Result.Loading -> {
-                        // No action needed
-                    }
-                }
-            }
+            handleResultFlow(
+                flow = manageFavoritesUseCase.removeFromFavorites(cocktail),
+                onSuccess = { _ ->
+                    loadFavorites() // Refresh favorites after removing
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to remove favorite. Please try again."
+            )
         }
     }
 
@@ -123,23 +93,16 @@ class FavoritesViewModel(
      */
     override fun toggleFavorite(cocktail: Cocktail) {
         viewModelScope.launch {
-            manageFavoritesUseCase.toggleFavorite(cocktail).collect { result ->
-                when (result) {
-                    is Result.Success -> {
-                        loadFavorites() // Refresh favorites after toggling
-                    }
-                    is Result.Error -> {
-                        setError(
-                            title = "Failed to Toggle Favorite",
-                            message = result.message,
-                            category = ErrorUtils.ErrorCategory.DATA
-                        )
-                    }
-                    is Result.Loading -> {
-                        // No action needed
-                    }
-                }
-            }
+            handleResultFlow(
+                flow = manageFavoritesUseCase.toggleFavorite(cocktail),
+                onSuccess = { _ ->
+                    loadFavorites() // Refresh favorites after toggling
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to toggle favorite. Please try again."
+            )
         }
     }
 
@@ -154,6 +117,9 @@ class FavoritesViewModel(
      * For backward compatibility with code that uses the old API.
      */
     fun isFavorite(id: String, callback: (Boolean) -> Unit) {
-        callback(isFavorite(id))
+        viewModelScope.launch {
+            val result = favorites.value.any { it.id == id }
+            callback(result)
+        }
     }
 }

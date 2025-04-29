@@ -53,40 +53,28 @@ class ThemeViewModel(
      * Load the user's theme preferences.
      */
     private fun loadThemePreference() {
-        executeWithErrorHandling(
-            operation = {
-                themeUseCase.getUserPreferences()
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                val preferences = result.data
-                                _followSystemTheme.value = preferences.followSystemTheme
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = themeUseCase.getUserPreferences(),
+                onSuccess = { preferences ->
+                    _followSystemTheme.value = preferences.followSystemTheme
 
-                                // If following system theme, use system setting, otherwise use saved preference
-                                _isDarkMode.value = if (preferences.followSystemTheme) {
-                                    _isSystemInDarkMode.value
-                                } else {
-                                    preferences.darkMode
-                                }
-                            }
-                            is Result.Error -> {
-                                // If there's an error, default to system setting
-                                _followSystemTheme.value = true
-                                _isDarkMode.value = _isSystemInDarkMode.value
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
+                    // If following system theme, use system setting, otherwise use saved preference
+                    _isDarkMode.value = if (preferences.followSystemTheme) {
+                        _isSystemInDarkMode.value
+                    } else {
+                        preferences.darkMode
                     }
-                }
-            },
-            defaultErrorMessage = "Failed to load theme preferences. Using system defaults.",
-            showAsEvent = false
-        )
+                },
+                onError = { _ ->
+                    // If there's an error, default to system setting
+                    _followSystemTheme.value = true
+                    _isDarkMode.value = _isSystemInDarkMode.value
+                },
+                defaultErrorMessage = "Failed to load theme preferences. Using system defaults.",
+                showAsEvent = false
+            )
+        }
     }
 
     /**
@@ -98,46 +86,30 @@ class ThemeViewModel(
             val currentValue = _isDarkMode.value
             val newValue = !currentValue
 
-            executeWithErrorHandling(
-                operation = {
-                    themeUseCase.setDarkMode(newValue, false)
-                },
-                onSuccess = { resultFlow ->
-                    viewModelScope.launch {
-                        resultFlow.collect { result ->
-                            when (result) {
-                                is Result.Success -> {
-                                    if (result.data) {
-                                        _isDarkMode.value = newValue
-                                    } else {
-                                        // If operation failed, revert UI state
-                                        _isDarkMode.value = currentValue
-                                        setError(
-                                            title = "Theme Update Failed",
-                                            message = "Failed to update dark mode setting",
-                                            category = ErrorUtils.ErrorCategory.DATA
-                                        )
-                                    }
-                                }
-                                is Result.Error -> {
-                                    // If there's an error, revert UI state
-                                    _isDarkMode.value = currentValue
-                                    setError(
-                                        title = "Theme Update Failed",
-                                        message = result.message,
-                                        category = ErrorUtils.ErrorCategory.DATA
-                                    )
-                                }
-                                is Result.Loading -> {
-                                    // Already handled by executeWithErrorHandling
-                                }
-                            }
+            viewModelScope.launch {
+                handleResultFlow(
+                    flow = themeUseCase.setDarkMode(newValue, false),
+                    onSuccess = { success ->
+                        if (success) {
+                            _isDarkMode.value = newValue
+                        } else {
+                            // If operation failed, revert UI state
+                            _isDarkMode.value = currentValue
+                            setError(
+                                title = "Theme Update Failed",
+                                message = "Failed to update dark mode setting",
+                                category = ErrorUtils.ErrorCategory.DATA
+                            )
                         }
-                    }
-                },
-                defaultErrorMessage = "Failed to update theme. Please try again.",
-                showAsEvent = true
-            )
+                    },
+                    onError = { _ ->
+                        // If there's an error, revert UI state
+                        _isDarkMode.value = currentValue
+                    },
+                    defaultErrorMessage = "Failed to update theme. Please try again.",
+                    showAsEvent = true
+                )
+            }
         }
     }
 
@@ -146,43 +118,28 @@ class ThemeViewModel(
      */
     override fun setDarkMode(enabled: Boolean) {
         if (_isDarkMode.value != enabled) {
-            executeWithErrorHandling(
-                operation = {
-                    themeUseCase.setDarkMode(enabled, false)
-                },
-                onSuccess = { resultFlow ->
-                    viewModelScope.launch {
-                        resultFlow.collect { result ->
-                            when (result) {
-                                is Result.Success -> {
-                                    if (result.data) {
-                                        _isDarkMode.value = enabled
-                                        _followSystemTheme.value = false
-                                    } else {
-                                        setError(
-                                            title = "Theme Update Failed",
-                                            message = "Failed to update dark mode setting",
-                                            category = ErrorUtils.ErrorCategory.DATA
-                                        )
-                                    }
-                                }
-                                is Result.Error -> {
-                                    setError(
-                                        title = "Theme Update Failed",
-                                        message = result.message,
-                                        category = ErrorUtils.ErrorCategory.DATA
-                                    )
-                                }
-                                is Result.Loading -> {
-                                    // Already handled by executeWithErrorHandling
-                                }
-                            }
+            viewModelScope.launch {
+                handleResultFlow(
+                    flow = themeUseCase.setDarkMode(enabled, false),
+                    onSuccess = { success ->
+                        if (success) {
+                            _isDarkMode.value = enabled
+                            _followSystemTheme.value = false
+                        } else {
+                            setError(
+                                title = "Theme Update Failed",
+                                message = "Failed to update dark mode setting",
+                                category = ErrorUtils.ErrorCategory.DATA
+                            )
                         }
-                    }
-                },
-                defaultErrorMessage = "Failed to update theme. Please try again.",
-                showAsEvent = true
-            )
+                    },
+                    onError = { _ ->
+                        // Error handling is done by handleResultFlow
+                    },
+                    defaultErrorMessage = "Failed to update theme. Please try again.",
+                    showAsEvent = true
+                )
+            }
         }
     }
 
@@ -193,46 +150,31 @@ class ThemeViewModel(
         val currentValue = _followSystemTheme.value
         val newValue = !currentValue
 
-        executeWithErrorHandling(
-            operation = {
-                themeUseCase.setFollowSystemTheme(newValue, _isSystemInDarkMode.value)
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                if (result.data) {
-                                    _followSystemTheme.value = newValue
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = themeUseCase.setFollowSystemTheme(newValue, _isSystemInDarkMode.value),
+                onSuccess = { success ->
+                    if (success) {
+                        _followSystemTheme.value = newValue
 
-                                    // If enabling follow system, update dark mode to match system
-                                    if (newValue) {
-                                        _isDarkMode.value = _isSystemInDarkMode.value
-                                    }
-                                } else {
-                                    setError(
-                                        title = "Theme Update Failed",
-                                        message = "Failed to update system theme setting",
-                                        category = ErrorUtils.ErrorCategory.DATA
-                                    )
-                                }
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Theme Update Failed",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
+                        // If enabling follow system, update dark mode to match system
+                        if (newValue) {
+                            _isDarkMode.value = _isSystemInDarkMode.value
                         }
+                    } else {
+                        setError(
+                            title = "Theme Update Failed",
+                            message = "Failed to update system theme setting",
+                            category = ErrorUtils.ErrorCategory.DATA
+                        )
                     }
-                }
-            },
-            defaultErrorMessage = "Failed to update theme settings. Please try again.",
-            showAsEvent = true
-        )
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to update theme settings. Please try again.",
+                showAsEvent = true
+            )
+        }
     }
 }

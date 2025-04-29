@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 
 /**
@@ -102,34 +103,27 @@ class HomeViewModel(
         _currentPage.value = 1 // Reset to first page
         _hasMoreData.value = true // Reset pagination state
 
-        executeWithErrorHandling(
-            operation = {
-                getCocktailsUseCase()
-            },
-            onSuccess = { resultFlow ->
-                handleResultFlow(
-                    flow = resultFlow,
-                    onSuccess = { cocktails ->
-                        val paginatedList = cocktails.take(PAGE_SIZE)
-                        _cocktails.value = paginatedList
-                        _hasMoreData.value = paginatedList.size < cocktails.size
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = getCocktailsUseCase(),
+                onSuccess = { cocktails ->
+                    val paginatedList = cocktails.take(PAGE_SIZE)
+                    _cocktails.value = paginatedList
+                    _hasMoreData.value = paginatedList.size < cocktails.size
 
-                        // If we got data while offline, clear any error
-                        if (_isOfflineMode.value && cocktails.isNotEmpty()) {
-                            clearError() // Clear base class error
-                            _errorString.value = "" // Clear legacy error string
-                        }
-                    },
-                    onError = { error ->
-                        _errorString.value = error.message
-                    },
-                    defaultErrorMessage = "Failed to load cocktails. Please try again.",
-                    recoveryAction = ErrorUtils.RecoveryAction("Retry") { retry() }
-                )
-            },
-            defaultErrorMessage = "Failed to load cocktails. Please try again.",
-            recoveryAction = ErrorUtils.RecoveryAction("Retry") { retry() }
-        )
+                    // If we got data while offline, clear any error
+                    if (_isOfflineMode.value && cocktails.isNotEmpty()) {
+                        clearError() // Clear base class error
+                        _errorString.value = "" // Clear legacy error string
+                    }
+                },
+                onError = { error ->
+                    _errorString.value = error.message
+                },
+                defaultErrorMessage = "Failed to load cocktails. Please try again.",
+                recoveryAction = ErrorUtils.RecoveryAction("Retry") { retry() }
+            )
+        }
     }
 
     /**
@@ -210,27 +204,20 @@ class HomeViewModel(
         searchJob = viewModelScope.launch {
             delay(300) // Debounce for 300ms
 
-            executeWithErrorHandling(
-                operation = {
-                    // Check if we have active filters
-                    if (_searchFilters.value.hasActiveFilters() || _isAdvancedSearchActive.value) {
-                        searchCocktailsUseCase.advanced(_searchFilters.value)
-                    } else {
-                        searchCocktailsUseCase(query)
-                    }
+            // Check if we have active filters
+            val searchFlow = if (_searchFilters.value.hasActiveFilters() || _isAdvancedSearchActive.value) {
+                searchCocktailsUseCase.advanced(_searchFilters.value)
+            } else {
+                searchCocktailsUseCase(query)
+            }
+
+            handleResultFlow(
+                flow = searchFlow,
+                onSuccess = { cocktails ->
+                    _cocktails.value = cocktails
                 },
-                onSuccess = { resultFlow ->
-                    handleResultFlow(
-                        flow = resultFlow,
-                        onSuccess = { cocktails ->
-                            _cocktails.value = cocktails
-                        },
-                        onError = { error ->
-                            _errorString.value = error.message
-                        },
-                        defaultErrorMessage = "Failed to search cocktails. Please try again.",
-                        recoveryAction = ErrorUtils.RecoveryAction("Retry") { searchCocktails(query) }
-                    )
+                onError = { error ->
+                    _errorString.value = error.message
                 },
                 defaultErrorMessage = "Failed to search cocktails. Please try again.",
                 recoveryAction = ErrorUtils.RecoveryAction("Retry") { searchCocktails(query) }
@@ -259,22 +246,13 @@ class HomeViewModel(
             searchJob = viewModelScope.launch {
                 delay(300) // Debounce for 300ms
 
-                executeWithErrorHandling(
-                    operation = {
-                        searchCocktailsUseCase.advanced(filters)
+                handleResultFlow(
+                    flow = searchCocktailsUseCase.advanced(filters),
+                    onSuccess = { cocktails ->
+                        _cocktails.value = cocktails
                     },
-                    onSuccess = { resultFlow ->
-                        handleResultFlow(
-                            flow = resultFlow,
-                            onSuccess = { cocktails ->
-                                _cocktails.value = cocktails
-                            },
-                            onError = { error ->
-                                _errorString.value = error.message
-                            },
-                            defaultErrorMessage = "Failed to apply filters. Please try again.",
-                            recoveryAction = ErrorUtils.RecoveryAction("Retry") { updateSearchFilters(filters) }
-                        )
+                    onError = { error ->
+                        _errorString.value = error.message
                     },
                     defaultErrorMessage = "Failed to apply filters. Please try again.",
                     recoveryAction = ErrorUtils.RecoveryAction("Retry") { updateSearchFilters(filters) }
@@ -333,82 +311,63 @@ class HomeViewModel(
      * Load cocktails filtered by category.
      */
     override fun loadCocktailsByCategory(category: String?) {
-        executeWithErrorHandling(
-            operation = {
-                if (category == null) {
-                    getCocktailsUseCase()
-                } else {
-                    getCocktailsUseCase.byCategory(category)
-                }
-            },
-            onSuccess = { resultFlow ->
-                handleResultFlow(
-                    flow = resultFlow,
-                    onSuccess = { cocktails ->
-                        _cocktails.value = cocktails
-                    },
-                    onError = { error ->
-                        _errorString.value = error.message
-                    },
-                    defaultErrorMessage = "Failed to filter cocktails. Please try again.",
-                    recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadCocktailsByCategory(category) }
-                )
-            },
-            defaultErrorMessage = "Failed to filter cocktails. Please try again.",
-            recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadCocktailsByCategory(category) }
-        )
+        viewModelScope.launch {
+            val flow = if (category == null) {
+                getCocktailsUseCase()
+            } else {
+                getCocktailsUseCase.byCategory(category)
+            }
+            
+            handleResultFlow(
+                flow = flow,
+                onSuccess = { cocktails ->
+                    _cocktails.value = cocktails
+                },
+                onError = { error ->
+                    _errorString.value = error.message
+                },
+                defaultErrorMessage = "Failed to filter cocktails. Please try again.",
+                recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadCocktailsByCategory(category) }
+            )
+        }
     }
 
     /**
      * Sort cocktails by price.
      */
     override fun sortByPrice(ascending: Boolean) {
-        executeWithErrorHandling(
-            operation = {
-                getCocktailsUseCase.sortedByPrice(ascending)
-            },
-            onSuccess = { resultFlow ->
-                handleResultFlow(
-                    flow = resultFlow,
-                    onSuccess = { cocktails ->
-                        _cocktails.value = cocktails
-                    },
-                    onError = { error ->
-                        _errorString.value = error.message
-                    },
-                    defaultErrorMessage = "Failed to sort cocktails. Please try again.",
-                    recoveryAction = ErrorUtils.RecoveryAction("Retry") { sortByPrice(ascending) }
-                )
-            },
-            defaultErrorMessage = "Failed to sort cocktails. Please try again.",
-            recoveryAction = ErrorUtils.RecoveryAction("Retry") { sortByPrice(ascending) }
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = getCocktailsUseCase.sortedByPrice(ascending),
+                onSuccess = { cocktails ->
+                    _cocktails.value = cocktails
+                },
+                onError = { error ->
+                    _errorString.value = error.message
+                },
+                defaultErrorMessage = "Failed to sort cocktails. Please try again.",
+                recoveryAction = ErrorUtils.RecoveryAction("Retry") { sortByPrice(ascending) }
+            )
+        }
     }
 
     /**
      * Sort cocktails by popularity.
      */
     override fun sortByPopularity() {
-        executeWithErrorHandling(
-            operation = {
-                getCocktailsUseCase.sortedByPopularity()
-            },
-            onSuccess = { resultFlow ->
-                handleResultFlow(
-                    flow = resultFlow,
-                    onSuccess = { cocktails ->
-                        _cocktails.value = cocktails
-                    },
-                    onError = { error ->
-                        _errorString.value = error.message
-                    },
-                    defaultErrorMessage = "Failed to sort cocktails. Please try again.",
-                    recoveryAction = ErrorUtils.RecoveryAction("Retry") { sortByPopularity() }
-                )
-            },
-            defaultErrorMessage = "Failed to sort cocktails. Please try again.",
-            recoveryAction = ErrorUtils.RecoveryAction("Retry") { sortByPopularity() }
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = getCocktailsUseCase.sortedByPopularity(),
+                onSuccess = { cocktails ->
+                    _cocktails.value = cocktails
+                },
+                onError = { error ->
+                    _errorString.value = error.message
+                },
+                defaultErrorMessage = "Failed to sort cocktails. Please try again.",
+                recoveryAction = ErrorUtils.RecoveryAction("Retry") { sortByPopularity() }
+            )
+        }
     }
 
     /**
@@ -466,36 +425,33 @@ class HomeViewModel(
      * This is used by the CocktailDetailScreen.
      */
     fun forceRefreshCocktailDetails(id: String) {
-        executeWithErrorHandling(
-            operation = {
-                getCocktailsUseCase.refreshCocktailDetails(id)
-            },
-            onSuccess = { resultFlow ->
-                handleResultFlow(
-                    flow = resultFlow,
-                    onSuccess = { cocktail ->
-                        // No need to update state, just log success
-                        println("Successfully refreshed cocktail details for $id")
-                    },
-                    onError = { error ->
-                        _errorString.value = error.message
-                    },
-                    defaultErrorMessage = "Failed to refresh cocktail details. Please try again."
-                )
-            },
-            defaultErrorMessage = "Failed to refresh cocktail details. Please try again."
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = getCocktailsUseCase.refreshCocktailDetails(id),
+                onSuccess = { _ ->
+                    // No need to update state, just log success
+                    println("Successfully refreshed cocktail details for $id")
+                },
+                onError = { error ->
+                    _errorString.value = error.message
+                },
+                defaultErrorMessage = "Failed to refresh cocktail details. Please try again."
+            )
+        }
     }
 
     /**
      * Get cocktails by category with a limit.
      * This is used by the CocktailDetailScreen.
      */
-    fun getCocktailsByCategory(category: String, limit: Int): List<Cocktail> {
-        // Return the current cocktails filtered by category and limited to the specified number
-        return _cocktails.value.filter {
-            it.category?.equals(category, ignoreCase = true) == true
-        }.take(limit)
+    fun getCocktailsByCategory(category: String, limit: Int): Flow<List<Cocktail>> {
+        return flow {
+            // Emit the current cocktails filtered by category and limited to the specified number
+            val filteredCocktails = _cocktails.value.filter {
+                it.category?.equals(category, ignoreCase = true) == true
+            }.take(limit)
+            emit(filteredCocktails)
+        }
     }
 
     override fun onCleared() {

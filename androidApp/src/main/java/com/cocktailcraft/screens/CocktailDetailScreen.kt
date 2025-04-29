@@ -106,6 +106,7 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import androidx.compose.animation.core.*
+import kotlinx.coroutines.flow.filter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -220,11 +221,13 @@ fun CocktailDetailScreen(
             // Only proceed if cocktail is not null
             cocktail?.let { cocktailData ->
                 val imageUrl = cocktailData.imageUrl ?: ""
-                val averageRating = if (reviews.isNotEmpty()) {
+                // Calculate average rating for display if needed
+                val ratingDisplay = if (reviews.isNotEmpty()) {
                     reviews.map { it.rating }.average().toFloat()
                 } else {
                     0f
                 }
+                // Note: ratingDisplay can be used for UI elements that need to show the average rating
 
                 LazyColumn(
                     modifier = Modifier
@@ -427,58 +430,70 @@ fun CocktailDetailScreen(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             elevation = 0,
                             content = {
-                                // Handle different types of ingredients list
-                                if (cocktailData.ingredients is List<*>) {
-                                    (cocktailData.ingredients as? List<CocktailIngredient>)?.forEach { ingredient ->
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 6.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            // Ingredient bullet point
-                                            Box(
+                                // Handle ingredients list
+                                val ingredients = cocktailData.ingredients
+                                when (ingredients) {
+                                    is List<*> -> {
+                                        // Try to cast to CocktailIngredient list
+                                        (ingredients as? List<CocktailIngredient>)?.forEach { ingredient ->
+                                            Row(
                                                 modifier = Modifier
-                                                    .size(8.dp)
-                                                    .background(AppColors.Primary, CircleShape)
-                                            )
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 6.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                // Ingredient bullet point
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(8.dp)
+                                                        .background(AppColors.Primary, CircleShape)
+                                                )
 
-                                            Spacer(modifier = Modifier.width(12.dp))
+                                                Spacer(modifier = Modifier.width(12.dp))
 
-                                            // Ingredient name and measure
-                                            Text(
-                                                text = "${ingredient.name} ${ingredient.measure}",
-                                                fontSize = 16.sp,
-                                                color = AppColors.TextSecondary
-                                            )
+                                                // Ingredient name and measure
+                                                Text(
+                                                    text = "${ingredient.name} ${ingredient.measure}",
+                                                    fontSize = 16.sp,
+                                                    color = AppColors.TextSecondary
+                                                )
+                                            }
+                                        } ?: run {
+                                            // Handle as a generic list if casting failed
+                                            ingredients.forEach { ingredient ->
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 6.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    // Ingredient bullet point
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(8.dp)
+                                                            .background(AppColors.Primary, CircleShape)
+                                                    )
+
+                                                    Spacer(modifier = Modifier.width(12.dp))
+
+                                                    // Ingredient name
+                                                    Text(
+                                                        text = ingredient.toString(),
+                                                        fontSize = 16.sp,
+                                                        color = AppColors.TextSecondary
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
-                                } else {
-                                    // Handle as a generic list
-                                    val ingredientsList = cocktailData.ingredients as? List<*>
-                                    ingredientsList?.forEach { ingredient ->
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 6.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            // Ingredient bullet point
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(8.dp)
-                                                    .background(AppColors.Primary, CircleShape)
-                                            )
-
-                                            Spacer(modifier = Modifier.width(12.dp))
-
-                                            // Ingredient name
-                                            Text(
-                                                text = ingredient.toString(),
-                                                fontSize = 16.sp,
-                                                color = AppColors.TextSecondary
-                                            )
-                                        }
+                                    else -> {
+                                        // Handle case where ingredients is not a list
+                                        Text(
+                                            text = "No ingredients information available",
+                                            fontSize = 16.sp,
+                                            color = AppColors.TextSecondary,
+                                            modifier = Modifier.padding(vertical = 8.dp)
+                                        )
                                     }
                                 }
                             }
@@ -553,21 +568,25 @@ fun CocktailDetailScreen(
                                 val category = cocktailData.category ?: "Cocktail"
                                 val currentId = cocktailData.id
 
-                                // Use the ViewModel to get recommendations
-                                val apiRecommendations = homeViewModel.getCocktailsByCategory(category, 10)
-                                    .filter { it.id != currentId } // Filter out current cocktail
-                                    .take(3) // Limit to 3 recommendations
+                                // Use the ViewModel to get recommendations - now collecting from Flow
+                                homeViewModel.getCocktailsByCategory(category, 10).collect { cocktails ->
+                                    val apiRecommendations = cocktails
+                                        .filter { it.id != currentId } // Filter out current cocktail
+                                        .take(3) // Limit to 3 recommendations
 
-                                // If we got recommendations from the API, use them
-                                if (apiRecommendations.isNotEmpty()) {
-                                    similarCocktails = apiRecommendations
-                                } else {
-                                    // If no recommendations from API, try to get any cocktails from the ViewModel
-                                    val viewModelRecommendations = homeViewModel.getCocktailsByCategory("Cocktail", 6)
-                                        .filter { it.id != currentId }
-                                        .take(3)
+                                    // If we got recommendations from the API, use them
+                                    if (apiRecommendations.isNotEmpty()) {
+                                        similarCocktails = apiRecommendations
+                                    } else {
+                                        // If no recommendations from API, try to get any cocktails from the ViewModel
+                                        homeViewModel.getCocktailsByCategory("Cocktail", 6).collect { generalCocktails ->
+                                            val viewModelRecommendations = generalCocktails
+                                                .filter { it.id != currentId }
+                                                .take(3)
 
-                                    similarCocktails = viewModelRecommendations
+                                            similarCocktails = viewModelRecommendations
+                                        }
+                                    }
                                 }
                             } catch (e: Exception) {
                                 // Just log the error, don't show to user

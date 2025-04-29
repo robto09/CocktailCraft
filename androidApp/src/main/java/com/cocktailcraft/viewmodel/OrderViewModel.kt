@@ -47,68 +47,37 @@ class OrderViewModel(
      * Load all orders.
      */
     override fun loadOrders() {
-        executeWithErrorHandling(
-            operation = {
-                manageOrdersUseCase.getOrderHistory()
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                _orders.value = result.data
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Failed to Load Orders",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA,
-                                    recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadOrders() }
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
-                    }
-                }
-            },
-            defaultErrorMessage = "Failed to load orders. Please try again.",
-            recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadOrders() }
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = manageOrdersUseCase.getOrderHistory(),
+                onSuccess = { orderList ->
+                    _orders.value = orderList
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to load orders. Please try again.",
+                recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadOrders() }
+            )
+        }
     }
 
     /**
      * Add an order.
      */
     override fun addOrder(order: Order) {
-        executeWithErrorHandling(
-            operation = {
-                manageOrdersUseCase.addOrder(order)
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                loadOrders() // Refresh the orders list
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Failed to Add Order",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
-                    }
-                }
-            },
-            defaultErrorMessage = "Failed to add order. Please try again."
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = manageOrdersUseCase.addOrder(order),
+                onSuccess = { _ ->
+                    loadOrders() // Refresh the orders list
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to add order. Please try again."
+            )
+        }
     }
 
     /**
@@ -137,148 +106,88 @@ class OrderViewModel(
             status = "Processing"
         )
 
-        executeWithErrorHandling(
-            operation = {
-                manageOrdersUseCase.placeOrder(order)
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                if (result.data) {
-                                    loadOrders() // Refresh orders list on success
-                                } else {
-                                    setError(
-                                        title = "Failed to Place Order",
-                                        message = "The order could not be processed. Please try again.",
-                                        category = ErrorUtils.ErrorCategory.DATA
-                                    )
-                                }
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Failed to Place Order",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = manageOrdersUseCase.placeOrder(order),
+                onSuccess = { success ->
+                    if (success) {
+                        loadOrders() // Refresh orders list on success
+                    } else {
+                        setError(
+                            title = "Failed to Place Order",
+                            message = "The order could not be processed. Please try again.",
+                            category = ErrorUtils.ErrorCategory.DATA
+                        )
                     }
-                }
-            },
-            defaultErrorMessage = "Failed to place order. Please try again."
-        )
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to place order. Please try again."
+            )
+        }
     }
 
     /**
      * Place an order using the PlaceOrderUseCase.
      */
     override fun placeOrder(cartItems: List<CocktailCartItem>, totalPrice: Double) {
-        executeWithErrorHandling(
-            operation = {
-                placeOrderUseCase(cartItems, totalPrice)
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                loadOrders() // Refresh the orders list
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Failed to Place Order",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
-                    }
-                }
-            },
-            defaultErrorMessage = "Failed to place order. Please try again."
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = placeOrderUseCase(cartItems, totalPrice),
+                onSuccess = { _ ->
+                    loadOrders() // Refresh the orders list
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to place order. Please try again."
+            )
+        }
     }
 
     /**
      * Update the status of an order.
      */
     override fun updateOrderStatus(orderId: String, status: String) {
-        executeWithErrorHandling(
-            operation = {
-                manageOrdersUseCase.updateOrderStatus(orderId, status)
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                loadOrders() // Refresh the orders list
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Failed to Update Order Status",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
-                    }
-                }
-            },
-            defaultErrorMessage = "Failed to update order status. Please try again."
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = manageOrdersUseCase.updateOrderStatus(orderId, status),
+                onSuccess = { _ ->
+                    loadOrders() // Refresh the orders list
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to update order status. Please try again."
+            )
+        }
     }
 
     /**
      * Cancel an order.
      */
     override fun cancelOrder(orderId: String) {
-        executeWithErrorHandling(
-            operation = {
-                manageOrdersUseCase.cancelOrder(orderId)
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                if (result.data) {
-                                    loadOrders() // Refresh orders list on success
-                                } else {
-                                    setError(
-                                        title = "Failed to Cancel Order",
-                                        message = "It may be too late to cancel this order.",
-                                        category = ErrorUtils.ErrorCategory.DATA
-                                    )
-                                }
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Failed to Cancel Order",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = manageOrdersUseCase.cancelOrder(orderId),
+                onSuccess = { success ->
+                    if (success) {
+                        loadOrders() // Refresh orders list on success
+                    } else {
+                        setError(
+                            title = "Failed to Cancel Order",
+                            message = "It may be too late to cancel this order.",
+                            category = ErrorUtils.ErrorCategory.DATA
+                        )
                     }
-                }
-            },
-            defaultErrorMessage = "Failed to cancel order. Please try again."
-        )
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to cancel order. Please try again."
+            )
+        }
     }
 
     /**
@@ -289,44 +198,40 @@ class OrderViewModel(
         return flow {
             setLoading(true)
 
-            // First check if the order is in the current list
-            orders.value.find { it.id == orderId }?.let {
-                emit(it)
-                setLoading(false)
-                return@flow
-            }
+            try {
+                // First check if the order is in the current list
+                orders.value.find { it.id == orderId }?.let {
+                    emit(it)
+                    return@flow
+                }
 
-            // If not found in current list, try to load from repository
-            executeWithErrorHandling(
-                operation = {
-                    manageOrdersUseCase.getOrderById(orderId)
-                },
-                onSuccess = { resultFlow ->
-                    viewModelScope.launch {
-                        resultFlow.collect { result ->
-                            when (result) {
-                                is Result.Success -> {
-                                    emit(result.data)
-                                }
-                                is Result.Error -> {
-                                    setError(
-                                        title = "Failed to Load Order Details",
-                                        message = result.message,
-                                        category = ErrorUtils.ErrorCategory.DATA
-                                    )
-                                    emit(null)
-                                }
-                                is Result.Loading -> {
-                                    // Already handled by executeWithErrorHandling
-                                }
-                            }
-                            setLoading(false)
+                // If not found in current list, try to load from repository
+                manageOrdersUseCase.getOrderById(orderId).collect { result ->
+                    when (result) {
+                        is Result.Success -> emit(result.data)
+                        is Result.Error -> {
+                            setError(
+                                title = "Failed to Load Order Details",
+                                message = result.message,
+                                category = ErrorUtils.ErrorCategory.DATA
+                            )
+                            emit(null)
+                        }
+                        is Result.Loading -> {
+                            // No action needed
                         }
                     }
-                },
-                defaultErrorMessage = "Failed to load order details. Please try again.",
-                showLoading = false
-            )
+                }
+            } catch (e: Exception) {
+                setError(
+                    title = "Failed to Load Order Details",
+                    message = e.message ?: "Unknown error occurred",
+                    category = ErrorUtils.ErrorCategory.DATA
+                )
+                emit(null)
+            } finally {
+                setLoading(false)
+            }
         }
     }
 }

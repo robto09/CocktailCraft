@@ -41,197 +41,108 @@ class CartViewModel(
      * Load all cart items and calculate total price.
      */
     override fun loadCartItems() {
-        executeWithErrorHandling(
-            operation = {
-                manageCartUseCase.getCartItems()
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                _cartItems.value = result.data
-                                loadCartTotal()
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Failed to Load Cart",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA,
-                                    recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadCartItems() }
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
-                    }
-                }
-            },
-            defaultErrorMessage = "Failed to load cart items. Please try again.",
-            recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadCartItems() }
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = manageCartUseCase.getCartItems(),
+                onSuccess = { items ->
+                    _cartItems.value = items
+                    loadCartTotal()
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to load cart items. Please try again.",
+                recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadCartItems() }
+            )
+        }
     }
 
     /**
      * Load the total price of all items in the cart.
      */
     private fun loadCartTotal() {
-        executeWithErrorHandling(
-            operation = {
-                manageCartUseCase.getCartTotal()
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                _totalPrice.value = result.data
-                            }
-                            is Result.Error -> {
-                                // Don't show error for total calculation
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
-                    }
-                }
-            },
-            defaultErrorMessage = "Failed to calculate cart total.",
-            showLoading = false
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = manageCartUseCase.getCartTotal(),
+                onSuccess = { total ->
+                    _totalPrice.value = total
+                },
+                defaultErrorMessage = "Failed to calculate cart total.",
+                showLoading = false,
+                showAsEvent = false // Don't show error for total calculation
+            )
+        }
     }
 
     /**
      * Add a cocktail to the cart.
      */
     override fun addToCart(cocktail: Cocktail, quantity: Int) {
-        executeWithErrorHandling(
-            operation = {
-                manageCartUseCase.addToCart(cocktail, quantity)
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                loadCartItems()
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Failed to Add to Cart",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
-                    }
-                }
-            },
-            defaultErrorMessage = "Failed to add item to cart. Please try again."
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = manageCartUseCase.addToCart(cocktail, quantity),
+                onSuccess = { _ ->
+                    loadCartItems()
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to add item to cart. Please try again."
+            )
+        }
     }
 
     /**
      * Remove a cocktail from the cart.
      */
     override fun removeFromCart(cocktailId: String) {
-        executeWithErrorHandling(
-            operation = {
-                manageCartUseCase.removeFromCart(cocktailId)
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                loadCartItems()
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Failed to Remove from Cart",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
-                    }
-                }
-            },
-            defaultErrorMessage = "Failed to remove item from cart. Please try again."
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = manageCartUseCase.removeFromCart(cocktailId),
+                onSuccess = { _ ->
+                    loadCartItems()
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to remove item from cart. Please try again."
+            )
+        }
     }
 
     /**
      * Update the quantity of a cocktail in the cart.
      */
     override fun updateQuantity(cocktailId: String, quantity: Int) {
-        executeWithErrorHandling(
-            operation = {
-                manageCartUseCase.updateQuantity(cocktailId, quantity)
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                loadCartItems()
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Failed to Update Quantity",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
-                    }
-                }
-            },
-            defaultErrorMessage = "Failed to update quantity. Please try again."
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = manageCartUseCase.updateQuantity(cocktailId, quantity),
+                onSuccess = { _ ->
+                    loadCartItems()
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to update quantity. Please try again."
+            )
+        }
     }
 
     /**
      * Clear all items from the cart.
      */
     override fun clearCart() {
-        executeWithErrorHandling(
-            operation = {
-                manageCartUseCase.clearCart()
-            },
-            onSuccess = { resultFlow ->
-                viewModelScope.launch {
-                    resultFlow.collect { result ->
-                        when (result) {
-                            is Result.Success -> {
-                                loadCartItems()
-                            }
-                            is Result.Error -> {
-                                setError(
-                                    title = "Failed to Clear Cart",
-                                    message = result.message,
-                                    category = ErrorUtils.ErrorCategory.DATA
-                                )
-                            }
-                            is Result.Loading -> {
-                                // Already handled by executeWithErrorHandling
-                            }
-                        }
-                    }
-                }
-            },
-            defaultErrorMessage = "Failed to clear cart. Please try again."
-        )
+        viewModelScope.launch {
+            handleResultFlow(
+                flow = manageCartUseCase.clearCart(),
+                onSuccess = { _ ->
+                    loadCartItems()
+                },
+                onError = { _ ->
+                    // Error handling is done by handleResultFlow
+                },
+                defaultErrorMessage = "Failed to clear cart. Please try again."
+            )
+        }
     }
 }
