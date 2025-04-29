@@ -2,103 +2,80 @@
 
 This document outlines the plan for implementing the remaining architectural improvements for the CocktailCraft app.
 
-## 1. Improve Dependency Injection
+## 1. Improve Testing Infrastructure
 
 ### Goals
-- Further reorganize Koin modules for better separation
-- Ensure DI setup works for both Android and iOS
-
-### Implementation Plan
-1. **Create Platform-Specific Modules**
-   - Refactor `PlatformModule` to use expect/actual pattern
-   - Ensure iOS-specific dependencies are properly injected
-
-2. **Reorganize Module Structure**
-   - Create a `CommonModule` for shared dependencies
-   - Separate modules by layer (data, domain, presentation)
-   - Create a dedicated `UseCaseModule` for all use cases
-
-3. **Improve Module Documentation**
-   - Add comprehensive documentation to all modules
-   - Document dependencies and their lifecycles
-
-## 2. Enhance Cross-Platform Compatibility
-
-### Goals
-- Ensure shared code is truly platform-independent
-- Implement proper expect/actual patterns for platform-specific code
-- Prepare ViewModels for iOS implementation
-
-### Implementation Plan
-1. **Audit Platform-Specific Code**
-   - Identify all Android-specific code in shared modules
-   - Move platform-specific code to platform-specific modules
-
-2. **Implement Expect/Actual Patterns**
-   - Create expect interfaces for platform-specific functionality
-   - Implement actual classes for Android and iOS
-
-3. **Prepare ViewModels for iOS**
-   - Ensure ViewModels don't have Android-specific dependencies
-   - Create a common ViewModel base class that works on both platforms
-   - Implement platform-specific ViewModel factories
-   - Leverage the Enhanced ViewModels we've created as a foundation
-
-4. **Create iOS-Specific Entry Points**
-   - Create iOS-specific entry points for all features
-   - Ensure proper lifecycle management for iOS
-
-## 3. Improve Testing Infrastructure
-
-### Goals
-- Add more unit tests for use cases and repositories
+- Add comprehensive test coverage for the application
+- Ensure all components are testable
 - Create test utilities for both platforms
-- Ensure testability of all components
 
 ### Implementation Plan
 1. **Create Test Utilities**
-   - Create mock implementations of repositories and data sources
-   - Create test helpers for common testing scenarios
-   - Create a test module for dependency injection
+   - Develop test helpers for common testing scenarios
+   - Create mock implementations for dependencies
+   - Set up test fixtures and data generators
 
 2. **Add Unit Tests for Use Cases**
    - Write comprehensive tests for all use cases
-   - Test success and error scenarios
-   - Test edge cases and boundary conditions
-   - Test the new use cases we've created (AdvancedFilterUseCase, OfflineModeUseCase, FavoritesUseCase)
+   - Test success, error, and edge cases
+   - Ensure proper error handling is tested
 
 3. **Add Unit Tests for Repositories**
-   - Write tests for repository implementations
-   - Test caching behavior
-   - Test offline mode behavior
-   - Verify that repositories are properly delegating business logic to use cases
+   - Test repository implementations
+   - Verify caching and offline behavior
+   - Test error handling and recovery
 
 4. **Add Integration Tests**
-   - Create integration tests for key user flows
    - Test interactions between components
-   - Verify that the Enhanced ViewModels work correctly with the use cases
+   - Verify end-to-end flows
+   - Test UI components with Compose testing
+
+## 2. Complete iOS Implementation
+
+### Goals
+- Implement the iOS version of the app
+- Ensure feature parity with Android
+- Leverage shared code for business logic
+
+### Implementation Plan
+1. **Set Up iOS Project**
+   - Configure Kotlin Multiplatform for iOS
+   - Set up SwiftUI project structure
+   - Configure build system and dependencies
+
+2. **Implement iOS UI**
+   - Create SwiftUI views for all screens
+   - Implement iOS-specific UI components
+   - Ensure consistent design language
+
+3. **Connect to Shared Logic**
+   - Integrate shared ViewModels with SwiftUI
+   - Implement iOS-specific platform features
+   - Ensure proper lifecycle management
 
 ## Timeline and Priorities
 
-### Phase 1: Cross-Platform Compatibility (1-2 weeks)
-- Audit platform-specific code
-- Implement expect/actual patterns
-- Prepare ViewModels for iOS
-
-### Phase 2: Dependency Injection Improvements (1 week)
-- Reorganize module structure
-- Create platform-specific modules
-- Improve module documentation
-
-### Phase 3: Testing Infrastructure (2-3 weeks)
-- Create test utilities
+### Phase 1: Testing Infrastructure (2-3 weeks)
+- Create test utilities and helpers
 - Add unit tests for use cases
 - Add unit tests for repositories
 - Add integration tests
 
+### Phase 2: iOS Implementation (3-4 weeks)
+- Set up iOS project structure
+- Implement iOS UI components
+- Connect to shared logic
+- Ensure feature parity with Android
+
+### Phase 3: Polish and Release (1-2 weeks)
+- Fix any remaining issues
+- Optimize performance
+- Prepare for release
+- Create documentation for iOS version
+
 ## Success Criteria
-- All shared code works on both Android and iOS
-- Dependency injection is properly organized and documented
-- Test coverage is at least 80% for all shared code
+- Test coverage of at least 80% for all shared code
 - All components are testable and have appropriate tests
-- Enhanced ViewModels are fully functional on both platforms
+- iOS version has feature parity with Android version
+- Shared code works correctly on both platforms
+- Documentation is up-to-date and comprehensive

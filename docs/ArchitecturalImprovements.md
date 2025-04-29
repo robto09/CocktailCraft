@@ -30,16 +30,19 @@ This document outlines the architectural improvements implemented in the Cocktai
 - Updated use cases to use the standardized error handling approach
 - Ensured proper error propagation from data to UI
 
-## Pending Improvements
+### 5. Improve Dependency Injection ✅
+- Created a CommonModule for shared dependencies
+- Created a dedicated UseCaseModule for all use cases
+- Updated DomainModule to focus on domain configurations
+- Updated AppModule to include all modules with improved documentation
+- Updated CocktailCraftApplication with better logging and documentation
 
-### 5. Improve Dependency Injection
-- Further reorganize Koin modules for better separation
-- Ensure DI setup works for both Android and iOS
-
-### 6. Enhance Cross-Platform Compatibility
-- Ensure shared code is truly platform-independent
-- Implement proper expect/actual patterns for platform-specific code
-- Prepare ViewModels for iOS implementation
+### 6. Enhance Cross-Platform Compatibility ✅
+- Updated NetworkMonitor to use expect/actual pattern properly
+- Created platform-specific implementations for Android and iOS
+- Removed Android-specific imports from shared code
+- Added offline mode support to NetworkMonitor
+- Prepared ViewModels for iOS implementation by standardizing Flow handling
 
 ### 7. Improve Testing Infrastructure
 - Add more unit tests for use cases and repositories
