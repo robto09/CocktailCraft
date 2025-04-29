@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 
 /**
@@ -196,7 +197,7 @@ abstract class BaseViewModel : KoinViewModel() {
                             }
 
                             val error = ErrorUtils.createErrorFromErrorCode(
-                                errorCode = result.errorCode,
+                                errorCode = result.code,
                                 defaultMessage = result.message,
                                 retryAction = recoveryAction?.action
                             )
@@ -217,6 +218,47 @@ abstract class BaseViewModel : KoinViewModel() {
                         }
                     }
                 }
+        }
+    }
+
+    /**
+     * Execute an operation with error handling and return a Flow.
+     * This is useful for operations that need to return a Flow directly.
+     *
+     * @param operation The operation to execute
+     * @param defaultErrorMessage The default error message to show if the operation fails
+     * @param showLoading Whether to show loading state
+     * @return Flow of the operation result
+     */
+    protected fun <T> executeWithErrorHandlingFlow(
+        operation: suspend () -> Flow<T>,
+        defaultErrorMessage: String = "An error occurred",
+        showLoading: Boolean = true
+    ): Flow<T> = flow {
+        if (showLoading) {
+            setLoading(true)
+        }
+
+        try {
+            val resultFlow = operation()
+            resultFlow.collect { value ->
+                emit(value)
+            }
+        } catch (e: Exception) {
+            // Set error state
+            val errorMessage = e.message ?: defaultErrorMessage
+            setError(
+                title = "Error",
+                message = errorMessage,
+                category = ErrorUtils.ErrorCategory.DATA
+            )
+
+            // Re-throw the exception to propagate it to the caller
+            throw e
+        } finally {
+            if (showLoading) {
+                setLoading(false)
+            }
         }
     }
 }

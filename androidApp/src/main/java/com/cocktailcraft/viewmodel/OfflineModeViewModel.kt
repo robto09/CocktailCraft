@@ -1,41 +1,51 @@
 package com.cocktailcraft.viewmodel
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.data.cache.CocktailCache
-import com.cocktailcraft.domain.repository.CocktailRepository
-import com.cocktailcraft.util.NetworkMonitor
+import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.usecase.NetworkStatusUseCase
+import com.cocktailcraft.domain.usecase.OfflineModeUseCase
+import com.cocktailcraft.domain.util.Result
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
-class OfflineModeViewModel : ViewModel(), KoinComponent {
+/**
+ * ViewModel for the offline mode screen.
+ * Uses use cases instead of directly accessing repositories.
+ */
+class OfflineModeViewModel : BaseViewModel() {
 
-    private val cocktailRepository: CocktailRepository by inject()
-    private val networkMonitor: NetworkMonitor by inject()
+    // Use cases
+    private val offlineModeUseCase: OfflineModeUseCase by inject()
+    private val networkStatusUseCase: NetworkStatusUseCase by inject()
+
+    // Cache
     private val cocktailCache: CocktailCache by inject()
 
+    // Offline mode state
     private val _isOfflineModeEnabled = MutableStateFlow(false)
     val isOfflineModeEnabled: StateFlow<Boolean> = _isOfflineModeEnabled.asStateFlow()
 
+    // Network state
     private val _isNetworkAvailable = MutableStateFlow(true)
     val isNetworkAvailable: StateFlow<Boolean> = _isNetworkAvailable.asStateFlow()
 
-    private val _recentlyViewedCocktails = MutableStateFlow<List<com.cocktailcraft.domain.model.Cocktail>>(emptyList())
-    val recentlyViewedCocktails: StateFlow<List<com.cocktailcraft.domain.model.Cocktail>> = _recentlyViewedCocktails.asStateFlow()
+    // Recently viewed cocktails
+    private val _recentlyViewedCocktails = MutableStateFlow<List<Cocktail>>(emptyList())
+    val recentlyViewedCocktails: StateFlow<List<Cocktail>> = _recentlyViewedCocktails.asStateFlow()
 
     init {
         // Initialize with current offline mode setting
-        _isOfflineModeEnabled.value = cocktailRepository.isOfflineModeEnabled()
+        _isOfflineModeEnabled.value = offlineModeUseCase.isOfflineModeEnabled()
 
         // Monitor network connectivity
         viewModelScope.launch {
-            networkMonitor.startMonitoring()
-            networkMonitor.isOnline.collectLatest { isOnline ->
+            networkStatusUseCase.startMonitoring()
+            networkStatusUseCase.getNetworkAvailability().collectLatest { isOnline ->
                 _isNetworkAvailable.value = isOnline
             }
         }
@@ -50,7 +60,7 @@ class OfflineModeViewModel : ViewModel(), KoinComponent {
     fun toggleOfflineMode() {
         val newValue = !_isOfflineModeEnabled.value
         _isOfflineModeEnabled.value = newValue
-        cocktailRepository.setOfflineMode(newValue)
+        offlineModeUseCase.setOfflineMode(newValue)
     }
 
     /**
@@ -58,18 +68,42 @@ class OfflineModeViewModel : ViewModel(), KoinComponent {
      */
     fun setOfflineMode(enabled: Boolean) {
         _isOfflineModeEnabled.value = enabled
-        cocktailRepository.setOfflineMode(enabled)
+        offlineModeUseCase.setOfflineMode(enabled)
     }
 
     /**
      * Load recently viewed cocktails.
      */
     fun loadRecentlyViewedCocktails() {
-        viewModelScope.launch {
-            cocktailRepository.getRecentlyViewedCocktails().collectLatest { cocktails ->
-                _recentlyViewedCocktails.value = cocktails
-            }
-        }
+        executeWithErrorHandling(
+            operation = {
+                offlineModeUseCase.getRecentlyViewedCocktails()
+            },
+            onSuccess = { resultFlow ->
+                viewModelScope.launch {
+                    resultFlow.collect { result ->
+                        when (result) {
+                            is Result.Success -> {
+                                _recentlyViewedCocktails.value = result.data
+                            }
+                            is Result.Error -> {
+                                setError(
+                                    title = "Failed to Load Recent Cocktails",
+                                    message = result.message,
+                                    category = com.cocktailcraft.util.ErrorUtils.ErrorCategory.DATA,
+                                    recoveryAction = com.cocktailcraft.util.ErrorUtils.RecoveryAction("Retry") { loadRecentlyViewedCocktails() }
+                                )
+                            }
+                            is Result.Loading -> {
+                                // Already handled by executeWithErrorHandling
+                            }
+                        }
+                    }
+                }
+            },
+            defaultErrorMessage = "Failed to load recently viewed cocktails. Please try again.",
+            recoveryAction = com.cocktailcraft.util.ErrorUtils.RecoveryAction("Retry") { loadRecentlyViewedCocktails() }
+        )
     }
 
     /**
@@ -89,6 +123,6 @@ class OfflineModeViewModel : ViewModel(), KoinComponent {
 
     override fun onCleared() {
         super.onCleared()
-        networkMonitor.stopMonitoring()
+        networkStatusUseCase.stopMonitoring()
     }
 }

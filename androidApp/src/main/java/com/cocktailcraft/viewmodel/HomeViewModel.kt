@@ -10,6 +10,7 @@ import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.ErrorUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -440,6 +441,56 @@ class HomeViewModel : BaseViewModel() {
     fun clearLegacyError() {
         clearError() // Call the base class method
         _errorString.value = "" // Also clear the legacy error string
+    }
+
+    /**
+     * Get a cocktail by ID.
+     * This is used by the CocktailDetailScreen.
+     */
+    fun getCocktailById(id: String): Flow<Cocktail?> {
+        return executeWithErrorHandlingFlow(
+            operation = {
+                getCocktailsUseCase.getById(id)
+            },
+            defaultErrorMessage = "Failed to get cocktail details. Please try again."
+        )
+    }
+
+    /**
+     * Force refresh cocktail details.
+     * This is used by the CocktailDetailScreen.
+     */
+    fun forceRefreshCocktailDetails(id: String) {
+        executeWithErrorHandling(
+            operation = {
+                getCocktailsUseCase.refreshCocktailDetails(id)
+            },
+            onSuccess = { resultFlow ->
+                handleResultFlow(
+                    flow = resultFlow,
+                    onSuccess = { cocktail ->
+                        // No need to update state, just log success
+                        println("Successfully refreshed cocktail details for $id")
+                    },
+                    onError = { error ->
+                        _errorString.value = error.message
+                    },
+                    defaultErrorMessage = "Failed to refresh cocktail details. Please try again."
+                )
+            },
+            defaultErrorMessage = "Failed to refresh cocktail details. Please try again."
+        )
+    }
+
+    /**
+     * Get cocktails by category with a limit.
+     * This is used by the CocktailDetailScreen.
+     */
+    fun getCocktailsByCategory(category: String, limit: Int): List<Cocktail> {
+        // Return the current cocktails filtered by category and limited to the specified number
+        return _cocktails.value.filter {
+            it.category?.equals(category, ignoreCase = true) == true
+        }.take(limit)
     }
 
     override fun onCleared() {

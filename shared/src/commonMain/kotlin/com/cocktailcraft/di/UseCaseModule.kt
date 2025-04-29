@@ -15,15 +15,28 @@ val useCaseModule = module {
     factory { GetRecommendationsUseCase(cocktailRepository = get()) }
     factory { GetFilterOptionsUseCase(cocktailRepository = get()) }
     factory { AdvancedFilterUseCase() }
-    
+
     // Favorites use cases
     factory { ManageFavoritesUseCase(cocktailRepository = get()) }
     factory { ToggleFavoriteUseCase(cocktailRepository = get()) }
     factory { FavoritesUseCase(cocktailRepository = get(), offlineModeUseCase = get()) }
-    
+
+    // Cart use cases
+    factory { ManageCartUseCase(cartRepository = get()) }
+
     // Order use cases
     factory { PlaceOrderUseCase(orderRepository = get()) }
-    
+    factory { ManageOrdersUseCase(orderRepository = get()) }
+
+    // Review use cases
+    factory { ManageReviewsUseCase() }
+
+    // Auth use cases
+    factory { AuthUseCase(authRepository = get()) }
+
+    // Theme use cases
+    factory { ThemeUseCase(authRepository = get()) }
+
     // Network and offline mode use cases
     factory { NetworkStatusUseCase(cocktailRepository = get(), networkMonitor = get()) }
     factory { OfflineModeUseCase(cocktailRepository = get(), networkMonitor = get()) }

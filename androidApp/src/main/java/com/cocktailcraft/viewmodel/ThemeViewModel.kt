@@ -1,30 +1,25 @@
 package com.cocktailcraft.viewmodel
 
 import androidx.lifecycle.viewModelScope
-import com.cocktailcraft.domain.model.UserPreferences
-import com.cocktailcraft.domain.repository.AuthRepository
+import com.cocktailcraft.domain.usecase.ThemeUseCase
+import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.util.ErrorUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.core.component.inject
 
 /**
  * ViewModel for managing theme preferences.
- * Supports both constructor injection (for testing) and Koin injection (for production).
+ * Uses use cases instead of directly accessing repositories.
  */
-class ThemeViewModel(
-    private val authRepository: AuthRepository? = null
-) : BaseViewModel() {
+class ThemeViewModel : BaseViewModel() {
 
-    // Use injected repository if not provided in constructor (for production)
-    private val injectedAuthRepository: AuthRepository by inject()
+    // Use cases
+    private val themeUseCase: ThemeUseCase by inject()
 
-    // Use the provided repository or the injected one
-    private val repository: AuthRepository
-        get() = authRepository ?: injectedAuthRepository
-
+    // Theme state
     private val _isDarkMode = MutableStateFlow(false)
     val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
 
@@ -49,110 +44,190 @@ class ThemeViewModel(
         }
     }
 
+    /**
+     * Load the user's theme preferences.
+     */
     private fun loadThemePreference() {
-        viewModelScope.launch {
-            setLoading(true)
-            try {
-                val preferences = repository.getUserPreferences().first()
-                _followSystemTheme.value = preferences.followSystemTheme
+        executeWithErrorHandling(
+            operation = {
+                themeUseCase.getUserPreferences()
+            },
+            onSuccess = { resultFlow ->
+                viewModelScope.launch {
+                    resultFlow.collect { result ->
+                        when (result) {
+                            is Result.Success -> {
+                                val preferences = result.data
+                                _followSystemTheme.value = preferences.followSystemTheme
 
-                // If following system theme, use system setting, otherwise use saved preference
-                _isDarkMode.value = if (preferences.followSystemTheme) {
-                    _isSystemInDarkMode.value
-                } else {
-                    preferences.darkMode
+                                // If following system theme, use system setting, otherwise use saved preference
+                                _isDarkMode.value = if (preferences.followSystemTheme) {
+                                    _isSystemInDarkMode.value
+                                } else {
+                                    preferences.darkMode
+                                }
+                            }
+                            is Result.Error -> {
+                                // If there's an error, default to system setting
+                                _followSystemTheme.value = true
+                                _isDarkMode.value = _isSystemInDarkMode.value
+                            }
+                            is Result.Loading -> {
+                                // Already handled by executeWithErrorHandling
+                            }
+                        }
+                    }
                 }
-            } catch (e: Exception) {
-                // If there's an error, default to system setting
-                _followSystemTheme.value = true
-                _isDarkMode.value = _isSystemInDarkMode.value
-            } finally {
-                setLoading(false)
-            }
-        }
+            },
+            defaultErrorMessage = "Failed to load theme preferences. Using system defaults.",
+            showAsEvent = false
+        )
     }
 
+    /**
+     * Toggle dark mode on/off.
+     */
     fun toggleDarkMode() {
-        viewModelScope.launch {
-            // Only toggle if not following system theme
-            if (!_followSystemTheme.value) {
-                val currentValue = _isDarkMode.value
-                val newValue = !currentValue
-                _isDarkMode.value = newValue
+        // Only toggle if not following system theme
+        if (!_followSystemTheme.value) {
+            val currentValue = _isDarkMode.value
+            val newValue = !currentValue
 
-                try {
-                    // Get current preferences first
-                    val currentPreferences = repository.getUserPreferences().first()
-
-                    // Update with new dark mode value
-                    val updatedPreferences = currentPreferences.copy(darkMode = newValue)
-                    repository.updateUserPreferences(updatedPreferences)
-                } catch (e: Exception) {
-                    // If saving fails, revert the UI state
-                    _isDarkMode.value = currentValue
-                }
-            }
-        }
-    }
-
-    fun setDarkMode(enabled: Boolean) {
-        viewModelScope.launch {
-            if (_isDarkMode.value != enabled) {
-                _isDarkMode.value = enabled
-
-                try {
-                    // Get current preferences first
-                    val currentPreferences = repository.getUserPreferences().first()
-
-                    // Update with new dark mode value and ensure follow system is disabled
-                    val updatedPreferences = currentPreferences.copy(
-                        darkMode = enabled,
-                        followSystemTheme = false
-                    )
-                    repository.updateUserPreferences(updatedPreferences)
-                    _followSystemTheme.value = false
-                } catch (e: Exception) {
-                    // If saving fails, revert the UI state
-                    _isDarkMode.value = !enabled
-                }
-            }
+            executeWithErrorHandling(
+                operation = {
+                    themeUseCase.setDarkMode(newValue, false)
+                },
+                onSuccess = { resultFlow ->
+                    viewModelScope.launch {
+                        resultFlow.collect { result ->
+                            when (result) {
+                                is Result.Success -> {
+                                    if (result.data) {
+                                        _isDarkMode.value = newValue
+                                    } else {
+                                        // If operation failed, revert UI state
+                                        _isDarkMode.value = currentValue
+                                        setError(
+                                            title = "Theme Update Failed",
+                                            message = "Failed to update dark mode setting",
+                                            category = ErrorUtils.ErrorCategory.DATA
+                                        )
+                                    }
+                                }
+                                is Result.Error -> {
+                                    // If there's an error, revert UI state
+                                    _isDarkMode.value = currentValue
+                                    setError(
+                                        title = "Theme Update Failed",
+                                        message = result.message,
+                                        category = ErrorUtils.ErrorCategory.DATA
+                                    )
+                                }
+                                is Result.Loading -> {
+                                    // Already handled by executeWithErrorHandling
+                                }
+                            }
+                        }
+                    }
+                },
+                defaultErrorMessage = "Failed to update theme. Please try again.",
+                showAsEvent = true
+            )
         }
     }
 
     /**
-     * Toggle whether to follow the system theme
+     * Set dark mode to a specific value.
+     */
+    fun setDarkMode(enabled: Boolean) {
+        if (_isDarkMode.value != enabled) {
+            executeWithErrorHandling(
+                operation = {
+                    themeUseCase.setDarkMode(enabled, false)
+                },
+                onSuccess = { resultFlow ->
+                    viewModelScope.launch {
+                        resultFlow.collect { result ->
+                            when (result) {
+                                is Result.Success -> {
+                                    if (result.data) {
+                                        _isDarkMode.value = enabled
+                                        _followSystemTheme.value = false
+                                    } else {
+                                        setError(
+                                            title = "Theme Update Failed",
+                                            message = "Failed to update dark mode setting",
+                                            category = ErrorUtils.ErrorCategory.DATA
+                                        )
+                                    }
+                                }
+                                is Result.Error -> {
+                                    setError(
+                                        title = "Theme Update Failed",
+                                        message = result.message,
+                                        category = ErrorUtils.ErrorCategory.DATA
+                                    )
+                                }
+                                is Result.Loading -> {
+                                    // Already handled by executeWithErrorHandling
+                                }
+                            }
+                        }
+                    }
+                },
+                defaultErrorMessage = "Failed to update theme. Please try again.",
+                showAsEvent = true
+            )
+        }
+    }
+
+    /**
+     * Toggle whether to follow the system theme.
      */
     fun toggleFollowSystemTheme() {
-        viewModelScope.launch {
-            val currentValue = _followSystemTheme.value
-            val newValue = !currentValue
-            _followSystemTheme.value = newValue
+        val currentValue = _followSystemTheme.value
+        val newValue = !currentValue
 
-            try {
-                // Get current preferences first
-                val currentPreferences = repository.getUserPreferences().first()
+        executeWithErrorHandling(
+            operation = {
+                themeUseCase.setFollowSystemTheme(newValue, _isSystemInDarkMode.value)
+            },
+            onSuccess = { resultFlow ->
+                viewModelScope.launch {
+                    resultFlow.collect { result ->
+                        when (result) {
+                            is Result.Success -> {
+                                if (result.data) {
+                                    _followSystemTheme.value = newValue
 
-                if (newValue) {
-                    // If enabling follow system, update dark mode to match system
-                    _isDarkMode.value = _isSystemInDarkMode.value
-
-                    // Update preferences
-                    val updatedPreferences = currentPreferences.copy(
-                        followSystemTheme = newValue,
-                        darkMode = _isSystemInDarkMode.value
-                    )
-                    repository.updateUserPreferences(updatedPreferences)
-                } else {
-                    // If disabling follow system, keep current dark mode
-                    val updatedPreferences = currentPreferences.copy(
-                        followSystemTheme = newValue
-                    )
-                    repository.updateUserPreferences(updatedPreferences)
+                                    // If enabling follow system, update dark mode to match system
+                                    if (newValue) {
+                                        _isDarkMode.value = _isSystemInDarkMode.value
+                                    }
+                                } else {
+                                    setError(
+                                        title = "Theme Update Failed",
+                                        message = "Failed to update system theme setting",
+                                        category = ErrorUtils.ErrorCategory.DATA
+                                    )
+                                }
+                            }
+                            is Result.Error -> {
+                                setError(
+                                    title = "Theme Update Failed",
+                                    message = result.message,
+                                    category = ErrorUtils.ErrorCategory.DATA
+                                )
+                            }
+                            is Result.Loading -> {
+                                // Already handled by executeWithErrorHandling
+                            }
+                        }
+                    }
                 }
-            } catch (e: Exception) {
-                // If saving fails, revert the UI state
-                _followSystemTheme.value = currentValue
-            }
-        }
+            },
+            defaultErrorMessage = "Failed to update theme settings. Please try again.",
+            showAsEvent = true
+        )
     }
 }

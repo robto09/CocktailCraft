@@ -16,7 +16,7 @@ actual class NetworkMonitor(
     private val context: Context
 ) : BaseNetworkMonitor() {
 
-    override val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+    actual override val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
     private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     private val prefs: SharedPreferences = context.getSharedPreferences("network_prefs", Context.MODE_PRIVATE)
 
@@ -49,7 +49,7 @@ actual class NetworkMonitor(
         }
     }
 
-    override fun startMonitoring() {
+    actual override fun startMonitoring() {
         val networkRequest = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
@@ -60,7 +60,7 @@ actual class NetworkMonitor(
         _isOnline.value = isNetworkAvailable()
     }
 
-    override fun stopMonitoring() {
+    actual override fun stopMonitoring() {
         try {
             connectivityManager.unregisterNetworkCallback(networkCallback)
         } catch (e: Exception) {
@@ -68,11 +68,11 @@ actual class NetworkMonitor(
         }
     }
 
-    override fun isOfflineModeEnabled(): Boolean {
+    actual override fun isOfflineModeEnabled(): Boolean {
         return _offlineModeEnabled
     }
 
-    override fun setOfflineMode(enabled: Boolean) {
+    actual override fun setOfflineMode(enabled: Boolean) {
         _offlineModeEnabled = enabled
         // Save to preferences
         prefs.edit().putBoolean("offline_mode_enabled", enabled).apply()

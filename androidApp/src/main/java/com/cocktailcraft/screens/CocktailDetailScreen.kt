@@ -553,9 +553,8 @@ fun CocktailDetailScreen(
                                 val category = cocktailData.category ?: "Cocktail"
                                 val currentId = cocktailData.id
 
-                                // Use the repository directly to get recommendations from the API
-                                // This bypasses any caching or filtering in the ViewModel
-                                val apiRecommendations = homeViewModel.repository.getCocktailsByCategory(category)
+                                // Use the ViewModel to get recommendations
+                                val apiRecommendations = homeViewModel.getCocktailsByCategory(category, 10)
                                     .filter { it.id != currentId } // Filter out current cocktail
                                     .take(3) // Limit to 3 recommendations
 

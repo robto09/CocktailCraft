@@ -56,7 +56,7 @@ class CocktailRepositoryImpl(
                 emit(cachedCocktails)
                 return@flow
             }
-            
+
             val cocktails = api.searchCocktailsByName(name).map { dto ->
                 val cocktail = mapDtoToCocktail(dto)
                 // Cache cocktails for offline access
@@ -68,7 +68,7 @@ class CocktailRepositoryImpl(
             // Try to use cache as fallback
             val cachedCocktails = cocktailCache.getAllCachedCocktails()
                 .filter { it.name.contains(name, ignoreCase = true) }
-            
+
             if (cachedCocktails.isNotEmpty()) {
                 emit(cachedCocktails)
             } else {
@@ -92,7 +92,7 @@ class CocktailRepositoryImpl(
                 emit(cachedCocktails)
                 return@flow
             }
-            
+
             val cocktails = api.searchCocktailsByFirstLetter(letter).map { dto ->
                 val cocktail = mapDtoToCocktail(dto)
                 // Cache cocktails for offline access
@@ -104,7 +104,7 @@ class CocktailRepositoryImpl(
             // Try to use cache as fallback
             val cachedCocktails = cocktailCache.getAllCachedCocktails()
                 .filter { it.name.startsWith(letter, ignoreCase = true) }
-            
+
             if (cachedCocktails.isNotEmpty()) {
                 emit(cachedCocktails)
             } else {
@@ -607,7 +607,7 @@ class CocktailRepositoryImpl(
         } catch (e: Exception) {
             // Try to use cache as fallback
             val cachedCocktails = cocktailCache.getAllCachedCocktails()
-            
+
             if (cachedCocktails.isNotEmpty()) {
                 emit(cachedCocktails)
             } else {
@@ -623,6 +623,38 @@ class CocktailRepositoryImpl(
             isConnected
         } catch (e: Exception) {
             false
+        }
+    }
+
+    /**
+     * Force refresh cocktail details from the API.
+     * This bypasses the cache and always makes a network request.
+     */
+    override suspend fun refreshCocktailDetails(id: String): Flow<Cocktail?> = flow {
+        try {
+            // Skip offline check - we want to force a refresh
+            val dto = api.getCocktailById(id)
+
+            if (dto != null) {
+                val cocktail = mapDtoToCocktail(dto)
+
+                // Update the cache with the fresh data
+                cocktailCache.cacheCocktail(cocktail)
+
+                emit(cocktail)
+            } else {
+                // If API call returns null, try to get from cache as fallback
+                val cachedCocktail = cocktailCache.getCachedCocktail(id)
+                emit(cachedCocktail)
+            }
+        } catch (e: Exception) {
+            // If there's an error with the API call, try to get from cache
+            val cachedCocktail = cocktailCache.getCachedCocktail(id)
+            if (cachedCocktail != null) {
+                emit(cachedCocktail)
+            } else {
+                emit(null)
+            }
         }
     }
 }
