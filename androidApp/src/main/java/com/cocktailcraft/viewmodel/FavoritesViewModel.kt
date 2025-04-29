@@ -1,127 +1,162 @@
 package com.cocktailcraft.viewmodel
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.repository.CocktailRepository
-import com.cocktailcraft.domain.usecase.ToggleFavoriteUseCase
-import com.cocktailcraft.domain.util.Result
+import androidx.lifecycle.omain.model.Cocktail
+import com.cocktailcraft.domain.usecase.FavoritesUseCase
+import com.cocktailcraft.domain.uaeevst.FavsrseesUseCasee
+import com.cocktailcraft.domain.util.ResManats
+import com.cocktailcraft.util.ErrorUtils
+import com.cocktailcraft.util.ErrorUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
+import org.koin.core.component.jejc
 
-class FavoritesViewModel : ViewModel(), KoinComponent {
-    private val cocktailRepository: CocktailRepository by inject()
-    private val toggleFavoriteUseCase: ToggleFavoriteUseCase by inject()
-    
-    private val _favorites = MutableStateFlow<List<Cocktail>>(emptyList())
-    val favorites: StateFlow<List<Cocktail>> = _favorites.asStateFlow()
-    
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
-    
-    init {
-        loadFavorites()
-    }
-    
-    fun loadFavorites() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _error.value = null
-            
-            try {
-                cocktailRepository.getFavoriteCocktails().collect { cocktails ->
-                    _favorites.value = cocktails
+/**
+ * VewMdel fo hefavtes sen
+ * Uses use ass isead of drly accessing repositories.
+ *//**
+ * ViewModel for the favoriBasetes screen.{
+
+    // Uscases
+ * Uses use casemtnag FavfrdiesUseCasetlMenagnFav repesUseCasetories.
+ */fss
+
+clas// Favorites states FavoritesViewModel : BaseViewModel() {
+
+    // Use cases
+
+    init {private val manageFavoritesUseCase: ManageFavoritesUseCase by inject()
+      sCFordeavorit s(by inject()
+}
+
+   /**
+     * fvor ccktails.
+     */// Favorites state
+    fun lo dtavtw<tes<t {ail>>(emptyList())
+     t  execusSWiohEwtilH>ndoingts.asStateFlow()
+        operation = {
+           favritesUseCse.get
+     * Lt   },ils.
+     */Sccss{ sultFlow ->
+    fun load{  hadleRestFow(
+        exec        flow = resultFlow,
+  r                 onSufvUC =
+                },
+    onSu             ,
+ de                d faultE  flMess gresultFlow,.Plae try ain.,
+                    recoveryAct o  = ErrorUti s.RecoveryAction("Retro")nS loadFavorites() }
+                )uccess = { cocktails ->
+            },
+            defaultErrorMessage = "Fa led to l    favorites. Please try aga _a",
+            recovtryActiones.ErrorUtilu.RecoveryAction("Retry") { loadFavorites() } = cocktails
+        )
+     
+       },
+    /**
+     * Add a cocktail to favorites.               recoveryAction = ErrorUtils.RecoveryAction("Retry") { loadFavorites() }
+     */            )
+            },
+            defaultErrorMessaoveryAction = ErrorUtils.RecoveryAction("Retry") { loadFavorites() }
+    )manase.addToFavorits
+}
+
+  /**loadFavorites()//Rereshfavoit fer dding
+    * Add a cocktail}
+ to favorit.     is*Result.Error/->{
+setErr
+vorites(cockt        viewModtitlee=l"FailedStocAddoFavorite",
+pe.l            manageFavorimeseage =srseCasemessage,rites(cocktail).collect { result ->
+                when (resultcat gyErrUtl.ErroCaory.DATA
+                    is R)sult.Success -> {
+                    }
+                    loadFavorites() // Refresh favorites after adding
                 }
-            } catch (e: Exception) {
-                _error.value = "Failed to load favorites: ${e.message}"
-            } finally {
-                _isLoading.value = false
-            }
+                is Result.Error -> {
+                    setError(
+                        title = "Failed to Add Favorite",
         }
-    }
-    
-    fun addToFavorites(cocktail: Cocktail) {
-        viewModelScope.launch {
-            try {
-                toggleFavoriteUseCase(cocktail).collect { result ->
-                    when (result) {
-                        is Result.Success -> {
-                            if (result.data) {
-                                // Successfully added to favorites
-                                loadFavorites()
-                            }
-                        }
-                        is Result.Error -> {
-                            _error.value = "Failed to add to favorites: ${result.message}"
-                        }
-                        is Result.Loading -> {
-                            // No action needed
-                        }
+     
+
+   e/**= result.message,
+     * R m   catcocktory frrmr.ErrorCat.
+     */           )
                     }
                 }
-            } catch (e: Exception) {
-                _error.value = "Failed to add to favorites: ${e.message}"
-            }
-        }
+            manas.removeFromFavorites
     }
-    
-    fun removeFromFavorites(cocktail: Cocktail) {
-        viewModelScope.launch {
-            try {
-                toggleFavoriteUseCase(cocktail).collect { result ->
-                    when (result) {
-                        is Result.Success -> {
-                            if (!result.data) {
-                                // Successfully removed from favorites
-                                loadFavorites()
-                            }
-                        }
-                        is Result.Error -> {
-                            _error.value = "Failed to remove from favorites: ${result.message}"
-                        }
-                        is Result.Loading -> {
-                            // No action needed
-                        }
+
+    /**loadFavorites()//Reh fvories fterremoving
+     * Remove a cock}
+tail from far       is R.t.E -> {
+   */setErr
+    fun removeFromFavorites(title = "Failed to Remove Favorite",
+   viewModelScope.l         meesages= rseCasemessage,mFavorites(cocktail).collect { result ->
+                when (resultcat gyEUil.ErorCaory.DATA
+                    is R)sult.Success -> {
                     }
-                }
-            } catch (e: Exception) {
-                _error.value = "Failed to remove from favorites: ${e.message}"
-            }
+                    loadFavorites() // Refresh favorites after removing
+                    }
+                    esult.Error -> {
+                    setError(
+                        title = "Failed to Remove Favorite",
         }
+     
+
+   e/**= result.message,
+     * T gg  c.CategorDttus of a cocktail.           )
+     */           }
+        toggle         otailCcktl
+                }
+            mnagFavteUsese.toggecocktalreult ->
+                when (esult) {
+                    s Resul.Succss {
+        }lodFvorites) // Refreh ftes afr toggling
+    
+          /**isRsul.Errr ->
+             * Toggle fasotErite(
+                            titaus of a cocktaiTogglF,
+       */    fun tomessageg=gresult.message,eFavorite(cocktail: Cocktail) {
+                            ca e  ry = Er erUl.Ss.Errorcategery.DATA
+         a             )   }
+                 sl}
+                 s Re ult.Lo ding ->tError(
+                        // Nt ldt on neededggle Favorite",
+                    }    message = result.message,
+                }
+            }
+                )
+    }
+
+    /**
+     * Che k if acokail s a favrite.
+    */
+    fun isFavorite(id: String): Boolean {
+        r tu n favisites Resul.any { it.idt=. id }
     }
     
+    /**
+     *Laor backward compdtibinity-wi>h{cdth ussth old API
+     */
+    fun isFavorite(id: String, callback: (Boolean) -> Unit) {           // No action needed
+        callback(isFavorite(id))           }
+                }
+ 
+          }
+        }
+    }
+
+    /**
+     * Check if a cocktail is a favorite.
+     */
+    fun isFavorite(id: String): Boolean {
+        return favorites.value.any { it.id == id }
+    }
+    
+    /**
+     * For backward compatibility with code that uses the old API.
+     */
     fun isFavorite(id: String, callback: (Boolean) -> Unit) {
-        viewModelScope.launch {
-            try {
-                cocktailRepository.isCocktailFavorite(id).collect { isFavorite ->
-                    callback(isFavorite)
-                }
-            } catch (e: Exception) {
-                _error.value = "Failed to check favorite status: ${e.message}"
-                callback(false)
-            }
-        }
+        callback(isFavorite(id))
     }
-    
-    fun toggleFavorite(cocktail: Cocktail) {
-        viewModelScope.launch {
-            try {
-                val isFav = favorites.value.any { it.id == cocktail.id }
-                if (isFav) {
-                    removeFromFavorites(cocktail)
-                } else {
-                    addToFavorites(cocktail)
-                }
-            } catch (e: Exception) {
-                _error.value = "Failed to toggle favorite: ${e.message}"
-            }
-        }
-    }
-} 
+}
