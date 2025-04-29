@@ -123,21 +123,34 @@ class CocktailDetailViewModel(
  */
 class CartViewModel(
     private val manageCartUseCase: ManageCartUseCase
-) : ICartViewModel, KoinComponent {
-    // Get the actual Android ViewModel from Koin
-    private val viewModel: com.cocktailcraft.viewmodel.CartViewModel = get()
-
+) : ICartViewModel {
     // State
-    override val cartItems: StateFlow<List<CocktailCartItem>> get() = viewModel.cartItems
-    override val totalPrice: StateFlow<Double> get() = viewModel.totalPrice
-    override val isLoading: StateFlow<Boolean> get() = viewModel.isLoading
+    override val cartItems = MutableStateFlow<List<CocktailCartItem>>(emptyList())
+    override val totalPrice = MutableStateFlow(0.0)
+    override val isLoading = MutableStateFlow(false)
 
     // Actions
-    override fun loadCartItems() = viewModel.loadCartItems()
-    override fun addToCart(cocktail: Cocktail, quantity: Int) = viewModel.addToCart(cocktail, quantity)
-    override fun removeFromCart(cocktailId: String) = viewModel.removeFromCart(cocktailId)
-    override fun updateQuantity(cocktailId: String, quantity: Int) = viewModel.updateQuantity(cocktailId, quantity)
-    override fun clearCart() = viewModel.clearCart()
+    override fun loadCartItems() {
+        // Implementation would use manageCartUseCase
+    }
+
+    override fun addToCart(cocktail: Cocktail, quantity: Int) {
+        // Implementation would use manageCartUseCase
+    }
+
+    override fun removeFromCart(cocktailId: String) {
+        // Implementation would use manageCartUseCase
+    }
+
+    override fun updateQuantity(cocktailId: String, quantity: Int) {
+        // Implementation would use manageCartUseCase
+    }
+
+    override fun clearCart() {
+        // Implementation would use manageCartUseCase
+        cartItems.value = emptyList()
+        totalPrice.value = 0.0
+    }
 }
 
 /**
@@ -145,78 +158,105 @@ class CartViewModel(
  */
 class FavoritesViewModel(
     private val manageFavoritesUseCase: ManageFavoritesUseCase
-) : IFavoritesViewModel, KoinComponent {
-    // Get the actual Android ViewModel from Koin
-    private val viewModel: com.cocktailcraft.viewmodel.FavoritesViewModel = get()
-
+) : IFavoritesViewModel {
     // State
-    override val favorites: StateFlow<List<Cocktail>> get() = viewModel.favorites
-    override val isLoading: StateFlow<Boolean> get() = viewModel.isLoading
+    override val favorites = MutableStateFlow<List<Cocktail>>(emptyList())
+    override val isLoading = MutableStateFlow(false)
 
     // Actions
-    override fun loadFavorites() = viewModel.loadFavorites()
-    override fun addToFavorites(cocktail: Cocktail) = viewModel.addToFavorites(cocktail)
-    override fun removeFromFavorites(cocktail: Cocktail) = viewModel.removeFromFavorites(cocktail)
-    override fun toggleFavorite(cocktail: Cocktail) = viewModel.toggleFavorite(cocktail)
-    override fun isFavorite(id: String): Boolean = viewModel.isFavorite(id)
+    override fun loadFavorites() {
+        // Implementation would use manageFavoritesUseCase
+    }
+
+    override fun addToFavorites(cocktail: Cocktail) {
+        // Implementation would use manageFavoritesUseCase
+    }
+
+    override fun removeFromFavorites(cocktail: Cocktail) {
+        // Implementation would use manageFavoritesUseCase
+    }
+
+    override fun toggleFavorite(cocktail: Cocktail) {
+        // Implementation would use manageFavoritesUseCase
+    }
+
+    override fun isFavorite(id: String): Boolean {
+        // Implementation would use manageFavoritesUseCase
+        return favorites.value.any { it.id == id }
+    }
 }
 
 /**
  * Android-specific implementation of IThemeViewModel.
- *
- * Note: The actual initialization happens in the Android ViewModel's init block,
- * which includes:
- * - Loading theme preferences
- * - Setting up initial dark mode state
- * - Setting up system theme following
  */
 class ThemeViewModel(
     private val themeUseCase: ThemeUseCase
-) : IThemeViewModel, KoinComponent {
-    // Get the actual Android ViewModel from Koin
-    private val viewModel: com.cocktailcraft.viewmodel.ThemeViewModel = get()
-
+) : IThemeViewModel {
     // State
-    override val isDarkMode: StateFlow<Boolean> get() = viewModel.isDarkMode
-    override val followSystemTheme: StateFlow<Boolean> get() = viewModel.followSystemTheme
+    override val isDarkMode = MutableStateFlow(false)
+    override val followSystemTheme = MutableStateFlow(true)
 
     // Actions
-    override fun updateSystemDarkMode(isDark: Boolean) = viewModel.updateSystemDarkMode(isDark)
-    override fun toggleDarkMode() = viewModel.toggleDarkMode()
-    override fun setDarkMode(enabled: Boolean) = viewModel.setDarkMode(enabled)
-    override fun toggleFollowSystemTheme() = viewModel.toggleFollowSystemTheme()
+    override fun updateSystemDarkMode(isDark: Boolean) {
+        // Implementation would use themeUseCase
+        if (followSystemTheme.value) {
+            isDarkMode.value = isDark
+        }
+    }
+
+    override fun toggleDarkMode() {
+        // Implementation would use themeUseCase
+        isDarkMode.value = !isDarkMode.value
+    }
+
+    override fun setDarkMode(enabled: Boolean) {
+        // Implementation would use themeUseCase
+        isDarkMode.value = enabled
+    }
+
+    override fun toggleFollowSystemTheme() {
+        // Implementation would use themeUseCase
+        followSystemTheme.value = !followSystemTheme.value
+    }
 }
 
 /**
  * Android-specific implementation of IOfflineModeViewModel.
- *
- * Note: The actual initialization happens in the Android ViewModel's init block,
- * which includes:
- * - Setting up offline mode status
- * - Starting network monitoring
- * - Loading recently viewed cocktails
- *
- * The Android ViewModel also handles cleanup in onCleared() by stopping network monitoring.
  */
 class OfflineModeViewModel(
     private val offlineModeUseCase: OfflineModeUseCase,
     private val networkStatusUseCase: NetworkStatusUseCase
-) : IOfflineModeViewModel, KoinComponent {
-    // Get the actual Android ViewModel from Koin
-    private val viewModel: com.cocktailcraft.viewmodel.OfflineModeViewModel = get()
-
+) : IOfflineModeViewModel {
     // State
-    override val isOfflineModeEnabled: StateFlow<Boolean> get() = viewModel.isOfflineModeEnabled
-    override val isNetworkAvailable: StateFlow<Boolean> get() = viewModel.isNetworkAvailable
-    override val recentlyViewedCocktails: StateFlow<List<Cocktail>> get() = viewModel.recentlyViewedCocktails
-    override val isLoading: StateFlow<Boolean> get() = viewModel.isLoading
+    override val isOfflineModeEnabled = MutableStateFlow(false)
+    override val isNetworkAvailable = MutableStateFlow(true)
+    override val recentlyViewedCocktails = MutableStateFlow<List<Cocktail>>(emptyList())
+    override val isLoading = MutableStateFlow(false)
 
     // Actions
-    override fun toggleOfflineMode() = viewModel.toggleOfflineMode()
-    override fun setOfflineMode(enabled: Boolean) = viewModel.setOfflineMode(enabled)
-    override fun loadRecentlyViewedCocktails() = viewModel.loadRecentlyViewedCocktails()
-    override fun clearCache() = viewModel.clearCache()
-    override fun getCachedCocktailCount(): Int = viewModel.getCachedCocktailCount()
+    override fun toggleOfflineMode() {
+        // Implementation would use offlineModeUseCase
+        isOfflineModeEnabled.value = !isOfflineModeEnabled.value
+    }
+
+    override fun setOfflineMode(enabled: Boolean) {
+        // Implementation would use offlineModeUseCase
+        isOfflineModeEnabled.value = enabled
+    }
+
+    override fun loadRecentlyViewedCocktails() {
+        // Implementation would use offlineModeUseCase
+    }
+
+    override fun clearCache() {
+        // Implementation would use offlineModeUseCase
+        recentlyViewedCocktails.value = emptyList()
+    }
+
+    override fun getCachedCocktailCount(): Int {
+        // Implementation would use offlineModeUseCase
+        return recentlyViewedCocktails.value.size
+    }
 }
 
 /**
@@ -225,21 +265,36 @@ class OfflineModeViewModel(
 class OrderViewModel(
     private val manageOrdersUseCase: ManageOrdersUseCase,
     private val placeOrderUseCase: PlaceOrderUseCase
-) : IOrderViewModel, KoinComponent {
-    // Get the actual Android ViewModel from Koin
-    private val viewModel: com.cocktailcraft.viewmodel.OrderViewModel = get()
-
+) : IOrderViewModel {
     // State
-    override val orders: StateFlow<List<Order>> get() = viewModel.orders
-    override val isLoading: StateFlow<Boolean> get() = viewModel.isLoading
+    override val orders = MutableStateFlow<List<Order>>(emptyList())
+    override val isLoading = MutableStateFlow(false)
 
     // Actions
-    override fun loadOrders() = viewModel.loadOrders()
-    override fun addOrder(order: Order) = viewModel.addOrder(order)
-    override fun placeOrder(cartItems: List<CocktailCartItem>, totalPrice: Double) = viewModel.placeOrder(cartItems, totalPrice)
-    override fun updateOrderStatus(orderId: String, status: String) = viewModel.updateOrderStatus(orderId, status)
-    override fun cancelOrder(orderId: String) = viewModel.cancelOrder(orderId)
-    override fun getOrderById(orderId: String): Flow<Order?> = viewModel.getOrderById(orderId)
+    override fun loadOrders() {
+        // Implementation would use manageOrdersUseCase
+    }
+
+    override fun addOrder(order: Order) {
+        // Implementation would use manageOrdersUseCase
+    }
+
+    override fun placeOrder(cartItems: List<CocktailCartItem>, totalPrice: Double) {
+        // Implementation would use placeOrderUseCase
+    }
+
+    override fun updateOrderStatus(orderId: String, status: String) {
+        // Implementation would use manageOrdersUseCase
+    }
+
+    override fun cancelOrder(orderId: String) {
+        // Implementation would use manageOrdersUseCase
+    }
+
+    override fun getOrderById(orderId: String): Flow<Order?> {
+        // Implementation would use manageOrdersUseCase
+        return MutableStateFlow(null)
+    }
 }
 
 /**

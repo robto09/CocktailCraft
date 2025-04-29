@@ -28,10 +28,10 @@ class CartViewModel(
 
     // Cart state
     private val _cartItems = MutableStateFlow<List<CocktailCartItem>>(emptyList())
-    val cartItems: StateFlow<List<CocktailCartItem>> = _cartItems.asStateFlow()
+    override val cartItems: StateFlow<List<CocktailCartItem>> = _cartItems.asStateFlow()
 
     private val _totalPrice = MutableStateFlow(0.0)
-    val totalPrice: StateFlow<Double> = _totalPrice.asStateFlow()
+    override val totalPrice: StateFlow<Double> = _totalPrice.asStateFlow()
 
     init {
         loadCartItems()
@@ -40,7 +40,7 @@ class CartViewModel(
     /**
      * Load all cart items and calculate total price.
      */
-    fun loadCartItems() {
+    override fun loadCartItems() {
         executeWithErrorHandling(
             operation = {
                 manageCartUseCase.getCartItems()
@@ -106,7 +106,7 @@ class CartViewModel(
     /**
      * Add a cocktail to the cart.
      */
-    fun addToCart(cocktail: Cocktail, quantity: Int = 1) {
+    override fun addToCart(cocktail: Cocktail, quantity: Int) {
         executeWithErrorHandling(
             operation = {
                 manageCartUseCase.addToCart(cocktail, quantity)
@@ -139,7 +139,7 @@ class CartViewModel(
     /**
      * Remove a cocktail from the cart.
      */
-    fun removeFromCart(cocktailId: String) {
+    override fun removeFromCart(cocktailId: String) {
         executeWithErrorHandling(
             operation = {
                 manageCartUseCase.removeFromCart(cocktailId)
@@ -172,7 +172,7 @@ class CartViewModel(
     /**
      * Update the quantity of a cocktail in the cart.
      */
-    fun updateQuantity(cocktailId: String, quantity: Int) {
+    override fun updateQuantity(cocktailId: String, quantity: Int) {
         executeWithErrorHandling(
             operation = {
                 manageCartUseCase.updateQuantity(cocktailId, quantity)
@@ -205,7 +205,7 @@ class CartViewModel(
     /**
      * Clear all items from the cart.
      */
-    fun clearCart() {
+    override fun clearCart() {
         executeWithErrorHandling(
             operation = {
                 manageCartUseCase.clearCart()

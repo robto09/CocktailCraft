@@ -31,20 +31,20 @@ class CocktailDetailViewModel(
 
     // Cocktail state
     private val _cocktail = MutableStateFlow<Cocktail?>(null)
-    val cocktail: StateFlow<Cocktail?> = _cocktail.asStateFlow()
+    override val cocktail: StateFlow<Cocktail?> = _cocktail.asStateFlow()
 
     // Favorite state
     private val _isFavorite = MutableStateFlow(false)
-    val isFavorite: StateFlow<Boolean> = _isFavorite.asStateFlow()
+    override val isFavorite: StateFlow<Boolean> = _isFavorite.asStateFlow()
 
     // Recommendations state
     private val _recommendations = MutableStateFlow<List<Cocktail>>(emptyList())
-    val recommendations: StateFlow<List<Cocktail>> = _recommendations.asStateFlow()
+    override val recommendations: StateFlow<List<Cocktail>> = _recommendations.asStateFlow()
 
     /**
      * Load cocktail details by ID.
      */
-    fun loadCocktailDetails(id: String) {
+    override fun loadCocktailDetails(id: String) {
         executeWithErrorHandling(
             operation = {
                 getCocktailDetailsUseCase(id)
@@ -91,7 +91,7 @@ class CocktailDetailViewModel(
     /**
      * Toggle favorite status of the current cocktail.
      */
-    fun toggleFavorite() {
+    override fun toggleFavorite() {
         val currentCocktail = _cocktail.value ?: return
 
         viewModelScope.launch {
@@ -173,7 +173,7 @@ class CocktailDetailViewModel(
     /**
      * Get a random cocktail.
      */
-    fun loadRandomCocktail() {
+    override fun loadRandomCocktail() {
         executeWithErrorHandling(
             operation = {
                 getCocktailDetailsUseCase.random()

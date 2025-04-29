@@ -27,7 +27,7 @@ class FavoritesViewModel(
 
     // Favorites state
     private val _favorites = MutableStateFlow<List<Cocktail>>(emptyList())
-    val favorites: StateFlow<List<Cocktail>> = _favorites.asStateFlow()
+    override val favorites: StateFlow<List<Cocktail>> = _favorites.asStateFlow()
 
     init {
         loadFavorites()
@@ -36,7 +36,7 @@ class FavoritesViewModel(
     /**
      * Load all favorite cocktails.
      */
-    fun loadFavorites() {
+    override fun loadFavorites() {
         executeWithErrorHandling(
             operation = {
                 manageFavoritesUseCase.getFavorites()
@@ -71,7 +71,7 @@ class FavoritesViewModel(
     /**
      * Add a cocktail to favorites.
      */
-    fun addToFavorites(cocktail: Cocktail) {
+    override fun addToFavorites(cocktail: Cocktail) {
         viewModelScope.launch {
             manageFavoritesUseCase.addToFavorites(cocktail).collect { result ->
                 when (result) {
@@ -96,7 +96,7 @@ class FavoritesViewModel(
     /**
      * Remove a cocktail from favorites.
      */
-    fun removeFromFavorites(cocktail: Cocktail) {
+    override fun removeFromFavorites(cocktail: Cocktail) {
         viewModelScope.launch {
             manageFavoritesUseCase.removeFromFavorites(cocktail).collect { result ->
                 when (result) {
@@ -121,7 +121,7 @@ class FavoritesViewModel(
     /**
      * Toggle favorite status of a cocktail.
      */
-    fun toggleFavorite(cocktail: Cocktail) {
+    override fun toggleFavorite(cocktail: Cocktail) {
         viewModelScope.launch {
             manageFavoritesUseCase.toggleFavorite(cocktail).collect { result ->
                 when (result) {
@@ -146,7 +146,7 @@ class FavoritesViewModel(
     /**
      * Check if a cocktail is a favorite.
      */
-    fun isFavorite(id: String): Boolean {
+    override fun isFavorite(id: String): Boolean {
         return favorites.value.any { it.id == id }
     }
 
