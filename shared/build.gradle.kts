@@ -2,6 +2,7 @@ plugins {
     kotlin("multiplatform") version "1.9.22"
     kotlin("plugin.serialization") version "1.9.22"
     id("com.android.library")
+    id("org.jetbrains.kotlin.native.cocoapods")
 }
 
 android {
@@ -21,9 +22,16 @@ kotlin {
     jvmToolchain(17)
     
     androidTarget()
-    // iosX64()
-    // iosArm64()
-    // iosSimulatorArm64()
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach {
+        it.binaries.framework {
+            baseName = "shared"
+            isStatic = false
+        }
+    }
 
     sourceSets {
         val commonMain by getting {
@@ -62,19 +70,19 @@ kotlin {
             }
         }
 
-        // val iosX64Main by getting
-        // val iosArm64Main by getting
-        // val iosSimulatorArm64Main by getting
-        // val iosMain by creating {
-        //     dependsOn(commonMain)
-        //     iosX64Main.dependsOn(this)
-        //     iosArm64Main.dependsOn(this)
-        //     iosSimulatorArm64Main.dependsOn(this)
+        val iosX64Main by getting
+        val iosArm64Main by getting
+        val iosSimulatorArm64Main by getting
+        val iosMain by creating {
+            dependsOn(commonMain)
+            iosX64Main.dependsOn(this)
+            iosArm64Main.dependsOn(this)
+            iosSimulatorArm64Main.dependsOn(this)
 
-        //     dependencies {
-        //         implementation(libs.ktor.client.darwin)
-        //     }
-        // }
+            dependencies {
+                implementation(libs.ktor.client.darwin)
+            }
+        }
 
         val commonTest by getting {
             dependencies {
