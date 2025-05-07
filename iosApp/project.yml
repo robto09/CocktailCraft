@@ -1,0 +1,49 @@
+name: CocktailCraft
+options:
+  bundleIdPrefix: com.cocktailcraft
+  deploymentTarget:
+    iOS: 14.0
+  createIntermediateGroups: true
+
+targets:
+  CocktailCraft:
+    type: application
+    platform: iOS
+    sources: 
+      - path: CocktailCraft
+        excludes:
+          - "DI/**"
+          - "UI/Components/**"
+          - "UI/Theme/**"
+          - "ViewModels/**"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cocktailcraft.ios
+        INFOPLIST_FILE: CocktailCraft/Info.plist
+        DEVELOPMENT_TEAM: "" # Add your team ID here
+        SWIFT_VERSION: 5.0
+        TARGETED_DEVICE_FAMILY: 1
+        SUPPORTS_MACCATALYST: NO
+        ENABLE_PREVIEWS: YES
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        SWIFT_EMIT_LOC_STRINGS: YES
+    info:
+      path: CocktailCraft/Info.plist
+      properties:
+        CFBundleDevelopmentRegion: $(DEVELOPMENT_LANGUAGE)
+        CFBundleDisplayName: CocktailCraft
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleInfoDictionaryVersion: "6.0"
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundlePackageType: $(PRODUCT_BUNDLE_PACKAGE_TYPE)
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        LSRequiresIPhoneOS: true
+        UIApplicationSupportsIndirectInputEvents: true
+        UIRequiredDeviceCapabilities:
+          - armv7
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    dependencies:
+      - sdk: SwiftUI.framework

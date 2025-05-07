@@ -1,54 +1,64 @@
 import Foundation
-import Factory
 import shared
 
-// Main container holding all dependencies
-extension Container {
-    // ViewModels
-    var mainViewModel: Factory<MainViewModel> {
-        self { MainViewModel(homeViewModel: shared.HomeViewModel()) }
-    }
-    
-    // Use Cases
-    var getCocktailsUseCase: Factory<GetCocktailsUseCase> {
-        self { shared.GetCocktailsUseCase() }
-    }
-    
-    var searchCocktailsUseCase: Factory<SearchCocktailsUseCase> {
-        self { shared.SearchCocktailsUseCase() }
-    }
-    
-    var getFilterOptionsUseCase: Factory<GetFilterOptionsUseCase> {
-        self { shared.GetFilterOptionsUseCase() }
-    }
+class DependencyContainer {
+    static let shared = DependencyContainer()
+    private let koin = KoinKt.doInitKoin().koin
     
     // Repositories
-    var cocktailRepository: Factory<CocktailRepository> {
-        self { shared.CocktailRepositoryImpl() }
+    lazy var cocktailRepository: CocktailRepository = {
+        koin.get(objCClass: CocktailRepository.self) as! CocktailRepository
+    }()
+    
+    lazy var cartRepository: CartRepository = {
+        koin.get(objCClass: CartRepository.self) as! CartRepository
+    }()
+    
+    lazy var favoritesRepository: FavoritesRepository = {
+        koin.get(objCClass: FavoritesRepository.self) as! FavoritesRepository
+    }()
+    
+    lazy var orderRepository: OrderRepository = {
+        koin.get(objCClass: OrderRepository.self) as! OrderRepository
+    }()
+    
+    lazy var authRepository: AuthRepository = {
+        koin.get(objCClass: AuthRepository.self) as! AuthRepository
+    }()
+    
+    // Use Cases
+    lazy var getCocktailsUseCase: GetCocktailsUseCase = {
+        koin.get(objCClass: GetCocktailsUseCase.self) as! GetCocktailsUseCase
+    }()
+    
+    lazy var searchCocktailsUseCase: SearchCocktailsUseCase = {
+        koin.get(objCClass: SearchCocktailsUseCase.self) as! SearchCocktailsUseCase
+    }()
+    
+    lazy var manageFavoritesUseCase: ManageFavoritesUseCase = {
+        koin.get(objCClass: ManageFavoritesUseCase.self) as! ManageFavoritesUseCase
+    }()
+    
+    lazy var manageCartUseCase: ManageCartUseCase = {
+        koin.get(objCClass: ManageCartUseCase.self) as! ManageCartUseCase
+    }()
+    
+    lazy var placeOrderUseCase: PlaceOrderUseCase = {
+        koin.get(objCClass: PlaceOrderUseCase.self) as! PlaceOrderUseCase
+    }()
+    
+    // ViewModels factory methods
+    func makeMainViewModel() -> MainViewModel {
+        MainViewModel()
     }
+    
+    // Private init to ensure singleton
+    private init() {}
 }
 
-// Helper for accessing dependencies
-enum Dependencies {
-    static let container = Container.shared
-    
-    static var mainViewModel: MainViewModel {
-        container.mainViewModel()
-    }
-    
-    static var getCocktailsUseCase: GetCocktailsUseCase {
-        container.getCocktailsUseCase()
-    }
-    
-    static var searchCocktailsUseCase: SearchCocktailsUseCase {
-        container.searchCocktailsUseCase()
-    }
-    
-    static var getFilterOptionsUseCase: GetFilterOptionsUseCase {
-        container.getFilterOptionsUseCase()
-    }
-    
-    static var cocktailRepository: CocktailRepository {
-        container.cocktailRepository()
+// View extension for dependency injection
+extension View {
+    func inject<T>(_ keyPath: KeyPath<DependencyContainer, T>) -> T {
+        DependencyContainer.shared[keyPath: keyPath]
     }
 }
