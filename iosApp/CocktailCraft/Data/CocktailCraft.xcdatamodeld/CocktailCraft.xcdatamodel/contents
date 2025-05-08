@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22222" systemVersion="23A344" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithCloudKit="NO" userDefinedModelVersionIdentifier="">
+    <entity name="CachedCocktail" representedClassName="CachedCocktail" syncable="YES">
+        <attribute name="category" optional="YES" attributeType="String"/>
+        <attribute name="cocktailDescription" optional="YES" attributeType="String"/>
+        <attribute name="garnish" optional="YES" attributeType="String"/>
+        <attribute name="glassType" optional="YES" attributeType="String"/>
+        <attribute name="id" attributeType="String"/>
+        <attribute name="imageUrl" optional="YES" attributeType="String"/>
+        <attribute name="instructions" optional="YES" attributeType="String"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="price" attributeType="Double" defaultValueString="0.0"/>
+        <attribute name="rating" attributeType="Float" defaultValueString="0.0"/>
+        <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="ingredients" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="CachedIngredient" inverseName="cocktail" inverseEntity="CachedIngredient"/>
+        <relationship name="reviews" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="CachedReview" inverseName="cocktail" inverseEntity="CachedReview"/>
+    </entity>
+    <entity name="CachedCartItem" representedClassName="CachedCartItem" syncable="YES">
+        <attribute name="cocktailId" attributeType="String"/>
+        <attribute name="imageUrl" optional="YES" attributeType="String"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="price" attributeType="Double" defaultValueString="0.0"/>
+        <attribute name="quantity" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="specialInstructions" optional="YES" attributeType="String"/>
+        <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+    <entity name="CachedFavorite" representedClassName="CachedFavorite" syncable="YES">
+        <attribute name="cocktailId" attributeType="String"/>
+        <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+    <entity name="CachedIngredient" representedClassName="CachedIngredient" syncable="YES">
+        <attribute name="amount" attributeType="Double" defaultValueString="0.0"/>
+        <attribute name="isOptional" attributeType="Boolean" defaultValueString="NO"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="unit" attributeType="String"/>
+        <relationship name="cocktail" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CachedCocktail" inverseName="ingredients" inverseEntity="CachedCocktail"/>
+    </entity>
+    <entity name="CachedOrder" representedClassName="CachedOrder" syncable="YES">
+        <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="deliveryAddress" optional="YES" attributeType="String"/>
+        <attribute name="id" attributeType="String"/>
+        <attribute name="paymentMethod" optional="YES" attributeType="String"/>
+        <attribute name="specialInstructions" optional="YES" attributeType="String"/>
+        <attribute name="status" attributeType="String"/>
+        <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="totalAmount" attributeType="Double" defaultValueString="0.0"/>
+        <relationship name="items" toMany="YES" deletionRule="Cascade" destinationEntity="CachedOrderItem" inverseName="order" inverseEntity="CachedOrderItem"/>
+    </entity>
+    <entity name="CachedOrderItem" representedClassName="CachedOrderItem" syncable="YES">
+        <attribute name="cocktailId" attributeType="String"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="price" attributeType="Double" defaultValueString="0.0"/>
+        <attribute name="quantity" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="order" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CachedOrder" inverseName="items" inverseEntity="CachedOrder"/>
+    </entity>
+    <entity name="CachedReview" representedClassName="CachedReview" syncable="YES">
+        <attribute name="comment" optional="YES" attributeType="String"/>
+        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="String"/>
+        <attribute name="likes" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="rating" attributeType="Float" defaultValueString="0.0"/>
+        <attribute name="userId" attributeType="String"/>
+        <attribute name="userName" attributeType="String"/>
+        <relationship name="cocktail" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CachedCocktail" inverseName="reviews" inverseEntity="CachedCocktail"/>
+    </entity>
+    <entity name="SyncMetadata" representedClassName="SyncMetadata" syncable="YES">
+        <attribute name="key" attributeType="String"/>
+        <attribute name="lastSyncTime" attributeType="Date" usesScalarValueType="NO"/>
+    </entity>
+</model>

@@ -3,21 +3,76 @@ import shared
 import Combine
 
 @MainActor
-class MainViewModel: ObservableObject {
+class MainViewModel: ObservableObject, IHomeViewModel {
     private let cocktailRepository: CocktailRepository
-    private let cartRepository: CartRepository
-    private let favoritesRepository: FavoritesRepository
+    private let searchUseCase: SearchCocktailsUseCase
+    private let networkUseCase: NetworkStatusUseCase
     
-    @Published var cocktails: [Cocktail] = []
-    @Published var isLoading: Bool = false
-    @Published var error: String? = nil
+    // MARK: - Published Properties (SwiftUI State)
+    @Published private(set) var cocktails: [Cocktail] = []
+    @Published private(set) var hasMoreData: Bool = true
+    @Published private(set) var isLoadingMore: Bool = false
+    @Published private(set) var searchQuery: String = ""
+    @Published private(set) var isSearchActive: Bool = false
+    @Published private(set) var searchFilters = SearchFilters()
+    @Published private(set) var isAdvancedSearchActive: Bool = false
+    @Published private(set) var isOfflineMode: Bool = false
+    @Published private(set) var isNetworkAvailable: Bool = true
+    @Published private(set) var isLoading: Bool = false
+    
+    // MARK: - StateFlow Properties (Shared KMP Interface)
+    var cocktailsFlow: any StateFlow<[Cocktail]> {
+        StateFlowWrapper(publisher: $cocktails.eraseToAnyPublisher())
+    }
+    
+    var hasMoreDataFlow: any StateFlow<Bool> {
+        StateFlowWrapper(publisher: $hasMoreData.eraseToAnyPublisher())
+    }
+    
+    var isLoadingMoreFlow: any StateFlow<Bool> {
+        StateFlowWrapper(publisher: $isLoadingMore.eraseToAnyPublisher())
+    }
+    
+    var searchQueryFlow: any StateFlow<String> {
+        StateFlowWrapper(publisher: $searchQuery.eraseToAnyPublisher())
+    }
+    
+    var isSearchActiveFlow: any StateFlow<Bool> {
+        StateFlowWrapper(publisher: $isSearchActive.eraseToAnyPublisher())
+    }
+    
+    var searchFiltersFlow: any StateFlow<SearchFilters> {
+        StateFlowWrapper(publisher: $searchFilters.eraseToAnyPublisher())
+    }
+    
+    var isAdvancedSearchActiveFlow: any StateFlow<Bool> {
+        StateFlowWrapper(publisher: $isAdvancedSearchActive.eraseToAnyPublisher())
+    }
+    
+    var isOfflineModeFlow: any StateFlow<Bool> {
+        StateFlowWrapper(publisher: $isOfflineMode.eraseToAnyPublisher())
+    }
+    
+    var isNetworkAvailableFlow: any StateFlow<Bool> {
+        StateFlowWrapper(publisher: $isNetworkAvailable.eraseToAnyPublisher())
+    }
+    
+    var isLoadingFlow: any StateFlow<Bool> {
+        StateFlowWrapper(publisher: $isLoading.eraseToAnyPublisher())
+    }
     
     init() {
-        // Get repositories from Koin
-        let koin = KoinKt.doInitKoin().koin
-        self.cocktailRepository = koin.get(objCClass: CocktailRepository.self) as! CocktailRepository
-        self.cartRepository = koin.get(objCClass: CartRepository.self) as! CartRepository
-        self.favoritesRepository = koin.get(objCClass: FavoritesRepository.self) as! FavoritesRepository
+        let container = DependencyContainer.shared
+        self.cocktailRepository = container.cocktailRepository
+        self.searchUseCase = container.searchCocktailsUseCase
+        self.networkUseCase = container.networkStatusUseCase
+        
+        // Start monitoring network status
+        Task {
+            for await status in networkUseCase.networkStatus {
+                isNetworkAvailable = status
+            }
+        }
         
         // Initial load
         Task {
@@ -25,44 +80,156 @@ class MainViewModel: ObservableObject {
         }
     }
     
-    func loadCocktails() async {
-        isLoading = true
-        error = nil
-        
-        do {
-            let result = try await cocktailRepository.getCocktails()
-            switch result {
-            case let success as Result.Success<NSArray>:
-                if let cocktailArray = success.data as? [Cocktail] {
-                    cocktails = cocktailArray
+    // MARK: - IHomeViewModel Implementation
+    
+    func loadCocktails() {
+        Task {
+            isLoading = true
+            do {
+                let result = try await cocktailRepository.getCocktails()
+                if let cocktailArray = result as? Result.Success<[Cocktail]> {
+                    cocktails = cocktailArray.data
                 }
-            case let failure as Result.Error:
-                error = failure.error.description
-            default:
-                error = "Unknown error occurred"
+            } catch {
+                print("Error loading cocktails: \(error)")
             }
-        } catch {
-            self.error = error.localizedDescription
+            isLoading = false
         }
+    }
+    
+    func loadMoreCocktails() {
+        guard !isLoadingMore && hasMoreData else { return }
         
-        isLoading = false
-    }
-    
-    func toggleFavorite(cocktail: Cocktail) async {
-        do {
-            try await favoritesRepository.toggleFavorite(cocktail: cocktail)
-            // Reload cocktails to reflect changes
-            await loadCocktails()
-        } catch {
-            self.error = error.localizedDescription
+        Task {
+            isLoadingMore = true
+            do {
+                let result = try await cocktailRepository.getMoreCocktails()
+                if let cocktailArray = result as? Result.Success<[Cocktail]> {
+                    cocktails.append(contentsOf: cocktailArray.data)
+                    hasMoreData = cocktailArray.data.count > 0
+                }
+            } catch {
+                print("Error loading more cocktails: \(error)")
+            }
+            isLoadingMore = false
         }
     }
     
-    func addToCart(cocktail: Cocktail) async {
-        do {
-            try await cartRepository.addToCart(cocktail: cocktail)
-        } catch {
-            self.error = error.localizedDescription
+    func searchCocktails(query: String) {
+        searchQuery = query
+        Task {
+            isLoading = true
+            do {
+                let result = try await searchUseCase.search(query: query, filters: searchFilters)
+                if let cocktailArray = result as? Result.Success<[Cocktail]> {
+                    cocktails = cocktailArray.data
+                }
+            } catch {
+                print("Error searching cocktails: \(error)")
+            }
+            isLoading = false
         }
+    }
+    
+    func updateSearchFilters(filters: SearchFilters) {
+        searchFilters = filters
+        if isSearchActive {
+            searchCocktails(query: searchQuery)
+        }
+    }
+    
+    func clearSearchFilters() {
+        searchFilters = SearchFilters()
+        if isSearchActive {
+            searchCocktails(query: searchQuery)
+        }
+    }
+    
+    func toggleAdvancedSearchMode(active: Bool) {
+        isAdvancedSearchActive = active
+    }
+    
+    func toggleSearchMode(active: Bool) {
+        isSearchActive = active
+        if !active {
+            searchQuery = ""
+            clearSearchFilters()
+            loadCocktails()
+        }
+    }
+    
+    func loadCocktailsByCategory(category: String?) {
+        Task {
+            isLoading = true
+            do {
+                let result = try await cocktailRepository.getCocktailsByCategory(category: category)
+                if let cocktailArray = result as? Result.Success<[Cocktail]> {
+                    cocktails = cocktailArray.data
+                }
+            } catch {
+                print("Error loading cocktails by category: \(error)")
+            }
+            isLoading = false
+        }
+    }
+    
+    func sortByPrice(ascending: Bool) {
+        cocktails.sort { first, second in
+            ascending ? first.price < second.price : first.price > second.price
+        }
+    }
+    
+    func sortByPopularity() {
+        cocktails.sort { $0.popularity > $1.popularity }
+    }
+    
+    func setOfflineMode(enabled: Bool) {
+        isOfflineMode = enabled
+        if enabled {
+            // Load cached data
+            loadCocktails()
+        }
+    }
+    
+    func retry() {
+        loadCocktails()
+    }
+    
+    func getCocktailById(id: String) -> any Flow<Cocktail?> {
+        cocktailRepository.getCocktailById(id: id)
+    }
+}
+
+// MARK: - StateFlow Wrapper
+private class StateFlowWrapper<T>: StateFlow {
+    private let publisher: AnyPublisher<T, Never>
+    private var currentValue: T
+    
+    init(publisher: AnyPublisher<T, Never>, initialValue: T? = nil) {
+        self.publisher = publisher
+        self.currentValue = initialValue ?? publisher.value
+    }
+    
+    var value: T {
+        get { currentValue }
+        set { currentValue = newValue }
+    }
+}
+
+extension Publisher where Failure == Never {
+    var value: Output {
+        var result: Output?
+        let semaphore = DispatchSemaphore(value: 0)
+        
+        let cancellable = first()
+            .sink { value in
+                result = value
+                semaphore.signal()
+            }
+        
+        semaphore.wait()
+        cancellable.cancel()
+        
+        return result!
     }
 }
