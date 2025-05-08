@@ -3,11 +3,9 @@ plugins {
     kotlin("plugin.serialization") version "1.9.22" apply false
     id("com.android.library") version "8.2.2" apply false
     id("com.android.application") version "8.2.2" apply false
+    id("org.jetbrains.kotlin.native.cocoapods") version "1.9.22" apply false
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
+tasks.register("clean", Delete::class) {
+    delete(layout.buildDirectory)
 }

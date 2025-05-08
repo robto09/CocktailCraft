@@ -14,7 +14,6 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        // Use our custom test runner for instrumented tests
         testInstrumentationRunner = "com.cocktailcraft.CocktailCraftTestRunner"
     }
 
@@ -23,7 +22,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8"
+        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
     }
 
     compileOptions {
@@ -36,74 +35,68 @@ android {
     }
 }
 
-// Add a configuration for dependency resolution
 configurations.all {
     resolutionStrategy {
-        // Force a specific version of Espresso to avoid conflicts
-        force("androidx.test.espresso:espresso-core:3.5.0")
+        force(libs.androidx.espresso.core.get())
         force("androidx.test.espresso:espresso-idling-resource:3.5.0")
     }
 }
 
 dependencies {
     implementation(project(":shared"))
-    implementation("com.google.android.material:material:1.11.0")
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation(libs.androidx.compose.material)
-    implementation(libs.androidx.ui.test.junit4.android)
 
+    // AndroidX and Material
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    
     // Compose
-    val composeBom = platform("androidx.compose:compose-bom:2023.10.01")
-    implementation(composeBom)
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.activity:activity-compose:1.8.2")
-
-    // Material Icons Extended - provides additional icons
-    implementation("androidx.compose.material:material-icons-extended")
-
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.compose.ui)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.material)
+    implementation(libs.compose.material.icons.extended)
+    implementation(libs.androidx.activity.compose)
+    
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.7.7")
-
+    implementation(libs.androidx.navigation.compose)
+    
     // Koin
-    implementation("io.insert-koin:koin-android:3.4.0")
-    implementation("io.insert-koin:koin-androidx-compose:3.4.0")
-
+    implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
+    
     // ViewModel
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
-
-    // Add Coil for image loading
-    implementation("io.coil-kt:coil-compose:2.4.0")
-
-    // Accompanist libraries for animations and system UI controller
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    
+    // Image Loading
+    implementation(libs.coil.compose)
+    
+    // Accompanist
     implementation(libs.accompanist.systemuicontroller)
     implementation(libs.accompanist.navigation.animation)
-
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
-
+    
+    // Debug
+    debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
+    
     // Test dependencies
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.mockito:mockito-core:5.3.1")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
-    testImplementation("app.cash.turbine:turbine:1.0.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-    testImplementation("androidx.navigation:navigation-testing:2.7.7")
-    testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.22")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-    testImplementation("com.russhwolf:multiplatform-settings:1.1.1")
-
+    testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.turbine)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.androidx.navigation.testing)
+    testImplementation(libs.kotlin.test)
+    testImplementation(libs.kotlinx.serialization.json)
+    testImplementation(libs.multiplatform.settings)
+    
     // Instrumented test dependencies
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation(composeBom)
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    // Use the version of Espresso that's compatible with Compose UI test
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.0")
-    androidTestImplementation("org.mockito:mockito-android:5.3.1")
-    androidTestImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
-    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }

@@ -1,6 +1,6 @@
 plugins {
-    kotlin("multiplatform") version "1.9.22"
-    kotlin("plugin.serialization") version "1.9.22"
+    kotlin("multiplatform")
+    kotlin("plugin.serialization")
     id("com.android.library")
     id("org.jetbrains.kotlin.native.cocoapods")
 }
@@ -22,12 +22,25 @@ kotlin {
     jvmToolchain(17)
     
     androidTarget()
+    
     listOf(
         iosX64(),
         iosArm64(),
         iosSimulatorArm64()
     ).forEach {
         it.binaries.framework {
+            baseName = "shared"
+            isStatic = false
+        }
+    }
+
+    cocoapods {
+        version = "1.0.0"
+        summary = "CocktailCraft shared module"
+        homepage = "Link to your project"
+        ios.deploymentTarget = "14.0"
+        podfile = project.file("../iosApp/Podfile")
+        framework {
             baseName = "shared"
             isStatic = false
         }
@@ -55,18 +68,24 @@ kotlin {
                 implementation(libs.multiplatform.settings)
 
                 // DI
-                implementation("io.insert-koin:koin-core:3.4.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                implementation(libs.koin.core)
             }
         }
 
         val androidMain by getting {
             dependencies {
                 implementation(libs.ktor.client.android)
-                implementation("androidx.datastore:datastore-preferences:1.0.0")
-                implementation("com.russhwolf:multiplatform-settings:1.1.1")
-                implementation("com.russhwolf:multiplatform-settings-datastore:1.1.1")
-                implementation("com.russhwolf:multiplatform-settings-coroutines:1.1.1")
+                
+                // DataStore
+                implementation(libs.androidx.datastore.core)
+                implementation(libs.androidx.datastore.preferences)
+                
+                // Settings with DataStore and Coroutines
+                implementation(libs.multiplatform.settings.datastore)
+                implementation(libs.multiplatform.settings.coroutines)
+                
+                // Coroutines
+                implementation(libs.kotlinx.coroutines.core)
             }
         }
 
@@ -84,20 +103,35 @@ kotlin {
             }
         }
 
+        // Common test dependencies
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test"))
-                implementation(libs.mockk)
+                implementation(libs.kotlin.test)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.koin.test)
                 implementation(libs.turbine)
+                implementation(libs.ktor.client.mock)
             }
         }
-    }
-}
 
-repositories {
-    google()
-    mavenCentral()
-    gradlePluginPortal()
+        // Android-specific test dependencies
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.mockk)
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.turbine)
+            }
+        }
+
+        // iOS-specific test dependencies
+        val iosX64Test by getting
+        val iosArm64Test by getting
+        val iosSimulatorArm64Test by getting
+        val iosTest by creating {
+            dependsOn(commonTest)
+            iosX64Test.dependsOn(this)
+            iosArm64Test.dependsOn(this)
+            iosSimulatorArm64Test.dependsOn(this)
+        }
+    }
 }
