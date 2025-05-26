@@ -191,8 +191,7 @@ fun AnimatedCocktailList(
                         isFavorite = favorites.any { it.id == cocktail.id },
                         onToggleFavorite = { cocktailToToggle ->
                             onToggleFavorite(cocktailToToggle)
-                        },
-                        index = batchIndex // Use batch index for staggered animation within batch
+                        }
                     )
                 }
             }

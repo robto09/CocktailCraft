@@ -107,11 +107,10 @@ fun RecommendationsSection(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    itemsIndexed(recommendations) { index, cocktail ->
+                    items(recommendations) { cocktail ->
                         RecommendationItem(
                             cocktail = cocktail,
-                            onClick = { onCocktailClick(cocktail) },
-                            index = index
+                            onClick = { onCocktailClick(cocktail) }
                         )
                     }
                 }
@@ -127,7 +126,6 @@ fun RecommendationsSection(
 fun RecommendationItem(
     cocktail: Cocktail,
     onClick: () -> Unit,
-    index: Int,
     modifier: Modifier = Modifier
 ) {
     Card(

@@ -53,7 +53,7 @@ fun CocktailLoadingShimmer(
         }
 
         // Shimmer items
-        items(List(itemCount) { it }) { index ->
+        items(List(itemCount) { it }) { _ ->
             CocktailItemShimmer()
         }
     }

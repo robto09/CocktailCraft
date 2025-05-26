@@ -62,7 +62,6 @@ fun AnimatedCocktailItem(
     onAddToCart: (Cocktail) -> Unit,
     isFavorite: Boolean = false,
     onToggleFavorite: (Cocktail) -> Unit = {},
-    index: Int = 0,
     modifier: Modifier = Modifier
 ) {
     // Animation states

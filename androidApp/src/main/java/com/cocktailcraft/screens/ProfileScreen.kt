@@ -75,8 +75,6 @@ fun ProfileScreen(
     profileViewModel: ProfileViewModel = viewModel(),
     themeViewModel: ThemeViewModel = viewModel()
 ) {
-    val context = LocalContext.current
-
     // Get user data from ViewModel
     val user by profileViewModel.user.collectAsState()
     val isSignedIn by profileViewModel.isSignedIn.collectAsState()
