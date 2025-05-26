@@ -23,7 +23,6 @@ class MainActivity : ComponentActivity() {
             // Get the ThemeViewModel to observe dark mode preference
             val themeViewModel: ThemeViewModel = viewModel()
             val isDarkMode by themeViewModel.isDarkMode.collectAsState()
-            val followSystemTheme by themeViewModel.followSystemTheme.collectAsState()
 
             // Get the current system dark mode state
             val isSystemInDarkTheme = isSystemInDarkTheme()

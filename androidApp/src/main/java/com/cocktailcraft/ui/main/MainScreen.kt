@@ -94,7 +94,6 @@ fun MainScreen() {
             if (!isDetailScreen) {
                 Column {
                     // Show offline mode indicator if offline and not already on the offline mode screen
-                    val currentRoute = navController.currentDestination?.route
                     if (currentRoute != Screen.OfflineMode.route) {
                         OfflineModeIndicator(
                             isOffline = !isNetworkAvailable || isOfflineModeEnabled,
@@ -156,8 +155,8 @@ fun MainScreen() {
         },
         bottomBar = {
             // Only show the bottom navigation bar if we're NOT on the detail screen or offline mode screen
-            val currentRoute = navController.currentDestination?.route
-            if (!isDetailScreen && currentRoute != Screen.OfflineMode.route) {
+            val currentScreenRoute = navController.currentDestination?.route
+            if (!isDetailScreen && currentScreenRoute != Screen.OfflineMode.route) {
                 NavigationBar(
                     containerColor = AppColors.Surface,
                     contentColor = AppColors.Primary,
@@ -222,9 +221,7 @@ fun MainScreen() {
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(
-                    navController = navController,
                     viewModel = sharedHomeViewModel,
-                    cartViewModel = sharedCartViewModel,
                     favoritesViewModel = sharedFavoritesViewModel,
                     onAddToCart = { cocktail ->
                         // Add to cart and then navigate to cart
