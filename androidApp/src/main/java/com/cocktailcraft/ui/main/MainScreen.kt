@@ -138,9 +138,10 @@ fun MainScreen() {
                         actions = {
                             // Removed search button/functionality
                         },
-                        colors = TopAppBarDefaults.topAppBarColors(
+                        colors = TopAppBarDefaults.mediumTopAppBarColors(
                             containerColor = AppColors.Primary,
                             titleContentColor = Color.White,
+                            navigationIconContentColor = Color.White,
                             actionIconContentColor = Color.White
                         )
                     )

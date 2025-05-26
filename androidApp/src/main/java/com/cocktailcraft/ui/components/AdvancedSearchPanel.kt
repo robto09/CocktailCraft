@@ -520,13 +520,13 @@ fun IngredientSelectionDialog(
                         )
                     },
                     singleLine = true,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        disabledContainerColor = Color.White,
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = AppColors.Primary,
+                        unfocusedBorderColor = Color.Gray,
                         cursorColor = AppColors.Primary,
-                        focusedIndicatorColor = AppColors.Primary,
-                        focusedLeadingIconColor = AppColors.Primary
+                        focusedLeadingIconColor = AppColors.Primary,
+                        unfocusedLeadingIconColor = Color.Gray,
+                        containerColor = Color.White
                     )
                 )
 
