@@ -3,6 +3,7 @@ package com.cocktailcraft.util
 import android.content.Context
 import android.os.Build
 import coil.ImageLoader
+import coil.annotation.ExperimentalCoilApi
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
@@ -76,6 +77,7 @@ object ImageLoaderSingleton {
     /**
      * Clear all caches (memory and disk).
      */
+    @OptIn(ExperimentalCoilApi::class)
     fun clearCache() {
         imageLoader?.let { loader ->
             loader.memoryCache?.clear()

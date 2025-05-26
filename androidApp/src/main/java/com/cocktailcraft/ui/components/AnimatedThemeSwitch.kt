@@ -97,14 +97,6 @@ fun AnimatedThemeSwitch(
         }
     ) { if (it) 1f else 0.7f }
 
-    // Animate the icon rotation
-    val iconRotation by transition.animateFloat(
-        label = "icon_rotation",
-        transitionSpec = {
-            tween(durationMillis = 500, easing = FastOutSlowInEasing)
-        }
-    ) { if (it) 360f else 0f }
-
     val interactionSource = remember { MutableInteractionSource() }
 
     Box(

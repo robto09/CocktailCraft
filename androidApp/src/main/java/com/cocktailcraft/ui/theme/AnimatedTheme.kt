@@ -120,7 +120,6 @@ fun AnimatedCocktailBarTheme(
     }
     
     // Handle system UI colors with animation
-    val systemUiController = rememberSystemUiController()
     val statusBarColor by animateColorAsState(
         targetValue = if (darkTheme) AppColors.BackgroundDark else AppColors.PrimaryLight,
         animationSpec = ColorAnimationSpec,
