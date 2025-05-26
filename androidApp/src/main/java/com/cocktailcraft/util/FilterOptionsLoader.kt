@@ -6,7 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.cocktailcraft.data.repository.CocktailRepository
+import com.cocktailcraft.domain.repository.CocktailRepository
 
 /**
  * A utility class for loading filter options from the repository.
