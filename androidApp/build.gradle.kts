@@ -23,7 +23,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8"
+        kotlinCompilerExtensionVersion = "1.4.8"
     }
 
     compileOptions {
@@ -54,7 +54,7 @@ dependencies {
     implementation(libs.androidx.ui.test.junit4.android)
 
     // Compose
-    val composeBom = platform("androidx.compose:compose-bom:2023.10.01")
+    val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
