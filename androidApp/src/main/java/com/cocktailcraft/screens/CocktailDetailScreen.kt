@@ -106,6 +106,7 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import androidx.compose.animation.core.*
+import com.cocktailcraft.ui.components.shimmerEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -370,8 +371,7 @@ fun CocktailDetailScreen(
                                 DetailInfoCard(
                                     title = "How to Prepare",
                                     modifier = Modifier.padding(vertical = 8.dp),
-                                    backgroundColor = AppColors.Surface.copy(alpha = 0.8f)
-                                ) {
+                                    content = {
                                     // Add debug print to console to verify instructions are available
                                     val instructionsText = cocktailData.instructions ?: ""
 
@@ -412,7 +412,9 @@ fun CocktailDetailScreen(
                                             }
                                         }
                                     }
-                                }
+                                },
+                                    backgroundColor = AppColors.Surface.copy(alpha = 0.8f)
+                                )
 
                                 Spacer(modifier = Modifier.height(16.dp))
                             }
@@ -424,8 +426,7 @@ fun CocktailDetailScreen(
                         DetailInfoCard(
                             title = "Ingredients",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            elevation = 0
-                        ) {
+                            content = {
 
                                 // Handle different types of ingredients list
                                 if (cocktailData.ingredients is List<*>) {
@@ -481,8 +482,9 @@ fun CocktailDetailScreen(
                                         }
                                     }
                                 }
-                            }
-                        }
+                            },
+                            elevation = 0
+                        )
                     }
 
                     // Details chips section
@@ -490,12 +492,10 @@ fun CocktailDetailScreen(
                         DetailInfoCard(
                             title = "Details",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            elevation = 0
-                        ) {
-
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
+                            content = {
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                                     // Category chip
                                     cocktailData.category?.let {
                                         item {
@@ -536,8 +536,9 @@ fun CocktailDetailScreen(
                                         )
                                     }
                                 }
-                            }
-                        }
+                            },
+                            elevation = 0
+                        )
                     }
 
                     // Recommendations section - ONLY SHOW WHEN WE HAVE REAL RECOMMENDATIONS
@@ -582,11 +583,11 @@ fun CocktailDetailScreen(
                         }
 
                         // Always show the recommendations section - we'll have fallback data if needed
-                            // Add a spacer before recommendations
-                            Spacer(modifier = Modifier.height(16.dp))
+                        // Add a spacer before recommendations
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                            // Display recommendations with a Card wrapper for consistent styling
-                            Card(
+                        // Display recommendations with a Card wrapper for consistent styling
+                        Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -648,8 +649,8 @@ fun CocktailDetailScreen(
                                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
                                             items(similarCocktails) { recommendation ->
-                                            // Simple recommendation card
-                                            Card(
+                                                // Simple recommendation card
+                                                Card(
                                                 modifier = Modifier
                                                     .width(140.dp)
                                                     .clickable {
@@ -722,31 +723,29 @@ fun CocktailDetailScreen(
                                                     }
                                                 }
                                             }
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
                     }
-
-
+                    
                     // Reviews section
                     item {
                         DetailInfoCard(
                             title = "",
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            elevation = 0
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                SectionHeader(
-                                    title = "Reviews (${reviews.size})",
-                                    modifier = Modifier.weight(1f),
-                                    fontSize = 18
-                                )
+                            content = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    SectionHeader(
+                                        title = "Reviews (${reviews.size})",
+                                        modifier = Modifier.weight(1f),
+                                        fontSize = 18
+                                    )
 
                                     TextButton(
                                         onClick = { showReviewDialog = true },
@@ -791,8 +790,9 @@ fun CocktailDetailScreen(
                                         }
                                     }
                                 }
-                            }
-                        }
+                            },
+                            elevation = 0
+                        )
                     }
 
                     // Bottom padding
