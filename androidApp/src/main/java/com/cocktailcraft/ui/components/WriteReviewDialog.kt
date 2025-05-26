@@ -73,12 +73,11 @@ fun WriteReviewDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = AppColors.Primary,
                                 unfocusedBorderColor = AppColors.LightGray,
                                 errorBorderColor = MaterialTheme.colorScheme.error,
-                                focusedContainerColor = AppColors.Surface,
-                                unfocusedContainerColor = AppColors.Surface
+                                containerColor = AppColors.Surface
                             )
                         )
                     }
@@ -147,11 +146,10 @@ fun WriteReviewDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(120.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
                                 focusedBorderColor = AppColors.Primary,
                                 unfocusedBorderColor = AppColors.LightGray,
-                                focusedContainerColor = AppColors.Surface,
-                                unfocusedContainerColor = AppColors.Surface
+                                containerColor = AppColors.Surface
                             )
                         )
 
