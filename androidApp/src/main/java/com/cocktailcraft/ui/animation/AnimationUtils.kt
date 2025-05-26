@@ -108,7 +108,7 @@ object AnimationUtils {
     val scaleAndFadeContentTransform: ContentTransform = (fadeInMedium + scaleInMedium).togetherWith(fadeOutMedium + scaleOutMedium)
 
     // Navigation transitions
-    fun slideIntoContainerFromRight(scope: AnimatedContentTransitionScope<*>): EnterTransition {
+    fun slideIntoContainerFromRight(): EnterTransition {
         return slideInHorizontally(
             animationSpec = tween(
                 durationMillis = ANIMATION_DURATION_MEDIUM,
@@ -120,7 +120,7 @@ object AnimationUtils {
         )
     }
 
-    fun slideOutOfContainerToLeft(scope: AnimatedContentTransitionScope<*>): ExitTransition {
+    fun slideOutOfContainerToLeft(): ExitTransition {
         return slideOutHorizontally(
             animationSpec = tween(
                 durationMillis = ANIMATION_DURATION_MEDIUM,
@@ -132,7 +132,7 @@ object AnimationUtils {
         )
     }
 
-    fun slideIntoContainerFromLeft(scope: AnimatedContentTransitionScope<*>): EnterTransition {
+    fun slideIntoContainerFromLeft(): EnterTransition {
         return slideInHorizontally(
             animationSpec = tween(
                 durationMillis = ANIMATION_DURATION_MEDIUM,
@@ -144,7 +144,7 @@ object AnimationUtils {
         )
     }
 
-    fun slideOutOfContainerToRight(scope: AnimatedContentTransitionScope<*>): ExitTransition {
+    fun slideOutOfContainerToRight(): ExitTransition {
         return slideOutHorizontally(
             animationSpec = tween(
                 durationMillis = ANIMATION_DURATION_MEDIUM,

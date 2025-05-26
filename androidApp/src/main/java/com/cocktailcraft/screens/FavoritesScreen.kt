@@ -84,12 +84,12 @@ fun FavoritesScreen(
                     CocktailItem(
                         cocktail = cocktail,
                         onClick = { /* Navigate to detail */ },
-                        onAddToCart = { cocktail ->
+                        onAddToCart = { _ ->
                             cartViewModel.addToCart(cocktail)
                             onAddToCart(cocktail)
                         },
                         isFavorite = true,
-                        onToggleFavorite = { cocktail ->
+                        onToggleFavorite = { _ ->
                             favoritesViewModel.toggleFavorite(cocktail)
                         }
                     )

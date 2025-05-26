@@ -105,9 +105,7 @@ import com.cocktailcraft.viewmodel.HomeViewModel
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun HomeScreen(
-    navController: NavController,
     viewModel: HomeViewModel,
-    cartViewModel: CartViewModel,
     favoritesViewModel: FavoritesViewModel,
     onAddToCart: (Cocktail) -> Unit,
     onCocktailClick: (Cocktail) -> Unit
@@ -124,9 +122,6 @@ fun HomeScreen(
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsState()
     val searchFilters by viewModel.searchFilters.collectAsState()
     val isAdvancedSearchActive by viewModel.isAdvancedSearchActive.collectAsState()
-
-    // State for error dialog
-    var showErrorDialog by remember { mutableStateOf(false) }
 
     // State for advanced search panel
     var showAdvancedSearch by remember { mutableStateOf(false) }
@@ -151,12 +146,6 @@ fun HomeScreen(
             viewModel.loadCocktailsByCategory(selectedCategory)
         }
     }
-
-    // Define common cocktail categories
-    val categories = listOf(
-        "All", "Cocktail", "Ordinary Drink", "Shot", "Coffee / Tea",
-        "Punch / Party Drink", "Homemade Liqueur", "Beer", "Soft Drink"
-    )
 
     Column(
         modifier = Modifier

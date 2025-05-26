@@ -221,11 +221,6 @@ fun CocktailDetailScreen(
             // Only proceed if cocktail is not null
             cocktail?.let { cocktailData ->
                 val imageUrl = cocktailData.imageUrl ?: ""
-                val averageRating = if (reviews.isNotEmpty()) {
-                    reviews.map { it.rating }.average().toFloat()
-                } else {
-                    0f
-                }
 
                 LazyColumn(
                     modifier = Modifier
@@ -429,7 +424,6 @@ fun CocktailDetailScreen(
                             content = {
 
                                 // Handle different types of ingredients list
-                                if (cocktailData.ingredients is List<*>) {
                                     (cocktailData.ingredients as? List<CocktailIngredient>)?.forEach { ingredient ->
                                         Row(
                                             modifier = Modifier
@@ -453,35 +447,8 @@ fun CocktailDetailScreen(
                                                 color = AppColors.TextSecondary
                                             )
                                         }
-                                    }
-                                } else {
-                                    // Handle as a generic list
-                                    val ingredientsList = cocktailData.ingredients as? List<*>
-                                    ingredientsList?.forEach { ingredient ->
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 6.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            // Ingredient bullet point
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(8.dp)
-                                                    .background(AppColors.Primary, CircleShape)
-                                            )
-
-                                            Spacer(modifier = Modifier.width(12.dp))
-
-                                            // Ingredient name
-                                            Text(
-                                                text = ingredient.toString(),
-                                                fontSize = 16.sp,
-                                                color = AppColors.TextSecondary
-                                            )
                                         }
-                                    }
-                                }
+
                             },
                             elevation = 0
                         )
