@@ -21,9 +21,9 @@ kotlin {
     jvmToolchain(17)
     
     androidTarget()
-    // iosX64()
-    // iosArm64()
-    // iosSimulatorArm64()
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
 
     sourceSets {
         val commonMain by getting {
@@ -47,34 +47,33 @@ kotlin {
                 implementation(libs.multiplatform.settings)
 
                 // DI
-                implementation("io.insert-koin:koin-core:3.4.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                implementation(libs.koin.core)
             }
         }
 
         val androidMain by getting {
             dependencies {
                 implementation(libs.ktor.client.android)
-                implementation("androidx.datastore:datastore-preferences:1.0.0")
-                implementation("com.russhwolf:multiplatform-settings:1.1.1")
+                implementation(libs.androidx.datastore.preferences)
+                implementation(libs.multiplatform.settings)
                 implementation("com.russhwolf:multiplatform-settings-datastore:1.1.1")
                 implementation("com.russhwolf:multiplatform-settings-coroutines:1.1.1")
             }
         }
 
-        // val iosX64Main by getting
-        // val iosArm64Main by getting
-        // val iosSimulatorArm64Main by getting
-        // val iosMain by creating {
-        //     dependsOn(commonMain)
-        //     iosX64Main.dependsOn(this)
-        //     iosArm64Main.dependsOn(this)
-        //     iosSimulatorArm64Main.dependsOn(this)
+        val iosX64Main by getting
+        val iosArm64Main by getting
+        val iosSimulatorArm64Main by getting
+        val iosMain by creating {
+            dependsOn(commonMain)
+            iosX64Main.dependsOn(this)
+            iosArm64Main.dependsOn(this)
+            iosSimulatorArm64Main.dependsOn(this)
 
-        //     dependencies {
-        //         implementation(libs.ktor.client.darwin)
-        //     }
-        // }
+            dependencies {
+                implementation(libs.ktor.client.darwin)
+            }
+        }
 
         val commonTest by getting {
             dependencies {
