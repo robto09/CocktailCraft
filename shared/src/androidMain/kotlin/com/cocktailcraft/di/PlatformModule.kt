@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import com.cocktailcraft.util.ImageLoader
+import com.cocktailcraft.util.ImageLoaderFactory
 import com.russhwolf.settings.ExperimentalSettingsApi
 import com.russhwolf.settings.ExperimentalSettingsImplementation
 import com.russhwolf.settings.Settings
@@ -28,5 +30,13 @@ actual fun platformModule() = module {
         val context = get<Context>()
         val sharedPrefs = context.getSharedPreferences("cocktailcraft_prefs", Context.MODE_PRIVATE)
         SharedPreferencesSettings(sharedPrefs)
+    }
+    
+    single<ImageLoaderFactory> {
+        ImageLoaderFactory(get())
+    }
+    
+    single<ImageLoader> {
+        get<ImageLoaderFactory>().createImageLoader()
     }
 } 
