@@ -2,6 +2,7 @@ package com.cocktailcraft.di
 
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.domain.config.AppConfig
+import com.cocktailcraft.domain.recommendation.CocktailRecommendationEngine
 import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.usecase.ToggleFavoriteUseCase
 import org.koin.dsl.module
@@ -16,4 +17,7 @@ val domainModule = module {
     // Use Cases
     factory { PlaceOrderUseCase(orderRepository = get()) }
     factory { ToggleFavoriteUseCase(cocktailRepository = get()) }
+    
+    // Recommendation Engine
+    single { CocktailRecommendationEngine(get(), get()) }
 }
