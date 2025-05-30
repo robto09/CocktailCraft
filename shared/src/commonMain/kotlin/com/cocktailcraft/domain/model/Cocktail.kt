@@ -1,6 +1,7 @@
 package com.cocktailcraft.domain.model
 
 import kotlinx.serialization.Serializable
+import com.cocktailcraft.util.getCurrentTimeMillis
 
 @Serializable
 data class Cocktail(
@@ -24,5 +25,5 @@ data class Cocktail(
     val stockCount: Int = 50,
     val rating: Float = 4.5f,
     val popularity: Int = 0,
-    val dateAdded: Long = System.currentTimeMillis()
+    val dateAdded: Long = getCurrentTimeMillis()
 )

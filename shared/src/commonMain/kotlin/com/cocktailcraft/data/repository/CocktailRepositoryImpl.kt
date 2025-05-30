@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import com.cocktailcraft.domain.config.AppConfig
 import kotlinx.serialization.json.Json
+import com.cocktailcraft.util.getCurrentTimeMillis
 
 class CocktailRepositoryImpl(
     private val api: CocktailApi,
@@ -376,14 +377,14 @@ class CocktailRepositoryImpl(
         return try {
             // If date string is null or empty, return current timestamp
             if (dateStr.isNullOrBlank()) {
-                System.currentTimeMillis()
+                getCurrentTimeMillis()
             } else {
                 // Parse the date string (format: "YYYY-MM-DD HH:mm:ss")
                 // For simplicity, we'll just use current timestamp if parsing fails
-                System.currentTimeMillis()
+                getCurrentTimeMillis()
             }
         } catch (e: Exception) {
-            System.currentTimeMillis()
+            getCurrentTimeMillis()
         }
     }
 

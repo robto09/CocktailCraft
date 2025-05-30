@@ -5,17 +5,18 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Android implementation of NetworkMonitor.
  */
-actual class NetworkMonitor actual constructor(
+actual class NetworkMonitor(
     private val context: Context
-) : BaseNetworkMonitor() {
-
-    actual override val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+) {
+    private val _isOnline = MutableStateFlow(true)
+    actual val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
     private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -42,7 +43,7 @@ actual class NetworkMonitor actual constructor(
         }
     }
 
-    actual override fun startMonitoring() {
+    actual fun startMonitoring() {
         val networkRequest = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
@@ -53,7 +54,7 @@ actual class NetworkMonitor actual constructor(
         _isOnline.value = isNetworkAvailable()
     }
 
-    actual override fun stopMonitoring() {
+    actual fun stopMonitoring() {
         try {
             connectivityManager.unregisterNetworkCallback(networkCallback)
         } catch (e: Exception) {

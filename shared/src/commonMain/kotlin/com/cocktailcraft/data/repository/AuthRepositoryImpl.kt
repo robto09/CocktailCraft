@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.util.UUID
+import com.cocktailcraft.util.generateUUID
 
 class AuthRepositoryImpl(
     private val settings: Settings,
@@ -28,7 +28,7 @@ class AuthRepositoryImpl(
 
             // Create new user
             val user = User(
-                id = UUID.randomUUID().toString(),
+                id = generateUUID(),
                 email = email,
                 name = "",
                 preferences = emptyMap()

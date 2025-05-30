@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.util.UUID
+import com.cocktailcraft.util.generateUUID
 
 class OrderRepositoryImpl(
     private val settings: Settings,
@@ -75,7 +75,7 @@ class OrderRepositoryImpl(
             val orders = _orders.value.toMutableList()
             // Generate a new ID if not provided
             val orderWithId = if (order.id.isBlank()) {
-                order.copy(id = UUID.randomUUID().toString())
+                order.copy(id = generateUUID())
             } else {
                 order
             }

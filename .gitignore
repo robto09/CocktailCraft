@@ -60,3 +60,6 @@ output.json
 # Other system-specific files
 .DS_Store
 Thumbs.db
+# iOS Framework (built by Gradle)
+iosApp/CocktailCraft/CocktailCraft/shared.framework/
+shared/build/

@@ -13,7 +13,7 @@ dependencyResolutionManagement {
     }
     versionCatalogs {
         create("libs") {
-            from(files("libraries.toml"))
+            from(files("versions.toml"))
         }
     }
 }
