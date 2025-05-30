@@ -24,7 +24,7 @@ import org.koin.dsl.module
 val networkModule = module {
     // HTTP Client
     single {
-        HttpClient {
+        HttpClient(httpClientEngine()) {
             install(ContentNegotiation) {
                 json(get<Json>())
             }
@@ -74,10 +74,6 @@ val networkModule = module {
                 handleResponseExceptionWithRequest { exception, _ ->
                     println("Network error: ${exception.message}")
                 }
-            }
-
-            engine {
-                // Engine-specific config
             }
         }
     }
