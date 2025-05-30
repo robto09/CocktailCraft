@@ -63,3 +63,8 @@ Thumbs.db
 # iOS Framework (built by Gradle)
 iosApp/CocktailCraft/CocktailCraft/shared.framework/
 shared/build/
+
+# Xcode user-specific files
+*.xcuserstate
+xcuserdata/
+
