@@ -149,16 +149,6 @@ struct ProfileView: View {
     }
 }
 
-struct CocktailDetailView: View {
-    let cocktailId: String
-    
-    var body: some View {
-        Text("Cocktail Detail: \(cocktailId)")
-            .navigationTitle("Cocktail Details")
-            .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
 struct ReviewsView: View {
     let cocktailId: String
     

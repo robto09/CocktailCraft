@@ -106,6 +106,8 @@ class ObservableCocktailDetailViewModel: ObservableViewModel<CocktailDetailViewM
     @Published var errorMessage: String?
     @Published var isFavorite = false
     @Published var reviews: [Review] = []
+    @Published var recommendations: [Cocktail] = []
+    @Published var isLoadingRecommendations = false
     
     override init(_ viewModel: CocktailDetailViewModel) {
         super.init(viewModel)
@@ -115,6 +117,8 @@ class ObservableCocktailDetailViewModel: ObservableViewModel<CocktailDetailViewM
         observe(viewModel.errorMessage, keyPath: \.errorMessage)
         observe(viewModel.isFavorite, keyPath: \.isFavorite)
         observe(viewModel.reviews, keyPath: \.reviews)
+        observe(viewModel.recommendations, keyPath: \.recommendations)
+        observe(viewModel.isLoadingRecommendations, keyPath: \.isLoadingRecommendations)
     }
     
     func loadCocktail(id: String) {
@@ -127,6 +131,10 @@ class ObservableCocktailDetailViewModel: ObservableViewModel<CocktailDetailViewM
     
     func addToCart(quantity: Int32) {
         viewModel.addToCart(quantity: quantity)
+    }
+    
+    func setCurrentCocktail(_ cocktail: Cocktail) {
+        viewModel.setCurrentCocktail(cocktail: cocktail)
     }
 }
 
