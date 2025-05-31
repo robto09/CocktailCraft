@@ -25,6 +25,7 @@ settings = "1.1.1"
 navigation = "2.8.8"
 security = "1.1.0-alpha06"
 turbine = "1.0.0"
+connectivity = "1.1.0"
 
 [libraries]
 accompanist-navigation-animation = { module = "com.google.accompanist:accompanist-navigation-animation", version.ref = "accompanist" }
@@ -71,6 +72,9 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "settings" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+connectivity-core = { module = "dev.jordond.connectivity:connectivity-core", version.ref = "connectivity" }
+connectivity-apple = { module = "dev.jordond.connectivity:connectivity-apple", version.ref = "connectivity" }
+connectivity-android = { module = "dev.jordond.connectivity:connectivity-android", version.ref = "connectivity" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

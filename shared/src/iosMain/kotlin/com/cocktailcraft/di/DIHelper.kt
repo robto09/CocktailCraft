@@ -1,5 +1,8 @@
 package com.cocktailcraft.di
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.core.context.startKoin
 import org.koin.dsl.KoinAppDeclaration
 
@@ -27,3 +30,11 @@ object DIHelper {
 fun doInitKoin() {
     DIHelper.initKoin()
 }
+
+/**
+ * Provides a CoroutineScope for iOS usage
+ * This scope is used for collecting flows from Swift
+ */
+private val iosScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+fun getIOSScope(): CoroutineScope = iosScope

@@ -9,7 +9,12 @@ echo "Building shared framework..."
 ./gradlew shared:linkDebugFrameworkIosSimulatorArm64
 
 # Copy the appropriate framework to the iOS project
-FRAMEWORK_SOURCE="../shared/build/bin/iosX64/debugFramework/shared.framework"
+# Determine which architecture to use based on current machine
+if [[ $(uname -m) == 'arm64' ]]; then
+    FRAMEWORK_SOURCE="shared/build/bin/iosSimulatorArm64/debugFramework/shared.framework"
+else
+    FRAMEWORK_SOURCE="shared/build/bin/iosX64/debugFramework/shared.framework"
+fi
 FRAMEWORK_DEST="iosApp/CocktailCraft/CocktailCraft/shared.framework"
 
 echo "Copying framework..."

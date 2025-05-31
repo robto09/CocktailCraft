@@ -13,7 +13,7 @@ struct CocktailItem: View {
             HStack(spacing: 12) {
                 // Cocktail image
                 ZStack {
-                    if let url = URL(string: cocktail.imageUrl ?? "") {
+                    if let urlString = cocktail.imageUrl, !urlString.isEmpty, let url = URL(string: urlString) {
                         AsyncImage(url: url) { phase in
                             switch phase {
                             case .empty:

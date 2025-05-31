@@ -15,6 +15,7 @@ typealias StateFlow = Kotlinx_coroutines_coreStateFlow
 class ObservableViewModel<T: BaseViewModel>: ObservableObject {
     let viewModel: T
     private var cancellables = Set<AnyCancellable>()
+    private var collectors: [Any] = []
     
     init(_ viewModel: T) {
         self.viewModel = viewModel
@@ -26,32 +27,19 @@ class ObservableViewModel<T: BaseViewModel>: ObservableObject {
     
     /// Helper to observe a StateFlow and publish changes to SwiftUI
     func observe<Value>(_ flow: any StateFlow, keyPath: ReferenceWritableKeyPath<ObservableViewModel<T>, Value>) {
-        FlowCollector<Value>(flow: flow) { [weak self] value in
+        let collector = StateFlowCollector<Value>()
+        collector.collect(flow: flow) { [weak self] value in
             DispatchQueue.main.async {
-                self?[keyPath: keyPath] = value
+                if let typedValue = value as? Value {
+                    self?[keyPath: keyPath] = typedValue
+                }
             }
         }
+        // Store collector to keep it alive
+        self.collectors.append(collector)
     }
 }
 
-/// Collector for Kotlin StateFlow to Swift
-class FlowCollector<T>: Kotlinx_coroutines_coreFlowCollector {
-    let callback: (T) -> Void
-    
-    init(flow: any StateFlow, callback: @escaping (T) -> Void) {
-        self.callback = callback
-        flow.collect(collector: self, completionHandler: { error in
-            print("Flow collection completed with error: \(String(describing: error))")
-        })
-    }
-    
-    func emit(value: Any?, completionHandler: @escaping (Error?) -> Void) {
-        if let value = value as? T {
-            callback(value)
-        }
-        completionHandler(nil)
-    }
-}
 
 // MARK: - Specific ViewModel Wrappers
 
@@ -68,6 +56,7 @@ class ObservableHomeViewModel: ObservableObject {
     
     let viewModel: HomeViewModel
     private var cancellables = Set<AnyCancellable>()
+    private var collectors: [Any] = []
     
     init(_ viewModel: HomeViewModel) {
         self.viewModel = viewModel
@@ -107,11 +96,16 @@ class ObservableHomeViewModel: ObservableObject {
     }
     
     private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
-        FlowCollector<Value>(flow: flow) { value in
+        let collector = StateFlowCollector<Value>()
+        collector.collect(flow: flow) { value in
             DispatchQueue.main.async {
-                handler(value)
+                if let typedValue = value as? Value {
+                    handler(typedValue)
+                }
             }
         }
+        // Store collector to keep it alive
+        self.collectors.append(collector)
     }
     
     // Computed properties
@@ -150,6 +144,7 @@ class ObservableCocktailDetailViewModel: ObservableObject {
     
     let viewModel: CocktailDetailViewModel
     private var cancellables = Set<AnyCancellable>()
+    private var collectors: [Any] = []
     
     init(_ viewModel: CocktailDetailViewModel) {
         self.viewModel = viewModel
@@ -176,11 +171,16 @@ class ObservableCocktailDetailViewModel: ObservableObject {
     }
     
     private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
-        FlowCollector<Value>(flow: flow) { value in
+        let collector = StateFlowCollector<Value>()
+        collector.collect(flow: flow) { value in
             DispatchQueue.main.async {
-                handler(value)
+                if let typedValue = value as? Value {
+                    handler(typedValue)
+                }
             }
         }
+        // Store collector to keep it alive
+        self.collectors.append(collector)
     }
     
     var errorMessage: String? {
@@ -203,6 +203,7 @@ class ObservableCartViewModel: ObservableObject {
     
     let viewModel: CartViewModel
     private var cancellables = Set<AnyCancellable>()
+    private var collectors: [Any] = []
     
     init(_ viewModel: CartViewModel) {
         self.viewModel = viewModel
@@ -223,11 +224,16 @@ class ObservableCartViewModel: ObservableObject {
     }
     
     private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
-        FlowCollector<Value>(flow: flow) { value in
+        let collector = StateFlowCollector<Value>()
+        collector.collect(flow: flow) { value in
             DispatchQueue.main.async {
-                handler(value)
+                if let typedValue = value as? Value {
+                    handler(typedValue)
+                }
             }
         }
+        // Store collector to keep it alive
+        self.collectors.append(collector)
     }
     
     var error: String? {
@@ -260,6 +266,7 @@ class ObservableThemeViewModel: ObservableObject {
     
     let viewModel: ThemeViewModel
     private var cancellables = Set<AnyCancellable>()
+    private var collectors: [Any] = []
     
     init(_ viewModel: ThemeViewModel) {
         self.viewModel = viewModel
@@ -273,11 +280,16 @@ class ObservableThemeViewModel: ObservableObject {
     }
     
     private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
-        FlowCollector<Value>(flow: flow) { value in
+        let collector = StateFlowCollector<Value>()
+        collector.collect(flow: flow) { value in
             DispatchQueue.main.async {
-                handler(value)
+                if let typedValue = value as? Value {
+                    handler(typedValue)
+                }
             }
         }
+        // Store collector to keep it alive
+        self.collectors.append(collector)
     }
     
     func setDarkMode(enabled: Bool) {
@@ -291,6 +303,7 @@ class ObservableFavoritesViewModel: ObservableObject {
     
     let viewModel: FavoritesViewModel
     private var cancellables = Set<AnyCancellable>()
+    private var collectors: [Any] = []
     
     init(_ viewModel: FavoritesViewModel) {
         self.viewModel = viewModel
@@ -308,11 +321,16 @@ class ObservableFavoritesViewModel: ObservableObject {
     }
     
     private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
-        FlowCollector<Value>(flow: flow) { value in
+        let collector = StateFlowCollector<Value>()
+        collector.collect(flow: flow) { value in
             DispatchQueue.main.async {
-                handler(value)
+                if let typedValue = value as? Value {
+                    handler(typedValue)
+                }
             }
         }
+        // Store collector to keep it alive
+        self.collectors.append(collector)
     }
     
     var error: String? {
@@ -335,6 +353,7 @@ class ObservableProfileViewModel: ObservableObject {
     
     let viewModel: ProfileViewModel
     private var cancellables = Set<AnyCancellable>()
+    private var collectors: [Any] = []
     
     init(_ viewModel: ProfileViewModel) {
         self.viewModel = viewModel
@@ -355,11 +374,16 @@ class ObservableProfileViewModel: ObservableObject {
     }
     
     private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
-        FlowCollector<Value>(flow: flow) { value in
+        let collector = StateFlowCollector<Value>()
+        collector.collect(flow: flow) { value in
             DispatchQueue.main.async {
-                handler(value)
+                if let typedValue = value as? Value {
+                    handler(typedValue)
+                }
             }
         }
+        // Store collector to keep it alive
+        self.collectors.append(collector)
     }
     
     func signIn(email: String, password: String) {
@@ -377,6 +401,7 @@ class ObservableOrderViewModel: ObservableObject {
     
     let viewModel: OrderViewModel
     private var cancellables = Set<AnyCancellable>()
+    private var collectors: [Any] = []
     
     init(_ viewModel: OrderViewModel) {
         self.viewModel = viewModel
@@ -394,11 +419,16 @@ class ObservableOrderViewModel: ObservableObject {
     }
     
     private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
-        FlowCollector<Value>(flow: flow) { value in
+        let collector = StateFlowCollector<Value>()
+        collector.collect(flow: flow) { value in
             DispatchQueue.main.async {
-                handler(value)
+                if let typedValue = value as? Value {
+                    handler(typedValue)
+                }
             }
         }
+        // Store collector to keep it alive
+        self.collectors.append(collector)
     }
     
     func placeOrder(items: [CocktailCartItem], totalPrice: Double) {
@@ -420,6 +450,7 @@ class ObservableReviewViewModel: ObservableObject {
     
     let viewModel: ReviewViewModel
     private var cancellables = Set<AnyCancellable>()
+    private var collectors: [Any] = []
     
     init(_ viewModel: ReviewViewModel) {
         self.viewModel = viewModel
@@ -433,11 +464,16 @@ class ObservableReviewViewModel: ObservableObject {
     }
     
     private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
-        FlowCollector<Value>(flow: flow) { value in
+        let collector = StateFlowCollector<Value>()
+        collector.collect(flow: flow) { value in
             DispatchQueue.main.async {
-                handler(value)
+                if let typedValue = value as? Value {
+                    handler(typedValue)
+                }
             }
         }
+        // Store collector to keep it alive
+        self.collectors.append(collector)
     }
     
     func addReview(review: Review) {
@@ -456,6 +492,7 @@ class ObservableOfflineModeViewModel: ObservableObject {
     
     let viewModel: OfflineModeViewModel
     private var cancellables = Set<AnyCancellable>()
+    private var collectors: [Any] = []
     
     var isOffline: Bool {
         return !isNetworkAvailable || isOfflineModeEnabled
@@ -480,11 +517,16 @@ class ObservableOfflineModeViewModel: ObservableObject {
     }
     
     private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
-        FlowCollector<Value>(flow: flow) { value in
+        let collector = StateFlowCollector<Value>()
+        collector.collect(flow: flow) { value in
             DispatchQueue.main.async {
-                handler(value)
+                if let typedValue = value as? Value {
+                    handler(typedValue)
+                }
             }
         }
+        // Store collector to keep it alive
+        self.collectors.append(collector)
     }
     
     func toggleOfflineMode() {

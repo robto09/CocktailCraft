@@ -58,6 +58,9 @@ kotlin {
 
                 // DI
                 implementation(libs.koin.core)
+                
+                // Connectivity
+                implementation(libs.connectivity.core)
             }
         }
 
@@ -68,12 +71,14 @@ kotlin {
                 implementation(libs.multiplatform.settings)
                 implementation("com.russhwolf:multiplatform-settings-datastore:1.1.1")
                 implementation("com.russhwolf:multiplatform-settings-coroutines:1.1.1")
+                implementation(libs.connectivity.android)
             }
         }
 
         val iosMain by getting {
             dependencies {
                 implementation(libs.ktor.client.darwin)
+                implementation(libs.connectivity.apple)
             }
         }
 

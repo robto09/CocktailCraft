@@ -115,6 +115,7 @@
 				0E1733F92DE93E50004403A7 /* Sources */,
 				0E1733FA2DE93E50004403A7 /* Frameworks */,
 				0E1733FB2DE93E50004403A7 /* Resources */,
+				0EE42CCA2DEAD85800BBA718 /* ShellScript */,
 				0E17342B2DE93F0D004403A7 /* Embed Frameworks */,
 			);
 			buildRules = (
@@ -244,6 +245,26 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		0EE42CCA2DEAD85800BBA718 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Add App Transport Security settings to the generated Info.plist\nset -e\n\necho \"Adding App Transport Security settings...\"\n\n# The Info.plist location in the built app\nINFO_PLIST=\"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\"\n\n# Add ATS settings using PlistBuddy\n/usr/libexec/PlistBuddy -c \"Add :NSAppTransportSecurity dict\" \"$INFO_PLIST\" 2>/dev/null || true\n/usr/libexec/PlistBuddy -c \"Add :NSAppTransportSecurity:NSExceptionDomains dict\" \"$INFO_PLIST\" 2>/dev/null || true\n/usr/libexec/PlistBuddy -c \"Add :NSAppTransportSecurity:NSExceptionDomains:thecocktaildb.com dict\" \"$INFO_PLIST\" 2>/dev/null || true\n/usr/libexec/PlistBuddy -c \"Set :NSAppTransportSecurity:NSExceptionDomains:thecocktaildb.com:NSIncludesSubdomains YES\" \"$INFO_PLIST\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Add :NSAppTransportSecurity:NSExceptionDomains:thecocktaildb.com:NSIncludesSubdomains bool YES\" \"$INFO_PLIST\"\n/usr/libexec/PlistBuddy -c \"Set :NSAppTransportSecurity:NSExceptionDomains:thecocktaildb.com:NSTemporaryExceptionAllowsInsecureHTTPLoads YES\" \"$INFO_PLIST\" 2>/dev/null || /usr/libexec/PlistBuddy -c \"Add :NSAppTransportSecurity:NSExceptionDomains:thecocktaildb.com:NSTemporaryExceptionAllowsInsecureHTTPLoads bool YES\" \"$INFO_PLIST\"\n\necho \"App Transport Security settings added successfully!\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		0E1733F92DE93E50004403A7 /* Sources */ = {
