@@ -122,10 +122,7 @@ struct HomeView: View {
                         }
                         
                         // Loading More Indicator
-                        if homeViewModel.isLoadingMore {
-                            ProgressView()
-                                .padding()
-                        }
+                        LoadingMoreIndicator(isLoading: homeViewModel.isLoadingMore)
                         
                         // End of List Message
                         if !homeViewModel.hasMoreData && !homeViewModel.cocktails.isEmpty {

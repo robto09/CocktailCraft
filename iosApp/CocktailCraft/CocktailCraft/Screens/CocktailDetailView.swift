@@ -21,12 +21,19 @@ struct CocktailDetailView: View {
     var body: some View {
         ZStack {
             if detailViewModel.isLoading && detailViewModel.cocktail == nil {
-                LoadingStateView()
+                LoadingStateComponent(
+                    isLoading: true,
+                    indicatorSize: 50
+                )
             } else if let cocktail = detailViewModel.cocktail {
                 ScrollView {
                     VStack(spacing: 0) {
                         // Hero Image Section
-                        CocktailHeroImage(imageUrl: cocktail.strDrinkThumb)
+                        DetailHeaderImage(
+                            imageUrl: cocktail.strDrinkThumb ?? "",
+                            contentDescription: cocktail.strDrink ?? "Cocktail image",
+                            height: 250
+                        )
                         
                         // Main Details Card
                         MainDetailsCard(
@@ -126,36 +133,6 @@ struct CocktailDetailView: View {
 
 // MARK: - Supporting Views
 
-struct CocktailHeroImage: View {
-    let imageUrl: String?
-    
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            AsyncImage(url: URL(string: imageUrl ?? "")) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } placeholder: {
-                Rectangle()
-                    .fill(Color(.systemGray5))
-                    .overlay(
-                        ProgressView()
-                    )
-            }
-            .frame(height: 250)
-            .clipped()
-            
-            // Gradient overlay
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.3)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        }
-        .frame(height: 250)
-    }
-}
-
 struct MainDetailsCard: View {
     let cocktail: Cocktail
     let isFavorite: Bool
@@ -185,6 +162,14 @@ struct MainDetailsCard: View {
             Text("\(cocktail.strCategory ?? "Cocktail") • \(cocktail.strAlcoholic ?? "Unknown")")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
+            
+            // Rating
+            if cocktail.averageRating > 0 {
+                RatingDisplay(
+                    rating: Float(cocktail.averageRating),
+                    reviewCount: Int(cocktail.reviewCount)
+                )
+            }
             
             // Stock Status
             HStack(spacing: 4) {
@@ -224,10 +209,7 @@ struct PreparationCard: View {
     let instructions: String?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("How to Prepare")
-                .font(.headline)
-            
+        DetailInfoCard(title: "How to Prepare") {
             if let instructions = instructions, !instructions.isEmpty {
                 Text(instructions)
                     .font(.body)
@@ -247,10 +229,6 @@ struct PreparationCard: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
     }
 }
 
@@ -288,10 +266,7 @@ struct IngredientsCard: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Ingredients")
-                .font(.headline)
-            
+        DetailInfoCard(title: "Ingredients") {
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(ingredients, id: \.name) { ingredient in
                     HStack(alignment: .top) {
@@ -305,10 +280,6 @@ struct IngredientsCard: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
     }
 }
 
@@ -316,86 +287,56 @@ struct DetailsCard: View {
     let cocktail: Cocktail
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Details")
-                .font(.headline)
-            
+        DetailInfoCard(title: "Details") {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    DetailChip(label: cocktail.strCategory ?? "Unknown")
+                    FilterChip(
+                        label: cocktail.strCategory ?? "Unknown",
+                        selected: false,
+                        onClick: {}
+                    )
+                    .disabled(true)
                     
                     if let glass = cocktail.strGlass {
-                        DetailChip(label: glass)
+                        FilterChip(
+                            label: glass,
+                            selected: false,
+                            onClick: {}
+                        )
+                        .disabled(true)
                     }
                     
                     if let alcoholic = cocktail.strAlcoholic {
-                        DetailChip(label: alcoholic)
+                        FilterChip(
+                            label: alcoholic,
+                            selected: false,
+                            onClick: {}
+                        )
+                        .disabled(true)
                     }
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(12)
     }
 }
 
-struct DetailChip: View {
-    let label: String
-    
-    var body: some View {
-        Text(label)
-            .font(.caption)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Color(.tertiarySystemBackground))
-            .cornerRadius(20)
-    }
-}
 
-struct LoadingStateView: View {
-    var body: some View {
-        VStack {
-            ProgressView()
-                .scaleEffect(1.5)
-            Text("Loading cocktail details...")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .padding(.top)
-        }
-    }
-}
 
 struct ErrorStateView: View {
     let message: String
     let onRetry: () -> Void
     
     var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 50))
-                .foregroundColor(.secondary)
-            
-            Text("Error Loading Cocktail")
-                .font(.title3)
-                .fontWeight(.semibold)
-            
-            Text(message)
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-            
-            Button(action: onRetry) {
-                Text("Try Again")
-                    .fontWeight(.semibold)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 30)
-                    .padding(.vertical, 12)
-                    .background(Color.accentColor)
-                    .cornerRadius(10)
-            }
+        VStack {
+            ErrorDialog(
+                errorTitle: "Error Loading Cocktail",
+                errorMessage: message,
+                errorIcon: "exclamationmark.triangle",
+                iconColor: .orange,
+                onDismiss: {},
+                onRetry: onRetry
+            )
         }
+        .padding()
     }
 }
