@@ -71,8 +71,8 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
     // Koin
-    implementation("io.insert-koin:koin-android:3.4.0")
-    implementation("io.insert-koin:koin-androidx-compose:3.4.0")
+    implementation("io.insert-koin:koin-android:4.0.1")
+    implementation("io.insert-koin:koin-androidx-compose:4.0.1")
 
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")

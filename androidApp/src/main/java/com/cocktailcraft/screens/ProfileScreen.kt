@@ -62,7 +62,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import org.koin.androidx.compose.koinViewModel
 import com.cocktailcraft.navigation.NavigationManager
 import com.cocktailcraft.ui.components.AnimatedThemeToggleRow
 import com.cocktailcraft.ui.theme.AppColors
@@ -72,8 +72,8 @@ import com.cocktailcraft.viewmodel.ThemeViewModel
 @Composable
 fun ProfileScreen(
     navigationManager: NavigationManager,
-    profileViewModel: ProfileViewModel = viewModel(),
-    themeViewModel: ThemeViewModel = viewModel()
+    profileViewModel: ProfileViewModel = koinViewModel(),
+    themeViewModel: ThemeViewModel = koinViewModel()
 ) {
     // Get user data from ViewModel
     val user by profileViewModel.user.collectAsState()

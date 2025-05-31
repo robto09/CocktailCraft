@@ -11,7 +11,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
+import org.koin.androidx.compose.koinViewModel
 import com.cocktailcraft.ui.main.MainScreen
 import com.cocktailcraft.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.viewmodel.ThemeViewModel
@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             // Get the ThemeViewModel to observe dark mode preference
-            val themeViewModel: ThemeViewModel = viewModel()
+            val themeViewModel: ThemeViewModel = koinViewModel()
             val isDarkMode by themeViewModel.isDarkMode.collectAsState()
 
             // Get the current system dark mode state

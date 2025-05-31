@@ -27,7 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import org.koin.androidx.compose.koinViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -71,13 +71,13 @@ fun MainScreen() {
     )
 
     // Create shared ViewModels for the entire app
-    val sharedOrderViewModel: OrderViewModel = viewModel()
-    val sharedCartViewModel: CartViewModel = viewModel()
-    val sharedReviewViewModel: ReviewViewModel = viewModel()
-    val sharedHomeViewModel: HomeViewModel = viewModel()
-    val sharedFavoritesViewModel: FavoritesViewModel = viewModel()
-    val sharedThemeViewModel: ThemeViewModel = viewModel()
-    val sharedOfflineModeViewModel: OfflineModeViewModel = viewModel()
+    val sharedOrderViewModel: OrderViewModel = koinViewModel()
+    val sharedCartViewModel: CartViewModel = koinViewModel()
+    val sharedReviewViewModel: ReviewViewModel = koinViewModel()
+    val sharedHomeViewModel: HomeViewModel = koinViewModel()
+    val sharedFavoritesViewModel: FavoritesViewModel = koinViewModel()
+    val sharedThemeViewModel: ThemeViewModel = koinViewModel()
+    val sharedOfflineModeViewModel: OfflineModeViewModel = koinViewModel()
 
     // Get the current route for conditional rendering
     val navBackStackEntry by navController.currentBackStackEntryAsState()
