@@ -63,7 +63,7 @@ struct MainView: View {
         case .cart:
             CartScreen()
         case .favorites:
-            FavoritesView()
+            FavoritesScreen()
         case .orders:
             OrderListView()
         case .profile:
@@ -79,7 +79,7 @@ struct MainView: View {
         case .cart:
             CartScreen()
         case .favorites:
-            FavoritesView()
+            FavoritesScreen()
         case .orders:
             OrderListView()
         case .profile:
@@ -120,13 +120,6 @@ struct OfflineBanner: View {
 }
 
 // Placeholder views - these will be implemented in subsequent tasks
-
-struct FavoritesView: View {
-    var body: some View {
-        Text("Favorites Screen")
-            .navigationTitle("Favorites")
-    }
-}
 
 struct OrderListView: View {
     var body: some View {
