@@ -85,10 +85,15 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(libs.mockk)
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.koin.test)
                 implementation(libs.turbine)
+            }
+        }
+        
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.mockk)
             }
         }
     }

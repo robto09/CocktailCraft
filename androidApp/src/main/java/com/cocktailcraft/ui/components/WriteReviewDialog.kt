@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,11 +74,13 @@ fun WriteReviewDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp),
-                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                            colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = AppColors.Primary,
                                 unfocusedBorderColor = AppColors.LightGray,
                                 errorBorderColor = MaterialTheme.colorScheme.error,
-                                containerColor = AppColors.Surface
+                                focusedContainerColor = AppColors.Surface,
+                                unfocusedContainerColor = AppColors.Surface,
+                                errorContainerColor = AppColors.Surface
                             )
                         )
                     }
@@ -146,10 +149,11 @@ fun WriteReviewDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(120.dp),
-                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                            colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = AppColors.Primary,
                                 unfocusedBorderColor = AppColors.LightGray,
-                                containerColor = AppColors.Surface
+                                focusedContainerColor = AppColors.Surface,
+                                unfocusedContainerColor = AppColors.Surface
                             )
                         )
 

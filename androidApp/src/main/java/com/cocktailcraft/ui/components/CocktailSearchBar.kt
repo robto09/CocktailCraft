@@ -16,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -90,13 +91,14 @@ fun CocktailSearchBar(
                     }
                 }
             },
-            colors = TextFieldDefaults.outlinedTextFieldColors(
+            colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = AppColors.Primary,
                 unfocusedBorderColor = Color.Gray,
                 cursorColor = AppColors.Primary,
                 focusedLeadingIconColor = AppColors.Primary,
                 unfocusedLeadingIconColor = Color.Gray,
-                containerColor = Color.White
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White
             ),
             shape = RoundedCornerShape(8.dp),
             singleLine = true
