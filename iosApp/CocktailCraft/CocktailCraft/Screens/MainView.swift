@@ -65,7 +65,7 @@ struct MainView: View {
         case .favorites:
             FavoritesScreen()
         case .orders:
-            OrderListView()
+            OrderListScreen()
         case .profile:
             ProfileScreen()
         }
@@ -81,7 +81,7 @@ struct MainView: View {
         case .favorites:
             FavoritesScreen()
         case .orders:
-            OrderListView()
+            OrderListScreen()
         case .profile:
             ProfileScreen()
         case .cocktailDetail(let cocktailId):
@@ -89,7 +89,7 @@ struct MainView: View {
         case .reviews(let cocktailId):
             ReviewsView(cocktailId: cocktailId)
         case .offlineMode:
-            OfflineModeView()
+            OfflineModeScreen()
         }
     }
 }
@@ -121,12 +121,6 @@ struct OfflineBanner: View {
 
 // Placeholder views - these will be implemented in subsequent tasks
 
-struct OrderListView: View {
-    var body: some View {
-        Text("Recipes Screen")
-            .navigationTitle("Recipes")
-    }
-}
 
 
 struct ReviewsView: View {
@@ -139,13 +133,6 @@ struct ReviewsView: View {
     }
 }
 
-struct OfflineModeView: View {
-    var body: some View {
-        Text("Offline Mode Settings")
-            .navigationTitle("Offline Mode")
-            .navigationBarTitleDisplayMode(.inline)
-    }
-}
 
 struct MainView_Previews: PreviewProvider {
     static var previews: some View {
