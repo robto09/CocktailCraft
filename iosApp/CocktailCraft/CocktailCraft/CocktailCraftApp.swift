@@ -10,6 +10,8 @@ import shared
 
 @main
 struct CocktailCraftApp: App {
+    @State private var showLaunchScreen = true
+    
     init() {
         // Initialize Koin DI
         DIHelperKt.doInitKoin()
@@ -17,7 +19,22 @@ struct CocktailCraftApp: App {
     
     var body: some Scene {
         WindowGroup {
-            MainView()
+            ZStack {
+                if showLaunchScreen {
+                    LaunchScreenView()
+                        .transition(.opacity)
+                } else {
+                    MainView()
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.5), value: showLaunchScreen)
+            .onAppear {
+                // Show launch screen for 2 seconds
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    showLaunchScreen = false
+                }
+            }
         }
     }
 }
