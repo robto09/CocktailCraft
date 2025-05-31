@@ -9,20 +9,50 @@ import SwiftUI
 import shared
 
 struct ContentView: View {
-    @State private var greetingText = "Loading..."
+    @StateObject private var homeViewModel = ViewModelProvider.shared.homeViewModel
+    @StateObject private var themeViewModel = ViewModelProvider.shared.themeViewModel
     
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text(greetingText)
-                .padding()
+        NavigationView {
+            VStack {
+                if homeViewModel.isLoading {
+                    ProgressView("Loading cocktails...")
+                        .padding()
+                } else if let error = homeViewModel.errorMessage {
+                    Text("Error: \(error)")
+                        .foregroundColor(.red)
+                        .padding()
+                } else {
+                    List(homeViewModel.cocktails, id: \.id) { cocktail in
+                        VStack(alignment: .leading) {
+                            Text(cocktail.name)
+                                .font(.headline)
+                            Text(cocktail.description_)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
+                            Text("$\(String(format: "%.2f", cocktail.price))")
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+            .navigationTitle("CocktailCraft")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        themeViewModel.toggleTheme()
+                    }) {
+                        Image(systemName: themeViewModel.isDarkMode ? "sun.max.fill" : "moon.fill")
+                    }
+                }
+            }
         }
+        .preferredColorScheme(themeViewModel.isDarkMode ? .dark : .light)
         .onAppear {
-            // Test calling a function from shared module
-            let greeting = Greeting()
-            greetingText = greeting.getGreeting()
+            homeViewModel.loadCocktails()
         }
     }
 }

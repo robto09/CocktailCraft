@@ -6,11 +6,13 @@
 //
 
 import SwiftUI
+import shared
 
 @main
 struct CocktailCraftApp: App {
     init() {
-        // Initialize Koin DI here later
+        // Initialize Koin DI
+        DIHelperKt.doInitKoin()
     }
     
     var body: some Scene {

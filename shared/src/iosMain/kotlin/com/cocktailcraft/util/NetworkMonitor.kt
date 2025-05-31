@@ -3,49 +3,61 @@ package com.cocktailcraft.util
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import platform.Network.*
-import platform.darwin.*
+import platform.Foundation.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 /**
- * iOS implementation of NetworkMonitor using NWPathMonitor for real network status monitoring.
+ * iOS implementation of NetworkMonitor.
+ * For now, this uses a simplified approach with URLSession to check connectivity.
+ * TODO: Implement proper network monitoring using NWPathMonitor or SCNetworkReachability
+ * when Kotlin/Native interop issues are resolved.
  */
 actual class NetworkMonitor {
     private val _isOnline = MutableStateFlow(true)
     actual val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
     
-    private var pathMonitor: nw_path_monitor_t? = null
-    private var monitorQueue: dispatch_queue_t? = null
+    private var isMonitoring = false
     
     actual fun startMonitoring() {
-        // Create the network path monitor
-        pathMonitor = nw_path_monitor_create()
+        isMonitoring = true
         
-        // Create a dispatch queue for the monitor
-        monitorQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT.toLong(), 0u)
+        // Initial check
+        checkConnectivity()
         
-        // Set up the update handler
-        val monitor = pathMonitor
-        if (monitor != null) {
-            nw_path_monitor_set_update_handler(monitor) { path ->
-                val status = nw_path_get_status(path)
-                _isOnline.value = (status == nw_path_status_satisfied || status == nw_path_status_satisfiable)
-            }
-            
-            // Start monitoring on the queue
-            val queue = monitorQueue
-            if (queue != null) {
-                nw_path_monitor_set_queue(monitor, queue)
-                nw_path_monitor_start(monitor)
+        // Periodic monitoring
+        GlobalScope.launch {
+            while (isMonitoring) {
+                kotlinx.coroutines.delay(10000L) // Check every 10 seconds
+                checkConnectivity()
             }
         }
     }
     
-    actual fun stopMonitoring() {
-        val monitor = pathMonitor
-        if (monitor != null) {
-            nw_path_monitor_cancel(monitor)
-            pathMonitor = null
+    private fun checkConnectivity() {
+        // Try to reach a reliable endpoint
+        val url = NSURL.URLWithString("https://www.google.com")
+        if (url != null) {
+            val request = NSMutableURLRequest(uRL = url)
+            request.setHTTPMethod("HEAD")
+            request.setTimeoutInterval(5.0)
+            request.setCachePolicy(NSURLRequestReloadIgnoringLocalCacheData)
+            
+            val session = NSURLSession.sharedSession
+            val task = session.dataTaskWithRequest(request) { _, response, error ->
+                val httpResponse = response as? NSHTTPURLResponse
+                val isConnected = error == null && httpResponse?.statusCode?.let { 
+                    it >= 200L && it < 300L 
+                } ?: false
+                
+                _isOnline.value = isConnected
+            }
+            
+            task.resume()
         }
-        monitorQueue = null
+    }
+    
+    actual fun stopMonitoring() {
+        isMonitoring = false
     }
 }

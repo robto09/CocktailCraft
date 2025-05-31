@@ -17,8 +17,8 @@ actual class ImageLoader {
         val config = NSURLSessionConfiguration.defaultSessionConfiguration
         // Configure cache: 100MB disk cache, 10MB memory cache
         config.URLCache = NSURLCache(
-            memoryCapacity = 10u * 1024u * 1024u, // 10 MB
-            diskCapacity = 100u * 1024u * 1024u,   // 100 MB
+            memoryCapacity = (10 * 1024 * 1024).toULong(), // 10 MB
+            diskCapacity = (100 * 1024 * 1024).toULong(),   // 100 MB
             diskPath = "cocktailcraft_image_cache"
         )
         config.requestCachePolicy = NSURLRequestReturnCacheDataElseLoad
