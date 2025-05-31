@@ -120,12 +120,6 @@ struct OfflineBanner: View {
 }
 
 // Placeholder views - these will be implemented in subsequent tasks
-struct HomeView: View {
-    var body: some View {
-        Text("Home Screen")
-            .navigationTitle("Home")
-    }
-}
 
 struct CartView: View {
     var body: some View {

@@ -60,6 +60,11 @@ class ObservableHomeViewModel: ObservableViewModel<HomeViewModel> {
     @Published var searchQuery = ""
     @Published var selectedSortOption: SortOption = .nameAsc
     @Published var isSearching = false
+    @Published var searchFilters = SearchFilters()
+    @Published var isAdvancedSearchActive = false
+    @Published var hasMoreData = true
+    @Published var isLoadingMore = false
+    @Published var favorites: [Cocktail] = []
     
     override init(_ viewModel: HomeViewModel) {
         super.init(viewModel)
@@ -71,6 +76,11 @@ class ObservableHomeViewModel: ObservableViewModel<HomeViewModel> {
         observe(viewModel.searchQuery, keyPath: \.searchQuery)
         observe(viewModel.selectedSortOption, keyPath: \.selectedSortOption)
         observe(viewModel.isSearching, keyPath: \.isSearching)
+        observe(viewModel.searchFilters, keyPath: \.searchFilters)
+        observe(viewModel.isAdvancedSearchActive, keyPath: \.isAdvancedSearchActive)
+        observe(viewModel.hasMoreData, keyPath: \.hasMoreData)
+        observe(viewModel.isLoadingMore, keyPath: \.isLoadingMore)
+        observe(viewModel.favorites, keyPath: \.favorites)
     }
     
     func loadCocktails() {
