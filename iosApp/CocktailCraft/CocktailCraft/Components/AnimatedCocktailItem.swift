@@ -11,6 +11,7 @@ struct AnimatedCocktailItem: View {
     
     @State private var isPressed = false
     @State private var isVisible = false
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
         Button(action: onTap) {

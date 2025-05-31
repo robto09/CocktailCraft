@@ -5,6 +5,7 @@ struct MainView: View {
     @StateObject private var navigationCoordinator = NavigationCoordinator()
     @StateObject private var themeViewModel = ViewModelProvider.shared.themeViewModel
     @StateObject private var offlineModeViewModel = ViewModelProvider.shared.offlineModeViewModel
+    @StateObject private var themeManager = ThemeManager.shared
     
     var body: some View {
         ZStack {
@@ -26,6 +27,10 @@ struct MainView: View {
                 }
             }
             .preferredColorScheme(themeViewModel.isDarkMode ? .dark : .light)
+            .environment(\.colorScheme, themeViewModel.isDarkMode ? .dark : .light)
+            .onChange(of: themeViewModel.isDarkMode) { isDark in
+                themeManager.updateTheme(isDarkMode: isDark)
+            }
             
             // Offline Mode Banner
             if offlineModeViewModel.isOffline {
@@ -96,6 +101,7 @@ struct MainView: View {
 
 struct OfflineBanner: View {
     let onTap: () -> Void
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
         HStack {
@@ -112,7 +118,7 @@ struct OfflineBanner: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
-        .background(Color.orange)
+        .background(AppColors.warning)
         .onTapGesture {
             onTap()
         }
