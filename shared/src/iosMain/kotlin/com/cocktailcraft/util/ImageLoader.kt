@@ -3,50 +3,88 @@ package com.cocktailcraft.util
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.Foundation.*
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 /**
- * iOS implementation of ImageLoader.
- * This is a placeholder implementation that will need to be replaced
- * with a proper iOS image loading library like Kamel or native implementation.
+ * iOS implementation of ImageLoader using native URLSession with caching.
  */
 actual class ImageLoader {
+    
+    private val urlSession: NSURLSession by lazy {
+        val config = NSURLSessionConfiguration.defaultSessionConfiguration
+        // Configure cache: 100MB disk cache, 10MB memory cache
+        config.URLCache = NSURLCache(
+            memoryCapacity = 10u * 1024u * 1024u, // 10 MB
+            diskCapacity = 100u * 1024u * 1024u,   // 100 MB
+            diskPath = "cocktailcraft_image_cache"
+        )
+        config.requestCachePolicy = NSURLRequestReturnCacheDataElseLoad
+        NSURLSession.sessionWithConfiguration(config)
+    }
     
     actual suspend fun preloadImages(
         imageUrls: List<String>,
         onProgress: ((Float) -> Unit)?
     ) {
-        // Placeholder implementation for iOS
-        // In a real implementation, you would use:
-        // - Kamel (KMP image loading library)
-        // - Or native iOS URLSession with caching
-        // - Or SDWebImage wrapped in Kotlin
-        
         if (imageUrls.isEmpty()) return
         
         withContext(Dispatchers.IO) {
             var loadedCount = 0
             
-            imageUrls.forEach { url ->
-                if (url.isNotBlank()) {
-                    // Simulate loading delay
-                    kotlinx.coroutines.delay(100)
-                    
-                    // Update progress
-                    loadedCount++
-                    val progress = loadedCount.toFloat() / imageUrls.size
-                    withContext(Dispatchers.Main) {
-                        onProgress?.invoke(progress)
+            imageUrls.forEach { urlString ->
+                if (urlString.isNotBlank()) {
+                    try {
+                        // Create URL and download image data
+                        NSURL.URLWithString(urlString)?.let { url ->
+                            downloadImageData(url)
+                        }
+                        
+                        // Update progress
+                        loadedCount++
+                        val progress = loadedCount.toFloat() / imageUrls.size
+                        withContext(Dispatchers.Main) {
+                            onProgress?.invoke(progress)
+                        }
+                    } catch (e: Exception) {
+                        // Log error but continue with other images
+                        Logger.e("ImageLoader", "Failed to preload image: $urlString", e)
                     }
                 }
             }
         }
     }
     
+    private suspend fun downloadImageData(url: NSURL): NSData = suspendCancellableCoroutine { continuation ->
+        val task = urlSession.dataTaskWithURL(url) { data, response, error ->
+            when {
+                error != null -> {
+                    continuation.resumeWithException(Exception(error.localizedDescription))
+                }
+                data != null -> {
+                    continuation.resume(data)
+                }
+                else -> {
+                    continuation.resumeWithException(Exception("No data received"))
+                }
+            }
+        }
+        
+        continuation.invokeOnCancellation {
+            task.cancel()
+        }
+        
+        task.resume()
+    }
+    
     actual fun clearCache() {
-        // Placeholder implementation
-        // In a real implementation, clear the image cache
-        // For URLSession: URLCache.shared.removeAllCachedResponses()
-        // For Kamel: Clear Kamel's cache
+        // Clear URLCache
+        urlSession.configuration.URLCache?.removeAllCachedResponses()
+        
+        // Also clear the shared URL cache
+        NSURLCache.sharedURLCache.removeAllCachedResponses()
     }
 }
 
