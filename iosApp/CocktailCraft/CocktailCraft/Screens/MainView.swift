@@ -67,7 +67,7 @@ struct MainView: View {
         case .orders:
             OrderListView()
         case .profile:
-            ProfileView()
+            ProfileScreen()
         }
     }
     
@@ -83,7 +83,7 @@ struct MainView: View {
         case .orders:
             OrderListView()
         case .profile:
-            ProfileView()
+            ProfileScreen()
         case .cocktailDetail(let cocktailId):
             CocktailDetailView(cocktailId: cocktailId)
         case .reviews(let cocktailId):
@@ -128,12 +128,6 @@ struct OrderListView: View {
     }
 }
 
-struct ProfileView: View {
-    var body: some View {
-        Text("Profile Screen")
-            .navigationTitle("Profile")
-    }
-}
 
 struct ReviewsView: View {
     let cocktailId: String
