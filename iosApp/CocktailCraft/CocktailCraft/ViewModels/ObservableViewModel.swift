@@ -158,3 +158,41 @@ class ObservableThemeViewModel: ObservableViewModel<ThemeViewModel> {
         viewModel.toggleTheme()
     }
 }
+
+class ObservableOfflineModeViewModel: ObservableViewModel<OfflineModeViewModel> {
+    @Published var isOfflineModeEnabled = false
+    @Published var isNetworkAvailable = true
+    @Published var recentlyViewedCocktails: [Cocktail] = []
+    
+    var isOffline: Bool {
+        return !isNetworkAvailable || isOfflineModeEnabled
+    }
+    
+    override init(_ viewModel: OfflineModeViewModel) {
+        super.init(viewModel)
+        
+        observe(viewModel.isOfflineModeEnabled, keyPath: \.isOfflineModeEnabled)
+        observe(viewModel.isNetworkAvailable, keyPath: \.isNetworkAvailable)
+        observe(viewModel.recentlyViewedCocktails, keyPath: \.recentlyViewedCocktails)
+    }
+    
+    func toggleOfflineMode() {
+        viewModel.toggleOfflineMode()
+    }
+    
+    func setOfflineMode(enabled: Bool) {
+        viewModel.setOfflineMode(enabled: enabled)
+    }
+    
+    func loadRecentlyViewedCocktails() {
+        viewModel.loadRecentlyViewedCocktails()
+    }
+    
+    func clearCache() {
+        viewModel.clearCache()
+    }
+    
+    func getCachedCocktailCount() -> Int32 {
+        return viewModel.getCachedCocktailCount()
+    }
+}

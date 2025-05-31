@@ -17,7 +17,7 @@ struct CocktailCraftApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainView()
         }
     }
 }

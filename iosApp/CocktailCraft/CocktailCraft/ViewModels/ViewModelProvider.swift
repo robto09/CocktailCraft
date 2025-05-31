@@ -19,6 +19,7 @@ class ViewModelProvider {
     lazy var homeViewModel = ObservableHomeViewModel(koinHelper.getHomeViewModel())
     lazy var cartViewModel = ObservableCartViewModel(koinHelper.getCartViewModel())
     lazy var themeViewModel = ObservableThemeViewModel(koinHelper.getThemeViewModel())
+    lazy var offlineModeViewModel = ObservableOfflineModeViewModel(koinHelper.getOfflineModeViewModel())
     
     // Factory methods for ViewModels that need fresh instances
     func cocktailDetailViewModel() -> ObservableCocktailDetailViewModel {
@@ -35,10 +36,6 @@ class ViewModelProvider {
     
     func orderViewModel() -> ObservableViewModel<OrderViewModel> {
         return ObservableViewModel(koinHelper.getOrderViewModel())
-    }
-    
-    func offlineModeViewModel() -> ObservableViewModel<OfflineModeViewModel> {
-        return ObservableViewModel(koinHelper.getOfflineModeViewModel())
     }
     
     func reviewViewModel() -> ObservableViewModel<ReviewViewModel> {
