@@ -1,12 +1,12 @@
 import SwiftUI
-import Shared
+import shared
 
 struct CocktailDetailView: View {
     let cocktailId: String
     
     @StateObject private var detailViewModel: ObservableCocktailDetailViewModel
     @StateObject private var cartViewModel = ViewModelProvider.shared.cartViewModel
-    @StateObject private var reviewViewModel: ObservableViewModel<ReviewViewModel>
+    @StateObject private var reviewViewModel = ViewModelProvider.shared.reviewViewModel
     @EnvironmentObject var navigationCoordinator: NavigationCoordinator
     
     @State private var showWriteReview = false
@@ -15,7 +15,6 @@ struct CocktailDetailView: View {
     init(cocktailId: String) {
         self.cocktailId = cocktailId
         _detailViewModel = StateObject(wrappedValue: ViewModelProvider.shared.cocktailDetailViewModel())
-        _reviewViewModel = StateObject(wrappedValue: ViewModelProvider.shared.reviewViewModel())
     }
     
     var body: some View {
@@ -30,8 +29,8 @@ struct CocktailDetailView: View {
                     VStack(spacing: 0) {
                         // Hero Image Section
                         DetailHeaderImage(
-                            imageUrl: cocktail.strDrinkThumb ?? "",
-                            contentDescription: cocktail.strDrink ?? "Cocktail image",
+                            imageUrl: cocktail.imageUrl ?? "",
+                            contentDescription: cocktail.name,
                             height: 250
                         )
                         
@@ -44,7 +43,7 @@ struct CocktailDetailView: View {
                                 detailViewModel.toggleFavorite()
                             },
                             onAddToCart: {
-                                cartViewModel.viewModel.addToCart(cocktail: cocktail)
+                                cartViewModel.addToCart(cocktail: cocktail, quantity: 1)
                                 showAddedToCartAlert = true
                             }
                         )
@@ -53,7 +52,7 @@ struct CocktailDetailView: View {
                         
                         VStack(spacing: 16) {
                             // How to Prepare Section
-                            PreparationCard(instructions: cocktail.strInstructions)
+                            PreparationCard(instructions: cocktail.instructions)
                             
                             // Ingredients Section
                             IngredientsCard(cocktail: cocktail)
@@ -64,7 +63,7 @@ struct CocktailDetailView: View {
                             // Recommendations Section
                             if !detailViewModel.recommendations.isEmpty || detailViewModel.isLoadingRecommendations {
                                 RecommendationsSection(
-                                    category: cocktail.strCategory ?? "Cocktails",
+                                    category: cocktail.category ?? "Cocktails",
                                     recommendations: detailViewModel.recommendations,
                                     isLoading: detailViewModel.isLoadingRecommendations,
                                     onCocktailTap: { recommendedCocktail in
@@ -76,7 +75,7 @@ struct CocktailDetailView: View {
                             // Reviews Section
                             ReviewsSection(
                                 cocktailId: cocktailId,
-                                reviews: reviewViewModel.viewModel.getReviewsForCocktail(cocktailId: cocktailId),
+                                reviews: reviewViewModel.getReviewsForCocktail(cocktailId: cocktailId),
                                 onWriteReview: {
                                     showWriteReview = true
                                 }
@@ -101,7 +100,7 @@ struct CocktailDetailView: View {
         .navigationBarBackButtonHidden(false)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                Text(detailViewModel.cocktail?.strDrink ?? "Loading...")
+                Text(detailViewModel.cocktail?.name ?? "Loading...")
                     .font(.headline)
                     .foregroundColor(.primary)
             }
@@ -112,14 +111,14 @@ struct CocktailDetailView: View {
         .alert("Added to Cart", isPresented: $showAddedToCartAlert) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("\(detailViewModel.cocktail?.strDrink ?? "Cocktail") has been added to your cart")
+            Text("\(detailViewModel.cocktail?.name ?? "Cocktail") has been added to your cart")
         }
         .sheet(isPresented: $showWriteReview) {
             if let cocktail = detailViewModel.cocktail {
                 WriteReviewView(
                     cocktail: cocktail,
                     onSubmit: { review in
-                        reviewViewModel.viewModel.addReview(review: review)
+                        reviewViewModel.addReview(review: review)
                         showWriteReview = false
                     },
                     onCancel: {
@@ -159,15 +158,15 @@ struct MainDetailsCard: View {
             }
             
             // Category and Type
-            Text("\(cocktail.strCategory ?? "Cocktail") • \(cocktail.strAlcoholic ?? "Unknown")")
+            Text("\(cocktail.category ?? "Cocktail") • \(cocktail.alcoholic ?? "Unknown")")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
             // Rating
-            if cocktail.averageRating > 0 {
+            if cocktail.rating > 0 {
                 RatingDisplay(
-                    rating: Float(cocktail.averageRating),
-                    reviewCount: Int(cocktail.reviewCount)
+                    rating: cocktail.rating,
+                    reviewCount: 0  // TODO: Add review count to model if needed
                 )
             }
             
@@ -235,40 +234,10 @@ struct PreparationCard: View {
 struct IngredientsCard: View {
     let cocktail: Cocktail
     
-    var ingredients: [(name: String, measure: String)] {
-        var result: [(String, String)] = []
-        
-        let ingredients = [
-            (cocktail.strIngredient1, cocktail.strMeasure1),
-            (cocktail.strIngredient2, cocktail.strMeasure2),
-            (cocktail.strIngredient3, cocktail.strMeasure3),
-            (cocktail.strIngredient4, cocktail.strMeasure4),
-            (cocktail.strIngredient5, cocktail.strMeasure5),
-            (cocktail.strIngredient6, cocktail.strMeasure6),
-            (cocktail.strIngredient7, cocktail.strMeasure7),
-            (cocktail.strIngredient8, cocktail.strMeasure8),
-            (cocktail.strIngredient9, cocktail.strMeasure9),
-            (cocktail.strIngredient10, cocktail.strMeasure10),
-            (cocktail.strIngredient11, cocktail.strMeasure11),
-            (cocktail.strIngredient12, cocktail.strMeasure12),
-            (cocktail.strIngredient13, cocktail.strMeasure13),
-            (cocktail.strIngredient14, cocktail.strMeasure14),
-            (cocktail.strIngredient15, cocktail.strMeasure15)
-        ]
-        
-        for (ingredient, measure) in ingredients {
-            if let ingredient = ingredient, !ingredient.isEmpty {
-                result.append((ingredient, measure ?? ""))
-            }
-        }
-        
-        return result
-    }
-    
     var body: some View {
         DetailInfoCard(title: "Ingredients") {
             VStack(alignment: .leading, spacing: 8) {
-                ForEach(ingredients, id: \.name) { ingredient in
+                ForEach(Array(cocktail.ingredients), id: \.self) { ingredient in
                     HStack(alignment: .top) {
                         Text("•")
                             .foregroundColor(.secondary)
@@ -291,13 +260,13 @@ struct DetailsCard: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     FilterChip(
-                        label: cocktail.strCategory ?? "Unknown",
+                        label: cocktail.category ?? "Unknown",
                         selected: false,
                         onClick: {}
                     )
                     .disabled(true)
                     
-                    if let glass = cocktail.strGlass {
+                    if let glass = cocktail.glass {
                         FilterChip(
                             label: glass,
                             selected: false,
@@ -306,7 +275,7 @@ struct DetailsCard: View {
                         .disabled(true)
                     }
                     
-                    if let alcoholic = cocktail.strAlcoholic {
+                    if let alcoholic = cocktail.alcoholic {
                         FilterChip(
                             label: alcoholic,
                             selected: false,

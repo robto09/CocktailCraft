@@ -2,84 +2,111 @@ import SwiftUI
 import shared
 
 struct FavoritesScreen: View {
-    @ObservedObject private var favoritesViewModel = ViewModelProvider.shared.favoritesViewModel
-    @ObservedObject private var cartViewModel = ViewModelProvider.shared.cartViewModel
+    @StateObject private var favoritesViewModel = ViewModelProvider.shared.favoritesViewModel
+    @StateObject private var cartViewModel = ViewModelProvider.shared.cartViewModel
     @EnvironmentObject var navigationCoordinator: NavigationCoordinator
     
     @State private var animatedIndices = Set<Int>()
     
     var body: some View {
         NavigationView {
-            ZStack {
-                if favoritesViewModel.isLoading {
-                    ProgressView("Loading favorites...")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let error = favoritesViewModel.error, !error.isEmpty {
-                    EmptyStateView(
-                        title: "Error",
-                        message: error,
-                        systemImage: "exclamationmark.triangle",
-                        actionButtonText: "Try Again",
-                        onActionButtonClick: {
-                            favoritesViewModel.refresh()
-                        }
-                    )
-                } else if favoritesViewModel.favorites.isEmpty {
-                    EmptyStateView(
-                        title: "No favorites yet",
-                        message: "Add cocktails to your favorites to see them here",
-                        systemImage: "heart",
-                        actionButtonText: "Browse Cocktails",
-                        onActionButtonClick: {
-                            navigationCoordinator.selectedTab = .home
-                        }
-                    )
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
-                            // Section Header
-                            HStack {
-                                Text("Your Favorite Cocktails")
-                                    .font(.system(size: 20, weight: .bold))
-                                Spacer()
-                            }
-                            .padding(.horizontal)
-                            .padding(.top, 8)
-                            
-                            // Favorites List
-                            ForEach(Array(favoritesViewModel.favorites.enumerated()), id: \.element.id) { index, cocktail in
-                                AnimatedCocktailItem(
-                                    cocktail: cocktail,
-                                    isFavorite: true,
-                                    isAnimated: animatedIndices.contains(index),
-                                    onTap: {
-                                        navigationCoordinator.navigate(to: .cocktailDetail(cocktailId: cocktail.id))
-                                    },
-                                    onAddToCart: {
-                                        cartViewModel.addToCart(cocktail: cocktail)
-                                        // Show some feedback that item was added
-                                    },
-                                    onToggleFavorite: {
-                                        favoritesViewModel.toggleFavorite(cocktail: cocktail)
-                                    }
-                                )
-                                .padding(.horizontal)
-                                .onAppear {
-                                    withAnimation(.easeOut(duration: 0.3).delay(Double(index) * 0.05)) {
-                                        animatedIndices.insert(index)
-                                    }
-                                }
-                                .onDisappear {
-                                    animatedIndices.remove(index)
-                                }
-                            }
-                        }
-                        .padding(.vertical)
-                    }
-                }
+            contentView
+        }
+    }
+    
+    @ViewBuilder
+    private var contentView: some View {
+        if favoritesViewModel.isLoading {
+            loadingView
+        } else if let error = favoritesViewModel.error {
+            errorView(error: error)
+        } else if favoritesViewModel.favorites.isEmpty {
+            emptyView
+        } else {
+            favoritesListView
+        }
+    }
+    
+    private var loadingView: some View {
+        ProgressView("Loading favorites...")
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private func errorView(error: String) -> some View {
+        EmptyStateView(
+            title: "Error",
+            message: error,
+            systemImage: "exclamationmark.triangle",
+            actionButtonText: "Try Again",
+            onActionButtonClick: {
+                favoritesViewModel.refresh()
             }
-            .navigationTitle("Favorites")
-            .navigationBarTitleDisplayMode(.large)
+        )
+    }
+    
+    private var emptyView: some View {
+        EmptyStateView(
+            title: "No favorites yet",
+            message: "Add cocktails to your favorites to see them here",
+            systemImage: "heart",
+            actionButtonText: "Browse Cocktails",
+            onActionButtonClick: {
+                navigationCoordinator.navigateToTab(.home)
+            }
+        )
+    }
+    
+    private var favoritesListView: some View {
+        ScrollView {
+            LazyVStack(spacing: 16) {
+                headerView
+                favoritesContent
+            }
+            .padding(.vertical)
+        }
+        .navigationTitle("Favorites")
+        .navigationBarTitleDisplayMode(.large)
+    }
+    
+    private var headerView: some View {
+        HStack {
+            Text("Your Favorite Cocktails")
+                .font(.system(size: 20, weight: .bold))
+            Spacer()
+        }
+        .padding(.horizontal)
+        .padding(.top, 8)
+    }
+    
+    private var favoritesContent: some View {
+        ForEach(Array(favoritesViewModel.favorites.enumerated()), id: \.element.id) { index, cocktail in
+            favoriteItemView(cocktail: cocktail, index: index)
+        }
+    }
+    
+    private func favoriteItemView(cocktail: Cocktail, index: Int) -> some View {
+        AnimatedCocktailItem(
+            cocktail: cocktail,
+            index: index,
+            isFavorite: true,
+            onFavoriteToggle: {
+                favoritesViewModel.toggleFavorite(cocktail: cocktail)
+            },
+            onAddToCart: {
+                cartViewModel.addToCart(cocktail: cocktail, quantity: 1)
+            },
+            onTap: {
+                navigationCoordinator.navigateToCocktailDetail(cocktailId: cocktail.id)
+            }
+        )
+        .padding(.horizontal)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.3).delay(Double(index) * 0.05)) {
+                _ = animatedIndices.insert(index)
+            }
+        }
+        .onDisappear {
+            animatedIndices.remove(index)
         }
     }
 }

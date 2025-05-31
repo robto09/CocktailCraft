@@ -1,5 +1,5 @@
 import SwiftUI
-import Shared
+import shared
 
 struct RecommendationsSection: View {
     let category: String
@@ -43,7 +43,7 @@ struct RecommendationCard: View {
         Button(action: onTap) {
             VStack(spacing: 8) {
                 // Cocktail Image
-                AsyncImage(url: URL(string: cocktail.strDrinkThumb ?? "")) { image in
+                AsyncImage(url: URL(string: cocktail.imageUrl ?? "")) { image in
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
@@ -59,7 +59,7 @@ struct RecommendationCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(cocktail.strDrink)
+                    Text(cocktail.name)
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .lineLimit(2)

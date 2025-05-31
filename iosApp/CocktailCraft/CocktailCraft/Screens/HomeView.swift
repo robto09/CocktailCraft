@@ -1,5 +1,5 @@
 import SwiftUI
-import Shared
+import shared
 import Combine
 
 struct HomeView: View {
@@ -19,7 +19,7 @@ struct HomeView: View {
             // Search Bar
             SearchBar(
                 text: $searchText,
-                hasActiveFilters: homeViewModel.searchFilters.hasActiveFilters(),
+                hasActiveFilters: homeViewModel.searchFilters?.hasActiveFilters() ?? false,
                 onFilterTap: {
                     showAdvancedSearch.toggle()
                 }
@@ -28,9 +28,9 @@ struct HomeView: View {
             .padding(.top, 8)
             
             // Active Filters
-            if homeViewModel.searchFilters.hasActiveFilters() {
+            if let searchFilters = homeViewModel.searchFilters, searchFilters.hasActiveFilters() {
                 SearchFilterChips(
-                    filters: homeViewModel.searchFilters,
+                    filters: searchFilters,
                     onRemove: { filter in
                         // TODO: Implement filter removal
                     },
@@ -48,7 +48,7 @@ struct HomeView: View {
                 onCategorySelected: { category in
                     selectedCategory = category
                     if let category = category {
-                        homeViewModel.viewModel.loadCocktailsByCategory(category: category)
+                        homeViewModel.loadCocktailsByCategory(category: category)
                     } else {
                         homeViewModel.loadCocktails()
                     }
@@ -84,7 +84,7 @@ struct HomeView: View {
                 // Empty State
                 EmptySearchResultsMessage(
                     searchQuery: searchText,
-                    hasFilters: homeViewModel.searchFilters.hasActiveFilters(),
+                    hasFilters: homeViewModel.searchFilters?.hasActiveFilters() ?? false,
                     onClearSearch: {
                         searchText = ""
                         homeViewModel.searchCocktails(query: "")
@@ -106,7 +106,7 @@ struct HomeView: View {
                                     // TODO: Implement toggle favorite
                                 },
                                 onAddToCart: {
-                                    cartViewModel.viewModel.addToCart(cocktail: cocktail)
+                                    cartViewModel.addToCart(cocktail: cocktail, quantity: 1)
                                 },
                                 onTap: {
                                     navigationCoordinator.navigateToCocktailDetail(cocktailId: cocktail.id)
@@ -140,16 +140,18 @@ struct HomeView: View {
         .navigationTitle("CocktailCraft")
         .navigationBarTitleDisplayMode(.large)
         .sheet(isPresented: $showAdvancedSearch) {
-            AdvancedSearchView(
-                filters: homeViewModel.searchFilters,
-                onApply: { filters in
-                    // TODO: Apply filters
-                    showAdvancedSearch = false
-                },
-                onCancel: {
-                    showAdvancedSearch = false
-                }
-            )
+            if let searchFilters = homeViewModel.searchFilters {
+                AdvancedSearchView(
+                    filters: searchFilters,
+                    onApply: { filters in
+                        // TODO: Apply filters
+                        showAdvancedSearch = false
+                    },
+                    onCancel: {
+                        showAdvancedSearch = false
+                    }
+                )
+            }
         }
         .onAppear {
             setupSearchDebouncer()

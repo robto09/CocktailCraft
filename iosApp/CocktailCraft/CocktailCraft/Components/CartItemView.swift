@@ -9,8 +9,6 @@ struct CartItemView: View {
     let onRemove: () -> Void
     let onToggleFavorite: () -> Void
     
-    @State private var imageData: Data?
-    
     private var currencyFormatter: NumberFormatter {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
@@ -21,25 +19,43 @@ struct CartItemView: View {
     var body: some View {
         HStack(spacing: 12) {
             // Product Image
-            Group {
-                if let imageData = imageData, let uiImage = UIImage(data: imageData) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 80, height: 80)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                } else {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(width: 80, height: 80)
-                        .overlay(
-                            ProgressView()
-                                .scaleEffect(0.7)
-                        )
+            if let imageUrl = item.cocktail.imageUrl, let url = URL(string: imageUrl) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .empty:
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(width: 80, height: 80)
+                            .overlay(
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                            )
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 80, height: 80)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    case .failure(_):
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(width: 80, height: 80)
+                            .overlay(
+                                Image(systemName: "photo")
+                                    .foregroundColor(.gray)
+                            )
+                    @unknown default:
+                        EmptyView()
+                    }
                 }
-            }
-            .onAppear {
-                loadImage()
+            } else {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 80, height: 80)
+                    .overlay(
+                        Image(systemName: "photo")
+                            .foregroundColor(.gray)
+                    )
             }
             
             VStack(alignment: .leading, spacing: 4) {
@@ -125,19 +141,5 @@ struct CartItemView: View {
         .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
-    }
-    
-    private func loadImage() {
-        Task {
-            do {
-                let loader = ViewModelProvider.shared.imageLoader
-                let data = try await loader.loadImage(url: item.cocktail.imageUrl)
-                await MainActor.run {
-                    self.imageData = data
-                }
-            } catch {
-                print("Failed to load image: \(error)")
-            }
-        }
     }
 }

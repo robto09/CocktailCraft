@@ -1,6 +1,6 @@
 import Foundation
 
-enum NavigationPath: Hashable {
+enum NavigationPath: Hashable, Identifiable {
     case home
     case cart
     case favorites
@@ -9,6 +9,27 @@ enum NavigationPath: Hashable {
     case cocktailDetail(cocktailId: String)
     case reviews(cocktailId: String)
     case offlineMode
+    
+    var id: String {
+        switch self {
+        case .home:
+            return "home"
+        case .cart:
+            return "cart"
+        case .favorites:
+            return "favorites"
+        case .orders:
+            return "orders"
+        case .profile:
+            return "profile"
+        case .cocktailDetail(let id):
+            return "cocktailDetail-\(id)"
+        case .reviews(let id):
+            return "reviews-\(id)"
+        case .offlineMode:
+            return "offlineMode"
+        }
+    }
     
     var title: String {
         switch self {

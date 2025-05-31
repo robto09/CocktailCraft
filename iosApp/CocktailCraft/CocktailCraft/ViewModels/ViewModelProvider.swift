@@ -11,7 +11,7 @@ import shared
 class ViewModelProvider {
     static let shared = ViewModelProvider()
     
-    private let koinHelper = KoinIOS.helper
+    private let koinHelper = KoinHelper()
     
     private init() {}
     
@@ -26,21 +26,10 @@ class ViewModelProvider {
         return ObservableCocktailDetailViewModel(koinHelper.getCocktailDetailViewModel())
     }
     
-    func favoritesViewModel() -> ObservableViewModel<FavoritesViewModel> {
-        return ObservableViewModel(koinHelper.getFavoritesViewModel())
-    }
-    
-    func profileViewModel() -> ObservableViewModel<ProfileViewModel> {
-        return ObservableViewModel(koinHelper.getProfileViewModel())
-    }
-    
-    func orderViewModel() -> ObservableViewModel<OrderViewModel> {
-        return ObservableViewModel(koinHelper.getOrderViewModel())
-    }
-    
-    func reviewViewModel() -> ObservableViewModel<ReviewViewModel> {
-        return ObservableViewModel(koinHelper.getReviewViewModel())
-    }
+    lazy var favoritesViewModel = ObservableFavoritesViewModel(koinHelper.getFavoritesViewModel())
+    lazy var profileViewModel = ObservableProfileViewModel(koinHelper.getProfileViewModel())
+    lazy var orderViewModel = ObservableOrderViewModel(koinHelper.getOrderViewModel())
+    lazy var reviewViewModel = ObservableReviewViewModel(koinHelper.getReviewViewModel())
 }
 
 // MARK: - Environment Values for easy access in SwiftUI

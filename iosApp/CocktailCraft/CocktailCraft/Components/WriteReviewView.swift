@@ -1,5 +1,5 @@
 import SwiftUI
-import Shared
+import shared
 
 struct WriteReviewView: View {
     let cocktail: Cocktail
@@ -27,7 +27,7 @@ struct WriteReviewView: View {
                 
                 Section("Rating") {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("How would you rate \(cocktail.strDrink)?")
+                        Text("How would you rate \(cocktail.name)?")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         
@@ -76,13 +76,17 @@ struct WriteReviewView: View {
         }
         
         // Create review
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let dateString = formatter.string(from: Date())
+        
         let review = Review(
             id: UUID().uuidString,
             cocktailId: cocktail.id,
             userName: userName.trimmingCharacters(in: .whitespacesAndNewlines),
-            rating: Int32(rating),
+            rating: Float(rating),
             comment: comment.trimmingCharacters(in: .whitespacesAndNewlines),
-            date: Int64(Date().timeIntervalSince1970 * 1000)
+            date: dateString
         )
         
         onSubmit(review)

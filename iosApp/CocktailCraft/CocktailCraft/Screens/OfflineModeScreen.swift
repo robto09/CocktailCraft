@@ -13,126 +13,10 @@ struct OfflineModeScreen: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 16) {
-                    // Network status card
-                    NetworkStatusCard(isNetworkAvailable: offlineModeViewModel.isNetworkAvailable)
-                        .padding(.horizontal)
-                    
-                    // Offline mode toggle
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Image(systemName: "airplane")
-                                .font(.system(size: 24))
-                                .foregroundColor(offlineModeViewModel.isOfflineModeEnabled ? .blue : .gray)
-                            
-                            Text("Offline Mode")
-                                .font(.system(size: 18, weight: .bold))
-                            
-                            Spacer()
-                            
-                            Toggle("", isOn: Binding(
-                                get: { offlineModeViewModel.isOfflineModeEnabled },
-                                set: { _ in offlineModeViewModel.toggleOfflineMode() }
-                            ))
-                            .labelsHidden()
-                        }
-                        
-                        Text("When enabled, the app will only use cached data and won't make network requests.")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                    }
-                    .padding()
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(12)
-                    .padding(.horizontal)
-                    
-                    // Cache info
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Image(systemName: "externaldrive")
-                                .font(.system(size: 24))
-                                .foregroundColor(.blue)
-                            
-                            Text("Cached Cocktails")
-                                .font(.system(size: 18, weight: .bold))
-                        }
-                        
-                        HStack {
-                            Text("Cocktails available offline:")
-                                .font(.system(size: 14))
-                                .foregroundColor(.secondary)
-                            
-                            Spacer()
-                            
-                            Text("\(offlineModeViewModel.recentlyViewedCocktails.count)")
-                                .font(.system(size: 14, weight: .bold))
-                        }
-                        
-                        Button(action: {
-                            showClearCacheAlert = true
-                        }) {
-                            HStack {
-                                Image(systemName: "trash")
-                                Text("Clear Cache")
-                            }
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Color.red.opacity(0.9))
-                            .cornerRadius(8)
-                        }
-                    }
-                    .padding()
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(12)
-                    .padding(.horizontal)
-                    
-                    // Recently viewed section
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Image(systemName: "clock.arrow.circlepath")
-                                .font(.system(size: 24))
-                                .foregroundColor(.blue)
-                            
-                            Text("Recently Viewed")
-                                .font(.system(size: 18, weight: .bold))
-                        }
-                        .padding(.horizontal)
-                        
-                        if offlineModeViewModel.recentlyViewedCocktails.isEmpty {
-                            EmptyRecentlyViewedView {
-                                dismiss()
-                                navigationCoordinator.selectedTab = .home
-                            }
-                            .padding(.horizontal)
-                        } else {
-                            LazyVStack(spacing: 16) {
-                                ForEach(Array(offlineModeViewModel.recentlyViewedCocktails.enumerated()), id: \.element.id) { index, cocktail in
-                                    AnimatedCocktailItem(
-                                        cocktail: cocktail,
-                                        isFavorite: false,
-                                        isAnimated: animatedIndices.contains(index),
-                                        onTap: {
-                                            dismiss()
-                                            navigationCoordinator.navigate(to: .cocktailDetail(cocktailId: cocktail.id))
-                                        },
-                                        onAddToCart: { /* Not needed here */ },
-                                        onToggleFavorite: { /* Not needed here */ }
-                                    )
-                                    .padding(.horizontal)
-                                    .onAppear {
-                                        withAnimation(.easeOut(duration: 0.3).delay(Double(index) * 0.05)) {
-                                            animatedIndices.insert(index)
-                                        }
-                                    }
-                                    .onDisappear {
-                                        animatedIndices.remove(index)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .padding(.vertical)
+                    networkStatusSection
+                    offlineModeToggleSection
+                    cacheInfoSection
+                    recentlyViewedSection
                 }
                 .padding(.vertical)
             }
@@ -153,6 +37,150 @@ struct OfflineModeScreen: View {
             } message: {
                 Text("Are you sure you want to clear all cached cocktails? You won't be able to view them offline.")
             }
+        }
+    }
+    
+    private var networkStatusSection: some View {
+        NetworkStatusCard(isNetworkAvailable: offlineModeViewModel.isNetworkAvailable)
+            .padding(.horizontal)
+    }
+    
+    private var offlineModeToggleSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "airplane")
+                    .font(.system(size: 24))
+                    .foregroundColor(offlineModeViewModel.isOfflineModeEnabled ? .blue : .gray)
+                
+                Text("Offline Mode")
+                    .font(.system(size: 18, weight: .bold))
+                
+                Spacer()
+                
+                Toggle("", isOn: Binding(
+                    get: { offlineModeViewModel.isOfflineModeEnabled },
+                    set: { _ in offlineModeViewModel.toggleOfflineMode() }
+                ))
+                .labelsHidden()
+            }
+            
+            Text("When enabled, the app will only use cached data and won't make network requests.")
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .background(Color(UIColor.secondarySystemBackground))
+        .cornerRadius(12)
+        .padding(.horizontal)
+    }
+    
+    private var cacheInfoSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "externaldrive")
+                    .font(.system(size: 24))
+                    .foregroundColor(.blue)
+                
+                Text("Cached Cocktails")
+                    .font(.system(size: 18, weight: .bold))
+            }
+            
+            HStack {
+                Text("Cocktails available offline:")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                Text("\(offlineModeViewModel.recentlyViewedCocktails.count)")
+                    .font(.system(size: 14, weight: .bold))
+            }
+            
+            clearCacheButton
+        }
+        .padding()
+        .background(Color(UIColor.secondarySystemBackground))
+        .cornerRadius(12)
+        .padding(.horizontal)
+    }
+    
+    private var clearCacheButton: some View {
+        Button(action: {
+            showClearCacheAlert = true
+        }) {
+            HStack {
+                Image(systemName: "trash")
+                Text("Clear Cache")
+            }
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(Color.red.opacity(0.9))
+            .cornerRadius(8)
+        }
+    }
+    
+    private var recentlyViewedSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 24))
+                    .foregroundColor(.blue)
+                
+                Text("Recently Viewed")
+                    .font(.system(size: 18, weight: .bold))
+            }
+            .padding(.horizontal)
+            
+            if offlineModeViewModel.recentlyViewedCocktails.isEmpty {
+                EmptyRecentlyViewedView {
+                    dismiss()
+                    navigationCoordinator.selectedTab = .home
+                }
+                .padding(.horizontal)
+            } else {
+                cocktailsList
+            }
+        }
+        .padding(.vertical)
+    }
+    
+    @ViewBuilder
+    private var cocktailsList: some View {
+        if offlineModeViewModel.recentlyViewedCocktails.isEmpty {
+            EmptyView()
+        } else {
+            VStack(spacing: 16) {
+                ForEach(offlineModeViewModel.recentlyViewedCocktails.indices, id: \.self) { index in
+                    cocktailItemView(at: index)
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func cocktailItemView(at index: Int) -> some View {
+        let cocktail = offlineModeViewModel.recentlyViewedCocktails[index]
+        AnimatedCocktailItem(
+            cocktail: cocktail,
+            index: index,
+            isFavorite: false,
+            onFavoriteToggle: { },
+            onAddToCart: { },
+            onTap: {
+                dismiss()
+                navigationCoordinator.navigateToCocktailDetail(cocktailId: cocktail.id)
+            }
+        )
+        .padding(.horizontal)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.3).delay(Double(index) * 0.05)) {
+                _ = animatedIndices.insert(index)
+            }
+        }
+        .onDisappear {
+            animatedIndices.remove(index)
         }
     }
 }

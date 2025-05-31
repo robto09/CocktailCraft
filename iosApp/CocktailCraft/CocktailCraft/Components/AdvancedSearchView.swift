@@ -1,5 +1,5 @@
 import SwiftUI
-import Shared
+import shared
 
 struct AdvancedSearchView: View {
     let filters: SearchFilters
@@ -13,147 +13,203 @@ struct AdvancedSearchView: View {
     @State private var maxPrice: Double = 100
     @State private var alcoholic: Bool? = nil
     
-    let categories = ["Cocktail", "Shot", "Coffee / Tea", "Beer", "Soft Drink", "Other / Unknown"]
-    let glassTypes = ["Highball glass", "Cocktail glass", "Old-fashioned glass", "Whiskey Glass", "Collins glass", "Champagne flute", "Margarita glass", "Shot glass", "Coffee mug", "Mason jar", "Beer mug", "Wine Glass"]
-    let commonIngredients = ["Vodka", "Gin", "Rum", "Tequila", "Whiskey", "Bourbon", "Lime juice", "Lemon juice", "Sugar", "Simple syrup", "Grenadine", "Orange juice", "Cranberry juice", "Ginger beer", "Soda water", "Tonic water"]
+    private let categories = ["Cocktail", "Shot", "Coffee / Tea", "Beer", "Soft Drink", "Other / Unknown"]
+    private let glassTypes = ["Highball glass", "Cocktail glass", "Old-fashioned glass", "Whiskey Glass", "Collins glass", "Champagne flute", "Margarita glass", "Shot glass", "Coffee mug", "Mason jar", "Beer mug", "Wine Glass"]
+    private let commonIngredients = ["Vodka", "Gin", "Rum", "Tequila", "Whiskey", "Bourbon", "Lime juice", "Lemon juice", "Sugar", "Simple syrup", "Grenadine", "Orange juice", "Cranberry juice", "Ginger beer", "Soda water", "Tonic water"]
     
     var body: some View {
         NavigationView {
-            Form {
-                // Category Section
-                Section("Category") {
-                    Picker("Category", selection: $category) {
-                        Text("Any").tag("")
-                        ForEach(categories, id: \.self) { cat in
-                            Text(cat).tag(cat)
-                        }
+            scrollContent
+                .navigationTitle("Advanced Search")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel", action: onCancel)
                     }
-                    .pickerStyle(.menu)
-                }
-                
-                // Ingredients Section
-                Section("Ingredients") {
-                    ScrollView {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
-                            ForEach(commonIngredients, id: \.self) { ingredient in
-                                IngredientChip(
-                                    ingredient: ingredient,
-                                    isSelected: selectedIngredients.contains(ingredient),
-                                    onToggle: {
-                                        if selectedIngredients.contains(ingredient) {
-                                            selectedIngredients.remove(ingredient)
-                                        } else {
-                                            selectedIngredients.insert(ingredient)
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-                    .frame(maxHeight: 200)
-                }
-                
-                // Glass Type Section
-                Section("Glass Type") {
-                    Picker("Glass Type", selection: $glass) {
-                        Text("Any").tag("")
-                        ForEach(glassTypes, id: \.self) { glassType in
-                            Text(glassType).tag(glassType)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                }
-                
-                // Price Range Section
-                Section("Price Range") {
-                    VStack {
-                        HStack {
-                            Text("$\(Int(minPrice))")
-                            Spacer()
-                            Text("$\(Int(maxPrice))")
-                        }
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        
-                        HStack {
-                            Slider(value: $minPrice, in: 0...maxPrice - 1, step: 1)
-                            Text("-")
-                            Slider(value: $maxPrice, in: minPrice + 1...100, step: 1)
-                        }
+                    
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Apply", action: applyFilters)
+                            .fontWeight(.semibold)
                     }
                 }
-                
-                // Alcoholic Section
-                Section("Type") {
-                    Picker("Type", selection: $alcoholic) {
-                        Text("Any").tag(nil as Bool?)
-                        Text("Alcoholic").tag(true as Bool?)
-                        Text("Non-Alcoholic").tag(false as Bool?)
-                    }
-                    .pickerStyle(.segmented)
-                }
-            }
-            .navigationTitle("Advanced Search")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel", action: onCancel)
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Apply") {
-                        let newFilters = SearchFilters(
-                            query: filters.query,
-                            category: category.isEmpty ? nil : category,
-                            ingredient: nil,
-                            alcoholic: alcoholic,
-                            glass: glass.isEmpty ? nil : glass,
-                            priceRange: minPrice > 0 || maxPrice < 100 ? Float(minPrice)...Float(maxPrice) : nil,
-                            ingredients: Array(selectedIngredients),
-                            excludeIngredients: [],
-                            tasteProfile: nil,
-                            complexity: nil,
-                            preparationTime: nil
-                        )
-                        onApply(newFilters)
-                    }
-                    .fontWeight(.semibold)
-                }
-            }
         }
-        .onAppear {
-            // Initialize with current filters
-            category = filters.category ?? ""
-            selectedIngredients = Set(filters.ingredients)
-            glass = filters.glass ?? ""
-            if let priceRange = filters.priceRange {
-                minPrice = Double(priceRange.lowerBound)
-                maxPrice = Double(priceRange.upperBound)
-            } else {
-                minPrice = 0
-                maxPrice = 100
+        .onAppear(perform: initializeFilters)
+    }
+    
+    private var scrollContent: some View {
+        ScrollView {
+            LazyVStack(spacing: 20) {
+                categorySection
+                ingredientsSection
+                glassSection
+                priceSection
+                typeSection
             }
-            alcoholic = filters.alcoholic
+            .padding()
         }
     }
-}
-
-struct IngredientChip: View {
-    let ingredient: String
-    let isSelected: Bool
-    let onToggle: () -> Void
     
-    var body: some View {
-        Button(action: onToggle) {
+    private var categorySection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Category")
+                .font(.headline)
+            
+            Picker("Category", selection: $category) {
+                Text("Any").tag("")
+                ForEach(categories, id: \.self) { cat in
+                    Text(cat).tag(cat)
+                }
+            }
+            .pickerStyle(.menu)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+    
+    private var ingredientsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Ingredients")
+                .font(.headline)
+            
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
+                ForEach(commonIngredients, id: \.self) { ingredient in
+                    ingredientChip(ingredient: ingredient)
+                }
+            }
+            .frame(maxHeight: 200)
+        }
+    }
+    
+    private func ingredientChip(ingredient: String) -> some View {
+        Button(action: {
+            toggleIngredient(ingredient)
+        }) {
             Text(ingredient)
                 .font(.caption)
-                .foregroundColor(isSelected ? .white : .primary)
+                .foregroundColor(selectedIngredients.contains(ingredient) ? .white : .primary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(
                     Capsule()
-                        .fill(isSelected ? Color.accentColor : Color(.systemGray6))
+                        .fill(selectedIngredients.contains(ingredient) ? Color.accentColor : Color(.systemGray6))
                 )
         }
+    }
+    
+    private var glassSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Glass Type")
+                .font(.headline)
+            
+            Picker("Glass Type", selection: $glass) {
+                Text("Any").tag("")
+                ForEach(glassTypes, id: \.self) { glassType in
+                    Text(glassType).tag(glassType)
+                }
+            }
+            .pickerStyle(.menu)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+    
+    private var priceSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Price Range")
+                .font(.headline)
+            
+            VStack(spacing: 12) {
+                HStack {
+                    Text("$\(Int(minPrice))")
+                    Spacer()
+                    Text("$\(Int(maxPrice))")
+                }
+                .font(.caption)
+                .foregroundColor(.secondary)
+                
+                priceSliders
+            }
+        }
+    }
+    
+    private var priceSliders: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("Min:")
+                Slider(value: $minPrice, in: 0...99, step: 1)
+            }
+            
+            HStack {
+                Text("Max:")
+                Slider(value: $maxPrice, in: 1...100, step: 1)
+            }
+        }
+    }
+    
+    private var typeSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Type")
+                .font(.headline)
+            
+            Picker("Type", selection: $alcoholic) {
+                Text("Any").tag(nil as Bool?)
+                Text("Alcoholic").tag(true as Bool?)
+                Text("Non-Alcoholic").tag(false as Bool?)
+            }
+            .pickerStyle(.segmented)
+        }
+    }
+    
+    private func toggleIngredient(_ ingredient: String) {
+        if selectedIngredients.contains(ingredient) {
+            selectedIngredients.remove(ingredient)
+        } else {
+            selectedIngredients.insert(ingredient)
+        }
+    }
+    
+    private func applyFilters() {
+        let alcoholicValue: KotlinBoolean? = {
+            if let alcoholic = alcoholic {
+                return KotlinBoolean(bool: alcoholic)
+            }
+            return nil
+        }()
+        
+        let newFilters = SearchFilters(
+            query: filters.query,
+            category: category.isEmpty ? nil : category,
+            ingredient: nil,
+            alcoholic: alcoholicValue,
+            glass: glass.isEmpty ? nil : glass,
+            priceRange: createPriceRange(),
+            ingredients: Array(selectedIngredients),
+            excludeIngredients: [],
+            tasteProfile: nil,
+            complexity: nil,
+            preparationTime: nil
+        )
+        onApply(newFilters)
+    }
+    
+    private func createPriceRange() -> (any KotlinClosedFloatingPointRange)? {
+        // For now, returning nil as creating KotlinClosedFloatingPointRange requires more complex setup
+        // This can be implemented later when we have a proper range factory method
+        return nil
+    }
+    
+    private func initializeFilters() {
+        category = filters.category ?? ""
+        selectedIngredients = Set(filters.ingredients)
+        glass = filters.glass ?? ""
+        
+        // Convert SharedBoolean? to Bool?
+        if let sharedBool = filters.alcoholic {
+            alcoholic = sharedBool.boolValue
+        } else {
+            alcoholic = nil
+        }
+        
+        // For now, use default price range since KotlinClosedFloatingPointRange is complex
+        minPrice = 0
+        maxPrice = 100
     }
 }

@@ -1,5 +1,5 @@
 import SwiftUI
-import Shared
+import shared
 
 struct ReviewsSection: View {
     let cocktailId: String
@@ -81,7 +81,10 @@ struct ReviewCard: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
-        return formatter.string(from: Date(timeIntervalSince1970: TimeInterval(review.date / 1000)))
+        if let timestamp = Double(review.date) {
+            return formatter.string(from: Date(timeIntervalSince1970: timestamp / 1000))
+        }
+        return review.date
     }
     
     var body: some View {

@@ -27,10 +27,11 @@ struct ContentView: View {
                         VStack(alignment: .leading) {
                             Text(cocktail.name)
                                 .font(.headline)
-                            Text(cocktail.description_)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .lineLimit(2)
+                            if let category = cocktail.category {
+                                Text(category)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
                             Text("$\(String(format: "%.2f", cocktail.price))")
                                 .font(.caption)
                                 .foregroundColor(.blue)
@@ -43,7 +44,7 @@ struct ContentView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        themeViewModel.toggleTheme()
+                        themeViewModel.setDarkMode(enabled: !themeViewModel.isDarkMode)
                     }) {
                         Image(systemName: themeViewModel.isDarkMode ? "sun.max.fill" : "moon.fill")
                     }

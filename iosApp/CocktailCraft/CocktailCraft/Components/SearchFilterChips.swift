@@ -1,5 +1,5 @@
 import SwiftUI
-import Shared
+import shared
 
 struct SearchFilterChips: View {
     let filters: SearchFilters
@@ -19,7 +19,7 @@ struct SearchFilterChips: View {
                 
                 // Category Filter
                 if let category = filters.category, !category.isEmpty {
-                    FilterChip(
+                    RemovableFilterChip(
                         label: "Category: \(category)",
                         onRemove: { onRemove("category") }
                     )
@@ -27,7 +27,7 @@ struct SearchFilterChips: View {
                 
                 // Ingredient Filters
                 ForEach(filters.ingredients, id: \.self) { ingredient in
-                    FilterChip(
+                    RemovableFilterChip(
                         label: ingredient,
                         onRemove: { onRemove("ingredient:\(ingredient)") }
                     )
@@ -35,7 +35,7 @@ struct SearchFilterChips: View {
                 
                 // Glass Type Filter
                 if let glass = filters.glass, !glass.isEmpty {
-                    FilterChip(
+                    RemovableFilterChip(
                         label: "Glass: \(glass)",
                         onRemove: { onRemove("glass") }
                     )
@@ -43,16 +43,23 @@ struct SearchFilterChips: View {
                 
                 // Price Range Filter
                 if let priceRange = filters.priceRange {
-                    FilterChip(
-                        label: "Price: $\(Int(priceRange.lowerBound))-$\(Int(priceRange.upperBound))",
+                    RemovableFilterChip(
+                        label: {
+                            if let start = priceRange.start as? Float,
+                               let end = priceRange.endInclusive as? Float {
+                                return "Price: $\(Int(start))-$\(Int(end))"
+                            } else {
+                                return "Price Range"
+                            }
+                        }(),
                         onRemove: { onRemove("price") }
                     )
                 }
                 
                 // Is Alcoholic Filter
                 if let alcoholic = filters.alcoholic {
-                    FilterChip(
-                        label: alcoholic ? "Alcoholic" : "Non-Alcoholic",
+                    RemovableFilterChip(
+                        label: alcoholic.boolValue ? "Alcoholic" : "Non-Alcoholic",
                         onRemove: { onRemove("alcoholic") }
                     )
                 }
@@ -62,7 +69,7 @@ struct SearchFilterChips: View {
     }
 }
 
-struct FilterChip: View {
+struct RemovableFilterChip: View {
     let label: String
     let onRemove: () -> Void
     

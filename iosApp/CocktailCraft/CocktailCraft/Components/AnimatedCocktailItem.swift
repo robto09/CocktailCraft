@@ -1,5 +1,5 @@
 import SwiftUI
-import Shared
+import shared
 
 struct AnimatedCocktailItem: View {
     let cocktail: Cocktail
@@ -17,7 +17,7 @@ struct AnimatedCocktailItem: View {
         Button(action: onTap) {
             HStack(spacing: 12) {
                 // Cocktail Image
-                AsyncImage(url: URL(string: cocktail.strDrinkThumb ?? "")) { image in
+                AsyncImage(url: URL(string: cocktail.imageUrl ?? "")) { image in
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
@@ -34,13 +34,13 @@ struct AnimatedCocktailItem: View {
                 
                 VStack(alignment: .leading, spacing: 4) {
                     // Name
-                    Text(cocktail.strDrink)
+                    Text(cocktail.name)
                         .font(.headline)
                         .lineLimit(1)
                         .foregroundColor(.primary)
                     
                     // Category and Type
-                    Text("\(cocktail.strAlcoholic ?? "Unknown") • \(cocktail.strCategory ?? "Cocktail")")
+                    Text("\(cocktail.alcoholic ?? "Unknown") • \(cocktail.category ?? "Cocktail")")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
@@ -128,11 +128,7 @@ struct AnimatedCocktailItem: View {
     }
     
     private func getIngredientsPreview() -> String? {
-        let ingredients = [
-            cocktail.strIngredient1,
-            cocktail.strIngredient2,
-            cocktail.strIngredient3
-        ].compactMap { $0 }.filter { !$0.isEmpty }
+        let ingredients = cocktail.ingredients.prefix(3).map { $0.name }
         
         guard !ingredients.isEmpty else { return nil }
         
