@@ -92,7 +92,7 @@ import com.cocktailcraft.ui.components.FilterChip
 import com.cocktailcraft.ui.components.NetworkErrorStateDisplay
 import com.cocktailcraft.ui.components.SearchFilterChips
 import com.cocktailcraft.ui.components.shimmerEffect
-import com.cocktailcraft.util.FilterOptionsLoader
+import com.cocktailcraft.util.AndroidFilterOptionsLoader
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.util.ErrorUtils
 import com.cocktailcraft.util.ListOptimizations.OnBottomReached
@@ -193,8 +193,8 @@ fun HomeScreen(
 
         // Advanced search panel
 
-        // Load filter options using the utility
-        val filterOptions = FilterOptionsLoader.rememberFilterOptions(repository = viewModel.repository)
+        // Load filter options using the Android-specific utility
+        val filterOptions = AndroidFilterOptionsLoader.rememberFilterOptions(repository = viewModel.repository)
         val categories = filterOptions.categories
         val ingredients = filterOptions.ingredients
         val glasses = filterOptions.glasses

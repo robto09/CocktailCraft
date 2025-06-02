@@ -5,8 +5,8 @@ import org.koin.dsl.module
 
 /**
  * Koin module for shared ViewModels.
- * With kmp-viewmodel, ViewModels are now regular factory instances
- * that will be properly scoped when retrieved with koinKmpViewModel()
+ * Using factory pattern for cross-platform compatibility.
+ * Android will properly scope these as ViewModels when retrieved with koinViewModel()
  */
 val viewModelModule = module {
     // Theme ViewModel

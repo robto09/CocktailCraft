@@ -70,12 +70,14 @@ fun CartScreen(
 
         // Show error state
         if (!isLoading && error != null) {
-            EmptyStateComponent(
-                title = "Error",
-                message = error ?: "An unknown error occurred",
-                actionButtonText = "Try Again",
-                onActionButtonClick = { /* Add retry logic here */ }
-            )
+            error?.let { err ->
+                EmptyStateComponent(
+                    title = err.title,
+                    message = err.message,
+                    actionButtonText = "Try Again",
+                    onActionButtonClick = { /* Add retry logic here */ }
+                )
+            }
         }
         // Show empty cart state
         else if (!isLoading && cartItems.isEmpty()) {

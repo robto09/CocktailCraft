@@ -18,7 +18,6 @@ class CocktailCraftApplication : Application() {
         startKoin {
             androidLogger()
             androidContext(this@CocktailCraftApplication)
-            // Use individual modules from shared, but replace viewModelModule with androidViewModelModule
             modules(
                 listOf(
                     networkModule,
@@ -26,7 +25,7 @@ class CocktailCraftApplication : Application() {
                     domainModule,
                     platformModule(),
                     recommendationModule,
-                    androidViewModelModule  // Android-specific ViewModels - must be last to override
+                    androidViewModelModule  // Android ViewModels with proper lifecycle
                 )
             )
         }

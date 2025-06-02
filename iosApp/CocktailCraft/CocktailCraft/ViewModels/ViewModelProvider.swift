@@ -3,6 +3,7 @@
 //  CocktailCraft
 //
 //  Provides easy access to ViewModels throughout the iOS app
+//  Updated to work with kmp-viewmodel
 //
 
 import SwiftUI
@@ -15,21 +16,21 @@ class ViewModelProvider {
     
     private init() {}
     
-    // Lazy initialization to ensure ViewModels are created only when needed
+    // Create observable wrappers for SwiftUI
+    // These are now much smaller wrappers that just bridge StateFlow to SwiftUI
     lazy var homeViewModel = ObservableHomeViewModel(koinHelper.getHomeViewModel())
     lazy var cartViewModel = ObservableCartViewModel(koinHelper.getCartViewModel())
     lazy var themeViewModel = ObservableThemeViewModel(koinHelper.getThemeViewModel())
     lazy var offlineModeViewModel = ObservableOfflineModeViewModel(koinHelper.getOfflineModeViewModel())
-    
-    // Factory methods for ViewModels that need fresh instances
-    func cocktailDetailViewModel() -> ObservableCocktailDetailViewModel {
-        return ObservableCocktailDetailViewModel(koinHelper.getCocktailDetailViewModel())
-    }
-    
     lazy var favoritesViewModel = ObservableFavoritesViewModel(koinHelper.getFavoritesViewModel())
     lazy var profileViewModel = ObservableProfileViewModel(koinHelper.getProfileViewModel())
     lazy var orderViewModel = ObservableOrderViewModel(koinHelper.getOrderViewModel())
     lazy var reviewViewModel = ObservableReviewViewModel(koinHelper.getReviewViewModel())
+    
+    // Factory method for ViewModels that need fresh instances
+    func cocktailDetailViewModel() -> ObservableCocktailDetailViewModel {
+        return ObservableCocktailDetailViewModel(koinHelper.getCocktailDetailViewModel())
+    }
 }
 
 // MARK: - Environment Values for easy access in SwiftUI

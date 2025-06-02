@@ -433,8 +433,8 @@ fun ProfileScreen(
     error?.let { errorMessage ->
         AlertDialog(
             onDismissRequest = { profileViewModel.clearError() },
-            title = { Text("Error") },
-            text = { Text(errorMessage) },
+            title = { Text(errorMessage.title) },
+            text = { Text(errorMessage.message) },
             confirmButton = {
                 Button(
                     onClick = { profileViewModel.clearError() },

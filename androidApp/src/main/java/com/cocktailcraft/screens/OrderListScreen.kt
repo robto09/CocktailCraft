@@ -46,17 +46,19 @@ fun OrderListScreen(
             ) {
                 CircularProgressIndicator(color = AppColors.Primary)
             }
-        } else if (error?.isNotEmpty() == true) {
+        } else if (error != null) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = error ?: "",
-                    color = AppColors.Error,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(16.dp)
-                )
+                error?.let { err ->
+                    Text(
+                        text = err.message,
+                        color = AppColors.Error,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
             }
         } else if (orders.isEmpty()) {
             // Empty state

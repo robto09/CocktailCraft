@@ -44,13 +44,15 @@ fun FavoritesScreen(
         LoadingStateComponent(isLoading = isLoading)
 
         // Show error state
-        if (!isLoading && error?.isNotEmpty() == true) {
-            EmptyStateComponent(
-                title = "Error",
-                message = error ?: "An unknown error occurred",
-                actionButtonText = "Try Again",
-                onActionButtonClick = { /* Add retry logic here */ }
-            )
+        if (!isLoading && error != null) {
+            error?.let { err ->
+                EmptyStateComponent(
+                    title = err.title,
+                    message = err.message,
+                    actionButtonText = "Try Again",
+                    onActionButtonClick = { /* Add retry logic here */ }
+                )
+            }
         }
         // Show empty favorites state
         else if (!isLoading && favorites.isEmpty()) {

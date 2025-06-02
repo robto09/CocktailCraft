@@ -1,13 +1,38 @@
 package com.cocktailcraft.di
 
+import com.cocktailcraft.viewmodel.*
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 /**
- * Android-specific Koin module.
- * With kmp-viewmodel, we now use the shared ViewModels directly.
- * This module is kept for any future Android-specific dependencies.
+ * Android-specific Koin module that properly scopes shared ViewModels for Android.
+ * Creates new instances of ViewModels with proper Android lifecycle management.
  */
 val androidViewModelModule = module {
-    // All ViewModels are now provided by the shared viewModelModule
-    // using kmp-viewmodel which works seamlessly with Android
+    // Theme ViewModel
+    viewModel { ThemeViewModel() }
+    
+    // Cart ViewModel
+    viewModel { CartViewModel() }
+    
+    // Cocktail Detail ViewModel
+    viewModel { CocktailDetailViewModel(get(), get()) }
+    
+    // Favorites ViewModel
+    viewModel { FavoritesViewModel() }
+    
+    // Home ViewModel
+    viewModel { HomeViewModel() }
+    
+    // Offline Mode ViewModel
+    viewModel { OfflineModeViewModel() }
+    
+    // Order ViewModel
+    viewModel { OrderViewModel() }
+    
+    // Profile ViewModel
+    viewModel { ProfileViewModel() }
+    
+    // Review ViewModel
+    viewModel { ReviewViewModel() }
 }

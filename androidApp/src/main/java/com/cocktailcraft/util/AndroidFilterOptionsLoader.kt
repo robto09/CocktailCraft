@@ -9,9 +9,10 @@ import androidx.compose.runtime.setValue
 import com.cocktailcraft.domain.repository.CocktailRepository
 
 /**
- * A utility class for loading filter options from the repository.
+ * Android-specific utility class for loading filter options from the repository.
+ * This version includes Compose-specific functionality.
  */
-object FilterOptionsLoader {
+object AndroidFilterOptionsLoader {
     
     /**
      * A data class representing filter options.

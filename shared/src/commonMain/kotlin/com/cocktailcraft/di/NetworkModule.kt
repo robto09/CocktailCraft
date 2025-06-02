@@ -4,6 +4,7 @@ import com.cocktailcraft.data.remote.CocktailApi
 import com.cocktailcraft.data.remote.CocktailApiImpl
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.util.NetworkMonitor
+import com.cocktailcraft.util.createNetworkMonitor
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
@@ -82,5 +83,5 @@ val networkModule = module {
     single<CocktailApi> { CocktailApiImpl(get()) }
 
     // Network monitoring
-    single { NetworkMonitor() }
+    single<NetworkMonitor> { createNetworkMonitor() }
 }
