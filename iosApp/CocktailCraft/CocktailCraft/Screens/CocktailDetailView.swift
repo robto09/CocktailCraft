@@ -86,9 +86,9 @@ struct CocktailDetailView: View {
                     }
                 }
                 .ignoresSafeArea(edges: .top)
-            } else if let error = detailViewModel.errorMessage {
+            } else if let error = detailViewModel.error {
                 ErrorStateView(
-                    message: error,
+                    message: error.title,
                     onRetry: {
                         detailViewModel.loadCocktail(id: cocktailId)
                     }

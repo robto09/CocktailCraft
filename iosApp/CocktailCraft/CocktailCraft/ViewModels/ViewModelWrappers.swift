@@ -43,7 +43,7 @@ class ObservableHomeViewModel: ObservableObject {
         observe(viewModel.isLoadingMore) { [weak self] in self?.isLoadingMore = $0 }
     }
     
-    private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
+    private func observe<Value>(_ flow: Kotlinx_coroutines_coreStateFlow, handler: @escaping (Value) -> Void) {
         let collector = StateFlowCollector<Value>()
         collector.collect(flow: flow) { value in
             Task { @MainActor in
@@ -72,6 +72,7 @@ class ObservableCartViewModel: ObservableObject {
     @Published var cartItems: [CocktailCartItem] = []
     @Published var totalPrice: Double = 0.0
     @Published var isLoading = false
+    @Published var errorString: String? = nil
     
     init(_ viewModel: CartViewModel) {
         self.viewModel = viewModel
@@ -82,9 +83,10 @@ class ObservableCartViewModel: ObservableObject {
         observe(viewModel.cartItems) { [weak self] in self?.cartItems = $0 }
         observe(viewModel.totalPrice) { [weak self] in self?.totalPrice = $0 }
         observe(viewModel.isLoading) { [weak self] in self?.isLoading = $0 }
+        observe(viewModel.errorString) { [weak self] in self?.errorString = $0 }
     }
     
-    private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
+    private func observe<Value>(_ flow: Kotlinx_coroutines_coreStateFlow, handler: @escaping (Value) -> Void) {
         let collector = StateFlowCollector<Value>()
         collector.collect(flow: flow) { value in
             Task { @MainActor in
@@ -127,7 +129,7 @@ class ObservableThemeViewModel: ObservableObject {
         observe(viewModel.isDarkMode) { [weak self] in self?.isDarkMode = $0 }
     }
     
-    private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
+    private func observe<Value>(_ flow: Kotlinx_coroutines_coreStateFlow, handler: @escaping (Value) -> Void) {
         let collector = StateFlowCollector<Value>()
         collector.collect(flow: flow) { value in
             Task { @MainActor in
@@ -155,6 +157,7 @@ class ObservableCocktailDetailViewModel: ObservableObject {
     @Published var isFavorite = false
     @Published var recommendations: [Cocktail] = []
     @Published var isLoadingRecommendations = false
+    @Published var error: ErrorUtils.UserFriendlyError?
     
     init(_ viewModel: CocktailDetailViewModel) {
         self.viewModel = viewModel
@@ -167,9 +170,10 @@ class ObservableCocktailDetailViewModel: ObservableObject {
         observe(viewModel.isFavorite) { [weak self] in self?.isFavorite = $0 }
         observe(viewModel.recommendations) { [weak self] in self?.recommendations = $0 }
         observe(viewModel.isLoadingRecommendations) { [weak self] in self?.isLoadingRecommendations = $0 }
+        observe(viewModel.error) { [weak self] in self?.error = $0 }
     }
     
-    private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
+    private func observe<Value>(_ flow: Kotlinx_coroutines_coreStateFlow, handler: @escaping (Value) -> Void) {
         let collector = StateFlowCollector<Value>()
         collector.collect(flow: flow) { value in
             Task { @MainActor in
@@ -193,6 +197,8 @@ class ObservableFavoritesViewModel: ObservableObject {
     
     @Published var favorites: [Cocktail] = []
     @Published var isLoading = false
+    @Published var errorString: String? = nil
+    @Published var error: ErrorUtils.UserFriendlyError?
     
     init(_ viewModel: FavoritesViewModel) {
         self.viewModel = viewModel
@@ -202,9 +208,11 @@ class ObservableFavoritesViewModel: ObservableObject {
     private func setupObservers() {
         observe(viewModel.favorites) { [weak self] in self?.favorites = $0 }
         observe(viewModel.isLoading) { [weak self] in self?.isLoading = $0 }
+        observe(viewModel.errorString) { [weak self] in self?.errorString = $0 }
+        observe(viewModel.error) { [weak self] in self?.error = $0 }
     }
     
-    private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
+    private func observe<Value>(_ flow: Kotlinx_coroutines_coreStateFlow, handler: @escaping (Value) -> Void) {
         let collector = StateFlowCollector<Value>()
         collector.collect(flow: flow) { value in
             Task { @MainActor in
@@ -229,6 +237,7 @@ class ObservableProfileViewModel: ObservableObject {
     @Published var user: User?
     @Published var isLoading = false
     @Published var isSignedIn = false
+    @Published var errorString: String? = nil
     
     init(_ viewModel: ProfileViewModel) {
         self.viewModel = viewModel
@@ -239,9 +248,10 @@ class ObservableProfileViewModel: ObservableObject {
         observe(viewModel.user) { [weak self] in self?.user = $0 }
         observe(viewModel.isLoading) { [weak self] in self?.isLoading = $0 }
         observe(viewModel.isSignedIn) { [weak self] in self?.isSignedIn = $0 }
+        observe(viewModel.errorString) { [weak self] in self?.errorString = $0 }
     }
     
-    private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
+    private func observe<Value>(_ flow: Kotlinx_coroutines_coreStateFlow, handler: @escaping (Value) -> Void) {
         let collector = StateFlowCollector<Value>()
         collector.collect(flow: flow) { value in
             Task { @MainActor in
@@ -265,6 +275,7 @@ class ObservableOrderViewModel: ObservableObject {
     
     @Published var orders: [Order] = []
     @Published var isLoading = false
+    @Published var errorString: String? = nil
     
     init(_ viewModel: OrderViewModel) {
         self.viewModel = viewModel
@@ -274,9 +285,10 @@ class ObservableOrderViewModel: ObservableObject {
     private func setupObservers() {
         observe(viewModel.orders) { [weak self] in self?.orders = $0 }
         observe(viewModel.isLoading) { [weak self] in self?.isLoading = $0 }
+        observe(viewModel.errorString) { [weak self] in self?.errorString = $0 }
     }
     
-    private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
+    private func observe<Value>(_ flow: Kotlinx_coroutines_coreStateFlow, handler: @escaping (Value) -> Void) {
         let collector = StateFlowCollector<Value>()
         collector.collect(flow: flow) { value in
             Task { @MainActor in
@@ -341,7 +353,7 @@ class ObservableOfflineModeViewModel: ObservableObject {
         observe(viewModel.recentlyViewedCocktails) { [weak self] in self?.recentlyViewedCocktails = $0 }
     }
     
-    private func observe<Value>(_ flow: any StateFlow, handler: @escaping (Value) -> Void) {
+    private func observe<Value>(_ flow: Kotlinx_coroutines_coreStateFlow, handler: @escaping (Value) -> Void) {
         let collector = StateFlowCollector<Value>()
         collector.collect(flow: flow) { value in
             Task { @MainActor in

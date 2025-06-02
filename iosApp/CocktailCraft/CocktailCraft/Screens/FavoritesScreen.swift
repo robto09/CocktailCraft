@@ -18,7 +18,7 @@ struct FavoritesScreen: View {
     private var contentView: some View {
         if favoritesViewModel.isLoading {
             loadingView
-        } else if let error = favoritesViewModel.error {
+        } else if let error = favoritesViewModel.errorString {
             errorView(error: error)
         } else if favoritesViewModel.favorites.isEmpty {
             emptyView

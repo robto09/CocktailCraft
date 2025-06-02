@@ -68,10 +68,10 @@ struct HomeView: View {
                     }
                     .padding(.top, 16)
                 }
-            } else if let error = homeViewModel.errorMessage, homeViewModel.cocktails.isEmpty {
+            } else if !homeViewModel.errorString.isEmpty && homeViewModel.cocktails.isEmpty {
                 // Error State
                 NetworkErrorStateDisplay(
-                    error: error,
+                    error: homeViewModel.errorString,
                     isOffline: offlineModeViewModel.isOffline,
                     onRetry: {
                         homeViewModel.loadCocktails()

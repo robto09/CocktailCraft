@@ -18,8 +18,8 @@ struct ContentView: View {
                 if homeViewModel.isLoading {
                     ProgressView("Loading cocktails...")
                         .padding()
-                } else if let error = homeViewModel.errorMessage {
-                    Text("Error: \(error)")
+                } else if !homeViewModel.errorString.isEmpty {
+                    Text("Error: \(homeViewModel.errorString)")
                         .foregroundColor(.red)
                         .padding()
                 } else {

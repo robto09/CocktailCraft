@@ -18,16 +18,25 @@ class ViewModelProvider {
     
     // Create observable wrappers for SwiftUI
     // These are now much smaller wrappers that just bridge StateFlow to SwiftUI
+    @MainActor
     lazy var homeViewModel = ObservableHomeViewModel(koinHelper.getHomeViewModel())
+    @MainActor
     lazy var cartViewModel = ObservableCartViewModel(koinHelper.getCartViewModel())
+    @MainActor
     lazy var themeViewModel = ObservableThemeViewModel(koinHelper.getThemeViewModel())
+    @MainActor
     lazy var offlineModeViewModel = ObservableOfflineModeViewModel(koinHelper.getOfflineModeViewModel())
+    @MainActor
     lazy var favoritesViewModel = ObservableFavoritesViewModel(koinHelper.getFavoritesViewModel())
+    @MainActor
     lazy var profileViewModel = ObservableProfileViewModel(koinHelper.getProfileViewModel())
+    @MainActor
     lazy var orderViewModel = ObservableOrderViewModel(koinHelper.getOrderViewModel())
+    @MainActor
     lazy var reviewViewModel = ObservableReviewViewModel(koinHelper.getReviewViewModel())
     
     // Factory method for ViewModels that need fresh instances
+    @MainActor
     func cocktailDetailViewModel() -> ObservableCocktailDetailViewModel {
         return ObservableCocktailDetailViewModel(koinHelper.getCocktailDetailViewModel())
     }

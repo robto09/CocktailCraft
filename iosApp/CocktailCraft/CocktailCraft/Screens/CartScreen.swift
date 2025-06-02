@@ -22,14 +22,14 @@ struct CartScreen: View {
                 if cartViewModel.isLoading {
                     ProgressView("Loading cart...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let error = cartViewModel.error {
+                } else if let error = cartViewModel.errorString {
                     EmptyStateView(
                         title: "Error",
                         message: error,
                         systemImage: "exclamationmark.triangle",
                         actionButtonText: "Try Again",
                         onActionButtonClick: {
-                            cartViewModel.refresh()
+                            // Cart doesn't have refresh, reload from parent view
                         }
                     )
                 } else if cartViewModel.cartItems.isEmpty {
