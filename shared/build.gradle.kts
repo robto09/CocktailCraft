@@ -59,6 +59,10 @@ kotlin {
                 // DI
                 implementation(libs.koin.core)
                 
+                // KMP ViewModel
+                implementation(libs.kmp.viewmodel.core)
+                implementation(libs.kmp.viewmodel.koin)
+                
                 // Connectivity
                 implementation(libs.connectivity.core)
             }
@@ -72,6 +76,9 @@ kotlin {
                 implementation("com.russhwolf:multiplatform-settings-datastore:1.1.1")
                 implementation("com.russhwolf:multiplatform-settings-coroutines:1.1.1")
                 implementation(libs.connectivity.android)
+                
+                // KMP ViewModel Android support
+                implementation(libs.kmp.viewmodel.savedstate)
             }
         }
 

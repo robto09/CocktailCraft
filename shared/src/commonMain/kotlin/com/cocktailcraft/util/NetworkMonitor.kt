@@ -13,26 +13,29 @@ import kotlinx.coroutines.launch
  * Network monitor to observe network connectivity status using the Connectivity library.
  */
 class NetworkMonitor {
-    private val connectivity = Connectivity()
+    // TODO: Fix Connectivity initialization - requires platform-specific setup
+    // private val connectivity = Connectivity()
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     
     private val _isOnline = MutableStateFlow(true)
     val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
     
     fun startMonitoring() {
-        connectivity.start()
-        
-        scope.launch {
-            connectivity.statusUpdates.collect { status ->
-                _isOnline.value = when (status) {
-                    is Connectivity.Status.Connected -> true
-                    is Connectivity.Status.Disconnected -> false
-                }
-            }
-        }
+        // TODO: Implement when Connectivity is properly initialized
+        // connectivity.start()
+        // 
+        // scope.launch {
+        //     connectivity.statusUpdates.collect { status ->
+        //         _isOnline.value = when (status) {
+        //             is Connectivity.Status.Connected -> true
+        //             is Connectivity.Status.Disconnected -> false
+        //         }
+        //     }
+        // }
     }
     
     fun stopMonitoring() {
-        connectivity.stop()
+        // TODO: Implement when Connectivity is properly initialized
+        // connectivity.stop()
     }
 }

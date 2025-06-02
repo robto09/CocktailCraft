@@ -26,6 +26,7 @@ navigation = "2.8.8"
 security = "1.1.0-alpha06"
 turbine = "1.0.0"
 connectivity = "1.1.0"
+kmp-viewmodel = "0.8.0"
 
 [libraries]
 accompanist-navigation-animation = { module = "com.google.accompanist:accompanist-navigation-animation", version.ref = "accompanist" }
@@ -75,6 +76,10 @@ turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 connectivity-core = { module = "dev.jordond.connectivity:connectivity-core", version.ref = "connectivity" }
 connectivity-apple = { module = "dev.jordond.connectivity:connectivity-apple", version.ref = "connectivity" }
 connectivity-android = { module = "dev.jordond.connectivity:connectivity-android", version.ref = "connectivity" }
+kmp-viewmodel-core = { module = "io.github.hoc081098:kmp-viewmodel", version.ref = "kmp-viewmodel" }
+kmp-viewmodel-savedstate = { module = "io.github.hoc081098:kmp-viewmodel-savedstate", version.ref = "kmp-viewmodel" }
+kmp-viewmodel-koin = { module = "io.github.hoc081098:kmp-viewmodel-koin", version.ref = "kmp-viewmodel" }
+kmp-viewmodel-compose = { module = "io.github.hoc081098:kmp-viewmodel-compose", version.ref = "kmp-viewmodel" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

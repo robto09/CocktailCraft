@@ -77,6 +77,10 @@ dependencies {
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
+    
+    // KMP ViewModel Compose support
+    implementation(libs.kmp.viewmodel.compose)
+    implementation(libs.kmp.viewmodel.koin)
 
     // Add Coil for image loading
     implementation("io.coil-kt:coil-compose:2.4.0")
