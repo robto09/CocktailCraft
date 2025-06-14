@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.delay
 import com.cocktailcraft.domain.config.AppConfig
 import kotlinx.serialization.json.Json
 
@@ -35,6 +36,11 @@ class CocktailRepositoryImpl(
 
     // Initialize the cocktail cache
     private val cocktailCache = CocktailCache(settings, json, appConfig)
+    
+    // Store all fetched cocktails for pagination
+    private var allCocktailsCache: List<Cocktail> = emptyList()
+    private var lastFetchTime: Long = 0
+    private val CACHE_VALIDITY_MS = 5 * 60 * 1000 // 5 minutes
 
     // Flag to force offline mode (user preference)
     private var forceOfflineMode: Boolean
@@ -70,41 +76,53 @@ class CocktailRepositoryImpl(
 
     override suspend fun getCocktailById(id: String): Flow<Cocktail?> = flow {
         try {
-            // First check if we're offline
+            // First check if we have a cached cocktail with full details
+            val cachedCocktail = cocktailCache.getCachedCocktail(id)
+            
+            // If we have a cached cocktail with ingredients (full details), return it
+            if (cachedCocktail != null && 
+                cachedCocktail.ingredients.isNotEmpty() && 
+                cachedCocktail.ingredients.first().name != "Details available on tap") {
+                emit(cachedCocktail)
+                return@flow
+            }
+            
+            // If we're offline, return whatever we have cached
             if (isOffline()) {
-                // Try to get from cache
-                val cachedCocktail = cocktailCache.getCachedCocktail(id)
-                if (cachedCocktail != null) {
-                    emit(cachedCocktail)
-                } else {
-                    emit(null)
-                }
+                emit(cachedCocktail)
                 return@flow
             }
 
-            // If online, make a direct API call
-            val dto = api.getCocktailById(id)
+            // If online, fetch full details from API
+            try {
+                // Add a small delay to avoid rate limiting if called rapidly
+                delay(200)
+                
+                val dto = api.getCocktailById(id)
 
-            if (dto != null) {
-                val cocktail = mapDtoToCocktail(dto)
+                if (dto != null) {
+                    val cocktail = mapDtoToCocktail(dto)
 
-                // Cache the cocktail for offline access
-                cocktailCache.cacheCocktail(cocktail)
+                    // Cache the full cocktail details
+                    cocktailCache.cacheCocktail(cocktail)
+                    
+                    // Update the in-memory cache as well
+                    allCocktailsCache = allCocktailsCache.map { 
+                        if (it.id == id) cocktail else it 
+                    }
 
-                emit(cocktail)
-            } else {
-                // If API call returns null, try to get from cache as fallback
-                val cachedCocktail = cocktailCache.getCachedCocktail(id)
+                    emit(cocktail)
+                } else {
+                    // If API returns null, use cached version
+                    emit(cachedCocktail)
+                }
+            } catch (e: Exception) {
+                // On API error, return cached version
+                println("Error fetching cocktail details for $id: ${e.message}")
                 emit(cachedCocktail)
             }
         } catch (e: Exception) {
-            // If there's an error with the API call, try to get from cache
-            val cachedCocktail = cocktailCache.getCachedCocktail(id)
-            if (cachedCocktail != null) {
-                emit(cachedCocktail)
-            } else {
-                emit(null)
-            }
+            emit(null)
         }
     }
 
@@ -295,7 +313,17 @@ class CocktailRepositoryImpl(
             if (isOffline()) {
                 // Use cached cocktails when offline
                 val cachedCocktails = cocktailCache.getAllCachedCocktails()
-                emit(cachedCocktails.sortedByDescending { it.dateAdded })
+                allCocktailsCache = cachedCocktails.sortedByDescending { it.dateAdded }
+                emit(allCocktailsCache)
+                return@flow
+            }
+
+            // Check if we have valid cached data
+            val currentTime = System.currentTimeMillis()
+            if (allCocktailsCache.isNotEmpty() && 
+                currentTime - lastFetchTime < CACHE_VALIDITY_MS) {
+                // Return cached data if still valid
+                emit(allCocktailsCache)
                 return@flow
             }
 
@@ -304,7 +332,8 @@ class CocktailRepositoryImpl(
                 // Fall back to cache if API is not reachable
                 val cachedCocktails = cocktailCache.getAllCachedCocktails()
                 if (cachedCocktails.isNotEmpty()) {
-                    emit(cachedCocktails.sortedByDescending { it.dateAdded })
+                    allCocktailsCache = cachedCocktails.sortedByDescending { it.dateAdded }
+                    emit(allCocktailsCache)
                     return@flow
                 }
                 throw Exception("API is not reachable. Please check your internet connection.")
@@ -324,15 +353,19 @@ class CocktailRepositoryImpl(
             )
             val allCocktails = mutableListOf<Cocktail>()
             
-            // Fetch cocktails from each category
-            for (category in allCategories) {
+            // Fetch cocktails from each category with delay to avoid rate limiting
+            for ((index, category) in allCategories.withIndex()) {
                 try {
+                    // Add delay between category fetches to avoid rate limiting
+                    if (index > 0) {
+                        delay(500) // 500ms delay between categories
+                    }
+                    
                     val categoryDrinks = api.filterByCategory(category)
                     
                     // Filter endpoints only return partial data
-                    // For now, just use the basic data to avoid rate limiting
-                    // Full details will be fetched when user clicks on a cocktail
-                    val detailedCocktails = categoryDrinks.take(10).map { basicDto ->
+                    // For pagination, fetch more cocktails per category
+                    val detailedCocktails = categoryDrinks.map { basicDto ->
                         val cocktail = mapDtoToCocktail(basicDto)
                         cocktailCache.cacheCocktail(cocktail)
                         cocktail
@@ -345,12 +378,17 @@ class CocktailRepositoryImpl(
                 }
             }
             
-            emit(allCocktails.sortedByDescending { it.dateAdded })
+            // Cache the results
+            allCocktailsCache = allCocktails.sortedByDescending { it.dateAdded }
+            lastFetchTime = currentTime
+            
+            emit(allCocktailsCache)
         } catch (e: Exception) {
             // Try to use cache as fallback
             val cachedCocktails = cocktailCache.getAllCachedCocktails()
             if (cachedCocktails.isNotEmpty()) {
-                emit(cachedCocktails.sortedByDescending { it.dateAdded })
+                allCocktailsCache = cachedCocktails.sortedByDescending { it.dateAdded }
+                emit(allCocktailsCache)
             } else {
                 // Re-throw with more context if no cached data
                 throw Exception("Failed to load cocktails: ${e.message}", e)
