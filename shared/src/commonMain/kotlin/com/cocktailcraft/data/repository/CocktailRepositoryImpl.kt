@@ -327,16 +327,27 @@ class CocktailRepositoryImpl(
                 return@flow
             }
 
-            // If online, check if API is reachable
-            if (!pingApiInternal()) {
-                // Fall back to cache if API is not reachable
+            // If we have any cached data (in-memory or persistent), use it first
+            if (allCocktailsCache.isNotEmpty()) {
+                emit(allCocktailsCache)
+                // Continue to try updating in background
+            } else {
                 val cachedCocktails = cocktailCache.getAllCachedCocktails()
                 if (cachedCocktails.isNotEmpty()) {
                     allCocktailsCache = cachedCocktails.sortedByDescending { it.dateAdded }
                     emit(allCocktailsCache)
+                }
+            }
+
+            // Try to refresh data from API if possible (but don't throw errors)
+            try {
+                if (!pingApiInternal()) {
+                    // API not reachable, but we already emitted cached data
                     return@flow
                 }
-                throw Exception("API is not reachable. Please check your internet connection.")
+            } catch (e: Exception) {
+                // Ignore ping errors, we have cached data
+                return@flow
             }
 
             // Get all cocktails without category filter to show all available drinks
@@ -378,21 +389,27 @@ class CocktailRepositoryImpl(
                 }
             }
             
-            // Cache the results
-            allCocktailsCache = allCocktails.sortedByDescending { it.dateAdded }
-            lastFetchTime = currentTime
-            
-            emit(allCocktailsCache)
-        } catch (e: Exception) {
-            // Try to use cache as fallback
-            val cachedCocktails = cocktailCache.getAllCachedCocktails()
-            if (cachedCocktails.isNotEmpty()) {
-                allCocktailsCache = cachedCocktails.sortedByDescending { it.dateAdded }
+            // Cache the results if we got new data
+            if (allCocktails.isNotEmpty()) {
+                allCocktailsCache = allCocktails.sortedByDescending { it.dateAdded }
+                lastFetchTime = currentTime
                 emit(allCocktailsCache)
-            } else {
-                // Re-throw with more context if no cached data
-                throw Exception("Failed to load cocktails: ${e.message}", e)
             }
+        } catch (e: Exception) {
+            // Don't throw errors if we already have cached data
+            if (allCocktailsCache.isEmpty()) {
+                // Try persistent cache as last resort
+                val cachedCocktails = cocktailCache.getAllCachedCocktails()
+                if (cachedCocktails.isNotEmpty()) {
+                    allCocktailsCache = cachedCocktails.sortedByDescending { it.dateAdded }
+                    emit(allCocktailsCache)
+                } else {
+                    // Only throw error if we have absolutely no data
+                    throw Exception("Failed to load cocktails: ${e.message}", e)
+                }
+            }
+            // If we have cached data, just log the error
+            println("Background refresh failed: ${e.message}")
         }
     }
 
