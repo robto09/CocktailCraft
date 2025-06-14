@@ -49,6 +49,10 @@ kotlin {
                 // DI
                 implementation("io.insert-koin:koin-core:3.4.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+
+                // Kache for caching
+                implementation("com.mayakapps.kache:kache:2.1.1")
+                implementation("com.mayakapps.kache:file-kache:2.1.1")
             }
         }
 

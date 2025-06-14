@@ -2,14 +2,18 @@ package com.cocktailcraft.data.cache
 
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
+import com.mayakapps.kache.Kache
+import com.mayakapps.kache.KacheStrategy
 import com.russhwolf.settings.Settings
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.datetime.Clock
+import com.cocktailcraft.util.CocktailDebugLogger
 
 /**
- * Manages caching of cocktail data for offline access.
+ * Manages caching of cocktail data for offline access using the Kache library.
  */
 class CocktailCache(
     private val settings: Settings,
@@ -19,157 +23,156 @@ class CocktailCache(
     companion object {
         private const val CACHE_PREFIX = "cocktail_cache_"
         private const val RECENTLY_VIEWED_KEY = "recently_viewed_cocktails"
+        private const val ALL_COCKTAILS_KEY = "all_cached_cocktails"
         private const val CACHE_METADATA_PREFIX = "cache_metadata_"
         private const val MAX_RECENTLY_VIEWED = 20
+        private const val MAX_CACHED_COCKTAILS = 100
+    }
+    
+    // In-memory cache for cocktails using LRU strategy
+    private val cocktailCache = Kache.lru<String, Cocktail>(
+        maxSize = MAX_CACHED_COCKTAILS
+    )
+
+    // In-memory cache for recently viewed cocktails
+    private val recentlyViewedCache = Kache.lru<String, Cocktail>(
+        maxSize = MAX_RECENTLY_VIEWED
+    )
+    
+    init {
+        CocktailDebugLogger.log("🗄️ CocktailCache init()")
+        // Load persisted cocktails into memory cache on initialization
+        loadPersistedCocktails()
+    }
+    
+    private fun loadPersistedCocktails() {
+        CocktailDebugLogger.log("📂 Loading persisted cocktails...")
+        try {
+            // Load all cached cocktails from persistent storage
+            val cachedJson = settings.getStringOrNull(ALL_COCKTAILS_KEY)
+            if (!cachedJson.isNullOrBlank()) {
+                val cocktails = json.decodeFromString<List<Cocktail>>(cachedJson)
+                CocktailDebugLogger.log("   ✅ Loaded ${cocktails.size} cocktails from persistent storage")
+                cocktails.forEach { cocktail ->
+                    cocktailCache.put(cocktail.id, cocktail)
+                }
+            } else {
+                CocktailDebugLogger.log("   ⚠️ No persisted cocktails found")
+            }
+            
+            // Load recently viewed cocktails
+            val recentJson = settings.getStringOrNull(RECENTLY_VIEWED_KEY)
+            if (!recentJson.isNullOrBlank()) {
+                val recentCocktails = json.decodeFromString<List<Cocktail>>(recentJson)
+                CocktailDebugLogger.log("   ✅ Loaded ${recentCocktails.size} recently viewed cocktails")
+                recentCocktails.forEach { cocktail ->
+                    recentlyViewedCache.put(cocktail.id, cocktail)
+                }
+            } else {
+                CocktailDebugLogger.log("   ⚠️ No recently viewed cocktails found")
+            }
+        } catch (e: Exception) {
+            // Log error but don't crash - caching is not critical
+            CocktailDebugLogger.log("   ❌ Failed to load persisted cocktails: ${e.message}")
+        }
+    }
+    
+    private fun persistCocktails() {
+        try {
+            // Persist all cached cocktails
+            val allCocktails = cocktailCache.snapshot().values.toList()
+            CocktailDebugLogger.log("💾 Persisting ${allCocktails.size} cocktails to storage")
+            if (allCocktails.isNotEmpty()) {
+                val json = json.encodeToString(allCocktails)
+                settings.putString(ALL_COCKTAILS_KEY, json)
+                CocktailDebugLogger.log("   ✅ Successfully persisted cocktails")
+            }
+        } catch (e: Exception) {
+            CocktailDebugLogger.log("   ❌ Failed to persist cocktails: ${e.message}")
+        }
+    }
+    
+    private fun persistRecentlyViewed() {
+        try {
+            // Persist recently viewed cocktails
+            val recentCocktails = recentlyViewedCache.snapshot().values.toList()
+            if (recentCocktails.isNotEmpty()) {
+                val json = json.encodeToString(recentCocktails)
+                settings.putString(RECENTLY_VIEWED_KEY, json)
+            }
+        } catch (e: Exception) {
+            CocktailDebugLogger.log("Failed to persist recently viewed: ${e.message}")
+        }
     }
     
     /**
      * Cache a cocktail for offline access.
      */
-    fun cacheCocktail(cocktail: Cocktail) {
-        try {
-            // Cache the cocktail data
-            val cocktailJson = json.encodeToString(cocktail)
-            settings.putString("$CACHE_PREFIX${cocktail.id}", cocktailJson)
-            
-            // Store cache metadata (timestamp)
-            val timestamp = Clock.System.now().toEpochMilliseconds()
-            settings.putLong("$CACHE_METADATA_PREFIX${cocktail.id}", timestamp)
-            
-            // Update recently viewed list
-            addToRecentlyViewed(cocktail.id)
-        } catch (e: Exception) {
-            println("Error caching cocktail: ${e.message}")
-        }
+    suspend fun cacheCocktail(cocktail: Cocktail) {
+        cocktailCache.put(cocktail.id, cocktail)
+        persistCocktails() // Persist to storage
     }
     
     /**
      * Get a cached cocktail by ID.
-     * Returns null if the cocktail is not in the cache or if the cache has expired.
      */
-    fun getCachedCocktail(id: String): Cocktail? {
-        try {
-            val cocktailJson = settings.getStringOrNull("$CACHE_PREFIX$id") ?: return null
-            
-            // Check if cache has expired
-            val timestamp = settings.getLongOrNull("$CACHE_METADATA_PREFIX$id") ?: 0L
-            val currentTime = Clock.System.now().toEpochMilliseconds()
-            
-            if (currentTime - timestamp > appConfig.cacheExpirationMs) {
-                // Cache expired, remove it
-                settings.remove("$CACHE_PREFIX$id")
-                settings.remove("$CACHE_METADATA_PREFIX$id")
-                return null
-            }
-            
-            return json.decodeFromString<Cocktail>(cocktailJson)
-        } catch (e: Exception) {
-            println("Error retrieving cached cocktail: ${e.message}")
-            return null
-        }
+    suspend fun getCachedCocktail(id: String): Cocktail? {
+        return cocktailCache.get(id)
     }
     
     /**
      * Get all cached cocktails.
      */
-    fun getAllCachedCocktails(): List<Cocktail> {
-        val cachedCocktails = mutableListOf<Cocktail>()
-        
-        try {
-            // Get all keys that start with the cache prefix
-            val allKeys = settings.keys.filter { it.startsWith(CACHE_PREFIX) }
-            
-            for (key in allKeys) {
-                val id = key.removePrefix(CACHE_PREFIX)
-                val cocktail = getCachedCocktail(id)
-                if (cocktail != null) {
-                    cachedCocktails.add(cocktail)
-                }
-            }
-        } catch (e: Exception) {
-            println("Error retrieving all cached cocktails: ${e.message}")
-        }
-        
-        return cachedCocktails
+    suspend fun getAllCachedCocktails(): List<Cocktail> {
+        val cocktails = cocktailCache.snapshot().values.toList()
+        CocktailDebugLogger.log("📦 CocktailCache.getAllCachedCocktails() returning ${cocktails.size} items")
+        return cocktails
     }
     
     /**
-     * Add a cocktail ID to the recently viewed list.
+     * Add a cocktail to the recently viewed list.
      */
-    private fun addToRecentlyViewed(id: String) {
-        try {
-            val recentlyViewed = getRecentlyViewedIds().toMutableList()
-            
-            // Remove if already in the list (to move it to the front)
-            recentlyViewed.remove(id)
-            
-            // Add to the front of the list
-            recentlyViewed.add(0, id)
-            
-            // Trim the list if it exceeds the maximum size
-            if (recentlyViewed.size > MAX_RECENTLY_VIEWED) {
-                recentlyViewed.removeAt(recentlyViewed.lastIndex)
-            }
-            
-            // Save the updated list
-            settings.putString(RECENTLY_VIEWED_KEY, json.encodeToString(recentlyViewed))
-        } catch (e: Exception) {
-            println("Error updating recently viewed list: ${e.message}")
+    suspend fun addToRecentlyViewed(cocktail: Cocktail) {
+        recentlyViewedCache.put(cocktail.id, cocktail)
+        // Also add to main cache if not already there
+        if (cocktailCache.get(cocktail.id) == null) {
+            cocktailCache.put(cocktail.id, cocktail)
+            persistCocktails()
         }
-    }
-    
-    /**
-     * Get the list of recently viewed cocktail IDs.
-     */
-    fun getRecentlyViewedIds(): List<String> {
-        return try {
-            val recentlyViewedJson = settings.getStringOrNull(RECENTLY_VIEWED_KEY) ?: "[]"
-            json.decodeFromString<List<String>>(recentlyViewedJson)
-        } catch (e: Exception) {
-            println("Error retrieving recently viewed list: ${e.message}")
-            emptyList()
-        }
+        persistRecentlyViewed() // Persist to storage
     }
     
     /**
      * Get the list of recently viewed cocktails.
      */
-    fun getRecentlyViewedCocktails(): List<Cocktail> {
-        val recentlyViewedIds = getRecentlyViewedIds()
-        return recentlyViewedIds.mapNotNull { getCachedCocktail(it) }
+    suspend fun getRecentlyViewedCocktails(): List<Cocktail> {
+        val recent = recentlyViewedCache.snapshot().values.toList().reversed()
+        CocktailDebugLogger.log("👀 CocktailCache.getRecentlyViewedCocktails() returning ${recent.size} items")
+        return recent
     }
     
     /**
      * Clear all cached cocktails.
      */
     fun clearCache() {
-        try {
-            val allKeys = settings.keys.filter { 
-                it.startsWith(CACHE_PREFIX) || it.startsWith(CACHE_METADATA_PREFIX) 
-            }
-            
-            for (key in allKeys) {
-                settings.remove(key)
-            }
-            
-            // Also clear recently viewed list
-            settings.remove(RECENTLY_VIEWED_KEY)
-        } catch (e: Exception) {
-            println("Error clearing cache: ${e.message}")
-        }
+        cocktailCache.clear()
+        recentlyViewedCache.clear()
+        // Clear from persistent storage
+        settings.remove(ALL_COCKTAILS_KEY)
+        settings.remove(RECENTLY_VIEWED_KEY)
     }
     
     /**
      * Check if a cocktail is cached.
      */
-    fun isCocktailCached(id: String): Boolean {
-        return settings.hasKey("$CACHE_PREFIX$id")
+    suspend fun isCocktailCached(id: String): Boolean {
+        return cocktailCache.get(id) != null
     }
     
     /**
      * Get the number of cached cocktails.
      */
     fun getCachedCocktailCount(): Int {
-        return settings.keys.count { it.startsWith(CACHE_PREFIX) }
+        return cocktailCache.size
     }
 }
