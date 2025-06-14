@@ -37,10 +37,14 @@ class CocktailRepositoryImpl(
     // Initialize the cocktail cache
     private val cocktailCache = CocktailCache(settings, json, appConfig)
     
-    // Store all fetched cocktails for pagination
-    private var allCocktailsCache: List<Cocktail> = emptyList()
-    private var lastFetchTime: Long = 0
-    private val CACHE_VALIDITY_MS = 5 * 60 * 1000 // 5 minutes
+    // Store all fetched cocktails for pagination (use companion object for persistence)
+    private var allCocktailsCache: List<Cocktail> 
+        get() = globalCocktailsCache
+        set(value) { globalCocktailsCache = value }
+    
+    private var lastFetchTime: Long
+        get() = globalLastFetchTime
+        set(value) { globalLastFetchTime = value }
 
     // Flag to force offline mode (user preference)
     private var forceOfflineMode: Boolean
@@ -308,45 +312,39 @@ class CocktailRepositoryImpl(
     }
 
     override suspend fun getCocktailsSortedByNewest(): Flow<List<Cocktail>> = flow {
+        // First, always try to emit cached data immediately
+        val cachedCocktails = cocktailCache.getAllCachedCocktails()
+        if (cachedCocktails.isNotEmpty()) {
+            allCocktailsCache = cachedCocktails.sortedByDescending { it.dateAdded }
+            emit(allCocktailsCache)
+        } else if (allCocktailsCache.isNotEmpty()) {
+            emit(allCocktailsCache)
+        }
+        
         try {
             // Check if we're offline
             if (isOffline()) {
-                // Use cached cocktails when offline
-                val cachedCocktails = cocktailCache.getAllCachedCocktails()
-                allCocktailsCache = cachedCocktails.sortedByDescending { it.dateAdded }
-                emit(allCocktailsCache)
+                // Already emitted cache, just return
                 return@flow
             }
 
             // Check if we have valid cached data
             val currentTime = System.currentTimeMillis()
             if (allCocktailsCache.isNotEmpty() && 
-                currentTime - lastFetchTime < CACHE_VALIDITY_MS) {
-                // Return cached data if still valid
-                emit(allCocktailsCache)
+                currentTime - lastFetchTime < Companion.CACHE_VALIDITY_MS) {
+                // Already emitted cache, and it's still valid
                 return@flow
             }
 
-            // If we have any cached data (in-memory or persistent), use it first
-            if (allCocktailsCache.isNotEmpty()) {
-                emit(allCocktailsCache)
-                // Continue to try updating in background
-            } else {
-                val cachedCocktails = cocktailCache.getAllCachedCocktails()
-                if (cachedCocktails.isNotEmpty()) {
-                    allCocktailsCache = cachedCocktails.sortedByDescending { it.dateAdded }
-                    emit(allCocktailsCache)
-                }
-            }
-
             // Try to refresh data from API if possible (but don't throw errors)
-            try {
-                if (!pingApiInternal()) {
-                    // API not reachable, but we already emitted cached data
-                    return@flow
-                }
+            val isApiReachable = try {
+                pingApiInternal()
             } catch (e: Exception) {
-                // Ignore ping errors, we have cached data
+                false
+            }
+            
+            if (!isApiReachable) {
+                // API not reachable, but we already emitted cached data
                 return@flow
             }
 
@@ -396,20 +394,13 @@ class CocktailRepositoryImpl(
                 emit(allCocktailsCache)
             }
         } catch (e: Exception) {
-            // Don't throw errors if we already have cached data
-            if (allCocktailsCache.isEmpty()) {
-                // Try persistent cache as last resort
-                val cachedCocktails = cocktailCache.getAllCachedCocktails()
-                if (cachedCocktails.isNotEmpty()) {
-                    allCocktailsCache = cachedCocktails.sortedByDescending { it.dateAdded }
-                    emit(allCocktailsCache)
-                } else {
-                    // Only throw error if we have absolutely no data
-                    throw Exception("Failed to load cocktails: ${e.message}", e)
-                }
-            }
-            // If we have cached data, just log the error
+            // Log the error but don't throw - we already emitted cached data if available
             println("Background refresh failed: ${e.message}")
+            
+            // If we haven't emitted anything yet, emit empty list instead of throwing
+            if (allCocktailsCache.isEmpty()) {
+                emit(emptyList())
+            }
         }
     }
 
@@ -840,5 +831,12 @@ class CocktailRepositoryImpl(
         } catch (e: Exception) {
             false
         }
+    }
+    
+    companion object {
+        // Global cache to persist across repository instances
+        private var globalCocktailsCache: List<Cocktail> = emptyList()
+        private var globalLastFetchTime: Long = 0
+        private const val CACHE_VALIDITY_MS = 5 * 60 * 1000 // 5 minutes
     }
 }
