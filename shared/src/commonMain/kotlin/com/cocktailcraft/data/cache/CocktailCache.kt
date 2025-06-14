@@ -2,8 +2,6 @@ package com.cocktailcraft.data.cache
 
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
-import com.mayakapps.kache.Kache
-import com.mayakapps.kache.KacheStrategy
 import com.russhwolf.settings.Settings
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -13,7 +11,46 @@ import kotlinx.datetime.Clock
 import com.cocktailcraft.util.CocktailDebugLogger
 
 /**
- * Manages caching of cocktail data for offline access using the Kache library.
+ * Simple LRU cache implementation
+ */
+class SimpleLruCache<K, V>(private val maxSize: Int) {
+    private val cache = LinkedHashMap<K, V>(maxSize + 1, 0.75f, true)
+    
+    fun put(key: K, value: V) {
+        synchronized(cache) {
+            cache[key] = value
+            if (cache.size > maxSize) {
+                val iterator = cache.entries.iterator()
+                iterator.next()
+                iterator.remove()
+            }
+        }
+    }
+    
+    fun get(key: K): V? {
+        synchronized(cache) {
+            return cache[key]
+        }
+    }
+    
+    fun snapshot(): Map<K, V> {
+        synchronized(cache) {
+            return cache.toMap()
+        }
+    }
+    
+    fun clear() {
+        synchronized(cache) {
+            cache.clear()
+        }
+    }
+    
+    val size: Int
+        get() = synchronized(cache) { cache.size }
+}
+
+/**
+ * Manages caching of cocktail data for offline access using a simple LRU cache.
  */
 class CocktailCache(
     private val settings: Settings,
@@ -30,14 +67,10 @@ class CocktailCache(
     }
     
     // In-memory cache for cocktails using LRU strategy
-    private val cocktailCache = Kache.lru<String, Cocktail>(
-        maxSize = MAX_CACHED_COCKTAILS
-    )
+    private val cocktailCache = SimpleLruCache<String, Cocktail>(MAX_CACHED_COCKTAILS)
 
     // In-memory cache for recently viewed cocktails
-    private val recentlyViewedCache = Kache.lru<String, Cocktail>(
-        maxSize = MAX_RECENTLY_VIEWED
-    )
+    private val recentlyViewedCache = SimpleLruCache<String, Cocktail>(MAX_RECENTLY_VIEWED)
     
     init {
         CocktailDebugLogger.log("🗄️ CocktailCache init()")
@@ -83,8 +116,8 @@ class CocktailCache(
             val allCocktails = cocktailCache.snapshot().values.toList()
             CocktailDebugLogger.log("💾 Persisting ${allCocktails.size} cocktails to storage")
             if (allCocktails.isNotEmpty()) {
-                val json = json.encodeToString(allCocktails)
-                settings.putString(ALL_COCKTAILS_KEY, json)
+                val jsonString = json.encodeToString(allCocktails)
+                settings.putString(ALL_COCKTAILS_KEY, jsonString)
                 CocktailDebugLogger.log("   ✅ Successfully persisted cocktails")
             }
         } catch (e: Exception) {
@@ -97,8 +130,8 @@ class CocktailCache(
             // Persist recently viewed cocktails
             val recentCocktails = recentlyViewedCache.snapshot().values.toList()
             if (recentCocktails.isNotEmpty()) {
-                val json = json.encodeToString(recentCocktails)
-                settings.putString(RECENTLY_VIEWED_KEY, json)
+                val jsonString = json.encodeToString(recentCocktails)
+                settings.putString(RECENTLY_VIEWED_KEY, jsonString)
             }
         } catch (e: Exception) {
             CocktailDebugLogger.log("Failed to persist recently viewed: ${e.message}")
