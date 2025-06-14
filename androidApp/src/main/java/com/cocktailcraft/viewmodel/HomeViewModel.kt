@@ -17,10 +17,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import com.cocktailcraft.util.CocktailDebugLogger
 
 class HomeViewModel(
     private val cocktailRepository: CocktailRepository? = null
 ) : BaseViewModel(), KoinComponent {
+    
 
     // Use injected repository if not provided in constructor (for production)
     private val injectedCocktailRepository: CocktailRepository by inject()
@@ -82,23 +84,28 @@ class HomeViewModel(
     private val networkErrorMessage = "Unable to connect to the cocktail database. Please check your internet connection and try again."
 
     init {
+        CocktailDebugLogger.log("🎯 HomeViewModel init() called")
         // Initialize offline mode status
         _isOfflineMode.value = repository.isOfflineModeEnabled()
+        CocktailDebugLogger.log("   - Initial offline mode: ${_isOfflineMode.value}")
 
         // Start monitoring network connectivity
         viewModelScope.launch {
             networkMonitor.startMonitoring()
             networkMonitor.isOnline.collectLatest { isOnline ->
+                CocktailDebugLogger.log("📡 Network status changed: $isOnline")
                 _isNetworkAvailable.value = isOnline
 
                 // If network becomes available and we had an error, retry loading
-                if (isOnline && _errorString.value.isNotBlank()) {
+                if (isOnline && _errorString.value.isNotBlank() && cocktails.value.isEmpty()) {
+                    CocktailDebugLogger.log("   🔄 Network restored with error state, retrying...")
                     retry()
                 }
 
                 // If network becomes unavailable and offline mode is not enabled,
                 // automatically enable it
                 if (!isOnline && !_isOfflineMode.value) {
+                    CocktailDebugLogger.log("   📴 Network lost, enabling offline mode")
                     setOfflineMode(true)
                 }
             }
@@ -109,8 +116,23 @@ class HomeViewModel(
             _isOfflineMode.value = repository.isOfflineModeEnabled()
         }
 
-        loadCocktails()
-        loadFavorites()
+        // Delay initial load slightly to ensure cache is ready
+        viewModelScope.launch {
+            CocktailDebugLogger.log("   ⏳ Delaying initial load by 100ms...")
+            delay(100) // Small delay to ensure cache initialization
+            
+            // Only load if we don't have cocktails already (ViewModel might be reused)
+            if (cocktails.value.isEmpty()) {
+                CocktailDebugLogger.log("   🚀 LAZY LOADING: Starting initial load with 'Cocktail' category only")
+                // Start with just the "Cocktail" category to reduce initial API calls
+                loadCocktailsByCategory("Cocktail")
+            } else {
+                CocktailDebugLogger.log("   ✅ Skipping initial load - already have ${cocktails.value.size} cocktails")
+            }
+            
+            loadFavorites()
+        }
+        
         monitorConnectivity()
     }
 
@@ -131,14 +153,14 @@ class HomeViewModel(
         viewModelScope.launch {
             _connectivityStatus.emit(checkConnectivity())
 
-            // Periodically check connectivity when there's an error
+            // Periodically check connectivity when there's an error AND no data
             while (true) {
                 delay(30000) // Check every 30 seconds
-                if (_errorString.value.isNotBlank()) {
+                if (_errorString.value.isNotBlank() && cocktails.value.isEmpty()) {
                     val isConnected = checkConnectivity()
                     _connectivityStatus.emit(isConnected)
 
-                    // If connection restored and we had an error, reload data
+                    // If connection restored and we had an error with no data, reload
                     if (isConnected && _errorString.value == networkErrorMessage) {
                         _errorString.value = ""
                         clearError()
@@ -150,87 +172,24 @@ class HomeViewModel(
     }
 
     private suspend fun checkConnectivity(): Boolean {
+        CocktailDebugLogger.log("🔌 HomeViewModel.checkConnectivity() called")
         return try {
-            repository.checkApiConnectivity().first()
+            val isConnected = repository.checkApiConnectivity().first()
+            CocktailDebugLogger.log("   - API connectivity: $isConnected")
+            isConnected
         } catch (e: Exception) {
+            CocktailDebugLogger.log("   ❌ Connectivity check failed: ${e.message}")
             false
         }
     }
 
     fun loadCocktails() {
-        viewModelScope.launch {
-            setLoading(true)
-            clearError() // Clear base class error
-            _errorString.value = "" // Clear legacy error string
-            _currentPage.value = 1 // Reset to first page
-            _hasMoreData.value = true // Reset pagination state
-
-            try {
-                // Check if we're in offline mode (either forced or due to network unavailability)
-                val isOffline = _isOfflineMode.value || !_isNetworkAvailable.value
-
-                // If we're offline, update the repository's offline mode setting
-                if (!_isNetworkAvailable.value && !_isOfflineMode.value) {
-                    repository.setOfflineMode(true)
-                    _isOfflineMode.value = true
-                }
-
-                // The repository will handle returning cached data when in offline mode
-                repository.getCocktailsSortedByNewest()
-                    .catch { e ->
-                        // If we're offline, don't show an error - just show cached data
-                        if (isOffline) {
-                            setLoading(false)
-                        } else {
-                            handleError("Failed to load cocktails", e)
-                        }
-                    }
-                    .collect { cocktailList ->
-                        // Apply pagination
-                        val paginatedList = cocktailList.take(PAGE_SIZE)
-                        _cocktails.value = paginatedList
-                        _hasMoreData.value = paginatedList.size < cocktailList.size
-                        setLoading(false)
-
-                        // If we got data while offline, clear any error
-                        if (isOffline && cocktailList.isNotEmpty()) {
-                            clearError() // Clear base class error
-                            _errorString.value = "" // Clear legacy error string
-                        }
-                    }
-            } catch (e: Exception) {
-                // If we're offline, try to get cached data instead of showing an error
-                if (_isOfflineMode.value || !_isNetworkAvailable.value) {
-                    try {
-                        val cachedCocktails = repository.getRecentlyViewedCocktails().first()
-                        if (cachedCocktails.isNotEmpty()) {
-                            _cocktails.value = cachedCocktails
-                            clearError() // Clear base class error
-                            _errorString.value = "" // Clear legacy error string
-                        } else {
-                            // Create a user-friendly error for no cached data
-                            setError(
-                                title = "No Cached Data",
-                                message = "No cached cocktails available offline. Connect to the internet to download cocktails.",
-                                category = ErrorUtils.ErrorCategory.DATA,
-                                recoveryAction = ErrorUtils.RecoveryAction("Go Online") {
-                                    if (_isNetworkAvailable.value) {
-                                        setOfflineMode(false)
-                                        retry()
-                                    }
-                                }
-                            )
-                            _errorString.value = "No cached cocktails available offline."
-                        }
-                    } catch (cacheException: Exception) {
-                        handleError("Failed to load cached cocktails", cacheException)
-                    }
-                } else {
-                    handleError("Failed to load cocktails", e)
-                }
-                setLoading(false)
-            }
-        }
+        CocktailDebugLogger.log("🏠 HomeViewModel.loadCocktails() called")
+        CocktailDebugLogger.log("   🎯 LAZY LOADING: Defaulting to 'Cocktail' category")
+        
+        // When loadCocktails is called without a category, default to "Cocktail"
+        // This reduces initial API calls from fetching all categories
+        loadCocktailsByCategory("Cocktail")
     }
 
     /**
@@ -287,13 +246,13 @@ class HomeViewModel(
                 repository.getFavoriteCocktails()
                     .catch { e ->
                         // Don't show error UI for favorites loading, just log
-                        println("Failed to load favorites: ${e.message}")
+                        CocktailDebugLogger.log("Failed to load favorites: ${e.message}")
                     }
                     .collect { cocktailList ->
                         _favorites.value = cocktailList
                     }
             } catch (e: Exception) {
-                println("Failed to load favorites: ${e.message}")
+                CocktailDebugLogger.log("Failed to load favorites: ${e.message}")
             }
         }
     }
@@ -446,6 +405,11 @@ class HomeViewModel(
 
     // Helper function to handle errors consistently
     private fun handleError(baseMessage: String, e: Throwable) {
+        CocktailDebugLogger.log("❌ HomeViewModel.handleError() called")
+        CocktailDebugLogger.log("   - Base message: $baseMessage")
+        CocktailDebugLogger.log("   - Error message: ${e.message}")
+        CocktailDebugLogger.log("   - Error type: ${e::class.simpleName}")
+        
         // Create a recovery action based on the error
         val recoveryAction = ErrorUtils.RecoveryAction("Retry") { retry() }
 
@@ -457,6 +421,7 @@ class HomeViewModel(
             e.message?.contains("server") == true -> ErrorUtils.ErrorCategory.SERVER
             else -> ErrorUtils.ErrorCategory.UNKNOWN
         }
+        CocktailDebugLogger.log("   - Error category: $category")
 
         // Format the error message
         val errorMessage = when {
@@ -467,6 +432,7 @@ class HomeViewModel(
                 networkErrorMessage
             else -> "$baseMessage: ${e.message}"
         }
+        CocktailDebugLogger.log("   - Formatted error: $errorMessage")
 
         // Set the error using the base class method
         setError(
@@ -478,9 +444,10 @@ class HomeViewModel(
 
         // Also update the legacy error string for backward compatibility
         _errorString.value = errorMessage
+        CocktailDebugLogger.log("   - Error string set: ${_errorString.value}")
 
         // Log the error
-        println("$baseMessage: ${e.message}")
+        CocktailDebugLogger.log("❌ Error set: $baseMessage: ${e.message}")
     }
 
     // Toggle search mode
@@ -494,39 +461,67 @@ class HomeViewModel(
 
     // Load cocktails filtered by category - add this new method
     fun loadCocktailsByCategory(category: String?) {
+        CocktailDebugLogger.log("🏷️ HomeViewModel.loadCocktailsByCategory() called with category: $category")
+        
+        // Track the current category to prevent duplicate loads
+        val currentCategory = category ?: "Cocktail" // Default to "Cocktail" if null
+        
         viewModelScope.launch {
             setLoading(true)
             clearError() // Clear base class error
             _errorString.value = "" // Clear legacy error string
+            _currentPage.value = 1 // Reset to first page
+            _hasMoreData.value = true // Reset pagination state
 
             try {
-                // Check connectivity first
-                if (!checkConnectivity()) {
-                    setError(
-                        title = "Network Error",
-                        message = networkErrorMessage,
-                        category = ErrorUtils.ErrorCategory.NETWORK,
-                        recoveryAction = ErrorUtils.RecoveryAction("Retry") { retry() }
-                    )
-                    _errorString.value = networkErrorMessage
-                    setLoading(false)
-                    return@launch
-                }
-
-                if (category == null) {
-                    loadCocktails() // Load all if category is null
-                    return@launch
-                }
-
-                repository.filterByCategory(category)
+                CocktailDebugLogger.log("   🏷️ Loading cocktails for category: $currentCategory")
+                repository.filterByCategory(currentCategory)
                     .catch { e ->
-                        handleError("Failed to filter cocktails", e)
+                        CocktailDebugLogger.log("   ❌ Flow error caught: ${e.message}")
+                        // Check if we have cached data to use
+                        val isOffline = _isOfflineMode.value || !_isNetworkAvailable.value
+                        if (isOffline) {
+                            CocktailDebugLogger.log("   📴 Offline mode, suppressing error")
+                            setLoading(false)
+                        } else {
+                            handleError("Failed to filter cocktails", e)
+                        }
                     }
                     .collect { cocktailList ->
-                        _cocktails.value = cocktailList
+                        CocktailDebugLogger.log("   ✅ Loaded ${cocktailList.size} cocktails for category: $currentCategory")
+                        // Apply pagination
+                        val paginatedList = cocktailList.take(PAGE_SIZE)
+                        _cocktails.value = paginatedList
+                        _hasMoreData.value = paginatedList.size < cocktailList.size
                         setLoading(false)
+                        
+                        // Clear any errors when we successfully get data
+                        clearError() // Clear base class error
+                        _errorString.value = "" // Clear legacy error string
+                        CocktailDebugLogger.log("   ✅ Successfully loaded cocktails, errors cleared")
                     }
             } catch (e: Exception) {
+                CocktailDebugLogger.log("   ❌ Exception in loadCocktailsByCategory: ${e.message}")
+                CocktailDebugLogger.log("   Exception type: ${e::class.simpleName}")
+                
+                // Try to use cached data before showing error
+                try {
+                    val cachedCocktails = repository.getRecentlyViewedCocktails().first()
+                        .filter { category == null || it.category == currentCategory }
+                    
+                    if (cachedCocktails.isNotEmpty()) {
+                        _cocktails.value = cachedCocktails
+                        clearError()
+                        _errorString.value = ""
+                        setLoading(false)
+                        CocktailDebugLogger.log("   ✅ Using ${cachedCocktails.size} cached cocktails")
+                        return@launch
+                    }
+                } catch (cacheException: Exception) {
+                    CocktailDebugLogger.log("   ❌ Cache access failed: ${cacheException.message}")
+                }
+                
+                // Show error if no cached data
                 handleError("Failed to filter cocktails", e)
             }
         }
@@ -538,7 +533,7 @@ class HomeViewModel(
                 repository.addToFavorites(cocktail)
                 loadFavorites() // Refresh favorites after adding
             } catch (e: Exception) {
-                println("Failed to add to favorites: ${e.message}")
+                CocktailDebugLogger.log("Failed to add to favorites: ${e.message}")
                 // Don't show UI error for favorite operations
             }
         }
@@ -565,7 +560,7 @@ class HomeViewModel(
                 repository.removeFromFavorites(cocktail)
                 loadFavorites() // Refresh favorites after removing
             } catch (e: Exception) {
-                println("Failed to remove from favorites: ${e.message}")
+                CocktailDebugLogger.log("Failed to remove from favorites: ${e.message}")
                 // Don't show UI error for favorite operations
             }
         }
@@ -619,7 +614,7 @@ class HomeViewModel(
                         }
                     }
             } catch (e: Exception) {
-                println("Failed to load recommendations: ${e.message}")
+                CocktailDebugLogger.log("Failed to load recommendations: ${e.message}")
             }
         }
 
