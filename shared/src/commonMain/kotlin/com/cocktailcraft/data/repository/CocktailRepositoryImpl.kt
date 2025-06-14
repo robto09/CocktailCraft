@@ -82,7 +82,7 @@ class CocktailRepositoryImpl(
             // If we have a cached cocktail with ingredients (full details), return it
             if (cachedCocktail != null && 
                 cachedCocktail.ingredients.isNotEmpty() && 
-                cachedCocktail.ingredients.first().name != "Details available on tap") {
+                cachedCocktail.ingredients.first().name != "Tap to view ingredients") {
                 emit(cachedCocktail)
                 return@flow
             }
@@ -461,12 +461,12 @@ class CocktailRepositoryImpl(
         return Cocktail(
             id = dto.id,
             name = dto.name,
-            instructions = dto.instructions ?: "Instructions will be loaded when you view this cocktail",
+            instructions = dto.instructions ?: "Tap to view recipe",
             imageUrl = dto.imageUrl,
             price = generateRandomPrice(),
             ingredients = dto.getIngredients().ifEmpty { 
                 // If no ingredients (from filter endpoint), add placeholder
-                listOf(CocktailIngredient("Details available on tap", ""))
+                listOf(CocktailIngredient("Tap to view ingredients", ""))
             },
             rating = generateRandomRating(),
             category = dto.category,

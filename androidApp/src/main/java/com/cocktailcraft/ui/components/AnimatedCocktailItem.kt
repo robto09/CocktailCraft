@@ -194,11 +194,17 @@ fun CocktailItemContent(
             // Use safe call for ingredients that might be null or empty
             Text(
                 text = if (cocktail.ingredients.isNotEmpty()) {
-                    // Join first 2 ingredients with safe operators
-                    cocktail.ingredients.take(2).joinToString(", ") { it.name }
-                        .let { if (cocktail.ingredients.size > 2) "$it..." else it }
+                    val firstIngredient = cocktail.ingredients.first().name
+                    // Check if it's a placeholder
+                    if (firstIngredient == "Tap to view ingredients") {
+                        firstIngredient
+                    } else {
+                        // Join first 2 ingredients with safe operators
+                        cocktail.ingredients.take(2).joinToString(", ") { it.name }
+                            .let { if (cocktail.ingredients.size > 2) "$it..." else it }
+                    }
                 } else {
-                    "No ingredients listed"
+                    "Tap to view ingredients"
                 },
                 fontSize = 12.sp,
                 color = AppColors.TextSecondary,
