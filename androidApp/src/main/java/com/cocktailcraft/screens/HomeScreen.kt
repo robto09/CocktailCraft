@@ -60,9 +60,8 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import kotlin.math.abs
-import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -74,6 +73,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import kotlin.math.abs
+import kotlinx.coroutines.delay
 import com.cocktailcraft.navigation.Screen
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.ui.components.AdvancedSearchPanel
@@ -101,6 +102,7 @@ import com.cocktailcraft.util.ListOptimizations.itemKey
 import com.cocktailcraft.viewmodel.CartViewModel
 import com.cocktailcraft.viewmodel.FavoritesViewModel
 import com.cocktailcraft.viewmodel.HomeViewModel
+import com.cocktailcraft.util.CocktailDebugLogger
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -126,8 +128,9 @@ fun HomeScreen(
     // State for advanced search panel
     var showAdvancedSearch by remember { mutableStateOf(false) }
 
-    // Add state for selected category
-    var selectedCategory by remember { mutableStateOf<String?>(null) }
+    // Add state for selected category - use rememberSaveable to persist across navigation
+    // Default to "Cocktail" to match lazy loading behavior
+    var selectedCategory by rememberSaveable { mutableStateOf<String?>("Cocktail") }
 
     // Function to handle category selection
     val onCategorySelected: (String?) -> Unit = { category ->
@@ -140,10 +143,34 @@ fun HomeScreen(
         onRefresh = { viewModel.retry() }
     )
 
+    // Track if this is the first composition
+    var isFirstComposition by rememberSaveable { mutableStateOf(true) }
+    
     // Effect to load cocktails by category when selected category changes
     LaunchedEffect(selectedCategory) {
+        CocktailDebugLogger.log("🏠 HomeScreen LaunchedEffect(selectedCategory): category=$selectedCategory, isSearchActive=$isSearchActive, isFirst=$isFirstComposition")
+        
+        // Skip loading on first composition if we already have data
+        if (isFirstComposition && cocktails.isNotEmpty()) {
+            CocktailDebugLogger.log("   ✅ Skipping load on first composition - already have ${cocktails.size} cocktails")
+            isFirstComposition = false
+            return@LaunchedEffect
+        }
+        
+        isFirstComposition = false
+        
+        // Only load if not in search mode and category has changed
         if (!isSearchActive) {
+            CocktailDebugLogger.log("   🏷️ Loading cocktails for category: $selectedCategory")
             viewModel.loadCocktailsByCategory(selectedCategory)
+        }
+    }
+    
+    // Effect to clear errors when screen is displayed with data
+    LaunchedEffect(cocktails) {
+        CocktailDebugLogger.log("🏠 HomeScreen LaunchedEffect(cocktails): count=${cocktails.size}, error='$legacyErrorString'")
+        if (cocktails.isNotEmpty() && legacyErrorString.isNotBlank()) {
+            viewModel.clearLegacyError()
         }
     }
 

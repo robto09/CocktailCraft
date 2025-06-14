@@ -3,7 +3,7 @@ package com.cocktailcraft.ui.theme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
-import com.cocktailcraft.R
+import com.cocktailcraft.android.R
 
 /**
  * Provides access to theme-specific assets throughout the app.

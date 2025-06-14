@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.cocktailcraft"
+    namespace = "com.cocktailcraft.android"
     compileSdk = 34
 
     defaultConfig {

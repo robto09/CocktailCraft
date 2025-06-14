@@ -27,7 +27,11 @@ val dataModule = module {
     }
 
     // Cache
-    single { CocktailCache(get(), get(), get()) }
+    single { CocktailCache(
+        settings = get(),
+        json = get(),
+        appConfig = get()
+    ) }
 
     // Repositories
     single<CocktailRepository> {
@@ -35,8 +39,8 @@ val dataModule = module {
             api = get(),
             settings = get(),
             appConfig = get(),
-            json = get(),
-            networkMonitor = get()
+            networkMonitor = get(),
+            cocktailCache = get()
         )
     }
 
