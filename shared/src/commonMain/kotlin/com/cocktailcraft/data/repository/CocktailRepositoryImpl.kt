@@ -15,6 +15,16 @@ import kotlinx.coroutines.flow.first
 import com.cocktailcraft.domain.config.AppConfig
 import kotlinx.serialization.json.Json
 
+/**
+ * Implementation of CocktailRepository that handles API interactions and data caching.
+ * 
+ * API Limitations & Workarounds:
+ * - Filter endpoints (filter.php) only return partial data (id, name, thumbnail)
+ * - Full cocktail details require individual lookup.php calls
+ * - Price, rating, popularity are not provided by API - we generate demo values
+ * - Advanced filtering (multi-ingredient, taste profiles) requires local filtering
+ * - The free API has rate limits, so we cache aggressively
+ */
 class CocktailRepositoryImpl(
     private val api: CocktailApi,
     private val settings: Settings,
@@ -135,10 +145,31 @@ class CocktailRepositoryImpl(
 
     override suspend fun filterByCategory(category: String): Flow<List<Cocktail>> = flow {
         try {
-            val cocktails = api.filterByCategory(category).map { dto ->
-                mapDtoToCocktail(dto)
+            val basicCocktails = api.filterByCategory(category)
+            
+            // Filter API returns partial data, enrich with full details for better UX
+            val enrichedCocktails = basicCocktails.map { basicDto ->
+                try {
+                    // Check if we already have full data
+                    if (!basicDto.instructions.isNullOrBlank()) {
+                        mapDtoToCocktail(basicDto)
+                    } else {
+                        // Try to get from cache first
+                        val cachedCocktail = cocktailCache.getCachedCocktail(basicDto.id)
+                        if (cachedCocktail != null) {
+                            cachedCocktail
+                        } else {
+                            // If not in cache, just use basic data
+                            // Full details will be fetched when user clicks on the cocktail
+                            mapDtoToCocktail(basicDto)
+                        }
+                    }
+                } catch (e: Exception) {
+                    mapDtoToCocktail(basicDto)
+                }
             }
-            emit(cocktails)
+            
+            emit(enrichedCocktails)
         } catch (e: Exception) {
             emit(emptyList())
         }
@@ -279,13 +310,42 @@ class CocktailRepositoryImpl(
                 throw Exception("API is not reachable. Please check your internet connection.")
             }
 
-            val cocktails = api.filterByCategory("Cocktail").map { dto ->
-                val cocktail = mapDtoToCocktail(dto)
-                // Cache cocktails for offline access
-                cocktailCache.cacheCocktail(cocktail)
-                cocktail
+            // Get all cocktails without category filter to show all available drinks
+            // Note: API uses spaces in category names, not underscores
+            val allCategories = listOf(
+                "Cocktail", 
+                "Ordinary Drink",
+                "Shot", 
+                "Coffee / Tea",
+                "Punch / Party Drink",
+                "Homemade Liqueur", 
+                "Beer", 
+                "Soft Drink"
+            )
+            val allCocktails = mutableListOf<Cocktail>()
+            
+            // Fetch cocktails from each category
+            for (category in allCategories) {
+                try {
+                    val categoryDrinks = api.filterByCategory(category)
+                    
+                    // Filter endpoints only return partial data
+                    // For now, just use the basic data to avoid rate limiting
+                    // Full details will be fetched when user clicks on a cocktail
+                    val detailedCocktails = categoryDrinks.take(10).map { basicDto ->
+                        val cocktail = mapDtoToCocktail(basicDto)
+                        cocktailCache.cacheCocktail(cocktail)
+                        cocktail
+                    }
+                    
+                    allCocktails.addAll(detailedCocktails)
+                } catch (e: Exception) {
+                    // Continue with other categories if one fails
+                    println("Failed to fetch category $category: ${e.message}")
+                }
             }
-            emit(cocktails.sortedByDescending { it.dateAdded })
+            
+            emit(allCocktails.sortedByDescending { it.dateAdded })
         } catch (e: Exception) {
             // Try to use cache as fallback
             val cachedCocktails = cocktailCache.getAllCachedCocktails()
@@ -300,10 +360,10 @@ class CocktailRepositoryImpl(
 
     override suspend fun getCocktailsSortedByPriceLowToHigh(): Flow<List<Cocktail>> = flow {
         try {
-            val cocktails = api.filterByCategory("Cocktail").map { dto ->
-                mapDtoToCocktail(dto)
+            // Use the same method as getCocktailsSortedByNewest to get all cocktails
+            getCocktailsSortedByNewest().collect { allCocktails ->
+                emit(allCocktails.sortedBy { it.price })
             }
-            emit(cocktails.sortedBy { it.price })
         } catch (e: Exception) {
             emit(emptyList())
         }
@@ -311,10 +371,10 @@ class CocktailRepositoryImpl(
 
     override suspend fun getCocktailsSortedByPriceHighToLow(): Flow<List<Cocktail>> = flow {
         try {
-            val cocktails = api.filterByCategory("Cocktail").map { dto ->
-                mapDtoToCocktail(dto)
+            // Use the same method as getCocktailsSortedByNewest to get all cocktails
+            getCocktailsSortedByNewest().collect { allCocktails ->
+                emit(allCocktails.sortedByDescending { it.price })
             }
-            emit(cocktails.sortedByDescending { it.price })
         } catch (e: Exception) {
             emit(emptyList())
         }
@@ -322,10 +382,10 @@ class CocktailRepositoryImpl(
 
     override suspend fun getCocktailsSortedByPopularity(): Flow<List<Cocktail>> = flow {
         try {
-            val cocktails = api.filterByCategory("Cocktail").map { dto ->
-                mapDtoToCocktail(dto)
+            // Use the same method as getCocktailsSortedByNewest to get all cocktails
+            getCocktailsSortedByNewest().collect { allCocktails ->
+                emit(allCocktails.sortedByDescending { it.popularity })
             }
-            emit(cocktails.sortedByDescending { it.popularity })
         } catch (e: Exception) {
             emit(emptyList())
         }
@@ -333,10 +393,10 @@ class CocktailRepositoryImpl(
 
     override suspend fun getCocktailsByPriceRange(minPrice: Double, maxPrice: Double): Flow<List<Cocktail>> = flow {
         try {
-            val cocktails = api.filterByCategory("Cocktail").map { dto ->
-                mapDtoToCocktail(dto)
+            // Use the same method as getCocktailsSortedByNewest to get all cocktails
+            getCocktailsSortedByNewest().collect { allCocktails ->
+                emit(allCocktails.filter { it.price in minPrice..maxPrice })
             }
-            emit(cocktails.filter { it.price in minPrice..maxPrice })
         } catch (e: Exception) {
             emit(emptyList())
         }
@@ -346,10 +406,13 @@ class CocktailRepositoryImpl(
         return Cocktail(
             id = dto.id,
             name = dto.name,
-            instructions = dto.instructions ?: "",
+            instructions = dto.instructions ?: "Instructions will be loaded when you view this cocktail",
             imageUrl = dto.imageUrl,
             price = generateRandomPrice(),
-            ingredients = dto.getIngredients(),
+            ingredients = dto.getIngredients().ifEmpty { 
+                // If no ingredients (from filter endpoint), add placeholder
+                listOf(CocktailIngredient("Details available on tap", ""))
+            },
             rating = generateRandomRating(),
             category = dto.category,
             glass = dto.glass,
