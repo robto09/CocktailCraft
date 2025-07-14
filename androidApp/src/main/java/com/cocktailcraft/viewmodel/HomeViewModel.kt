@@ -4,6 +4,8 @@ import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.CocktailRepository
 import com.cocktailcraft.util.ErrorUtils
+import com.cocktailcraft.util.ErrorCategory
+import com.cocktailcraft.util.RecoveryAction
 import com.cocktailcraft.util.NetworkMonitor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay

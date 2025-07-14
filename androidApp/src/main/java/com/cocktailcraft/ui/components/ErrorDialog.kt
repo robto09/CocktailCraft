@@ -44,6 +44,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.util.ErrorUtils
+import com.cocktailcraft.util.UserFriendlyError
+import com.cocktailcraft.util.ErrorCategory
 
 /**
  * A reusable error dialog component that displays user-friendly error messages
@@ -124,20 +126,21 @@ fun ErrorDialog(
 
                     // Recovery action button
                     if (showRecoveryAction) {
-                        if (error.recoveryAction != null) {
+                        error.recoveryAction?.let { recoveryAction ->
                             Button(
                                 onClick = {
-                                    error.recoveryAction.action()
+                                    recoveryAction.action.invoke()
                                     onDismiss()
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = AppColors.Primary
                                 )
                             ) {
-                                Text(error.recoveryAction.actionLabel)
+                                Text(recoveryAction.actionLabel)
                             }
-                        } else if (onRetry != null) {
-                            Button(
+                        } ?: run {
+                            if (onRetry != null) {
+                                Button(
                                 onClick = {
                                     onRetry()
                                     onDismiss()
@@ -147,6 +150,7 @@ fun ErrorDialog(
                                 )
                             ) {
                                 Text("Try Again")
+                                }
                             }
                         }
                     }
@@ -214,19 +218,20 @@ fun ErrorBanner(
                         )
                     }
 
-                    if (onAction != null && it.recoveryAction != null) {
-                        TextButton(
-                            onClick = {
-                                it.recoveryAction.action()
-                                onAction()
-                                onDismiss()
-                            },
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = Color.White
-                            )
-                        ) {
-                            Text(
-                                text = it.recoveryAction.actionLabel,
+                    it.recoveryAction?.let { recoveryAction ->
+                        if (onAction != null) {
+                            TextButton(
+                                onClick = {
+                                    recoveryAction.action.invoke()
+                                    onAction()
+                                    onDismiss()
+                                },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Text(
+                                    text = recoveryAction.actionLabel,
                                 fontWeight = FontWeight.Bold
                             )
                         }

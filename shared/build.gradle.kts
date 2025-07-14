@@ -2,6 +2,7 @@ plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
     id("com.android.library")
+    kotlin("native.cocoapods")
 }
 
 android {
@@ -21,9 +22,20 @@ kotlin {
     jvmToolchain(17)
     
     androidTarget()
-    // iosX64()
-    // iosArm64()
-    // iosSimulatorArm64()
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+    
+    cocoapods {
+        summary = "CocktailCraft Shared Module"
+        homepage = "https://github.com/cocktailcraft/shared"
+        ios.deploymentTarget = "14.0"
+        podfile = project.file("../iosApp/Podfile")
+        framework {
+            baseName = "shared"
+            isStatic = true
+        }
+    }
 
     sourceSets {
         val commonMain by getting {
@@ -50,6 +62,10 @@ kotlin {
                 implementation("io.insert-koin:koin-core:3.4.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
+                
+                // Multiplatform logging
+                implementation("co.touchlab:kermit:2.0.2")
+
                 // No external caching library needed - using custom implementation
             }
         }
@@ -64,19 +80,19 @@ kotlin {
             }
         }
 
-        // val iosX64Main by getting
-        // val iosArm64Main by getting
-        // val iosSimulatorArm64Main by getting
-        // val iosMain by creating {
-        //     dependsOn(commonMain)
-        //     iosX64Main.dependsOn(this)
-        //     iosArm64Main.dependsOn(this)
-        //     iosSimulatorArm64Main.dependsOn(this)
+        val iosX64Main by getting
+        val iosArm64Main by getting
+        val iosSimulatorArm64Main by getting
+        val iosMain by creating {
+            dependsOn(commonMain)
+            iosX64Main.dependsOn(this)
+            iosArm64Main.dependsOn(this)
+            iosSimulatorArm64Main.dependsOn(this)
 
-        //     dependencies {
-        //         implementation(libs.ktor.client.darwin)
-        //     }
-        // }
+            dependencies {
+                implementation(libs.ktor.client.darwin)
+            }
+        }
 
         val commonTest by getting {
             dependencies {

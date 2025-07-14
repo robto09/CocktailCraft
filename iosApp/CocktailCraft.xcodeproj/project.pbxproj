@@ -1,0 +1,11 @@
+// Note: This is a placeholder file
+// The actual Xcode project file should be created using Xcode
+// To create the project:
+// 1. Open Xcode
+// 2. Create new iOS App
+// 3. Product Name: CocktailCraft
+// 4. Team: Your Development Team
+// 5. Organization Identifier: com.cocktailcraft
+// 6. Interface: SwiftUI
+// 7. Language: Swift
+// 8. Add all the created Swift files to the project
