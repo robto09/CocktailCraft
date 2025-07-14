@@ -27,6 +27,7 @@ kotlin {
     iosSimulatorArm64()
     
     cocoapods {
+        version = "1.0.0"
         summary = "CocktailCraft Shared Module"
         homepage = "https://github.com/cocktailcraft/shared"
         ios.deploymentTarget = "14.0"

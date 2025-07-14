@@ -49,9 +49,9 @@ object ErrorHandler {
         defaultMessage: String = "Something went wrong. Please try again.",
         recoveryAction: RecoveryAction? = null
     ): UserFriendlyError {
-        return when (exception) {
+        return when {
             // Timeout errors
-            is TimeoutCancellationException -> UserFriendlyError(
+            exception is TimeoutCancellationException -> UserFriendlyError(
                 title = "Connection Timeout",
                 message = "The connection timed out. This might be due to slow internet or server issues. Please try again.",
                 category = ErrorCategory.NETWORK,
@@ -61,7 +61,9 @@ object ErrorHandler {
             )
 
             // Authentication errors
-            is SecurityException -> UserFriendlyError(
+            // Note: SecurityException is JVM-specific, so we check by exception message instead
+            (exception.message?.contains("security", ignoreCase = true) == true ||
+            exception.message?.contains("permission", ignoreCase = true) == true) -> UserFriendlyError(
                 title = "Authentication Error",
                 message = "You don't have permission to access this resource. Please log in again.",
                 category = ErrorCategory.AUTHENTICATION,
@@ -71,8 +73,8 @@ object ErrorHandler {
             )
 
             // Data errors
-            is IllegalArgumentException,
-            is IllegalStateException -> UserFriendlyError(
+            exception is IllegalArgumentException ||
+            exception is IllegalStateException -> UserFriendlyError(
                 title = "Data Error",
                 message = exception.message ?: "Invalid data received. Please try again.",
                 category = ErrorCategory.DATA,

@@ -8,9 +8,10 @@ import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.util.Result
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 class PlaceOrderUseCase(
     private val orderRepository: OrderRepository
@@ -18,8 +19,10 @@ class PlaceOrderUseCase(
     suspend operator fun invoke(cartItems: List<CocktailCartItem>, totalPrice: Double): Flow<Result<Order>> = flow {
         try {
             // Generate order ID and date
-            val orderId = "ORD-${System.currentTimeMillis()}"
-            val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val orderId = "ORD-${Clock.System.now().toEpochMilliseconds()}"
+            val currentInstant = Clock.System.now()
+            val currentDate = currentInstant.toLocalDateTime(TimeZone.currentSystemDefault())
+                .let { "${it.year}-${it.monthNumber.toString().padStart(2, '0')}-${it.dayOfMonth.toString().padStart(2, '0')}" }
             
             // Map cart items to order items
             val orderItems = cartItems.map { cartItem ->

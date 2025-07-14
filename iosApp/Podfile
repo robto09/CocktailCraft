@@ -12,3 +12,14 @@ target 'CocktailCraft' do
   pod 'Kingfisher', '~> 7.0'  # For image loading
 
 end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      # Disable all preview-related settings
+      config.build_settings['ENABLE_PREVIEWS'] = 'NO'
+      config.build_settings['SWIFT_EMIT_LOC_STRINGS'] = 'NO'
+      config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+    end
+  end
+end

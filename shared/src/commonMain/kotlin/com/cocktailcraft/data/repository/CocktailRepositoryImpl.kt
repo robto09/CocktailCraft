@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.delay
 import com.cocktailcraft.domain.config.AppConfig
+import kotlinx.datetime.Clock
 
 /**
  * Implementation of CocktailRepository that handles API interactions and data caching.
@@ -189,7 +190,7 @@ class CocktailRepositoryImpl(
             // First check category-specific cache
             val categoryCachedCocktails = categoryCacheMap[category] ?: emptyList()
             val categoryLastFetch = categoryLastFetchMap[category] ?: 0L
-            val categoryCacheAge = System.currentTimeMillis() - categoryLastFetch
+            val categoryCacheAge = Clock.System.now().toEpochMilliseconds() - categoryLastFetch
             
             CocktailDebugLogger.log("   - Category cache size: ${categoryCachedCocktails.size}")
             CocktailDebugLogger.log("   - Category cache age: ${categoryCacheAge/1000}s")
@@ -221,7 +222,7 @@ class CocktailRepositoryImpl(
             }
             
             // Apply rate limiting with exponential backoff
-            val timeSinceLastCall = System.currentTimeMillis() - lastApiCallTime
+            val timeSinceLastCall = Clock.System.now().toEpochMilliseconds() - lastApiCallTime
             val requiredInterval = maxOf(MIN_API_CALL_INTERVAL_MS, rateLimitBackoffMs)
             
             if (timeSinceLastCall < requiredInterval) {
@@ -240,7 +241,7 @@ class CocktailRepositoryImpl(
             }
             
             CocktailDebugLogger.log("   📡 Fetching $category cocktails from API...")
-            lastApiCallTime = System.currentTimeMillis()
+            lastApiCallTime = Clock.System.now().toEpochMilliseconds()
             
             try {
                 val basicCocktails = api.filterByCategory(category)
@@ -274,7 +275,7 @@ class CocktailRepositoryImpl(
                 
                 // Update category cache
                 categoryCacheMap[category] = enrichedCocktails
-                categoryLastFetchMap[category] = System.currentTimeMillis()
+                categoryLastFetchMap[category] = Clock.System.now().toEpochMilliseconds()
                 
                 // Cache individual cocktails
                 enrichedCocktails.forEach { cocktail ->
@@ -523,14 +524,14 @@ class CocktailRepositoryImpl(
         return try {
             // If date string is null or empty, return current timestamp
             if (dateStr.isNullOrBlank()) {
-                System.currentTimeMillis()
+                Clock.System.now().toEpochMilliseconds()
             } else {
                 // Parse the date string (format: "YYYY-MM-DD HH:mm:ss")
                 // For simplicity, we'll just use current timestamp if parsing fails
-                System.currentTimeMillis()
+                Clock.System.now().toEpochMilliseconds()
             }
         } catch (e: Exception) {
-            System.currentTimeMillis()
+            Clock.System.now().toEpochMilliseconds()
         }
     }
 
@@ -871,7 +872,7 @@ class CocktailRepositoryImpl(
             
             // Skip ping if we're in backoff period
             if (rateLimitBackoffMs > 0) {
-                val timeSinceLastCall = System.currentTimeMillis() - lastApiCallTime
+                val timeSinceLastCall = Clock.System.now().toEpochMilliseconds() - lastApiCallTime
                 if (timeSinceLastCall < rateLimitBackoffMs) {
                     CocktailDebugLogger.log("   ⏳ In rate limit backoff period, skipping ping")
                     return false
@@ -879,13 +880,13 @@ class CocktailRepositoryImpl(
             }
             
             // Check if we've made recent API calls to avoid rate limiting
-            val timeSinceLastCall = System.currentTimeMillis() - lastApiCallTime
+            val timeSinceLastCall = Clock.System.now().toEpochMilliseconds() - lastApiCallTime
             if (timeSinceLastCall < MIN_API_CALL_INTERVAL_MS) {
                 CocktailDebugLogger.log("   ⏳ Skipping ping to avoid rate limit (last call ${timeSinceLastCall}ms ago)")
                 return true // Assume API is reachable
             }
             
-            lastApiCallTime = System.currentTimeMillis()
+            lastApiCallTime = Clock.System.now().toEpochMilliseconds()
             val isConnected = api.pingApi()
             
             // Reset backoff on successful ping

@@ -9,44 +9,60 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.datetime.Clock
 import com.cocktailcraft.util.CocktailDebugLogger
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.runBlocking
 
 /**
  * Simple LRU cache implementation
  */
 class SimpleLruCache<K, V>(private val maxSize: Int) {
-    private val cache = LinkedHashMap<K, V>(maxSize + 1, 0.75f, true)
+    private val cache = mutableMapOf<K, V>()
+    private val accessOrder = mutableListOf<K>()
+    private val mutex = Mutex()
     
-    fun put(key: K, value: V) {
-        synchronized(cache) {
+    suspend fun put(key: K, value: V) {
+        mutex.withLock {
+            // Remove key from access order if it exists
+            accessOrder.remove(key)
+            // Add key to end (most recently used)
+            accessOrder.add(key)
             cache[key] = value
+            
+            // Evict least recently used if over capacity
             if (cache.size > maxSize) {
-                val iterator = cache.entries.iterator()
-                iterator.next()
-                iterator.remove()
+                val lruKey = accessOrder.removeAt(0)
+                cache.remove(lruKey)
             }
         }
     }
     
-    fun get(key: K): V? {
-        synchronized(cache) {
-            return cache[key]
+    suspend fun get(key: K): V? {
+        return mutex.withLock {
+            cache[key]?.also {
+                // Move to end (most recently used)
+                accessOrder.remove(key)
+                accessOrder.add(key)
+            }
         }
     }
     
-    fun snapshot(): Map<K, V> {
-        synchronized(cache) {
-            return cache.toMap()
+    suspend fun snapshot(): Map<K, V> {
+        return mutex.withLock {
+            cache.toMap()
         }
     }
     
-    fun clear() {
-        synchronized(cache) {
+    suspend fun clear() {
+        mutex.withLock {
             cache.clear()
+            accessOrder.clear()
         }
     }
     
-    val size: Int
-        get() = synchronized(cache) { cache.size }
+    suspend fun size(): Int {
+        return mutex.withLock { cache.size }
+    }
 }
 
 /**
@@ -75,10 +91,12 @@ class CocktailCache(
     init {
         CocktailDebugLogger.log("🗄️ CocktailCache init()")
         // Load persisted cocktails into memory cache on initialization
-        loadPersistedCocktails()
+        runBlocking {
+            loadPersistedCocktails()
+        }
     }
     
-    private fun loadPersistedCocktails() {
+    private suspend fun loadPersistedCocktails() {
         CocktailDebugLogger.log("📂 Loading persisted cocktails...")
         try {
             // Load all cached cocktails from persistent storage
@@ -110,7 +128,7 @@ class CocktailCache(
         }
     }
     
-    private fun persistCocktails() {
+    private suspend fun persistCocktails() {
         try {
             // Persist all cached cocktails
             val allCocktails = cocktailCache.snapshot().values.toList()
@@ -125,7 +143,7 @@ class CocktailCache(
         }
     }
     
-    private fun persistRecentlyViewed() {
+    private suspend fun persistRecentlyViewed() {
         try {
             // Persist recently viewed cocktails
             val recentCocktails = recentlyViewedCache.snapshot().values.toList()
@@ -187,7 +205,7 @@ class CocktailCache(
     /**
      * Clear all cached cocktails.
      */
-    fun clearCache() {
+    suspend fun clearCache() {
         cocktailCache.clear()
         recentlyViewedCache.clear()
         // Clear from persistent storage
@@ -205,7 +223,7 @@ class CocktailCache(
     /**
      * Get the number of cached cocktails.
      */
-    fun getCachedCocktailCount(): Int {
-        return cocktailCache.size
+    suspend fun getCachedCocktailCount(): Int {
+        return cocktailCache.size()
     }
 }

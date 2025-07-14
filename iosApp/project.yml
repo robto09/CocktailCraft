@@ -1,0 +1,48 @@
+name: CocktailCraft
+options:
+  bundleIdPrefix: com.cocktailcraft
+  deploymentTarget:
+    iOS: 14.0
+  generateEmptyDirectories: true
+  groupSortPosition: top
+  createIntermediateGroups: true
+targets:
+  CocktailCraft:
+    type: application
+    platform: iOS
+    deploymentTarget: 14.0
+    sources:
+      - path: .
+        excludes:
+          - "*.xcodeproj"
+          - "*.xcworkspace"
+          - "Pods"
+          - "Podfile*"
+          - "project.yml"
+          - "Sources/main.swift"
+          - "Package.swift"
+    settings:
+      base:
+        INFOPLIST_FILE: Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.cocktailcraft.CocktailCraft
+        SWIFT_VERSION: 5.0
+        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_PREVIEWS: NO
+      configs:
+        Debug:
+          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: "-O"
+    preBuildScripts:
+      - script: |
+          # Remove duplicate preview dylib if it exists
+          PREVIEW_DYLIB="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/__preview.dylib"
+          if [ -f "$PREVIEW_DYLIB" ]; then
+            rm -f "$PREVIEW_DYLIB"
+            echo "Removed duplicate preview dylib"
+          fi
+        name: "Clean Preview Dylib"
+    dependencies:
+      - sdk: UIKit.framework
+      - sdk: SwiftUI.framework

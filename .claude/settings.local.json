@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.thecocktaildb.com)",
+      "Bash(find:*)",
+      "Bash(./gradlew:*)",
+      "Bash(git commit:*)",
+      "Bash(git add:*)",
+      "Bash(sed:*)",
+      "Bash(chmod:*)",
+      "Bash(ls:*)",
+      "Bash(rm:*)",
+      "Bash(grep:*)",
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)",
+      "Bash(./rebase_script.sh:*)",
+      "Bash(git push:*)",
+      "Bash(brew install:*)",
+      "Bash(gh auth:*)",
+      "Bash(mkdir:*)",
+      "Bash(rg:*)",
+      "Bash(touch:*)",
+      "Bash(java:*)",
+      "Bash(git reset:*)",
+      "Bash(/usr/libexec/java_home:*)",
+      "Bash(export:*)",
+      "Bash(pod install:*)",
+      "Bash(xcodegen generate:*)",
+      "Bash(swift package init:*)",
+      "Bash(true)",
+      "Bash(cp:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(plutil:*)"
+    ],
+    "deny": []
+  }
+}
