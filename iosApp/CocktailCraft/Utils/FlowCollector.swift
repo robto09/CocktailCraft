@@ -107,6 +107,40 @@ extension FlowCollector {
     }
 }
 
+// Helper class to collect values from Kotlin Flows using a simpler approach
+class FlowValueCollector<T>: ObservableObject {
+    @Published var value: T?
+    @Published var isLoading = true
+    @Published var error: Error?
+
+    private var collector: SimpleFlowCollector<T>?
+
+    init() {}
+
+    func collect(from flow: Kotlinx_coroutines_coreFlow) {
+        isLoading = true
+        error = nil
+
+        collector = SimpleFlowCollector<T> { [weak self] value in
+            DispatchQueue.main.async {
+                self?.value = value
+                self?.isLoading = false
+            }
+        }
+
+        guard let collector = collector else { return }
+
+        flow.collect(collector: collector) { [weak self] error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+                if let error = error {
+                    self?.error = error
+                }
+            }
+        }
+    }
+}
+
 // Mock empty flow implementation
 class EmptyFlow: NSObject, Kotlinx_coroutines_coreFlow {
     func collect(collector: Kotlinx_coroutines_coreFlowCollector, completionHandler: @escaping (Error?) -> Void) {

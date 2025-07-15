@@ -27,35 +27,36 @@ class CartViewModel: ObservableObject {
         isLoading = true
         error = nil
 
-        Task {
+        Task { @MainActor in
             do {
                 // Load cart items
                 let cartFlow = try await cartRepository.getCartItems()
-                let cartCollector = FlowCollector<NSArray>(flow: cartFlow)
+                let cartCollector = FlowValueCollector<NSArray>()
+                cartCollector.collect(from: cartFlow)
 
                 // Load total price
                 let totalFlow = try await cartRepository.getCartTotal()
-                let totalCollector = FlowCollector<KotlinDouble>(flow: totalFlow)
+                let totalCollector = FlowValueCollector<KotlinDouble>()
+                totalCollector.collect(from: totalFlow)
 
-                await MainActor.run {
-                    if let cartArray = cartCollector.value as? [CocktailCartItem] {
-                        self.cartItems = cartArray
-                    }
-                    if let total = totalCollector.value?.doubleValue {
-                        self.totalPrice = total
-                    }
-                    self.isLoading = cartCollector.isLoading || totalCollector.isLoading
-                    if let error = cartCollector.error ?? totalCollector.error {
-                        self.error = ErrorHandler.shared.createUserFriendlyError(
-                            title: "Loading Error",
-                            message: "Failed to load cart: \(error.localizedDescription)",
-                            category: ErrorHandler.ErrorCategory.unknown,
-                            recoveryAction: nil,
-                            originalException: nil,
-                            errorCode: ErrorCode.unknown
-                        )
-                    }
+                // Wait for both values to be collected
+                var attempts = 0
+                while (cartCollector.isLoading || totalCollector.isLoading) && attempts < 50 {
+                    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+                    attempts += 1
                 }
+
+                if let error = cartCollector.error ?? totalCollector.error {
+                    throw error
+                }
+
+                if let cartArray = cartCollector.value as? [CocktailCartItem] {
+                    self.cartItems = cartArray
+                }
+                if let total = totalCollector.value {
+                    self.totalPrice = total.doubleValue
+                }
+                self.isLoading = false
             } catch {
                 await MainActor.run {
                     self.isLoading = false
@@ -179,24 +180,20 @@ class CartViewModel: ObservableObject {
             return
         }
 
-        Task {
+        Task { @MainActor in
             do {
                 try await cartRepository.clearCart()
                 // Reload cart to get updated data
-                await MainActor.run {
-                    self.loadCart()
-                }
+                self.loadCart()
             } catch {
-                await MainActor.run {
-                    self.error = ErrorHandler.shared.createUserFriendlyError(
-                        title: "Clear Cart Error",
-                        message: "Failed to clear cart: \(error.localizedDescription)",
-                        category: ErrorHandler.ErrorCategory.unknown,
-                        recoveryAction: nil,
-                        originalException: nil,
-                        errorCode: ErrorCode.unknown
-                    )
-                }
+                self.error = ErrorHandler.shared.createUserFriendlyError(
+                    title: "Clear Cart Error",
+                    message: "Failed to clear cart: \(error.localizedDescription)",
+                    category: ErrorHandler.ErrorCategory.unknown,
+                    recoveryAction: nil,
+                    originalException: nil,
+                    errorCode: ErrorCode.unknown
+                )
             }
         }
     }
@@ -210,4 +207,6 @@ class CartViewModel: ObservableObject {
     func retryLoadCart() {
         loadCart()
     }
+
+
 }

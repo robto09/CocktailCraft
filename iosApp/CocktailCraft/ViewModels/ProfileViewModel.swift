@@ -28,32 +28,30 @@ class ProfileViewModel: ObservableObject {
         isLoading = true
         error = nil
 
-        Task {
+        Task { @MainActor in
             do {
                 // Check if user is signed in
                 let signedInFlow = try await authRepository.isUserSignedIn()
                 let signedInCollector = FlowCollector<KotlinBoolean>(flow: signedInFlow)
 
-                await MainActor.run {
-                    if let isSignedIn = signedInCollector.value?.boolValue {
-                        self.isAuthenticated = isSignedIn
+                if let isSignedIn = signedInCollector.value?.boolValue {
+                    self.isAuthenticated = isSignedIn
 
-                        if isSignedIn {
-                            // Load user details
-                            self.loadUserDetails()
-                        }
+                    if isSignedIn {
+                        // Load user details
+                        self.loadUserDetails()
                     }
-                    self.isLoading = signedInCollector.isLoading
-                    if let error = signedInCollector.error {
-                        self.error = ErrorHandler.shared.createUserFriendlyError(
-                            title: "Authentication Error",
-                            message: "Failed to check authentication status: \(error.localizedDescription)",
-                            category: ErrorHandler.ErrorCategory.unknown,
-                            recoveryAction: nil,
-                            originalException: nil,
-                            errorCode: ErrorCode.unknown
-                        )
-                    }
+                }
+                self.isLoading = signedInCollector.isLoading
+                if let error = signedInCollector.error {
+                    self.error = ErrorHandler.shared.createUserFriendlyError(
+                        title: "Authentication Error",
+                        message: "Failed to check authentication status: \(error.localizedDescription)",
+                        category: ErrorHandler.ErrorCategory.unknown,
+                        recoveryAction: nil,
+                        originalException: nil,
+                        errorCode: ErrorCode.unknown
+                    )
                 }
             } catch {
                 await MainActor.run {
@@ -74,31 +72,17 @@ class ProfileViewModel: ObservableObject {
     private func loadUserDetails() {
         guard let authRepository = authRepository else { return }
 
-        Task {
+        Task { @MainActor in
             do {
                 let userFlow = try await authRepository.getCurrentUser()
                 let userCollector = FlowCollector<User>(flow: userFlow)
 
-                await MainActor.run {
-                    if let user = userCollector.value {
-                        self.userName = user.name
-                        self.userEmail = user.email
-                    }
-                    self.isLoading = userCollector.isLoading
-                    if let error = userCollector.error {
-                        self.error = ErrorHandler.shared.createUserFriendlyError(
-                            title: "User Data Error",
-                            message: "Failed to load user details: \(error.localizedDescription)",
-                            category: ErrorHandler.ErrorCategory.unknown,
-                            recoveryAction: nil,
-                            originalException: nil,
-                            errorCode: ErrorCode.unknown
-                        )
-                    }
+                if let user = userCollector.value {
+                    self.userName = user.name
+                    self.userEmail = user.email
                 }
-            } catch {
-                await MainActor.run {
-                    self.isLoading = false
+                self.isLoading = userCollector.isLoading
+                if let error = userCollector.error {
                     self.error = ErrorHandler.shared.createUserFriendlyError(
                         title: "User Data Error",
                         message: "Failed to load user details: \(error.localizedDescription)",
@@ -108,6 +92,16 @@ class ProfileViewModel: ObservableObject {
                         errorCode: ErrorCode.unknown
                     )
                 }
+            } catch {
+                self.isLoading = false
+                self.error = ErrorHandler.shared.createUserFriendlyError(
+                    title: "User Data Error",
+                    message: "Failed to load user details: \(error.localizedDescription)",
+                    category: ErrorHandler.ErrorCategory.unknown,
+                    recoveryAction: nil,
+                    originalException: nil,
+                    errorCode: ErrorCode.unknown
+                )
             }
         }
     }
@@ -124,7 +118,7 @@ class ProfileViewModel: ObservableObject {
         isLoading = true
         error = nil
 
-        Task {
+        Task { @MainActor in
             do {
                 let signInFlow = try await authRepository.signIn(email: email, password: password)
                 let signInCollector = FlowCollector<KotlinBoolean>(flow: signInFlow)
