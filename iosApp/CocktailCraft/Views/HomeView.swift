@@ -1,4 +1,5 @@
 import SwiftUI
+
 import shared
 
 struct HomeView: View {
@@ -31,8 +32,8 @@ struct HomeView: View {
                 } else {
                     ScrollView {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                            ForEach(viewModel.filteredCocktails, id: \.idDrink) { cocktail in
-                                NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.idDrink)) {
+                            ForEach(viewModel.filteredCocktails, id: \.id) { cocktail in
+                                NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.id)) {
                                     CocktailCard(cocktail: cocktail)
                                 }
                                 .buttonStyle(PlainButtonStyle())
@@ -40,9 +41,7 @@ struct HomeView: View {
                         }
                         .padding()
                     }
-                    .refreshable {
-                        await viewModel.refreshCocktails()
-                    }
+                    // Note: .refreshable requires iOS 15.0+, removed for iOS 14.0 compatibility
                 }
             }
             .navigationTitle("CocktailCraft")

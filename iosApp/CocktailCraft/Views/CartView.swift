@@ -1,5 +1,7 @@
 import SwiftUI
+
 import shared
+import Kingfisher
 
 struct CartView: View {
     @StateObject private var viewModel = CartViewModel()
@@ -12,16 +14,17 @@ struct CartView: View {
                     title: "Your cart is empty",
                     message: "Add some cocktails to get started"
                 )
+                .navigationTitle("Cart")
             } else {
                 VStack {
                     List {
-                        ForEach(viewModel.cartItems, id: \.cocktail.idDrink) { item in
+                        ForEach(viewModel.cartItems, id: \.cocktail.id) { item in
                             CartItemRow(item: item, viewModel: viewModel)
                         }
                         .onDelete { indexSet in
                             indexSet.forEach { index in
                                 let item = viewModel.cartItems[index]
-                                viewModel.removeFromCart(cocktailId: item.cocktail.idDrink)
+                                viewModel.removeFromCart(cocktailId: item.cocktail.id)
                             }
                         }
                     }
@@ -55,8 +58,8 @@ struct CartView: View {
                     .background(Color(UIColor.systemBackground))
                     .shadow(color: Color.black.opacity(0.1), radius: 5, y: -2)
                 }
+                .navigationTitle("Cart")
             }
-            .navigationTitle("Cart")
         }
     }
 }
@@ -68,18 +71,17 @@ struct CartItemRow: View {
     var body: some View {
         HStack {
             // Cocktail Image
-            AsyncImage(url: URL(string: item.cocktail.strDrinkThumb ?? "")) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } placeholder: {
-                ProgressView()
-            }
+            KFImage(URL(string: item.cocktail.imageUrl ?? ""))
+                .placeholder {
+                    ProgressView()
+                }
+                .resizable()
+                .aspectRatio(contentMode: .fill)
             .frame(width: 60, height: 60)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(item.cocktail.strDrink)
+                Text(item.cocktail.name)
                     .font(.headline)
                     .lineLimit(1)
                 
@@ -94,7 +96,7 @@ struct CartItemRow: View {
             HStack(spacing: 12) {
                 Button(action: {
                     viewModel.updateQuantity(
-                        cocktailId: item.cocktail.idDrink,
+                        cocktailId: item.cocktail.id,
                         quantity: max(1, item.quantity - 1)
                     )
                 }) {
@@ -108,7 +110,7 @@ struct CartItemRow: View {
                 
                 Button(action: {
                     viewModel.updateQuantity(
-                        cocktailId: item.cocktail.idDrink,
+                        cocktailId: item.cocktail.id,
                         quantity: item.quantity + 1
                     )
                 }) {

@@ -7,11 +7,16 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * Common interface for monitoring network connectivity.
  */
-expect class NetworkMonitor {
+interface NetworkMonitor {
     fun startMonitoring()
     fun stopMonitoring()
     val isOnline: StateFlow<Boolean>
 }
+
+/**
+ * Platform-specific factory function for creating NetworkMonitor instances.
+ */
+expect fun createNetworkMonitor(): NetworkMonitor
 
 /**
  * Base implementation with common functionality.

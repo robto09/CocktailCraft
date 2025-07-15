@@ -1,4 +1,5 @@
 import Foundation
+
 import shared
 
 class PlatformErrorHandler {
@@ -9,26 +10,26 @@ class PlatformErrorHandler {
     func getErrorFromPlatformException(
         exception: NSError,
         defaultMessage: String,
-        recoveryAction: RecoveryAction?
-    ) -> UserFriendlyError {
+        recoveryAction: ErrorHandler.RecoveryAction?
+    ) -> ErrorHandler.UserFriendlyError {
         // Map iOS-specific errors to UserFriendlyError
         switch exception.code {
         case NSURLErrorNotConnectedToInternet,
              NSURLErrorNetworkConnectionLost:
-            return UserFriendlyError(
+            return ErrorHandler.UserFriendlyError(
                 title: "Network Error",
                 message: "Unable to connect to the server. Please check your internet connection.",
-                category: ErrorCategory.network,
+                category: ErrorHandler.ErrorCategory.network,
                 recoveryAction: recoveryAction,
                 originalException: nil,
                 errorCode: ErrorCode.network
             )
             
         case NSURLErrorTimedOut:
-            return UserFriendlyError(
+            return ErrorHandler.UserFriendlyError(
                 title: "Connection Timeout",
                 message: "The connection timed out. Please try again.",
-                category: ErrorCategory.network,
+                category: ErrorHandler.ErrorCategory.network,
                 recoveryAction: recoveryAction,
                 originalException: nil,
                 errorCode: ErrorCode.timeout
@@ -36,10 +37,10 @@ class PlatformErrorHandler {
             
         case NSURLErrorCannotFindHost,
              NSURLErrorCannotConnectToHost:
-            return UserFriendlyError(
+            return ErrorHandler.UserFriendlyError(
                 title: "Server Error",
                 message: "Unable to reach the server. Please try again later.",
-                category: ErrorCategory.server,
+                category: ErrorHandler.ErrorCategory.server,
                 recoveryAction: recoveryAction,
                 originalException: nil,
                 errorCode: ErrorCode.serverError
@@ -50,7 +51,7 @@ class PlatformErrorHandler {
             return ErrorHandler.shared.createUserFriendlyError(
                 title: "Error",
                 message: exception.localizedDescription.isEmpty ? defaultMessage : exception.localizedDescription,
-                category: ErrorCategory.unknown,
+                category: ErrorHandler.ErrorCategory.unknown,
                 recoveryAction: recoveryAction,
                 originalException: nil,
                 errorCode: ErrorCode.unknown

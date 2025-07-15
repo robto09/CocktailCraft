@@ -2,47 +2,41 @@ name: CocktailCraft
 options:
   bundleIdPrefix: com.cocktailcraft
   deploymentTarget:
-    iOS: 14.0
-  generateEmptyDirectories: true
-  groupSortPosition: top
-  createIntermediateGroups: true
+    iOS: "14.0"
+  
 targets:
   CocktailCraft:
     type: application
     platform: iOS
-    deploymentTarget: 14.0
     sources:
-      - path: .
-        excludes:
-          - "*.xcodeproj"
-          - "*.xcworkspace"
-          - "Pods"
-          - "Podfile*"
-          - "project.yml"
-          - "Sources/main.swift"
-          - "Package.swift"
-    settings:
-      base:
-        INFOPLIST_FILE: Info.plist
-        PRODUCT_BUNDLE_IDENTIFIER: com.cocktailcraft.CocktailCraft
-        SWIFT_VERSION: 5.0
-        DEVELOPMENT_TEAM: ""
-        CODE_SIGN_STYLE: Automatic
-        ENABLE_PREVIEWS: NO
-      configs:
-        Debug:
-          SWIFT_OPTIMIZATION_LEVEL: "-Onone"
-        Release:
-          SWIFT_OPTIMIZATION_LEVEL: "-O"
-    preBuildScripts:
-      - script: |
-          # Remove duplicate preview dylib if it exists
-          PREVIEW_DYLIB="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/__preview.dylib"
-          if [ -f "$PREVIEW_DYLIB" ]; then
-            rm -f "$PREVIEW_DYLIB"
-            echo "Removed duplicate preview dylib"
-          fi
-        name: "Clean Preview Dylib"
+      - CocktailCraft
     dependencies:
-      - sdk: UIKit.framework
-      - sdk: SwiftUI.framework
+      - framework: ../shared/build/cocoapods/publish/debug/shared.xcframework
+        embed: true
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.cocktailcraft.CocktailCraft
+      DEVELOPMENT_TEAM: ""
+      SWIFT_VERSION: "5.0"
+      IPHONEOS_DEPLOYMENT_TARGET: "14.0"
+      ENABLE_PREVIEWS: true
+      GENERATE_INFOPLIST_FILE: true
+      INFOPLIST_FILE: CocktailCraft/Info.plist
+      INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+      INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
+      INFOPLIST_KEY_UILaunchScreen_Generation: true
+      INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+      INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+      FRAMEWORK_SEARCH_PATHS:
+        - "$(inherited)"
+      OTHER_LDFLAGS:
+        - "$(inherited)"
+    
+schemes:
+  CocktailCraft:
+    build:
+      targets:
+        CocktailCraft: all
+    run:
+      config: Debug
+    archive:
+      config: Release

@@ -1,4 +1,5 @@
 import SwiftUI
+
 import shared
 import Combine
 
@@ -11,16 +12,16 @@ struct CartItem {
 class CartViewModel: ObservableObject {
     @Published var cartItems: [CartItem] = []
     @Published var isLoading = false
-    @Published var error: UserFriendlyError? = nil
+    @Published var error: ErrorHandler.UserFriendlyError? = nil
     
     var totalPrice: Double {
         cartItems.reduce(0) { $0 + ($1.price * Double($1.quantity)) }
     }
     
-    private let repository: CocktailRepository
-    
+    private let repository: CocktailRepository?
+
     init() {
-        self.repository = koin.get(objCClass: CocktailRepository.self) as! CocktailRepository
+        self.repository = KoinInitializer.shared.getCocktailRepository()
         loadCart()
     }
     
@@ -30,7 +31,7 @@ class CartViewModel: ObservableObject {
     }
     
     func addToCart(cocktail: Cocktail) {
-        if let index = cartItems.firstIndex(where: { $0.cocktail.idDrink == cocktail.idDrink }) {
+        if let index = cartItems.firstIndex(where: { $0.cocktail.id == cocktail.id }) {
             cartItems[index].quantity += 1
         } else {
             cartItems.append(CartItem(cocktail: cocktail, quantity: 1))
@@ -38,11 +39,11 @@ class CartViewModel: ObservableObject {
     }
     
     func removeFromCart(cocktailId: String) {
-        cartItems.removeAll { $0.cocktail.idDrink == cocktailId }
+        cartItems.removeAll { $0.cocktail.id == cocktailId }
     }
     
     func updateQuantity(cocktailId: String, quantity: Int) {
-        if let index = cartItems.firstIndex(where: { $0.cocktail.idDrink == cocktailId }) {
+        if let index = cartItems.firstIndex(where: { $0.cocktail.id == cocktailId }) {
             if quantity > 0 {
                 cartItems[index].quantity = quantity
             } else {

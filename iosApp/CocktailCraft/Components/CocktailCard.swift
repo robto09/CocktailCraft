@@ -1,5 +1,7 @@
 import SwiftUI
+
 import shared
+
 import Kingfisher
 
 struct CocktailCard: View {
@@ -11,7 +13,7 @@ struct CocktailCard: View {
         VStack(alignment: .leading, spacing: 8) {
             // Cocktail Image
             ZStack(alignment: .topTrailing) {
-                KFImage(URL(string: cocktail.strDrinkThumb ?? ""))
+                KFImage(URL(string: cocktail.imageUrl ?? ""))
                     .placeholder {
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color.gray.opacity(0.2))
@@ -40,13 +42,13 @@ struct CocktailCard: View {
             
             // Cocktail Info
             VStack(alignment: .leading, spacing: 4) {
-                Text(cocktail.strDrink)
+                Text(cocktail.name)
                     .font(.headline)
                     .lineLimit(2)
                     .foregroundColor(.primary)
                 
                 HStack {
-                    if let category = cocktail.strCategory {
+                    if let category = cocktail.category {
                         Text(category)
                             .font(.caption)
                             .foregroundColor(.secondary)

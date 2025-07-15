@@ -16,11 +16,11 @@ import platform.darwin.dispatch_queue_t
 /**
  * iOS implementation of NetworkMonitor using Network framework
  */
-actual class NetworkMonitor : BaseNetworkMonitor() {
+class IOSNetworkMonitor : BaseNetworkMonitor(), NetworkMonitor {
     private var monitor: nw_path_monitor_t? = null
     private var queue: dispatch_queue_t? = null
     
-    actual override fun startMonitoring() {
+    override fun startMonitoring() {
         NSLog("NetworkMonitor: Starting network monitoring")
         
         // Create monitor and queue
@@ -43,7 +43,7 @@ actual class NetworkMonitor : BaseNetworkMonitor() {
         }
     }
     
-    actual override fun stopMonitoring() {
+    override fun stopMonitoring() {
         NSLog("NetworkMonitor: Stopping network monitoring")
         monitor?.let {
             nw_path_monitor_cancel(it)
@@ -52,3 +52,8 @@ actual class NetworkMonitor : BaseNetworkMonitor() {
         queue = null
     }
 }
+
+/**
+ * Factory function for creating NetworkMonitor on iOS.
+ */
+actual fun createNetworkMonitor(): NetworkMonitor = IOSNetworkMonitor()

@@ -84,7 +84,4 @@ val networkModule = module {
 
     // API
     single<CocktailApi> { CocktailApiImpl(get()) }
-
-    // Network monitoring
-    single { NetworkMonitor() }
 }

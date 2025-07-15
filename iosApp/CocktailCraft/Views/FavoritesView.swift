@@ -1,4 +1,5 @@
 import SwiftUI
+
 import shared
 
 struct FavoritesView: View {
@@ -12,13 +13,14 @@ struct FavoritesView: View {
                     title: "No favorites yet",
                     message: "Start adding cocktails to your favorites"
                 )
+                .navigationTitle("Favorites")
             } else {
                 ScrollView {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                        ForEach(viewModel.favoriteCocktails, id: \.idDrink) { cocktail in
-                            NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.idDrink)) {
+                        ForEach(viewModel.favoriteCocktails, id: \.id) { cocktail in
+                            NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.id)) {
                                 CocktailCard(cocktail: cocktail, isFavorite: true) {
-                                    viewModel.removeFavorite(cocktailId: cocktail.idDrink)
+                                    viewModel.removeFavorite(cocktailId: cocktail.id)
                                 }
                             }
                             .buttonStyle(PlainButtonStyle())
@@ -26,8 +28,8 @@ struct FavoritesView: View {
                     }
                     .padding()
                 }
+                .navigationTitle("Favorites")
             }
-            .navigationTitle("Favorites")
         }
         .onAppear {
             viewModel.loadFavorites()

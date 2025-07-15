@@ -1,14 +1,15 @@
 import SwiftUI
+
 import shared
 
 class FavoritesViewModel: ObservableObject {
     @Published var favoriteCocktails: [Cocktail] = []
     @Published var isLoading = false
     
-    private let repository: CocktailRepository
-    
+    private let repository: CocktailRepository?
+
     init() {
-        self.repository = koin.get(objCClass: CocktailRepository.self) as! CocktailRepository
+        self.repository = KoinInitializer.shared.getCocktailRepository()
     }
     
     func loadFavorites() {
@@ -18,16 +19,16 @@ class FavoritesViewModel: ObservableObject {
     }
     
     func addFavorite(cocktail: Cocktail) {
-        if !favoriteCocktails.contains(where: { $0.idDrink == cocktail.idDrink }) {
+        if !favoriteCocktails.contains(where: { $0.id == cocktail.id }) {
             favoriteCocktails.append(cocktail)
         }
     }
     
     func removeFavorite(cocktailId: String) {
-        favoriteCocktails.removeAll { $0.idDrink == cocktailId }
+        favoriteCocktails.removeAll { $0.id == cocktailId }
     }
     
     func isFavorite(cocktailId: String) -> Bool {
-        favoriteCocktails.contains { $0.idDrink == cocktailId }
+        favoriteCocktails.contains { $0.id == cocktailId }
     }
 }
