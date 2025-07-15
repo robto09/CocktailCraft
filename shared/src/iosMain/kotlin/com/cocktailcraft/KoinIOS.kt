@@ -1,6 +1,7 @@
 package com.cocktailcraft
 
 import com.cocktailcraft.domain.repository.AuthRepository
+import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailRepository
 import org.koin.core.KoinApplication
 import org.koin.core.component.KoinComponent
@@ -17,6 +18,11 @@ class KoinHelper : KoinComponent {
 
     fun getAuthRepository(): AuthRepository {
         val repository: AuthRepository by inject()
+        return repository
+    }
+
+    fun getCartRepository(): CartRepository {
+        val repository: CartRepository by inject()
         return repository
     }
 }

@@ -17,21 +17,63 @@ class HomeViewModel: ObservableObject {
 
     init() {
         self.repository = KoinInitializer.shared.getCocktailRepository()
-        // Load mock data for now since repository is nil
-        loadMockData()
+        // Load real data if repository is available, otherwise use mock data
+        if repository != nil {
+            loadCocktails()
+        } else {
+            loadMockData()
+        }
     }
     
     func loadCocktails() {
         isLoading = true
         error = nil
-        
-        // For now, use sample data while we set up proper Flow collection
-        // TODO: Implement proper Flow collection from repository
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.cocktails = self.getSampleCocktails()
-            self.filteredCocktails = self.cocktails
-            self.applySorting()
-            self.isLoading = false
+
+        guard let repository = repository else {
+            // Fallback to mock data if repository is not available
+            loadMockData()
+            return
+        }
+
+        // Load cocktails by category (start with "Ordinary Drink" as default)
+        Task {
+            do {
+                let flow = try await repository.filterByCategory(category: "Ordinary Drink")
+                let collector = FlowCollector<NSArray>(flow: flow)
+
+                // Observe the flow collector
+                await MainActor.run {
+                    // Convert NSArray to [Cocktail]
+                    if let cocktailArray = collector.value as? [Cocktail] {
+                        self.cocktails = cocktailArray
+                        self.filteredCocktails = cocktailArray
+                        self.applySorting()
+                    }
+                    self.isLoading = collector.isLoading
+                    if let error = collector.error {
+                        self.error = ErrorHandler.shared.createUserFriendlyError(
+                            title: "Loading Error",
+                            message: "Failed to load cocktails: \(error.localizedDescription)",
+                            category: ErrorHandler.ErrorCategory.unknown,
+                            recoveryAction: nil,
+                            originalException: nil,
+                            errorCode: ErrorCode.unknown
+                        )
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.isLoading = false
+                    self.error = ErrorHandler.shared.createUserFriendlyError(
+                        title: "Loading Error",
+                        message: "Failed to load cocktails: \(error.localizedDescription)",
+                        category: ErrorHandler.ErrorCategory.unknown,
+                        recoveryAction: nil,
+                        originalException: nil,
+                        errorCode: ErrorCode.unknown
+                    )
+                }
+            }
         }
     }
     
@@ -98,14 +140,64 @@ class HomeViewModel: ObservableObject {
     }
     
     func searchCocktails(query: String) {
+        guard let repository = repository else {
+            // Fallback to local filtering if repository is not available
+            if query.isEmpty {
+                filteredCocktails = cocktails
+            } else {
+                filteredCocktails = cocktails.filter { cocktail in
+                    cocktail.name.lowercased().contains(query.lowercased())
+                }
+            }
+            applySorting()
+            return
+        }
+
         if query.isEmpty {
-            filteredCocktails = cocktails
-        } else {
-            filteredCocktails = cocktails.filter { cocktail in
-                cocktail.name.lowercased().contains(query.lowercased())
+            // If query is empty, reload all cocktails
+            loadCocktails()
+            return
+        }
+
+        isLoading = true
+        error = nil
+
+        Task {
+            do {
+                let flow = try await repository.searchCocktailsByName(name: query)
+                let collector = FlowCollector<NSArray>(flow: flow)
+
+                await MainActor.run {
+                    if let cocktailArray = collector.value as? [Cocktail] {
+                        self.filteredCocktails = cocktailArray
+                        self.applySorting()
+                    }
+                    self.isLoading = collector.isLoading
+                    if let error = collector.error {
+                        self.error = ErrorHandler.shared.createUserFriendlyError(
+                            title: "Search Error",
+                            message: "Failed to search cocktails: \(error.localizedDescription)",
+                            category: ErrorHandler.ErrorCategory.unknown,
+                            recoveryAction: nil,
+                            originalException: nil,
+                            errorCode: ErrorCode.unknown
+                        )
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.isLoading = false
+                    self.error = ErrorHandler.shared.createUserFriendlyError(
+                        title: "Search Error",
+                        message: "Failed to search cocktails: \(error.localizedDescription)",
+                        category: ErrorHandler.ErrorCategory.unknown,
+                        recoveryAction: nil,
+                        originalException: nil,
+                        errorCode: ErrorCode.unknown
+                    )
+                }
             }
         }
-        applySorting()
     }
     
     func applyFilters() {

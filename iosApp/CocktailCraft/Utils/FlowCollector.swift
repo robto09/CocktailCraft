@@ -4,30 +4,42 @@ import shared
 import Combine
 
 // Helper to collect Kotlin Flows in iOS
-class FlowCollector<T> {
+class FlowCollector<T>: ObservableObject {
     @Published var value: T?
+    @Published var isLoading = false
+    @Published var error: Error?
+
     private var cancellable: Kotlinx_coroutines_coreJob?
 
     init(flow: Kotlinx_coroutines_coreFlow) {
-        // Create a simple collector that emits the first value
+        isLoading = true
+
+        // Create a simple collector that emits values
         let collector = SimpleFlowCollector<T> { [weak self] value in
             DispatchQueue.main.async {
                 self?.value = value
+                self?.isLoading = false
+                self?.error = nil
             }
         }
 
         // Collect the flow
-        flow.collect(collector: collector) { error in
-            if let error = error {
-                print("Flow collection error: \(error)")
+        flow.collect(collector: collector) { [weak self] error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+                if let error = error {
+                    print("Flow collection error: \(error)")
+                    self?.error = error
+                }
             }
         }
     }
-    
+
     func cancel() {
-        cancellable?.cancel(cause: nil)
+        // Flow collection doesn't return a cancellable job in this implementation
+        // The collection will stop when the FlowCollector is deallocated
     }
-    
+
     deinit {
         cancel()
     }
@@ -64,6 +76,34 @@ extension Kotlinx_coroutines_coreFlow {
     static func createEmptyFlow() -> Kotlinx_coroutines_coreFlow {
         // This is a temporary mock - in a real implementation we'd use proper Kotlin Flow creation
         return EmptyFlow()
+    }
+}
+
+// Convenience methods for common repository operations
+extension FlowCollector {
+    // Helper to collect cocktail lists
+    static func collectCocktailList(from flow: Kotlinx_coroutines_coreFlow) -> FlowCollector<NSArray> {
+        return FlowCollector<NSArray>(flow: flow)
+    }
+
+    // Helper to collect single cocktail
+    static func collectCocktail(from flow: Kotlinx_coroutines_coreFlow) -> FlowCollector<Cocktail> {
+        return FlowCollector<Cocktail>(flow: flow)
+    }
+
+    // Helper to collect boolean values
+    static func collectBoolean(from flow: Kotlinx_coroutines_coreFlow) -> FlowCollector<KotlinBoolean> {
+        return FlowCollector<KotlinBoolean>(flow: flow)
+    }
+
+    // Helper to collect cart items
+    static func collectCartItems(from flow: Kotlinx_coroutines_coreFlow) -> FlowCollector<NSArray> {
+        return FlowCollector<NSArray>(flow: flow)
+    }
+
+    // Helper to collect double values
+    static func collectDouble(from flow: Kotlinx_coroutines_coreFlow) -> FlowCollector<KotlinDouble> {
+        return FlowCollector<KotlinDouble>(flow: flow)
     }
 }
 

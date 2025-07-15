@@ -65,7 +65,7 @@ struct CartView: View {
 }
 
 struct CartItemRow: View {
-    let item: CartItem
+    let item: CocktailCartItem
     @ObservedObject var viewModel: CartViewModel
     
     var body: some View {
@@ -85,7 +85,7 @@ struct CartItemRow: View {
                     .font(.headline)
                     .lineLimit(1)
                 
-                Text("$\(item.price, specifier: "%.2f")")
+                Text("$\(item.cocktail.price, specifier: "%.2f")")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
@@ -97,7 +97,7 @@ struct CartItemRow: View {
                 Button(action: {
                     viewModel.updateQuantity(
                         cocktailId: item.cocktail.id,
-                        quantity: max(1, item.quantity - 1)
+                        quantity: max(1, Int(item.quantity) - 1)
                     )
                 }) {
                     Image(systemName: "minus.circle.fill")
@@ -111,7 +111,7 @@ struct CartItemRow: View {
                 Button(action: {
                     viewModel.updateQuantity(
                         cocktailId: item.cocktail.id,
-                        quantity: item.quantity + 1
+                        quantity: Int(item.quantity) + 1
                     )
                 }) {
                     Image(systemName: "plus.circle.fill")

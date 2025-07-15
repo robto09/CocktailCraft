@@ -41,17 +41,36 @@ var koin: Koin_coreKoin {
     return KoinInitializer.shared.koin
 }
 
-// Temporary placeholder - disable dependency injection for now
-// TODO: Replace with proper Koin dependency injection once reified generics issue is resolved
+// Use KoinHelper to get repositories without reified generics
 extension KoinInitializer {
     func getCocktailRepository() -> CocktailRepository? {
-        // Return nil for now - ViewModels will use mock data instead
-        return nil
+        do {
+            let helper = KoinHelper()
+            return helper.getCocktailRepository()
+        } catch {
+            print("Error getting CocktailRepository: \(error)")
+            return nil
+        }
     }
 
     func getAuthRepository() -> AuthRepository? {
-        // Return nil for now - ViewModels will use mock data instead
-        return nil
+        do {
+            let helper = KoinHelper()
+            return helper.getAuthRepository()
+        } catch {
+            print("Error getting AuthRepository: \(error)")
+            return nil
+        }
+    }
+
+    func getCartRepository() -> CartRepository? {
+        do {
+            let helper = KoinHelper()
+            return helper.getCartRepository()
+        } catch {
+            print("Error getting CartRepository: \(error)")
+            return nil
+        }
     }
 }
 

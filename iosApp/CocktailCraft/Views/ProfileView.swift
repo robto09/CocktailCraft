@@ -31,7 +31,7 @@ struct ProfileView: View {
                             .fontWeight(.bold)
                         
                         Button(action: {
-                            viewModel.signIn()
+                            viewModel.signIn(email: "demo@example.com", password: "password")
                         }) {
                             Text("Sign In")
                                 .font(.headline)
