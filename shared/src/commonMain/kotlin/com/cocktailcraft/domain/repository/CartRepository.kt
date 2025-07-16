@@ -10,4 +10,4 @@ interface CartRepository {
     suspend fun updateQuantity(cocktailId: String, quantity: Int)
     suspend fun clearCart()
     suspend fun getCartTotal(): Flow<Double>
-} 
+}
