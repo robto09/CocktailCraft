@@ -5,7 +5,7 @@ import Kingfisher
 
 struct CocktailDetailView: View {
     let cocktailId: String
-    @StateObject private var cartViewModel = CartViewModel()
+    @ObservedObject private var cartViewModel = CartViewModel.shared
     @StateObject private var favoritesViewModel = FavoritesViewModel()
     @State private var cocktail: Cocktail? = nil
     @State private var isLoading = true

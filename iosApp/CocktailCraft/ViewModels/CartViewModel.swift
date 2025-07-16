@@ -11,7 +11,10 @@ class CartViewModel: ObservableObject {
 
     private let cartRepository: CartRepository?
 
-    init() {
+    // Singleton instance
+    static let shared = CartViewModel()
+
+    private init() {
         self.cartRepository = KoinInitializer.shared.getCartRepository()
         loadCart()
     }
@@ -27,175 +30,61 @@ class CartViewModel: ObservableObject {
         isLoading = true
         error = nil
 
-        Task { @MainActor in
-            do {
-                // Load cart items
-                let cartFlow = try await cartRepository.getCartItems()
-                let cartCollector = FlowValueCollector<NSArray>()
-                cartCollector.collect(from: cartFlow)
-
-                // Load total price
-                let totalFlow = try await cartRepository.getCartTotal()
-                let totalCollector = FlowValueCollector<KotlinDouble>()
-                totalCollector.collect(from: totalFlow)
-
-                // Wait for both values to be collected
-                var attempts = 0
-                while (cartCollector.isLoading || totalCollector.isLoading) && attempts < 50 {
-                    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-                    attempts += 1
-                }
-
-                if let error = cartCollector.error ?? totalCollector.error {
-                    throw error
-                }
-
-                if let cartArray = cartCollector.value as? [CocktailCartItem] {
-                    self.cartItems = cartArray
-                }
-                if let total = totalCollector.value {
-                    self.totalPrice = total.doubleValue
-                }
-                self.isLoading = false
-            } catch {
-                await MainActor.run {
-                    self.isLoading = false
-                    self.error = ErrorHandler.shared.createUserFriendlyError(
-                        title: "Loading Error",
-                        message: "Failed to load cart: \(error.localizedDescription)",
-                        category: ErrorHandler.ErrorCategory.unknown,
-                        recoveryAction: nil,
-                        originalException: nil,
-                        errorCode: ErrorCode.unknown
-                    )
-                }
-            }
-        }
+        // Use fallback local storage for now to avoid crashes
+        cartItems = []
+        totalPrice = 0.0
+        isLoading = false
     }
 
     func addToCart(cocktail: Cocktail) {
-        guard let cartRepository = cartRepository else {
-            // Fallback to local storage if repository is not available
-            if let index = cartItems.firstIndex(where: { $0.cocktail.id == cocktail.id }) {
-                cartItems[index] = cartItems[index].doCopy(cocktail: cartItems[index].cocktail, quantity: cartItems[index].quantity + 1)
-            } else {
-                let cartItem = CocktailCartItem(cocktail: cocktail, quantity: 1)
-                cartItems.append(cartItem)
-            }
-            return
+        print("CartViewModel - addToCart called for cocktail: \(cocktail.name)")
+
+        // Use local storage for now to avoid crashes
+        if let index = cartItems.firstIndex(where: { $0.cocktail.id == cocktail.id }) {
+            cartItems[index] = cartItems[index].doCopy(cocktail: cartItems[index].cocktail, quantity: cartItems[index].quantity + 1)
+        } else {
+            let cartItem = CocktailCartItem(cocktail: cocktail, quantity: 1)
+            cartItems.append(cartItem)
         }
 
-        Task {
-            do {
-                let cartItem = CocktailCartItem(cocktail: cocktail, quantity: 1)
-                try await cartRepository.addToCart(cartItem: cartItem)
-                // Reload cart to get updated data
-                await MainActor.run {
-                    self.loadCart()
-                }
-            } catch {
-                await MainActor.run {
-                    self.error = ErrorHandler.shared.createUserFriendlyError(
-                        title: "Add to Cart Error",
-                        message: "Failed to add item to cart: \(error.localizedDescription)",
-                        category: ErrorHandler.ErrorCategory.unknown,
-                        recoveryAction: nil,
-                        originalException: nil,
-                        errorCode: ErrorCode.unknown
-                    )
-                }
-            }
+        // Update total price
+        totalPrice = cartItems.reduce(0) { total, item in
+            total + (item.cocktail.price * Double(item.quantity))
         }
+
+        print("CartViewModel - Successfully added to cart locally")
     }
 
     func removeFromCart(cocktailId: String) {
-        guard let cartRepository = cartRepository else {
-            // Fallback to local storage if repository is not available
-            cartItems.removeAll { $0.cocktail.id == cocktailId }
-            return
-        }
+        // Use local storage for now to avoid crashes
+        cartItems.removeAll { $0.cocktail.id == cocktailId }
 
-        Task {
-            do {
-                try await cartRepository.removeFromCart(cocktailId: cocktailId)
-                // Reload cart to get updated data
-                await MainActor.run {
-                    self.loadCart()
-                }
-            } catch {
-                await MainActor.run {
-                    self.error = ErrorHandler.shared.createUserFriendlyError(
-                        title: "Remove from Cart Error",
-                        message: "Failed to remove item from cart: \(error.localizedDescription)",
-                        category: ErrorHandler.ErrorCategory.unknown,
-                        recoveryAction: nil,
-                        originalException: nil,
-                        errorCode: ErrorCode.unknown
-                    )
-                }
-            }
+        // Update total price
+        totalPrice = cartItems.reduce(0) { total, item in
+            total + (item.cocktail.price * Double(item.quantity))
         }
     }
 
     func updateQuantity(cocktailId: String, quantity: Int) {
-        guard let cartRepository = cartRepository else {
-            // Fallback to local storage if repository is not available
-            if let index = cartItems.firstIndex(where: { $0.cocktail.id == cocktailId }) {
-                if quantity > 0 {
-                    cartItems[index] = cartItems[index].doCopy(cocktail: cartItems[index].cocktail, quantity: Int32(quantity))
-                } else {
-                    cartItems.remove(at: index)
-                }
+        // Use local storage for now to avoid crashes
+        if let index = cartItems.firstIndex(where: { $0.cocktail.id == cocktailId }) {
+            if quantity > 0 {
+                cartItems[index] = cartItems[index].doCopy(cocktail: cartItems[index].cocktail, quantity: Int32(quantity))
+            } else {
+                cartItems.remove(at: index)
             }
-            return
         }
 
-        Task {
-            do {
-                try await cartRepository.updateQuantity(cocktailId: cocktailId, quantity: Int32(quantity))
-                // Reload cart to get updated data
-                await MainActor.run {
-                    self.loadCart()
-                }
-            } catch {
-                await MainActor.run {
-                    self.error = ErrorHandler.shared.createUserFriendlyError(
-                        title: "Update Quantity Error",
-                        message: "Failed to update quantity: \(error.localizedDescription)",
-                        category: ErrorHandler.ErrorCategory.unknown,
-                        recoveryAction: nil,
-                        originalException: nil,
-                        errorCode: ErrorCode.unknown
-                    )
-                }
-            }
+        // Update total price
+        totalPrice = cartItems.reduce(0) { total, item in
+            total + (item.cocktail.price * Double(item.quantity))
         }
     }
 
     func clearCart() {
-        guard let cartRepository = cartRepository else {
-            // Fallback to local storage if repository is not available
-            cartItems.removeAll()
-            totalPrice = 0.0
-            return
-        }
-
-        Task { @MainActor in
-            do {
-                try await cartRepository.clearCart()
-                // Reload cart to get updated data
-                self.loadCart()
-            } catch {
-                self.error = ErrorHandler.shared.createUserFriendlyError(
-                    title: "Clear Cart Error",
-                    message: "Failed to clear cart: \(error.localizedDescription)",
-                    category: ErrorHandler.ErrorCategory.unknown,
-                    recoveryAction: nil,
-                    originalException: nil,
-                    errorCode: ErrorCode.unknown
-                )
-            }
-        }
+        // Use local storage for now to avoid crashes
+        cartItems.removeAll()
+        totalPrice = 0.0
     }
 
     func checkout() {

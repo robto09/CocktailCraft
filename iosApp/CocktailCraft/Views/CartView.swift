@@ -4,7 +4,7 @@ import shared
 import Kingfisher
 
 struct CartView: View {
-    @StateObject private var viewModel = CartViewModel()
+    @ObservedObject private var viewModel = CartViewModel.shared
     
     var body: some View {
         NavigationView {
