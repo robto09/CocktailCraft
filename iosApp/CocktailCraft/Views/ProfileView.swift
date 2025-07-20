@@ -5,7 +5,6 @@ import shared
 struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
     @State private var showingSettings = false
-    @State private var showingOrders = false
     
     var body: some View {
         NavigationView {
@@ -48,19 +47,6 @@ struct ProfileView: View {
                 // Menu Items
                 List {
                     Section {
-                        Button(action: { showingOrders = true }) {
-                            HStack {
-                                Image(systemName: "bag.fill")
-                                    .foregroundColor(.blue)
-                                    .frame(width: 30)
-                                Text("My Orders")
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                        .foregroundColor(.primary)
-                        
                         Button(action: { showingSettings = true }) {
                             HStack {
                                 Image(systemName: "gearshape.fill")
@@ -94,9 +80,6 @@ struct ProfileView: View {
                 .listStyle(InsetGroupedListStyle())
             }
             .navigationTitle("Profile")
-            .sheet(isPresented: $showingOrders) {
-                OrderListView()
-            }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
             }

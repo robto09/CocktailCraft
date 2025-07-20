@@ -72,6 +72,16 @@ extension KoinInitializer {
             return nil
         }
     }
+
+    func getOrderRepository() -> OrderRepository? {
+        do {
+            let helper = KoinHelper()
+            return helper.getOrderRepository()
+        } catch {
+            print("Error getting OrderRepository: \(error)")
+            return nil
+        }
+    }
 }
 
 // MARK: - Temporary Content View

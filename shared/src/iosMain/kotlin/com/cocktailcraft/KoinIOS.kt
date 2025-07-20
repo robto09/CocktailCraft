@@ -3,6 +3,7 @@ package com.cocktailcraft
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.domain.repository.OrderRepository
 import org.koin.core.KoinApplication
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -23,6 +24,11 @@ class KoinHelper : KoinComponent {
 
     fun getCartRepository(): CartRepository {
         val repository: CartRepository by inject()
+        return repository
+    }
+
+    fun getOrderRepository(): OrderRepository {
+        val repository: OrderRepository by inject()
         return repository
     }
 }

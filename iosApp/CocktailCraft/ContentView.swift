@@ -23,12 +23,18 @@ struct ContentView: View {
                     Label("Favorites", systemImage: "heart.fill")
                 }
                 .tag(2)
-            
+
+            OrderListView()
+                .tabItem {
+                    Label("Orders", systemImage: "list.bullet")
+                }
+                .tag(3)
+
             ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")
                 }
-                .tag(3)
+                .tag(4)
             }
             
             // Offline Banner

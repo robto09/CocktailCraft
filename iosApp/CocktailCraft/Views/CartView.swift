@@ -1,5 +1,4 @@
 import SwiftUI
-
 import shared
 import Kingfisher
 
@@ -76,7 +75,7 @@ struct CartItemRow: View {
                     ProgressView()
                 }
                 .resizable()
-                .aspectRatio(contentMode: .fill)
+                .aspectRatio(contentMode: ContentMode.fill)
             .frame(width: 60, height: 60)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             
