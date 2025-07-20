@@ -24,45 +24,65 @@ class FavoritesViewModel: ObservableObject {
         isLoading = true
         error = nil
 
-        Task { @MainActor in
-            do {
-                let flow = try await repository.getFavoriteCocktails()
-
-                // Create a collector to get the cocktails
-                let collector = FlowValueCollector<NSArray>()
-                collector.collect(from: flow)
-
-                // Wait for the value to be collected
-                var attempts = 0
-                while collector.isLoading && attempts < 50 { // Wait up to 5 seconds
-                    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-                    attempts += 1
-                }
-
-                if let error = collector.error {
-                    throw error
-                }
-
-                if let cocktailArray = collector.value as? [Cocktail] {
-                    self.favoriteCocktails = cocktailArray
-                }
-                self.isLoading = false
-            } catch {
-                self.isLoading = false
-                self.error = ErrorHandler.shared.createUserFriendlyError(
-                    title: "Loading Error",
-                    message: "Failed to load favorites: \(error.localizedDescription)",
-                    category: ErrorHandler.ErrorCategory.unknown,
-                    recoveryAction: nil,
-                    originalException: nil,
-                    errorCode: ErrorCode.unknown
-                )
-            }
+        Task {
+            await loadFavoritesAsync()
         }
     }
 
-    func addFavorite(cocktail: Cocktail) {
+    @MainActor
+    private func loadFavoritesAsync() async {
         guard let repository = repository else {
+            self.isLoading = false
+            return
+        }
+
+        do {
+            let flow = try await repository.getFavoriteCocktails()
+
+            // Create a collector to get the cocktails
+            let collector = FlowValueCollector<NSArray>()
+            collector.collect(from: flow)
+
+            // Wait for the value to be collected
+            await waitForCollectorCompletion(collector)
+
+            if let error = collector.error {
+                throw error
+            }
+
+            if let cocktailArray = collector.value as? [Cocktail] {
+                self.favoriteCocktails = cocktailArray
+            }
+            self.isLoading = false
+        } catch {
+            await handleLoadingError(error)
+        }
+    }
+
+    @MainActor
+    private func waitForCollectorCompletion(_ collector: FlowValueCollector<NSArray>) async {
+        var attempts = 0
+        while collector.isLoading && attempts < 50 { // Wait up to 5 seconds
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+            attempts += 1
+        }
+    }
+
+    @MainActor
+    private func handleLoadingError(_ error: Error) async {
+        self.isLoading = false
+        self.error = ErrorHandler.shared.createUserFriendlyError(
+            title: "Loading Error",
+            message: "Failed to load favorites: \(error.localizedDescription)",
+            category: ErrorHandler.ErrorCategory.unknown,
+            recoveryAction: nil,
+            originalException: nil,
+            errorCode: ErrorCode.unknown
+        )
+    }
+
+    func addFavorite(cocktail: Cocktail) {
+        guard repository != nil else {
             // Fallback to local storage if repository is not available
             if !favoriteCocktails.contains(where: { $0.id == cocktail.id }) {
                 favoriteCocktails.append(cocktail)
@@ -70,26 +90,13 @@ class FavoritesViewModel: ObservableObject {
             return
         }
 
-        Task { @MainActor in
-            do {
-                try await repository.addToFavorites(cocktail: cocktail)
-                // Reload favorites to get updated list
-                self.loadFavorites()
-            } catch {
-                self.error = ErrorHandler.shared.createUserFriendlyError(
-                    title: "Add Favorite Error",
-                    message: "Failed to add to favorites: \(error.localizedDescription)",
-                    category: ErrorHandler.ErrorCategory.unknown,
-                    recoveryAction: nil,
-                    originalException: nil,
-                    errorCode: ErrorCode.unknown
-                )
-            }
+        Task {
+            await addFavoriteAsync(cocktail: cocktail)
         }
     }
 
     func removeFavorite(cocktailId: String) {
-        guard let repository = repository else {
+        guard repository != nil else {
             // Fallback to local storage if repository is not available
             favoriteCocktails.removeAll { $0.id == cocktailId }
             return
@@ -100,21 +107,8 @@ class FavoritesViewModel: ObservableObject {
             return
         }
 
-        Task { @MainActor in
-            do {
-                try await repository.removeFromFavorites(cocktail: cocktail)
-                // Reload favorites to get updated list
-                self.loadFavorites()
-            } catch {
-                self.error = ErrorHandler.shared.createUserFriendlyError(
-                    title: "Remove Favorite Error",
-                    message: "Failed to remove from favorites: \(error.localizedDescription)",
-                    category: ErrorHandler.ErrorCategory.unknown,
-                    recoveryAction: nil,
-                    originalException: nil,
-                    errorCode: ErrorCode.unknown
-                )
-            }
+        Task {
+            await removeFavoriteAsync(cocktail: cocktail)
         }
     }
 
@@ -131,6 +125,44 @@ class FavoritesViewModel: ObservableObject {
         // Simulate refresh
         try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
         loadFavorites()
+    }
+
+    @MainActor
+    private func addFavoriteAsync(cocktail: Cocktail) async {
+        guard let repository = repository else { return }
+
+        do {
+            try await repository.addToFavorites(cocktail: cocktail)
+            // Reload favorites to get updated list
+            self.loadFavorites()
+        } catch {
+            await handleFavoriteError(error, action: "add")
+        }
+    }
+
+    @MainActor
+    private func removeFavoriteAsync(cocktail: Cocktail) async {
+        guard let repository = repository else { return }
+
+        do {
+            try await repository.removeFromFavorites(cocktail: cocktail)
+            // Reload favorites to get updated list
+            self.loadFavorites()
+        } catch {
+            await handleFavoriteError(error, action: "remove")
+        }
+    }
+
+    @MainActor
+    private func handleFavoriteError(_ error: Error, action: String) async {
+        self.error = ErrorHandler.shared.createUserFriendlyError(
+            title: "\(action.capitalized) Favorite Error",
+            message: "Failed to \(action) favorite: \(error.localizedDescription)",
+            category: ErrorHandler.ErrorCategory.unknown,
+            recoveryAction: nil,
+            originalException: nil,
+            errorCode: ErrorCode.unknown
+        )
     }
 
 

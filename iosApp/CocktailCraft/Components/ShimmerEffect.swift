@@ -17,7 +17,7 @@ struct ShimmerEffect: View {
             .frame(width: geometry.size.width * 2)
             .offset(x: isAnimating ? geometry.size.width : -geometry.size.width)
             .animation(
-                Animation.linear(duration: 1.5)
+                .linear(duration: 1.5)
                     .repeatForever(autoreverses: false),
                 value: isAnimating
             )

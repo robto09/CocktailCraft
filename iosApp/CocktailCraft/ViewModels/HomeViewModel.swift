@@ -40,51 +40,70 @@ class HomeViewModel: ObservableObject {
         }
 
         print("HomeViewModel - Repository available, loading real data")
-        // Load cocktails by category (start with "Ordinary Drink" as default)
-        // Ensure Kotlin suspend functions are called on the main thread
-        Task { @MainActor in
-            do {
-                print("HomeViewModel - Calling repository.filterByCategory")
-                let flow = try await repository.filterByCategory(category: "Ordinary Drink")
-                print("HomeViewModel - Got flow, creating collector")
 
-                // Create a collector to get the cocktails
-                let collector = FlowValueCollector<NSArray>()
-                collector.collect(from: flow)
-
-                // Wait for the value to be collected
-                var attempts = 0
-                while collector.isLoading && attempts < 50 { // Wait up to 5 seconds
-                    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-                    attempts += 1
-                }
-
-                if let error = collector.error {
-                    throw error
-                }
-
-                if let cocktailArray = collector.value as? [Cocktail] {
-                    print("HomeViewModel - Got \(cocktailArray.count) cocktails")
-                    self.cocktails = cocktailArray
-                    self.filteredCocktails = cocktailArray
-                    self.applySorting()
-                } else {
-                    print("HomeViewModel - No cocktails returned or wrong type")
-                }
-                self.isLoading = false
-            } catch {
-                print("HomeViewModel - Error loading cocktails: \(error)")
-                self.isLoading = false
-                self.error = ErrorHandler.shared.createUserFriendlyError(
-                    title: "Loading Error",
-                    message: "Failed to load cocktails: \(error.localizedDescription)",
-                    category: ErrorHandler.ErrorCategory.unknown,
-                    recoveryAction: nil,
-                    originalException: nil,
-                    errorCode: ErrorCode.unknown
-                )
-            }
+        Task {
+            await loadCocktailsAsync()
         }
+    }
+
+    @MainActor
+    private func loadCocktailsAsync() async {
+        guard let repository = repository else {
+            self.isLoading = false
+            return
+        }
+
+        do {
+            print("HomeViewModel - Calling repository.filterByCategory")
+            let flow = try await repository.filterByCategory(category: "Ordinary Drink")
+            print("HomeViewModel - Got flow, creating collector")
+
+            // Create a collector to get the cocktails
+            let collector = FlowValueCollector<NSArray>()
+            collector.collect(from: flow)
+
+            // Wait for the value to be collected with improved error handling
+            await waitForCollectorCompletion(collector)
+
+            if let error = collector.error {
+                throw error
+            }
+
+            if let cocktailArray = collector.value as? [Cocktail] {
+                print("HomeViewModel - Got \(cocktailArray.count) cocktails")
+                self.cocktails = cocktailArray
+                self.filteredCocktails = cocktailArray
+                self.applySorting()
+            } else {
+                print("HomeViewModel - No cocktails returned or wrong type")
+            }
+            self.isLoading = false
+        } catch {
+            await handleLoadingError(error)
+        }
+    }
+
+    @MainActor
+    private func waitForCollectorCompletion(_ collector: FlowValueCollector<NSArray>) async {
+        var attempts = 0
+        while collector.isLoading && attempts < 50 { // Wait up to 5 seconds
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+            attempts += 1
+        }
+    }
+
+    @MainActor
+    private func handleLoadingError(_ error: Error) async {
+        print("HomeViewModel - Error loading cocktails: \(error)")
+        self.isLoading = false
+        self.error = ErrorHandler.shared.createUserFriendlyError(
+            title: "Loading Error",
+            message: "Failed to load cocktails: \(error.localizedDescription)",
+            category: ErrorHandler.ErrorCategory.unknown,
+            recoveryAction: nil,
+            originalException: nil,
+            errorCode: ErrorCode.unknown
+        )
     }
 
 
@@ -174,42 +193,53 @@ class HomeViewModel: ObservableObject {
         isLoading = true
         error = nil
 
-        Task { @MainActor in
-            do {
-                let flow = try await repository.searchCocktailsByName(name: query)
-
-                // Create a collector to get the cocktails
-                let collector = FlowValueCollector<NSArray>()
-                collector.collect(from: flow)
-
-                // Wait for the value to be collected
-                var attempts = 0
-                while collector.isLoading && attempts < 50 { // Wait up to 5 seconds
-                    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-                    attempts += 1
-                }
-
-                if let error = collector.error {
-                    throw error
-                }
-
-                if let cocktailArray = collector.value as? [Cocktail] {
-                    self.filteredCocktails = cocktailArray
-                    self.applySorting()
-                }
-                self.isLoading = false
-            } catch {
-                self.isLoading = false
-                self.error = ErrorHandler.shared.createUserFriendlyError(
-                    title: "Search Error",
-                    message: "Failed to search cocktails: \(error.localizedDescription)",
-                    category: ErrorHandler.ErrorCategory.unknown,
-                    recoveryAction: nil,
-                    originalException: nil,
-                    errorCode: ErrorCode.unknown
-                )
-            }
+        Task {
+            await searchCocktailsAsync(query: query)
         }
+    }
+
+    @MainActor
+    private func searchCocktailsAsync(query: String) async {
+        guard let repository = repository else {
+            self.isLoading = false
+            return
+        }
+
+        do {
+            let flow = try await repository.searchCocktailsByName(name: query)
+
+            // Create a collector to get the cocktails
+            let collector = FlowValueCollector<NSArray>()
+            collector.collect(from: flow)
+
+            // Wait for the value to be collected
+            await waitForCollectorCompletion(collector)
+
+            if let error = collector.error {
+                throw error
+            }
+
+            if let cocktailArray = collector.value as? [Cocktail] {
+                self.filteredCocktails = cocktailArray
+                self.applySorting()
+            }
+            self.isLoading = false
+        } catch {
+            await handleSearchError(error)
+        }
+    }
+
+    @MainActor
+    private func handleSearchError(_ error: Error) async {
+        self.isLoading = false
+        self.error = ErrorHandler.shared.createUserFriendlyError(
+            title: "Search Error",
+            message: "Failed to search cocktails: \(error.localizedDescription)",
+            category: ErrorHandler.ErrorCategory.unknown,
+            recoveryAction: nil,
+            originalException: nil,
+            errorCode: ErrorCode.unknown
+        )
     }
     
     func applyFilters() {

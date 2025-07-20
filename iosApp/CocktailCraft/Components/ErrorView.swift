@@ -30,22 +30,22 @@ struct ErrorView: View {
                 }) {
                     Text(recoveryAction.actionLabel)
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 12)
-                        .background(Color.blue)
-                        .cornerRadius(8)
+                        .background(Color.blue, in: RoundedRectangle(cornerRadius: 8))
                 }
+                .buttonStyle(.plain)
             } else if let onRetry = onRetry {
                 Button(action: onRetry) {
                     Text("Try Again")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundStyle(.white)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 12)
-                        .background(Color.blue)
-                        .cornerRadius(8)
+                        .background(Color.blue, in: RoundedRectangle(cornerRadius: 8))
                 }
+                .buttonStyle(.plain)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

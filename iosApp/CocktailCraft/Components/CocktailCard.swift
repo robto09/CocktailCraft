@@ -31,11 +31,11 @@ struct CocktailCard: View {
                 if let onToggle = onFavoriteToggle {
                     Button(action: onToggle) {
                         Image(systemName: isFavorite ? "heart.fill" : "heart")
-                            .foregroundColor(isFavorite ? .red : .white)
+                            .foregroundStyle(isFavorite ? .red : .white)
                             .padding(8)
-                            .background(Color.black.opacity(0.6))
-                            .clipShape(Circle())
+                            .background(.black.opacity(0.6), in: Circle())
                     }
+                    .buttonStyle(.plain)
                     .padding(8)
                 }
             }
@@ -45,21 +45,21 @@ struct CocktailCard: View {
                 Text(cocktail.name)
                     .font(.headline)
                     .lineLimit(2)
-                    .foregroundColor(.primary)
+                    .foregroundStyle(.primary)
                 
                 HStack {
                     if let category = cocktail.category {
                         Text(category)
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(.secondary)
                     }
-                    
+
                     Spacer()
-                    
+
                     Text("$12.99")
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(.blue)
                 }
             }
             .padding(.horizontal, 4)
