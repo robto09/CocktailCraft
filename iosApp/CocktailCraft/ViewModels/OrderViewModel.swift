@@ -1,7 +1,8 @@
 import SwiftUI
-import shared
+@preconcurrency import shared
 import Combine
 
+@MainActor
 class OrderViewModel: ObservableObject {
     @Published var orders: [Order] = []
     @Published var isLoading = false
@@ -196,6 +197,7 @@ class OrderViewModel: ObservableObject {
 
 
     // Store session orders for fallback
+    @MainActor
     private static var sessionOrders: [Order] = []
 
     // Add order to session storage (fallback when repository doesn't work)

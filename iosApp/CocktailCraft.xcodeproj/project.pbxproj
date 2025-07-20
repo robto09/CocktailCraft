@@ -14,16 +14,15 @@
 		39405B15883513D4C9A4C2C5 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 781E4068C6D09E26A2F6F660 /* HomeView.swift */; };
 		3BF4E2DF43ABEAC1F129FA6B /* CocktailDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80D5D04492BF6D891CC9B192 /* CocktailDetailView.swift */; };
 		3DFF4F40B75C631EB448832A /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0076F028F0173CC4CD4C18F /* HomeViewModel.swift */; };
+		43288984DF6D79F9037FA2CF /* Pods_CocktailCraft.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4D99D0DAF68B0F452E9368E9 /* Pods_CocktailCraft.framework */; };
 		46C8C9D96091B8F23BF81EE3 /* shared.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 21F30FED0F50FC8B426E54D3 /* shared.xcframework */; };
 		4B1843A05358F5B1489781B5 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F79C3BBEFD0B2BE551CBB4A8 /* SettingsView.swift */; };
 		4BFEB7F904D60ED73FC3E3DA /* OfflineBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5353458E21534CF1929CE2C8 /* OfflineBanner.swift */; };
-		530108BE6C35A929F731B416 /* Pods_CocktailCraft.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 366DFA470AC522634A516E70 /* Pods_CocktailCraft.framework */; };
 		556B8A0A0C717207D3369E23 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509CBA5BD785E60D138BA5C8 /* NetworkMonitor.swift */; };
 		5A0D2FFB332B2A70F00C6BA4 /* shared.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 21F30FED0F50FC8B426E54D3 /* shared.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5DD5C9541804B1F02B26C2CA /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77C5D3DBDD3CA76A90859F00 /* FavoritesView.swift */; };
 		631932ECF8AC75AFB5416740 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D295EC1E30F565480A8AEB /* EmptyStateView.swift */; };
 		668EB708FC2815D75C081F1C /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A79556DFB570415C59DA4EC8 /* ProfileViewModel.swift */; };
-		B1234567890ABCDEF1234567 /* OrderViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1234567890ABCDEF1234567 /* OrderViewModel.swift */; };
 		96CF06A65ECCAB15A7E21B07 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EBC388A838EA20284B59381 /* ContentView.swift */; };
 		9CA8A23169EACEE6BAA6168E /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61384C5931B60FCC54CA0D2E /* ProfileView.swift */; };
 		A08FFF1D99A48522CC39E685 /* FlowCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 551152FC5852C0E331270B70 /* FlowCollector.swift */; };
@@ -35,6 +34,7 @@
 		DE8850F09E59ACDA9DA09D48 /* CocktailCraftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E192F0B9BFCD6DE2579690 /* CocktailCraftApp.swift */; };
 		E98ED878D2B29E35286864F6 /* FavoritesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EAC83CA3CA493E5DFBFC8C4 /* FavoritesViewModel.swift */; };
 		EF018FBC5C1312DB79C5D641 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62F8C00AB4F768E2258F18A6 /* Toast.swift */; };
+		F1E78BE51AC1052068C40BB5 /* OrderViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54BA18F029314AD01BB37067 /* OrderViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -56,13 +56,12 @@
 		0EAC83CA3CA493E5DFBFC8C4 /* FavoritesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesViewModel.swift; sourceTree = "<group>"; };
 		21F30FED0F50FC8B426E54D3 /* shared.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = shared.xcframework; path = ../shared/build/cocoapods/publish/debug/shared.xcframework; sourceTree = "<group>"; };
 		2BD10A6D0C4EF128674C822C /* CartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartView.swift; sourceTree = "<group>"; };
-		32AF275096C9A9B8D546D964 /* Pods-CocktailCraft.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraft.debug.xcconfig"; path = "Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft.debug.xcconfig"; sourceTree = "<group>"; };
-		366DFA470AC522634A516E70 /* Pods_CocktailCraft.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CocktailCraft.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4231148A0AE075220A7C4774 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		4EBD64BA6C0FB1D0AC9E6723 /* Pods-CocktailCraft.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraft.release.xcconfig"; path = "Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft.release.xcconfig"; sourceTree = "<group>"; };
+		4D99D0DAF68B0F452E9368E9 /* Pods_CocktailCraft.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CocktailCraft.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		509CBA5BD785E60D138BA5C8 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		51DDA700E2FDBA1E1F3392DF /* FilterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterView.swift; sourceTree = "<group>"; };
 		5353458E21534CF1929CE2C8 /* OfflineBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineBanner.swift; sourceTree = "<group>"; };
+		54BA18F029314AD01BB37067 /* OrderViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderViewModel.swift; sourceTree = "<group>"; };
 		551152FC5852C0E331270B70 /* FlowCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowCollector.swift; sourceTree = "<group>"; };
 		61384C5931B60FCC54CA0D2E /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		62F8C00AB4F768E2258F18A6 /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
@@ -74,11 +73,12 @@
 		80D5D04492BF6D891CC9B192 /* CocktailDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailDetailView.swift; sourceTree = "<group>"; };
 		87E192F0B9BFCD6DE2579690 /* CocktailCraftApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailCraftApp.swift; sourceTree = "<group>"; };
 		8885ACD7979C44B621ECA874 /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
+		8CDCE3DE2A8B6A4D03D294FC /* Pods-CocktailCraft.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraft.debug.xcconfig"; path = "Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft.debug.xcconfig"; sourceTree = "<group>"; };
 		9248BD25E553421257FD596D /* CartViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartViewModel.swift; sourceTree = "<group>"; };
 		A0076F028F0173CC4CD4C18F /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		A79556DFB570415C59DA4EC8 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
-		F1234567890ABCDEF1234567 /* OrderViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderViewModel.swift; sourceTree = "<group>"; };
 		C33609CC7CE44DBCE6EA103C /* ShimmerEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShimmerEffect.swift; sourceTree = "<group>"; };
+		D83136CACC331BFA65BF22E1 /* Pods-CocktailCraft.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraft.release.xcconfig"; path = "Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft.release.xcconfig"; sourceTree = "<group>"; };
 		E2B26ED3A3ACF1E6DAEE3D49 /* OrderListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderListView.swift; sourceTree = "<group>"; };
 		E88E12E1DD858DB8B9E22AC7 /* CocktailCraft.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CocktailCraft.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5A93B6E8F24572E413E46A2 /* PlatformErrorHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformErrorHandler.swift; sourceTree = "<group>"; };
@@ -91,7 +91,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				46C8C9D96091B8F23BF81EE3 /* shared.xcframework in Frameworks */,
-				530108BE6C35A929F731B416 /* Pods_CocktailCraft.framework in Frameworks */,
+				43288984DF6D79F9037FA2CF /* Pods_CocktailCraft.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -126,7 +126,7 @@
 			isa = PBXGroup;
 			children = (
 				21F30FED0F50FC8B426E54D3 /* shared.xcframework */,
-				366DFA470AC522634A516E70 /* Pods_CocktailCraft.framework */,
+				4D99D0DAF68B0F452E9368E9 /* Pods_CocktailCraft.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -137,7 +137,7 @@
 				03BB8F276EF1BB27252E582F /* CocktailCraft */,
 				2E0DD283B5F68345B12032EE /* Frameworks */,
 				3B97070C3DB6D5BF27718617 /* Products */,
-				B4C91A44F7404B952773D99B /* Pods */,
+				EFE3F31D031D21C06D2D3241 /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
@@ -170,7 +170,7 @@
 				9248BD25E553421257FD596D /* CartViewModel.swift */,
 				0EAC83CA3CA493E5DFBFC8C4 /* FavoritesViewModel.swift */,
 				A0076F028F0173CC4CD4C18F /* HomeViewModel.swift */,
-				F1234567890ABCDEF1234567 /* OrderViewModel.swift */,
+				54BA18F029314AD01BB37067 /* OrderViewModel.swift */,
 				A79556DFB570415C59DA4EC8 /* ProfileViewModel.swift */,
 			);
 			path = ViewModels;
@@ -190,11 +190,11 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
-		B4C91A44F7404B952773D99B /* Pods */ = {
+		EFE3F31D031D21C06D2D3241 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				32AF275096C9A9B8D546D964 /* Pods-CocktailCraft.debug.xcconfig */,
-				4EBD64BA6C0FB1D0AC9E6723 /* Pods-CocktailCraft.release.xcconfig */,
+				8CDCE3DE2A8B6A4D03D294FC /* Pods-CocktailCraft.debug.xcconfig */,
+				D83136CACC331BFA65BF22E1 /* Pods-CocktailCraft.release.xcconfig */,
 			);
 			name = Pods;
 			path = Pods;
@@ -207,11 +207,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 6B903AD635163E4B7D594652 /* Build configuration list for PBXNativeTarget "CocktailCraft" */;
 			buildPhases = (
-				C238163BD09B0E06C7948A2D /* [CP] Check Pods Manifest.lock */,
+				7DA3039BBC383216E3CCE0AC /* [CP] Check Pods Manifest.lock */,
 				B7BE29C2D9427FF20A890F5D /* Sources */,
 				FE87D19B269F1080AEABCDAE /* Frameworks */,
 				C1C4DC418C24FA0BE5E5FA16 /* Embed Frameworks */,
-				4DB797A473C49186A89CA076 /* [CP] Embed Pods Frameworks */,
+				9D29150C73F595AE9D60614F /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -257,24 +257,7 @@
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		4DB797A473C49186A89CA076 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		C238163BD09B0E06C7948A2D /* [CP] Check Pods Manifest.lock */ = {
+		7DA3039BBC383216E3CCE0AC /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -294,6 +277,23 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		9D29150C73F595AE9D60614F /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -321,9 +321,9 @@
 				556B8A0A0C717207D3369E23 /* NetworkMonitor.swift in Sources */,
 				4BFEB7F904D60ED73FC3E3DA /* OfflineBanner.swift in Sources */,
 				DB7D7BA10D5729B4F84CCEDB /* OrderListView.swift in Sources */,
+				F1E78BE51AC1052068C40BB5 /* OrderViewModel.swift in Sources */,
 				A8E64AE208119647DAB79C75 /* PlatformErrorHandler.swift in Sources */,
 				9CA8A23169EACEE6BAA6168E /* ProfileView.swift in Sources */,
-				B1234567890ABCDEF1234567 /* OrderViewModel.swift in Sources */,
 				668EB708FC2815D75C081F1C /* ProfileViewModel.swift in Sources */,
 				4B1843A05358F5B1489781B5 /* SettingsView.swift in Sources */,
 				103C311FC2DD28DEC408D64A /* ShimmerEffect.swift in Sources */,
@@ -336,7 +336,7 @@
 /* Begin XCBuildConfiguration section */
 		23784922E358FB50794F0359 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 32AF275096C9A9B8D546D964 /* Pods-CocktailCraft.debug.xcconfig */;
+			baseConfigurationReference = 8CDCE3DE2A8B6A4D03D294FC /* Pods-CocktailCraft.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -353,7 +353,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -368,7 +368,7 @@
 		};
 		80F24C1A2A01E524D482B026 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 4EBD64BA6C0FB1D0AC9E6723 /* Pods-CocktailCraft.release.xcconfig */;
+			baseConfigurationReference = D83136CACC331BFA65BF22E1 /* Pods-CocktailCraft.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -385,7 +385,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -443,7 +443,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -505,7 +505,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

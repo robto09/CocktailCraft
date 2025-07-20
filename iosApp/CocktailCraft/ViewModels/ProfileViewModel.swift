@@ -1,7 +1,7 @@
 import SwiftUI
+@preconcurrency import shared
 
-import shared
-
+@MainActor
 class ProfileViewModel: ObservableObject {
     @Published var isAuthenticated = false
     @Published var userName = ""

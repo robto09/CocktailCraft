@@ -1,8 +1,8 @@
 import SwiftUI
-
-import shared
+@preconcurrency import shared
 import Combine
 
+@MainActor
 class CartViewModel: ObservableObject {
     @Published var cartItems: [CocktailCartItem] = []
     @Published var isLoading = false

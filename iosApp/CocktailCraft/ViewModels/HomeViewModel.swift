@@ -1,8 +1,8 @@
 import SwiftUI
-
-import shared
+@preconcurrency import shared
 import Combine
 
+@MainActor
 class HomeViewModel: ObservableObject {
     @Published var cocktails: [Cocktail] = []
     @Published var filteredCocktails: [Cocktail] = []

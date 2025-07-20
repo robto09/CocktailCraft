@@ -1,7 +1,7 @@
 import SwiftUI
+@preconcurrency import shared
 
-import shared
-
+@MainActor
 class FavoritesViewModel: ObservableObject {
     @Published var favoriteCocktails: [Cocktail] = []
     @Published var isLoading = false

@@ -1,5 +1,4 @@
 import Foundation
-
 import shared
 import Combine
 
@@ -9,27 +8,25 @@ class FlowCollector<T>: ObservableObject {
     @Published var isLoading = false
     @Published var error: Error?
 
-    private var cancellable: Kotlinx_coroutines_coreJob?
-
     init(flow: Kotlinx_coroutines_coreFlow) {
         isLoading = true
-
+        
         // Create a simple collector that emits values
-        let collector = SimpleFlowCollector<T> { [weak self] value in
+        let collector = SimpleFlowCollector<T> { value in
             DispatchQueue.main.async {
-                self?.value = value
-                self?.isLoading = false
-                self?.error = nil
+                self.value = value
+                self.isLoading = false
+                self.error = nil
             }
         }
-
+        
         // Collect the flow
-        flow.collect(collector: collector) { [weak self] error in
+        flow.collect(collector: collector) { error in
             DispatchQueue.main.async {
-                self?.isLoading = false
+                self.isLoading = false
                 if let error = error {
                     print("Flow collection error: \(error)")
-                    self?.error = error
+                    self.error = error
                 }
             }
         }
@@ -38,10 +35,6 @@ class FlowCollector<T>: ObservableObject {
     func cancel() {
         // Flow collection doesn't return a cancellable job in this implementation
         // The collection will stop when the FlowCollector is deallocated
-    }
-
-    deinit {
-        cancel()
     }
 }
 
@@ -118,23 +111,27 @@ class FlowValueCollector<T>: ObservableObject {
     init() {}
 
     func collect(from flow: Kotlinx_coroutines_coreFlow) {
-        isLoading = true
-        error = nil
+        DispatchQueue.main.async {
+            self.isLoading = true
+            self.error = nil
+        }
 
-        collector = SimpleFlowCollector<T> { [weak self] value in
+        let newCollector = SimpleFlowCollector<T> { value in
             DispatchQueue.main.async {
-                self?.value = value
-                self?.isLoading = false
+                self.value = value
+                self.isLoading = false
             }
         }
 
-        guard let collector = collector else { return }
+        DispatchQueue.main.async {
+            self.collector = newCollector
+        }
 
-        flow.collect(collector: collector) { [weak self] error in
+        flow.collect(collector: newCollector) { error in
             DispatchQueue.main.async {
-                self?.isLoading = false
+                self.isLoading = false
                 if let error = error {
-                    self?.error = error
+                    self.error = error
                 }
             }
         }

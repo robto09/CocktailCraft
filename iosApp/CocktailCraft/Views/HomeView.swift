@@ -41,15 +41,19 @@ struct HomeView: View {
                         }
                         .padding()
                     }
-                    // Note: .refreshable requires iOS 15.0+, removed for iOS 14.0 compatibility
+                    .refreshable {
+                        await viewModel.refreshCocktails()
+                    }
                 }
             }
             .navigationTitle("CocktailCraft")
-            .navigationBarItems(
-                trailing: Button(action: { showingFilters.toggle() }) {
-                    Image(systemName: "slider.horizontal.3")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { showingFilters.toggle() }) {
+                        Image(systemName: "slider.horizontal.3")
+                    }
                 }
-            )
+            }
             .sheet(isPresented: $showingFilters) {
                 FilterView(viewModel: viewModel)
             }
@@ -57,7 +61,7 @@ struct HomeView: View {
         .onAppear {
             viewModel.loadCocktails()
         }
-        .onChange(of: searchText) { _ in
+        .onChange(of: searchText) {
             viewModel.searchCocktails(query: searchText)
         }
     }

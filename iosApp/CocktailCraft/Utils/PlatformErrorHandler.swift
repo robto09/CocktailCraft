@@ -2,6 +2,7 @@ import Foundation
 
 import shared
 
+@MainActor
 class PlatformErrorHandler {
     static let shared = PlatformErrorHandler()
     

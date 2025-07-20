@@ -1,6 +1,5 @@
 import SwiftUI
-
-import shared
+@preconcurrency import shared
 import Kingfisher
 
 struct CocktailDetailView: View {
