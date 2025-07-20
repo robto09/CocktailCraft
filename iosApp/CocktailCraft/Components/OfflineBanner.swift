@@ -32,7 +32,7 @@ struct OfflineBanner: View {
         .onAppear {
             showBanner = !networkMonitor.isConnected
         }
-        .onChange(of: networkMonitor.isConnected) { _ in
+        .onChange(of: networkMonitor.isConnected) {
             withAnimation {
                 showBanner = !networkMonitor.isConnected
             }

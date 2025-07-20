@@ -44,43 +44,23 @@ var koin: Koin_coreKoin {
 // Use KoinHelper to get repositories without reified generics
 extension KoinInitializer {
     func getCocktailRepository() -> CocktailRepository? {
-        do {
-            let helper = KoinHelper()
-            return helper.getCocktailRepository()
-        } catch {
-            print("Error getting CocktailRepository: \(error)")
-            return nil
-        }
+        let helper = KoinHelper()
+        return helper.getCocktailRepository()
     }
 
     func getAuthRepository() -> AuthRepository? {
-        do {
-            let helper = KoinHelper()
-            return helper.getAuthRepository()
-        } catch {
-            print("Error getting AuthRepository: \(error)")
-            return nil
-        }
+        let helper = KoinHelper()
+        return helper.getAuthRepository()
     }
 
     func getCartRepository() -> CartRepository? {
-        do {
-            let helper = KoinHelper()
-            return helper.getCartRepository()
-        } catch {
-            print("Error getting CartRepository: \(error)")
-            return nil
-        }
+        let helper = KoinHelper()
+        return helper.getCartRepository()
     }
 
     func getOrderRepository() -> OrderRepository? {
-        do {
-            let helper = KoinHelper()
-            return helper.getOrderRepository()
-        } catch {
-            print("Error getting OrderRepository: \(error)")
-            return nil
-        }
+        let helper = KoinHelper()
+        return helper.getOrderRepository()
     }
 }
 

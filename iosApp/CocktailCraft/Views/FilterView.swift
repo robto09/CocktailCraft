@@ -45,17 +45,21 @@ struct FilterView: View {
                 }
             }
             .navigationTitle("Filters")
-            .navigationBarItems(
-                leading: Button("Clear") {
-                    viewModel.selectedCategory = nil
-                    viewModel.selectedIngredient = nil
-                    viewModel.sortOption = .nameAsc
-                    viewModel.applyFilters()
-                },
-                trailing: Button("Done") {
-                    presentationMode.wrappedValue.dismiss()
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Clear") {
+                        viewModel.selectedCategory = nil
+                        viewModel.selectedIngredient = nil
+                        viewModel.sortOption = .nameAsc
+                        viewModel.applyFilters()
+                    }
                 }
-            )
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                }
+            }
         }
     }
 }

@@ -21,7 +21,7 @@ class CartViewModel: ObservableObject {
     }
     
     func loadCart() {
-        guard let cartRepository = cartRepository else {
+        guard cartRepository != nil else {
             // If no repository, keep empty cart
             cartItems = []
             totalPrice = 0.0

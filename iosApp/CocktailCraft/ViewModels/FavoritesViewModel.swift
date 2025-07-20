@@ -126,5 +126,12 @@ class FavoritesViewModel: ObservableObject {
         loadFavorites()
     }
 
+    @MainActor
+    func refreshFavorites() async {
+        // Simulate refresh
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        loadFavorites()
+    }
+
 
 }

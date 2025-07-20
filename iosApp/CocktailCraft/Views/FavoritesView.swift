@@ -28,6 +28,9 @@ struct FavoritesView: View {
                     }
                     .padding()
                 }
+                .refreshable {
+                    await viewModel.refreshFavorites()
+                }
                 .navigationTitle("Favorites")
             }
         }
