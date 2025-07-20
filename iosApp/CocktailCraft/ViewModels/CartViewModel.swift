@@ -88,50 +88,54 @@ class CartViewModel: ObservableObject {
         totalPrice = 0.0
     }
 
-    func checkout() {
+    func checkout(completion: @escaping (Bool) -> Void = { _ in }) {
         // Get the order repository
         guard let orderRepository = KoinInitializer.shared.getOrderRepository() else {
             // If no repository, just clear the cart for now
             clearCart()
+            completion(false)
             return
         }
 
         // Don't proceed if cart is empty
-        guard !cartItems.isEmpty else { return }
+        guard !cartItems.isEmpty else {
+            completion(false)
+            return
+        }
 
         // Create a copy of cart items and total for the order
         let orderCartItems = cartItems
         let orderTotal = totalPrice
 
-        // Clear the cart immediately
-        clearCart()
+        // Create order ID and date
+        let orderId = "ORD-\(Int(Date().timeIntervalSince1970 * 1000))"
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let currentDate = dateFormatter.string(from: Date())
+
+        // Map cart items to order items
+        let orderItems = orderCartItems.map { cartItem in
+            OrderItem(
+                name: cartItem.cocktail.name,
+                quantity: Int32(cartItem.quantity),
+                price: cartItem.cocktail.price
+            )
+        }
+
+        // Create order object (outside Task so it's accessible in both success and error cases)
+        let order = Order(
+            id: orderId,
+            date: currentDate,
+            items: orderItems,
+            total: orderTotal,
+            status: "Processing"
+        )
+
+        isLoading = true
 
         // Place the order asynchronously
         Task { @MainActor in
             do {
-                // Create order ID and date
-                let orderId = "ORD-\(Int(Date().timeIntervalSince1970 * 1000))"
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "yyyy-MM-dd"
-                let currentDate = dateFormatter.string(from: Date())
-
-                // Map cart items to order items
-                let orderItems = orderCartItems.map { cartItem in
-                    OrderItem(
-                        name: cartItem.cocktail.name,
-                        quantity: Int32(cartItem.quantity),
-                        price: cartItem.cocktail.price
-                    )
-                }
-
-                // Create order object
-                let order = Order(
-                    id: orderId,
-                    date: currentDate,
-                    items: orderItems,
-                    total: orderTotal,
-                    status: "Processing"
-                )
 
                 // Place order through repository - must be called on main thread
                 let placeOrderFlow = try await orderRepository.placeOrder(order: order)
@@ -144,16 +148,32 @@ class CartViewModel: ObservableObject {
                     .compactMap { $0 }
                     .sink { success in
                         if success.boolValue {
-                            // Order placed successfully, clear cart
+                            print("CartViewModel: Order placed successfully via repository")
+                            // Order placed successfully, clear cart only once
                             self.clearCart()
+                            // Also add to session storage as fallback
+                            OrderViewModel.shared.addOrderToSession(order)
+                            print("CartViewModel: Added order to session storage")
+                            // Refresh the shared OrderViewModel to show the new order
+                            OrderViewModel.shared.loadOrders()
+                            completion(true)
+                        } else {
+                            print("CartViewModel: Repository reported order placement failed")
+                            completion(false)
                         }
                         self.isLoading = false
                     }
                     .store(in: &cancellables)
             } catch {
                 // Handle error silently for now - the OrderViewModel will show any errors
-                print("Error placing order: \(error)")
+                print("CartViewModel: Error placing order via repository: \(error)")
+                // Even if repository fails, add to session storage so user can see their order
+                print("CartViewModel: Adding order to session storage as fallback")
+                OrderViewModel.shared.addOrderToSession(order)
+                self.clearCart()
+                OrderViewModel.shared.loadOrders()
                 self.isLoading = false
+                completion(true) // Still report success since we saved it locally
             }
         }
     }
