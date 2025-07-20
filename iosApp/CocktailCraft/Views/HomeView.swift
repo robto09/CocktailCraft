@@ -6,13 +6,36 @@ struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
     @State private var searchText = ""
     @State private var showingFilters = false
-    
+
     var body: some View {
-        NavigationView {
             VStack {
-                // Search Bar
-                SearchBar(text: $searchText)
-                    .padding(.horizontal)
+                // Modern Search Bar
+                HStack {
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(.secondary)
+
+                        TextField("Search cocktails...", text: $searchText)
+                            .textFieldStyle(.plain)
+                            .onSubmit {
+                                viewModel.searchCocktails(query: searchText)
+                            }
+
+                        if !searchText.isEmpty {
+                            Button(action: {
+                                searchText = ""
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+                }
+                .padding(.horizontal)
                 
                 // Cocktail List
                 if viewModel.isLoading && viewModel.cocktails.isEmpty {
@@ -57,7 +80,6 @@ struct HomeView: View {
             .sheet(isPresented: $showingFilters) {
                 FilterView(viewModel: viewModel)
             }
-        }
         .onAppear {
             viewModel.loadCocktails()
         }
@@ -67,35 +89,3 @@ struct HomeView: View {
     }
 }
 
-// MARK: - Search Bar
-struct SearchBar: UIViewRepresentable {
-    @Binding var text: String
-    
-    func makeUIView(context: Context) -> UISearchBar {
-        let searchBar = UISearchBar()
-        searchBar.placeholder = "Search cocktails..."
-        searchBar.searchBarStyle = .minimal
-        searchBar.delegate = context.coordinator
-        return searchBar
-    }
-    
-    func updateUIView(_ uiView: UISearchBar, context: Context) {
-        uiView.text = text
-    }
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    
-    class Coordinator: NSObject, UISearchBarDelegate {
-        let parent: SearchBar
-        
-        init(_ parent: SearchBar) {
-            self.parent = parent
-        }
-        
-        func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-            parent.text = searchText
-        }
-    }
-}

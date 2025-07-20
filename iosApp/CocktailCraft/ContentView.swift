@@ -2,41 +2,56 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var selectedTab = 0
-    
+
     var body: some View {
         ZStack {
             TabView(selection: $selectedTab) {
-            HomeView()
+                // Home Tab
+                NavigationStack {
+                    HomeView()
+                }
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
                 }
                 .tag(0)
-            
-            CartView(selectedTab: $selectedTab)
+
+                // Cart Tab
+                NavigationStack {
+                    CartView(selectedTab: $selectedTab)
+                }
                 .tabItem {
                     Label("Cart", systemImage: "cart.fill")
                 }
                 .tag(1)
-            
-            FavoritesView()
+
+                // Favorites Tab
+                NavigationStack {
+                    FavoritesView()
+                }
                 .tabItem {
                     Label("Favorites", systemImage: "heart.fill")
                 }
                 .tag(2)
 
-            OrderListView()
+                // Orders Tab
+                NavigationStack {
+                    OrderListView()
+                }
                 .tabItem {
                     Label("Orders", systemImage: "list.bullet")
                 }
                 .tag(3)
 
-            ProfileView()
+                // Profile Tab
+                NavigationStack {
+                    ProfileView()
+                }
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")
                 }
                 .tag(4)
             }
-            
+
             // Offline Banner
             VStack {
                 OfflineBanner()

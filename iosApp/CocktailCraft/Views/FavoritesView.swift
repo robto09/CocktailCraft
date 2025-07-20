@@ -4,16 +4,15 @@ import shared
 
 struct FavoritesView: View {
     @StateObject private var viewModel = FavoritesViewModel()
-    
+
     var body: some View {
-        NavigationView {
+        Group {
             if viewModel.favoriteCocktails.isEmpty {
                 EmptyStateView(
                     icon: "heart",
                     title: "No favorites yet",
                     message: "Start adding cocktails to your favorites"
                 )
-                .navigationTitle("Favorites")
             } else {
                 ScrollView {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
@@ -31,9 +30,9 @@ struct FavoritesView: View {
                 .refreshable {
                     await viewModel.refreshFavorites()
                 }
-                .navigationTitle("Favorites")
             }
         }
+        .navigationTitle("Favorites")
         .onAppear {
             viewModel.loadFavorites()
         }
