@@ -260,7 +260,7 @@ This document provides detailed subtasks for each phase of the iOS 18.5 migratio
 
 ---
 
-## 🔄 **Phase 3: Advanced Features Implementation**
+## 🔄 **Phase 3: SKIE Integration & KMP Enhancement**
 
 ### ✅ **Task 3.1: Enhanced Navigation System - COMPLETED**
 
@@ -301,37 +301,83 @@ This document provides detailed subtasks for each phase of the iOS 18.5 migratio
 - ✅ Search functionality enhanced with modern UI
 - ✅ Ready for future navigation enhancements (deep linking, state management)
 
-### 🔄 **Task 3.2: Advanced State Management**
+### 🔄 **Task 3.2: SKIE Integration (Priority)**
 
 #### Subtasks:
-1. **Implement @Observable Pattern for iOS 17+**
-   - [ ] Evaluate @Observable vs @ObservableObject for ViewModels
-   - [ ] Update ViewModels to use @Observable where beneficial
-   - [ ] Test state management performance improvements
-   - [ ] Ensure backward compatibility with iOS 15+
+1. **Add SKIE Plugin to Gradle**
+   - [ ] Open `shared/build.gradle.kts`
+   - [ ] Add SKIE plugin: `id("co.touchlab.skie") version "0.6.1"`
+   - [ ] Configure SKIE settings for iOS 18.5
+   - [ ] Build shared module to generate SKIE wrappers
 
-2. **Improve Data Flow and State Persistence**
-   - [ ] Implement proper app state persistence
-   - [ ] Add state restoration for app lifecycle events
-   - [ ] Optimize state updates for better performance
-   - [ ] Add proper state validation and error recovery
+2. **Configure SKIE for iOS 18.5 Compatibility**
+   - [ ] Review SKIE configuration options
+   - [ ] Set up proper Swift version compatibility
+   - [ ] Configure Flow → AsyncSequence mappings
+   - [ ] Test basic SKIE functionality
 
-3. **Add Proper App Lifecycle State Management**
-   - [ ] Handle app backgrounding/foregrounding properly
-   - [ ] Implement proper data refresh on app resume
-   - [ ] Add network state change handling
-   - [ ] Optimize memory usage during state transitions
+3. **Migrate ViewModels to SKIE APIs**
+   - [ ] Start with HomeViewModel as test case
+   - [ ] Replace FlowCollector patterns with AsyncSequence
+   - [ ] Update FavoritesViewModel with SKIE patterns
+   - [ ] Verify suspend function → async function mapping
+
+4. **Eliminate FlowCollector Boilerplate**
+   - [ ] Remove custom FlowCollector implementations
+   - [ ] Replace complex async patterns with simple for-await loops
+   - [ ] Test all repository integrations with SKIE
+   - [ ] Validate type safety improvements
 
 #### Expected Outcome:
-- Enhanced state management with modern iOS patterns
-- Better app lifecycle handling and data persistence
+- 70% reduction in iOS ViewModel boilerplate code
+- Native Swift experience for Kotlin APIs
+- Simplified and more maintainable KMP integration
 
 #### Validation:
-- [ ] State persists correctly across app lifecycle events
-- [ ] Performance improvements measurable
-- [ ] No state corruption or data loss
+- [ ] SKIE generates Swift code without errors
+- [ ] Kotlin Flows work as AsyncSequences in Swift
+- [ ] ViewModels are significantly simplified
+- [ ] All functionality works with SKIE integration
 
-### 🔄 **Task 3.3: iOS-Specific Features**
+### 🔄 **Task 3.3: Enhanced KMP Integration**
+
+#### Subtasks:
+1. **Verify Shared Module Compatibility with SKIE**
+   - [ ] Build shared module for iOS 18.5 with SKIE
+   - [ ] Test all repository integrations with SKIE wrappers
+   - [ ] Verify Koin dependency injection works with SKIE
+   - [ ] Check for any iOS 18.5 specific issues
+
+2. **Test SKIE-Enhanced Repository Integrations**
+   - [ ] Test CocktailRepository with SKIE AsyncSequences
+   - [ ] Verify Flow collections work smoothly as AsyncSequences
+   - [ ] Test error handling through SKIE wrappers
+   - [ ] Validate data type mappings and conversions
+
+3. **Validate Improved Data Flow Patterns**
+   - [ ] Compare old FlowCollector vs SKIE AsyncSequence patterns
+   - [ ] Measure performance improvements with SKIE
+   - [ ] Test complex data scenarios (search, filtering, favorites)
+   - [ ] Document new SKIE patterns for team reference
+
+4. **Optimize KMP Performance with SKIE**
+   - [ ] Profile memory usage with SKIE integration
+   - [ ] Test async/await performance improvements
+   - [ ] Validate thread safety with SKIE wrappers
+   - [ ] Ensure proper cleanup and lifecycle management
+
+#### Expected Outcome:
+- Seamless KMP integration with native Swift experience
+- Significantly simplified iOS ViewModels
+- Better performance and maintainability
+
+#### Validation:
+- [ ] All repository integrations work smoothly with SKIE
+- [ ] Performance improvements are measurable
+- [ ] Data flow patterns are dramatically simplified
+- [ ] Code is more maintainable and readable
+
+### 🔄 **Task 3.4: iOS-Specific Features (Optional)**
 
 #### Subtasks:
 1. **Add Haptic Feedback Integration**
@@ -361,35 +407,35 @@ This document provides detailed subtasks for each phase of the iOS 18.5 migratio
 - [ ] System integration works seamlessly
 - [ ] UI patterns feel native to iOS
 
-### 🔄 **Task 3.4: Performance Optimizations**
+### 🔄 **Task 3.5: Advanced State Management (Optional)**
 
 #### Subtasks:
-1. **iOS-Specific Performance Improvements**
+1. **Consider @Observable Pattern for iOS 17+**
+   - [ ] Evaluate @Observable vs @ObservableObject for ViewModels
+   - [ ] Update ViewModels to use @Observable where beneficial
+   - [ ] Test state management performance improvements
+   - [ ] Ensure backward compatibility with iOS 15+
+
+2. **Performance Optimizations**
    - [ ] Implement lazy loading for large data sets
    - [ ] Optimize image loading and caching strategies
    - [ ] Add proper memory management for ViewModels
    - [ ] Profile app performance on iOS 18.5
 
-2. **Memory Management Enhancements**
-   - [ ] Review and optimize memory usage patterns
-   - [ ] Implement proper cleanup in ViewModels
-   - [ ] Add memory pressure handling
-   - [ ] Test for memory leaks and retain cycles
-
-3. **Efficient Data Loading Patterns**
-   - [ ] Implement pagination for cocktail lists
-   - [ ] Add intelligent prefetching strategies
-   - [ ] Optimize network request batching
-   - [ ] Implement proper data caching
+3. **Improve Data Flow and State Persistence**
+   - [ ] Implement proper app state persistence
+   - [ ] Add state restoration for app lifecycle events
+   - [ ] Optimize state updates for better performance
+   - [ ] Add proper state validation and error recovery
 
 #### Expected Outcome:
-- Significantly improved app performance
-- Better memory management and efficiency
+- Minor performance improvements with modern iOS patterns
+- Better app lifecycle handling and data persistence
 
 #### Validation:
-- [ ] App launches faster and responds quickly
-- [ ] Memory usage is optimized
-- [ ] No memory leaks or performance issues
+- [ ] State persists correctly across app lifecycle events
+- [ ] Performance improvements measurable
+- [ ] No state corruption or data loss
 
 ---
 
@@ -694,11 +740,12 @@ This document provides detailed subtasks for each phase of the iOS 18.5 migratio
 - ✅ Task 2.3: Update ViewModels (Enhanced with modern async/await)
 - ✅ Task 2.4: Modernize UI Components
 
-#### **Phase 3: Advanced Features Implementation - PARTIALLY COMPLETED**
+#### **Phase 3: SKIE Integration & KMP Enhancement - PARTIALLY COMPLETED**
 - ✅ Task 3.1: Enhanced Navigation System - **COMPLETED**
-- 🔄 Task 3.2: Advanced State Management
-- 🔄 Task 3.3: iOS-Specific Features
-- 🔄 Task 3.4: Performance Optimizations
+- 🔄 Task 3.2: SKIE Integration - **HIGH PRIORITY**
+- 🔄 Task 3.3: Enhanced KMP Integration - **HIGH PRIORITY**
+- 🔄 Task 3.4: iOS-Specific Features (Optional)
+- 🔄 Task 3.5: Advanced State Management (Optional)
 
 ### 🔄 **Remaining Optional Tasks**
 - 🔄 Phase 4: UI/UX Enhancements & SKIE Migration
@@ -710,8 +757,8 @@ This document provides detailed subtasks for each phase of the iOS 18.5 migratio
 - ✅ Improved ViewModels with better async/await patterns and error handling
 - ✅ Modern UI components with updated APIs and styling
 - ✅ Performance optimized by removing UIKit dependencies
-- 🔄 SKIE integration remains optional enhancement
-- ✅ Team can proceed with current enhanced state
+- 🎯 **SKIE integration is next priority** - Will eliminate 70% of ViewModel boilerplate
+- ✅ Team can proceed with current enhanced state or implement SKIE for major improvement
 
 ---
 

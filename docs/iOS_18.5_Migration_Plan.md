@@ -137,9 +137,9 @@ This document outlines the comprehensive migration plan for updating the Cocktai
 - `iosApp/CocktailCraft/Components/ShimmerEffect.swift` - *Working, has minor warnings*
 - All ViewModels in `iosApp/CocktailCraft/ViewModels/` - *All functional*
 
-### 🔄 **Phase 3: Advanced Features Implementation - IN PROGRESS**
-**Priority**: Medium
-**Risk**: Low
+### 🔄 **Phase 3: SKIE Integration & KMP Enhancement - IN PROGRESS**
+**Priority**: High (Major architectural improvement)
+**Risk**: Medium
 
 #### ✅ **Task 3.1: Enhanced Navigation System - COMPLETED**
 - ✅ Modern NavigationStack implementation
@@ -147,26 +147,29 @@ This document outlines the comprehensive migration plan for updating the Cocktai
 - ✅ Enhanced navigation patterns and interactions
 - ✅ Fixed view hierarchy and lifecycle management
 
-#### 🔄 **Remaining Tasks:**
-1. **Task 3.2: Advanced State Management**
-   - Implement @Observable pattern for iOS 17+
-   - Improve data flow and state persistence
-   - Add proper app lifecycle state management
+#### 🔄 **Priority Tasks:**
+1. **Task 3.2: SKIE Integration**
+   - Add SKIE plugin to `shared/build.gradle.kts`
+   - Configure SKIE for iOS 18.5 compatibility
+   - Migrate ViewModels to use SKIE-generated APIs
+   - Eliminate FlowCollector boilerplate (70% code reduction)
 
-2. **Task 3.3: iOS-Specific Features**
+2. **Task 3.3: Enhanced KMP Integration**
+   - Test SKIE-enhanced repository integrations
+   - Validate improved data flow patterns
+   - Verify shared module compatibility with iOS 18.5
+   - Optimize KMP performance with SKIE
+
+#### 🔄 **Optional Enhancements:**
+3. **Task 3.4: iOS-Specific Features**
    - Add haptic feedback integration
    - Implement system integration features
    - Platform-optimized UI patterns
 
-3. **Task 3.4: Performance Optimizations**
-   - iOS-specific performance improvements
-   - Memory management enhancements
-   - Efficient data loading patterns
-
-4. **Optional: SKIE Integration**
-   - Add SKIE plugin to `shared/build.gradle.kts`
-   - Configure SKIE for iOS 18.5 compatibility
-   - Test enhanced KMP integration
+4. **Task 3.5: Advanced State Management**
+   - Consider @Observable pattern for iOS 17+ (minor optimization)
+   - Improve data flow and state persistence
+   - Add proper app lifecycle state management
 
 #### Files to Modify:
 - `shared/build.gradle.kts` (SKIE plugin)
