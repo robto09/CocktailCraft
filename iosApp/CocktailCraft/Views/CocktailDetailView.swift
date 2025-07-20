@@ -12,12 +12,43 @@ struct CocktailDetailView: View {
     @State private var isFavorite = false
     @State private var showingToast = false
     @State private var toastMessage = ""
-    
+    @State private var error: ErrorHandler.UserFriendlyError? = nil
+
+    private let repository: CocktailRepository?
+
+    init(cocktailId: String) {
+        self.cocktailId = cocktailId
+        self.repository = KoinInitializer.shared.getCocktailRepository()
+    }
+
     var body: some View {
         VStack {
             if isLoading {
                 ProgressView("Loading...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let error = error {
+                VStack(spacing: 16) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.largeTitle)
+                        .foregroundColor(.orange)
+
+                    Text(error.title)
+                        .font(.headline)
+
+                    Text(error.message)
+                        .font(.body)
+                        .multilineTextAlignment(.center)
+
+                    Button("Retry") {
+                        loadCocktail()
+                    }
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                }
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let cocktail = cocktail {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
@@ -45,8 +76,8 @@ struct CocktailDetailView: View {
                                 }
                                 
                                 Spacer()
-                                
-                                Text("$12.99")
+
+                                Text("$\(String(format: "%.2f", cocktail.price))")
                                     .font(.title2)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.blue)
@@ -122,39 +153,73 @@ struct CocktailDetailView: View {
     }
     
     private func loadCocktail() {
-        // In a real app, this would fetch from the repository
-        // For now, we'll create a sample cocktail
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.cocktail = Cocktail(
-                id: self.cocktailId,
-                name: "Margarita",
-                alternateName: nil,
-                tags: ["IBA", "Contemporary Classic"],
-                category: "Ordinary Drink",
-                iba: "Contemporary Classic",
-                alcoholic: "Alcoholic",
-                glass: "Cocktail glass",
-                instructions: "Rub the rim of the glass with the lime slice to make the salt stick to it. Take care to moisten only the outer rim and sprinkle the salt on it. The salt should present to the lips of the imbiber and never mix into the cocktail. Shake the other ingredients with ice, then carefully pour into the glass.",
-                imageUrl: "https://www.thecocktaildb.com/images/media/drink/5noda61589575158.jpg",
-                ingredients: [
-                    CocktailIngredient(name: "Tequila", measure: "1 1/2 oz"),
-                    CocktailIngredient(name: "Triple sec", measure: "1/2 oz"),
-                    CocktailIngredient(name: "Lime juice", measure: "1 oz"),
-                    CocktailIngredient(name: "Salt", measure: "")
-                ],
-                imageSource: nil,
-                imageAttribution: nil,
-                creativeCommonsConfirmed: true,
-                dateModified: "2015-08-18 14:42:59",
-                price: 12.99,
-                inStock: true,
-                stockCount: 50,
-                rating: 4.5,
-                popularity: 95,
-                dateAdded: Int64(Date().timeIntervalSince1970 * 1000)
+        guard let repository = repository else {
+            print("CocktailDetailView - No repository available, showing error")
+            self.error = ErrorHandler.shared.createUserFriendlyError(
+                title: "Loading Error",
+                message: "Unable to load cocktail details. Please try again later.",
+                category: ErrorHandler.ErrorCategory.unknown,
+                recoveryAction: nil,
+                originalException: nil,
+                errorCode: ErrorCode.unknown
             )
-            self.isFavorite = self.favoritesViewModel.isFavorite(cocktailId: self.cocktailId)
             self.isLoading = false
+            return
+        }
+
+        print("CocktailDetailView - Loading cocktail with ID: \(cocktailId)")
+        isLoading = true
+        error = nil
+
+        Task { @MainActor in
+            do {
+                print("CocktailDetailView - Calling repository.getCocktailById")
+                let flow = try await repository.getCocktailById(id: cocktailId)
+                print("CocktailDetailView - Got flow, creating collector")
+
+                // Create a collector to get the cocktail
+                let collector = FlowValueCollector<Cocktail>()
+                collector.collect(from: flow)
+
+                // Wait for the value to be collected
+                var attempts = 0
+                while collector.isLoading && attempts < 50 { // Wait up to 5 seconds
+                    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+                    attempts += 1
+                }
+
+                if let error = collector.error {
+                    throw error
+                }
+
+                if let loadedCocktail = collector.value {
+                    print("CocktailDetailView - Got cocktail: \(loadedCocktail.name)")
+                    self.cocktail = loadedCocktail
+                    self.isFavorite = self.favoritesViewModel.isFavorite(cocktailId: self.cocktailId)
+                } else {
+                    print("CocktailDetailView - No cocktail returned")
+                    self.error = ErrorHandler.shared.createUserFriendlyError(
+                        title: "Cocktail Not Found",
+                        message: "The requested cocktail could not be found.",
+                        category: ErrorHandler.ErrorCategory.unknown,
+                        recoveryAction: nil,
+                        originalException: nil,
+                        errorCode: ErrorCode.unknown
+                    )
+                }
+                self.isLoading = false
+            } catch {
+                print("CocktailDetailView - Error loading cocktail: \(error)")
+                self.isLoading = false
+                self.error = ErrorHandler.shared.createUserFriendlyError(
+                    title: "Loading Error",
+                    message: "Failed to load cocktail details: \(error.localizedDescription)",
+                    category: ErrorHandler.ErrorCategory.unknown,
+                    recoveryAction: nil,
+                    originalException: nil,
+                    errorCode: ErrorCode.unknown
+                )
+            }
         }
     }
     
