@@ -2,7 +2,7 @@ name: CocktailCraft
 options:
   bundleIdPrefix: com.cocktailcraft
   deploymentTarget:
-    iOS: "14.0"
+    iOS: "18.5"
   
 targets:
   CocktailCraft:
@@ -16,8 +16,8 @@ targets:
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.cocktailcraft.CocktailCraft
       DEVELOPMENT_TEAM: ""
-      SWIFT_VERSION: "5.0"
-      IPHONEOS_DEPLOYMENT_TARGET: "14.0"
+      SWIFT_VERSION: "6.0"
+      IPHONEOS_DEPLOYMENT_TARGET: "18.5"
       ENABLE_PREVIEWS: true
       GENERATE_INFOPLIST_FILE: true
       INFOPLIST_FILE: CocktailCraft/Info.plist
