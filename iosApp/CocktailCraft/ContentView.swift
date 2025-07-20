@@ -12,7 +12,7 @@ struct ContentView: View {
                 }
                 .tag(0)
             
-            CartView()
+            CartView(selectedTab: $selectedTab)
                 .tabItem {
                     Label("Cart", systemImage: "cart.fill")
                 }
