@@ -3,7 +3,7 @@ import shared
 
 struct OrderListView: View {
     @Environment(\.presentationMode) var presentationMode
-    @StateObject private var viewModel = OrderViewModel()
+    @ObservedObject private var viewModel = OrderViewModel.shared
 
     var body: some View {
         NavigationView {
