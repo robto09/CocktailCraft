@@ -23,6 +23,7 @@
 		5DD5C9541804B1F02B26C2CA /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77C5D3DBDD3CA76A90859F00 /* FavoritesView.swift */; };
 		631932ECF8AC75AFB5416740 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D295EC1E30F565480A8AEB /* EmptyStateView.swift */; };
 		668EB708FC2815D75C081F1C /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A79556DFB570415C59DA4EC8 /* ProfileViewModel.swift */; };
+		B1234567890ABCDEF1234567 /* OrderViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1234567890ABCDEF1234567 /* OrderViewModel.swift */; };
 		96CF06A65ECCAB15A7E21B07 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EBC388A838EA20284B59381 /* ContentView.swift */; };
 		9CA8A23169EACEE6BAA6168E /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61384C5931B60FCC54CA0D2E /* ProfileView.swift */; };
 		A08FFF1D99A48522CC39E685 /* FlowCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 551152FC5852C0E331270B70 /* FlowCollector.swift */; };
@@ -76,6 +77,7 @@
 		9248BD25E553421257FD596D /* CartViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartViewModel.swift; sourceTree = "<group>"; };
 		A0076F028F0173CC4CD4C18F /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		A79556DFB570415C59DA4EC8 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModel.swift; sourceTree = "<group>"; };
+		F1234567890ABCDEF1234567 /* OrderViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderViewModel.swift; sourceTree = "<group>"; };
 		C33609CC7CE44DBCE6EA103C /* ShimmerEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShimmerEffect.swift; sourceTree = "<group>"; };
 		E2B26ED3A3ACF1E6DAEE3D49 /* OrderListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderListView.swift; sourceTree = "<group>"; };
 		E88E12E1DD858DB8B9E22AC7 /* CocktailCraft.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CocktailCraft.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -168,6 +170,7 @@
 				9248BD25E553421257FD596D /* CartViewModel.swift */,
 				0EAC83CA3CA493E5DFBFC8C4 /* FavoritesViewModel.swift */,
 				A0076F028F0173CC4CD4C18F /* HomeViewModel.swift */,
+				F1234567890ABCDEF1234567 /* OrderViewModel.swift */,
 				A79556DFB570415C59DA4EC8 /* ProfileViewModel.swift */,
 			);
 			path = ViewModels;
@@ -320,6 +323,7 @@
 				DB7D7BA10D5729B4F84CCEDB /* OrderListView.swift in Sources */,
 				A8E64AE208119647DAB79C75 /* PlatformErrorHandler.swift in Sources */,
 				9CA8A23169EACEE6BAA6168E /* ProfileView.swift in Sources */,
+				B1234567890ABCDEF1234567 /* OrderViewModel.swift in Sources */,
 				668EB708FC2815D75C081F1C /* ProfileViewModel.swift in Sources */,
 				4B1843A05358F5B1489781B5 /* SettingsView.swift in Sources */,
 				103C311FC2DD28DEC408D64A /* ShimmerEffect.swift in Sources */,

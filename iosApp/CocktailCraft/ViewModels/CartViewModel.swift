@@ -10,6 +10,7 @@ class CartViewModel: ObservableObject {
     @Published var totalPrice: Double = 0.0
 
     private let cartRepository: CartRepository?
+    private var cancellables = Set<AnyCancellable>()
 
     // Singleton instance
     static let shared = CartViewModel()
@@ -88,9 +89,73 @@ class CartViewModel: ObservableObject {
     }
 
     func checkout() {
-        // Implement checkout logic
-        // For now, just clear the cart
+        // Get the order repository
+        guard let orderRepository = KoinInitializer.shared.getOrderRepository() else {
+            // If no repository, just clear the cart for now
+            clearCart()
+            return
+        }
+
+        // Don't proceed if cart is empty
+        guard !cartItems.isEmpty else { return }
+
+        // Create a copy of cart items and total for the order
+        let orderCartItems = cartItems
+        let orderTotal = totalPrice
+
+        // Clear the cart immediately
         clearCart()
+
+        // Place the order asynchronously
+        Task { @MainActor in
+            do {
+                // Create order ID and date
+                let orderId = "ORD-\(Int(Date().timeIntervalSince1970 * 1000))"
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "yyyy-MM-dd"
+                let currentDate = dateFormatter.string(from: Date())
+
+                // Map cart items to order items
+                let orderItems = orderCartItems.map { cartItem in
+                    OrderItem(
+                        name: cartItem.cocktail.name,
+                        quantity: Int32(cartItem.quantity),
+                        price: cartItem.cocktail.price
+                    )
+                }
+
+                // Create order object
+                let order = Order(
+                    id: orderId,
+                    date: currentDate,
+                    items: orderItems,
+                    total: orderTotal,
+                    status: "Processing"
+                )
+
+                // Place order through repository - must be called on main thread
+                let placeOrderFlow = try await orderRepository.placeOrder(order: order)
+
+                // Collect the flow using FlowCollector
+                let flowCollector = FlowCollector<KotlinBoolean>(flow: placeOrderFlow)
+
+                // Observe the collected value
+                flowCollector.$value
+                    .compactMap { $0 }
+                    .sink { success in
+                        if success.boolValue {
+                            // Order placed successfully, clear cart
+                            self.clearCart()
+                        }
+                        self.isLoading = false
+                    }
+                    .store(in: &cancellables)
+            } catch {
+                // Handle error silently for now - the OrderViewModel will show any errors
+                print("Error placing order: \(error)")
+                self.isLoading = false
+            }
+        }
     }
 
     func retryLoadCart() {
