@@ -10,49 +10,83 @@ class OrderViewModel: ObservableObject {
     private let orderRepository: OrderRepository?
     private var cancellables = Set<AnyCancellable>()
 
-    init() {
+    // Singleton instance
+    static let shared = OrderViewModel()
+
+    private init() {
         self.orderRepository = KoinInitializer.shared.getOrderRepository()
         loadOrders()
     }
 
     func loadOrders() {
+        print("OrderViewModel.loadOrders() called")
+
         guard let orderRepository = orderRepository else {
-            // If no repository, use mock data for testing
-            orders = createMockOrders()
+            print("OrderViewModel: No repository found, using session orders only")
+            // If no repository, use session orders only
+            orders = OrderViewModel.sessionOrders
+            isLoading = false
             return
         }
 
+        print("OrderViewModel: Repository found, loading orders...")
         isLoading = true
         error = nil
 
+        // Use a simpler approach - directly use the repository without complex flow collection
         Task { @MainActor in
             do {
-                // Get orders from repository - must be called on main thread
+                print("OrderViewModel: Getting order history from repository...")
+
+                // Try to get orders directly from repository
                 let ordersFlow = try await orderRepository.getOrderHistory()
+                print("OrderViewModel: Got orders flow")
 
-                // Collect the flow using FlowCollector
-                let flowCollector = FlowCollector<NSArray>(flow: ordersFlow)
+                // Use a simple collector that just gets the first emission
+                let collector = SimpleOrderCollector { [weak self] orderArray in
+                    DispatchQueue.main.async {
+                        print("OrderViewModel: Received \(orderArray?.count ?? 0) orders from repository")
 
-                // Observe the collected value
-                flowCollector.$value
-                    .compactMap { $0 }
-                    .sink { orderArray in
-                        // Convert NSArray to [Order]
-                        let orders = orderArray.compactMap { $0 as? Order }
-                        self.orders = orders
-                        self.isLoading = false
+                        var repositoryOrders: [Order] = []
+                        if let orderArray = orderArray {
+                            repositoryOrders = orderArray.compactMap { $0 as? Order }
+                        }
+
+                        // Combine repository orders with session orders
+                        var allOrders = repositoryOrders
+
+                        // Add session orders that aren't already in repository
+                        for sessionOrder in OrderViewModel.sessionOrders {
+                            if !allOrders.contains(where: { $0.id == sessionOrder.id }) {
+                                allOrders.append(sessionOrder)
+                            }
+                        }
+
+                        print("OrderViewModel: Total orders (repository + session): \(allOrders.count)")
+                        self?.orders = allOrders.sorted { $0.date > $1.date }
+                        self?.isLoading = false
                     }
-                    .store(in: &cancellables)
+                }
+
+                // Collect from the flow
+                ordersFlow.collect(collector: collector) { error in
+                    DispatchQueue.main.async {
+                        if let error = error {
+                            print("OrderViewModel: Flow collection error: \(error)")
+                        }
+                        // Even if there's an error, show session orders
+                        if self.isLoading {
+                            print("OrderViewModel: Using session orders due to flow error")
+                            self.orders = OrderViewModel.sessionOrders.sorted { $0.date > $1.date }
+                            self.isLoading = false
+                        }
+                    }
+                }
 
             } catch {
-                self.error = ErrorHandler.UserFriendlyError(
-                    title: "Failed to Load Orders",
-                    message: "Unable to load your order history. Please try again.",
-                    category: ErrorHandler.ErrorCategory.network,
-                    recoveryAction: nil,
-                    originalException: nil,
-                    errorCode: ErrorCode.networkError
-                )
+                print("OrderViewModel: Error loading orders: \(error)")
+                // Use session orders if repository fails
+                self.orders = OrderViewModel.sessionOrders.sorted { $0.date > $1.date }
                 self.isLoading = false
             }
         }
@@ -161,35 +195,15 @@ class OrderViewModel: ObservableObject {
 
 
 
-    // Mock data for testing when repository is not available
-    private func createMockOrders() -> [Order] {
-        let mockOrderItems1 = [
-            OrderItem(name: "Mojito", quantity: 2, price: 10.0),
-            OrderItem(name: "Margarita", quantity: 1, price: 12.0)
-        ]
+    // Store session orders for fallback
+    private static var sessionOrders: [Order] = []
 
-        let mockOrderItems2 = [
-            OrderItem(name: "Cosmopolitan", quantity: 1, price: 11.0),
-            OrderItem(name: "Old Fashioned", quantity: 1, price: 13.0)
-        ]
-        
-        return [
-            Order(
-                id: "ORD-001",
-                date: "2024-01-15",
-                items: mockOrderItems1,
-                total: 32.0,
-                status: "Delivered"
-            ),
-            Order(
-                id: "ORD-002",
-                date: "2024-01-10",
-                items: mockOrderItems2,
-                total: 24.0,
-                status: "Processing"
-            )
-        ]
+    // Add order to session storage (fallback when repository doesn't work)
+    func addOrderToSession(_ order: Order) {
+        OrderViewModel.sessionOrders.append(order)
     }
+
+    // No mock data - only use real orders from repository and session
 
     func clearError() {
         error = nil
@@ -198,5 +212,23 @@ class OrderViewModel: ObservableObject {
     func retryLoadOrders() {
         clearError()
         loadOrders()
+    }
+}
+
+// Simple collector for order flows
+class SimpleOrderCollector: NSObject, Kotlinx_coroutines_coreFlowCollector {
+    private let onValue: (NSArray?) -> Void
+
+    init(onValue: @escaping (NSArray?) -> Void) {
+        self.onValue = onValue
+    }
+
+    func emit(value: Any?, completionHandler: @escaping (Error?) -> Void) {
+        if let orderArray = value as? NSArray {
+            onValue(orderArray)
+        } else {
+            onValue(nil)
+        }
+        completionHandler(nil)
     }
 }
