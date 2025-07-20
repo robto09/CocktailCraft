@@ -4,6 +4,8 @@ import Kingfisher
 
 struct CartView: View {
     @ObservedObject private var viewModel = CartViewModel.shared
+    @Binding var selectedTab: Int
+    @State private var showCheckoutConfirmation = false
     
     var body: some View {
         NavigationView {
@@ -41,9 +43,9 @@ struct CartView: View {
                         .padding(.horizontal)
                         
                         Button(action: {
-                            viewModel.checkout()
+                            showCheckoutConfirmation = true
                         }) {
-                            Text("Checkout")
+                            Text("Place Order")
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -59,6 +61,21 @@ struct CartView: View {
                 }
                 .navigationTitle("Cart")
             }
+        }
+        .alert(isPresented: $showCheckoutConfirmation) {
+            Alert(
+                title: Text("Confirm Order"),
+                message: Text("Are you sure you want to place this order for $\(viewModel.totalPrice + 5.99, specifier: "%.2f")?"),
+                primaryButton: .default(Text("Confirm")) {
+                    viewModel.checkout { success in
+                        if success {
+                            // Navigate to Orders tab (tag 3)
+                            selectedTab = 3
+                        }
+                    }
+                },
+                secondaryButton: .cancel()
+            )
         }
     }
 }
