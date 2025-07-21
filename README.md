@@ -5,7 +5,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 
 ### Platform Status
 - **Android**: ✅ Fully functional and production-ready
-- **iOS**: ✅ **iOS 18.5 Migration Complete** - Full SKIE integration with native Swift experience
+- **iOS**: ✅ **iOS 18.5 Ready** - Enhanced SKIE integration with native Swift APIs and modern SwiftUI
 
 ![CocktailCraft Home Screen](docs/images/Screenshot_20250419_014459.png)
 
@@ -23,7 +23,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Robust Error Handling**: User-friendly error messages with recovery options
 - **Polished Animations**: Enhanced user experience with smooth animations and micro-interactions
 - **Cross-Platform**: Same codebase for both Android and iOS platforms
-- **iOS 18.5 Ready**: Full compatibility with iOS 18.5 and SKIE integration for native Swift experience
+- **iOS 18.5 Ready**: Full compatibility with iOS 18.5, enhanced SKIE integration, and modern SwiftUI patterns
 
 ## Architecture
 The application follows the **Clean Architecture** pattern with **MVVM** (Model-View-ViewModel) for presentation, reactive state management, and a modular **Dependency Injection** system:
@@ -189,6 +189,8 @@ For detailed information about the dependency injection implementation, see:
 For a detailed list of all libraries with versions and purposes, see the [Libraries Documentation](docs/Libraries.md).
 
 For information about the reusable UI components in the app, see the [UI Components Documentation](docs/UI_Components.md).
+
+For details about the iOS 18.5 migration and SKIE integration, see the [SKIE Integration Guide](docs/SKIE_Integration_Guide.md).
 
 ## Package Structure
 

@@ -6,6 +6,26 @@ plugins {
     id("co.touchlab.skie") version "0.6.1"
 }
 
+// Configure SKIE for enhanced Swift interop
+skie {
+    features {
+        group {
+            // Core interop features
+            co.touchlab.skie.configuration.FlowInterop.Enabled(true)
+            co.touchlab.skie.configuration.SuspendInterop.Enabled(true)
+
+            // Enhanced enum support for better Swift integration
+            co.touchlab.skie.configuration.EnumInterop.Enabled(true)
+
+            // Sealed class support for Swift enum-like behavior
+            co.touchlab.skie.configuration.SealedInterop.Enabled(true)
+
+            // Default arguments support for cleaner Swift APIs
+            co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(true)
+        }
+    }
+}
+
 android {
     namespace = "com.cocktailcraft"
     compileSdk = 34

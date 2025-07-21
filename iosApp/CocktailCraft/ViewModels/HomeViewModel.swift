@@ -56,21 +56,39 @@ class HomeViewModel: ObservableObject {
         do {
             print("HomeViewModel - Calling repository.filterByCategory with SKIE")
 
-            // Use simple collector for repository flows
-            let flow = try await repository.filterByCategory(category: "Ordinary Drink")
-            let collector = SimpleFlowCollector<NSArray> { [weak self] cocktailArray in
-                DispatchQueue.main.async {
-                    if let cocktails = cocktailArray as? [Cocktail] {
-                        print("HomeViewModel - Got \(cocktails.count) cocktails via SKIE")
-                        self?.cocktails = cocktails
-                        self?.filteredCocktails = cocktails
-                        self?.applySorting()
-                    }
-                    self?.isLoading = false
-                }
-            }
+            // Use SKIE conversion to get proper AsyncSequence
+            let kotlinFlow = try await repository.filterByCategory(category: "Ordinary Drink")
 
-            try await flow.collect(collector: collector)
+            // Try to convert to SKIE flow - need to check the actual type
+            if let skieFlow = kotlinFlow as? SkieSwiftFlow<NSArray> {
+                // Use true SKIE AsyncSequence
+                for await cocktailArray in skieFlow {
+                    await MainActor.run {
+                        if let cocktails = cocktailArray as? [Cocktail] {
+                            print("HomeViewModel - Got \(cocktails.count) cocktails via true SKIE AsyncSequence")
+                            self.cocktails = cocktails
+                            self.filteredCocktails = cocktails
+                            self.applySorting()
+                        }
+                        self.isLoading = false
+                    }
+                    return // Take first emission and exit
+                }
+            } else {
+                // Fallback to SimpleFlowCollector if SKIE conversion doesn't work
+                let collector = SimpleFlowCollector<NSArray> { [weak self] cocktailArray in
+                    DispatchQueue.main.async {
+                        if let cocktails = cocktailArray as? [Cocktail] {
+                            print("HomeViewModel - Got \(cocktails.count) cocktails via SimpleFlowCollector fallback")
+                            self?.cocktails = cocktails
+                            self?.filteredCocktails = cocktails
+                            self?.applySorting()
+                        }
+                        self?.isLoading = false
+                    }
+                }
+                try await kotlinFlow.collect(collector: collector)
+            }
 
             self.isLoading = false
         } catch {
