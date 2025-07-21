@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -25,7 +25,6 @@
 		668EB708FC2815D75C081F1C /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A79556DFB570415C59DA4EC8 /* ProfileViewModel.swift */; };
 		96CF06A65ECCAB15A7E21B07 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EBC388A838EA20284B59381 /* ContentView.swift */; };
 		9CA8A23169EACEE6BAA6168E /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61384C5931B60FCC54CA0D2E /* ProfileView.swift */; };
-		A08FFF1D99A48522CC39E685 /* FlowCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 551152FC5852C0E331270B70 /* FlowCollector.swift */; };
 		A166DB404CF006A66284D821 /* CocktailCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A00F91ED1F43F12CF3B7400 /* CocktailCard.swift */; };
 		A22D24F59CFC34A6C3643DED /* CartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BD10A6D0C4EF128674C822C /* CartView.swift */; };
 		A8E64AE208119647DAB79C75 /* PlatformErrorHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A93B6E8F24572E413E46A2 /* PlatformErrorHandler.swift */; };
@@ -62,7 +61,6 @@
 		51DDA700E2FDBA1E1F3392DF /* FilterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterView.swift; sourceTree = "<group>"; };
 		5353458E21534CF1929CE2C8 /* OfflineBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineBanner.swift; sourceTree = "<group>"; };
 		54BA18F029314AD01BB37067 /* OrderViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderViewModel.swift; sourceTree = "<group>"; };
-		551152FC5852C0E331270B70 /* FlowCollector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowCollector.swift; sourceTree = "<group>"; };
 		61384C5931B60FCC54CA0D2E /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		62F8C00AB4F768E2258F18A6 /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
 		77C5D3DBDD3CA76A90859F00 /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
@@ -80,7 +78,7 @@
 		C33609CC7CE44DBCE6EA103C /* ShimmerEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShimmerEffect.swift; sourceTree = "<group>"; };
 		D83136CACC331BFA65BF22E1 /* Pods-CocktailCraft.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraft.release.xcconfig"; path = "Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft.release.xcconfig"; sourceTree = "<group>"; };
 		E2B26ED3A3ACF1E6DAEE3D49 /* OrderListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderListView.swift; sourceTree = "<group>"; };
-		E88E12E1DD858DB8B9E22AC7 /* CocktailCraft.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CocktailCraft.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E88E12E1DD858DB8B9E22AC7 /* CocktailCraft.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CocktailCraft.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5A93B6E8F24572E413E46A2 /* PlatformErrorHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformErrorHandler.swift; sourceTree = "<group>"; };
 		F79C3BBEFD0B2BE551CBB4A8 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -115,7 +113,6 @@
 		2100EB78E12FFADB14DB2966 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				551152FC5852C0E331270B70 /* FlowCollector.swift */,
 				509CBA5BD785E60D138BA5C8 /* NetworkMonitor.swift */,
 				F5A93B6E8F24572E413E46A2 /* PlatformErrorHandler.swift */,
 			);
@@ -196,7 +193,6 @@
 				8CDCE3DE2A8B6A4D03D294FC /* Pods-CocktailCraft.debug.xcconfig */,
 				D83136CACC331BFA65BF22E1 /* Pods-CocktailCraft.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -246,7 +242,6 @@
 			);
 			mainGroup = 3AE844851B04A04D60BFD763;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 54;
 			productRefGroup = 3B97070C3DB6D5BF27718617 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -287,9 +282,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -314,7 +313,6 @@
 				5DD5C9541804B1F02B26C2CA /* FavoritesView.swift in Sources */,
 				E98ED878D2B29E35286864F6 /* FavoritesViewModel.swift in Sources */,
 				12EB7C0EC24212CA6AD2FA19 /* FilterView.swift in Sources */,
-				A08FFF1D99A48522CC39E685 /* FlowCollector.swift in Sources */,
 				39405B15883513D4C9A4C2C5 /* HomeView.swift in Sources */,
 				3DFF4F40B75C631EB448832A /* HomeViewModel.swift in Sources */,
 				D3BD0756F33F51BAF8873DEF /* LoadingOverlay.swift in Sources */,

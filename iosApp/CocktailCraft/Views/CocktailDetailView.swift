@@ -160,7 +160,7 @@ struct CocktailDetailView: View {
                 category: ErrorHandler.ErrorCategory.unknown,
                 recoveryAction: nil,
                 originalException: nil,
-                errorCode: ErrorCode.unknown
+                errorCode: .unknown
             )
             self.isLoading = false
             return
@@ -176,26 +176,20 @@ struct CocktailDetailView: View {
                 let flow = try await repository.getCocktailById(id: cocktailId)
                 print("CocktailDetailView - Got flow, creating collector")
 
-                // Create a collector to get the cocktail
-                let collector = FlowValueCollector<Cocktail>()
-                collector.collect(from: flow)
-
-                // Wait for the value to be collected
-                var attempts = 0
-                while collector.isLoading && attempts < 50 { // Wait up to 5 seconds
-                    try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-                    attempts += 1
+                // Use simple collector for repository flows
+                let collector = SimpleFlowCollector<Cocktail> { loadedCocktail in
+                    DispatchQueue.main.async {
+                        if let loadedCocktail = loadedCocktail {
+                            print("CocktailDetailView - Got cocktail: \(loadedCocktail.name)")
+                            self.cocktail = loadedCocktail
+                            self.isFavorite = self.favoritesViewModel.isFavorite(cocktailId: self.cocktailId)
+                        }
+                    }
                 }
 
-                if let error = collector.error {
-                    throw error
-                }
+                try await flow.collect(collector: collector)
 
-                if let loadedCocktail = collector.value {
-                    print("CocktailDetailView - Got cocktail: \(loadedCocktail.name)")
-                    self.cocktail = loadedCocktail
-                    self.isFavorite = self.favoritesViewModel.isFavorite(cocktailId: self.cocktailId)
-                } else {
+                if self.cocktail == nil {
                     print("CocktailDetailView - No cocktail returned")
                     self.error = ErrorHandler.shared.createUserFriendlyError(
                         title: "Cocktail Not Found",
@@ -203,7 +197,7 @@ struct CocktailDetailView: View {
                         category: ErrorHandler.ErrorCategory.unknown,
                         recoveryAction: nil,
                         originalException: nil,
-                        errorCode: ErrorCode.unknown
+                        errorCode: .unknown
                     )
                 }
                 self.isLoading = false
@@ -216,7 +210,7 @@ struct CocktailDetailView: View {
                     category: ErrorHandler.ErrorCategory.unknown,
                     recoveryAction: nil,
                     originalException: nil,
-                    errorCode: ErrorCode.unknown
+                    errorCode: .unknown
                 )
             }
         }

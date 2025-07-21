@@ -1,5 +1,4 @@
 import Foundation
-
 import shared
 
 @MainActor
@@ -23,7 +22,7 @@ class PlatformErrorHandler {
                 category: ErrorHandler.ErrorCategory.network,
                 recoveryAction: recoveryAction,
                 originalException: nil,
-                errorCode: ErrorCode.network
+                errorCode: .network
             )
             
         case NSURLErrorTimedOut:
@@ -33,7 +32,7 @@ class PlatformErrorHandler {
                 category: ErrorHandler.ErrorCategory.network,
                 recoveryAction: recoveryAction,
                 originalException: nil,
-                errorCode: ErrorCode.timeout
+                errorCode: .timeout
             )
             
         case NSURLErrorCannotFindHost,
@@ -44,7 +43,7 @@ class PlatformErrorHandler {
                 category: ErrorHandler.ErrorCategory.server,
                 recoveryAction: recoveryAction,
                 originalException: nil,
-                errorCode: ErrorCode.serverError
+                errorCode: .serverError
             )
             
         default:
@@ -55,7 +54,7 @@ class PlatformErrorHandler {
                 category: ErrorHandler.ErrorCategory.unknown,
                 recoveryAction: recoveryAction,
                 originalException: nil,
-                errorCode: ErrorCode.unknown
+                errorCode: .unknown
             )
         }
     }

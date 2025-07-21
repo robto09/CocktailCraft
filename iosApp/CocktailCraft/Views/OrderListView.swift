@@ -39,10 +39,10 @@ struct OrderListView: View {
                     title: Text("Error"),
                     message: viewModel.error != nil ? Text(viewModel.error!.message) : nil,
                     primaryButton: .default(Text("Retry")) {
-                        viewModel.retryLoadOrders()
+                        viewModel.loadOrders()
                     },
                     secondaryButton: .cancel {
-                        viewModel.clearError()
+                        viewModel.error = nil
                     }
                 )
             }

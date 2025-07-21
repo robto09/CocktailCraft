@@ -8,11 +8,11 @@ struct ErrorView: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: getErrorIcon(for: error.category))
+            Image(systemName: getErrorIcon(for: error.category as! shared.__Bridge__ErrorHandler_ErrorCategory))
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 60, height: 60)
-                .foregroundColor(getErrorColor(for: error.category))
+                .foregroundColor(getErrorColor(for: error.category as! shared.__Bridge__ErrorHandler_ErrorCategory))
             
             Text(error.title)
                 .font(.title3)
@@ -51,7 +51,7 @@ struct ErrorView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
-    private func getErrorIcon(for category: ErrorHandler.ErrorCategory) -> String {
+    private func getErrorIcon(for category: shared.__Bridge__ErrorHandler_ErrorCategory) -> String {
         switch category {
         case .network:
             return "wifi.slash"
@@ -66,7 +66,7 @@ struct ErrorView: View {
         }
     }
     
-    private func getErrorColor(for category: ErrorHandler.ErrorCategory) -> Color {
+    private func getErrorColor(for category: shared.__Bridge__ErrorHandler_ErrorCategory) -> Color {
         switch category {
         case .network:
             return .blue

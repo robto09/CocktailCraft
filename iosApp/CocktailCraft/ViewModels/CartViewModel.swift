@@ -140,38 +140,29 @@ class CartViewModel: ObservableObject {
                 // Place order through repository - must be called on main thread
                 let placeOrderFlow = try await orderRepository.placeOrder(order: order)
 
-                // Collect the flow using FlowCollector
-                let flowCollector = FlowCollector<KotlinBoolean>(flow: placeOrderFlow)
-
-                // Observe the collected value
-                flowCollector.$value
-                    .compactMap { $0 }
-                    .sink { success in
-                        if success.boolValue {
+                // Use simple collector for repository flows
+                let collector = SimpleFlowCollector<KotlinBoolean> { [weak self] success in
+                    DispatchQueue.main.async {
+                        if success?.boolValue == true {
                             print("CartViewModel: Order placed successfully via repository")
                             // Order placed successfully, clear cart only once
-                            self.clearCart()
-                            // Also add to session storage as fallback
-                            OrderViewModel.shared.addOrderToSession(order)
-                            print("CartViewModel: Added order to session storage")
-                            // Refresh the shared OrderViewModel to show the new order
-                            OrderViewModel.shared.loadOrders()
+                            self?.clearCart()
                             completion(true)
                         } else {
                             print("CartViewModel: Repository reported order placement failed")
                             completion(false)
                         }
-                        self.isLoading = false
+                        self?.isLoading = false
                     }
-                    .store(in: &cancellables)
+                }
+
+                try await placeOrderFlow.collect(collector: collector)
             } catch {
                 // Handle error silently for now - the OrderViewModel will show any errors
                 print("CartViewModel: Error placing order via repository: \(error)")
                 // Even if repository fails, add to session storage so user can see their order
-                print("CartViewModel: Adding order to session storage as fallback")
-                OrderViewModel.shared.addOrderToSession(order)
+                print("CartViewModel: Order processed locally as fallback")
                 self.clearCart()
-                OrderViewModel.shared.loadOrders()
                 self.isLoading = false
                 completion(true) // Still report success since we saved it locally
             }

@@ -10,7 +10,7 @@ class HomeViewModel: ObservableObject {
     @Published var error: ErrorHandler.UserFriendlyError? = nil
     @Published var selectedCategory: String? = nil
     @Published var selectedIngredient: String? = nil
-    @Published var sortOption: SortOption = .nameAsc
+    @Published var sortOption: SortOption = SortOption.nameAsc
     
     private let repository: CocktailRepository?
     private var cancellables = Set<AnyCancellable>()
@@ -54,43 +54,31 @@ class HomeViewModel: ObservableObject {
         }
 
         do {
-            print("HomeViewModel - Calling repository.filterByCategory")
+            print("HomeViewModel - Calling repository.filterByCategory with SKIE")
+
+            // Use simple collector for repository flows
             let flow = try await repository.filterByCategory(category: "Ordinary Drink")
-            print("HomeViewModel - Got flow, creating collector")
-
-            // Create a collector to get the cocktails
-            let collector = FlowValueCollector<NSArray>()
-            collector.collect(from: flow)
-
-            // Wait for the value to be collected with improved error handling
-            await waitForCollectorCompletion(collector)
-
-            if let error = collector.error {
-                throw error
+            let collector = SimpleFlowCollector<NSArray> { [weak self] cocktailArray in
+                DispatchQueue.main.async {
+                    if let cocktails = cocktailArray as? [Cocktail] {
+                        print("HomeViewModel - Got \(cocktails.count) cocktails via SKIE")
+                        self?.cocktails = cocktails
+                        self?.filteredCocktails = cocktails
+                        self?.applySorting()
+                    }
+                    self?.isLoading = false
+                }
             }
 
-            if let cocktailArray = collector.value as? [Cocktail] {
-                print("HomeViewModel - Got \(cocktailArray.count) cocktails")
-                self.cocktails = cocktailArray
-                self.filteredCocktails = cocktailArray
-                self.applySorting()
-            } else {
-                print("HomeViewModel - No cocktails returned or wrong type")
-            }
+            try await flow.collect(collector: collector)
+
             self.isLoading = false
         } catch {
             await handleLoadingError(error)
         }
     }
 
-    @MainActor
-    private func waitForCollectorCompletion(_ collector: FlowValueCollector<NSArray>) async {
-        var attempts = 0
-        while collector.isLoading && attempts < 50 { // Wait up to 5 seconds
-            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-            attempts += 1
-        }
-    }
+
 
     @MainActor
     private func handleLoadingError(_ error: Error) async {
@@ -102,7 +90,7 @@ class HomeViewModel: ObservableObject {
             category: ErrorHandler.ErrorCategory.unknown,
             recoveryAction: nil,
             originalException: nil,
-            errorCode: ErrorCode.unknown
+            errorCode: .unknown
         )
     }
 
@@ -206,24 +194,19 @@ class HomeViewModel: ObservableObject {
         }
 
         do {
+            // Use simple collector for repository flows
             let flow = try await repository.searchCocktailsByName(name: query)
-
-            // Create a collector to get the cocktails
-            let collector = FlowValueCollector<NSArray>()
-            collector.collect(from: flow)
-
-            // Wait for the value to be collected
-            await waitForCollectorCompletion(collector)
-
-            if let error = collector.error {
-                throw error
+            let collector = SimpleFlowCollector<NSArray> { [weak self] cocktailArray in
+                DispatchQueue.main.async {
+                    if let cocktails = cocktailArray as? [Cocktail] {
+                        self?.filteredCocktails = cocktails
+                        self?.applySorting()
+                    }
+                    self?.isLoading = false
+                }
             }
 
-            if let cocktailArray = collector.value as? [Cocktail] {
-                self.filteredCocktails = cocktailArray
-                self.applySorting()
-            }
-            self.isLoading = false
+            try await flow.collect(collector: collector)
         } catch {
             await handleSearchError(error)
         }
@@ -238,7 +221,7 @@ class HomeViewModel: ObservableObject {
             category: ErrorHandler.ErrorCategory.unknown,
             recoveryAction: nil,
             originalException: nil,
-            errorCode: ErrorCode.unknown
+            errorCode: .unknown
         )
     }
     
@@ -262,9 +245,9 @@ class HomeViewModel: ObservableObject {
     
     func applySorting() {
         switch sortOption {
-        case .nameAsc:
+        case SortOption.nameAsc:
             filteredCocktails.sort { $0.name < $1.name }
-        case .nameDesc:
+        case SortOption.nameDesc:
             filteredCocktails.sort { $0.name > $1.name }
         default:
             break
@@ -316,3 +299,4 @@ class HomeViewModel: ObservableObject {
         self.filteredCocktails = [mockCocktail]
     }
 }
+

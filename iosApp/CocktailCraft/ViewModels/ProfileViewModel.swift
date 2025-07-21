@@ -1,6 +1,20 @@
 import SwiftUI
 @preconcurrency import shared
 
+// Simple collector for repository flows (temporary workaround until SKIE fully supports all flows)
+class SimpleFlowCollector<T>: NSObject, Kotlinx_coroutines_coreFlowCollector {
+    private let onValue: (T?) -> Void
+
+    init(onValue: @escaping (T?) -> Void) {
+        self.onValue = onValue
+        super.init()
+    }
+
+    func __emit(value: Any?) async throws {
+        onValue(value as? T)
+    }
+}
+
 @MainActor
 class ProfileViewModel: ObservableObject {
     @Published var isAuthenticated = false
@@ -32,27 +46,21 @@ class ProfileViewModel: ObservableObject {
             do {
                 // Check if user is signed in
                 let signedInFlow = try await authRepository.isUserSignedIn()
-                let signedInCollector = FlowCollector<KotlinBoolean>(flow: signedInFlow)
 
-                if let isSignedIn = signedInCollector.value?.boolValue {
-                    self.isAuthenticated = isSignedIn
-
-                    if isSignedIn {
-                        // Load user details
-                        self.loadUserDetails()
+                // Use simple collector for AuthRepository flows (temporary workaround)
+                let collector = SimpleFlowCollector<KotlinBoolean> { [weak self] value in
+                    DispatchQueue.main.async {
+                        if let isSignedIn = value?.boolValue {
+                            self?.isAuthenticated = isSignedIn
+                            if isSignedIn {
+                                self?.loadUserDetails()
+                            }
+                        }
+                        self?.isLoading = false
                     }
                 }
-                self.isLoading = signedInCollector.isLoading
-                if let error = signedInCollector.error {
-                    self.error = ErrorHandler.shared.createUserFriendlyError(
-                        title: "Authentication Error",
-                        message: "Failed to check authentication status: \(error.localizedDescription)",
-                        category: ErrorHandler.ErrorCategory.unknown,
-                        recoveryAction: nil,
-                        originalException: nil,
-                        errorCode: ErrorCode.unknown
-                    )
-                }
+
+                try await signedInFlow.collect(collector: collector)
             } catch {
                 await MainActor.run {
                     self.isLoading = false
@@ -62,7 +70,7 @@ class ProfileViewModel: ObservableObject {
                         category: ErrorHandler.ErrorCategory.unknown,
                         recoveryAction: nil,
                         originalException: nil,
-                        errorCode: ErrorCode.unknown
+                        errorCode: .unknown
                     )
                 }
             }
@@ -75,23 +83,19 @@ class ProfileViewModel: ObservableObject {
         Task { @MainActor in
             do {
                 let userFlow = try await authRepository.getCurrentUser()
-                let userCollector = FlowCollector<User>(flow: userFlow)
 
-                if let user = userCollector.value {
-                    self.userName = user.name
-                    self.userEmail = user.email
+                // Use simple collector for AuthRepository flows (temporary workaround)
+                let collector = SimpleFlowCollector<User> { [weak self] user in
+                    DispatchQueue.main.async {
+                        if let user = user {
+                            self?.userName = user.name
+                            self?.userEmail = user.email
+                        }
+                        self?.isLoading = false
+                    }
                 }
-                self.isLoading = userCollector.isLoading
-                if let error = userCollector.error {
-                    self.error = ErrorHandler.shared.createUserFriendlyError(
-                        title: "User Data Error",
-                        message: "Failed to load user details: \(error.localizedDescription)",
-                        category: ErrorHandler.ErrorCategory.unknown,
-                        recoveryAction: nil,
-                        originalException: nil,
-                        errorCode: ErrorCode.unknown
-                    )
-                }
+
+                try await userFlow.collect(collector: collector)
             } catch {
                 self.isLoading = false
                 self.error = ErrorHandler.shared.createUserFriendlyError(
@@ -100,7 +104,7 @@ class ProfileViewModel: ObservableObject {
                     category: ErrorHandler.ErrorCategory.unknown,
                     recoveryAction: nil,
                     originalException: nil,
-                    errorCode: ErrorCode.unknown
+                    errorCode: .unknown
                 )
             }
         }
@@ -121,35 +125,29 @@ class ProfileViewModel: ObservableObject {
         Task { @MainActor in
             do {
                 let signInFlow = try await authRepository.signIn(email: email, password: password)
-                let signInCollector = FlowCollector<KotlinBoolean>(flow: signInFlow)
 
-                await MainActor.run {
-                    if let success = signInCollector.value?.boolValue, success {
-                        self.isAuthenticated = true
-                        self.userEmail = email
-                        self.loadUserDetails()
-                    } else {
-                        self.error = ErrorHandler.shared.createUserFriendlyError(
-                            title: "Sign In Failed",
-                            message: "Invalid email or password",
-                            category: ErrorHandler.ErrorCategory.authentication,
-                            recoveryAction: nil,
-                            originalException: nil,
-                            errorCode: ErrorCode.unauthorized
-                        )
-                    }
-                    self.isLoading = signInCollector.isLoading
-                    if let error = signInCollector.error {
-                        self.error = ErrorHandler.shared.createUserFriendlyError(
-                            title: "Sign In Error",
-                            message: "Failed to sign in: \(error.localizedDescription)",
-                            category: ErrorHandler.ErrorCategory.unknown,
-                            recoveryAction: nil,
-                            originalException: nil,
-                            errorCode: ErrorCode.unknown
-                        )
+                // Use simple collector for AuthRepository flows (temporary workaround)
+                let collector = SimpleFlowCollector<KotlinBoolean> { [weak self] success in
+                    DispatchQueue.main.async {
+                        if let success = success?.boolValue, success {
+                            self?.isAuthenticated = true
+                            self?.userEmail = email
+                            self?.loadUserDetails()
+                        } else {
+                            self?.error = ErrorHandler.shared.createUserFriendlyError(
+                                title: "Sign In Failed",
+                                message: "Invalid email or password",
+                                category: ErrorHandler.ErrorCategory.authentication,
+                                recoveryAction: nil,
+                                originalException: nil,
+                                errorCode: .unauthorized
+                            )
+                        }
+                        self?.isLoading = false
                     }
                 }
+
+                try await signInFlow.collect(collector: collector)
             } catch {
                 await MainActor.run {
                     self.isLoading = false
@@ -159,7 +157,7 @@ class ProfileViewModel: ObservableObject {
                         category: ErrorHandler.ErrorCategory.unknown,
                         recoveryAction: nil,
                         originalException: nil,
-                        errorCode: ErrorCode.unknown
+                        errorCode: .unknown
                     )
                 }
             }
@@ -181,26 +179,20 @@ class ProfileViewModel: ObservableObject {
         Task {
             do {
                 let signOutFlow = try await authRepository.signOut()
-                let signOutCollector = FlowCollector<KotlinBoolean>(flow: signOutFlow)
 
-                await MainActor.run {
-                    if let success = signOutCollector.value?.boolValue, success {
-                        self.isAuthenticated = false
-                        self.userName = ""
-                        self.userEmail = ""
-                    }
-                    self.isLoading = signOutCollector.isLoading
-                    if let error = signOutCollector.error {
-                        self.error = ErrorHandler.shared.createUserFriendlyError(
-                            title: "Sign Out Error",
-                            message: "Failed to sign out: \(error.localizedDescription)",
-                            category: ErrorHandler.ErrorCategory.unknown,
-                            recoveryAction: nil,
-                            originalException: nil,
-                            errorCode: ErrorCode.unknown
-                        )
+                // Use simple collector for AuthRepository flows (temporary workaround)
+                let collector = SimpleFlowCollector<KotlinBoolean> { [weak self] success in
+                    DispatchQueue.main.async {
+                        if let success = success?.boolValue, success {
+                            self?.isAuthenticated = false
+                            self?.userName = ""
+                            self?.userEmail = ""
+                        }
+                        self?.isLoading = false
                     }
                 }
+
+                try await signOutFlow.collect(collector: collector)
             } catch {
                 await MainActor.run {
                     self.isLoading = false
@@ -210,7 +202,7 @@ class ProfileViewModel: ObservableObject {
                         category: ErrorHandler.ErrorCategory.unknown,
                         recoveryAction: nil,
                         originalException: nil,
-                        errorCode: ErrorCode.unknown
+                        errorCode: .unknown
                     )
                 }
             }

@@ -50,7 +50,7 @@ struct FilterView: View {
                     Button("Clear") {
                         viewModel.selectedCategory = nil
                         viewModel.selectedIngredient = nil
-                        viewModel.sortOption = .nameAsc
+                        viewModel.sortOption = SortOption.nameAsc
                         viewModel.applyFilters()
                     }
                 }

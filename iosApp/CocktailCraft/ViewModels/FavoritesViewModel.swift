@@ -39,34 +39,23 @@ class FavoritesViewModel: ObservableObject {
         do {
             let flow = try await repository.getFavoriteCocktails()
 
-            // Create a collector to get the cocktails
-            let collector = FlowValueCollector<NSArray>()
-            collector.collect(from: flow)
-
-            // Wait for the value to be collected
-            await waitForCollectorCompletion(collector)
-
-            if let error = collector.error {
-                throw error
+            // Use simple collector for repository flows
+            let collector = SimpleFlowCollector<NSArray> { [weak self] cocktailArray in
+                DispatchQueue.main.async {
+                    if let cocktails = cocktailArray as? [Cocktail] {
+                        self?.favoriteCocktails = cocktails
+                    }
+                    self?.isLoading = false
+                }
             }
 
-            if let cocktailArray = collector.value as? [Cocktail] {
-                self.favoriteCocktails = cocktailArray
-            }
-            self.isLoading = false
+            try await flow.collect(collector: collector)
         } catch {
             await handleLoadingError(error)
         }
     }
 
-    @MainActor
-    private func waitForCollectorCompletion(_ collector: FlowValueCollector<NSArray>) async {
-        var attempts = 0
-        while collector.isLoading && attempts < 50 { // Wait up to 5 seconds
-            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-            attempts += 1
-        }
-    }
+
 
     @MainActor
     private func handleLoadingError(_ error: Error) async {
@@ -77,7 +66,7 @@ class FavoritesViewModel: ObservableObject {
             category: ErrorHandler.ErrorCategory.unknown,
             recoveryAction: nil,
             originalException: nil,
-            errorCode: ErrorCode.unknown
+            errorCode: .unknown
         )
     }
 
@@ -161,9 +150,8 @@ class FavoritesViewModel: ObservableObject {
             category: ErrorHandler.ErrorCategory.unknown,
             recoveryAction: nil,
             originalException: nil,
-            errorCode: ErrorCode.unknown
+            errorCode: .unknown
         )
     }
-
-
 }
+
