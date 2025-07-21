@@ -3,6 +3,7 @@ plugins {
     kotlin("plugin.serialization")
     id("com.android.library")
     kotlin("native.cocoapods")
+    id("co.touchlab.skie") version "0.6.1"
 }
 
 android {
@@ -11,10 +12,14 @@ android {
     defaultConfig {
         minSdk = 24
     }
-    
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    lint {
+        disable.add("MissingPermission")
     }
 }
 
@@ -30,13 +35,15 @@ kotlin {
         version = "1.0.0"
         summary = "CocktailCraft Shared Module"
         homepage = "https://github.com/cocktailcraft/shared"
-        ios.deploymentTarget = "14.0"
+        ios.deploymentTarget = "18.5"
         podfile = project.file("../iosApp/Podfile")
         framework {
             baseName = "shared"
             isStatic = true
         }
     }
+
+
 
     sourceSets {
         val commonMain by getting {
