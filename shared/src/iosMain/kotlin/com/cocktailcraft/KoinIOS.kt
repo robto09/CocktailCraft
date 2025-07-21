@@ -4,6 +4,7 @@ import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailRepository
 import com.cocktailcraft.domain.repository.OrderRepository
+import com.cocktailcraft.viewmodel.SharedCocktailListViewModel
 import org.koin.core.KoinApplication
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -30,5 +31,11 @@ class KoinHelper : KoinComponent {
     fun getOrderRepository(): OrderRepository {
         val repository: OrderRepository by inject()
         return repository
+    }
+
+    // Shared ViewModels (Proof of Concept)
+    fun getSharedCocktailListViewModel(): SharedCocktailListViewModel {
+        val viewModel: SharedCocktailListViewModel by inject()
+        return viewModel
     }
 }
