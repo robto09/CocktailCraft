@@ -1,19 +1,7 @@
 import SwiftUI
 @preconcurrency import shared
 
-// Simple collector for repository flows (temporary workaround until SKIE fully supports all flows)
-class SimpleFlowCollector<T>: NSObject, Kotlinx_coroutines_coreFlowCollector {
-    private let onValue: (T?) -> Void
 
-    init(onValue: @escaping (T?) -> Void) {
-        self.onValue = onValue
-        super.init()
-    }
-
-    func __emit(value: Any?) async throws {
-        onValue(value as? T)
-    }
-}
 
 @MainActor
 class ProfileViewModel: ObservableObject {
@@ -47,20 +35,17 @@ class ProfileViewModel: ObservableObject {
                 // Check if user is signed in
                 let signedInFlow = try await authRepository.isUserSignedIn()
 
-                // Use simple collector for AuthRepository flows (temporary workaround)
-                let collector = SimpleFlowCollector<KotlinBoolean> { [weak self] value in
-                    DispatchQueue.main.async {
-                        if let isSignedIn = value?.boolValue {
-                            self?.isAuthenticated = isSignedIn
-                            if isSignedIn {
-                                self?.loadUserDetails()
-                            }
+                // Use SKIE AsyncSequence pattern
+                for await value in signedInFlow {
+                    if let isSignedIn = value?.boolValue {
+                        self.isAuthenticated = isSignedIn
+                        if isSignedIn {
+                            self.loadUserDetails()
                         }
-                        self?.isLoading = false
                     }
+                    self.isLoading = false
+                    return // Take first emission and exit
                 }
-
-                try await signedInFlow.collect(collector: collector)
             } catch {
                 await MainActor.run {
                     self.isLoading = false
@@ -84,18 +69,15 @@ class ProfileViewModel: ObservableObject {
             do {
                 let userFlow = try await authRepository.getCurrentUser()
 
-                // Use simple collector for AuthRepository flows (temporary workaround)
-                let collector = SimpleFlowCollector<User> { [weak self] user in
-                    DispatchQueue.main.async {
-                        if let user = user {
-                            self?.userName = user.name
-                            self?.userEmail = user.email
-                        }
-                        self?.isLoading = false
+                // Use SKIE AsyncSequence pattern
+                for await user in userFlow {
+                    if let user = user {
+                        self.userName = user.name
+                        self.userEmail = user.email
                     }
+                    self.isLoading = false
+                    return // Take first emission and exit
                 }
-
-                try await userFlow.collect(collector: collector)
             } catch {
                 self.isLoading = false
                 self.error = ErrorHandler.shared.createUserFriendlyError(
@@ -126,28 +108,25 @@ class ProfileViewModel: ObservableObject {
             do {
                 let signInFlow = try await authRepository.signIn(email: email, password: password)
 
-                // Use simple collector for AuthRepository flows (temporary workaround)
-                let collector = SimpleFlowCollector<KotlinBoolean> { [weak self] success in
-                    DispatchQueue.main.async {
-                        if let success = success?.boolValue, success {
-                            self?.isAuthenticated = true
-                            self?.userEmail = email
-                            self?.loadUserDetails()
-                        } else {
-                            self?.error = ErrorHandler.shared.createUserFriendlyError(
-                                title: "Sign In Failed",
-                                message: "Invalid email or password",
-                                category: ErrorHandler.ErrorCategory.authentication,
-                                recoveryAction: nil,
-                                originalException: nil,
-                                errorCode: .unauthorized
-                            )
-                        }
-                        self?.isLoading = false
+                // Use SKIE AsyncSequence pattern
+                for await success in signInFlow {
+                    if let success = success?.boolValue, success {
+                        self.isAuthenticated = true
+                        self.userEmail = email
+                        self.loadUserDetails()
+                    } else {
+                        self.error = ErrorHandler.shared.createUserFriendlyError(
+                            title: "Sign In Failed",
+                            message: "Invalid email or password",
+                            category: ErrorHandler.ErrorCategory.authentication,
+                            recoveryAction: nil,
+                            originalException: nil,
+                            errorCode: .unauthorized
+                        )
                     }
+                    self.isLoading = false
+                    return // Take first emission and exit
                 }
-
-                try await signInFlow.collect(collector: collector)
             } catch {
                 await MainActor.run {
                     self.isLoading = false
@@ -180,19 +159,18 @@ class ProfileViewModel: ObservableObject {
             do {
                 let signOutFlow = try await authRepository.signOut()
 
-                // Use simple collector for AuthRepository flows (temporary workaround)
-                let collector = SimpleFlowCollector<KotlinBoolean> { [weak self] success in
-                    DispatchQueue.main.async {
+                // Use SKIE AsyncSequence pattern
+                for await success in signOutFlow {
+                    await MainActor.run {
                         if let success = success?.boolValue, success {
-                            self?.isAuthenticated = false
-                            self?.userName = ""
-                            self?.userEmail = ""
+                            self.isAuthenticated = false
+                            self.userName = ""
+                            self.userEmail = ""
                         }
-                        self?.isLoading = false
+                        self.isLoading = false
                     }
+                    return // Take first emission and exit
                 }
-
-                try await signOutFlow.collect(collector: collector)
             } catch {
                 await MainActor.run {
                     self.isLoading = false

@@ -46,26 +46,23 @@ class OrderViewModel: ObservableObject {
                 let ordersFlow = try await orderRepository.getOrderHistory()
                 print("OrderViewModel: Got orders flow")
 
-                // Collect from the flow using async/await
+                // Use SKIE AsyncSequence pattern
                 do {
-                    // Use simple collector for repository flows
-                    let collector = SimpleFlowCollector<NSArray> { [weak self] orderArray in
-                        DispatchQueue.main.async {
-                            print("OrderViewModel: Received \(orderArray?.count ?? 0) orders from repository")
+                    // SKIE provides native Swift async iteration
+                    for await orderArray in ordersFlow {
+                        await MainActor.run {
+                            print("OrderViewModel: Received \(orderArray.count) orders from repository")
 
                             var repositoryOrders: [Order] = []
-                            if let orderArray = orderArray {
-                                repositoryOrders = orderArray.compactMap { $0 as? Order }
-                            }
+                            repositoryOrders = orderArray.compactMap { $0 as? Order }
 
                             // Merge with local orders
-                            let allOrders = repositoryOrders + (self?.localOrders ?? [])
-                            self?.orders = allOrders.sorted { $0.date > $1.date }
-                            self?.isLoading = false
+                            let allOrders = repositoryOrders + self.localOrders
+                            self.orders = allOrders.sorted { $0.date > $1.date }
+                            self.isLoading = false
                         }
+                        return // Take first emission and exit
                     }
-
-                    try await ordersFlow.collect(collector: collector)
                 } catch {
                     await MainActor.run {
                         print("OrderViewModel: Error loading orders: \(error)")
@@ -107,19 +104,18 @@ class OrderViewModel: ObservableObject {
                 // Place order through repository - must be called on main thread
                 let placeOrderFlow = try await orderRepository.placeOrder(order: order)
 
-                // Use simple collector for repository flows
-                let collector = SimpleFlowCollector<KotlinBoolean> { [weak self] success in
-                    DispatchQueue.main.async {
+                // Use SKIE AsyncSequence pattern
+                for await success in placeOrderFlow {
+                    await MainActor.run {
                         if let success = success?.boolValue, success {
                             print("OrderViewModel: Order placed successfully through repository")
                         } else {
                             print("OrderViewModel: Failed to place order through repository, keeping local copy")
                         }
-                        self?.isPlacingOrder = false
+                        self.isPlacingOrder = false
                     }
+                    return // Take first emission and exit
                 }
-
-                try await placeOrderFlow.collect(collector: collector)
             } catch {
                 await MainActor.run {
                     print("OrderViewModel: Error placing order through repository: \(error), keeping local copy")

@@ -39,17 +39,14 @@ class FavoritesViewModel: ObservableObject {
         do {
             let flow = try await repository.getFavoriteCocktails()
 
-            // Use simple collector for repository flows
-            let collector = SimpleFlowCollector<NSArray> { [weak self] cocktailArray in
-                DispatchQueue.main.async {
-                    if let cocktails = cocktailArray as? [Cocktail] {
-                        self?.favoriteCocktails = cocktails
-                    }
-                    self?.isLoading = false
+            // Use SKIE AsyncSequence pattern
+            for await cocktailArray in flow {
+                if let cocktails = cocktailArray as? [Cocktail] {
+                    self.favoriteCocktails = cocktails
                 }
+                self.isLoading = false
+                return // Take first emission and exit
             }
-
-            try await flow.collect(collector: collector)
         } catch {
             await handleLoadingError(error)
         }

@@ -140,23 +140,22 @@ class CartViewModel: ObservableObject {
                 // Place order through repository - must be called on main thread
                 let placeOrderFlow = try await orderRepository.placeOrder(order: order)
 
-                // Use simple collector for repository flows
-                let collector = SimpleFlowCollector<KotlinBoolean> { [weak self] success in
-                    DispatchQueue.main.async {
+                // Use SKIE AsyncSequence pattern
+                for await success in placeOrderFlow {
+                    await MainActor.run {
                         if success?.boolValue == true {
                             print("CartViewModel: Order placed successfully via repository")
                             // Order placed successfully, clear cart only once
-                            self?.clearCart()
+                            self.clearCart()
                             completion(true)
                         } else {
                             print("CartViewModel: Repository reported order placement failed")
                             completion(false)
                         }
-                        self?.isLoading = false
+                        self.isLoading = false
                     }
+                    return // Take first emission and exit
                 }
-
-                try await placeOrderFlow.collect(collector: collector)
             } catch {
                 // Handle error silently for now - the OrderViewModel will show any errors
                 print("CartViewModel: Error placing order via repository: \(error)")

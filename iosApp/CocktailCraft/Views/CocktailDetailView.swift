@@ -176,18 +176,15 @@ struct CocktailDetailView: View {
                 let flow = try await repository.getCocktailById(id: cocktailId)
                 print("CocktailDetailView - Got flow, creating collector")
 
-                // Use simple collector for repository flows
-                let collector = SimpleFlowCollector<Cocktail> { loadedCocktail in
-                    DispatchQueue.main.async {
-                        if let loadedCocktail = loadedCocktail {
-                            print("CocktailDetailView - Got cocktail: \(loadedCocktail.name)")
-                            self.cocktail = loadedCocktail
-                            self.isFavorite = self.favoritesViewModel.isFavorite(cocktailId: self.cocktailId)
-                        }
+                // Use SKIE AsyncSequence pattern
+                for await loadedCocktail in flow {
+                    if let loadedCocktail = loadedCocktail {
+                        print("CocktailDetailView - Got cocktail: \(loadedCocktail.name)")
+                        self.cocktail = loadedCocktail
+                        self.isFavorite = self.favoritesViewModel.isFavorite(cocktailId: self.cocktailId)
                     }
+                    return // Take first emission and exit
                 }
-
-                try await flow.collect(collector: collector)
 
                 if self.cocktail == nil {
                     print("CocktailDetailView - No cocktail returned")
