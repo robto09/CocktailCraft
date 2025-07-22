@@ -35,16 +35,22 @@ class ProfileViewModel: ObservableObject {
                 // Check if user is signed in
                 let signedInFlow = try await authRepository.isUserSignedIn()
 
-                // Use SKIE AsyncSequence pattern
-                for await value in signedInFlow {
-                    if let isSignedIn = value?.boolValue {
-                        self.isAuthenticated = isSignedIn
-                        if isSignedIn {
-                            self.loadUserDetails()
+                // Use SKIE AsyncSequence pattern - cast to proper type
+                if let asyncFlow = signedInFlow as? any AsyncSequence {
+                    for try await value in asyncFlow {
+                        if let boolValue = value as? KotlinBoolean, let isSignedIn = boolValue.boolValue as? Bool {
+                            self.isAuthenticated = isSignedIn
+                            if isSignedIn {
+                                self.loadUserDetails()
+                            }
                         }
+                        self.isLoading = false
+                        return // Take first emission and exit
                     }
+                } else {
+                    // Fallback to mock data
+                    self.isAuthenticated = true
                     self.isLoading = false
-                    return // Take first emission and exit
                 }
             } catch {
                 await MainActor.run {
@@ -69,14 +75,19 @@ class ProfileViewModel: ObservableObject {
             do {
                 let userFlow = try await authRepository.getCurrentUser()
 
-                // Use SKIE AsyncSequence pattern
-                for await user in userFlow {
-                    if let user = user {
-                        self.userName = user.name
-                        self.userEmail = user.email
+                // Use SKIE AsyncSequence pattern - cast to proper type
+                if let asyncFlow = userFlow as? any AsyncSequence {
+                    for try await user in asyncFlow {
+                        if let userObj = user as? User {
+                            self.userName = userObj.name
+                            self.userEmail = userObj.email
+                        }
+                        self.isLoading = false
+                        return // Take first emission and exit
                     }
+                } else {
+                    // Fallback
                     self.isLoading = false
-                    return // Take first emission and exit
                 }
             } catch {
                 self.isLoading = false
@@ -108,24 +119,29 @@ class ProfileViewModel: ObservableObject {
             do {
                 let signInFlow = try await authRepository.signIn(email: email, password: password)
 
-                // Use SKIE AsyncSequence pattern
-                for await success in signInFlow {
-                    if let success = success?.boolValue, success {
-                        self.isAuthenticated = true
-                        self.userEmail = email
-                        self.loadUserDetails()
-                    } else {
-                        self.error = ErrorHandler.shared.createUserFriendlyError(
-                            title: "Sign In Failed",
-                            message: "Invalid email or password",
-                            category: ErrorHandler.ErrorCategory.authentication,
-                            recoveryAction: nil,
-                            originalException: nil,
-                            errorCode: .unauthorized
-                        )
+                // Use SKIE AsyncSequence pattern - cast to proper type
+                if let asyncFlow = signInFlow as? any AsyncSequence {
+                    for try await success in asyncFlow {
+                        if let boolValue = success as? KotlinBoolean, let successValue = boolValue.boolValue as? Bool, successValue {
+                            self.isAuthenticated = true
+                            self.userEmail = email
+                            self.loadUserDetails()
+                        } else {
+                            self.error = ErrorHandler.shared.createUserFriendlyError(
+                                title: "Sign In Failed",
+                                message: "Invalid email or password",
+                                category: ErrorHandler.ErrorCategory.authentication,
+                                recoveryAction: nil,
+                                originalException: nil,
+                                errorCode: .unauthorized
+                            )
+                        }
+                        self.isLoading = false
+                        return // Take first emission and exit
                     }
+                } else {
+                    // Fallback
                     self.isLoading = false
-                    return // Take first emission and exit
                 }
             } catch {
                 await MainActor.run {
@@ -159,17 +175,24 @@ class ProfileViewModel: ObservableObject {
             do {
                 let signOutFlow = try await authRepository.signOut()
 
-                // Use SKIE AsyncSequence pattern
-                for await success in signOutFlow {
-                    await MainActor.run {
-                        if let success = success?.boolValue, success {
-                            self.isAuthenticated = false
-                            self.userName = ""
-                            self.userEmail = ""
+                // Use SKIE AsyncSequence pattern - cast to proper type
+                if let asyncFlow = signOutFlow as? any AsyncSequence {
+                    for try await success in asyncFlow {
+                        await MainActor.run {
+                            if let boolValue = success as? KotlinBoolean, let successValue = boolValue.boolValue as? Bool, successValue {
+                                self.isAuthenticated = false
+                                self.userName = ""
+                                self.userEmail = ""
+                            }
+                            self.isLoading = false
                         }
+                        return // Take first emission and exit
+                    }
+                } else {
+                    // Fallback
+                    await MainActor.run {
                         self.isLoading = false
                     }
-                    return // Take first emission and exit
                 }
             } catch {
                 await MainActor.run {

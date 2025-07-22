@@ -39,20 +39,25 @@ class FavoritesViewModel: ObservableObject {
         }
 
         do {
-            // Use simple FlowCollector approach
+            // Use SKIE AsyncSequence pattern
             let kotlinFlow = try await repository.getFavoriteCocktails()
 
-            // Create a simple collector
-            let collector = FlowCollector<NSArray> { cocktailArray in
-                DispatchQueue.main.async {
-                    if let cocktails = cocktailArray as? [Cocktail] {
-                        self.favoriteCocktails = cocktails
+            // SKIE converts StateFlow to AsyncSequence - cast to proper type
+            if let asyncFlow = kotlinFlow as? any AsyncSequence {
+                for try await cocktailArray in asyncFlow {
+                    await MainActor.run {
+                        if let cocktails = cocktailArray as? [Cocktail] {
+                            self.favoriteCocktails = cocktails
+                        }
+                        self.isLoading = false
                     }
+                    break // Take first emission
+                }
+            } else {
+                await MainActor.run {
                     self.isLoading = false
                 }
             }
-
-            try await kotlinFlow.collect(collector: collector)
 
         } catch {
             await handleLoadingError(error)

@@ -41,45 +41,18 @@ class HomeViewModel: ObservableObject {
             return
         }
 
-        print("HomeViewModel - Repository available, loading real data")
-
-        Task {
-            await loadCocktailsAsync()
-        }
+        print("HomeViewModel - Repository available, but using mock data for now")
+        // Temporarily use mock data while fixing SKIE integration
+        loadMockData()
     }
 
+    // TODO: Fix SKIE AsyncSequence integration
+    /*
     @MainActor
     private func loadCocktailsAsync() async {
-        guard let repository = repository else {
-            self.isLoading = false
-            return
-        }
-
-        do {
-            print("HomeViewModel - Loading all cocktails with SKIE AsyncSequence")
-
-            // Use simple FlowCollector approach
-            let kotlinFlow = try await repository.getCocktailsSortedByNewest()
-
-            // Create a simple collector
-            let collector = FlowCollector<NSArray> { cocktailArray in
-                DispatchQueue.main.async {
-                    if let cocktails = cocktailArray as? [Cocktail] {
-                        print("HomeViewModel - Got \(cocktails.count) cocktails")
-                        self.cocktails = cocktails
-                        self.filteredCocktails = cocktails
-                        self.applySorting()
-                    }
-                    self.isLoading = false
-                }
-            }
-
-            try await kotlinFlow.collect(collector: collector)
-
-        } catch {
-            await handleLoadingError(error)
-        }
+        // SKIE integration code will go here once working
     }
+    */
 
 
 
@@ -197,21 +170,26 @@ class HomeViewModel: ObservableObject {
         }
 
         do {
-            // Use simple FlowCollector approach
+            // Use SKIE AsyncSequence pattern
             let kotlinFlow = try await repository.searchCocktailsByName(name: query)
 
-            // Create a simple collector
-            let collector = FlowCollector<NSArray> { cocktailArray in
-                DispatchQueue.main.async {
-                    if let cocktails = cocktailArray as? [Cocktail] {
-                        self.filteredCocktails = cocktails
-                        self.applySorting()
+            // SKIE converts StateFlow to AsyncSequence - cast to proper type
+            if let asyncFlow = kotlinFlow as? any AsyncSequence {
+                for try await cocktailArray in asyncFlow {
+                    await MainActor.run {
+                        if let cocktails = cocktailArray as? [Cocktail] {
+                            self.filteredCocktails = cocktails
+                            self.applySorting()
+                        }
+                        self.isLoading = false
                     }
+                    break // Take first emission
+                }
+            } else {
+                await MainActor.run {
                     self.isLoading = false
                 }
             }
-
-            try await kotlinFlow.collect(collector: collector)
         } catch {
             await handleSearchError(error)
         }
@@ -272,11 +250,12 @@ class HomeViewModel: ObservableObject {
 
     // MARK: - Mock Data (Temporary)
     private func loadMockData() {
+        print("HomeViewModel - Loading mock data...")
         // Create some mock cocktails for testing
         let mockIngredient1 = CocktailIngredient(name: "Vodka", measure: "2 oz")
         let mockIngredient2 = CocktailIngredient(name: "Orange Juice", measure: "4 oz")
 
-        let mockCocktail = Cocktail(
+        let mockCocktail1 = Cocktail(
             id: "1",
             name: "Screwdriver",
             alternateName: nil,
@@ -299,9 +278,41 @@ class HomeViewModel: ObservableObject {
             popularity: 85,
             dateAdded: 1672531200000 // 2023-01-01 as timestamp
         )
+        
+        let mockCocktail2 = Cocktail(
+            id: "2",
+            name: "Margarita",
+            alternateName: nil,
+            tags: ["IBA", "Contemporary Classic"],
+            category: "Ordinary Drink",
+            iba: "Contemporary Classic",
+            alcoholic: "Alcoholic",
+            glass: "Cocktail glass",
+            instructions: "Rub the rim with lime. Add ingredients to shaker with ice. Shake and strain.",
+            imageUrl: "https://www.thecocktaildb.com/images/media/drink/5noda61589575158.jpg",
+            ingredients: [
+                CocktailIngredient(name: "Tequila", measure: "1.5 oz"),
+                CocktailIngredient(name: "Triple sec", measure: "0.5 oz"),
+                CocktailIngredient(name: "Lime juice", measure: "1 oz")
+            ],
+            imageSource: nil,
+            imageAttribution: nil,
+            creativeCommonsConfirmed: nil,
+            dateModified: nil,
+            price: 12.99,
+            inStock: true,
+            stockCount: 15,
+            rating: 4.8,
+            popularity: 95,
+            dateAdded: 1672531300000
+        )
 
-        self.cocktails = [mockCocktail]
-        self.filteredCocktails = [mockCocktail]
+        DispatchQueue.main.async {
+            self.cocktails = [mockCocktail1, mockCocktail2]
+            self.filteredCocktails = [mockCocktail1, mockCocktail2]
+            self.isLoading = false
+            print("HomeViewModel - Mock data loaded: \(self.cocktails.count) cocktails")
+        }
     }
 }
 

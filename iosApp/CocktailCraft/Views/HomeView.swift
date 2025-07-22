@@ -38,6 +38,12 @@ struct HomeView: View {
                 .padding(.horizontal)
                 
                 // Cocktail List
+                // Debug info
+                Text("Debug: Loading=\(viewModel.isLoading), Cocktails=\(viewModel.cocktails.count), Error=\(viewModel.error?.title ?? "none")")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                    .padding(.horizontal)
+                
                 if viewModel.isLoading && viewModel.cocktails.isEmpty {
                     ScrollView {
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {

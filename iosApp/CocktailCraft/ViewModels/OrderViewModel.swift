@@ -46,26 +46,29 @@ class OrderViewModel: ObservableObject {
                 let ordersFlow = try await orderRepository.getOrderHistory()
                 print("OrderViewModel: Got orders flow")
 
-                // Use SKIE AsyncSequence pattern
-                do {
-                    // SKIE provides native Swift async iteration
-                    for await orderArray in ordersFlow {
+                // Use SKIE AsyncSequence pattern - cast to proper type
+                if let asyncFlow = ordersFlow as? any AsyncSequence {
+                    for try await orderArray in asyncFlow {
                         await MainActor.run {
-                            print("OrderViewModel: Received \(orderArray.count) orders from repository")
+                            if let orderList = orderArray as? NSArray {
+                                print("OrderViewModel: Received \(orderList.count) orders from repository")
+                                var repositoryOrders: [Order] = []
+                                repositoryOrders = orderList.compactMap { $0 as? Order }
 
-                            var repositoryOrders: [Order] = []
-                            repositoryOrders = orderArray.compactMap { $0 as? Order }
-
-                            // Merge with local orders
-                            let allOrders = repositoryOrders + self.localOrders
-                            self.orders = allOrders.sorted { $0.date > $1.date }
+                                // Merge with local orders
+                                let allOrders = repositoryOrders + self.localOrders
+                                self.orders = allOrders.sorted { $0.date > $1.date }
+                            } else {
+                                // Fallback to local orders
+                                self.orders = self.localOrders.sorted { $0.date > $1.date }
+                            }
                             self.isLoading = false
                         }
-                        return // Take first emission and exit
+                        break // Take first emission and exit
                     }
-                } catch {
+                } else {
+                    // Fallback to local orders
                     await MainActor.run {
-                        print("OrderViewModel: Error loading orders: \(error)")
                         self.orders = self.localOrders.sorted { $0.date > $1.date }
                         self.isLoading = false
                     }
@@ -82,7 +85,7 @@ class OrderViewModel: ObservableObject {
 
     func loadOrdersFromRepository() async {
         // This method is kept for compatibility but now calls loadOrders()
-        await loadOrders()
+        loadOrders()
     }
 
     func placeOrder(order: Order) async {
@@ -104,17 +107,23 @@ class OrderViewModel: ObservableObject {
                 // Place order through repository - must be called on main thread
                 let placeOrderFlow = try await orderRepository.placeOrder(order: order)
 
-                // Use SKIE AsyncSequence pattern
-                for await success in placeOrderFlow {
-                    await MainActor.run {
-                        if let success = success?.boolValue, success {
-                            print("OrderViewModel: Order placed successfully through repository")
-                        } else {
-                            print("OrderViewModel: Failed to place order through repository, keeping local copy")
+                // Use SKIE AsyncSequence pattern - cast to proper type
+                if let asyncFlow = placeOrderFlow as? any AsyncSequence {
+                    for try await success in asyncFlow {
+                        await MainActor.run {
+                            if let boolValue = success as? KotlinBoolean, let successValue = boolValue.boolValue as? Bool, successValue {
+                                print("OrderViewModel: Order placed successfully through repository")
+                            } else {
+                                print("OrderViewModel: Failed to place order through repository, keeping local copy")
+                            }
+                            self.isPlacingOrder = false
                         }
+                        break // Take first emission
+                    }
+                } else {
+                    await MainActor.run {
                         self.isPlacingOrder = false
                     }
-                    return // Take first emission and exit
                 }
             } catch {
                 await MainActor.run {

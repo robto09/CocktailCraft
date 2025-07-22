@@ -142,23 +142,29 @@ class CartViewModel: ObservableObject {
                 // Place order through repository - must be called on main thread
                 let kotlinFlow = try await orderRepository.placeOrder(order: order)
 
-                // Use simple FlowCollector approach
-                let collector = FlowCollector<KotlinBoolean> { success in
-                    DispatchQueue.main.async {
-                        if success.boolValue == true {
-                            print("CartViewModel: Order placed successfully via repository")
-                            // Order placed successfully, clear cart only once
-                            self.clearCart()
-                            completion(true)
-                        } else {
-                            print("CartViewModel: Repository reported order placement failed")
-                            completion(false)
+                // Use SKIE AsyncSequence pattern - cast to proper type
+                if let asyncFlow = kotlinFlow as? any AsyncSequence {
+                    for try await success in asyncFlow {
+                        await MainActor.run {
+                            if let boolValue = success as? KotlinBoolean, boolValue.boolValue == true {
+                                print("CartViewModel: Order placed successfully via repository")
+                                // Order placed successfully, clear cart only once
+                                self.clearCart()
+                                completion(true)
+                            } else {
+                                print("CartViewModel: Repository reported order placement failed")
+                                completion(false)
+                            }
+                            self.isLoading = false
                         }
+                        break // Take first emission
+                    }
+                } else {
+                    await MainActor.run {
                         self.isLoading = false
+                        completion(false)
                     }
                 }
-
-                try await kotlinFlow.collect(collector: collector)
             } catch {
                 // Handle error silently for now - the OrderViewModel will show any errors
                 print("CartViewModel: Error placing order via repository: \(error)")
