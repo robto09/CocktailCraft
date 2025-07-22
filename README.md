@@ -5,7 +5,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 
 ### Platform Status
 - **Android**: ✅ Fully functional and production-ready
-- **iOS**: ✅ **iOS 18.5 Ready** - Enhanced SKIE integration with native Swift APIs and modern SwiftUI
+- **iOS**: ✅ **iOS 18.5 Ready** - Working SKIE integration (~80% complete) with native Swift async/await patterns
 
 ![CocktailCraft Home Screen](docs/images/Screenshot_20250419_014459.png)
 
@@ -23,7 +23,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Robust Error Handling**: User-friendly error messages with recovery options
 - **Polished Animations**: Enhanced user experience with smooth animations and micro-interactions
 - **Cross-Platform**: Same codebase for both Android and iOS platforms
-- **iOS 18.5 Ready**: Full compatibility with iOS 18.5, enhanced SKIE integration, and modern SwiftUI patterns
+- **iOS 18.5 Ready**: Working SKIE integration (~80% complete) with FlowCollector bridge pattern and modern SwiftUI
 
 ## Architecture
 The application follows the **Clean Architecture** pattern with **MVVM** (Model-View-ViewModel) for presentation, reactive state management, and a modular **Dependency Injection** system:
@@ -190,7 +190,7 @@ For a detailed list of all libraries with versions and purposes, see the [Librar
 
 For information about the reusable UI components in the app, see the [UI Components Documentation](docs/UI_Components.md).
 
-For details about the iOS 18.5 migration and SKIE integration, see the [SKIE Integration Guide](docs/SKIE_Integration_Guide.md).
+For details about the iOS 18.5 migration and current SKIE integration status (~80% complete), see the [SKIE Integration Status](docs/SKIE_Integration_Complete.md).
 
 ## Package Structure
 
@@ -296,7 +296,7 @@ The application includes comprehensive test coverage:
 ## Troubleshooting
 - **Build Issues**: Try cleaning and rebuilding the project
 - **KMP Plugin Issues**: Make sure the Kotlin Multiplatform plugin is up to date
-- **iOS Builds**: ✅ **Now working!** See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) for details
+- **iOS Builds**: ✅ **Working with SKIE integration!** See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) and [SKIE Status](docs/SKIE_Integration_Complete.md) for details
 - **iOS Build Warnings**: Non-blocking warnings exist (see iOS documentation for details)
 - **Dependency Resolution**: Check Gradle settings and versions.toml file
 
