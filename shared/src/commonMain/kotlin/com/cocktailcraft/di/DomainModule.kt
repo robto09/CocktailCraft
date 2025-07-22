@@ -19,4 +19,5 @@ val domainModule = module {
 
     // Shared ViewModels (Proof of Concept)
     factory { com.cocktailcraft.viewmodel.SharedCocktailListViewModel() }
+    factory { com.cocktailcraft.viewmodel.SharedFavoritesViewModel() }
 }
