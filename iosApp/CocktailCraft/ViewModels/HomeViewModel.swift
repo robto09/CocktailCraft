@@ -1,5 +1,7 @@
 import SwiftUI
 @preconcurrency import shared
+
+
 import Combine
 
 @MainActor
@@ -54,24 +56,26 @@ class HomeViewModel: ObservableObject {
         }
 
         do {
-            print("HomeViewModel - Loading all cocktails with SKIE")
+            print("HomeViewModel - Loading all cocktails with SKIE AsyncSequence")
 
-            // Use SKIE AsyncSequence pattern - SKIE automatically converts Kotlin Flow to AsyncSequence
-            let kotlinFlow = try await repository.getAllCocktails()
+            // Use simple FlowCollector approach
+            let kotlinFlow = try await repository.getCocktailsSortedByNewest()
 
-            // SKIE provides native Swift async iteration
-            for await cocktailArray in kotlinFlow {
-                if let cocktails = cocktailArray as? [Cocktail] {
-                    print("HomeViewModel - Got \(cocktails.count) cocktails via SKIE AsyncSequence")
-                    self.cocktails = cocktails
-                    self.filteredCocktails = cocktails
-                    self.applySorting()
+            // Create a simple collector
+            let collector = FlowCollector<NSArray> { cocktailArray in
+                DispatchQueue.main.async {
+                    if let cocktails = cocktailArray as? [Cocktail] {
+                        print("HomeViewModel - Got \(cocktails.count) cocktails")
+                        self.cocktails = cocktails
+                        self.filteredCocktails = cocktails
+                        self.applySorting()
+                    }
+                    self.isLoading = false
                 }
-                self.isLoading = false
-                return // Take first emission and exit
             }
 
-            self.isLoading = false
+            try await kotlinFlow.collect(collector: collector)
+
         } catch {
             await handleLoadingError(error)
         }
@@ -193,18 +197,21 @@ class HomeViewModel: ObservableObject {
         }
 
         do {
-            // Use SKIE AsyncSequence pattern for search
-            let flow = try await repository.searchCocktailsByName(name: query)
+            // Use simple FlowCollector approach
+            let kotlinFlow = try await repository.searchCocktailsByName(name: query)
 
-            // SKIE provides native Swift async iteration
-            for await cocktailArray in flow {
-                if let cocktails = cocktailArray as? [Cocktail] {
-                    self.filteredCocktails = cocktails
-                    self.applySorting()
+            // Create a simple collector
+            let collector = FlowCollector<NSArray> { cocktailArray in
+                DispatchQueue.main.async {
+                    if let cocktails = cocktailArray as? [Cocktail] {
+                        self.filteredCocktails = cocktails
+                        self.applySorting()
+                    }
+                    self.isLoading = false
                 }
-                self.isLoading = false
-                return // Take first emission and exit
             }
+
+            try await kotlinFlow.collect(collector: collector)
         } catch {
             await handleSearchError(error)
         }

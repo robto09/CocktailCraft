@@ -1,6 +1,8 @@
 import SwiftUI
 @preconcurrency import shared
 
+
+
 @MainActor
 class FavoritesViewModel: ObservableObject {
     @Published var favoriteCocktails: [Cocktail] = []
@@ -37,16 +39,21 @@ class FavoritesViewModel: ObservableObject {
         }
 
         do {
-            let flow = try await repository.getFavoriteCocktails()
+            // Use simple FlowCollector approach
+            let kotlinFlow = try await repository.getFavoriteCocktails()
 
-            // Use SKIE AsyncSequence pattern
-            for await cocktailArray in flow {
-                if let cocktails = cocktailArray as? [Cocktail] {
-                    self.favoriteCocktails = cocktails
+            // Create a simple collector
+            let collector = FlowCollector<NSArray> { cocktailArray in
+                DispatchQueue.main.async {
+                    if let cocktails = cocktailArray as? [Cocktail] {
+                        self.favoriteCocktails = cocktails
+                    }
+                    self.isLoading = false
                 }
-                self.isLoading = false
-                return // Take first emission and exit
             }
+
+            try await kotlinFlow.collect(collector: collector)
+
         } catch {
             await handleLoadingError(error)
         }

@@ -1,5 +1,7 @@
 import SwiftUI
 @preconcurrency import shared
+
+
 import Combine
 
 @MainActor
@@ -13,7 +15,7 @@ class CartViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     // Singleton instance
-    static let shared = CartViewModel()
+    static let instance = CartViewModel()
 
     private init() {
         self.cartRepository = KoinInitializer.shared.getCartRepository()
@@ -138,12 +140,12 @@ class CartViewModel: ObservableObject {
             do {
 
                 // Place order through repository - must be called on main thread
-                let placeOrderFlow = try await orderRepository.placeOrder(order: order)
+                let kotlinFlow = try await orderRepository.placeOrder(order: order)
 
-                // Use SKIE AsyncSequence pattern
-                for await success in placeOrderFlow {
-                    await MainActor.run {
-                        if success?.boolValue == true {
+                // Use simple FlowCollector approach
+                let collector = FlowCollector<KotlinBoolean> { success in
+                    DispatchQueue.main.async {
+                        if success.boolValue == true {
                             print("CartViewModel: Order placed successfully via repository")
                             // Order placed successfully, clear cart only once
                             self.clearCart()
@@ -154,8 +156,9 @@ class CartViewModel: ObservableObject {
                         }
                         self.isLoading = false
                     }
-                    return // Take first emission and exit
                 }
+
+                try await kotlinFlow.collect(collector: collector)
             } catch {
                 // Handle error silently for now - the OrderViewModel will show any errors
                 print("CartViewModel: Error placing order via repository: \(error)")

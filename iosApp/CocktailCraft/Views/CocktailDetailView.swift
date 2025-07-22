@@ -2,9 +2,11 @@ import SwiftUI
 @preconcurrency import shared
 import Kingfisher
 
+
+
 struct CocktailDetailView: View {
     let cocktailId: String
-    @ObservedObject private var cartViewModel = CartViewModel.shared
+    @ObservedObject private var cartViewModel = CartViewModel.instance
     @StateObject private var favoritesViewModel = FavoritesViewModel()
     @State private var cocktail: Cocktail? = nil
     @State private var isLoading = true
@@ -173,18 +175,20 @@ struct CocktailDetailView: View {
         Task { @MainActor in
             do {
                 print("CocktailDetailView - Calling repository.getCocktailById")
-                let flow = try await repository.getCocktailById(id: cocktailId)
-                print("CocktailDetailView - Got flow, creating collector")
+                let kotlinFlow = try await repository.getCocktailById(id: cocktailId)
+                print("CocktailDetailView - Got flow, using SKIE AsyncSequence")
 
-                // Use SKIE AsyncSequence pattern
-                for await loadedCocktail in flow {
-                    if let loadedCocktail = loadedCocktail {
+                // Use simple FlowCollector approach
+                let collector = FlowCollector<Cocktail> { loadedCocktail in
+                    DispatchQueue.main.async {
                         print("CocktailDetailView - Got cocktail: \(loadedCocktail.name)")
                         self.cocktail = loadedCocktail
                         self.isFavorite = self.favoritesViewModel.isFavorite(cocktailId: self.cocktailId)
+                        self.isLoading = false
                     }
-                    return // Take first emission and exit
                 }
+
+                try await kotlinFlow.collect(collector: collector)
 
                 if self.cocktail == nil {
                     print("CocktailDetailView - No cocktail returned")
