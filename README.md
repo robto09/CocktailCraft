@@ -192,6 +192,8 @@ For information about the reusable UI components in the app, see the [UI Compone
 
 For details about the iOS 18.5 migration and current SKIE integration status (~80% complete), see the [SKIE Integration Status](docs/SKIE_Integration_Complete.md).
 
+For technical details about the FlowCollector bridge pattern and why we're not at 100% SKIE yet, see the [SKIE FlowCollector Pattern Guide](docs/SKIE_FlowCollector_Pattern.md).
+
 ## Package Structure
 
 ### Domain Layer
