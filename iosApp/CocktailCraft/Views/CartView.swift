@@ -3,7 +3,7 @@ import shared
 import Kingfisher
 
 struct CartView: View {
-    @ObservedObject private var viewModel = CartViewModel.shared
+    @ObservedObject private var viewModel = CartViewModel.instance
     @Binding var selectedTab: Int
     @State private var showCheckoutConfirmation = false
     

@@ -62,6 +62,8 @@ extension KoinInitializer {
         let helper = KoinHelper()
         return helper.getOrderRepository()
     }
+    
+    // TODO: Add SharedViewModel methods once type export is resolved
 }
 
 // MARK: - Temporary Content View
