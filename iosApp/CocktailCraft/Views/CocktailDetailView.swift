@@ -15,6 +15,7 @@ struct CocktailDetailView: View {
     @State private var toastMessage = ""
     @State private var error: ErrorHandler.UserFriendlyError? = nil
 
+    // TODO: Use SharedCocktailDetailViewModel once exported properly
     private let repository: CocktailRepository?
 
     init(cocktailId: String) {
@@ -168,7 +169,7 @@ struct CocktailDetailView: View {
             return
         }
 
-        print("CocktailDetailView - Loading cocktail with ID: \(cocktailId)")
+        print("CocktailDetailView - Loading cocktail with ID: \(cocktailId) via repository")
         isLoading = true
         error = nil
 
@@ -176,89 +177,39 @@ struct CocktailDetailView: View {
             do {
                 print("CocktailDetailView - Calling repository.getCocktailById")
                 let kotlinFlow = try await repository.getCocktailById(id: cocktailId)
-                print("CocktailDetailView - Got flow, using SKIE AsyncSequence")
+                print("CocktailDetailView - Got flow: \(type(of: kotlinFlow))")
 
-                // Fallback to mock data since SKIE AsyncSequence has issues
-                print("CocktailDetailView - Using mock data for cocktail ID: \(cocktailId)")
-                await MainActor.run {
-                    // Create mock cocktail based on ID
-                    if cocktailId == "1" {
-                        let mockCocktail = Cocktail(
-                            id: "1",
-                            name: "Screwdriver",
-                            alternateName: nil,
-                            tags: nil,
-                            category: "Ordinary Drink",
-                            iba: nil,
-                            alcoholic: "Alcoholic",
-                            glass: "Highball glass",
-                            instructions: "Mix vodka and orange juice in a glass with ice. Garnish with an orange slice.",
-                            imageUrl: "https://www.thecocktaildb.com/images/media/drink/8xnyke1504352207.jpg",
-                            ingredients: [
-                                CocktailIngredient(name: "Vodka", measure: "2 oz"),
-                                CocktailIngredient(name: "Orange Juice", measure: "4 oz")
-                            ],
-                            imageSource: nil,
-                            imageAttribution: nil,
-                            creativeCommonsConfirmed: nil,
-                            dateModified: nil,
-                            price: 8.50,
-                            inStock: true,
-                            stockCount: 10,
-                            rating: 4.5,
-                            popularity: 85,
-                            dateAdded: 1672531200000
-                        )
-                        self.cocktail = mockCocktail
-                        print("CocktailDetailView - Loaded mock Screwdriver")
-                    } else if cocktailId == "2" {
-                        let mockCocktail = Cocktail(
-                            id: "2",
-                            name: "Margarita",
-                            alternateName: nil,
-                            tags: ["IBA", "Contemporary Classic"],
-                            category: "Ordinary Drink",
-                            iba: "Contemporary Classic",
-                            alcoholic: "Alcoholic",
-                            glass: "Cocktail glass",
-                            instructions: "Rub the rim with lime. Add ingredients to shaker with ice. Shake and strain into glass.",
-                            imageUrl: "https://www.thecocktaildb.com/images/media/drink/5noda61589575158.jpg",
-                            ingredients: [
-                                CocktailIngredient(name: "Tequila", measure: "1.5 oz"),
-                                CocktailIngredient(name: "Triple sec", measure: "0.5 oz"),
-                                CocktailIngredient(name: "Lime juice", measure: "1 oz")
-                            ],
-                            imageSource: nil,
-                            imageAttribution: nil,
-                            creativeCommonsConfirmed: nil,
-                            dateModified: nil,
-                            price: 12.99,
-                            inStock: true,
-                            stockCount: 15,
-                            rating: 4.8,
-                            popularity: 95,
-                            dateAdded: 1672531300000
-                        )
-                        self.cocktail = mockCocktail
-                        print("CocktailDetailView - Loaded mock Margarita")
+                // Try SKIE AsyncSequence conversion
+                if let asyncFlow = kotlinFlow as? any AsyncSequence {
+                    print("CocktailDetailView - Successfully cast to AsyncSequence")
+                    for try await cocktailData in asyncFlow {
+                        await MainActor.run {
+                            if let cocktail = cocktailData as? Cocktail {
+                                self.cocktail = cocktail
+                                print("CocktailDetailView - Loaded cocktail via SKIE: \(cocktail.name)")
+                            }
+                            self.isLoading = false
+                        }
+                        break // Take first emission
                     }
-                    
+                } else {
+                    print("CocktailDetailView - AsyncSequence cast failed, flow type: \(type(of: kotlinFlow))")
+                    await MainActor.run {
+                        self.isLoading = false
+                        self.error = ErrorHandler.shared.createUserFriendlyError(
+                            title: "Loading Error",
+                            message: "Unable to load cocktail. AsyncSequence conversion failed.",
+                            category: ErrorHandler.ErrorCategory.unknown,
+                            recoveryAction: nil,
+                            originalException: nil,
+                            errorCode: .unknown
+                        )
+                    }
+                }
+                
+                if self.cocktail != nil {
                     self.isFavorite = self.favoritesViewModel.isFavorite(cocktailId: self.cocktailId)
-                    self.isLoading = false
                 }
-
-                if self.cocktail == nil {
-                    print("CocktailDetailView - No cocktail returned")
-                    self.error = ErrorHandler.shared.createUserFriendlyError(
-                        title: "Cocktail Not Found",
-                        message: "The requested cocktail could not be found.",
-                        category: ErrorHandler.ErrorCategory.unknown,
-                        recoveryAction: nil,
-                        originalException: nil,
-                        errorCode: .unknown
-                    )
-                }
-                self.isLoading = false
             } catch {
                 print("CocktailDetailView - Error loading cocktail: \(error)")
                 self.isLoading = false

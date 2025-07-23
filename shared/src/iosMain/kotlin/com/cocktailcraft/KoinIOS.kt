@@ -8,6 +8,7 @@ import com.cocktailcraft.viewmodel.SharedCocktailListViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import com.cocktailcraft.viewmodel.SharedCartViewModel
+import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
 import org.koin.core.KoinApplication
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -54,6 +55,11 @@ class KoinHelper : KoinComponent {
     
     fun getSharedCartViewModel(): SharedCartViewModel {
         val viewModel: SharedCartViewModel by inject()
+        return viewModel
+    }
+    
+    fun getSharedCocktailDetailViewModel(): SharedCocktailDetailViewModel {
+        val viewModel: SharedCocktailDetailViewModel by inject()
         return viewModel
     }
 }

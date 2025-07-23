@@ -1,7 +1,5 @@
 import SwiftUI
 @preconcurrency import shared
-
-
 import Combine
 
 @MainActor
@@ -20,13 +18,8 @@ class HomeViewModel: ObservableObject {
     init() {
         self.repository = KoinInitializer.shared.getCocktailRepository()
         print("HomeViewModel init - repository: \(repository != nil ? "available" : "nil")")
-        // Load real data if repository is available, otherwise use mock data
-        if repository != nil {
-            loadCocktails()
-        } else {
-            print("HomeViewModel - No repository, loading mock data")
-            loadMockData()
-        }
+        // Load data from repository
+        loadCocktails()
     }
     
     func loadCocktails() {
@@ -35,27 +28,60 @@ class HomeViewModel: ObservableObject {
         error = nil
 
         guard let repository = repository else {
-            print("HomeViewModel - No repository, loading mock data")
-            // Fallback to mock data if repository is not available
-            loadMockData()
+            print("HomeViewModel - No repository, showing error")
+            // Show error if repository is not available
+            self.error = ErrorHandler.shared.createUserFriendlyError(
+                title: "Service Unavailable",
+                message: "Unable to connect to cocktail service.",
+                category: ErrorHandler.ErrorCategory.unknown,
+                recoveryAction: nil,
+                originalException: nil,
+                errorCode: .unknown
+            )
+            self.isLoading = false
             return
         }
 
-        print("HomeViewModel - Repository available, but using mock data for now")
-        // Temporarily use mock data while fixing SKIE integration
-        loadMockData()
+        Task { @MainActor in
+            do {
+                print("HomeViewModel - Repository available, loading via SKIE AsyncSequence")
+                let kotlinFlow = try await repository.getCocktailsSortedByNewest()
+                print("HomeViewModel - Got kotlinFlow type: \(type(of: kotlinFlow))")
+
+                // SKIE converts StateFlow to AsyncSequence - cast to proper type
+                if let asyncFlow = kotlinFlow as? any AsyncSequence {
+                    print("HomeViewModel - Successfully cast to AsyncSequence")
+                    for try await cocktailArray in asyncFlow {
+                        await MainActor.run {
+                            if let cocktails = cocktailArray as? [Cocktail] {
+                                self.cocktails = cocktails
+                                self.filteredCocktails = cocktails
+                                print("HomeViewModel - Loaded \(cocktails.count) cocktails via SKIE")
+                            }
+                            self.isLoading = false
+                        }
+                        break // Take first emission
+                    }
+                } else {
+                    print("HomeViewModel - AsyncSequence cast failed, flow type: \(type(of: kotlinFlow))")
+                    await MainActor.run {
+                        self.isLoading = false
+                        self.error = ErrorHandler.shared.createUserFriendlyError(
+                            title: "Data Loading Error",
+                            message: "Unable to load cocktails. AsyncSequence conversion failed.",
+                            category: ErrorHandler.ErrorCategory.unknown,
+                            recoveryAction: nil,
+                            originalException: nil,
+                            errorCode: .unknown
+                        )
+                    }
+                }
+            } catch {
+                await handleLoadingError(error)
+            }
+        }
     }
-
-    // TODO: Fix SKIE AsyncSequence integration
-    /*
-    @MainActor
-    private func loadCocktailsAsync() async {
-        // SKIE integration code will go here once working
-    }
-    */
-
-
-
+    
     @MainActor
     private func handleLoadingError(_ error: Error) async {
         print("HomeViewModel - Error loading cocktails: \(error)")
@@ -157,7 +183,7 @@ class HomeViewModel: ObservableObject {
         isLoading = true
         error = nil
 
-        Task {
+        Task { @MainActor in
             await searchCocktailsAsync(query: query)
         }
     }
@@ -172,13 +198,16 @@ class HomeViewModel: ObservableObject {
         do {
             // Use SKIE AsyncSequence pattern
             let kotlinFlow = try await repository.searchCocktailsByName(name: query)
+            print("HomeViewModel - Search got kotlinFlow type: \(type(of: kotlinFlow))")
 
             // SKIE converts StateFlow to AsyncSequence - cast to proper type
             if let asyncFlow = kotlinFlow as? any AsyncSequence {
+                print("HomeViewModel - Successfully cast search to AsyncSequence")
                 for try await cocktailArray in asyncFlow {
                     await MainActor.run {
                         if let cocktails = cocktailArray as? [Cocktail] {
                             self.filteredCocktails = cocktails
+                            print("HomeViewModel - Found \(cocktails.count) cocktails via SKIE search")
                             self.applySorting()
                         }
                         self.isLoading = false
@@ -186,8 +215,17 @@ class HomeViewModel: ObservableObject {
                     break // Take first emission
                 }
             } else {
+                print("HomeViewModel - AsyncSequence cast failed for search, flow type: \(type(of: kotlinFlow))")
                 await MainActor.run {
                     self.isLoading = false
+                    self.error = ErrorHandler.shared.createUserFriendlyError(
+                        title: "Search Error",
+                        message: "Unable to search cocktails. AsyncSequence conversion failed.",
+                        category: ErrorHandler.ErrorCategory.unknown,
+                        recoveryAction: nil,
+                        originalException: nil,
+                        errorCode: .unknown
+                    )
                 }
             }
         } catch {
@@ -246,73 +284,6 @@ class HomeViewModel: ObservableObject {
         // Simulate refresh
         try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
         loadCocktails()
-    }
-
-    // MARK: - Mock Data (Temporary)
-    private func loadMockData() {
-        print("HomeViewModel - Loading mock data...")
-        // Create some mock cocktails for testing
-        let mockIngredient1 = CocktailIngredient(name: "Vodka", measure: "2 oz")
-        let mockIngredient2 = CocktailIngredient(name: "Orange Juice", measure: "4 oz")
-
-        let mockCocktail1 = Cocktail(
-            id: "1",
-            name: "Screwdriver",
-            alternateName: nil,
-            tags: nil,
-            category: "Ordinary Drink",
-            iba: nil,
-            alcoholic: "Alcoholic",
-            glass: "Highball glass",
-            instructions: "Mix vodka and orange juice in a glass with ice.",
-            imageUrl: "https://www.thecocktaildb.com/images/media/drink/8xnyke1504352207.jpg",
-            ingredients: [mockIngredient1, mockIngredient2],
-            imageSource: nil,
-            imageAttribution: nil,
-            creativeCommonsConfirmed: nil,
-            dateModified: nil,
-            price: 8.50,
-            inStock: true,
-            stockCount: 10,
-            rating: 4.5,
-            popularity: 85,
-            dateAdded: 1672531200000 // 2023-01-01 as timestamp
-        )
-        
-        let mockCocktail2 = Cocktail(
-            id: "2",
-            name: "Margarita",
-            alternateName: nil,
-            tags: ["IBA", "Contemporary Classic"],
-            category: "Ordinary Drink",
-            iba: "Contemporary Classic",
-            alcoholic: "Alcoholic",
-            glass: "Cocktail glass",
-            instructions: "Rub the rim with lime. Add ingredients to shaker with ice. Shake and strain.",
-            imageUrl: "https://www.thecocktaildb.com/images/media/drink/5noda61589575158.jpg",
-            ingredients: [
-                CocktailIngredient(name: "Tequila", measure: "1.5 oz"),
-                CocktailIngredient(name: "Triple sec", measure: "0.5 oz"),
-                CocktailIngredient(name: "Lime juice", measure: "1 oz")
-            ],
-            imageSource: nil,
-            imageAttribution: nil,
-            creativeCommonsConfirmed: nil,
-            dateModified: nil,
-            price: 12.99,
-            inStock: true,
-            stockCount: 15,
-            rating: 4.8,
-            popularity: 95,
-            dateAdded: 1672531300000
-        )
-
-        DispatchQueue.main.async {
-            self.cocktails = [mockCocktail1, mockCocktail2]
-            self.filteredCocktails = [mockCocktail1, mockCocktail2]
-            self.isLoading = false
-            print("HomeViewModel - Mock data loaded: \(self.cocktails.count) cocktails")
-        }
     }
 }
 
