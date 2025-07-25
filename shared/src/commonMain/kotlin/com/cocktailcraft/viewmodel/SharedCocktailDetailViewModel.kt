@@ -1,28 +1,28 @@
 package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.repository.CocktailRepository
 import com.cocktailcraft.domain.repository.CartRepository
-import com.cocktailcraft.util.ErrorHandler
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.koin.core.component.inject
 
 /**
- * Shared ViewModel for Cocktail Detail screen.
+ * Shared ViewModel for Cocktail Detail functionality.
  * Designed for full SKIE interoperability with iOS.
- * 
+ *
  * Key SKIE features:
  * - StateFlows are automatically converted to Swift AsyncSequence
  * - Suspend functions become Swift async functions
  * - No FlowCollector bridge needed
  */
 class SharedCocktailDetailViewModel : SharedViewModel() {
-    
-    private val cocktailRepository: CocktailRepository by inject()
+
+    private val repository: CocktailRepository by inject()
     private val cartRepository: CartRepository by inject()
     
-    // Detail state - SKIE will convert these to Swift AsyncSequence
+    // UI State - SKIE will convert these to Swift AsyncSequence
     private val _cocktail = MutableStateFlow<Cocktail?>(null)
     val cocktail: StateFlow<Cocktail?> = _cocktail.asStateFlow()
     
@@ -38,140 +38,75 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
     private val _relatedCocktails = MutableStateFlow<List<Cocktail>>(emptyList())
     val relatedCocktails: StateFlow<List<Cocktail>> = _relatedCocktails.asStateFlow()
     
-    // Ingredients grouped by type
     private val _ingredientsByType = MutableStateFlow<Map<String, List<String>>>(emptyMap())
     val ingredientsByType: StateFlow<Map<String, List<String>>> = _ingredientsByType.asStateFlow()
-    
-    // Currently selected cocktail ID
-    private var currentCocktailId: String? = null
-    
+
     /**
      * Load cocktail details by ID.
      * SKIE will convert this to Swift async function.
      */
     suspend fun loadCocktail(cocktailId: String) {
-        currentCocktailId = cocktailId
         setLoading(true)
         clearError()
-        
+
         try {
-            // Load cocktail details
-            cocktailRepository.getCocktailById(cocktailId)
-                .catch { e ->
-                    handleException(
-                        e,
-                        "Failed to load cocktail details",
-                        recoveryAction = ErrorHandler.RecoveryAction("Retry") {
-                            viewModelScope.launch { loadCocktail(cocktailId) }
+            repository.getCocktailById(cocktailId)
+                .catch { e -> handleException(e, "Failed to load cocktail details") }
+                .collect { loadedCocktail ->
+                    _cocktail.value = loadedCocktail
+                    if (loadedCocktail != null) {
+                        // Check if cocktail is favorite
+                        viewModelScope.launch {
+                            try {
+                                repository.getFavoriteCocktails().collect { favorites ->
+                                    _isFavorite.value = favorites.any { it.id == cocktailId }
+                                }
+                            } catch (e: Exception) {
+                                // Silent fail for favorites check
+                            }
                         }
-                    )
-                }
-                .collect { cocktailData ->
-                    _cocktail.value = cocktailData
-                    
-                    if (cocktailData != null) {
-                        // Group ingredients by type
-                        groupIngredients(cocktailData)
-                        
-                        // Check favorite status
-                        checkFavoriteStatus(cocktailData)
-                        
-                        // Check cart status
-                        checkCartStatus(cocktailData.id)
-                        
-                        // Load related cocktails
-                        loadRelatedCocktails(cocktailData)
-                        
-                        // Add to recently viewed (commented out - method may not exist)
-                        // addToRecentlyViewed(cocktailData)
+                        updateCartStatus(cocktailId)
+                        loadRelatedCocktails(loadedCocktail)
+                        processIngredients(loadedCocktail)
                     }
-                    
                     setLoading(false)
                 }
         } catch (e: Exception) {
-            handleException(
-                e,
-                "Failed to load cocktail details",
-                recoveryAction = ErrorHandler.RecoveryAction("Retry") {
-                    viewModelScope.launch { loadCocktail(cocktailId) }
-                }
-            )
+            handleException(e, "Failed to load cocktail details")
             setLoading(false)
         }
     }
-    
+
     /**
      * Toggle favorite status.
      * SKIE will convert this to Swift async function.
      */
     suspend fun toggleFavorite() {
         val currentCocktail = _cocktail.value ?: return
-        
         try {
             if (_isFavorite.value) {
-                cocktailRepository.removeFromFavorites(currentCocktail)
-                _isFavorite.value = false
-                
-                setError(
-                    title = "Removed from Favorites",
-                    message = "${currentCocktail.name} has been removed from your favorites",
-                    category = ErrorHandler.ErrorCategory.DATA,
-                    showAsEvent = true
-                )
+                repository.removeFromFavorites(currentCocktail)
             } else {
-                cocktailRepository.addToFavorites(currentCocktail)
-                _isFavorite.value = true
-                
-                setError(
-                    title = "Added to Favorites",
-                    message = "${currentCocktail.name} has been added to your favorites",
-                    category = ErrorHandler.ErrorCategory.DATA,
-                    showAsEvent = true
-                )
+                repository.addToFavorites(currentCocktail)
             }
-        } catch (e: Exception) {
-            handleException(
-                e,
-                "Failed to update favorites",
-                showAsEvent = true
-            )
-            // Revert the state on error
             _isFavorite.value = !_isFavorite.value
+        } catch (e: Exception) {
+            handleException(e, "Failed to update favorites", showAsEvent = true)
         }
     }
-    
+
     /**
      * Add to cart or update quantity.
      * SKIE will convert this to Swift async function.
      */
     suspend fun addToCart(quantity: Int = 1) {
         val currentCocktail = _cocktail.value ?: return
-        
         try {
-            val cartItem = com.cocktailcraft.domain.model.CocktailCartItem(
-                cocktail = currentCocktail,
-                quantity = quantity
-            )
+            val cartItem = CocktailCartItem(currentCocktail, quantity)
             cartRepository.addToCart(cartItem)
-            
-            _isInCart.value = true
-            _cartQuantity.value = quantity
-            
-            setError(
-                title = "Added to Cart",
-                message = "${currentCocktail.name} has been added to your cart",
-                category = ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
-            )
+            updateCartStatus(currentCocktail.id)
         } catch (e: Exception) {
-            handleException(
-                e,
-                "Failed to add to cart",
-                showAsEvent = true,
-                recoveryAction = ErrorHandler.RecoveryAction("Retry") {
-                    viewModelScope.launch { addToCart(quantity) }
-                }
-            )
+            handleException(e, "Failed to add to cart", showAsEvent = true)
         }
     }
     
@@ -181,21 +116,15 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
      */
     suspend fun updateCartQuantity(quantity: Int) {
         val currentCocktail = _cocktail.value ?: return
-        
-        if (quantity <= 0) {
-            removeFromCart()
-            return
-        }
-        
         try {
-            cartRepository.updateQuantity(currentCocktail.id, quantity)
-            _cartQuantity.value = quantity
+            if (quantity > 0) {
+                cartRepository.updateQuantity(currentCocktail.id, quantity)
+            } else {
+                cartRepository.removeFromCart(currentCocktail.id)
+            }
+            updateCartStatus(currentCocktail.id)
         } catch (e: Exception) {
-            handleException(
-                e,
-                "Failed to update quantity",
-                showAsEvent = true
-            )
+            handleException(e, "Failed to update cart quantity", showAsEvent = true)
         }
     }
     
@@ -205,51 +134,91 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
      */
     suspend fun removeFromCart() {
         val currentCocktail = _cocktail.value ?: return
-        
         try {
             cartRepository.removeFromCart(currentCocktail.id)
-            _isInCart.value = false
-            _cartQuantity.value = 0
-            
-            setError(
-                title = "Removed from Cart",
-                message = "${currentCocktail.name} has been removed from your cart",
-                category = ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
-            )
+            updateCartStatus(currentCocktail.id)
         } catch (e: Exception) {
-            handleException(
-                e,
-                "Failed to remove from cart",
-                showAsEvent = true
-            )
+            handleException(e, "Failed to remove from cart", showAsEvent = true)
         }
     }
     
+    // MARK: - Private Helper Methods
+    
+    private suspend fun updateCartStatus(cocktailId: String) {
+        try {
+            cartRepository.getCartItems().collect { cartItems ->
+                val cartItem = cartItems.find { it.cocktail.id == cocktailId }
+                _isInCart.value = cartItem != null
+                _cartQuantity.value = cartItem?.quantity ?: 0
+            }
+        } catch (e: Exception) {
+            // Silent fail for cart status
+        }
+    }
+    
+    private suspend fun loadRelatedCocktails(cocktail: Cocktail) {
+        try {
+            // Get cocktails from the same category
+            repository.filterByCategory(cocktail.category ?: "Cocktail")
+                .catch { /* Silent fail */ }
+                .collect { cocktails ->
+                    _relatedCocktails.value = cocktails
+                        .filter { it.id != cocktail.id }
+                        .shuffled()
+                        .take(3)
+                }
+        } catch (e: Exception) {
+            // Silent fail for related cocktails
+        }
+    }
+    
+    private fun processIngredients(cocktail: Cocktail) {
+        val ingredientsByType = mutableMapOf<String, MutableList<String>>()
+        
+        cocktail.ingredients.forEach { ingredient ->
+            val type = categorizeIngredient(ingredient.name)
+            ingredientsByType.getOrPut(type) { mutableListOf() }.add(ingredient.name)
+        }
+        
+        _ingredientsByType.value = ingredientsByType.mapValues { it.value.toList() }
+    }
+    
+    private fun categorizeIngredient(ingredientName: String): String {
+        val name = ingredientName.lowercase()
+        return when {
+            name.contains("rum") || name.contains("vodka") || name.contains("gin") ||
+            name.contains("whiskey") || name.contains("tequila") || name.contains("bourbon") -> "Spirits"
+            name.contains("juice") || name.contains("lime") || name.contains("lemon") ||
+            name.contains("orange") -> "Citrus & Juices"
+            name.contains("syrup") || name.contains("sugar") || name.contains("honey") -> "Sweeteners"
+            name.contains("bitters") || name.contains("salt") || name.contains("pepper") -> "Seasonings"
+            else -> "Other"
+        }
+    }
+    
+    // MARK: - Synchronous Helper Methods
+    
     /**
-     * Share cocktail recipe.
-     * Returns a shareable text representation.
+     * Get shareable text representation of the cocktail.
      */
     fun getShareableText(): String {
-        val currentCocktail = _cocktail.value ?: return ""
+        val cocktail = _cocktail.value ?: return ""
         
-        val ingredients = currentCocktail.ingredients.joinToString("\n") { ingredient ->
-            "• ${ingredient.measure?.trim() ?: ""} ${ingredient.name}".trim()
+        val ingredients = cocktail.ingredients.joinToString("\n") {
+            "• ${it.measure} ${it.name}".trim()
         }
         
         return """
-            🍹 ${currentCocktail.name}
-            
-            Category: ${currentCocktail.category ?: "Unknown"}
-            Glass: ${currentCocktail.glass ?: "Any"}
+            🍹 ${cocktail.name}
             
             Ingredients:
             $ingredients
             
             Instructions:
-            ${currentCocktail.instructions ?: "No instructions available"}
+            ${cocktail.instructions}
             
-            Shared from CocktailCraft
+            Glass: ${cocktail.glass}
+            Category: ${cocktail.category}
         """.trimIndent()
     }
     
@@ -257,30 +226,30 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
      * Get nutrition facts (example calculation).
      */
     fun getNutritionFacts(): Map<String, String> {
-        val currentCocktail = _cocktail.value ?: return emptyMap()
+        val cocktail = _cocktail.value ?: return emptyMap()
         
-        // Example calculation based on common ingredients
-        val hasVodka = currentCocktail.ingredients.any { 
-            it.name.contains("vodka", ignoreCase = true) 
-        }
-        val hasRum = currentCocktail.ingredients.any { 
-            it.name.contains("rum", ignoreCase = true) 
-        }
-        val hasJuice = currentCocktail.ingredients.any { 
-            it.name.contains("juice", ignoreCase = true) 
-        }
+        // Simple estimation based on ingredients
+        var calories = 0
+        var alcohol = 0.0
         
-        val calories = when {
-            hasVodka || hasRum -> "180-220"
-            hasJuice -> "150-180"
-            else -> "120-150"
+        cocktail.ingredients.forEach { ingredient ->
+            val name = ingredient.name.lowercase()
+            when {
+                name.contains("rum") || name.contains("vodka") || name.contains("gin") ||
+                name.contains("whiskey") || name.contains("tequila") -> {
+                    calories += 65 // ~65 calories per oz of spirits
+                    alcohol += 14.0 // ~14g alcohol per oz
+                }
+                name.contains("juice") -> calories += 15 // ~15 calories per oz of juice
+                name.contains("syrup") || name.contains("sugar") -> calories += 25 // ~25 calories per oz
+            }
         }
         
         return mapOf(
-            "Calories" to "$calories cal",
-            "Carbs" to "15-25g",
-            "Sugar" to "10-20g",
-            "Alcohol" to if (currentCocktail.alcoholic == "Alcoholic") "1.5-2 oz" else "0 oz"
+            "Calories" to "${calories} kcal",
+            "Alcohol" to "${alcohol.toInt()}g",
+            "Carbs" to "${(calories * 0.1).toInt()}g",
+            "Sugar" to "${(calories * 0.15).toInt()}g"
         )
     }
     
@@ -288,91 +257,11 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
      * Refresh cocktail details.
      */
     fun refresh() {
-        currentCocktailId?.let { id ->
+        val currentCocktail = _cocktail.value
+        if (currentCocktail != null) {
             viewModelScope.launch {
-                loadCocktail(id)
+                loadCocktail(currentCocktail.id)
             }
         }
     }
-    
-    // Private helper functions
-    
-    private fun groupIngredients(cocktail: Cocktail) {
-        val grouped = cocktail.ingredients.groupBy { ingredient ->
-            when {
-                ingredient.name.contains("vodka", ignoreCase = true) ||
-                ingredient.name.contains("rum", ignoreCase = true) ||
-                ingredient.name.contains("gin", ignoreCase = true) ||
-                ingredient.name.contains("whiskey", ignoreCase = true) ||
-                ingredient.name.contains("tequila", ignoreCase = true) -> "Spirits"
-                
-                ingredient.name.contains("juice", ignoreCase = true) ||
-                ingredient.name.contains("syrup", ignoreCase = true) ||
-                ingredient.name.contains("soda", ignoreCase = true) -> "Mixers"
-                
-                ingredient.name.contains("lime", ignoreCase = true) ||
-                ingredient.name.contains("lemon", ignoreCase = true) ||
-                ingredient.name.contains("orange", ignoreCase = true) ||
-                ingredient.name.contains("cherry", ignoreCase = true) -> "Garnish"
-                
-                else -> "Other"
-            }
-        }.mapValues { (_, ingredients) ->
-            ingredients.map { "${it.measure?.trim() ?: ""} ${it.name}".trim() }
-        }
-        
-        _ingredientsByType.value = grouped
-    }
-    
-    private suspend fun checkFavoriteStatus(cocktail: Cocktail) {
-        try {
-            cocktailRepository.getFavoriteCocktails()
-                .first()
-                .any { it.id == cocktail.id }
-                .let { _isFavorite.value = it }
-        } catch (e: Exception) {
-            // Silent fail for favorite check
-        }
-    }
-    
-    private suspend fun checkCartStatus(cocktailId: String) {
-        try {
-            cartRepository.getCartItems()
-                .first()
-                .find { it.cocktail.id == cocktailId }
-                ?.let { cartItem ->
-                    _isInCart.value = true
-                    _cartQuantity.value = cartItem.quantity
-                } ?: run {
-                    _isInCart.value = false
-                    _cartQuantity.value = 0
-                }
-        } catch (e: Exception) {
-            // Silent fail for cart check
-        }
-    }
-    
-    private suspend fun loadRelatedCocktails(cocktail: Cocktail) {
-        try {
-            val category = cocktail.category ?: return
-            
-            cocktailRepository.filterByCategory(category)
-                .first()
-                .filter { it.id != cocktail.id }
-                .shuffled()
-                .take(6)
-                .let { _relatedCocktails.value = it }
-        } catch (e: Exception) {
-            // Silent fail for related cocktails
-        }
-    }
-    
-    // Recently viewed functionality commented out - method may not exist in repository
-    // private suspend fun addToRecentlyViewed(cocktail: Cocktail) {
-    //     try {
-    //         cocktailRepository.addToRecentlyViewed(cocktail)
-    //     } catch (e: Exception) {
-    //         // Silent fail for recently viewed
-    //     }
-    // }
 }

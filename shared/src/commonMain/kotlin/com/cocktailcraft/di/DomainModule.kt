@@ -19,10 +19,19 @@ val domainModule = module {
 
     // Shared ViewModels (Proof of Concept)
     factory { com.cocktailcraft.viewmodel.SharedCocktailListViewModel() }
-    factory { com.cocktailcraft.viewmodel.SharedFavoritesViewModel() }
     
-    // New Shared ViewModels with full SKIE integration
+    // Shared ViewModels with full SKIE integration (working ones)
     factory { com.cocktailcraft.viewmodel.SharedHomeViewModel() }
     factory { com.cocktailcraft.viewmodel.SharedCartViewModel() }
     factory { com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel() }
+    factory { com.cocktailcraft.viewmodel.SharedFavoritesViewModel() }
+    
+    // Phase 1 ViewModels - Core Dependencies (Completed)
+    factory { com.cocktailcraft.viewmodel.SharedOfflineModeViewModel() }
+    factory { com.cocktailcraft.viewmodel.SharedOrderViewModel() }
+    
+    // Phase 2 ViewModels - User Experience Features (Completed)
+    factory { com.cocktailcraft.viewmodel.SharedProfileViewModel() }
+    factory { com.cocktailcraft.viewmodel.SharedThemeViewModel() }
+    factory { com.cocktailcraft.viewmodel.SharedReviewViewModel() }
 }

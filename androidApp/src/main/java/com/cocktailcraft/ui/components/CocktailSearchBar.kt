@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -43,6 +44,7 @@ import com.cocktailcraft.ui.theme.AppColors
  * @param activeFilterIconTint The tint color for the filter icon when active
  * @param inactiveFilterIconTint The tint color for the filter icon when inactive
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CocktailSearchBar(
     searchQuery: String,

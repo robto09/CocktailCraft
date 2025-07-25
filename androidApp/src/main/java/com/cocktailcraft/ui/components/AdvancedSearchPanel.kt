@@ -383,8 +383,7 @@ fun TasteProfileSelector(
     Column {
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Add "All" option
             FilterChip(
@@ -417,8 +416,7 @@ fun ComplexitySelector(
     Column {
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Add "All" option
             FilterChip(
@@ -451,8 +449,7 @@ fun PrepTimeSelector(
     Column {
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Add "All" option
             FilterChip(
@@ -476,6 +473,7 @@ fun PrepTimeSelector(
 /**
  * Ingredient selection dialog component
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IngredientSelectionDialog(
     ingredients: List<String>,
@@ -629,8 +627,7 @@ fun IngredientSelector(
 
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 selectedIngredients.forEach { ingredient ->
                     FilterChip(
@@ -661,8 +658,7 @@ fun IngredientSelector(
 
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 excludedIngredients.forEach { ingredient ->
                     FilterChip(

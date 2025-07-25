@@ -98,7 +98,7 @@ import com.cocktailcraft.viewmodel.CartViewModel
 import com.cocktailcraft.viewmodel.CocktailDetailViewModel
 import com.cocktailcraft.viewmodel.FavoritesViewModel
 import com.cocktailcraft.viewmodel.HomeViewModel
-import com.cocktailcraft.viewmodel.ReviewViewModel
+import com.cocktailcraft.viewmodel.ReviewViewModelSKIE
 import com.cocktailcraft.navigation.NavigationManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -113,7 +113,7 @@ fun CocktailDetailScreen(
     cocktailId: String,
     homeViewModel: HomeViewModel,
     cartViewModel: CartViewModel,
-    reviewViewModel: ReviewViewModel,
+    reviewViewModel: ReviewViewModelSKIE,
     favoritesViewModel: FavoritesViewModel,
     navigationManager: NavigationManager,
     onBackClick: () -> Unit,
@@ -126,10 +126,13 @@ fun CocktailDetailScreen(
     val cocktailFlow = remember { homeViewModel.getCocktailById(cocktailId) }
     val cocktail by cocktailFlow.collectAsState(initial = null)
 
+    // Load reviews for this cocktail
+    LaunchedEffect(cocktailId) {
+        reviewViewModel.loadReviewsForCocktail(cocktailId)
+    }
+    
     // Properly collect reviews as a state
-    val reviewsMap by reviewViewModel.reviews.collectAsState()
-    // Safely get reviews for this cocktail
-    val reviews = reviewsMap[cocktailId] ?: emptyList()
+    val reviews by reviewViewModel.currentCocktailReviews.collectAsState()
     val favorites by favoritesViewModel.favorites.collectAsState()
     val isFavorite = cocktail?.let { c -> favorites.any { fav -> fav.id == c.id } } ?: false
 
@@ -155,11 +158,11 @@ fun CocktailDetailScreen(
         onDismiss = { showReviewDialog = false },
         onSubmit = { userName, rating, comment ->
             try {
-                reviewViewModel.createAndAddReview(
+                reviewViewModel.submitReview(
                     cocktailId = cocktailId,
-                    userName = userName,
                     rating = rating,
-                    comment = comment
+                    comment = comment,
+                    userName = userName
                 )
                 showReviewDialog = false
             } catch (e: Exception) {

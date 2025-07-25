@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -48,10 +50,10 @@ import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.CartViewModel
 import com.cocktailcraft.viewmodel.FavoritesViewModel
 import com.cocktailcraft.viewmodel.HomeViewModel
-import com.cocktailcraft.viewmodel.OfflineModeViewModel
-import com.cocktailcraft.viewmodel.OrderViewModel
-import com.cocktailcraft.viewmodel.ReviewViewModel
-import com.cocktailcraft.viewmodel.ThemeViewModel
+import com.cocktailcraft.viewmodel.OfflineModeViewModelSKIE
+import com.cocktailcraft.viewmodel.OrderViewModelSKIE
+import com.cocktailcraft.viewmodel.ReviewViewModelSKIE
+import com.cocktailcraft.viewmodel.ThemeViewModelSKIE
 import com.cocktailcraft.ui.components.OfflineModeIndicator
 import androidx.compose.runtime.collectAsState
 
@@ -71,13 +73,13 @@ fun MainScreen() {
     )
 
     // Create shared ViewModels for the entire app
-    val sharedOrderViewModel: OrderViewModel = viewModel()
+    val sharedOrderViewModel: OrderViewModelSKIE = viewModel()
     val sharedCartViewModel: CartViewModel = viewModel()
-    val sharedReviewViewModel: ReviewViewModel = viewModel()
+    val sharedReviewViewModel: ReviewViewModelSKIE = viewModel()
     val sharedHomeViewModel: HomeViewModel = viewModel()
     val sharedFavoritesViewModel: FavoritesViewModel = viewModel()
-    val sharedThemeViewModel: ThemeViewModel = viewModel()
-    val sharedOfflineModeViewModel: OfflineModeViewModel = viewModel()
+    val sharedThemeViewModel: ThemeViewModelSKIE = viewModel()
+    val sharedOfflineModeViewModel: OfflineModeViewModelSKIE = viewModel()
 
     // Get the current route for conditional rendering
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -194,31 +196,7 @@ fun MainScreen() {
         NavHost(
             navController = navController,
             startDestination = Screen.Home.route,
-            modifier = Modifier.padding(innerPadding),
-            enterTransition = {
-                slideIntoContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                    animationSpec = tween(300)
-                ) + fadeIn(animationSpec = tween(300))
-            },
-            exitTransition = {
-                slideOutOfContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                    animationSpec = tween(300)
-                ) + fadeOut(animationSpec = tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                    animationSpec = tween(300)
-                ) + fadeIn(animationSpec = tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(
-                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                    animationSpec = tween(300)
-                ) + fadeOut(animationSpec = tween(300))
-            }
+            modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(
@@ -248,8 +226,7 @@ fun MainScreen() {
             }
             composable(Screen.Profile.route) {
                 ProfileScreen(
-                    navigationManager = navigationManager,
-                    themeViewModel = sharedThemeViewModel
+                    navigationManager = navigationManager
                 )
             }
             composable(Screen.Favorites.route) {

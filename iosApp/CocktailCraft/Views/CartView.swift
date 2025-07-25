@@ -3,7 +3,8 @@ import shared
 import Kingfisher
 
 struct CartView: View {
-    @ObservedObject private var viewModel = CartViewModel.instance
+    @StateObject private var viewModel = CartViewModelSKIE()
+    @StateObject private var orderViewModel = OrderViewModelSKIE()
     @Binding var selectedTab: Int
     @State private var showCheckoutConfirmation = false
     
@@ -25,7 +26,9 @@ struct CartView: View {
                         .onDelete { indexSet in
                             indexSet.forEach { index in
                                 let item = viewModel.cartItems[index]
-                                viewModel.removeFromCart(cocktailId: item.cocktail.id)
+                                Task {
+                                    await viewModel.removeFromCart(item.cocktail.id)
+                                }
                             }
                         }
                     }
@@ -111,10 +114,12 @@ struct CartItemRow: View {
             // Quantity Controls
             HStack(spacing: 12) {
                 Button(action: {
-                    viewModel.updateQuantity(
-                        cocktailId: item.cocktail.id,
-                        quantity: max(1, Int(item.quantity) - 1)
-                    )
+                    Task {
+                        await viewModel.updateQuantity(
+                            item.cocktail.id,
+                            quantity: max(1, Int(item.quantity) - 1)
+                        )
+                    }
                 }) {
                     Image(systemName: "minus.circle.fill")
                         .foregroundColor(.blue)
@@ -125,10 +130,12 @@ struct CartItemRow: View {
                     .frame(minWidth: 30)
                 
                 Button(action: {
-                    viewModel.updateQuantity(
-                        cocktailId: item.cocktail.id,
-                        quantity: Int(item.quantity) + 1
-                    )
+                    Task {
+                        await viewModel.updateQuantity(
+                            item.cocktail.id,
+                            quantity: Int(item.quantity) + 1
+                        )
+                    }
                 }) {
                     Image(systemName: "plus.circle.fill")
                         .foregroundColor(.blue)

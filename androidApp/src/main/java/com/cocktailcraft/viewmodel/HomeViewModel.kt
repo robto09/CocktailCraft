@@ -3,9 +3,8 @@ package com.cocktailcraft.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.util.ErrorUtils
-import com.cocktailcraft.util.ErrorCategory
-import com.cocktailcraft.util.RecoveryAction
 import com.cocktailcraft.util.NetworkMonitor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -294,8 +293,8 @@ class HomeViewModel(
                     setError(
                         title = "Network Error",
                         message = networkErrorMessage,
-                        category = ErrorUtils.ErrorCategory.NETWORK,
-                        recoveryAction = ErrorUtils.RecoveryAction("Retry") { retry() }
+                        category = ErrorHandler.ErrorCategory.NETWORK,
+                        recoveryAction = ErrorHandler.RecoveryAction("Retry") { retry() }
                     )
                     _errorString.value = networkErrorMessage
                     setLoading(false)
@@ -413,15 +412,15 @@ class HomeViewModel(
         CocktailDebugLogger.log("   - Error type: ${e::class.simpleName}")
         
         // Create a recovery action based on the error
-        val recoveryAction = ErrorUtils.RecoveryAction("Retry") { retry() }
+        val recoveryAction = ErrorHandler.RecoveryAction("Retry") { retry() }
 
         // Determine error category
         val category = when {
-            e.message?.contains("timeout") == true -> ErrorUtils.ErrorCategory.NETWORK
+            e.message?.contains("timeout") == true -> ErrorHandler.ErrorCategory.NETWORK
             e.message?.contains("connection") == true ||
-            e.message?.contains("network") == true -> ErrorUtils.ErrorCategory.NETWORK
-            e.message?.contains("server") == true -> ErrorUtils.ErrorCategory.SERVER
-            else -> ErrorUtils.ErrorCategory.UNKNOWN
+            e.message?.contains("network") == true -> ErrorHandler.ErrorCategory.NETWORK
+            e.message?.contains("server") == true -> ErrorHandler.ErrorCategory.SERVER
+            else -> ErrorHandler.ErrorCategory.UNKNOWN
         }
         CocktailDebugLogger.log("   - Error category: $category")
 
@@ -438,7 +437,7 @@ class HomeViewModel(
 
         // Set the error using the base class method
         setError(
-            title = if (category == ErrorUtils.ErrorCategory.NETWORK) "Network Error" else "Error",
+            title = if (category == ErrorHandler.ErrorCategory.NETWORK) "Network Error" else "Error",
             message = errorMessage,
             category = category,
             recoveryAction = recoveryAction
@@ -815,8 +814,8 @@ class HomeViewModel(
                         setError(
                             title = "Refresh Failed",
                             message = "Could not refresh cocktail details. Please try again.",
-                            category = ErrorUtils.ErrorCategory.DATA,
-                            recoveryAction = ErrorUtils.RecoveryAction("Retry") { forceRefreshCocktailDetails(id) }
+                            category = ErrorHandler.ErrorCategory.DATA,
+                            recoveryAction = ErrorHandler.RecoveryAction("Retry") { forceRefreshCocktailDetails(id) }
                         )
                         _errorString.value = "Could not refresh cocktail details. Please try again."
                     }

@@ -43,9 +43,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.cocktailcraft.ui.theme.AppColors
+import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.util.ErrorUtils
-import com.cocktailcraft.util.UserFriendlyError
-import com.cocktailcraft.util.ErrorCategory
 
 /**
  * A reusable error dialog component that displays user-friendly error messages
@@ -53,7 +52,7 @@ import com.cocktailcraft.util.ErrorCategory
  */
 @Composable
 fun ErrorDialog(
-    error: ErrorUtils.UserFriendlyError,
+    error: ErrorHandler.UserFriendlyError,
     onDismiss: () -> Unit,
     onRetry: (() -> Unit)? = null,
     showRecoveryAction: Boolean = true
@@ -165,7 +164,7 @@ fun ErrorDialog(
  */
 @Composable
 fun ErrorBanner(
-    error: ErrorUtils.UserFriendlyError?,
+    error: ErrorHandler.UserFriendlyError?,
     onDismiss: () -> Unit,
     onAction: (() -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -232,8 +231,9 @@ fun ErrorBanner(
                             ) {
                                 Text(
                                     text = recoveryAction.actionLabel,
-                                fontWeight = FontWeight.Bold
-                            )
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
@@ -246,7 +246,7 @@ fun ErrorBanner(
  * Get an appropriate background color for the error banner
  */
 @Composable
-private fun getErrorBackgroundColor(category: ErrorUtils.ErrorCategory): Color {
+private fun getErrorBackgroundColor(category: ErrorHandler.ErrorCategory): Color {
     // Use the ErrorUtils.getErrorColor function and apply alpha
     return ErrorUtils.getErrorColor(category).copy(alpha = 0.9f)
 }

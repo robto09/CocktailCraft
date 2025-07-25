@@ -60,13 +60,13 @@ import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.ui.components.CocktailItem
 import com.cocktailcraft.ui.theme.AppColors
-import com.cocktailcraft.viewmodel.OfflineModeViewModel
+import com.cocktailcraft.viewmodel.OfflineModeViewModelSKIE
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OfflineModeScreen(
-    viewModel: OfflineModeViewModel,
+    viewModel: OfflineModeViewModelSKIE,
     onBackClick: () -> Unit,
     onCocktailClick: (Cocktail) -> Unit
 ) {
@@ -211,7 +211,7 @@ fun OfflineModeScreen(
 
                                 Switch(
                                     checked = isOfflineModeEnabled,
-                                    onCheckedChange = { viewModel.toggleOfflineMode() },
+                                    onCheckedChange = { viewModel.setOfflineMode(it) },
                                     thumbContent = if (isOfflineModeEnabled) {
                                         {
                                             Icon(
@@ -352,7 +352,7 @@ fun OfflineModeScreen(
                                 Spacer(modifier = Modifier.height(16.dp))
 
                                 Text(
-                                    text = "No recently viewed cocktails",
+                                    text = "No cached cocktails",
                                     fontSize = 16.sp,
                                     color = AppColors.TextSecondary,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center

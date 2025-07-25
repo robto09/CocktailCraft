@@ -14,9 +14,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.ui.theme.AppColors
-import com.cocktailcraft.viewmodel.ReviewViewModel
 import androidx.compose.ui.graphics.Color
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WriteReviewDialog(
     showDialog: Boolean,

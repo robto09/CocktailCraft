@@ -103,8 +103,8 @@ class SharedHomeViewModel : SharedViewModel() {
      * Load cocktails for the currently selected category.
      * SKIE will convert this to Swift async function.
      */
-    suspend fun loadCocktails() {
-        loadCocktailsByCategory(_selectedCategory.value ?: "Cocktail")
+    suspend fun loadCocktails(category: String? = null) {
+        loadCocktailsByCategory(category ?: _selectedCategory.value ?: "Cocktail")
     }
     
     /**
@@ -153,24 +153,24 @@ class SharedHomeViewModel : SharedViewModel() {
      */
     suspend fun searchCocktails(query: String) {
         _searchQuery.value = query
-        _searchFilters.value = _searchFilters.value.copy(query = query)
         
-        if (query.isNotEmpty() && !_isSearchActive.value) {
-            _isSearchActive.value = true
-        }
-        
-        searchJob?.cancel()
-        
-        if (query.isBlank() && !_searchFilters.value.hasActiveFilters()) {
-            _isSearchActive.value = false
+        if (query.isBlank()) {
             loadCocktails()
-            return
-        }
-        
-        // Debounce search
-        searchJob = viewModelScope.launch {
-            delay(300)
-            performSearch()
+        } else {
+            setLoading(true)
+            clearError()
+            
+            try {
+                repository.searchCocktailsByName(query)
+                    .catch { e -> handleException(e, "Failed to search cocktails") }
+                    .collect { cocktailList ->
+                        _cocktails.value = cocktailList
+                        setLoading(false)
+                    }
+            } catch (e: Exception) {
+                handleException(e, "Failed to search cocktails")
+                setLoading(false)
+            }
         }
     }
     
@@ -215,19 +215,28 @@ class SharedHomeViewModel : SharedViewModel() {
      * Update search filters and perform search.
      * SKIE will convert this to Swift async function.
      */
-    suspend fun updateSearchFilters(filters: SearchFilters) {
-        _searchFilters.value = filters
-        _searchQuery.value = filters.query
-        _isSearchActive.value = filters.hasBasicSearch() || filters.hasActiveFilters()
+    suspend fun applyFilters(category: String? = null, ingredient: String? = null) {
+        setLoading(true)
+        clearError()
         
-        if (_isSearchActive.value) {
-            searchJob?.cancel()
-            searchJob = viewModelScope.launch {
-                delay(300)
-                performSearch()
+        try {
+            var filtered = repository.getCocktailsSortedByNewest().first()
+            
+            if (category != null) {
+                filtered = filtered.filter { it.category == category }
             }
-        } else {
-            loadCocktails()
+            
+            if (ingredient != null) {
+                filtered = filtered.filter { cocktail ->
+                    cocktail.ingredients.any { it.name == ingredient }
+                }
+            }
+            
+            _cocktails.value = filtered
+            setLoading(false)
+        } catch (e: Exception) {
+            handleException(e, "Failed to apply filters")
+            setLoading(false)
         }
     }
     

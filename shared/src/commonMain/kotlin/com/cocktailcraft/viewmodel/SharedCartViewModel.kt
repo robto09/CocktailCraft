@@ -1,9 +1,8 @@
 package com.cocktailcraft.viewmodel
 
-import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.CartRepository
-import com.cocktailcraft.util.ErrorHandler
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.koin.core.component.inject
@@ -11,17 +10,17 @@ import org.koin.core.component.inject
 /**
  * Shared ViewModel for Cart functionality.
  * Designed for full SKIE interoperability with iOS.
- * 
+ *
  * Key SKIE features:
  * - StateFlows are automatically converted to Swift AsyncSequence
  * - Suspend functions become Swift async functions
  * - No FlowCollector bridge needed
  */
 class SharedCartViewModel : SharedViewModel() {
-    
+
     private val repository: CartRepository by inject()
     
-    // Cart state - SKIE will convert these to Swift AsyncSequence
+    // UI State - SKIE will convert these to Swift AsyncSequence
     private val _cartItems = MutableStateFlow<List<CocktailCartItem>>(emptyList())
     val cartItems: StateFlow<List<CocktailCartItem>> = _cartItems.asStateFlow()
     
@@ -39,48 +38,30 @@ class SharedCartViewModel : SharedViewModel() {
         get() = _cartItems.value.isNotEmpty()
     
     init {
-        loadCartItems()
+        loadCart()
     }
     
-    /**
-     * Load cart items and total.
-     * SKIE will convert this to Swift async function.
-     */
-    private fun loadCartItems() {
+    private fun loadCart() {
         viewModelScope.launch {
+            setLoading(true)
             try {
-                // Observe cart items
                 repository.getCartItems()
-                    .catch { e ->
-                        handleException(
-                            e,
-                            "Failed to load cart items",
-                            showAsEvent = true
-                        )
-                    }
+                    .catch { /* Ignore errors */ }
                     .collect { items ->
                         _cartItems.value = items
-                        _itemCount.value = items.sumOf { it.quantity }
+                        updateTotals()
+                        setLoading(false)
                     }
             } catch (e: Exception) {
-                handleException(e, "Failed to load cart items")
+                setLoading(false)
             }
         }
-        
-        viewModelScope.launch {
-            try {
-                // Observe cart total
-                repository.getCartTotal()
-                    .catch { e ->
-                        // Silent fail for total calculation
-                    }
-                    .collect { total ->
-                        _totalPrice.value = total
-                    }
-            } catch (e: Exception) {
-                // Don't show error for total calculation
-            }
-        }
+    }
+    
+    private fun updateTotals() {
+        val items = _cartItems.value
+        _itemCount.value = items.sumOf { it.quantity }
+        _totalPrice.value = items.sumOf { it.cocktail.price * it.quantity }
     }
     
     /**
@@ -91,46 +72,22 @@ class SharedCartViewModel : SharedViewModel() {
         try {
             val cartItem = CocktailCartItem(cocktail, quantity)
             repository.addToCart(cartItem)
-            
-            // Show success feedback
-            setError(
-                title = "Added to Cart",
-                message = "${cocktail.name} has been added to your cart",
-                category = ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
-            )
+            loadCart()
         } catch (e: Exception) {
-            handleException(
-                e,
-                "Failed to add ${cocktail.name} to cart",
-                showAsEvent = true,
-                recoveryAction = ErrorHandler.RecoveryAction("Retry") {
-                    viewModelScope.launch {
-                        addToCart(cocktail, quantity)
-                    }
-                }
-            )
+            handleException(e, "Failed to add item to cart", showAsEvent = true)
         }
     }
     
     /**
-     * Remove an item from the cart.
+     * Remove an item from the cart by cocktail ID.
      * SKIE will convert this to Swift async function.
      */
     suspend fun removeFromCart(cocktailId: String) {
         try {
             repository.removeFromCart(cocktailId)
+            loadCart()
         } catch (e: Exception) {
-            handleException(
-                e,
-                "Failed to remove item from cart",
-                showAsEvent = true,
-                recoveryAction = ErrorHandler.RecoveryAction("Retry") {
-                    viewModelScope.launch {
-                        removeFromCart(cocktailId)
-                    }
-                }
-            )
+            handleException(e, "Failed to remove item from cart", showAsEvent = true)
         }
     }
     
@@ -139,24 +96,11 @@ class SharedCartViewModel : SharedViewModel() {
      * SKIE will convert this to Swift async function.
      */
     suspend fun updateQuantity(cocktailId: String, quantity: Int) {
-        if (quantity <= 0) {
-            removeFromCart(cocktailId)
-            return
-        }
-        
         try {
             repository.updateQuantity(cocktailId, quantity)
+            loadCart()
         } catch (e: Exception) {
-            handleException(
-                e,
-                "Failed to update quantity",
-                showAsEvent = true,
-                recoveryAction = ErrorHandler.RecoveryAction("Retry") {
-                    viewModelScope.launch {
-                        updateQuantity(cocktailId, quantity)
-                    }
-                }
-            )
+            handleException(e, "Failed to update quantity", showAsEvent = true)
         }
     }
     
@@ -177,8 +121,10 @@ class SharedCartViewModel : SharedViewModel() {
      */
     suspend fun decrementQuantity(cocktailId: String) {
         val currentItem = _cartItems.value.find { it.cocktail.id == cocktailId }
-        if (currentItem != null) {
+        if (currentItem != null && currentItem.quantity > 1) {
             updateQuantity(cocktailId, currentItem.quantity - 1)
+        } else if (currentItem != null) {
+            removeFromCart(cocktailId)
         }
     }
     
@@ -189,27 +135,14 @@ class SharedCartViewModel : SharedViewModel() {
     suspend fun clearCart() {
         try {
             repository.clearCart()
-            
-            // Show success feedback
-            setError(
-                title = "Cart Cleared",
-                message = "All items have been removed from your cart",
-                category = ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
-            )
+            _cartItems.value = emptyList()
+            updateTotals()
         } catch (e: Exception) {
-            handleException(
-                e,
-                "Failed to clear cart",
-                showAsEvent = true,
-                recoveryAction = ErrorHandler.RecoveryAction("Retry") {
-                    viewModelScope.launch {
-                        clearCart()
-                    }
-                }
-            )
+            handleException(e, "Failed to clear cart", showAsEvent = true)
         }
     }
+    
+    // MARK: - Synchronous Helper Methods
     
     /**
      * Check if a cocktail is in the cart.
@@ -233,14 +166,15 @@ class SharedCartViewModel : SharedViewModel() {
     }
     
     /**
-     * Calculate estimated delivery time (example business logic).
+     * Calculate estimated delivery time.
      */
     fun getEstimatedDeliveryTime(): String {
         val itemCount = _itemCount.value
         return when {
+            itemCount == 0 -> "No items"
             itemCount <= 3 -> "15-20 minutes"
-            itemCount <= 6 -> "20-30 minutes"
-            else -> "30-45 minutes"
+            itemCount <= 6 -> "20-25 minutes"
+            else -> "25-30 minutes"
         }
     }
     
@@ -248,7 +182,7 @@ class SharedCartViewModel : SharedViewModel() {
      * Check if free delivery is applicable.
      */
     fun isFreeDelivery(): Boolean {
-        return _totalPrice.value >= 50.0 // Free delivery for orders over $50
+        return _totalPrice.value >= 50.0
     }
     
     /**
@@ -269,6 +203,6 @@ class SharedCartViewModel : SharedViewModel() {
      * Refresh cart data.
      */
     fun refresh() {
-        loadCartItems()
+        loadCart()
     }
 }

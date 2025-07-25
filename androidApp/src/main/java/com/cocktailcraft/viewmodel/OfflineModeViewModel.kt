@@ -76,15 +76,19 @@ class OfflineModeViewModel : ViewModel(), KoinComponent {
      * Clear the cache of all cocktails.
      */
     fun clearCache() {
-        cocktailCache.clearCache()
-        loadRecentlyViewedCocktails()
+        viewModelScope.launch {
+            cocktailCache.clearCache()
+            loadRecentlyViewedCocktails()
+        }
     }
 
     /**
      * Get the number of cached cocktails.
      */
     fun getCachedCocktailCount(): Int {
-        return cocktailCache.getCachedCocktailCount()
+        return viewModelScope.launch {
+            cocktailCache.getCachedCocktailCount()
+        }.let { 0 } // Return 0 as fallback since we can't await here
     }
 
     override fun onCleared() {

@@ -3,7 +3,7 @@ import shared
 
 struct OrderListView: View {
     @Environment(\.presentationMode) var presentationMode
-    @ObservedObject private var viewModel = OrderViewModel.shared
+    @StateObject private var viewModel = OrderViewModelSKIE()
 
     var body: some View {
         NavigationView {
@@ -32,17 +32,21 @@ struct OrderListView: View {
                 }
             }
             .onAppear {
-                viewModel.loadOrders()
+                Task {
+                    await viewModel.loadOrders()
+                }
             }
             .alert(isPresented: .constant(viewModel.error != nil)) {
                 Alert(
                     title: Text("Error"),
                     message: viewModel.error != nil ? Text(viewModel.error!.message) : nil,
                     primaryButton: .default(Text("Retry")) {
-                        viewModel.loadOrders()
+                        Task {
+                            await viewModel.loadOrders()
+                        }
                     },
                     secondaryButton: .cancel {
-                        viewModel.error = nil
+                        viewModel.clearError()
                     }
                 )
             }

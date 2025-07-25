@@ -66,24 +66,24 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cocktailcraft.navigation.NavigationManager
 import com.cocktailcraft.ui.components.AnimatedThemeToggleRow
 import com.cocktailcraft.ui.theme.AppColors
-import com.cocktailcraft.viewmodel.ProfileViewModel
-import com.cocktailcraft.viewmodel.ThemeViewModel
+import com.cocktailcraft.viewmodel.ProfileViewModelSKIE
+import com.cocktailcraft.viewmodel.ThemeViewModelSKIE
 
 @Composable
 fun ProfileScreen(
     navigationManager: NavigationManager,
-    profileViewModel: ProfileViewModel = viewModel(),
-    themeViewModel: ThemeViewModel = viewModel()
+    profileViewModel: ProfileViewModelSKIE = viewModel(),
+    themeViewModel: ThemeViewModelSKIE = viewModel()
 ) {
     // Get user data from ViewModel
     val user by profileViewModel.user.collectAsState()
-    val isSignedIn by profileViewModel.isSignedIn.collectAsState()
+    val isLoggedIn by profileViewModel.isLoggedIn.collectAsState()
     val isLoading by profileViewModel.isLoading.collectAsState()
     val error by profileViewModel.error.collectAsState()
 
     // Get theme data from ThemeViewModel
     val isDarkMode by themeViewModel.isDarkMode.collectAsState()
-    val followSystemTheme by themeViewModel.followSystemTheme.collectAsState()
+    val isSystemTheme by themeViewModel.isSystemTheme.collectAsState()
 
     // Dialog states
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -206,7 +206,7 @@ fun ProfileScreen(
                 )
 
                 // Show login/signup buttons if not signed in
-                if (!isSignedIn) {
+                if (!isLoggedIn) {
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
@@ -243,7 +243,7 @@ fun ProfileScreen(
         }
 
         // Only show account settings and logout option if signed in
-        if (isSignedIn) {
+        if (isLoggedIn) {
             // Account settings
             Card(
                 modifier = Modifier
@@ -336,31 +336,31 @@ fun ProfileScreen(
                 // Follow System Theme Toggle with animated switch
                 AnimatedThemeToggleRow(
                     title = "Follow System Theme",
-                    subtitle = if (followSystemTheme) "On" else "Off",
+                    subtitle = if (isSystemTheme) "On" else "Off",
                     icon = Icons.Default.DateRange,
-                    isChecked = followSystemTheme,
-                    onToggle = { themeViewModel.toggleFollowSystemTheme() },
+                    isChecked = isSystemTheme,
+                    onToggle = { themeViewModel.applySystemTheme() },
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 // Dark Mode Toggle with animated switch (only enabled if not following system theme)
                 AnimatedThemeToggleRow(
                     title = "Dark Mode",
-                    subtitle = if (followSystemTheme)
+                    subtitle = if (isSystemTheme)
                         "Controlled by system"
                     else
                         if (isDarkMode) "On" else "Off",
                     icon = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
                     isChecked = isDarkMode,
                     onToggle = {
-                        if (!followSystemTheme) themeViewModel.toggleDarkMode()
+                        if (!isSystemTheme) themeViewModel.toggleDarkMode()
                     },
-                    enabled = !followSystemTheme,
+                    enabled = !isSystemTheme,
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 // Only show logout if signed in
-                if (isSignedIn) {
+                if (isLoggedIn) {
                     SettingsItem(
                         icon = Icons.Default.ExitToApp,
                         title = "Logout",
@@ -430,11 +430,11 @@ fun ProfileScreen(
     }
 
     // Show error message if needed
-    error?.let { errorMessage ->
+    error?.let { errorInfo ->
         AlertDialog(
             onDismissRequest = { profileViewModel.clearError() },
             title = { Text("Error") },
-            text = { Text(errorMessage) },
+            text = { Text(errorInfo.message) },
             confirmButton = {
                 Button(
                     onClick = { profileViewModel.clearError() },

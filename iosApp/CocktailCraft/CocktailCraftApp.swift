@@ -63,7 +63,57 @@ extension KoinInitializer {
         return helper.getOrderRepository()
     }
     
-    // TODO: Add SharedViewModel methods once type export is resolved
+    // MARK: - Shared ViewModel Getters (SKIE Integration)
+    
+    func getSharedHomeViewModel() -> SharedHomeViewModel {
+        let helper = KoinHelper()
+        return helper.getSharedHomeViewModel()
+    }
+    
+    func getSharedCartViewModel() -> SharedCartViewModel {
+        let helper = KoinHelper()
+        return helper.getSharedCartViewModel()
+    }
+    
+    func getSharedCocktailDetailViewModel() -> SharedCocktailDetailViewModel {
+        let helper = KoinHelper()
+        return helper.getSharedCocktailDetailViewModel()
+    }
+    
+    func getSharedFavoritesViewModel() -> SharedFavoritesViewModel {
+        let helper = KoinHelper()
+        return helper.getSharedFavoritesViewModel()
+    }
+    
+    func getSharedProfileViewModel() -> SharedProfileViewModel {
+        let helper = KoinHelper()
+        return helper.getSharedProfileViewModel()
+    }
+    
+    func getSharedOfflineModeViewModel() -> SharedOfflineModeViewModel {
+        let helper = KoinHelper()
+        return helper.getSharedOfflineModeViewModel()
+    }
+    
+    func getSharedOrderViewModel() -> SharedOrderViewModel {
+        let helper = KoinHelper()
+        return helper.getSharedOrderViewModel()
+    }
+    
+    func getSharedThemeViewModel() -> SharedThemeViewModel {
+        let helper = KoinHelper()
+        return helper.getSharedThemeViewModel()
+    }
+    
+    func getSharedReviewViewModel() -> SharedReviewViewModel {
+        let helper = KoinHelper()
+        return helper.getSharedReviewViewModel()
+    }
+    
+    func getSharedCocktailListViewModel() -> SharedCocktailListViewModel {
+        let helper = KoinHelper()
+        return helper.getSharedCocktailListViewModel()
+    }
 }
 
 // MARK: - Temporary Content View

@@ -3,7 +3,7 @@ import SwiftUI
 import shared
 
 struct ProfileView: View {
-    @StateObject private var viewModel = ProfileViewModel()
+    @StateObject private var viewModel = ProfileViewModelSKIE()
     @State private var showingSettings = false
     
     var body: some View {
@@ -16,7 +16,7 @@ struct ProfileView: View {
                         .frame(width: 100, height: 100)
                         .foregroundColor(.gray)
                     
-                    if viewModel.isAuthenticated {
+                    if viewModel.isLoggedIn {
                         Text(viewModel.userName)
                             .font(.title2)
                             .fontWeight(.bold)
@@ -30,7 +30,9 @@ struct ProfileView: View {
                             .fontWeight(.bold)
                         
                         Button(action: {
-                            viewModel.signIn(email: "demo@example.com", password: "password")
+                            Task {
+                                await viewModel.signIn(email: "demo@example.com", password: "password")
+                            }
                         }) {
                             Text("Sign In")
                                 .font(.headline)
@@ -61,10 +63,12 @@ struct ProfileView: View {
                         .foregroundColor(.primary)
                     }
                     
-                    if viewModel.isAuthenticated {
+                    if viewModel.isLoggedIn {
                         Section {
                             Button(action: {
-                                viewModel.signOut()
+                                Task {
+                                    await viewModel.signOut()
+                                }
                             }) {
                                 HStack {
                                     Image(systemName: "arrow.right.square.fill")

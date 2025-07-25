@@ -145,9 +145,4 @@ class SharedCocktailListViewModelWrapper: ObservableObject {
     }
 }
 
-// MARK: - KoinInitializer Extension
-extension KoinInitializer {
-    func getSharedCocktailListViewModel() -> SharedCocktailListViewModel {
-        return koinHelper.getSharedCocktailListViewModel()
-    }
-}
+// Note: getSharedCocktailListViewModel() is now defined in CocktailCraftApp.swift

@@ -4,7 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.recommendation.CocktailRecommendationEngine
 import com.cocktailcraft.domain.repository.CocktailRepository
-import com.cocktailcraft.util.ErrorUtils
+import com.cocktailcraft.util.ErrorHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -79,7 +79,7 @@ class CocktailDetailViewModel(
                 setError(
                     title = "Favorite Error",
                     message = "Failed to update favorite status: ${e.message}",
-                    category = ErrorUtils.ErrorCategory.DATA
+                    category = ErrorHandler.ErrorCategory.DATA
                 )
             }
         }

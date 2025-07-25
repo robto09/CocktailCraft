@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -99,8 +100,7 @@ fun SearchFilterChips(
                 // Filter chips
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // Category filter
                     if (filters.category != null) {
@@ -230,14 +230,3 @@ fun ActiveFilterChip(
     }
 }
 
-@Composable
-fun Column(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    androidx.compose.foundation.layout.Column(
-        modifier = modifier
-    ) {
-        content()
-    }
-}

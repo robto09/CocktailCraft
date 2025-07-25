@@ -14,14 +14,14 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cocktailcraft.ui.main.MainScreen
 import com.cocktailcraft.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.viewmodel.ThemeViewModel
+import com.cocktailcraft.viewmodel.ThemeViewModelSKIE
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             // Get the ThemeViewModel to observe dark mode preference
-            val themeViewModel: ThemeViewModel = viewModel()
+            val themeViewModel: ThemeViewModelSKIE = viewModel()
             val isDarkMode by themeViewModel.isDarkMode.collectAsState()
 
             // Get the current system dark mode state
@@ -29,7 +29,9 @@ class MainActivity : ComponentActivity() {
 
             // Update the ThemeViewModel with the current system dark mode state
             DisposableEffect(isSystemInDarkTheme) {
-                themeViewModel.updateSystemDarkMode(isSystemInDarkTheme)
+                if (isSystemInDarkTheme) {
+                    themeViewModel.applySystemTheme()
+                }
                 onDispose { }
             }
 

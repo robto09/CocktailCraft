@@ -6,7 +6,8 @@ import Kingfisher
 
 struct CocktailDetailView: View {
     let cocktailId: String
-    @ObservedObject private var cartViewModel = CartViewModel.instance
+    @StateObject private var cartViewModel = CartViewModelSKIE()
+    @StateObject private var reviewViewModel = ReviewViewModelSKIE()
     @StateObject private var favoritesViewModel = FavoritesViewModel()
     @State private var cocktail: Cocktail? = nil
     @State private var isLoading = true
@@ -230,11 +231,15 @@ struct CocktailDetailView: View {
     
     private func addToCart() {
         guard let cocktail = cocktail else { return }
-        cartViewModel.addToCart(cocktail: cocktail)
-        
-        // Show toast feedback
-        toastMessage = "Added \(cocktail.name) to cart"
-        showingToast = true
+        Task {
+            await cartViewModel.addToCart(cocktail, quantity: 1)
+            
+            // Show toast feedback
+            await MainActor.run {
+                toastMessage = "Added \(cocktail.name) to cart"
+                showingToast = true
+            }
+        }
     }
     
     private func createMockCocktail(for id: String) -> Cocktail? {

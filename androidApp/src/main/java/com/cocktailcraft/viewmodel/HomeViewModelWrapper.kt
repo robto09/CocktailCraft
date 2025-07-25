@@ -134,7 +134,7 @@ class HomeViewModelWrapper : ViewModel(), KoinComponent {
     
     fun updateSearchFilters(filters: SearchFilters) {
         viewModelScope.launch {
-            sharedViewModel.updateSearchFilters(filters)
+            sharedViewModel.applyFilters(filters.category, filters.ingredient)
         }
     }
     

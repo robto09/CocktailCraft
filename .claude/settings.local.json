@@ -30,7 +30,8 @@
       "Bash(true)",
       "Bash(cp:*)",
       "Bash(xcodebuild:*)",
-      "Bash(plutil:*)"
+      "Bash(plutil:*)",
+      "WebFetch(domain:skie.touchlab.co)"
     ],
     "deny": []
   }

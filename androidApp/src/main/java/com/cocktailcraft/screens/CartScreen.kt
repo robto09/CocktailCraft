@@ -36,7 +36,7 @@ import com.cocktailcraft.ui.components.SectionHeader
 import com.cocktailcraft.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.CartViewModel
 import com.cocktailcraft.viewmodel.FavoritesViewModel
-import com.cocktailcraft.viewmodel.OrderViewModel
+import com.cocktailcraft.viewmodel.OrderViewModelSKIE
 import com.cocktailcraft.navigation.NavigationManager
 import java.text.NumberFormat
 import java.util.Locale
@@ -44,7 +44,7 @@ import java.util.Locale
 @Composable
 fun CartScreen(
     viewModel: CartViewModel,
-    orderViewModel: OrderViewModel,
+    orderViewModel: OrderViewModelSKIE,
     navigationManager: NavigationManager,
     onStartShopping: () -> Unit,
     favoritesViewModel: FavoritesViewModel
@@ -160,7 +160,10 @@ fun CartScreen(
         confirmButtonText = "Confirm",
         dismissButtonText = "Cancel",
         onConfirm = {
-            orderViewModel.placeOrder(cartItems, totalPrice)
+            orderViewModel.placeOrder(
+                cartItems = cartItems,
+                totalPrice = totalPrice + 5.99 // Include delivery fee
+            )
             viewModel.clearCart()
             showPlaceOrderDialog = false
             navigationManager.navigateToOrderList()

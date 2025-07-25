@@ -27,12 +27,12 @@ import androidx.compose.material3.Divider
 
 @Composable
 fun OrderListScreen(
-    orderViewModel: com.cocktailcraft.viewmodel.OrderViewModel,
+    orderViewModel: com.cocktailcraft.viewmodel.OrderViewModelSKIE,
     navigationManager: NavigationManager
 ) {
     val orders by orderViewModel.orders.collectAsState()
-    val isLoading by orderViewModel.isLoading.collectAsState()
-    val error by orderViewModel.error.collectAsState()
+    val isLoading by orderViewModel.loadingState.collectAsState()
+    val error by orderViewModel.errorState.collectAsState()
 
     Column(
         modifier = Modifier
@@ -46,13 +46,13 @@ fun OrderListScreen(
             ) {
                 CircularProgressIndicator(color = AppColors.Primary)
             }
-        } else if (error?.isNotEmpty() == true) {
+        } else if (error != null) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = error ?: "",
+                    text = error?.message ?: "Unknown error",
                     color = AppColors.Error,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(16.dp)
