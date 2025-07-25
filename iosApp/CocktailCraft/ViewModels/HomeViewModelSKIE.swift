@@ -2,6 +2,15 @@ import SwiftUI
 import shared
 import Combine
 
+enum SortOption: CaseIterable {
+    case nameAsc
+    case nameDesc
+    case priceAsc
+    case priceDesc
+    case ratingDesc
+    case popularityDesc
+}
+
 /**
  * iOS ViewModel wrapper for SharedHomeViewModel using pure SKIE integration.
  * No FlowCollector bridge needed - uses native Swift async/await.
@@ -14,6 +23,8 @@ class HomeViewModelSKIE: ObservableObject {
     @Published var isLoading = false
     @Published var error: ErrorHandler.UserFriendlyError? = nil
     @Published var selectedCategory: String? = nil
+    @Published var selectedIngredient: String? = nil
+    @Published var sortOption: SortOption = .nameAsc
     @Published var isSearchActive = false
     @Published var searchQuery = ""
     @Published var isOfflineMode = false
@@ -64,7 +75,7 @@ class HomeViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await loading in sharedViewModel.isLoading {
                 await MainActor.run {
-                    self.isLoading = loading
+                    self.isLoading = loading.boolValue
                 }
             }
         })
@@ -91,7 +102,7 @@ class HomeViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await active in sharedViewModel.isSearchActive {
                 await MainActor.run {
-                    self.isSearchActive = active
+                    self.isSearchActive = active.boolValue
                 }
             }
         })
@@ -109,7 +120,7 @@ class HomeViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await offline in sharedViewModel.isOfflineMode {
                 await MainActor.run {
-                    self.isOfflineMode = offline
+                    self.isOfflineMode = offline.boolValue
                 }
             }
         })
@@ -118,7 +129,7 @@ class HomeViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await available in sharedViewModel.isNetworkAvailable {
                 await MainActor.run {
-                    self.isNetworkAvailable = available
+                    self.isNetworkAvailable = available.boolValue
                 }
             }
         })
@@ -127,7 +138,7 @@ class HomeViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await hasMore in sharedViewModel.hasMoreData {
                 await MainActor.run {
-                    self.hasMoreData = hasMore
+                    self.hasMoreData = hasMore.boolValue
                 }
             }
         })
@@ -135,7 +146,7 @@ class HomeViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await loadingMore in sharedViewModel.isLoadingMore {
                 await MainActor.run {
-                    self.isLoadingMore = loadingMore
+                    self.isLoadingMore = loadingMore.boolValue
                 }
             }
         })
@@ -153,39 +164,76 @@ class HomeViewModelSKIE: ObservableObject {
     // MARK: - Public Methods (using SKIE async/await)
     
     func loadCocktails() async {
-        await sharedViewModel.loadCocktails()
+        do {
+            try await sharedViewModel.loadCocktails()
+        } catch {
+            print("HomeViewModelSKIE - Error loading cocktails: \(error)")
+        }
     }
     
     func loadCocktailsByCategory(_ category: String?) async {
-        await sharedViewModel.loadCocktailsByCategory(category: category)
+        do {
+            try await sharedViewModel.loadCocktailsByCategory(category: category)
+        } catch {
+            print("HomeViewModelSKIE - Error loading cocktails by category: \(error)")
+        }
     }
     
     func searchCocktails(query: String) async {
-        await sharedViewModel.searchCocktails(query: query)
+        do {
+            try await sharedViewModel.searchCocktails(query: query)
+        } catch {
+            print("HomeViewModelSKIE - Error searching cocktails: \(error)")
+        }
     }
     
     func loadMoreCocktails() async {
-        await sharedViewModel.loadMoreCocktails()
+        do {
+            try await sharedViewModel.loadMoreCocktails()
+        } catch {
+            print("HomeViewModelSKIE - Error loading more cocktails: \(error)")
+        }
     }
     
     func toggleFavorite(_ cocktail: Cocktail) async {
-        await sharedViewModel.toggleFavorite(cocktail: cocktail)
+        do {
+            try await sharedViewModel.toggleFavorite(cocktail: cocktail)
+        } catch {
+            print("HomeViewModelSKIE - Error toggling favorite: \(error)")
+        }
     }
     
     func sortByPrice(ascending: Bool) async {
-        await sharedViewModel.sortByPrice(ascending: ascending)
+        do {
+            try await sharedViewModel.sortByPrice(ascending: ascending)
+        } catch {
+            print("HomeViewModelSKIE - Error sorting by price: \(error)")
+        }
     }
     
     func sortByRating() async {
-        await sharedViewModel.sortByRating()
+        do {
+            try await sharedViewModel.sortByRating()
+        } catch {
+            print("HomeViewModelSKIE - Error sorting by rating: \(error)")
+        }
     }
     
     func sortByPopularity() async {
-        await sharedViewModel.sortByPopularity()
+        do {
+            try await sharedViewModel.sortByPopularity()
+        } catch {
+            print("HomeViewModelSKIE - Error sorting by popularity: \(error)")
+        }
     }
     
     func getCocktailById(_ id: String) async -> Cocktail? {
-        return await sharedViewModel.getCocktailById(id: id)
+        do {
+            return try await sharedViewModel.getCocktailById(id: id)
+        } catch {
+            print("HomeViewModelSKIE - Error getting cocktail by ID: \(error)")
+            return nil
+        }
     }
     
     // MARK: - Synchronous Methods
@@ -226,17 +274,41 @@ class HomeViewModelSKIE: ObservableObject {
         await loadCocktails()
     }
     
+    func applyFilters() {
+        applyFilters(category: selectedCategory, ingredient: selectedIngredient)
+    }
+    
     func applyFilters(category: String? = nil, ingredient: String? = nil) {
         var filtered = cocktails
         
-        if let category = category {
-            filtered = filtered.filter { $0.category == category }
+        // Apply category filter
+        let categoryToUse = category ?? selectedCategory
+        if let categoryToUse = categoryToUse {
+            filtered = filtered.filter { $0.category == categoryToUse }
         }
         
-        if let ingredient = ingredient {
+        // Apply ingredient filter
+        let ingredientToUse = ingredient ?? selectedIngredient
+        if let ingredientToUse = ingredientToUse {
             filtered = filtered.filter { cocktail in
-                cocktail.ingredients.contains { $0.name == ingredient }
+                cocktail.ingredients.contains { $0.name == ingredientToUse }
             }
+        }
+        
+        // Apply sorting
+        switch sortOption {
+        case .nameAsc:
+            filtered = filtered.sorted { $0.name < $1.name }
+        case .nameDesc:
+            filtered = filtered.sorted { $0.name > $1.name }
+        case .priceAsc:
+            filtered = filtered.sorted { $0.price < $1.price }
+        case .priceDesc:
+            filtered = filtered.sorted { $0.price > $1.price }
+        case .ratingDesc:
+            filtered = filtered.sorted { $0.rating > $1.rating }
+        case .popularityDesc:
+            filtered = filtered.sorted { $0.rating > $1.rating } // Using rating as popularity proxy
         }
         
         filteredCocktails = filtered

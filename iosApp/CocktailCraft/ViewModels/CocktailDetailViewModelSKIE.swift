@@ -67,7 +67,7 @@ class CocktailDetailViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await favorite in sharedViewModel.isFavorite {
                 await MainActor.run {
-                    self.isFavorite = favorite
+                    self.isFavorite = favorite.boolValue
                 }
             }
         })
@@ -76,7 +76,7 @@ class CocktailDetailViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await inCart in sharedViewModel.isInCart {
                 await MainActor.run {
-                    self.isInCart = inCart
+                    self.isInCart = inCart.boolValue
                 }
             }
         })
@@ -85,7 +85,7 @@ class CocktailDetailViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await quantity in sharedViewModel.cartQuantity {
                 await MainActor.run {
-                    self.cartQuantity = quantity
+                    self.cartQuantity = Int(quantity.intValue)
                 }
             }
         })
@@ -112,7 +112,7 @@ class CocktailDetailViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await loading in sharedViewModel.isLoading {
                 await MainActor.run {
-                    self.isLoading = loading
+                    self.isLoading = loading.boolValue
                 }
             }
         })
@@ -130,23 +130,43 @@ class CocktailDetailViewModelSKIE: ObservableObject {
     // MARK: - Public Methods (using SKIE async/await)
     
     func loadCocktail(_ cocktailId: String) async {
-        await sharedViewModel.loadCocktail(cocktailId: cocktailId)
+        do {
+            try await sharedViewModel.loadCocktail(cocktailId: cocktailId)
+        } catch {
+            print("CocktailDetailViewModelSKIE - Error loading cocktail: \(error)")
+        }
     }
     
     func toggleFavorite() async {
-        await sharedViewModel.toggleFavorite()
+        do {
+            try await sharedViewModel.toggleFavorite()
+        } catch {
+            print("CocktailDetailViewModelSKIE - Error toggling favorite: \(error)")
+        }
     }
     
     func addToCart(quantity: Int = 1) async {
-        await sharedViewModel.addToCart(quantity: Int32(quantity))
+        do {
+            try await sharedViewModel.addToCart(quantity: Int32(quantity))
+        } catch {
+            print("CocktailDetailViewModelSKIE - Error adding to cart: \(error)")
+        }
     }
     
     func updateCartQuantity(_ quantity: Int) async {
-        await sharedViewModel.updateCartQuantity(quantity: Int32(quantity))
+        do {
+            try await sharedViewModel.updateCartQuantity(quantity: Int32(quantity))
+        } catch {
+            print("CocktailDetailViewModelSKIE - Error updating cart quantity: \(error)")
+        }
     }
     
     func removeFromCart() async {
-        await sharedViewModel.removeFromCart()
+        do {
+            try await sharedViewModel.removeFromCart()
+        } catch {
+            print("CocktailDetailViewModelSKIE - Error removing from cart: \(error)")
+        }
     }
     
     // MARK: - Synchronous Methods

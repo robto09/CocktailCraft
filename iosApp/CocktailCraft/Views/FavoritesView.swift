@@ -3,11 +3,11 @@ import SwiftUI
 import shared
 
 struct FavoritesView: View {
-    @StateObject private var viewModel = FavoritesViewModel()
+    @StateObject private var viewModel = FavoritesViewModelSKIE()
 
     var body: some View {
         Group {
-            if viewModel.favoriteCocktails.isEmpty {
+            if viewModel.favorites.isEmpty {
                 EmptyStateView(
                     icon: "heart",
                     title: "No favorites yet",
@@ -16,10 +16,12 @@ struct FavoritesView: View {
             } else {
                 ScrollView {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                        ForEach(viewModel.favoriteCocktails, id: \.id) { cocktail in
+                        ForEach(viewModel.favorites, id: \.id) { cocktail in
                             NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.id)) {
                                 CocktailCard(cocktail: cocktail, isFavorite: true) {
-                                    viewModel.removeFavorite(cocktailId: cocktail.id)
+                                    Task {
+                                        await viewModel.toggleFavorite(cocktail)
+                                    }
                                 }
                             }
                             .buttonStyle(PlainButtonStyle())
@@ -34,7 +36,9 @@ struct FavoritesView: View {
         }
         .navigationTitle("Favorites")
         .onAppear {
-            viewModel.loadFavorites()
+            Task {
+                await viewModel.loadFavorites()
+            }
         }
     }
 }

@@ -3,7 +3,7 @@ import SwiftUI
 import shared
 
 struct FilterView: View {
-    @ObservedObject var viewModel: HomeViewModel
+    @ObservedObject var viewModel: HomeViewModelSKIE
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {

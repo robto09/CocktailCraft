@@ -72,7 +72,7 @@ struct SKIETestView: View {
                 }
                 
                 // Test 2: Can we get SharedHomeViewModel?
-                let homeViewModel = helper.getSharedHomeViewModel()
+                let homeViewModel = helper.getSharedHomeViewModelSKIE()
                 await MainActor.run {
                     addResult("✅ SharedHomeViewModel retrieved via SKIE")
                 }
@@ -109,7 +109,7 @@ struct SKIETestView: View {
                 }
                 
                 // Test 5: Can we get SharedCartViewModel?
-                let cartViewModel = helper.getSharedCartViewModel()
+                let cartViewModel = helper.getSharedCartViewModelSKIE()
                 await MainActor.run {
                     addResult("✅ SharedCartViewModel retrieved via SKIE")
                 }

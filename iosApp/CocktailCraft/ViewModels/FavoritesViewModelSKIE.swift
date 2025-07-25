@@ -59,7 +59,7 @@ class FavoritesViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await count in sharedViewModel.favoriteCount {
                 await MainActor.run {
-                    self.favoriteCount = count
+                    self.favoriteCount = Int(count.intValue)
                 }
             }
         })
@@ -68,7 +68,7 @@ class FavoritesViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await loading in sharedViewModel.isLoading {
                 await MainActor.run {
-                    self.isLoading = loading
+                    self.isLoading = loading.boolValue
                 }
             }
         })
@@ -86,15 +86,27 @@ class FavoritesViewModelSKIE: ObservableObject {
     // MARK: - Public Methods (using SKIE async/await)
     
     func loadFavorites() async {
-        await sharedViewModel.loadFavorites()
+        do {
+            try await sharedViewModel.loadFavorites()
+        } catch {
+            print("FavoritesViewModelSKIE - Error loading favorites: \(error)")
+        }
     }
     
     func toggleFavorite(_ cocktail: Cocktail) async {
-        await sharedViewModel.toggleFavorite(cocktail: cocktail)
+        do {
+            try await sharedViewModel.toggleFavorite(cocktail: cocktail)
+        } catch {
+            print("FavoritesViewModelSKIE - Error toggling favorite: \(error)")
+        }
     }
     
     func clearAllFavorites() async {
-        await sharedViewModel.clearAllFavorites()
+        do {
+            try await sharedViewModel.clearAllFavorites()
+        } catch {
+            print("FavoritesViewModelSKIE - Error clearing favorites: \(error)")
+        }
     }
     
     // MARK: - Synchronous Methods

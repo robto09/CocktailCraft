@@ -65,7 +65,7 @@ class OfflineModeViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await enabled in sharedViewModel.isOfflineModeEnabled {
                 await MainActor.run {
-                    self.isOfflineModeEnabled = enabled
+                    self.isOfflineModeEnabled = enabled.boolValue
                 }
             }
         })
@@ -74,7 +74,7 @@ class OfflineModeViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await available in sharedViewModel.isNetworkAvailable {
                 await MainActor.run {
-                    self.isNetworkAvailable = available
+                    self.isNetworkAvailable = available.boolValue
                 }
             }
         })
@@ -92,7 +92,7 @@ class OfflineModeViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await size in sharedViewModel.cacheSize {
                 await MainActor.run {
-                    self.cacheSize = Int(size)
+                    self.cacheSize = Int(truncating: size)
                 }
             }
         })
@@ -110,7 +110,7 @@ class OfflineModeViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await loading in sharedViewModel.isLoading {
                 await MainActor.run {
-                    self.isLoading = loading
+                    self.isLoading = loading.boolValue
                 }
             }
         })
@@ -128,23 +128,43 @@ class OfflineModeViewModelSKIE: ObservableObject {
     // MARK: - Public Methods (using SKIE async/await)
     
     func toggleOfflineMode() async {
-        await sharedViewModel.toggleOfflineMode()
+        do {
+            try await sharedViewModel.toggleOfflineMode()
+        } catch {
+            print("OfflineModeViewModelSKIE - Error toggling offline mode: \(error)")
+        }
     }
     
     func setOfflineMode(_ enabled: Bool) async {
-        await sharedViewModel.setOfflineMode(enabled: enabled)
+        do {
+            try await sharedViewModel.setOfflineMode(enabled: enabled)
+        } catch {
+            print("OfflineModeViewModelSKIE - Error setting offline mode: \(error)")
+        }
     }
     
     func syncCachedData() async {
-        await sharedViewModel.syncCachedData()
+        do {
+            try await sharedViewModel.syncCachedData()
+        } catch {
+            print("OfflineModeViewModelSKIE - Error syncing cached data: \(error)")
+        }
     }
     
     func clearCache() async {
-        await sharedViewModel.clearCache()
+        do {
+            try await sharedViewModel.clearCache()
+        } catch {
+            print("OfflineModeViewModelSKIE - Error clearing cache: \(error)")
+        }
     }
     
     func loadRecentlyViewedCocktails() async {
-        await sharedViewModel.loadRecentlyViewedCocktails()
+        do {
+            try await sharedViewModel.loadRecentlyViewedCocktails()
+        } catch {
+            print("OfflineModeViewModelSKIE - Error loading recently viewed cocktails: \(error)")
+        }
     }
     
     // MARK: - Synchronous Methods

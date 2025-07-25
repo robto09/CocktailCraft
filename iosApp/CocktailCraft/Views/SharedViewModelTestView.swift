@@ -11,7 +11,7 @@ import SwiftUI
  * - Type safety without casting
  */
 struct SharedViewModelTestView: View {
-    @StateObject private var viewModel = SharedCocktailListViewModelWrapper()
+    @StateObject private var viewModel = HomeViewModelSKIE()
     @State private var searchText = ""
     
     var body: some View {
@@ -19,22 +19,24 @@ struct SharedViewModelTestView: View {
             VStack {
                 // Search Bar
                 SearchBar(text: $searchText, onSearchButtonClicked: {
-                    viewModel.searchCocktails(query: searchText)
+                    Task {
+                        await viewModel.searchCocktails(query: searchText)
+                    }
                 })
                 
                 // Status Information
                 HStack {
-                    Text("Cocktails: \(viewModel.cocktailCount)")
+                    Text("Cocktails: \(viewModel.cocktails.count)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
                     Spacer()
                     
-                    if viewModel.isSearching {
+                    if viewModel.isSearchActive {
                         Text("Searching: '\(viewModel.searchQuery)'")
                             .font(.caption)
                             .foregroundColor(.blue)
-                    } else if viewModel.hasSelectedCategory {
+                    } else if viewModel.selectedCategory != nil {
                         Text("Category: \(viewModel.selectedCategory ?? "")")
                             .font(.caption)
                             .foregroundColor(.green)
@@ -67,27 +69,33 @@ struct SharedViewModelTestView: View {
                         CocktailRowView(cocktail: cocktail)
                     }
                     .refreshable {
-                        viewModel.refresh()
+                        await viewModel.refreshCocktails()
                     }
                 }
                 
                 // Category Buttons
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
-                        CategoryButton(title: "All", isSelected: !viewModel.hasSelectedCategory) {
+                        CategoryButton(title: "All", isSelected: viewModel.selectedCategory == nil) {
                             viewModel.clearSearch()
                         }
                         
                         CategoryButton(title: "Cocktail", isSelected: viewModel.selectedCategory == "Cocktail") {
-                            viewModel.loadCocktailsByCategory(category: "Cocktail")
+                            Task {
+                                await viewModel.loadCocktailsByCategory("Cocktail")
+                            }
                         }
                         
                         CategoryButton(title: "Shot", isSelected: viewModel.selectedCategory == "Shot") {
-                            viewModel.loadCocktailsByCategory(category: "Shot")
+                            Task {
+                                await viewModel.loadCocktailsByCategory("Shot")
+                            }
                         }
                         
                         CategoryButton(title: "Beer", isSelected: viewModel.selectedCategory == "Beer") {
-                            viewModel.loadCocktailsByCategory(category: "Beer")
+                            Task {
+                                await viewModel.loadCocktailsByCategory("Beer")
+                            }
                         }
                     }
                     .padding(.horizontal)
@@ -99,7 +107,9 @@ struct SharedViewModelTestView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Refresh") {
-                        viewModel.refresh()
+                        Task {
+                            await viewModel.refreshCocktails()
+                        }
                     }
                 }
             }

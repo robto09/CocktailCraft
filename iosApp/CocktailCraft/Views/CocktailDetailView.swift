@@ -8,7 +8,7 @@ struct CocktailDetailView: View {
     let cocktailId: String
     @StateObject private var cartViewModel = CartViewModelSKIE()
     @StateObject private var reviewViewModel = ReviewViewModelSKIE()
-    @StateObject private var favoritesViewModel = FavoritesViewModel()
+    @StateObject private var favoritesViewModel = FavoritesViewModelSKIE()
     @State private var cocktail: Cocktail? = nil
     @State private var isLoading = true
     @State private var isFavorite = false
@@ -191,7 +191,7 @@ struct CocktailDetailView: View {
                 }
                 
                 if self.cocktail != nil {
-                    self.isFavorite = self.favoritesViewModel.isFavorite(cocktailId: self.cocktailId)
+                    self.isFavorite = self.favoritesViewModel.isFavorite(self.cocktailId)
                 }
             } catch {
                 print("CocktailDetailView - Error loading cocktail: \(error)")
@@ -221,12 +221,12 @@ struct CocktailDetailView: View {
     private func toggleFavorite() {
         guard let cocktail = cocktail else { return }
         
-        if isFavorite {
-            favoritesViewModel.removeFavorite(cocktailId: cocktail.id)
-        } else {
-            favoritesViewModel.addFavorite(cocktail: cocktail)
+        Task {
+            await favoritesViewModel.toggleFavorite(cocktail)
+            await MainActor.run {
+                self.isFavorite = self.favoritesViewModel.isFavorite(cocktail.id)
+            }
         }
-        isFavorite.toggle()
     }
     
     private func addToCart() {

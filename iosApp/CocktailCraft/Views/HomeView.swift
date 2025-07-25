@@ -3,7 +3,7 @@ import SwiftUI
 import shared
 
 struct HomeView: View {
-    @StateObject private var viewModel = HomeViewModel()
+    @StateObject private var viewModel = HomeViewModelSKIE()
     @State private var searchText = ""
     @State private var showingFilters = false
 
@@ -18,7 +18,9 @@ struct HomeView: View {
                         TextField("Search cocktails...", text: $searchText)
                             .textFieldStyle(.plain)
                             .onSubmit {
-                                viewModel.searchCocktails(query: searchText)
+                                Task {
+                                    await viewModel.searchCocktails(query: searchText)
+                                }
                             }
 
                         if !searchText.isEmpty {
@@ -56,7 +58,9 @@ struct HomeView: View {
                     .transition(.opacity)
                 } else if let error = viewModel.error {
                     ErrorView(error: error, onRetry: {
-                        viewModel.retryLoadCocktails()
+                        Task {
+                            await viewModel.loadCocktails()
+                        }
                     })
                 } else {
                     ScrollView {
@@ -87,10 +91,14 @@ struct HomeView: View {
                 FilterView(viewModel: viewModel)
             }
         .onAppear {
-            viewModel.loadCocktails()
+            Task {
+                await viewModel.loadCocktails()
+            }
         }
         .onChange(of: searchText) {
-            viewModel.searchCocktails(query: searchText)
+            Task {
+                await viewModel.searchCocktails(query: searchText)
+            }
         }
     }
 }
