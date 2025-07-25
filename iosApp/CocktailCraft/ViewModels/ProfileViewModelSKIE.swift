@@ -12,7 +12,9 @@ class ProfileViewModelSKIE: ObservableObject {
     @Published var user: User? = nil
     @Published var isLoggedIn = false
     @Published var authStatus = "Unknown"
-    @Published var isLoading = false
+    @Published var isAuthenticating = false
+    @Published var authError: String? = nil
+    @Published var userPreferences = UserPreferences()
     @Published var error: ErrorHandler.UserFriendlyError? = nil
     
     // Computed properties
@@ -72,7 +74,7 @@ class ProfileViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await loggedIn in sharedViewModel.isLoggedIn {
                 await MainActor.run {
-                    self.isLoggedIn = loggedIn
+                    self.isLoggedIn = loggedIn.boolValue
                 }
             }
         })
@@ -86,11 +88,29 @@ class ProfileViewModelSKIE: ObservableObject {
             }
         })
         
-        // Observe loading state
+        // Observe authenticating state
         observationTasks.append(Task {
-            for await loading in sharedViewModel.isLoading {
+            for await authenticating in sharedViewModel.isAuthenticating {
                 await MainActor.run {
-                    self.isLoading = loading
+                    self.isAuthenticating = authenticating.boolValue
+                }
+            }
+        })
+        
+        // Observe auth error
+        observationTasks.append(Task {
+            for await authErrorValue in sharedViewModel.authError {
+                await MainActor.run {
+                    self.authError = authErrorValue
+                }
+            }
+        })
+        
+        // Observe user preferences
+        observationTasks.append(Task {
+            for await preferences in sharedViewModel.userPreferences {
+                await MainActor.run {
+                    self.userPreferences = preferences
                 }
             }
         })
@@ -107,32 +127,60 @@ class ProfileViewModelSKIE: ObservableObject {
     
     // MARK: - Public Methods (using SKIE async/await)
     
-    func signIn(email: String, password: String) async {
-        await sharedViewModel.signIn(email: email, password: password)
+    func signIn(email: String, password: String) async -> Bool {
+        do {
+            return try await sharedViewModel.signIn(email: email, password: password).boolValue
+        } catch {
+            return false
+        }
     }
     
-    func signUp(name: String, email: String, password: String) async {
-        await sharedViewModel.signUp(name: name, email: email, password: password)
+    func signUp(name: String, email: String, password: String) async -> Bool {
+        do {
+            return try await sharedViewModel.signUp(name: name, email: email, password: password).boolValue
+        } catch {
+            return false
+        }
     }
     
-    func signOut() async {
-        await sharedViewModel.signOut()
+    func signOut() async -> Bool {
+        do {
+            return try await sharedViewModel.signOut().boolValue
+        } catch {
+            return false
+        }
     }
     
-    func updateProfile(name: String) async {
-        await sharedViewModel.updateProfile(name: name)
+    func updateProfile(name: String, email: String) async -> Bool {
+        do {
+            return try await sharedViewModel.updateProfile(name: name, email: email).boolValue
+        } catch {
+            return false
+        }
     }
     
-    func updateEmail(email: String) async {
-        await sharedViewModel.updateEmail(email: email)
+    func resetPassword(email: String) async -> Bool {
+        do {
+            return try await sharedViewModel.resetPassword(email: email).boolValue
+        } catch {
+            return false
+        }
     }
     
-    func changePassword(currentPassword: String, newPassword: String) async {
-        await sharedViewModel.changePassword(currentPassword: currentPassword, newPassword: newPassword)
+    func changePassword(oldPassword: String, newPassword: String) async -> Bool {
+        do {
+            return try await sharedViewModel.changePassword(oldPassword: oldPassword, newPassword: newPassword).boolValue
+        } catch {
+            return false
+        }
     }
     
-    func deleteAccount() async {
-        await sharedViewModel.deleteAccount()
+    func updateAddress(address: Address) async -> Bool {
+        do {
+            return try await sharedViewModel.updateAddress(address: address).boolValue
+        } catch {
+            return false
+        }
     }
     
     // MARK: - Synchronous Methods
@@ -149,8 +197,12 @@ class ProfileViewModelSKIE: ObservableObject {
         return Int(sharedViewModel.getPasswordStrength(password: password))
     }
     
-    func checkAuthStatus() {
-        sharedViewModel.checkAuthStatus()
+    func checkAuthStatus() async {
+        do {
+            try await sharedViewModel.checkAuthStatus()
+        } catch {
+            // Handle error silently
+        }
     }
     
     func clearError() {
@@ -159,6 +211,18 @@ class ProfileViewModelSKIE: ObservableObject {
     
     func refresh() {
         sharedViewModel.refresh()
+    }
+    
+    func getDisplayName() -> String {
+        return sharedViewModel.getDisplayName()
+    }
+    
+    func getUserEmail() -> String {
+        return sharedViewModel.getUserEmail()
+    }
+    
+    func isEmailVerified() -> Bool {
+        return sharedViewModel.isEmailVerified()
     }
     
     // MARK: - Helper Methods for SwiftUI

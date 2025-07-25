@@ -79,7 +79,7 @@ class OrderViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await count in sharedViewModel.orderCount {
                 await MainActor.run {
-                    self.orderCount = Int(count)
+                    self.orderCount = Int(truncating: count)
                 }
             }
         })
@@ -88,7 +88,7 @@ class OrderViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await placing in sharedViewModel.isPlacingOrder {
                 await MainActor.run {
-                    self.isPlacingOrder = placing
+                    self.isPlacingOrder = placing.boolValue
                 }
             }
         })
@@ -97,7 +97,7 @@ class OrderViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await total in sharedViewModel.totalSpent {
                 await MainActor.run {
-                    self.totalSpent = total
+                    self.totalSpent = total.doubleValue
                 }
             }
         })
@@ -106,7 +106,7 @@ class OrderViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await loading in sharedViewModel.isLoading {
                 await MainActor.run {
-                    self.isLoading = loading
+                    self.isLoading = loading.boolValue
                 }
             }
         })
@@ -124,27 +124,51 @@ class OrderViewModelSKIE: ObservableObject {
     // MARK: - Public Methods (using SKIE async/await)
     
     func loadOrders() async {
-        await sharedViewModel.loadOrders()
+        do {
+            try await sharedViewModel.loadOrders()
+        } catch {
+            // Handle error silently
+        }
     }
     
     func placeOrder(cartItems: [CocktailCartItem], totalPrice: Double) async -> Bool {
-        return await sharedViewModel.placeOrder(cartItems: cartItems, totalPrice: totalPrice)
+        do {
+            return try await sharedViewModel.placeOrder(cartItems: cartItems, totalPrice: totalPrice).boolValue
+        } catch {
+            return false
+        }
     }
     
     func getOrderById(_ orderId: String) async -> Order? {
-        return await sharedViewModel.getOrderById(orderId: orderId)
+        do {
+            return try await sharedViewModel.getOrderById(orderId: orderId)
+        } catch {
+            return nil
+        }
     }
     
     func updateOrderStatus(_ orderId: String, status: String) async -> Bool {
-        return await sharedViewModel.updateOrderStatus(orderId: orderId, status: status)
+        do {
+            return try await sharedViewModel.updateOrderStatus(orderId: orderId, status: status).boolValue
+        } catch {
+            return false
+        }
     }
     
     func cancelOrder(_ orderId: String) async -> Bool {
-        return await sharedViewModel.cancelOrder(orderId: orderId)
+        do {
+            return try await sharedViewModel.cancelOrder(orderId: orderId).boolValue
+        } catch {
+            return false
+        }
     }
     
     func reorderItems(_ orderId: String) async -> Bool {
-        return await sharedViewModel.reorderItems(orderId: orderId)
+        do {
+            return try await sharedViewModel.reorderItems(orderId: orderId).boolValue
+        } catch {
+            return false
+        }
     }
     
     // MARK: - Synchronous Methods

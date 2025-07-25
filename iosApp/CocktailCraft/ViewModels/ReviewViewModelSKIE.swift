@@ -8,15 +8,12 @@ import Combine
  */
 @MainActor
 class ReviewViewModelSKIE: ObservableObject {
-    // Published properties for SwiftUI
-    @Published var reviews: [Review] = []
+    // Published properties for SwiftUI - matching actual SharedReviewViewModel StateFlows
+    @Published var reviews: [String: [Review]] = [:]
     @Published var currentCocktailReviews: [Review] = []
-    @Published var userReviews: [Review] = []
-    @Published var averageRating: Double = 0.0
-    @Published var totalReviews: Int = 0
-    @Published var ratingDistribution: [Int: Int] = [:]
-    @Published var isSubmittingReview = false
-    @Published var selectedCocktailId: String? = nil
+    @Published var averageRating: Float = 0.0
+    @Published var reviewCount: Int = 0
+    @Published var currentCocktailId: String? = nil
     @Published var isLoading = false
     @Published var error: ErrorHandler.UserFriendlyError? = nil
     
@@ -25,12 +22,8 @@ class ReviewViewModelSKIE: ObservableObject {
         sharedViewModel.hasReviews
     }
     
-    var canSubmitReview: Bool {
-        sharedViewModel.canSubmitReview
-    }
-    
-    var formattedAverageRating: String {
-        sharedViewModel.formattedAverageRating
+    var isEmpty: Bool {
+        sharedViewModel.isEmpty
     }
     
     // Shared ViewModel instance
@@ -58,9 +51,16 @@ class ReviewViewModelSKIE: ObservableObject {
     private func startObserving() {
         // Observe reviews using SKIE async sequence
         observationTasks.append(Task {
-            for await reviewList in sharedViewModel.reviews {
+            for await reviewMap in sharedViewModel.reviews {
                 await MainActor.run {
-                    self.reviews = reviewList
+                    // Convert Kotlin Map to Swift Dictionary
+                    var swiftDict: [String: [Review]] = [:]
+                    for (key, value) in reviewMap {
+                        if let stringKey = key as? String, let reviewList = value as? [Review] {
+                            swiftDict[stringKey] = reviewList
+                        }
+                    }
+                    self.reviews = swiftDict
                 }
             }
         })
@@ -74,63 +74,29 @@ class ReviewViewModelSKIE: ObservableObject {
             }
         })
         
-        // Observe user reviews
-        observationTasks.append(Task {
-            for await userReviewList in sharedViewModel.userReviews {
-                await MainActor.run {
-                    self.userReviews = userReviewList
-                }
-            }
-        })
-        
         // Observe average rating
         observationTasks.append(Task {
             for await rating in sharedViewModel.averageRating {
                 await MainActor.run {
-                    self.averageRating = rating
+                    self.averageRating = rating.floatValue
                 }
             }
         })
         
-        // Observe total reviews
+        // Observe review count
         observationTasks.append(Task {
-            for await total in sharedViewModel.totalReviews {
+            for await count in sharedViewModel.reviewCount {
                 await MainActor.run {
-                    self.totalReviews = Int(total)
+                    self.reviewCount = count.intValue
                 }
             }
         })
         
-        // Observe rating distribution
+        // Observe current cocktail ID
         observationTasks.append(Task {
-            for await distribution in sharedViewModel.ratingDistribution {
+            for await cocktailId in sharedViewModel.currentCocktailId {
                 await MainActor.run {
-                    // Convert Kotlin Map to Swift Dictionary
-                    var swiftDict: [Int: Int] = [:]
-                    for (key, value) in distribution {
-                        if let intKey = key as? Int, let intValue = value as? Int {
-                            swiftDict[intKey] = intValue
-                        }
-                    }
-                    self.ratingDistribution = swiftDict
-                }
-            }
-        })
-        
-        // Observe submitting review state
-        observationTasks.append(Task {
-            for await submitting in sharedViewModel.isSubmittingReview {
-                await MainActor.run {
-                    self.isSubmittingReview = submitting
-                }
-            }
-        })
-        
-        // Observe selected cocktail ID
-        observationTasks.append(Task {
-            for await cocktailId in sharedViewModel.selectedCocktailId {
-                await MainActor.run {
-                    self.selectedCocktailId = cocktailId
+                    self.currentCocktailId = cocktailId
                 }
             }
         })
@@ -139,7 +105,7 @@ class ReviewViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await loading in sharedViewModel.isLoading {
                 await MainActor.run {
-                    self.isLoading = loading
+                    self.isLoading = loading.boolValue
                 }
             }
         })
@@ -156,129 +122,112 @@ class ReviewViewModelSKIE: ObservableObject {
     
     // MARK: - Public Methods (using SKIE async/await)
     
-    func submitReview(cocktailId: String, rating: Int, comment: String, userName: String) async {
-        await sharedViewModel.submitReview(
-            cocktailId: cocktailId,
-            rating: Int32(rating),
-            comment: comment,
-            userName: userName
-        )
+    func submitReview(cocktailId: String, rating: Float, comment: String, userName: String) async -> Bool {
+        do {
+            let result = try await sharedViewModel.submitReview(
+                cocktailId: cocktailId,
+                rating: rating,
+                comment: comment,
+                userName: userName
+            )
+            return result.boolValue
+        } catch {
+            return false
+        }
     }
     
     func loadReviewsForCocktail(_ cocktailId: String) async {
-        await sharedViewModel.loadReviewsForCocktail(cocktailId: cocktailId)
+        do {
+            try await sharedViewModel.loadReviewsForCocktail(cocktailId: cocktailId)
+        } catch {
+            // Error handling is done in the shared ViewModel
+        }
     }
     
-    func loadUserReviews(_ userId: String) async {
-        await sharedViewModel.loadUserReviews(userId: userId)
+    func updateReview(_ reviewId: String, rating: Float, comment: String) async -> Bool {
+        do {
+            let result = try await sharedViewModel.updateReview(
+                reviewId: reviewId,
+                rating: rating,
+                comment: comment
+            )
+            return result.boolValue
+        } catch {
+            return false
+        }
     }
     
-    func updateReview(_ reviewId: String, rating: Int, comment: String) async {
-        await sharedViewModel.updateReview(
-            reviewId: reviewId,
-            rating: Int32(rating),
-            comment: comment
-        )
+    func deleteReview(_ reviewId: String) async -> Bool {
+        do {
+            let result = try await sharedViewModel.deleteReview(reviewId: reviewId)
+            return result.boolValue
+        } catch {
+            return false
+        }
     }
     
-    func deleteReview(_ reviewId: String) async {
-        await sharedViewModel.deleteReview(reviewId: reviewId)
-    }
-    
-    func likeReview(_ reviewId: String) async {
-        await sharedViewModel.likeReview(reviewId: reviewId)
-    }
-    
-    func unlikeReview(_ reviewId: String) async {
-        await sharedViewModel.unlikeReview(reviewId: reviewId)
-    }
-    
-    func reportReview(_ reviewId: String, reason: String) async {
-        await sharedViewModel.reportReview(reviewId: reviewId, reason: reason)
+    func loadAllReviews() async {
+        do {
+            try await sharedViewModel.loadAllReviews()
+        } catch {
+            // Error handling is done in the shared ViewModel
+        }
     }
     
     // MARK: - Synchronous Methods
-    
-    func setSelectedCocktail(_ cocktailId: String) {
-        sharedViewModel.setSelectedCocktail(cocktailId: cocktailId)
-    }
     
     func getReviewsForCocktail(_ cocktailId: String) -> [Review] {
         return sharedViewModel.getReviewsForCocktail(cocktailId: cocktailId)
     }
     
-    func getUserReviewForCocktail(_ cocktailId: String, userId: String) -> Review? {
-        return sharedViewModel.getUserReviewForCocktail(cocktailId: cocktailId, userId: userId)
+    func getAverageRating(_ cocktailId: String) -> Float {
+        return sharedViewModel.getAverageRating(cocktailId: cocktailId)
     }
     
-    func hasUserReviewedCocktail(_ cocktailId: String, userId: String) -> Bool {
-        return sharedViewModel.hasUserReviewedCocktail(cocktailId: cocktailId, userId: userId)
+    func getReviewCount(_ cocktailId: String) -> Int {
+        return Int(sharedViewModel.getReviewCount(cocktailId: cocktailId))
     }
     
-    func calculateAverageRating(_ cocktailId: String) -> Double {
-        return sharedViewModel.calculateAverageRating(cocktailId: cocktailId)
+    func validateReview(rating: Float, comment: String) -> Bool {
+        return sharedViewModel.validateReview(rating: rating, comment: comment)
     }
     
     func getRatingDistribution(_ cocktailId: String) -> [Int: Int] {
         let kotlinMap = sharedViewModel.getRatingDistribution(cocktailId: cocktailId)
         var swiftDict: [Int: Int] = [:]
         for (key, value) in kotlinMap {
-            if let intKey = key as? Int, let intValue = value as? Int {
-                swiftDict[intKey] = intValue
+            if let intKey = key as? KotlinInt, let intValue = value as? KotlinInt {
+                swiftDict[intKey.intValue] = intValue.intValue
             }
         }
         return swiftDict
     }
     
-    func getTotalReviewCount(_ cocktailId: String) -> Int {
-        return Int(sharedViewModel.getTotalReviewCount(cocktailId: cocktailId))
+    func getReviewsSortedByRating(_ cocktailId: String) -> [Review] {
+        return sharedViewModel.getReviewsSortedByRating(cocktailId: cocktailId)
     }
     
-    func isValidRating(_ rating: Int) -> Bool {
-        return sharedViewModel.isValidRating(rating: Int32(rating))
+    func getReviewsSortedByDate(_ cocktailId: String) -> [Review] {
+        return sharedViewModel.getReviewsSortedByDate(cocktailId: cocktailId)
     }
     
-    func isValidComment(_ comment: String) -> Bool {
-        return sharedViewModel.isValidComment(comment: comment)
+    func getRecentReviews(limit: Int = 10) -> [Review] {
+        return sharedViewModel.getRecentReviews(limit: Int32(limit))
     }
     
-    func getReviewById(_ reviewId: String) -> Review? {
-        return sharedViewModel.getReviewById(reviewId: reviewId)
+    func searchReviews(query: String) -> [Review] {
+        return sharedViewModel.searchReviews(query: query)
     }
     
-    func sortReviewsByRating(ascending: Bool = false) -> [Review] {
-        return sharedViewModel.sortReviewsByRating(ascending: ascending)
-    }
-    
-    func sortReviewsByDate(ascending: Bool = false) -> [Review] {
-        return sharedViewModel.sortReviewsByDate(ascending: ascending)
-    }
-    
-    func filterReviewsByRating(_ minRating: Int) -> [Review] {
-        return sharedViewModel.filterReviewsByRating(minRating: Int32(minRating))
-    }
-    
-    func getReviewsSummary(_ cocktailId: String) -> String {
-        return sharedViewModel.getReviewsSummary(cocktailId: cocktailId)
-    }
-    
-    func clearError() {
-        sharedViewModel.clearError()
-    }
-    
-    func clearSelectedCocktail() {
-        sharedViewModel.clearSelectedCocktail()
-    }
-    
-    func refreshReviews() {
-        sharedViewModel.refreshReviews()
+    func refresh() {
+        sharedViewModel.refresh()
     }
     
     // MARK: - Helper Methods for SwiftUI
     
-    func getStarRating(_ rating: Double) -> String {
+    func getStarRating(_ rating: Float) -> String {
         let fullStars = Int(rating)
-        let hasHalfStar = rating - Double(fullStars) >= 0.5
+        let hasHalfStar = rating - Float(fullStars) >= 0.5
         let emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
         
         return String(repeating: "★", count: fullStars) +
@@ -286,11 +235,11 @@ class ReviewViewModelSKIE: ObservableObject {
                String(repeating: "☆", count: emptyStars)
     }
     
-    func formatRating(_ rating: Double) -> String {
+    func formatRating(_ rating: Float) -> String {
         return String(format: "%.1f", rating)
     }
     
-    func getRatingColor(_ rating: Double) -> Color {
+    func getRatingColor(_ rating: Float) -> Color {
         switch rating {
         case 4.5...5.0: return .green
         case 3.5..<4.5: return .yellow
@@ -300,7 +249,7 @@ class ReviewViewModelSKIE: ObservableObject {
     }
     
     func getReviewCountText() -> String {
-        let count = totalReviews
+        let count = reviewCount
         if count == 0 {
             return "No reviews"
         } else if count == 1 {
@@ -320,9 +269,11 @@ class ReviewViewModelSKIE: ObservableObject {
         return review.date
     }
     
-    func getRatingPercentage(_ rating: Int) -> Double {
-        guard totalReviews > 0 else { return 0.0 }
-        let count = ratingDistribution[rating] ?? 0
-        return Double(count) / Double(totalReviews) * 100.0
+    func getRatingPercentage(_ rating: Int, for cocktailId: String) -> Double {
+        let distribution = getRatingDistribution(cocktailId)
+        let totalCount = distribution.values.reduce(0, +)
+        guard totalCount > 0 else { return 0.0 }
+        let count = distribution[rating] ?? 0
+        return Double(count) / Double(totalCount) * 100.0
     }
 }

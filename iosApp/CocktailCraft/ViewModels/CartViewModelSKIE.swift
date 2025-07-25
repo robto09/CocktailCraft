@@ -76,7 +76,7 @@ class CartViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await total in sharedViewModel.totalPrice {
                 await MainActor.run {
-                    self.totalPrice = total
+                    self.totalPrice = total.doubleValue
                 }
             }
         })
@@ -85,7 +85,7 @@ class CartViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await count in sharedViewModel.itemCount {
                 await MainActor.run {
-                    self.itemCount = count
+                    self.itemCount = Int(count.int32Value)
                 }
             }
         })
@@ -94,7 +94,7 @@ class CartViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await loading in sharedViewModel.isLoading {
                 await MainActor.run {
-                    self.isLoading = loading
+                    self.isLoading = loading.boolValue
                 }
             }
         })
@@ -112,27 +112,51 @@ class CartViewModelSKIE: ObservableObject {
     // MARK: - Public Methods (using SKIE async/await)
     
     func addToCart(_ cocktail: Cocktail, quantity: Int = 1) async {
-        await sharedViewModel.addToCart(cocktail: cocktail, quantity: Int32(quantity))
+        do {
+            try await sharedViewModel.addToCart(cocktail: cocktail, quantity: Int32(quantity))
+        } catch {
+            // Handle error silently
+        }
     }
     
     func removeFromCart(_ cocktailId: String) async {
-        await sharedViewModel.removeFromCart(cocktailId: cocktailId)
+        do {
+            try await sharedViewModel.removeFromCart(cocktailId: cocktailId)
+        } catch {
+            // Handle error silently
+        }
     }
     
     func updateQuantity(_ cocktailId: String, quantity: Int) async {
-        await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: Int32(quantity))
+        do {
+            try await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: Int32(quantity))
+        } catch {
+            // Handle error silently
+        }
     }
     
     func incrementQuantity(_ cocktailId: String) async {
-        await sharedViewModel.incrementQuantity(cocktailId: cocktailId)
+        do {
+            try await sharedViewModel.incrementQuantity(cocktailId: cocktailId)
+        } catch {
+            // Handle error silently
+        }
     }
     
     func decrementQuantity(_ cocktailId: String) async {
-        await sharedViewModel.decrementQuantity(cocktailId: cocktailId)
+        do {
+            try await sharedViewModel.decrementQuantity(cocktailId: cocktailId)
+        } catch {
+            // Handle error silently
+        }
     }
     
     func clearCart() async {
-        await sharedViewModel.clearCart()
+        do {
+            try await sharedViewModel.clearCart()
+        } catch {
+            // Handle error silently
+        }
     }
     
     // MARK: - Synchronous Methods

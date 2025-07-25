@@ -70,8 +70,11 @@ struct CartView: View {
                 title: Text("Confirm Order"),
                 message: Text("Are you sure you want to place this order for $\(viewModel.totalPrice + 5.99, specifier: "%.2f")?"),
                 primaryButton: .default(Text("Confirm")) {
-                    viewModel.checkout { success in
+                    Task {
+                        let success = await orderViewModel.placeOrder(cartItems: viewModel.cartItems, totalPrice: viewModel.totalPrice)
                         if success {
+                            // Clear cart after successful order
+                            await viewModel.clearCart()
                             // Navigate to Orders tab (tag 3)
                             selectedTab = 3
                         }
@@ -85,7 +88,7 @@ struct CartView: View {
 
 struct CartItemRow: View {
     let item: CocktailCartItem
-    @ObservedObject var viewModel: CartViewModel
+    @ObservedObject var viewModel: CartViewModelSKIE
     
     var body: some View {
         HStack {

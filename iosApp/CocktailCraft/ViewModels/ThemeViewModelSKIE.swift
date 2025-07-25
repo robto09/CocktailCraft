@@ -63,7 +63,7 @@ class ThemeViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await darkMode in sharedViewModel.isDarkMode {
                 await MainActor.run {
-                    self.isDarkMode = darkMode
+                    self.isDarkMode = darkMode.boolValue
                 }
             }
         })
@@ -81,7 +81,7 @@ class ThemeViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await systemTheme in sharedViewModel.isSystemTheme {
                 await MainActor.run {
-                    self.isSystemTheme = systemTheme
+                    self.isSystemTheme = systemTheme.boolValue
                 }
             }
         })
@@ -108,7 +108,7 @@ class ThemeViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await highContrast in sharedViewModel.isHighContrast {
                 await MainActor.run {
-                    self.isHighContrast = highContrast
+                    self.isHighContrast = highContrast.boolValue
                 }
             }
         })
@@ -117,7 +117,7 @@ class ThemeViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await reducedMotion in sharedViewModel.isReducedMotion {
                 await MainActor.run {
-                    self.isReducedMotion = reducedMotion
+                    self.isReducedMotion = reducedMotion.boolValue
                 }
             }
         })
@@ -126,7 +126,7 @@ class ThemeViewModelSKIE: ObservableObject {
         observationTasks.append(Task {
             for await loading in sharedViewModel.isLoading {
                 await MainActor.run {
-                    self.isLoading = loading
+                    self.isLoading = loading.boolValue
                 }
             }
         })
@@ -144,35 +144,67 @@ class ThemeViewModelSKIE: ObservableObject {
     // MARK: - Public Methods (using SKIE async/await)
     
     func setThemeMode(_ mode: String) async {
-        await sharedViewModel.setThemeMode(mode: mode)
+        do {
+            try await sharedViewModel.setThemeMode(mode: mode)
+        } catch {
+            // Handle error silently
+        }
     }
     
     func toggleDarkMode() async {
-        await sharedViewModel.toggleDarkMode()
+        do {
+            try await sharedViewModel.toggleDarkMode()
+        } catch {
+            // Handle error silently
+        }
     }
     
     func setAccentColor(_ color: String) async {
-        await sharedViewModel.setAccentColor(color: color)
+        do {
+            try await sharedViewModel.setAccentColor(color: color)
+        } catch {
+            // Handle error silently
+        }
     }
     
     func setFontSize(_ size: String) async {
-        await sharedViewModel.setFontSize(size: size)
+        do {
+            try await sharedViewModel.setFontSize(size: size)
+        } catch {
+            // Handle error silently
+        }
     }
     
     func toggleHighContrast() async {
-        await sharedViewModel.toggleHighContrast()
+        do {
+            try await sharedViewModel.toggleHighContrast()
+        } catch {
+            // Handle error silently
+        }
     }
     
     func toggleReducedMotion() async {
-        await sharedViewModel.toggleReducedMotion()
+        do {
+            try await sharedViewModel.toggleReducedMotion()
+        } catch {
+            // Handle error silently
+        }
     }
     
     func resetToDefaults() async {
-        await sharedViewModel.resetToDefaults()
+        do {
+            try await sharedViewModel.resetToDefaults()
+        } catch {
+            // Handle error silently
+        }
     }
     
     func applySystemTheme() async {
-        await sharedViewModel.applySystemTheme()
+        do {
+            try await sharedViewModel.applySystemTheme()
+        } catch {
+            // Handle error silently
+        }
     }
     
     // MARK: - Synchronous Methods
