@@ -18,10 +18,10 @@ enum SortOption: CaseIterable {
 @MainActor
 class HomeViewModelSKIE: ObservableObject {
     // Published properties for SwiftUI
-    @Published var cocktails: [Cocktail] = []
-    @Published var filteredCocktails: [Cocktail] = []
+    @Published var cocktails: [shared.Cocktail] = []
+    @Published var filteredCocktails: [shared.Cocktail] = []
     @Published var isLoading = false
-    @Published var error: ErrorHandler.UserFriendlyError? = nil
+    @Published var error: shared.ErrorHandler.UserFriendlyError? = nil
     @Published var selectedCategory: String? = nil
     @Published var selectedIngredient: String? = nil
     @Published var sortOption: SortOption = .nameAsc
@@ -31,17 +31,17 @@ class HomeViewModelSKIE: ObservableObject {
     @Published var isNetworkAvailable = true
     @Published var hasMoreData = false
     @Published var isLoadingMore = false
-    @Published var favorites: [Cocktail] = []
+    @Published var favorites: [shared.Cocktail] = []
     
     // Shared ViewModel instance
-    private let sharedViewModel: SharedHomeViewModel
+    private let sharedViewModel: shared.SharedHomeViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
     
     init() {
         // Get shared ViewModel from Koin
-        self.sharedViewModel = KoinInitializer.shared.getSharedHomeViewModel()
+        self.sharedViewModel = getSharedKoinHelper().getSharedHomeViewModel()
         
         // Start observing StateFlows using SKIE async/await
         startObserving()
@@ -195,7 +195,7 @@ class HomeViewModelSKIE: ObservableObject {
         }
     }
     
-    func toggleFavorite(_ cocktail: Cocktail) async {
+    func toggleFavorite(_ cocktail: shared.Cocktail) async {
         do {
             try await sharedViewModel.toggleFavorite(cocktail: cocktail)
         } catch {
@@ -227,7 +227,7 @@ class HomeViewModelSKIE: ObservableObject {
         }
     }
     
-    func getCocktailById(_ id: String) async -> Cocktail? {
+    func getCocktailById(_ id: String) async -> shared.Cocktail? {
         do {
             return try await sharedViewModel.getCocktailById(id: id)
         } catch {
@@ -246,7 +246,7 @@ class HomeViewModelSKIE: ObservableObject {
         return sharedViewModel.getCategories()
     }
     
-    func getCocktailsByCategory(_ category: String, limit: Int32 = 3) -> [Cocktail] {
+    func getCocktailsByCategory(_ category: String, limit: Int32 = 3) -> [shared.Cocktail] {
         return sharedViewModel.getCocktailsByCategory(category: category, limit: limit)
     }
     

@@ -9,19 +9,19 @@ struct CocktailDetailView: View {
     @StateObject private var cartViewModel = CartViewModelSKIE()
     @StateObject private var reviewViewModel = ReviewViewModelSKIE()
     @StateObject private var favoritesViewModel = FavoritesViewModelSKIE()
-    @State private var cocktail: Cocktail? = nil
+    @State private var cocktail: shared.Cocktail? = nil
     @State private var isLoading = true
     @State private var isFavorite = false
     @State private var showingToast = false
     @State private var toastMessage = ""
-    @State private var error: ErrorHandler.UserFriendlyError? = nil
+    @State private var error: shared.ErrorHandler.UserFriendlyError? = nil
 
     // TODO: Use SharedCocktailDetailViewModel once exported properly
-    private let repository: CocktailRepository?
+    private let repository: shared.CocktailRepository?
 
     init(cocktailId: String) {
         self.cocktailId = cocktailId
-        self.repository = KoinInitializer.shared.getCocktailRepository()
+        self.repository = getSharedKoinHelper().getCocktailRepository()
     }
 
     var body: some View {

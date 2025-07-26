@@ -9,10 +9,10 @@ import Combine
 @MainActor
 class FavoritesViewModelSKIE: ObservableObject {
     // Published properties for SwiftUI
-    @Published var favorites: [Cocktail] = []
+    @Published var favorites: [shared.Cocktail] = []
     @Published var favoriteCount: Int = 0
     @Published var isLoading = false
-    @Published var error: ErrorHandler.UserFriendlyError? = nil
+    @Published var error: shared.ErrorHandler.UserFriendlyError? = nil
     
     // Computed properties
     var isEmpty: Bool {
@@ -24,14 +24,14 @@ class FavoritesViewModelSKIE: ObservableObject {
     }
     
     // Shared ViewModel instance
-    private let sharedViewModel: SharedFavoritesViewModel
+    private let sharedViewModel: shared.SharedFavoritesViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
     
     init() {
         // Get shared ViewModel from Koin
-        self.sharedViewModel = KoinInitializer.shared.getSharedFavoritesViewModel()
+        self.sharedViewModel = getSharedKoinHelper().getSharedFavoritesViewModel()
         
         // Start observing StateFlows using SKIE async/await
         startObserving()
@@ -93,7 +93,7 @@ class FavoritesViewModelSKIE: ObservableObject {
         }
     }
     
-    func toggleFavorite(_ cocktail: Cocktail) async {
+    func toggleFavorite(_ cocktail: shared.Cocktail) async {
         do {
             try await sharedViewModel.toggleFavorite(cocktail: cocktail)
         } catch {
@@ -115,7 +115,7 @@ class FavoritesViewModelSKIE: ObservableObject {
         return sharedViewModel.isFavorite(cocktailId: cocktailId)
     }
     
-    func getFavoritesByCategory(_ category: String) -> [Cocktail] {
+    func getFavoritesByCategory(_ category: String) -> [shared.Cocktail] {
         return sharedViewModel.getFavoritesByCategory(category: category)
     }
     
@@ -123,19 +123,19 @@ class FavoritesViewModelSKIE: ObservableObject {
         return sharedViewModel.getFavoriteCategories()
     }
     
-    func searchFavorites(query: String) -> [Cocktail] {
+    func searchFavorites(query: String) -> [shared.Cocktail] {
         return sharedViewModel.searchFavorites(query: query)
     }
     
-    func getFavoritesSortedByName() -> [Cocktail] {
+    func getFavoritesSortedByName() -> [shared.Cocktail] {
         return sharedViewModel.getFavoritesSortedByName()
     }
     
-    func getFavoritesSortedByDate() -> [Cocktail] {
+    func getFavoritesSortedByDate() -> [shared.Cocktail] {
         return sharedViewModel.getFavoritesSortedByDate()
     }
     
-    func getFavoritesSortedByRating() -> [Cocktail] {
+    func getFavoritesSortedByRating() -> [shared.Cocktail] {
         return sharedViewModel.getFavoritesSortedByRating()
     }
     
@@ -159,7 +159,7 @@ class FavoritesViewModelSKIE: ObservableObject {
         return getFavoritesByCategory(category).count
     }
     
-    func getTopRatedFavorites(limit: Int = 5) -> [Cocktail] {
+    func getTopRatedFavorites(limit: Int = 5) -> [shared.Cocktail] {
         return getFavoritesSortedByRating().prefix(limit).map { $0 }
     }
 }

@@ -1,5 +1,4 @@
 import SwiftUI
-
 import shared
 
 @main
@@ -7,7 +6,7 @@ struct CocktailCraftApp: App {
     
     init() {
         // Initialize Koin
-        KoinInitializer.shared.initialize()
+        KoinInitializer.instance.initialize()
     }
     
     var body: some Scene {
@@ -20,100 +19,32 @@ struct CocktailCraftApp: App {
 
 // MARK: - Koin Initializer
 class KoinInitializer {
-    static let shared = KoinInitializer()
+    static let instance = KoinInitializer()
 
     private init() {}
 
     func initialize() {
-        // Start Koin with all modules
-        let koinApplication = KoinIOSKt.doInitKoin()
+        // Start Koin with all modules using SKIE generated function
+        let koinApplication = shared.doInitKoin()
         _koin = koinApplication.koin
     }
 
-    private var _koin: Koin_coreKoin?
-    var koin: Koin_coreKoin {
+    private var _koin: shared.Koin_coreKoin?
+    var koin: shared.Koin_coreKoin {
         return _koin!
     }
 }
 
 // Global accessor for Koin - use lazy initialization
-var koin: Koin_coreKoin {
-    return KoinInitializer.shared.koin
+var koin: shared.Koin_coreKoin {
+    return KoinInitializer.instance.koin
 }
 
-// Use KoinHelper to get repositories without reified generics
-extension KoinInitializer {
-    func getCocktailRepository() -> CocktailRepository? {
-        let helper = KoinHelper()
-        return helper.getCocktailRepository()
-    }
+// MARK: - Global Koin Helper Functions
+// Using global functions to avoid namespace conflicts
 
-    func getAuthRepository() -> AuthRepository? {
-        let helper = KoinHelper()
-        return helper.getAuthRepository()
-    }
-
-    func getCartRepository() -> CartRepository? {
-        let helper = KoinHelper()
-        return helper.getCartRepository()
-    }
-
-    func getOrderRepository() -> OrderRepository? {
-        let helper = KoinHelper()
-        return helper.getOrderRepository()
-    }
-    
-    // MARK: - Shared ViewModel Getters (SKIE Integration)
-    
-    func getSharedHomeViewModel() -> SharedHomeViewModel {
-        let helper = KoinHelper()
-        return helper.getSharedHomeViewModel()
-    }
-    
-    func getSharedCartViewModel() -> SharedCartViewModel {
-        let helper = KoinHelper()
-        return helper.getSharedCartViewModel()
-    }
-    
-    func getSharedCocktailDetailViewModel() -> SharedCocktailDetailViewModel {
-        let helper = KoinHelper()
-        return helper.getSharedCocktailDetailViewModel()
-    }
-    
-    func getSharedFavoritesViewModel() -> SharedFavoritesViewModel {
-        let helper = KoinHelper()
-        return helper.getSharedFavoritesViewModel()
-    }
-    
-    func getSharedProfileViewModel() -> SharedProfileViewModel {
-        let helper = KoinHelper()
-        return helper.getSharedProfileViewModel()
-    }
-    
-    func getSharedOfflineModeViewModel() -> SharedOfflineModeViewModel {
-        let helper = KoinHelper()
-        return helper.getSharedOfflineModeViewModel()
-    }
-    
-    func getSharedOrderViewModel() -> SharedOrderViewModel {
-        let helper = KoinHelper()
-        return helper.getSharedOrderViewModel()
-    }
-    
-    func getSharedThemeViewModel() -> SharedThemeViewModel {
-        let helper = KoinHelper()
-        return helper.getSharedThemeViewModel()
-    }
-    
-    func getSharedReviewViewModel() -> SharedReviewViewModel {
-        let helper = KoinHelper()
-        return helper.getSharedReviewViewModel()
-    }
-    
-    func getSharedCocktailListViewModel() -> SharedCocktailListViewModel {
-        let helper = KoinHelper()
-        return helper.getSharedCocktailListViewModel()
-    }
+func getSharedKoinHelper() -> shared.KoinHelper {
+    return shared.KoinHelper()
 }
 
 // MARK: - Temporary Content View

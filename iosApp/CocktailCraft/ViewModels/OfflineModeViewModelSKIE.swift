@@ -11,11 +11,11 @@ class OfflineModeViewModelSKIE: ObservableObject {
     // Published properties for SwiftUI
     @Published var isOfflineModeEnabled = false
     @Published var isNetworkAvailable = true
-    @Published var recentlyViewedCocktails: [Cocktail] = []
+    @Published var recentlyViewedCocktails: [shared.Cocktail] = []
     @Published var cacheSize = 0
     @Published var lastSyncTime: String? = nil
     @Published var isLoading = false
-    @Published var error: ErrorHandler.UserFriendlyError? = nil
+    @Published var error: shared.ErrorHandler.UserFriendlyError? = nil
     
     // Computed properties
     var hasRecentlyViewed: Bool {
@@ -39,14 +39,14 @@ class OfflineModeViewModelSKIE: ObservableObject {
     }
     
     // Shared ViewModel instance
-    private let sharedViewModel: SharedOfflineModeViewModel
+    private let sharedViewModel: shared.SharedOfflineModeViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
     
     init() {
         // Get shared ViewModel from Koin
-        self.sharedViewModel = KoinInitializer.shared.getSharedOfflineModeViewModel()
+        self.sharedViewModel = getSharedKoinHelper().getSharedOfflineModeViewModel()
         
         // Start observing StateFlows using SKIE async/await
         startObserving()
@@ -173,11 +173,11 @@ class OfflineModeViewModelSKIE: ObservableObject {
         return Int(sharedViewModel.getCachedCocktailCount())
     }
     
-    func getRecentlyViewedByCategory(_ category: String) -> [Cocktail] {
+    func getRecentlyViewedByCategory(_ category: String) -> [shared.Cocktail] {
         return sharedViewModel.getRecentlyViewedByCategory(category: category)
     }
     
-    func getRecentlyViewedWithLimit(_ limit: Int) -> [Cocktail] {
+    func getRecentlyViewedWithLimit(_ limit: Int) -> [shared.Cocktail] {
         return sharedViewModel.getRecentlyViewedWithLimit(limit: Int32(limit))
     }
     

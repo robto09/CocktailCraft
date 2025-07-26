@@ -9,14 +9,14 @@ import Combine
 @MainActor
 class CocktailDetailViewModelSKIE: ObservableObject {
     // Published properties for SwiftUI
-    @Published var cocktail: Cocktail? = nil
+    @Published var cocktail: shared.Cocktail? = nil
     @Published var isFavorite = false
     @Published var isInCart = false
     @Published var cartQuantity: Int = 0
-    @Published var relatedCocktails: [Cocktail] = []
+    @Published var relatedCocktails: [shared.Cocktail] = []
     @Published var ingredientsByType: [String: [String]] = [:]
     @Published var isLoading = false
-    @Published var error: ErrorHandler.UserFriendlyError? = nil
+    @Published var error: shared.ErrorHandler.UserFriendlyError? = nil
     
     // Computed properties
     var hasRelatedCocktails: Bool {
@@ -32,14 +32,14 @@ class CocktailDetailViewModelSKIE: ObservableObject {
     }
     
     // Shared ViewModel instance
-    private let sharedViewModel: SharedCocktailDetailViewModel
+    private let sharedViewModel: shared.SharedCocktailDetailViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
     
     init() {
         // Get shared ViewModel from Koin
-        self.sharedViewModel = KoinInitializer.shared.getSharedCocktailDetailViewModel()
+        self.sharedViewModel = getSharedKoinHelper().getSharedCocktailDetailViewModel()
         
         // Start observing StateFlows using SKIE async/await
         startObserving()

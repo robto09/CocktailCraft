@@ -17,7 +17,7 @@ class ThemeViewModelSKIE: ObservableObject {
     @Published var isHighContrast = false
     @Published var isReducedMotion = false
     @Published var isLoading = false
-    @Published var error: ErrorHandler.UserFriendlyError? = nil
+    @Published var error: shared.ErrorHandler.UserFriendlyError? = nil
     
     // Computed properties
     var currentThemeName: String {
@@ -37,14 +37,14 @@ class ThemeViewModelSKIE: ObservableObject {
     }
     
     // Shared ViewModel instance
-    private let sharedViewModel: SharedThemeViewModel
+    private let sharedViewModel: shared.SharedThemeViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
     
     init() {
         // Get shared ViewModel from Koin
-        self.sharedViewModel = KoinHelper().getSharedThemeViewModel()
+        self.sharedViewModel = getSharedKoinHelper().getSharedThemeViewModel()
         
         // Start observing StateFlows using SKIE async/await
         startObserving()

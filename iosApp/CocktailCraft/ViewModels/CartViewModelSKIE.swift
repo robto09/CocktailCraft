@@ -9,11 +9,11 @@ import Combine
 @MainActor
 class CartViewModelSKIE: ObservableObject {
     // Published properties for SwiftUI
-    @Published var cartItems: [CocktailCartItem] = []
+    @Published var cartItems: [shared.CocktailCartItem] = []
     @Published var totalPrice: Double = 0.0
     @Published var itemCount: Int = 0
     @Published var isLoading = false
-    @Published var error: ErrorHandler.UserFriendlyError? = nil
+    @Published var error: shared.ErrorHandler.UserFriendlyError? = nil
     
     // Computed properties
     var isEmpty: Bool {
@@ -41,14 +41,14 @@ class CartViewModelSKIE: ObservableObject {
     }
     
     // Shared ViewModel instance
-    private let sharedViewModel: SharedCartViewModel
+    private let sharedViewModel: shared.SharedCartViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
     
     init() {
         // Get shared ViewModel from Koin
-        self.sharedViewModel = KoinInitializer.shared.getSharedCartViewModel()
+        self.sharedViewModel = getSharedKoinHelper().getSharedCartViewModel()
         
         // Start observing StateFlows using SKIE async/await
         startObserving()
@@ -111,7 +111,7 @@ class CartViewModelSKIE: ObservableObject {
     
     // MARK: - Public Methods (using SKIE async/await)
     
-    func addToCart(_ cocktail: Cocktail, quantity: Int = 1) async {
+    func addToCart(_ cocktail: shared.Cocktail, quantity: Int = 1) async {
         do {
             try await sharedViewModel.addToCart(cocktail: cocktail, quantity: Int32(quantity))
         } catch {
@@ -169,7 +169,7 @@ class CartViewModelSKIE: ObservableObject {
         return Int(sharedViewModel.getQuantity(cocktailId: cocktailId))
     }
     
-    func getCartItem(_ cocktailId: String) -> CocktailCartItem? {
+    func getCartItem(_ cocktailId: String) -> shared.CocktailCartItem? {
         return sharedViewModel.getCartItem(cocktailId: cocktailId)
     }
     
