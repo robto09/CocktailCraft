@@ -136,6 +136,39 @@ class CocktailRepositoryImpl(
         }
     }
 
+    override suspend fun refreshCocktailById(id: String): Cocktail? {
+        return try {
+            if (isOffline()) {
+                // If offline, return cached version
+                cocktailCache.getCachedCocktail(id)
+            } else {
+                // Force refresh from API
+                delay(200) // Avoid rate limiting
+                val dto = api.getCocktailById(id)
+                
+                if (dto != null) {
+                    val cocktail = mapDtoToCocktail(dto)
+                    
+                    // Update cache
+                    cocktailCache.cacheCocktail(cocktail)
+                    cocktailCache.addToRecentlyViewed(cocktail)
+                    
+                    // Update in-memory cache
+                    allCocktailsCache = allCocktailsCache.map { 
+                        if (it.id == id) cocktail else it 
+                    }
+                    
+                    cocktail
+                } else {
+                    cocktailCache.getCachedCocktail(id)
+                }
+            }
+        } catch (e: Exception) {
+            CocktailDebugLogger.log("Error refreshing cocktail $id: ${e.message}")
+            cocktailCache.getCachedCocktail(id)
+        }
+    }
+
     override suspend fun getRandomCocktail(): Flow<Cocktail?> = flow {
         try {
             val dto = api.getRandomCocktail()

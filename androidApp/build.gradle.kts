@@ -50,7 +50,7 @@ dependencies {
     // Compose BOM
     val composeBom = platform("androidx.compose:compose-bom:2023.05.01")
     implementation(composeBom)
-    androidTestImplementation(composeBom)
+    // androidTestImplementation(composeBom) // Commented out - no tests
     
     // Compose UI
     implementation("androidx.compose.ui:ui")
@@ -91,6 +91,6 @@ dependencies {
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.31.0-alpha")
     implementation("com.google.accompanist:accompanist-navigation-animation:0.31.0-alpha")
     
-    // Testing
-    testImplementation("androidx.compose.ui:ui-test-junit4")
+    // Testing - Commented out, no tests
+    // testImplementation("androidx.compose.ui:ui-test-junit4")
 }

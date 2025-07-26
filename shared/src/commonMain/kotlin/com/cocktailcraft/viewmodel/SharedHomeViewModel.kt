@@ -22,7 +22,7 @@ import org.koin.core.component.inject
  */
 class SharedHomeViewModel : SharedViewModel() {
     
-    private val repository: CocktailRepository by inject()
+    val repository: CocktailRepository by inject()
     private val networkMonitor: NetworkMonitor by inject()
     
     // UI State - SKIE will convert these to Swift AsyncSequence
@@ -47,6 +47,9 @@ class SharedHomeViewModel : SharedViewModel() {
     
     private val _searchFilters = MutableStateFlow(SearchFilters())
     val searchFilters: StateFlow<SearchFilters> = _searchFilters.asStateFlow()
+    
+    private val _isAdvancedSearchActive = MutableStateFlow(false)
+    val isAdvancedSearchActive: StateFlow<Boolean> = _isAdvancedSearchActive.asStateFlow()
     
     // Pagination state
     private val _currentPage = MutableStateFlow(1)
@@ -321,6 +324,37 @@ class SharedHomeViewModel : SharedViewModel() {
     }
     
     /**
+     * Get cocktail by ID as Flow.
+     * SKIE will convert this to Swift AsyncSequence.
+     */
+    fun getCocktailByIdFlow(id: String): Flow<Cocktail?> {
+        return flow {
+            try {
+                repository.getCocktailById(id).collect { cocktail ->
+                    emit(cocktail)
+                }
+            } catch (e: Exception) {
+                handleException(e, "Failed to load cocktail details", showAsEvent = true)
+                emit(null)
+            }
+        }
+    }
+    
+    /**
+     * Force refresh cocktail details.
+     */
+    suspend fun refreshCocktailDetails(id: String) {
+        try {
+            setLoading(true)
+            repository.refreshCocktailById(id)
+        } catch (e: Exception) {
+            handleException(e, "Failed to refresh cocktail details", showAsEvent = true)
+        } finally {
+            setLoading(false)
+        }
+    }
+    
+    /**
      * Get cocktails by category with limit.
      * SKIE will handle the List return type perfectly.
      */
@@ -373,6 +407,33 @@ class SharedHomeViewModel : SharedViewModel() {
         _searchFilters.value = SearchFilters()
         _isSearchActive.value = false
         viewModelScope.launch { loadCocktails() }
+    }
+    
+    /**
+     * Toggle search mode.
+     */
+    fun toggleSearchMode(active: Boolean) {
+        _isSearchActive.value = active
+        if (!active) {
+            _searchQuery.value = ""
+            _searchFilters.value = SearchFilters()
+            viewModelScope.launch { loadCocktails() }
+        }
+    }
+    
+    /**
+     * Toggle advanced search mode.
+     */
+    fun toggleAdvancedSearchMode(active: Boolean) {
+        _isAdvancedSearchActive.value = active
+    }
+    
+    /**
+     * Clear search filters.
+     */
+    fun clearSearchFilters() {
+        _searchFilters.value = SearchFilters()
+        viewModelScope.launch { searchCocktails(_searchQuery.value) }
     }
     
     /**

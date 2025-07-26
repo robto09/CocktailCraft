@@ -7,6 +7,7 @@ interface CocktailRepository {
     suspend fun searchCocktailsByName(name: String): Flow<List<Cocktail>>
     suspend fun searchCocktailsByFirstLetter(letter: Char): Flow<List<Cocktail>>
     suspend fun getCocktailById(id: String): Flow<Cocktail?>
+    suspend fun refreshCocktailById(id: String): Cocktail?
     suspend fun getRandomCocktail(): Flow<Cocktail?>
     suspend fun filterByIngredient(ingredient: String): Flow<List<Cocktail>>
     suspend fun filterByAlcoholic(alcoholic: Boolean): Flow<List<Cocktail>>

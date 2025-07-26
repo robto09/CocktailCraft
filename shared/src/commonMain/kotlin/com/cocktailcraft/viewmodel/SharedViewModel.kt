@@ -37,6 +37,10 @@ abstract class SharedViewModel : KoinComponent {
     // Error events - for one-time error handling (like showing a dialog)
     private val _errorEvent = MutableSharedFlow<ErrorHandler.UserFriendlyError>()
     val errorEvent: SharedFlow<ErrorHandler.UserFriendlyError> = _errorEvent.asSharedFlow()
+    
+    // Error string for legacy compatibility
+    private val _errorString = MutableStateFlow("")
+    val errorString: StateFlow<String> = _errorString.asStateFlow()
 
     /**
      * Set loading state
@@ -69,6 +73,9 @@ abstract class SharedViewModel : KoinComponent {
             // Set as a persistent state
             _error.value = userFriendlyError
         }
+        
+        // Also set the error string for legacy compatibility
+        _errorString.value = userFriendlyError.message
 
         // Log the error
         Logger.e("Error in ${this::class.simpleName}", exception)
@@ -98,6 +105,9 @@ abstract class SharedViewModel : KoinComponent {
         } else {
             _error.value = userFriendlyError
         }
+        
+        // Also set the error string for legacy compatibility
+        _errorString.value = userFriendlyError.message
     }
 
     /**
@@ -105,6 +115,7 @@ abstract class SharedViewModel : KoinComponent {
      */
     fun clearError() {
         _error.value = null
+        _errorString.value = ""
     }
 
     /**
