@@ -1,6 +1,5 @@
 import SwiftUI
 import shared
-import Kingfisher
 
 struct CartView: View {
     @StateObject private var viewModel = CartViewModelSKIE()
@@ -93,12 +92,13 @@ struct CartItemRow: View {
     var body: some View {
         HStack {
             // Cocktail Image
-            KFImage(URL(string: item.cocktail.imageUrl ?? ""))
-                .placeholder {
-                    ProgressView()
-                }
-                .resizable()
-                .aspectRatio(contentMode: ContentMode.fill)
+            AsyncImage(url: URL(string: item.cocktail.imageUrl ?? "")) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } placeholder: {
+                ProgressView()
+            }
             .frame(width: 60, height: 60)
             .clipShape(RoundedRectangle(cornerRadius: 8))
             

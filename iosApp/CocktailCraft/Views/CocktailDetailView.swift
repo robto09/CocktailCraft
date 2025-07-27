@@ -1,6 +1,5 @@
 import SwiftUI
 @preconcurrency import shared
-import Kingfisher
 
 
 
@@ -56,13 +55,14 @@ struct CocktailDetailView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         // Cocktail image
-                        KFImage(URL(string: cocktail.imageUrl ?? ""))
-                            .placeholder {
-                                ProgressView()
-                                    .frame(height: 300)
-                            }
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
+                        AsyncImage(url: URL(string: cocktail.imageUrl ?? "")) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            ProgressView()
+                                .frame(height: 300)
+                        }
                         .frame(maxHeight: 300)
                         .clipped()
                         

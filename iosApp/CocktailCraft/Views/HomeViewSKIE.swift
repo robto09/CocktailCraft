@@ -9,81 +9,240 @@ struct HomeViewSKIE: View {
     @StateObject private var viewModel = HomeViewModelSKIE()
     @State private var searchText = ""
     @State private var showingFilters = false
+    @State private var showingAdvancedSearch = false
+    @State private var selectedCategory: String? = nil
+    @State private var activeFilters: [String] = []
+    
+    // Android-style colors
+    private let primaryColor = Color(red: 0.92, green: 0.42, blue: 0.26) // #EB6A43
+    private let secondaryColor = Color(red: 1.0, green: 0.78, blue: 0.30) // #FFC84D
+    private let backgroundColor = Color(red: 0.98, green: 0.98, blue: 0.98) // #FAFAFA
+    private let surfaceColor = Color(UIColor.systemBackground)
+    private let textSecondary = Color.secondary
     
     var body: some View {
-        VStack {
-            // Modern Search Bar
-            HStack {
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundStyle(.secondary)
+        VStack(spacing: 0) {
+            // Search Bar with Advanced Search Toggle
+            VStack(spacing: 12) {
+                HStack(spacing: 8) {
+                    // Main Search Bar
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(textSecondary)
+                        
+                        TextField("Search cocktails...", text: $searchText)
+                            .textFieldStyle(.plain)
+                            .foregroundColor(.primary)
+                            .onSubmit {
+                                Task {
+                                    await viewModel.searchCocktails(query: searchText)
+                                }
+                            }
+                        
+                        if !searchText.isEmpty {
+                            Button(action: {
+                                searchText = ""
+                                viewModel.clearSearch()
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(textSecondary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(surfaceColor)
+                    .cornerRadius(10)
+                    .shadow(color: Color.black.opacity(0.05), radius: 1, x: 0, y: 1)
                     
-                    TextField("Search cocktails...", text: $searchText)
-                        .textFieldStyle(.plain)
-                        .onSubmit {
-                            Task {
-                                await viewModel.searchCocktails(query: searchText)
+                    // Advanced Search Button
+                    Button(action: { showingAdvancedSearch.toggle() }) {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 18))
+                            .foregroundColor(primaryColor)
+                            .padding(8)
+                            .background(surfaceColor)
+                            .cornerRadius(8)
+                            .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
+                    }
+                    .buttonStyle(.plain)
+                }
+                
+                // Active Filters Row (simplified)
+                if !activeFilters.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(activeFilters, id: \.self) { filter in
+                                HStack(spacing: 4) {
+                                    Text(filter)
+                                        .font(.caption)
+                                    
+                                    Button(action: { removeActiveFilter(filter) }) {
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 10))
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(primaryColor.opacity(0.1))
+                                .foregroundColor(primaryColor)
+                                .cornerRadius(8)
                             }
                         }
-                    
-                    if !searchText.isEmpty {
-                        Button(action: {
-                            searchText = ""
-                            viewModel.clearSearch()
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.plain)
+                        .padding(.horizontal, 16)
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+                
+                // Category Filter Row (only show when not searching)
+                if searchText.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            // "All" chip
+                            Button("All") {
+                                selectedCategory = nil
+                                removeActiveFilter("Category")
+                                Task {
+                                    await viewModel.loadCocktails()
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 6)
+                            .background(selectedCategory == nil ? primaryColor : surfaceColor)
+                            .foregroundColor(selectedCategory == nil ? .white : primaryColor)
+                            .cornerRadius(16)
+                            .shadow(color: selectedCategory == nil ? Color.black.opacity(0.15) : Color.clear, radius: 2, x: 0, y: 1)
+                            
+                            // Category chips
+                            ForEach(viewModel.getCategories(), id: \.self) { category in
+                                Button(category) {
+                                    selectedCategory = category
+                                    addActiveFilter("Category: \(category)")
+                                    Task {
+                                        await viewModel.loadCocktailsByCategory(category)
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 6)
+                                .background(selectedCategory == category ? primaryColor : surfaceColor)
+                                .foregroundColor(selectedCategory == category ? .white : primaryColor)
+                                .cornerRadius(16)
+                                .shadow(color: selectedCategory == category ? Color.black.opacity(0.15) : Color.clear, radius: 2, x: 0, y: 1)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    }
+                }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(backgroundColor)
             
-            // Cocktail List
+            // Content Area with Pull-to-Refresh
             if viewModel.isLoading && viewModel.cocktails.isEmpty {
                 ScrollView {
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                    LazyVStack(spacing: 12) {
                         ForEach(0..<6, id: \.self) { _ in
-                            CocktailCardPlaceholder()
+                            // Loading placeholder matching new card size
+                            HStack(spacing: 16) {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.gray.opacity(0.2))
+                                    .frame(width: 120, height: 120)
+                                
+                                VStack(alignment: .leading, spacing: 6) {
+                                    // Title placeholder
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(Color.gray.opacity(0.2))
+                                        .frame(height: 22)
+                                    
+                                    // Subtitle placeholder
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(Color.gray.opacity(0.2))
+                                        .frame(width: 140, height: 18)
+                                    
+                                    // Ingredients placeholder
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(Color.gray.opacity(0.2))
+                                        .frame(width: 120, height: 16)
+                                    
+                                    Spacer(minLength: 8)
+                                    
+                                    // Bottom row placeholder
+                                    HStack {
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(Color.gray.opacity(0.2))
+                                            .frame(width: 70, height: 24)
+                                        
+                                        Spacer()
+                                        
+                                        HStack(spacing: 12) {
+                                            Circle()
+                                                .fill(Color.gray.opacity(0.2))
+                                                .frame(width: 40, height: 40)
+                                            
+                                            Circle()
+                                                .fill(Color.gray.opacity(0.2))
+                                                .frame(width: 40, height: 40)
+                                        }
+                                    }
+                                }
+                                .padding(.vertical, 8)
+                            }
+                            .padding(16)
+                            .background(surfaceColor)
+                            .cornerRadius(16)
+                            .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
+                            .redacted(reason: .placeholder)
                         }
                     }
-                    .padding()
+                    .padding(16)
                 }
+                .background(backgroundColor)
                 .transition(.opacity)
             } else if viewModel.cocktails.isEmpty && !viewModel.isLoading {
-                EmptyStateView(
-                    icon: "wineglass",
-                    title: "No Cocktails Found",
-                    subtitle: "Try adjusting your search or filters",
-                    actionTitle: "Clear Filters",
-                    action: {
-                        viewModel.clearSearch()
-                        searchText = ""
+                ScrollView {
+                    VStack {
+                        Spacer()
+                        EmptyStateView(
+                            icon: "wineglass",
+                            title: "No Cocktails Found",
+                            subtitle: "Try adjusting your search or filters",
+                            actionTitle: "Clear Filters",
+                            action: {
+                                clearAllFilters()
+                            }
+                        )
+                        Spacer()
                     }
-                )
+                }
+                .background(backgroundColor)
             } else {
                 ScrollView {
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                    LazyVStack(spacing: 12) {
                         ForEach(viewModel.filteredCocktails, id: \.id) { cocktail in
-                            NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.id)) {
+                            Button(action: {
+                                // Handle navigation to detail view
+                                print("Navigate to detail: \(cocktail.name)")
+                            }) {
                                 CocktailCard(
                                     cocktail: cocktail,
                                     isFavorite: viewModel.isFavorite(cocktail.id),
-                                    onToggleFavorite: {
+                                    onFavoriteToggle: {
                                         Task {
                                             await viewModel.toggleFavorite(cocktail)
                                         }
+                                    },
+                                    onAddToCart: {
+                                        // Handle add to cart
+                                        print("Add to cart: \(cocktail.name)")
                                     }
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
                         
-                        // Load More Button
+                        // Load More Section
                         if viewModel.hasMoreData && !viewModel.isLoadingMore {
                             Button(action: {
                                 Task {
@@ -91,29 +250,59 @@ struct HomeViewSKIE: View {
                                 }
                             }) {
                                 Text("Load More")
-                                    .foregroundColor(.blue)
-                                    .padding()
+                                    .font(.callout)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(primaryColor)
+                                    .padding(.vertical, 12)
+                                    .padding(.horizontal, 20)
+                                    .background(surfaceColor)
+                                    .cornerRadius(8)
+                                    .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
                             }
+                            .buttonStyle(.plain)
+                            .padding(.bottom, 32)
                         } else if viewModel.isLoadingMore {
-                            ProgressView()
-                                .padding()
+                            HStack {
+                                ProgressView()
+                                    .foregroundColor(primaryColor)
+                                Text("Loading more...")
+                                    .font(.callout)
+                                    .foregroundColor(textSecondary)
+                            }
+                            .padding(.bottom, 32)
                         }
                     }
-                    .padding()
+                    .padding(16)
+                }
+                .background(backgroundColor)
+                .refreshable {
+                    await viewModel.refreshCocktails()
                 }
             }
         }
-        .navigationTitle("Cocktails")
+        .navigationTitle("My Bar")
         .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showingFilters.toggle() }) {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
-                }
-            }
-        }
+        .toolbarBackground(primaryColor, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .sheet(isPresented: $showingFilters) {
             FilterViewSKIE(viewModel: viewModel)
+                .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $showingAdvancedSearch) {
+            // Simple advanced search placeholder
+            NavigationView {
+                Text("Advanced Search Coming Soon")
+                    .navigationTitle("Advanced Search")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") {
+                                showingAdvancedSearch = false
+                            }
+                        }
+                    }
+            }
         }
         .alert("Error", isPresented: .constant(viewModel.error != nil)) {
             Button("OK") {
@@ -128,8 +317,10 @@ struct HomeViewSKIE: View {
             Text(viewModel.error?.message ?? "An error occurred")
         }
         .onChange(of: searchText) { newValue in
-            Task {
-                await viewModel.searchCocktails(query: newValue)
+            if !newValue.isEmpty {
+                Task {
+                    await viewModel.searchCocktails(query: newValue)
+                }
             }
         }
         .task {
@@ -138,9 +329,33 @@ struct HomeViewSKIE: View {
                 await viewModel.loadCocktails()
             }
         }
-        .refreshable {
-            await viewModel.refreshCocktails()
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func addActiveFilter(_ filter: String) {
+        if !activeFilters.contains(filter) {
+            activeFilters.append(filter)
         }
+    }
+    
+    private func removeActiveFilter(_ filter: String) {
+        activeFilters.removeAll { $0.contains(filter) }
+    }
+    
+    private func clearAllFilters() {
+        searchText = ""
+        selectedCategory = nil
+        activeFilters.removeAll()
+        viewModel.clearSearch()
+        Task {
+            await viewModel.loadCocktails()
+        }
+    }
+    
+    private func applyAdvancedFilters() {
+        // Placeholder for advanced filters functionality
+        print("Advanced filters applied")
     }
 }
 
@@ -231,112 +446,6 @@ struct FilterViewSKIE: View {
 }
 
 // MARK: - Supporting Views
-
-struct CocktailCard: View {
-    let cocktail: Cocktail
-    let isFavorite: Bool
-    let onToggleFavorite: () -> Void
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Image with favorite button
-            ZStack(alignment: .topTrailing) {
-                if let imageUrl = cocktail.imageUrl {
-                    AsyncImage(url: URL(string: imageUrl)) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.2))
-                            .overlay(
-                                ProgressView()
-                            )
-                    }
-                    .frame(height: 150)
-                    .clipped()
-                }
-                
-                Button(action: onToggleFavorite) {
-                    Image(systemName: isFavorite ? "heart.fill" : "heart")
-                        .foregroundColor(isFavorite ? .red : .white)
-                        .padding(8)
-                        .background(Color.black.opacity(0.3))
-                        .clipShape(Circle())
-                }
-                .padding(8)
-            }
-            
-            // Content
-            VStack(alignment: .leading, spacing: 4) {
-                Text(cocktail.name)
-                    .font(.headline)
-                    .lineLimit(1)
-                
-                Text(cocktail.category ?? "Cocktail")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                HStack {
-                    Text(String(format: "$%.2f", cocktail.price ?? 0))
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                    
-                    Spacer()
-                    
-                    if let rating = cocktail.rating {
-                        HStack(spacing: 2) {
-                            Image(systemName: "star.fill")
-                                .font(.caption)
-                                .foregroundColor(.yellow)
-                            Text(String(format: "%.1f", rating))
-                                .font(.caption)
-                        }
-                    }
-                }
-            }
-            .padding(12)
-        }
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-    }
-}
-
-struct CocktailCardPlaceholder: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Rectangle()
-                .fill(Color.gray.opacity(0.2))
-                .frame(height: 150)
-            
-            VStack(alignment: .leading, spacing: 8) {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(height: 20)
-                
-                Rectangle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(width: 100, height: 16)
-                
-                HStack {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(width: 60, height: 16)
-                    
-                    Spacer()
-                    
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(width: 40, height: 16)
-                }
-            }
-            .padding(12)
-        }
-        .cornerRadius(12)
-        .redacted(reason: .placeholder)
-    }
-}
 
 struct EmptyStateView: View {
     let icon: String
