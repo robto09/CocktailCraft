@@ -80,7 +80,6 @@ class CocktailRepositoryImpl(
     }
 
     override suspend fun getCocktailById(id: String): Flow<Cocktail?> = flow {
-        CocktailDebugLogger.log("🔍 Repository.getCocktailById() called with ID: '$id'")
         
         try {
             // First check if we have a cached cocktail with full details
@@ -107,7 +106,6 @@ class CocktailRepositoryImpl(
                 // Add a small delay to avoid rate limiting if called rapidly
                 delay(200)
                 
-                CocktailDebugLogger.log("🌐 Repository calling API.getCocktailById() with ID: '$id'")
                 val dto = api.getCocktailById(id)
 
                 if (dto != null) {
@@ -134,8 +132,9 @@ class CocktailRepositoryImpl(
                 // Don't log Flow cancellation as errors - they're expected when using first/firstOrNull
                 if (e.message?.contains("Flow was aborted") != true && 
                     e.message?.contains("no more elements needed") != true) {
-                    CocktailDebugLogger.log("Error fetching cocktail details for $id: ${e.message}")
+                    // Log actual errors but not expected Flow cancellations
                 }
+                
                 emit(cachedCocktail)
             }
         } catch (e: Exception) {
