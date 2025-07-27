@@ -33,15 +33,17 @@ class HomeViewModelSKIE: ObservableObject {
     @Published var isLoadingMore = false
     @Published var favorites: [shared.Cocktail] = []
     
-    // Shared ViewModel instance
+    // Shared ViewModel instances
     private let sharedViewModel: shared.SharedHomeViewModel
+    private let cartViewModel: shared.SharedCartViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
     
     init() {
-        // Get shared ViewModel from Koin
+        // Get shared ViewModels from Koin
         self.sharedViewModel = getSharedKoinHelper().getSharedHomeViewModel()
+        self.cartViewModel = getSharedKoinHelper().getSharedCartViewModel()
         
         // Start observing StateFlows using SKIE async/await
         startObserving()
@@ -56,6 +58,7 @@ class HomeViewModelSKIE: ObservableObject {
         // Cancel all observation tasks
         observationTasks.forEach { $0.cancel() }
         sharedViewModel.onCleared()
+        cartViewModel.onCleared()
     }
     
     // MARK: - SKIE StateFlow Observation
@@ -200,6 +203,14 @@ class HomeViewModelSKIE: ObservableObject {
             try await sharedViewModel.toggleFavorite(cocktail: cocktail)
         } catch {
             print("HomeViewModelSKIE - Error toggling favorite: \(error)")
+        }
+    }
+    
+    func addToCart(_ cocktail: shared.Cocktail) async {
+        do {
+            try await cartViewModel.addToCart(cocktail: cocktail, quantity: 1)
+        } catch {
+            print("HomeViewModelSKIE - Error adding to cart: \(error)")
         }
     }
     

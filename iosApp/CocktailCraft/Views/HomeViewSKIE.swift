@@ -12,6 +12,8 @@ struct HomeViewSKIE: View {
     @State private var showingAdvancedSearch = false
     @State private var selectedCategory: String? = nil
     @State private var activeFilters: [String] = []
+    @State private var showingToast = false
+    @State private var toastMessage = ""
     
     // Android-style colors
     private let primaryColor = Color(red: 0.92, green: 0.42, blue: 0.26) // #EB6A43
@@ -221,25 +223,30 @@ struct HomeViewSKIE: View {
                 ScrollView {
                     LazyVStack(spacing: 12) {
                         ForEach(viewModel.filteredCocktails, id: \.id) { cocktail in
-                            Button(action: {
-                                // Handle navigation to detail view
-                                print("Navigate to detail: \(cocktail.name)")
-                            }) {
-                                CocktailCard(
-                                    cocktail: cocktail,
-                                    isFavorite: viewModel.isFavorite(cocktail.id),
-                                    onFavoriteToggle: {
-                                        Task {
-                                            await viewModel.toggleFavorite(cocktail)
-                                        }
-                                    },
-                                    onAddToCart: {
-                                        // Handle add to cart
-                                        print("Add to cart: \(cocktail.name)")
+                            CocktailCard(
+                                cocktail: cocktail,
+                                isFavorite: viewModel.isFavorite(cocktail.id),
+                                onFavoriteToggle: {
+                                    Task {
+                                        await viewModel.toggleFavorite(cocktail)
                                     }
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
+                                },
+                                onAddToCart: {
+                                    Task {
+                                        await viewModel.addToCart(cocktail)
+                                        await MainActor.run {
+                                            toastMessage = "Added \(cocktail.name) to cart"
+                                            withAnimation {
+                                                showingToast = true
+                                            }
+                                        }
+                                    }
+                                },
+                                onCardTap: {
+                                    // Handle navigation to detail view
+                                    print("Navigate to detail: \(cocktail.name)")
+                                }
+                            )
                         }
                         
                         // Load More Section
@@ -329,6 +336,7 @@ struct HomeViewSKIE: View {
                 await viewModel.loadCocktails()
             }
         }
+        .toast(isShowing: $showingToast, message: toastMessage, type: .success, duration: 2)
     }
     
     // MARK: - Helper Functions

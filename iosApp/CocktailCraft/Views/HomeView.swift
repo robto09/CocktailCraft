@@ -8,6 +8,8 @@ struct HomeView: View {
     @State private var showingAdvancedSearch = false
     @State private var selectedCategory: String? = nil
     @State private var activeFilters: [String] = []
+    @State private var showingToast = false
+    @State private var toastMessage = ""
     
     // Android-style colors
     private let primaryColor = Color(red: 0.92, green: 0.42, blue: 0.26) // #EB6A43
@@ -57,6 +59,7 @@ struct HomeView: View {
                 await viewModel.loadCocktails()
             }
         }
+        .toast(isShowing: $showingToast, message: toastMessage, type: .success, duration: 2)
     }
     
     // MARK: - Header Section
@@ -335,24 +338,30 @@ struct HomeView: View {
     }
     
     private func cocktailRow(for cocktail: Cocktail) -> some View {
-        NavigationLink(destination: {
-            print("HomeView - Navigating to cocktail with ID: '\(cocktail.id)', name: '\(cocktail.name)'")
-            return CocktailDetailView(cocktailId: cocktail.id)
-        }()) {
-            CocktailCard(
-                cocktail: cocktail,
-                isFavorite: viewModel.isFavorite(cocktail.id),
-                onFavoriteToggle: {
-                    Task {
-                        await viewModel.toggleFavorite(cocktail)
-                    }
-                },
-                onAddToCart: {
-                    print("Add to cart: \(cocktail.name)")
+        CocktailCard(
+            cocktail: cocktail,
+            isFavorite: viewModel.isFavorite(cocktail.id),
+            onFavoriteToggle: {
+                Task {
+                    await viewModel.toggleFavorite(cocktail)
                 }
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
+            },
+            onAddToCart: {
+                Task {
+                    await viewModel.addToCart(cocktail)
+                    await MainActor.run {
+                        toastMessage = "Added \(cocktail.name) to cart"
+                        withAnimation {
+                            showingToast = true
+                        }
+                    }
+                }
+            },
+            onCardTap: {
+                print("HomeView - Navigating to cocktail with ID: '\(cocktail.id)', name: '\(cocktail.name)'")
+                // TODO: Add navigation to detail view
+            }
+        )
     }
     
     @ViewBuilder

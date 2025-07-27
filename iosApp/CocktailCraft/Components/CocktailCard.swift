@@ -11,6 +11,7 @@ struct CocktailCard: View {
     var isFavorite: Bool = false
     var onFavoriteToggle: (() -> Void)? = nil
     var onAddToCart: (() -> Void)? = nil
+    var onCardTap: (() -> Void)? = nil
     var layout: CocktailCardLayout = .horizontal
     
     // Check if cocktail is out of stock (using stockCount if available)
@@ -39,7 +40,8 @@ struct CocktailCard: View {
     
     @ViewBuilder
     private var horizontalLayout: some View {
-        HStack(spacing: 16) {
+        Button(action: { onCardTap?() }) {
+            HStack(spacing: 16) {
             // Cocktail Image - Larger size
             ZStack(alignment: .center) {
                 AsyncImage(url: URL(string: cocktail.imageUrl ?? "")) { image in
@@ -136,16 +138,19 @@ struct CocktailCard: View {
                 }
             }
             .padding(.vertical, 8)
+            }
+            .padding(16)
+            .background(surfaceColor)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
         }
-        .padding(16)
-        .background(surfaceColor)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
+        .buttonStyle(PlainButtonStyle())
     }
     
     @ViewBuilder
     private var verticalLayout: some View {
-        VStack(spacing: 12) {
+        Button(action: { onCardTap?() }) {
+            VStack(spacing: 12) {
             // Cocktail Image - Full width
             ZStack(alignment: .center) {
                 AsyncImage(url: URL(string: cocktail.imageUrl ?? "")) { image in
@@ -244,10 +249,12 @@ struct CocktailCard: View {
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 12)
+            }
+            .background(surfaceColor)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
         }
-        .background(surfaceColor)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
+        .buttonStyle(PlainButtonStyle())
     }
     
     private func getIngredientsText() -> String {

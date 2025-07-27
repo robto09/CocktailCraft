@@ -3,6 +3,7 @@ import shared
 
 struct ContentView: View {
     @State private var selectedTab = 0
+    @StateObject private var cartViewModel = CartViewModelSKIE()
 
     var body: some View {
         ZStack {
@@ -23,6 +24,7 @@ struct ContentView: View {
                 .tabItem {
                     Label("Cart", systemImage: "cart.fill")
                 }
+                .badge(cartViewModel.itemCount)
                 .tag(1)
 
                 // Favorites Tab
