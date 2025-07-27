@@ -335,9 +335,7 @@ struct HomeView: View {
     }
     
     private func cocktailRow(for cocktail: Cocktail) -> some View {
-        Button(action: {
-            print("Navigate to detail: \(cocktail.name)")
-        }) {
+        NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.id)) {
             CocktailCard(
                 cocktail: cocktail,
                 isFavorite: viewModel.isFavorite(cocktail.id),

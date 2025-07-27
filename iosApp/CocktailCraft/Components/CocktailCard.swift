@@ -102,7 +102,7 @@ struct CocktailCard: View {
                                     .foregroundColor(isFavorite ? secondaryColor : grayColor)
                             }
                             .frame(width: 40, height: 40)
-                            .buttonStyle(.plain)
+                            .buttonStyle(.borderless)
                         }
                         
                         // Add to Cart Button
@@ -114,7 +114,7 @@ struct CocktailCard: View {
                             }
                             .frame(width: 40, height: 40)
                             .disabled(isOutOfStock)
-                            .buttonStyle(.plain)
+                            .buttonStyle(.borderless)
                         }
                     }
                 }
