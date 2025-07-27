@@ -1,11 +1,17 @@
 import SwiftUI
 import shared
 
+enum CocktailCardLayout {
+    case horizontal // For Home tab list
+    case vertical   // For Favorites grid
+}
+
 struct CocktailCard: View {
     let cocktail: Cocktail
     var isFavorite: Bool = false
     var onFavoriteToggle: (() -> Void)? = nil
     var onAddToCart: (() -> Void)? = nil
+    var layout: CocktailCardLayout = .horizontal
     
     // Check if cocktail is out of stock (using stockCount if available)
     private var isOutOfStock: Bool {
@@ -23,6 +29,16 @@ struct CocktailCard: View {
     private let grayColor = Color(red: 0.56, green: 0.56, blue: 0.58) // #8E8E93
     
     var body: some View {
+        switch layout {
+        case .horizontal:
+            horizontalLayout
+        case .vertical:
+            verticalLayout
+        }
+    }
+    
+    @ViewBuilder
+    private var horizontalLayout: some View {
         HStack(spacing: 16) {
             // Cocktail Image - Larger size
             ZStack(alignment: .center) {
@@ -122,6 +138,113 @@ struct CocktailCard: View {
             .padding(.vertical, 8)
         }
         .padding(16)
+        .background(surfaceColor)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
+    }
+    
+    @ViewBuilder
+    private var verticalLayout: some View {
+        VStack(spacing: 12) {
+            // Cocktail Image - Full width
+            ZStack(alignment: .center) {
+                AsyncImage(url: URL(string: cocktail.imageUrl ?? "")) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(lightGray)
+                        .overlay(
+                            ProgressView()
+                                .scaleEffect(1.2)
+                        )
+                }
+                .frame(height: 140)
+                .clipped()
+                .cornerRadius(12)
+                
+                // Stock overlay for out of stock items
+                if isOutOfStock {
+                    Rectangle()
+                        .fill(Color.black.opacity(0.6))
+                        .cornerRadius(12)
+                        .overlay(
+                            Text("Out of Stock")
+                                .font(.caption)
+                                .foregroundColor(.white)
+                                .fontWeight(.medium)
+                        )
+                }
+            }
+            
+            // Content Section
+            VStack(alignment: .leading, spacing: 8) {
+                // Cocktail Name - Allow more lines
+                Text(cocktail.name)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(textPrimary)
+                    .lineLimit(3)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                // Category Info (Alcoholic • Category)
+                if let category = cocktail.category {
+                    Text("Alcoholic • \(category)")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(textSecondary)
+                        .lineLimit(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                
+                // Ingredients (first 2 or placeholder)
+                Text(getIngredientsText())
+                    .font(.system(size: 12, weight: .regular))
+                    .italic()
+                    .foregroundColor(textSecondary)
+                    .lineLimit(3)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                // Price and Actions Row
+                HStack(alignment: .center) {
+                    // Price - Prominent
+                    Text(String(format: "$%.2f", cocktail.price ?? 12.99))
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(primaryColor)
+                    
+                    Spacer()
+                    
+                    // Action Buttons - Compact
+                    HStack(spacing: 8) {
+                        // Favorite Button
+                        if let onToggle = onFavoriteToggle {
+                            Button(action: onToggle) {
+                                Image(systemName: isFavorite ? "heart.fill" : "heart")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(isFavorite ? secondaryColor : grayColor)
+                            }
+                            .frame(width: 32, height: 32)
+                            .buttonStyle(.borderless)
+                        }
+                        
+                        // Add to Cart Button
+                        if let onAddToCart = onAddToCart {
+                            Button(action: onAddToCart) {
+                                Image(systemName: "cart.badge.plus")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(isOutOfStock ? grayColor : primaryColor)
+                            }
+                            .frame(width: 32, height: 32)
+                            .disabled(isOutOfStock)
+                            .buttonStyle(.borderless)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
+        }
         .background(surfaceColor)
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
