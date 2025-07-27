@@ -1,5 +1,6 @@
 package com.cocktailcraft.data.remote
 
+import com.cocktailcraft.util.CocktailDebugLogger
 import io.ktor.client.HttpClient
 import io.ktor.client.call.*
 import io.ktor.client.plugins.timeout
@@ -45,6 +46,8 @@ class CocktailApiImpl(
     }
     
     override suspend fun getCocktailById(id: String): CocktailDto? {
+        CocktailDebugLogger.log("🌐 API.getCocktailById() calling lookup.php with ID: '$id'")
+        
         try {
             // Force API call to specifically use the lookup endpoint for full details
             val response = client.get("$BASE_URL/lookup.php") {

@@ -335,7 +335,10 @@ struct HomeView: View {
     }
     
     private func cocktailRow(for cocktail: Cocktail) -> some View {
-        NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.id)) {
+        NavigationLink(destination: {
+            print("HomeView - Navigating to cocktail with ID: '\(cocktail.id)', name: '\(cocktail.name)'")
+            return CocktailDetailView(cocktailId: cocktail.id)
+        }()) {
             CocktailCard(
                 cocktail: cocktail,
                 isFavorite: viewModel.isFavorite(cocktail.id),

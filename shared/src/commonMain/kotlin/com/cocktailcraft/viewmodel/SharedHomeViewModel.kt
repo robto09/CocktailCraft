@@ -5,6 +5,7 @@ import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.repository.CocktailRepository
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.util.NetworkMonitor
+import com.cocktailcraft.util.CocktailDebugLogger
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -315,11 +316,27 @@ class SharedHomeViewModel : SharedViewModel() {
      * SKIE will convert this to Swift async function returning optional.
      */
     suspend fun getCocktailById(id: String): Cocktail? {
+        CocktailDebugLogger.log("🏠 HomeViewModel.getCocktailById() called with ID: '$id'")
         return try {
-            repository.getCocktailById(id).first()
+            // Collect the entire flow to avoid cancellation issues
+            var result: Cocktail? = null
+            repository.getCocktailById(id).collect { cocktail ->
+                CocktailDebugLogger.log("🏠 HomeViewModel received cocktail from repository: ${cocktail?.name ?: "null"}")
+                result = cocktail
+            }
+            CocktailDebugLogger.log("🏠 HomeViewModel.getCocktailById() returning: ${result?.name ?: "null"}")
+            result
         } catch (e: Exception) {
-            handleException(e, "Failed to load cocktail details", showAsEvent = true)
-            null
+            CocktailDebugLogger.log("🏠 HomeViewModel.getCocktailById() exception: ${e::class.simpleName}: ${e.message}")
+            // Filter out expected Flow cancellation exceptions
+            if (e.message?.contains("Flow was aborted") == true || 
+                e.message?.contains("no more elements needed") == true) {
+                // This is expected behavior when using first/firstOrNull - not an actual error
+                null
+            } else {
+                handleException(e, "Failed to load cocktail details", showAsEvent = true)
+                null
+            }
         }
     }
     

@@ -171,23 +171,41 @@ struct CocktailDetailView: View {
         }
 
         print("CocktailDetailView - Loading cocktail with ID: \(cocktailId) via repository")
+        print("CocktailDetailView - DEBUG: Cocktail ID type: \(type(of: cocktailId)), value: '\(cocktailId)'")
         isLoading = true
         error = nil
 
         Task { @MainActor in
             do {
-                print("CocktailDetailView - Calling repository.getCocktailById")
-                let kotlinFlow = try await repository.getCocktailById(id: cocktailId)
-                print("CocktailDetailView - Got flow: \(type(of: kotlinFlow))")
-
-                // Since SKIE AsyncSequence casting isn't working, create mock cocktail
-                print("CocktailDetailView - AsyncSequence casting failed, using mock data")
-                await MainActor.run {
-                    // Create mock cocktail based on ID for testing
-                    if cocktailId.hasPrefix("test-") {
-                        self.cocktail = self.createMockCocktail(for: cocktailId)
+                print("CocktailDetailView - Using HomeViewModel to get cocktail by ID: \(cocktailId)")
+                
+                // Use the HomeViewModel which already has working SKIE integration
+                let homeViewModel = getSharedKoinHelper().getSharedHomeViewModel()
+                let cocktailResult = try await homeViewModel.getCocktailById(id: cocktailId)
+                
+                if let cocktail = cocktailResult {
+                    print("CocktailDetailView - Successfully received cocktail: \(cocktail.name)")
+                    await MainActor.run {
+                        self.cocktail = cocktail
+                        self.isLoading = false
                     }
-                    self.isLoading = false
+                } else {
+                    print("CocktailDetailView - HomeViewModel returned nil for ID: \(cocktailId)")
+                    await MainActor.run {
+                        if self.cocktailId.hasPrefix("test-") {
+                            self.cocktail = self.createMockCocktail(for: self.cocktailId)
+                        } else {
+                            self.error = ErrorHandler.shared.createUserFriendlyError(
+                                title: "Cocktail Not Found",
+                                message: "Could not load cocktail details for ID: \(self.cocktailId)",
+                                category: ErrorHandler.ErrorCategory.unknown,
+                                recoveryAction: nil,
+                                originalException: nil,
+                                errorCode: .unknown
+                            )
+                        }
+                        self.isLoading = false
+                    }
                 }
                 
                 if self.cocktail != nil {
