@@ -25,11 +25,8 @@ struct HomeView: View {
             headerSection
             contentSection
         }
-        .navigationTitle("My Bar")
+
         .navigationBarTitleDisplayMode(.large)
-        .toolbarBackground(primaryColor, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
         .sheet(isPresented: $showingFilters) {
             FilterView(viewModel: viewModel)
                 .presentationDetents([.medium, .large])
