@@ -2,6 +2,7 @@ import SwiftUI
 import shared
 
 struct HomeView: View {
+    @ObservedObject var cartViewModel: CartViewModelSKIE
     @StateObject private var viewModel = HomeViewModelSKIE()
     @State private var searchText = ""
     @State private var showingFilters = false
@@ -348,7 +349,7 @@ struct HomeView: View {
             },
             onAddToCart: {
                 Task {
-                    await viewModel.addToCart(cocktail)
+                    await cartViewModel.addToCart(cocktail, quantity: 1)
                     await MainActor.run {
                         toastMessage = "Added \(cocktail.name) to cart"
                         withAnimation {
@@ -445,7 +446,7 @@ struct HomeView: View {
 struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            HomeView()
+            HomeView(cartViewModel: CartViewModelSKIE())
         }
     }
 }

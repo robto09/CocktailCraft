@@ -2,14 +2,14 @@ import SwiftUI
 import shared
 
 struct CartView: View {
-    @StateObject private var viewModel = CartViewModelSKIE()
+    @ObservedObject var cartViewModel: CartViewModelSKIE
     @StateObject private var orderViewModel = OrderViewModelSKIE()
     @Binding var selectedTab: Int
     @State private var showCheckoutConfirmation = false
     
     var body: some View {
         NavigationView {
-            if viewModel.cartItems.isEmpty {
+            if cartViewModel.cartItems.isEmpty {
                 EmptyStateView(
                     icon: "cart",
                     title: "Your cart is empty",
@@ -19,14 +19,14 @@ struct CartView: View {
             } else {
                 VStack {
                     List {
-                        ForEach(viewModel.cartItems, id: \.cocktail.id) { item in
-                            CartItemRow(item: item, viewModel: viewModel)
+                        ForEach(cartViewModel.cartItems, id: \.cocktail.id) { item in
+                            CartItemRow(item: item, cartViewModel: cartViewModel)
                         }
                         .onDelete { indexSet in
                             indexSet.forEach { index in
-                                let item = viewModel.cartItems[index]
+                                let item = cartViewModel.cartItems[index]
                                 Task {
-                                    await viewModel.removeFromCart(item.cocktail.id)
+                                    await cartViewModel.removeFromCart(item.cocktail.id)
                                 }
                             }
                         }
@@ -38,7 +38,7 @@ struct CartView: View {
                             Text("Total:")
                                 .font(.headline)
                             Spacer()
-                            Text("$\(viewModel.totalPrice, specifier: "%.2f")")
+                            Text("$\(cartViewModel.totalPrice, specifier: "%.2f")")
                                 .font(.title2)
                                 .fontWeight(.bold)
                         }
@@ -67,13 +67,13 @@ struct CartView: View {
         .alert(isPresented: $showCheckoutConfirmation) {
             Alert(
                 title: Text("Confirm Order"),
-                message: Text("Are you sure you want to place this order for $\(viewModel.totalPrice + 5.99, specifier: "%.2f")?"),
+                message: Text("Are you sure you want to place this order for $\(cartViewModel.totalPrice + 5.99, specifier: "%.2f")?"),
                 primaryButton: .default(Text("Confirm")) {
                     Task {
-                        let success = await orderViewModel.placeOrder(cartItems: viewModel.cartItems, totalPrice: viewModel.totalPrice)
+                        let success = await orderViewModel.placeOrder(cartItems: cartViewModel.cartItems, totalPrice: cartViewModel.totalPrice)
                         if success {
                             // Clear cart after successful order
-                            await viewModel.clearCart()
+                            await cartViewModel.clearCart()
                             // Navigate to Orders tab (tag 3)
                             selectedTab = 3
                         }
@@ -87,7 +87,7 @@ struct CartView: View {
 
 struct CartItemRow: View {
     let item: CocktailCartItem
-    @ObservedObject var viewModel: CartViewModelSKIE
+    @ObservedObject var cartViewModel: CartViewModelSKIE
     
     var body: some View {
         HStack {
@@ -118,10 +118,7 @@ struct CartItemRow: View {
             HStack(spacing: 12) {
                 Button(action: {
                     Task {
-                        await viewModel.updateQuantity(
-                            item.cocktail.id,
-                            quantity: max(1, Int(item.quantity) - 1)
-                        )
+                        await cartViewModel.decrementQuantity(item.cocktail.id)
                     }
                 }) {
                     Image(systemName: "minus.circle.fill")
@@ -134,10 +131,7 @@ struct CartItemRow: View {
                 
                 Button(action: {
                     Task {
-                        await viewModel.updateQuantity(
-                            item.cocktail.id,
-                            quantity: Int(item.quantity) + 1
-                        )
+                        await cartViewModel.incrementQuantity(item.cocktail.id)
                     }
                 }) {
                     Image(systemName: "plus.circle.fill")

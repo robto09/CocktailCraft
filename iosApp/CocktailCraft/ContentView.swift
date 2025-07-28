@@ -10,7 +10,7 @@ struct ContentView: View {
             TabView(selection: $selectedTab) {
                 // Home Tab
                 NavigationStack {
-                    HomeView()
+                    HomeView(cartViewModel: cartViewModel)
                 }
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
@@ -19,7 +19,7 @@ struct ContentView: View {
 
                 // Cart Tab
                 NavigationStack {
-                    CartView(selectedTab: $selectedTab)
+                    CartView(cartViewModel: cartViewModel, selectedTab: $selectedTab)
                 }
                 .tabItem {
                     Label("Cart", systemImage: "cart.fill")
