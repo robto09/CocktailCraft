@@ -40,8 +40,7 @@ struct CocktailCard: View {
     
     @ViewBuilder
     private var horizontalLayout: some View {
-        Button(action: { onCardTap?() }) {
-            HStack(spacing: 16) {
+        HStack(spacing: 16) {
             // Cocktail Image - Larger size
             ZStack(alignment: .center) {
                 AsyncImage(url: URL(string: cocktail.imageUrl ?? "")) { image in
@@ -138,19 +137,21 @@ struct CocktailCard: View {
                 }
             }
             .padding(.vertical, 8)
-            }
-            .padding(16)
-            .background(surfaceColor)
-            .cornerRadius(16)
-            .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(16)
+        .background(surfaceColor)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
+        .if(onCardTap != nil) { view in
+            view.onTapGesture {
+                onCardTap?()
+            }
+        }
     }
     
     @ViewBuilder
     private var verticalLayout: some View {
-        Button(action: { onCardTap?() }) {
-            VStack(spacing: 12) {
+        VStack(spacing: 12) {
             // Cocktail Image - Full width
             ZStack(alignment: .center) {
                 AsyncImage(url: URL(string: cocktail.imageUrl ?? "")) { image in
@@ -249,12 +250,15 @@ struct CocktailCard: View {
             }
             .padding(.horizontal, 12)
             .padding(.bottom, 12)
-            }
-            .background(surfaceColor)
-            .cornerRadius(16)
-            .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
         }
-        .buttonStyle(PlainButtonStyle())
+        .background(surfaceColor)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
+        .if(onCardTap != nil) { view in
+            view.onTapGesture {
+                onCardTap?()
+            }
+        }
     }
     
     private func getIngredientsText() -> String {
@@ -265,5 +269,16 @@ struct CocktailCard: View {
             return ingredientNames.joined(separator: ", ")
         }
         return "Premium ingredients"
+    }
+}
+
+// MARK: - View Extension for Conditional Modifiers
+extension View {
+    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
+        }
     }
 }

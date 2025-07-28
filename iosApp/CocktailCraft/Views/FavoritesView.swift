@@ -3,6 +3,7 @@ import SwiftUI
 import shared
 
 struct FavoritesView: View {
+    @ObservedObject var cartViewModel: CartViewModelSKIE
     @StateObject private var viewModel = FavoritesViewModelSKIE()
 
     var body: some View {
@@ -52,7 +53,7 @@ struct FavoritesView: View {
     }
     
     private func cocktailGridItem(_ cocktail: Cocktail) -> some View {
-        NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.id)) {
+        NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.id, cartViewModel: cartViewModel)) {
             CocktailCard(
                 cocktail: cocktail,
                 isFavorite: true,

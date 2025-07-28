@@ -5,7 +5,7 @@ import SwiftUI
 
 struct CocktailDetailView: View {
     let cocktailId: String
-    @StateObject private var cartViewModel = CartViewModelSKIE()
+    @ObservedObject var cartViewModel: CartViewModelSKIE
     @StateObject private var reviewViewModel = ReviewViewModelSKIE()
     @StateObject private var favoritesViewModel = FavoritesViewModelSKIE()
     @State private var cocktail: shared.Cocktail? = nil
@@ -18,8 +18,9 @@ struct CocktailDetailView: View {
     // TODO: Use SharedCocktailDetailViewModel once exported properly
     private let repository: shared.CocktailRepository?
 
-    init(cocktailId: String) {
+    init(cocktailId: String, cartViewModel: CartViewModelSKIE) {
         self.cocktailId = cocktailId
+        self.cartViewModel = cartViewModel
         self.repository = getSharedKoinHelper().getCocktailRepository()
     }
 

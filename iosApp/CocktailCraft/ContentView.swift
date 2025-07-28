@@ -29,7 +29,7 @@ struct ContentView: View {
 
                 // Favorites Tab
                 NavigationStack {
-                    FavoritesView()
+                    FavoritesView(cartViewModel: cartViewModel)
                 }
                 .tabItem {
                     Label("Favorites", systemImage: "heart.fill")

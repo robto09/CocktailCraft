@@ -11,6 +11,7 @@ struct HomeView: View {
     @State private var activeFilters: [String] = []
     @State private var showingToast = false
     @State private var toastMessage = ""
+
     
     // Android-style colors
     private let primaryColor = Color(red: 0.92, green: 0.42, blue: 0.26) // #EB6A43
@@ -36,6 +37,7 @@ struct HomeView: View {
         .sheet(isPresented: $showingAdvancedSearch) {
             advancedSearchSheet
         }
+
         .alert("Error", isPresented: .constant(viewModel.error != nil)) {
             Button("OK") {
                 viewModel.clearError()
@@ -339,30 +341,32 @@ struct HomeView: View {
     }
     
     private func cocktailRow(for cocktail: Cocktail) -> some View {
-        CocktailCard(
-            cocktail: cocktail,
-            isFavorite: viewModel.isFavorite(cocktail.id),
-            onFavoriteToggle: {
-                Task {
-                    await viewModel.toggleFavorite(cocktail)
-                }
-            },
-            onAddToCart: {
-                Task {
-                    await cartViewModel.addToCart(cocktail, quantity: 1)
-                    await MainActor.run {
-                        toastMessage = "Added \(cocktail.name) to cart"
-                        withAnimation {
-                            showingToast = true
+        NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.id, cartViewModel: cartViewModel)) {
+            CocktailCard(
+                cocktail: cocktail,
+                isFavorite: viewModel.isFavorite(cocktail.id),
+                onFavoriteToggle: {
+                    print("DEBUG: Favorite button tapped")
+                    Task {
+                        await viewModel.toggleFavorite(cocktail)
+                    }
+                },
+                onAddToCart: {
+                    print("DEBUG: Add to cart button tapped")
+                    Task {
+                        await cartViewModel.addToCart(cocktail, quantity: 1)
+                        await MainActor.run {
+                            toastMessage = "Added \(cocktail.name) to cart"
+                            withAnimation {
+                                showingToast = true
+                            }
                         }
                     }
-                }
-            },
-            onCardTap: {
-                print("HomeView - Navigating to cocktail with ID: '\(cocktail.id)', name: '\(cocktail.name)'")
-                // TODO: Add navigation to detail view
-            }
-        )
+                },
+                onCardTap: nil // Explicitly set to nil to prevent interference with NavigationLink
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
     
     @ViewBuilder
