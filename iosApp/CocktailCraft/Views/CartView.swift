@@ -115,28 +115,36 @@ struct CartItemRow: View {
             Spacer()
             
             // Quantity Controls
-            HStack(spacing: 12) {
+            HStack(spacing: 16) {
                 Button(action: {
                     Task {
                         await cartViewModel.decrementQuantity(item.cocktail.id)
                     }
                 }) {
                     Image(systemName: "minus.circle.fill")
+                        .font(.title2)
                         .foregroundColor(.blue)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
-                
+                .buttonStyle(PlainButtonStyle())
+
                 Text("\(item.quantity)")
                     .font(.headline)
-                    .frame(minWidth: 30)
-                
+                    .frame(minWidth: 40)
+
                 Button(action: {
                     Task {
                         await cartViewModel.incrementQuantity(item.cocktail.id)
                     }
                 }) {
                     Image(systemName: "plus.circle.fill")
+                        .font(.title2)
                         .foregroundColor(.blue)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(PlainButtonStyle())
             }
         }
         .padding(.vertical, 4)

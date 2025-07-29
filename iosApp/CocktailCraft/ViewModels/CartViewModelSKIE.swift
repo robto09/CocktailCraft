@@ -45,6 +45,9 @@ class CartViewModelSKIE: ObservableObject {
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
+
+    // Prevent concurrent updates
+    private var isUpdating = false
     
     init() {
         // Get shared ViewModel from Koin
@@ -114,46 +117,136 @@ class CartViewModelSKIE: ObservableObject {
     func addToCart(_ cocktail: shared.Cocktail, quantity: Int = 1) async {
         do {
             try await sharedViewModel.addToCart(cocktail: cocktail, quantity: Int32(quantity))
-        } catch {
-            // Handle error silently
-        }
-    }
-    
-    func removeFromCart(_ cocktailId: String) async {
-        do {
-            try await sharedViewModel.removeFromCart(cocktailId: cocktailId)
-        } catch {
-            // Handle error silently
-        }
-    }
-    
-    func updateQuantity(_ cocktailId: String, quantity: Int) async {
-        do {
-            try await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: Int32(quantity))
-        } catch {
-            // Handle error silently
-        }
-    }
-    
-    func incrementQuantity(_ cocktailId: String) async {
-        do {
-            try await sharedViewModel.incrementQuantity(cocktailId: cocktailId)
+            // Force a refresh of the cart state to ensure UI updates
+            await refreshCartState()
         } catch {
             // Handle error silently
         }
     }
     
     func decrementQuantity(_ cocktailId: String) async {
+        // Prevent concurrent updates
+        guard !isUpdating else { return }
+        isUpdating = true
+        defer { isUpdating = false }
+
+        // Find the current item first
+        let currentItem = cartItems.first { $0.cocktail.id == cocktailId }
+        guard let item = currentItem else { return }
+
+        // Update local state immediately for instant UI feedback
+        await MainActor.run {
+            if item.quantity > 1 {
+                // Decrease quantity
+                let newQuantity = item.quantity - 1
+
+                // Update the local cart items array
+                if let index = self.cartItems.firstIndex(where: { $0.cocktail.id == cocktailId }) {
+                    var updatedItem = self.cartItems[index]
+                    updatedItem = CocktailCartItem(cocktail: updatedItem.cocktail, quantity: Int32(newQuantity))
+                    self.cartItems[index] = updatedItem
+                }
+
+                // Update totals
+                self.totalPrice = self.cartItems.reduce(0.0) { $0 + ($1.cocktail.price * Double($1.quantity)) }
+                self.itemCount = Int(self.cartItems.reduce(0) { $0 + $1.quantity })
+            } else {
+                // Remove item
+                self.cartItems.removeAll { $0.cocktail.id == cocktailId }
+
+                // Update totals
+                self.totalPrice = self.cartItems.reduce(0.0) { $0 + ($1.cocktail.price * Double($1.quantity)) }
+                self.itemCount = Int(self.cartItems.reduce(0) { $0 + $1.quantity })
+            }
+        }
+
+        // Then update the shared state
         do {
-            try await sharedViewModel.decrementQuantity(cocktailId: cocktailId)
+            if item.quantity > 1 {
+                try await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: Int32(item.quantity - 1))
+            } else {
+                try await sharedViewModel.removeFromCart(cocktailId: cocktailId)
+            }
+        } catch {
+            // If the shared update fails, revert the local state
+            await refreshCartState()
+        }
+    }
+
+    func incrementQuantity(_ cocktailId: String) async {
+        // Prevent concurrent updates
+        guard !isUpdating else { return }
+        isUpdating = true
+        defer { isUpdating = false }
+
+        // Find the current item first
+        let currentItem = cartItems.first { $0.cocktail.id == cocktailId }
+        guard let item = currentItem else { return }
+
+        let newQuantity = item.quantity + 1
+
+        // Update local state immediately for instant UI feedback
+        await MainActor.run {
+            // Update the local cart items array
+            if let index = self.cartItems.firstIndex(where: { $0.cocktail.id == cocktailId }) {
+                var updatedItem = self.cartItems[index]
+                updatedItem = CocktailCartItem(cocktail: updatedItem.cocktail, quantity: Int32(newQuantity))
+                self.cartItems[index] = updatedItem
+            }
+
+            // Update totals
+            self.totalPrice = self.cartItems.reduce(0.0) { $0 + ($1.cocktail.price * Double($1.quantity)) }
+            self.itemCount = Int(self.cartItems.reduce(0) { $0 + $1.quantity })
+        }
+
+        // Then update the shared state
+        do {
+            try await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: Int32(newQuantity))
+        } catch {
+            // If the shared update fails, revert the local state
+            await refreshCartState()
+        }
+    }
+
+    func removeFromCart(_ cocktailId: String) async {
+        do {
+            try await sharedViewModel.removeFromCart(cocktailId: cocktailId)
+            // Force a refresh of the cart state to ensure UI updates
+            await refreshCartState()
         } catch {
             // Handle error silently
+        }
+    }
+
+    func updateQuantity(_ cocktailId: String, quantity: Int) async {
+        do {
+            try await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: Int32(quantity))
+            // Force a refresh of the cart state to ensure UI updates
+            await refreshCartState()
+        } catch {
+            // Handle error silently
+        }
+    }
+
+    private func refreshCartState() async {
+        // Force a UI update to ensure the state changes are reflected
+        await MainActor.run {
+            self.objectWillChange.send()
+        }
+
+        // Give a small delay to allow the shared state to propagate
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+
+        await MainActor.run {
+            self.objectWillChange.send()
         }
     }
     
     func clearCart() async {
         do {
             try await sharedViewModel.clearCart()
+            // Force a refresh of the cart state to ensure UI updates
+            await refreshCartState()
         } catch {
             // Handle error silently
         }
