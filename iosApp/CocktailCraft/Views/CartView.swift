@@ -8,7 +8,7 @@ struct CartView: View {
     @State private var showCheckoutConfirmation = false
     
     var body: some View {
-        NavigationView {
+        Group {
             if cartViewModel.cartItems.isEmpty {
                 EmptyStateView(
                     icon: "cart",
@@ -17,49 +17,89 @@ struct CartView: View {
                 )
                 .navigationTitle("Cart")
             } else {
-                VStack {
-                    List {
-                        ForEach(cartViewModel.cartItems, id: \.cocktail.id) { item in
-                            CartItemRow(item: item, cartViewModel: cartViewModel)
-                        }
-                        .onDelete { indexSet in
-                            indexSet.forEach { index in
-                                let item = cartViewModel.cartItems[index]
-                                Task {
-                                    await cartViewModel.removeFromCart(item.cocktail.id)
-                                }
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Cart Items
+                        VStack(spacing: 16) {
+                            ForEach(cartViewModel.cartItems, id: \.cocktail.id) { item in
+                                CartItemCard(item: item, cartViewModel: cartViewModel)
+                                    .padding(.horizontal, 16)
                             }
                         }
-                    }
-                    
-                    // Total and Checkout
-                    VStack(spacing: 16) {
-                        HStack {
-                            Text("Total:")
-                                .font(.headline)
-                            Spacer()
-                            Text("$\(cartViewModel.totalPrice, specifier: "%.2f")")
+                        .padding(.top, 8)
+
+                        // Order Summary Section
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Order Summary")
                                 .font(.title2)
                                 .fontWeight(.bold)
+                                .padding(.horizontal, 16)
+
+                            VStack(spacing: 0) {
+                                // Subtotal
+                                HStack {
+                                    Text("Subtotal")
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text("$\(cartViewModel.totalPrice, specifier: "%.2f")")
+                                        .fontWeight(.medium)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+
+                                Divider()
+                                    .padding(.horizontal, 16)
+
+                                // Delivery Fee
+                                HStack {
+                                    Text("Delivery Fee")
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text("$\(cartViewModel.deliveryFee, specifier: "%.2f")")
+                                        .fontWeight(.medium)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+
+                                Divider()
+                                    .padding(.horizontal, 16)
+
+                                // Total
+                                HStack {
+                                    Text("Total")
+                                        .font(.headline)
+                                        .fontWeight(.bold)
+                                    Spacer()
+                                    Text("$\(cartViewModel.finalTotal, specifier: "%.2f")")
+                                        .font(.headline)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.orange)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                            }
+                            .background(Color(UIColor.systemBackground))
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.1), radius: 4, y: 2)
+                            .padding(.horizontal, 16)
                         }
-                        .padding(.horizontal)
-                        
+
+                        // Place Order Button
                         Button(action: {
                             showCheckoutConfirmation = true
                         }) {
                             Text("Place Order")
                                 .font(.headline)
+                                .fontWeight(.semibold)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.blue)
-                                .cornerRadius(10)
+                                .padding(.vertical, 16)
+                                .background(Color.orange)
+                                .cornerRadius(12)
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 20)
                     }
-                    .padding(.vertical)
-                    .background(Color(UIColor.systemBackground))
-                    .shadow(color: Color.black.opacity(0.1), radius: 5, y: -2)
                 }
                 .navigationTitle("Cart")
             }
@@ -85,68 +125,124 @@ struct CartView: View {
     }
 }
 
-struct CartItemRow: View {
+struct CartItemCard: View {
     let item: CocktailCartItem
     @ObservedObject var cartViewModel: CartViewModelSKIE
-    
+
     var body: some View {
-        HStack {
-            // Cocktail Image
-            AsyncImage(url: URL(string: item.cocktail.imageUrl ?? "")) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } placeholder: {
-                ProgressView()
-            }
-            .frame(width: 60, height: 60)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(item.cocktail.name)
-                    .font(.headline)
-                    .lineLimit(1)
-                
-                Text("$\(item.cocktail.price, specifier: "%.2f")")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-            
-            // Quantity Controls
-            HStack(spacing: 16) {
-                Button(action: {
-                    Task {
-                        await cartViewModel.decrementQuantity(item.cocktail.id)
-                    }
-                }) {
-                    Image(systemName: "minus.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(.blue)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                // Cocktail Image
+                AsyncImage(url: URL(string: item.cocktail.imageUrl ?? "")) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    ProgressView()
                 }
-                .buttonStyle(PlainButtonStyle())
+                .frame(width: 80, height: 80)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                Text("\(item.quantity)")
-                    .font(.headline)
-                    .frame(minWidth: 40)
+                // Content
+                VStack(alignment: .leading, spacing: 8) {
+                    // Name and Favorite
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.cocktail.name)
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                                .lineLimit(2)
 
-                Button(action: {
-                    Task {
-                        await cartViewModel.incrementQuantity(item.cocktail.id)
+                            Text(item.cocktail.category ?? "Unknown")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+
+                        Spacer()
+
+                        Button(action: {
+                            // TODO: Add favorite functionality
+                        }) {
+                            Image(systemName: "heart")
+                                .font(.title3)
+                                .foregroundColor(.gray)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                }) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(.blue)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
+
+                    // Price
+                    Text("$\(item.cocktail.price, specifier: "%.2f")")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.orange)
+
+                    Spacer()
+
+                    // Quantity Controls and Total
+                    HStack {
+                        // Quantity Controls
+                        HStack(spacing: 12) {
+                            Button(action: {
+                                Task {
+                                    await cartViewModel.decrementQuantity(item.cocktail.id)
+                                }
+                            }) {
+                                Image(systemName: "minus")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 32, height: 32)
+                                    .background(Color.gray.opacity(0.6))
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            Text("\(item.quantity)")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                                .frame(minWidth: 30)
+
+                            Button(action: {
+                                Task {
+                                    await cartViewModel.incrementQuantity(item.cocktail.id)
+                                }
+                            }) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 32, height: 32)
+                                    .background(Color.orange)
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+
+                        Spacer()
+
+                        // Item Total and Delete
+                        HStack(spacing: 8) {
+                            Text("$\(item.cocktail.price * Double(item.quantity), specifier: "%.2f")")
+                                .font(.headline)
+                                .fontWeight(.bold)
+
+                            Button(action: {
+                                Task {
+                                    await cartViewModel.removeFromCart(item.cocktail.id)
+                                }
+                            }) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.red)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
                 }
-                .buttonStyle(PlainButtonStyle())
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .padding(16)
         }
-        .padding(.vertical, 4)
+        .background(Color(UIColor.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.1), radius: 4, y: 2)
     }
 }
