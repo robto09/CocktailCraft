@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -33,6 +34,11 @@ fun OrderListScreen(
     val orders by orderViewModel.orders.collectAsState()
     val isLoading by orderViewModel.loadingState.collectAsState()
     val error by orderViewModel.errorState.collectAsState()
+
+    // Load orders when the screen is first displayed
+    LaunchedEffect(Unit) {
+        orderViewModel.loadOrders()
+    }
 
     Column(
         modifier = Modifier
