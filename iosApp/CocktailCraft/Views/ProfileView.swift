@@ -3,7 +3,7 @@ import shared
 
 struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModelSKIE()
-    @StateObject private var themeViewModel = ThemeViewModelSKIE()
+    @ObservedObject private var themeViewModel = ThemeViewModelSKIE.shared
     @State private var showingSettings = false
     @State private var showingSignIn = false
     @State private var showingSignUp = false

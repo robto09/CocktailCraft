@@ -8,6 +8,9 @@ import Combine
  */
 @MainActor
 class ThemeViewModelSKIE: ObservableObject {
+    // Singleton instance
+    static let shared = ThemeViewModelSKIE()
+
     // Published properties for SwiftUI
     @Published var isDarkMode = false
     @Published var themeMode = "system"
@@ -42,7 +45,7 @@ class ThemeViewModelSKIE: ObservableObject {
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
     
-    init() {
+    private init() {
         // Get shared ViewModel from Koin
         self.sharedViewModel = getSharedKoinHelper().getSharedThemeViewModel()
         

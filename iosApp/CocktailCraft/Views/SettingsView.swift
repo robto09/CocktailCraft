@@ -3,7 +3,7 @@ import shared
 
 struct SettingsView: View {
     @Environment(\.presentationMode) var presentationMode
-    @StateObject private var themeViewModel = ThemeViewModelSKIE()
+    @ObservedObject private var themeViewModel = ThemeViewModelSKIE.shared
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     
     var body: some View {
