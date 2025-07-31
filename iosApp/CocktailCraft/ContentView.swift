@@ -47,7 +47,7 @@ struct ContentView: View {
 
                 // Profile Tab
                 NavigationStack {
-                    ProfileView()
+                    ProfileView(selectedTab: $selectedTab)
                 }
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")

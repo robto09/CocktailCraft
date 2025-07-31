@@ -11,6 +11,11 @@
 		0EBB347D2E33E199005F3BA9 /* CocktailDetailViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EBB34782E33E199005F3BA9 /* CocktailDetailViewModelSKIE.swift */; };
 		0EBB347E2E33E199005F3BA9 /* HomeViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EBB347A2E33E199005F3BA9 /* HomeViewModelSKIE.swift */; };
 		0EBB347F2E33E199005F3BA9 /* FavoritesViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EBB34792E33E199005F3BA9 /* FavoritesViewModelSKIE.swift */; };
+		1A2B3C4D5E6F7890ABCD1234 /* OfflineModeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890ABCD1235 /* OfflineModeView.swift */; };
+		2B3C4D5E6F7890ABCD123456 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B3C4D5E6F7890ABCD123457 /* SignInView.swift */; };
+		3C4D5E6F7890ABCD12345678 /* SignUpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C4D5E6F7890ABCD12345679 /* SignUpView.swift */; };
+		4D5E6F7890ABCD123456789A /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D5E6F7890ABCD123456789B /* AppColors.swift */; };
+		5E6F7890ABCD123456789ABC /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E6F7890ABCD123456789ABD /* AppTheme.swift */; };
 		103C311FC2DD28DEC408D64A /* ShimmerEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33609CC7CE44DBCE6EA103C /* ShimmerEffect.swift */; };
 		12EB7C0EC24212CA6AD2FA19 /* FilterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51DDA700E2FDBA1E1F3392DF /* FilterView.swift */; };
 		24890AC789C7126C99DEC28B /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8885ACD7979C44B621ECA874 /* ErrorView.swift */; };
@@ -59,6 +64,11 @@
 		0EBB34792E33E199005F3BA9 /* FavoritesViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesViewModelSKIE.swift; sourceTree = "<group>"; };
 		0EBB347A2E33E199005F3BA9 /* HomeViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModelSKIE.swift; sourceTree = "<group>"; };
 		0EBB347B2E33E199005F3BA9 /* OfflineModeViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineModeViewModelSKIE.swift; sourceTree = "<group>"; };
+	1A2B3C4D5E6F7890ABCD1235 /* OfflineModeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineModeView.swift; sourceTree = "<group>"; };
+	2B3C4D5E6F7890ABCD123457 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+	3C4D5E6F7890ABCD12345679 /* SignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpView.swift; sourceTree = "<group>"; };
+	4D5E6F7890ABCD123456789B /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
+	5E6F7890ABCD123456789ABD /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 
 		2BD10A6D0C4EF128674C822C /* CartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartView.swift; sourceTree = "<group>"; };
 		3CC06385A5E745A5A73C130E /* ReviewViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewViewModelSKIE.swift; sourceTree = "<group>"; };
@@ -109,6 +119,7 @@
 				7EBC388A838EA20284B59381 /* ContentView.swift */,
 				4231148A0AE075220A7C4774 /* Info.plist */,
 				763F7D2C53916801E282D4AC /* Components */,
+				ABC123DEF456789012345678 /* Theme */,
 				2100EB78E12FFADB14DB2966 /* Utils */,
 				6045566B216A43A8FCC133C5 /* ViewModels */,
 				3F6D58A9E066A0CF397C86A2 /* Views */,
@@ -123,6 +134,15 @@
 				F5A93B6E8F24572E413E46A2 /* PlatformErrorHandler.swift */,
 			);
 			path = Utils;
+			sourceTree = "<group>";
+		};
+		ABC123DEF456789012345678 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				4D5E6F7890ABCD123456789B /* AppColors.swift */,
+				5E6F7890ABCD123456789ABD /* AppTheme.swift */,
+			);
+			path = Theme;
 			sourceTree = "<group>";
 		};
 		2E0DD283B5F68345B12032EE /* Frameworks */ = {
@@ -159,9 +179,12 @@
 				77C5D3DBDD3CA76A90859F00 /* FavoritesView.swift */,
 				51DDA700E2FDBA1E1F3392DF /* FilterView.swift */,
 				781E4068C6D09E26A2F6F660 /* HomeView.swift */,
+				1A2B3C4D5E6F7890ABCD1235 /* OfflineModeView.swift */,
 				E2B26ED3A3ACF1E6DAEE3D49 /* OrderListView.swift */,
 				61384C5931B60FCC54CA0D2E /* ProfileView.swift */,
 				F79C3BBEFD0B2BE551CBB4A8 /* SettingsView.swift */,
+				2B3C4D5E6F7890ABCD123457 /* SignInView.swift */,
+				3C4D5E6F7890ABCD12345679 /* SignUpView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -320,11 +343,16 @@
 				D3BD0756F33F51BAF8873DEF /* LoadingOverlay.swift in Sources */,
 				556B8A0A0C717207D3369E23 /* NetworkMonitor.swift in Sources */,
 				4BFEB7F904D60ED73FC3E3DA /* OfflineBanner.swift in Sources */,
+				1A2B3C4D5E6F7890ABCD1234 /* OfflineModeView.swift in Sources */,
 				DB7D7BA10D5729B4F84CCEDB /* OrderListView.swift in Sources */,
 				A8E64AE208119647DAB79C75 /* PlatformErrorHandler.swift in Sources */,
 				9CA8A23169EACEE6BAA6168E /* ProfileView.swift in Sources */,
 				4B1843A05358F5B1489781B5 /* SettingsView.swift in Sources */,
+				2B3C4D5E6F7890ABCD123456 /* SignInView.swift in Sources */,
+				3C4D5E6F7890ABCD12345678 /* SignUpView.swift in Sources */,
 				103C311FC2DD28DEC408D64A /* ShimmerEffect.swift in Sources */,
+				4D5E6F7890ABCD123456789A /* AppColors.swift in Sources */,
+				5E6F7890ABCD123456789ABC /* AppTheme.swift in Sources */,
 				EF018FBC5C1312DB79C5D641 /* Toast.swift in Sources */,
 				F025AA2D6B5B4502A3023799 /* CartViewModelSKIE.swift in Sources */,
 				0EBB347C2E33E199005F3BA9 /* OfflineModeViewModelSKIE.swift in Sources */,
