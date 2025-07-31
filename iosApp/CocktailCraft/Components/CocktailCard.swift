@@ -20,14 +20,7 @@ struct CocktailCard: View {
         return false // cocktail.stockCount <= 0
     }
     
-    // Android-style colors
-    private let primaryColor = Color(red: 0.92, green: 0.42, blue: 0.26) // #EB6A43
-    private let secondaryColor = Color(red: 1.0, green: 0.78, blue: 0.30) // #FFC84D
-    private let textPrimary = Color.primary
-    private let textSecondary = Color.secondary
-    private let surfaceColor = Color(UIColor.systemBackground)
-    private let lightGray = Color(red: 0.90, green: 0.90, blue: 0.92) // #E5E5EA
-    private let grayColor = Color(red: 0.56, green: 0.56, blue: 0.58) // #8E8E93
+    @Environment(\.isDarkMode) var isDarkMode
     
     var body: some View {
         switch layout {
@@ -49,7 +42,7 @@ struct CocktailCard: View {
                         .aspectRatio(contentMode: .fill)
                 } placeholder: {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(lightGray)
+                        .fill(AppColors.lightGray)
                         .overlay(
                             ProgressView()
                                 .scaleEffect(1.2)
@@ -78,7 +71,7 @@ struct CocktailCard: View {
                 // Cocktail Name - Larger font
                 Text(cocktail.name)
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(textPrimary)
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 
@@ -86,7 +79,7 @@ struct CocktailCard: View {
                 if let category = cocktail.category {
                     Text("Alcoholic • \(category)")
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(textSecondary)
+                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         .lineLimit(1)
                 }
                 
@@ -94,7 +87,7 @@ struct CocktailCard: View {
                 Text(getIngredientsText())
                     .font(.system(size: 13, weight: .regular))
                     .italic()
-                    .foregroundColor(textSecondary)
+                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 
@@ -105,7 +98,7 @@ struct CocktailCard: View {
                     // Price - Larger and more prominent
                     Text(String(format: "$%.2f", cocktail.price ?? 12.99))
                         .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(primaryColor)
+                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
                     
                     Spacer()
                     
@@ -116,7 +109,7 @@ struct CocktailCard: View {
                             Button(action: onToggle) {
                                 Image(systemName: isFavorite ? "heart.fill" : "heart")
                                     .font(.system(size: 24))
-                                    .foregroundColor(isFavorite ? secondaryColor : grayColor)
+                                    .foregroundColor(isFavorite ? AppColors.secondary(isDarkMode: isDarkMode) : AppColors.gray)
                             }
                             .frame(width: 40, height: 40)
                             .buttonStyle(.borderless)
@@ -127,7 +120,7 @@ struct CocktailCard: View {
                             Button(action: onAddToCart) {
                                 Image(systemName: "cart.badge.plus")
                                     .font(.system(size: 24))
-                                    .foregroundColor(isOutOfStock ? grayColor : primaryColor)
+                                    .foregroundColor(isOutOfStock ? AppColors.gray : AppColors.primary(isDarkMode: isDarkMode))
                             }
                             .frame(width: 40, height: 40)
                             .disabled(isOutOfStock)
@@ -139,7 +132,7 @@ struct CocktailCard: View {
             .padding(.vertical, 8)
         }
         .padding(16)
-        .background(surfaceColor)
+        .background(AppColors.surface(isDarkMode: isDarkMode))
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
         .if(onCardTap != nil) { view in
@@ -160,7 +153,7 @@ struct CocktailCard: View {
                         .aspectRatio(contentMode: .fill)
                 } placeholder: {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(lightGray)
+                        .fill(AppColors.lightGray)
                         .overlay(
                             ProgressView()
                                 .scaleEffect(1.2)
@@ -189,7 +182,7 @@ struct CocktailCard: View {
                 // Cocktail Name - Allow more lines
                 Text(cocktail.name)
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(textPrimary)
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     .lineLimit(3)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -198,7 +191,7 @@ struct CocktailCard: View {
                 if let category = cocktail.category {
                     Text("Alcoholic • \(category)")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(textSecondary)
+                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         .lineLimit(2)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -207,7 +200,7 @@ struct CocktailCard: View {
                 Text(getIngredientsText())
                     .font(.system(size: 12, weight: .regular))
                     .italic()
-                    .foregroundColor(textSecondary)
+                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                     .lineLimit(3)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -217,7 +210,7 @@ struct CocktailCard: View {
                     // Price - Prominent
                     Text(String(format: "$%.2f", cocktail.price ?? 12.99))
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(primaryColor)
+                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
                     
                     Spacer()
                     
@@ -228,7 +221,7 @@ struct CocktailCard: View {
                             Button(action: onToggle) {
                                 Image(systemName: isFavorite ? "heart.fill" : "heart")
                                     .font(.system(size: 20))
-                                    .foregroundColor(isFavorite ? secondaryColor : grayColor)
+                                    .foregroundColor(isFavorite ? AppColors.secondary(isDarkMode: isDarkMode) : AppColors.gray)
                             }
                             .frame(width: 32, height: 32)
                             .buttonStyle(.borderless)
@@ -239,7 +232,7 @@ struct CocktailCard: View {
                             Button(action: onAddToCart) {
                                 Image(systemName: "cart.badge.plus")
                                     .font(.system(size: 20))
-                                    .foregroundColor(isOutOfStock ? grayColor : primaryColor)
+                                    .foregroundColor(isOutOfStock ? AppColors.gray : AppColors.primary(isDarkMode: isDarkMode))
                             }
                             .frame(width: 32, height: 32)
                             .disabled(isOutOfStock)
@@ -251,7 +244,7 @@ struct CocktailCard: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 12)
         }
-        .background(surfaceColor)
+        .background(AppColors.surface(isDarkMode: isDarkMode))
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
         .if(onCardTap != nil) { view in

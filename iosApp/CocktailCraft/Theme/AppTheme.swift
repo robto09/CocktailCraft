@@ -1,5 +1,17 @@
 import SwiftUI
 
+/// Environment key for theme state
+struct ThemeEnvironmentKey: EnvironmentKey {
+    static let defaultValue = false // Default to light mode
+}
+
+extension EnvironmentValues {
+    var isDarkMode: Bool {
+        get { self[ThemeEnvironmentKey.self] }
+        set { self[ThemeEnvironmentKey.self] = newValue }
+    }
+}
+
 /// App typography and spacing constants matching Android design
 struct AppTheme {
     
@@ -69,9 +81,11 @@ struct AppTheme {
 
 // MARK: - View Modifiers
 struct CardStyle: ViewModifier {
+    @Environment(\.isDarkMode) var isDarkMode
+
     func body(content: Content) -> some View {
         content
-            .background(AppColors.surface)
+            .background(AppColors.surface(isDarkMode: isDarkMode))
             .cornerRadius(AppTheme.CornerRadius.card)
             .shadow(
                 color: AppTheme.Shadow.card.color,
@@ -84,13 +98,14 @@ struct CardStyle: ViewModifier {
 
 struct ChipStyle: ViewModifier {
     let isSelected: Bool
-    
+    @Environment(\.isDarkMode) var isDarkMode
+
     func body(content: Content) -> some View {
         content
             .padding(.horizontal, AppTheme.Spacing.lg)
             .padding(.vertical, AppTheme.Spacing.xs)
-            .background(isSelected ? AppColors.primary : AppColors.surface)
-            .foregroundColor(isSelected ? .white : AppColors.primary)
+            .background(isSelected ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.surface(isDarkMode: isDarkMode))
+            .foregroundColor(isSelected ? .white : AppColors.primary(isDarkMode: isDarkMode))
             .cornerRadius(AppTheme.CornerRadius.chip)
             .shadow(
                 color: isSelected ? AppTheme.Shadow.button.color : Color.clear,

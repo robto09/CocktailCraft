@@ -4,6 +4,7 @@ import shared
 struct ContentView: View {
     @State private var selectedTab = 0
     @StateObject private var cartViewModel = CartViewModelSKIE()
+    @StateObject private var themeViewModel = ThemeViewModelSKIE()
 
     var body: some View {
         ZStack {
@@ -61,6 +62,9 @@ struct ContentView: View {
                 Spacer()
             }
         }
+        .background(AppColors.background(isDarkMode: themeViewModel.isDarkMode))
+        .environment(\.isDarkMode, themeViewModel.isDarkMode)
+        .preferredColorScheme(themeViewModel.isSystemTheme ? nil : (themeViewModel.isDarkMode ? .dark : .light))
     }
 }
 

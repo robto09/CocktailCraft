@@ -11,14 +11,7 @@ struct HomeView: View {
     @State private var activeFilters: [String] = []
     @State private var showingToast = false
     @State private var toastMessage = ""
-
-    
-    // Android-style colors
-    private let primaryColor = Color(red: 0.92, green: 0.42, blue: 0.26) // #EB6A43
-    private let secondaryColor = Color(red: 1.0, green: 0.78, blue: 0.30) // #FFC84D
-    private let backgroundColor = Color(red: 0.98, green: 0.98, blue: 0.98) // #FAFAFA
-    private let surfaceColor = Color(UIColor.systemBackground)
-    private let textSecondary = Color.secondary
+    @Environment(\.isDarkMode) var isDarkMode
     
     var body: some View {
         VStack(spacing: 0) {
@@ -72,7 +65,7 @@ struct HomeView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(backgroundColor)
+        .background(AppColors.background(isDarkMode: isDarkMode))
     }
     
     private var searchBarSection: some View {
@@ -85,7 +78,7 @@ struct HomeView: View {
     private var searchBar: some View {
         HStack {
             Image(systemName: "magnifyingglass")
-                .foregroundColor(textSecondary)
+                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
             
             TextField("Search cocktails...", text: $searchText)
                 .textFieldStyle(.plain)
@@ -102,14 +95,14 @@ struct HomeView: View {
                     viewModel.clearSearch()
                 }) {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(textSecondary)
+                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(surfaceColor)
+        .background(AppColors.surface(isDarkMode: isDarkMode))
         .cornerRadius(10)
         .shadow(color: Color.black.opacity(0.05), radius: 1, x: 0, y: 1)
     }
@@ -118,9 +111,9 @@ struct HomeView: View {
         Button(action: { showingAdvancedSearch.toggle() }) {
             Image(systemName: "slider.horizontal.3")
                 .font(.system(size: 18))
-                .foregroundColor(primaryColor)
+                .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
                 .padding(8)
-                .background(surfaceColor)
+                .background(AppColors.surface(isDarkMode: isDarkMode))
                 .cornerRadius(8)
                 .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
         }
@@ -154,8 +147,8 @@ struct HomeView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 2)
-        .background(primaryColor.opacity(0.1))
-        .foregroundColor(primaryColor)
+        .background(AppColors.primary(isDarkMode: isDarkMode).opacity(0.1))
+        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
         .cornerRadius(8)
     }
     
@@ -182,8 +175,8 @@ struct HomeView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 6)
-        .background(selectedCategory == nil ? primaryColor : surfaceColor)
-        .foregroundColor(selectedCategory == nil ? .white : primaryColor)
+        .background(selectedCategory == nil ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.surface(isDarkMode: isDarkMode))
+        .foregroundColor(selectedCategory == nil ? .white : AppColors.primary(isDarkMode: isDarkMode))
         .cornerRadius(16)
         .shadow(color: selectedCategory == nil ? Color.black.opacity(0.15) : Color.clear, radius: 2, x: 0, y: 1)
     }
@@ -205,8 +198,8 @@ struct HomeView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 6)
-        .background(selectedCategory == category ? primaryColor : surfaceColor)
-        .foregroundColor(selectedCategory == category ? .white : primaryColor)
+        .background(selectedCategory == category ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.surface(isDarkMode: isDarkMode))
+        .foregroundColor(selectedCategory == category ? .white : AppColors.primary(isDarkMode: isDarkMode))
         .cornerRadius(16)
         .shadow(color: selectedCategory == category ? Color.black.opacity(0.15) : Color.clear, radius: 2, x: 0, y: 1)
     }
@@ -234,7 +227,7 @@ struct HomeView: View {
             }
             .padding(16)
         }
-        .background(backgroundColor)
+        .background(AppColors.background(isDarkMode: isDarkMode))
         .transition(.opacity)
     }
     
@@ -280,7 +273,7 @@ struct HomeView: View {
             .padding(.vertical, 8)
         }
         .padding(16)
-        .background(surfaceColor)
+        .background(AppColors.surface(isDarkMode: isDarkMode))
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
         .redacted(reason: .placeholder)
@@ -308,12 +301,12 @@ struct HomeView: View {
                         clearAllFilters()
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(primaryColor)
+                    .tint(AppColors.primary(isDarkMode: isDarkMode))
                 }
                 Spacer()
             }
         }
-        .background(backgroundColor)
+        .background(AppColors.background(isDarkMode: isDarkMode))
     }
     
     private var cocktailListSection: some View {
@@ -324,7 +317,7 @@ struct HomeView: View {
             }
             .padding(16)
         }
-        .background(backgroundColor)
+        .background(AppColors.background(isDarkMode: isDarkMode))
         .refreshable {
             await viewModel.refreshCocktails()
         }
@@ -384,10 +377,10 @@ struct HomeView: View {
             Text("Load More")
                 .font(.callout)
                 .fontWeight(.medium)
-                .foregroundColor(primaryColor)
+                .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
                 .padding(.vertical, 12)
                 .padding(.horizontal, 20)
-                .background(surfaceColor)
+                .background(AppColors.surface(isDarkMode: isDarkMode))
                 .cornerRadius(8)
                 .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
         }
@@ -398,10 +391,10 @@ struct HomeView: View {
     private var loadingMoreIndicator: some View {
         HStack {
             ProgressView()
-                .foregroundColor(primaryColor)
+                .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
             Text("Loading more...")
                 .font(.callout)
-                .foregroundColor(textSecondary)
+                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
         }
         .padding(.bottom, 32)
     }

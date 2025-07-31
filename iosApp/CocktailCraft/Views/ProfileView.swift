@@ -10,6 +10,7 @@ struct ProfileView: View {
     @State private var showingLogoutAlert = false
     @State private var showingOfflineMode = false
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.isDarkMode) var isDarkMode
 
     // Optional binding for tab selection to enable navigation to Orders tab
     var selectedTab: Binding<Int>?
@@ -40,7 +41,7 @@ struct ProfileView: View {
                 .padding(.top, 8)
                 .padding(.bottom)
             }
-            .background(Color(.systemBackground))
+            .background(AppColors.background(isDarkMode: isDarkMode))
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
@@ -105,7 +106,7 @@ struct ProfileView: View {
                 Text(viewModel.userName.prefix(1).uppercased())
                     .font(.largeTitle)
                     .fontWeight(.bold)
-                    .foregroundColor(AppColors.primary)
+                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
             }
 
             // User Info
@@ -113,7 +114,7 @@ struct ProfileView: View {
                 Text(viewModel.userName)
                     .font(.title2)
                     .fontWeight(.bold)
-                    .foregroundColor(.primary)
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                 Text(viewModel.userEmail)
                     .font(.subheadline)
@@ -125,7 +126,7 @@ struct ProfileView: View {
                 VStack(spacing: 12) {
                     Text("Sign in to access your profile")
                         .font(.body)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         .padding(.top, 8)
 
                     Button("Sign In") {
@@ -150,7 +151,7 @@ struct ProfileView: View {
             Text("Account Settings")
                 .font(.headline)
                 .fontWeight(.bold)
-                .foregroundColor(.primary)
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
             VStack(spacing: 0) {
                 SettingsRow(
@@ -194,7 +195,7 @@ struct ProfileView: View {
             Text("App Settings")
                 .font(.headline)
                 .fontWeight(.bold)
-                .foregroundColor(.primary)
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
             VStack(spacing: 0) {
                 SettingsRow(
@@ -278,13 +279,13 @@ struct ProfileView: View {
             Text("About")
                 .font(.headline)
                 .fontWeight(.bold)
-                .foregroundColor(.primary)
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
             VStack(alignment: .leading, spacing: 12) {
                 Text("Cocktail Bar App")
                     .font(.body)
                     .fontWeight(.medium)
-                    .foregroundColor(.primary)
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                 Text("Version 1.0.0")
                     .font(.subheadline)
@@ -392,29 +393,33 @@ struct ThemeToggleRow: View {
 
 
 struct PrimaryButtonStyle: ButtonStyle {
+    @Environment(\.isDarkMode) var isDarkMode
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .padding()
-            .background(AppColors.primary)
+            .background(AppColors.primary(isDarkMode: isDarkMode))
             .cornerRadius(8)
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
     }
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
+    @Environment(\.isDarkMode) var isDarkMode
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
-            .foregroundColor(AppColors.primary)
+            .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
             .frame(maxWidth: .infinity)
             .padding()
             .background(Color.clear)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(AppColors.primary, lineWidth: 1)
+                    .stroke(AppColors.primary(isDarkMode: isDarkMode), lineWidth: 1)
             )
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
     }
