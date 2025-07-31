@@ -95,9 +95,3 @@ extension Color {
     }
 }
 
-extension UIColor {
-    convenience init(_ color: Color) {
-        let uiColor = UIColor(color)
-        self.init(cgColor: uiColor.cgColor)
-    }
-}

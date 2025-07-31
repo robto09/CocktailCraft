@@ -8,6 +8,7 @@ enum NavigationDestination: Hashable {
     case profile
     case orderHistory
     case cart
+    case offlineMode
     
     // Hashable conformance
     func hash(into hasher: inout Hasher) {
@@ -23,6 +24,8 @@ enum NavigationDestination: Hashable {
             hasher.combine("orderHistory")
         case .cart:
             hasher.combine("cart")
+        case .offlineMode:
+            hasher.combine("offlineMode")
         }
     }
     
@@ -105,7 +108,7 @@ class NavigationCoordinator {
             selectedTab = .home
         case .cart:
             selectedTab = .cart
-        case .profile, .settings:
+        case .profile, .settings, .offlineMode:
             selectedTab = .profile
         case .orderHistory:
             selectedTab = .orders
@@ -133,6 +136,8 @@ class NavigationCoordinator {
             handleDeepLink(.cart)
         case "orders":
             handleDeepLink(.orderHistory)
+        case "offline":
+            handleDeepLink(.offlineMode)
         default:
             break
         }
@@ -157,6 +162,8 @@ extension NavigationCoordinator {
                 get: { self.selectedTab },
                 set: { self.selectedTab = $0 }
             ))
+        case .offlineMode:
+            OfflineModeView()
         }
     }
 }
