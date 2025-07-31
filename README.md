@@ -181,10 +181,22 @@ For detailed information about the dependency injection implementation, see:
 - **Shimmer Effects**: Loading state animations with shimmer effects
 
 ### Testing
-- **JUnit**: For unit testing
-- **Mockito & Mockk**: For mocking in tests
-- **Turbine**: For testing Flow emissions
-- **Espresso**: For UI testing
+- **JUnit Jupiter**: Modern unit testing framework (5.10.1)
+- **kotlin-test**: Multiplatform testing support (2.0.21)
+- **Jetpack Compose UI Testing**: UI testing for Compose (2025.02.00)
+- **Mockk**: Kotlin-friendly mocking library (1.13.8)
+- **Turbine**: For testing Flow emissions (1.0.0)
+- **XCUITest**: iOS UI testing framework
+- **Koin Test**: Dependency injection testing utilities
+- **Robolectric**: Android unit testing framework
+
+**Testing Setup:**
+- [Testing Implementation Summary](docs/TESTING_IMPLEMENTATION_SUMMARY.md) - Complete testing framework overview and setup
+
+**Run Tests:**
+```bash
+./gradlew test  # Run all tests
+```
 
 For a detailed list of all libraries with versions and purposes, see the [Libraries Documentation](docs/Libraries.md).
 

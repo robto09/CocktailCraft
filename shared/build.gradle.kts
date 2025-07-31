@@ -125,17 +125,27 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
                 implementation("io.insert-koin:koin-test:3.5.6")
-                implementation("app.cash.turbine:turbine:0.13.0")
+                implementation("app.cash.turbine:turbine:1.0.0")
             }
         }
 
         val androidUnitTest by getting {
             dependencies {
-                implementation("io.mockk:mockk:1.13.5")
+                implementation("io.mockk:mockk:1.13.8")
+                implementation("org.robolectric:robolectric:4.11.1")
+                implementation("androidx.test:core:1.5.0")
+                implementation("androidx.test.ext:junit:1.1.5")
+
+                // JUnit Jupiter for modern testing (Android only)
+                implementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
+                implementation("org.junit.jupiter:junit-jupiter-engine:5.10.1")
+                implementation("org.junit.jupiter:junit-jupiter-params:5.10.1")
             }
         }
+
+
     }
 }
 
