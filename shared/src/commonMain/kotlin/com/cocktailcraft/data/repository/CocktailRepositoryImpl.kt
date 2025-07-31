@@ -854,7 +854,6 @@ class CocktailRepositoryImpl(
                             it.name.contains("milk", ignoreCase = true) ||
                             it.name.contains("coconut", ignoreCase = true)
                         }
-                    else -> true
                 }
             }
         }
@@ -872,7 +871,6 @@ class CocktailRepositoryImpl(
                         ingredientCount in 4..6 && instructionLength in 100..200
                     com.cocktailcraft.domain.model.Complexity.COMPLEX ->
                         ingredientCount > 6 || instructionLength > 200
-                    else -> true
                 }
             }
         }
@@ -893,7 +891,6 @@ class CocktailRepositoryImpl(
                         ingredientCount in 4..6 || hasComplexTechniques
                     com.cocktailcraft.domain.model.PreparationTime.LONG ->
                         ingredientCount > 6 || instructionLength > 300
-                    else -> true
                 }
             }
         }
