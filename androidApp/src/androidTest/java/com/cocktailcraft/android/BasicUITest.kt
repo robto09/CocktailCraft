@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 
 /**
  * Basic UI test to verify Jetpack Compose testing setup is working.
- * More detailed UI tests can be added as needed with proper data model setup.
+ * More detailed UI tests are now implemented in specific screen test files.
  */
 @RunWith(AndroidJUnit4::class)
 class BasicUITest {
@@ -23,7 +23,7 @@ class BasicUITest {
         composeTestRule.setContent {
             // Empty content for basic setup verification
         }
-        
+
         assertTrue(true, "Jetpack Compose UI testing setup is working correctly")
     }
 }
