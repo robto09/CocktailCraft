@@ -1,0 +1,42 @@
+name: CocktailCraft
+options:
+  bundleIdPrefix: com.cocktailcraft
+  deploymentTarget:
+    iOS: "18.5"
+  
+targets:
+  CocktailCraft:
+    type: application
+    platform: iOS
+    sources:
+      - CocktailCraft
+    dependencies:
+      - framework: ../shared/build/cocoapods/publish/debug/shared.xcframework
+        embed: true
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.cocktailcraft.CocktailCraft
+      DEVELOPMENT_TEAM: ""
+      SWIFT_VERSION: "6.0"
+      IPHONEOS_DEPLOYMENT_TARGET: "18.5"
+      ENABLE_PREVIEWS: true
+      GENERATE_INFOPLIST_FILE: true
+      INFOPLIST_FILE: CocktailCraft/Info.plist
+      INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+      INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
+      INFOPLIST_KEY_UILaunchScreen_Generation: true
+      INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+      INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+      FRAMEWORK_SEARCH_PATHS:
+        - "$(inherited)"
+      OTHER_LDFLAGS:
+        - "$(inherited)"
+    
+schemes:
+  CocktailCraft:
+    build:
+      targets:
+        CocktailCraft: all
+    run:
+      config: Debug
+    archive:
+      config: Release

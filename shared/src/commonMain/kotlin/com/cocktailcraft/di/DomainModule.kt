@@ -7,7 +7,7 @@ import com.cocktailcraft.domain.usecase.ToggleFavoriteUseCase
 import org.koin.dsl.module
 
 /**
- * Koin module for domain-related dependencies including use cases and domain configurations.
+ * Koin module for domain-related dependencies including use cases, domain configurations, and shared ViewModels.
  */
 val domainModule = module {
     // Config
@@ -16,4 +16,22 @@ val domainModule = module {
     // Use Cases
     factory { PlaceOrderUseCase(orderRepository = get()) }
     factory { ToggleFavoriteUseCase(cocktailRepository = get()) }
+
+    // Shared ViewModels (Proof of Concept)
+    factory { com.cocktailcraft.viewmodel.SharedCocktailListViewModel() }
+    
+    // Shared ViewModels with full SKIE integration (working ones)
+    factory { com.cocktailcraft.viewmodel.SharedHomeViewModel() }
+    factory { com.cocktailcraft.viewmodel.SharedCartViewModel() }
+    factory { com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel() }
+    factory { com.cocktailcraft.viewmodel.SharedFavoritesViewModel() }
+    
+    // Phase 1 ViewModels - Core Dependencies (Completed)
+    factory { com.cocktailcraft.viewmodel.SharedOfflineModeViewModel() }
+    factory { com.cocktailcraft.viewmodel.SharedOrderViewModel() }
+    
+    // Phase 2 ViewModels - User Experience Features (Completed)
+    factory { com.cocktailcraft.viewmodel.SharedProfileViewModel() }
+    factory { com.cocktailcraft.viewmodel.SharedThemeViewModel() }
+    factory { com.cocktailcraft.viewmodel.SharedReviewViewModel() }
 }

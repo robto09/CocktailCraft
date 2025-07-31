@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import com.cocktailcraft.util.AndroidNetworkMonitor
+import com.cocktailcraft.util.NetworkMonitor
 import com.russhwolf.settings.ExperimentalSettingsApi
 import com.russhwolf.settings.ExperimentalSettingsImplementation
 import com.russhwolf.settings.Settings
@@ -29,4 +31,7 @@ actual fun platformModule() = module {
         val sharedPrefs = context.getSharedPreferences("cocktailcraft_prefs", Context.MODE_PRIVATE)
         SharedPreferencesSettings(sharedPrefs)
     }
+
+    // Network monitoring
+    single<NetworkMonitor> { AndroidNetworkMonitor(get<Context>()) }
 } 

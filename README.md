@@ -1,7 +1,11 @@
 # CocktailCraft App
 
 ## Overview
-CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail ordering and discovery application, designed to run in Android platform. The app allows users to browse, search, and order various cocktails, manage their shopping cart, track orders, and maintain a profile. It leverages modern mobile app development practices including MVVM architecture, reactive programming, and dependency injection.
+CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail ordering and discovery application, designed to run on both Android and iOS platforms. The app allows users to browse, search, and order various cocktails, manage their shopping cart, track orders, and maintain a profile. It leverages modern mobile app development practices including MVVM architecture, reactive programming, and dependency injection.
+
+### Platform Status
+- **Android**: ✅ Fully functional and production-ready
+- **iOS**: ✅ **iOS 18.5 Ready** - Working SKIE integration (~80% complete) with native Swift async/await patterns
 
 ![CocktailCraft Home Screen](docs/images/Screenshot_20250419_014459.png)
 
@@ -19,6 +23,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Robust Error Handling**: User-friendly error messages with recovery options
 - **Polished Animations**: Enhanced user experience with smooth animations and micro-interactions
 - **Cross-Platform**: Same codebase for both Android and iOS platforms
+- **iOS 18.5 Ready**: Working SKIE integration (~80% complete) with FlowCollector bridge pattern and modern SwiftUI
 
 ## Architecture
 The application follows the **Clean Architecture** pattern with **MVVM** (Model-View-ViewModel) for presentation, reactive state management, and a modular **Dependency Injection** system:
@@ -185,6 +190,10 @@ For a detailed list of all libraries with versions and purposes, see the [Librar
 
 For information about the reusable UI components in the app, see the [UI Components Documentation](docs/UI_Components.md).
 
+For details about the iOS 18.5 migration and current SKIE integration status (~80% complete), see the [SKIE Integration Status](docs/SKIE_Integration_Complete.md).
+
+For technical details about the FlowCollector bridge pattern and why we're not at 100% SKIE yet, see the [SKIE FlowCollector Pattern Guide](docs/SKIE_FlowCollector_Pattern.md).
+
 ## Package Structure
 
 ### Domain Layer
@@ -271,6 +280,14 @@ The application includes comprehensive test coverage:
    - Choose an emulator or device
    - Click Run
 
+5. **Run on iOS** (macOS only):
+   - Build the shared framework: `./gradlew :shared:podPublishXCFramework`
+   - Navigate to `iosApp` directory: `cd iosApp`
+   - Install CocoaPods dependencies: `pod install`
+   - Open `CocktailCraft.xcworkspace` in Xcode
+   - Select a simulator and run the app
+   - See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) for detailed setup
+
 ## Development Setup
 - **Android Studio**: Latest version recommended (Flamingo or newer)
 - **JDK**: Version 17 or higher
@@ -281,7 +298,8 @@ The application includes comprehensive test coverage:
 ## Troubleshooting
 - **Build Issues**: Try cleaning and rebuilding the project
 - **KMP Plugin Issues**: Make sure the Kotlin Multiplatform plugin is up to date
-- **iOS Builds**: Make sure the Kotlin/Native target is properly configured
+- **iOS Builds**: ✅ **Working with SKIE integration!** See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) and [SKIE Status](docs/SKIE_Integration_Complete.md) for details
+- **iOS Build Warnings**: Non-blocking warnings exist (see iOS documentation for details)
 - **Dependency Resolution**: Check Gradle settings and versions.toml file
 
 ## Contributing

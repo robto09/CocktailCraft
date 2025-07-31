@@ -1,19 +1,22 @@
 package com.cocktailcraft.util
 
-import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Common interface for monitoring network connectivity.
- * Currently only implemented for Android.
  */
-expect class NetworkMonitor(context: Context) {
+interface NetworkMonitor {
     fun startMonitoring()
     fun stopMonitoring()
     val isOnline: StateFlow<Boolean>
 }
+
+/**
+ * Platform-specific factory function for creating NetworkMonitor instances.
+ */
+expect fun createNetworkMonitor(): NetworkMonitor
 
 /**
  * Base implementation with common functionality.
