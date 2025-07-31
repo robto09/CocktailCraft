@@ -36,6 +36,14 @@ struct OrderListView: View {
                     await viewModel.loadOrders()
                 }
             }
+            .refreshable {
+                await viewModel.loadOrders()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OrderPlaced"))) { _ in
+                Task {
+                    await viewModel.loadOrders()
+                }
+            }
             .alert(isPresented: .constant(viewModel.error != nil)) {
                 Alert(
                     title: Text("Error"),

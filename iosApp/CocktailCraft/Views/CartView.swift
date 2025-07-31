@@ -107,15 +107,25 @@ struct CartView: View {
         .alert(isPresented: $showCheckoutConfirmation) {
             Alert(
                 title: Text("Confirm Order"),
-                message: Text("Are you sure you want to place this order for $\(cartViewModel.totalPrice + 5.99, specifier: "%.2f")?"),
+                message: Text("Are you sure you want to place this order for $\(cartViewModel.finalTotal, specifier: "%.2f")?"),
                 primaryButton: .default(Text("Confirm")) {
                     Task {
-                        let success = await orderViewModel.placeOrder(cartItems: cartViewModel.cartItems, totalPrice: cartViewModel.totalPrice)
+                        let success = await orderViewModel.placeOrder(cartItems: cartViewModel.cartItems, totalPrice: cartViewModel.finalTotal)
+                        print("Order placement result: \(success)")
                         if success {
                             // Clear cart after successful order
                             await cartViewModel.clearCart()
-                            // Navigate to Orders tab (tag 3)
-                            selectedTab = 3
+                            // Post notification for order placed
+                            NotificationCenter.default.post(name: NSNotification.Name("OrderPlaced"), object: nil)
+                            // Small delay to ensure order is saved
+                            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                            // Navigate to Orders tab (tag 3) - ensure this runs on main thread
+                            await MainActor.run {
+                                print("Navigating to Orders tab")
+                                selectedTab = 3
+                            }
+                        } else {
+                            print("Order placement failed")
                         }
                     }
                 },

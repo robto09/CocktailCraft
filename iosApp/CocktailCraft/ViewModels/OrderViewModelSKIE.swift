@@ -132,8 +132,11 @@ class OrderViewModelSKIE: ObservableObject {
     }
     
     func placeOrder(cartItems: [shared.CocktailCartItem], totalPrice: Double) async -> Bool {
+        print("Swift: placeOrder called with \(cartItems.count) items, total: \(totalPrice)")
         return await withCheckedContinuation { continuation in
+            print("Swift: About to call placeOrderWithCallback")
             sharedViewModel.placeOrderWithCallback(cartItems: cartItems, totalPrice: totalPrice) { result in
+                print("Swift: Callback received with result: \(result.boolValue)")
                 continuation.resume(returning: result.boolValue)
             }
         }

@@ -90,11 +90,12 @@ class SharedOrderViewModel : SharedViewModel() {
             )
             return false
         }
-        
+
         _isPlacingOrder.value = true
         setLoading(true)
-        
+
         try {
+            var orderSuccess = false
             placeOrderUseCase(cartItems, totalPrice)
                 .catch { e ->
                     handleException(e, "Failed to place order")
@@ -108,6 +109,7 @@ class SharedOrderViewModel : SharedViewModel() {
                             loadOrders() // Refresh orders list
                             _isPlacingOrder.value = false
                             setLoading(false)
+                            orderSuccess = true
                         }
                         is Result.Error -> {
                             setError(
@@ -118,18 +120,86 @@ class SharedOrderViewModel : SharedViewModel() {
                             )
                             _isPlacingOrder.value = false
                             setLoading(false)
+                            orderSuccess = false
                         }
                         is Result.Loading -> {
                             // Loading state is already handled by _isPlacingOrder and setLoading
                         }
                     }
                 }
-            return true
+            return orderSuccess
         } catch (e: Exception) {
             handleException(e, "Failed to place order", showAsEvent = true)
             _isPlacingOrder.value = false
             setLoading(false)
             return false
+        }
+    }
+
+    /**
+     * Place order with callback for iOS integration.
+     * This method provides a callback-based interface for better iOS interop.
+     */
+    fun placeOrderWithCallback(cartItems: List<CocktailCartItem>, totalPrice: Double, callback: (Boolean) -> Unit) {
+        println("SharedOrderViewModel.placeOrderWithCallback called with ${cartItems.size} items, total: $totalPrice")
+
+        if (cartItems.isEmpty()) {
+            setError(
+                "Empty Cart",
+                "Cannot place order with empty cart",
+                ErrorHandler.ErrorCategory.DATA,
+                showAsEvent = true
+            )
+            callback(false)
+            return
+        }
+
+        _isPlacingOrder.value = true
+        setLoading(true)
+
+        viewModelScope.launch {
+            try {
+                placeOrderUseCase(cartItems, totalPrice)
+                    .catch { e ->
+                        handleException(e, "Failed to place order")
+                        _isPlacingOrder.value = false
+                        setLoading(false)
+                        callback(false)
+                    }
+                    .collect { result ->
+                        when (result) {
+                            is Result.Success -> {
+                                _currentOrder.value = result.data
+                                loadOrders() // Refresh orders list
+                                _isPlacingOrder.value = false
+                                setLoading(false)
+                                println("SharedOrderViewModel: Order placed successfully, calling callback with true")
+                                callback(true)
+                            }
+                            is Result.Error -> {
+                                setError(
+                                    "Order Failed",
+                                    result.message,
+                                    ErrorHandler.ErrorCategory.SERVER,
+                                    showAsEvent = true
+                                )
+                                _isPlacingOrder.value = false
+                                setLoading(false)
+                                println("SharedOrderViewModel: Order failed, calling callback with false")
+                                callback(false)
+                            }
+                            is Result.Loading -> {
+                                // Loading state is already handled by _isPlacingOrder and setLoading
+                            }
+                        }
+                    }
+            } catch (e: Exception) {
+                handleException(e, "Failed to place order", showAsEvent = true)
+                _isPlacingOrder.value = false
+                setLoading(false)
+                println("SharedOrderViewModel: Exception occurred, calling callback with false")
+                callback(false)
+            }
         }
     }
     
