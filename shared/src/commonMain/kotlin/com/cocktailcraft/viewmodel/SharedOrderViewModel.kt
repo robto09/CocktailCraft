@@ -159,24 +159,30 @@ class SharedOrderViewModel : SharedViewModel() {
 
         viewModelScope.launch {
             try {
+                println("SharedOrderViewModel: Starting flow collection")
                 placeOrderUseCase(cartItems, totalPrice)
                     .catch { e ->
+                        println("SharedOrderViewModel: Flow catch block triggered: ${e.message}")
                         handleException(e, "Failed to place order")
                         _isPlacingOrder.value = false
                         setLoading(false)
                         callback(false)
                     }
                     .collect { result ->
+                        println("SharedOrderViewModel: Flow collect received result: $result")
                         when (result) {
                             is Result.Success -> {
+                                println("SharedOrderViewModel: Processing success result")
                                 _currentOrder.value = result.data
-                                loadOrders() // Refresh orders list
                                 _isPlacingOrder.value = false
                                 setLoading(false)
                                 println("SharedOrderViewModel: Order placed successfully, calling callback with true")
                                 callback(true)
+                                // Refresh orders list after callback to avoid blocking
+                                loadOrders()
                             }
                             is Result.Error -> {
+                                println("SharedOrderViewModel: Processing error result: ${result.message}")
                                 setError(
                                     "Order Failed",
                                     result.message,
@@ -189,11 +195,14 @@ class SharedOrderViewModel : SharedViewModel() {
                                 callback(false)
                             }
                             is Result.Loading -> {
+                                println("SharedOrderViewModel: Processing loading result")
                                 // Loading state is already handled by _isPlacingOrder and setLoading
                             }
                         }
                     }
+                println("SharedOrderViewModel: Flow collection completed")
             } catch (e: Exception) {
+                println("SharedOrderViewModel: Exception in viewModelScope: ${e.message}")
                 handleException(e, "Failed to place order", showAsEvent = true)
                 _isPlacingOrder.value = false
                 setLoading(false)

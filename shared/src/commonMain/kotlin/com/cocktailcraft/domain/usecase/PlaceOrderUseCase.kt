@@ -18,12 +18,15 @@ class PlaceOrderUseCase(
 ) {
     suspend operator fun invoke(cartItems: List<CocktailCartItem>, totalPrice: Double): Flow<Result<Order>> = flow {
         try {
+            println("PlaceOrderUseCase: Starting order placement")
             // Generate order ID and date
             val orderId = "ORD-${Clock.System.now().toEpochMilliseconds()}"
             val currentInstant = Clock.System.now()
             val currentDate = currentInstant.toLocalDateTime(TimeZone.currentSystemDefault())
                 .let { "${it.year}-${it.monthNumber.toString().padStart(2, '0')}-${it.dayOfMonth.toString().padStart(2, '0')}" }
-            
+
+            println("PlaceOrderUseCase: Generated order ID: $orderId")
+
             // Map cart items to order items
             val orderItems = cartItems.map { cartItem ->
                 OrderItem(
@@ -32,7 +35,7 @@ class PlaceOrderUseCase(
                     price = cartItem.cocktail.price
                 )
             }
-            
+
             // Create order object
             val order = Order(
                 id = orderId,
@@ -41,13 +44,17 @@ class PlaceOrderUseCase(
                 total = totalPrice,
                 status = "Processing"
             )
-            
+
+            println("PlaceOrderUseCase: Created order object, calling repository.addOrder")
             // Add order to repository
             orderRepository.addOrder(order)
-            
+
+            println("PlaceOrderUseCase: Order added to repository, emitting success result")
             // Emit success result with created order
             emit(Result.Success(order))
+            println("PlaceOrderUseCase: Success result emitted")
         } catch (e: Exception) {
+            println("PlaceOrderUseCase: Exception occurred: ${e.message}")
             // Emit error result
             emit(Result.Error(e.message ?: "Unknown error occurred"))
         }

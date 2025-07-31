@@ -19,11 +19,11 @@
 		43288984DF6D79F9037FA2CF /* Pods_CocktailCraft.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4D99D0DAF68B0F452E9368E9 /* Pods_CocktailCraft.framework */; };
 		4336041E6BEF4D8BA74DBABA /* ReviewViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CC06385A5E745A5A73C130E /* ReviewViewModelSKIE.swift */; };
 		460A663ED56842689C78A398 /* ThemeViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72ABE76F0454E87B6F8C307 /* ThemeViewModelSKIE.swift */; };
-		46C8C9D96091B8F23BF81EE3 /* shared.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 21F30FED0F50FC8B426E54D3 /* shared.xcframework */; };
+
 		4B1843A05358F5B1489781B5 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F79C3BBEFD0B2BE551CBB4A8 /* SettingsView.swift */; };
 		4BFEB7F904D60ED73FC3E3DA /* OfflineBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5353458E21534CF1929CE2C8 /* OfflineBanner.swift */; };
 		556B8A0A0C717207D3369E23 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509CBA5BD785E60D138BA5C8 /* NetworkMonitor.swift */; };
-		5A0D2FFB332B2A70F00C6BA4 /* shared.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 21F30FED0F50FC8B426E54D3 /* shared.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+
 		5DD5C9541804B1F02B26C2CA /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77C5D3DBDD3CA76A90859F00 /* FavoritesView.swift */; };
 		631932ECF8AC75AFB5416740 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D295EC1E30F565480A8AEB /* EmptyStateView.swift */; };
 		7867DEB863AC49819CBF9550 /* ProfileViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5097B9993D604867B5723F89 /* ProfileViewModelSKIE.swift */; };
@@ -47,7 +47,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				5A0D2FFB332B2A70F00C6BA4 /* shared.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -60,7 +59,7 @@
 		0EBB34792E33E199005F3BA9 /* FavoritesViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesViewModelSKIE.swift; sourceTree = "<group>"; };
 		0EBB347A2E33E199005F3BA9 /* HomeViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModelSKIE.swift; sourceTree = "<group>"; };
 		0EBB347B2E33E199005F3BA9 /* OfflineModeViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineModeViewModelSKIE.swift; sourceTree = "<group>"; };
-		21F30FED0F50FC8B426E54D3 /* shared.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = shared.xcframework; path = ../shared/build/cocoapods/publish/debug/shared.xcframework; sourceTree = "<group>"; };
+
 		2BD10A6D0C4EF128674C822C /* CartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartView.swift; sourceTree = "<group>"; };
 		3CC06385A5E745A5A73C130E /* ReviewViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewViewModelSKIE.swift; sourceTree = "<group>"; };
 		4231148A0AE075220A7C4774 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -96,7 +95,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				46C8C9D96091B8F23BF81EE3 /* shared.xcframework in Frameworks */,
 				43288984DF6D79F9037FA2CF /* Pods_CocktailCraft.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -130,7 +128,6 @@
 		2E0DD283B5F68345B12032EE /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				21F30FED0F50FC8B426E54D3 /* shared.xcframework */,
 				4D99D0DAF68B0F452E9368E9 /* Pods_CocktailCraft.framework */,
 			);
 			name = Frameworks;
@@ -354,7 +351,6 @@
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"../shared/build/cocoapods/publish/debug\"",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CocktailCraft/Info.plist;
@@ -386,7 +382,6 @@
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"../shared/build/cocoapods/publish/debug\"",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CocktailCraft/Info.plist;
