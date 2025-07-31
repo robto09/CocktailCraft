@@ -47,7 +47,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				5A0D2FFB332B2A70F00C6BA4 /* shared.xcframework in Embed Frameworks */
+				5A0D2FFB332B2A70F00C6BA4 /* shared.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -97,7 +97,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				46C8C9D96091B8F23BF81EE3 /* shared.xcframework in Frameworks */,
-				43288984DF6D79F9037FA2CF /* Pods_CocktailCraft.framework in Frameworks */
+				43288984DF6D79F9037FA2CF /* Pods_CocktailCraft.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -113,7 +113,7 @@
 				763F7D2C53916801E282D4AC /* Components */,
 				2100EB78E12FFADB14DB2966 /* Utils */,
 				6045566B216A43A8FCC133C5 /* ViewModels */,
-				3F6D58A9E066A0CF397C86A2 /* Views */
+				3F6D58A9E066A0CF397C86A2 /* Views */,
 			);
 			path = CocktailCraft;
 			sourceTree = "<group>";
@@ -122,7 +122,7 @@
 			isa = PBXGroup;
 			children = (
 				509CBA5BD785E60D138BA5C8 /* NetworkMonitor.swift */,
-				F5A93B6E8F24572E413E46A2 /* PlatformErrorHandler.swift */
+				F5A93B6E8F24572E413E46A2 /* PlatformErrorHandler.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -131,7 +131,7 @@
 			isa = PBXGroup;
 			children = (
 				21F30FED0F50FC8B426E54D3 /* shared.xcframework */,
-				4D99D0DAF68B0F452E9368E9 /* Pods_CocktailCraft.framework */
+				4D99D0DAF68B0F452E9368E9 /* Pods_CocktailCraft.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -142,14 +142,14 @@
 				03BB8F276EF1BB27252E582F /* CocktailCraft */,
 				2E0DD283B5F68345B12032EE /* Frameworks */,
 				3B97070C3DB6D5BF27718617 /* Products */,
-				EFE3F31D031D21C06D2D3241 /* Pods */
+				EFE3F31D031D21C06D2D3241 /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
 		3B97070C3DB6D5BF27718617 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				E88E12E1DD858DB8B9E22AC7 /* CocktailCraft.app */
+				E88E12E1DD858DB8B9E22AC7 /* CocktailCraft.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -164,7 +164,7 @@
 				781E4068C6D09E26A2F6F660 /* HomeView.swift */,
 				E2B26ED3A3ACF1E6DAEE3D49 /* OrderListView.swift */,
 				61384C5931B60FCC54CA0D2E /* ProfileView.swift */,
-				F79C3BBEFD0B2BE551CBB4A8 /* SettingsView.swift */
+				F79C3BBEFD0B2BE551CBB4A8 /* SettingsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -180,7 +180,7 @@
 				5BDC12B4B38A45DB93627603 /* OrderViewModelSKIE.swift */,
 				5097B9993D604867B5723F89 /* ProfileViewModelSKIE.swift */,
 				A72ABE76F0454E87B6F8C307 /* ThemeViewModelSKIE.swift */,
-				3CC06385A5E745A5A73C130E /* ReviewViewModelSKIE.swift */
+				3CC06385A5E745A5A73C130E /* ReviewViewModelSKIE.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -194,7 +194,7 @@
 				809D06387624AC9896D7E632 /* LoadingOverlay.swift */,
 				5353458E21534CF1929CE2C8 /* OfflineBanner.swift */,
 				C33609CC7CE44DBCE6EA103C /* ShimmerEffect.swift */,
-				62F8C00AB4F768E2258F18A6 /* Toast.swift */
+				62F8C00AB4F768E2258F18A6 /* Toast.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -203,7 +203,7 @@
 			isa = PBXGroup;
 			children = (
 				8CDCE3DE2A8B6A4D03D294FC /* Pods-CocktailCraft.debug.xcconfig */,
-				D83136CACC331BFA65BF22E1 /* Pods-CocktailCraft.release.xcconfig */
+				D83136CACC331BFA65BF22E1 /* Pods-CocktailCraft.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -219,7 +219,7 @@
 				B7BE29C2D9427FF20A890F5D /* Sources */,
 				FE87D19B269F1080AEABCDAE /* Frameworks */,
 				C1C4DC418C24FA0BE5E5FA16 /* Embed Frameworks */,
-				9D29150C73F595AE9D60614F /* [CP] Embed Pods Frameworks */
+				9D29150C73F595AE9D60614F /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -250,7 +250,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
-				en
+				en,
 			);
 			mainGroup = 3AE844851B04A04D60BFD763;
 			minimizedProjectReferenceProxies = 1;
@@ -258,7 +258,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				9F9F4C6B41AB384902D1C81C /* CocktailCraft */
+				9F9F4C6B41AB384902D1C81C /* CocktailCraft */,
 			);
 		};
 /* End PBXProject section */
@@ -273,13 +273,13 @@
 			);
 			inputPaths = (
 				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock"
+				"${PODS_ROOT}/Manifest.lock",
 			);
 			name = "[CP] Check Pods Manifest.lock";
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-CocktailCraft-checkManifestLockResult.txt"
+				"$(DERIVED_FILE_DIR)/Pods-CocktailCraft-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -292,15 +292,11 @@
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-input-files.xcfilelist"
-			);
-			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-output-files.xcfilelist"
-			);
-			outputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -341,7 +337,7 @@
 				A11198AEB00E48BAB113C476 /* OrderViewModelSKIE.swift in Sources */,
 				7867DEB863AC49819CBF9550 /* ProfileViewModelSKIE.swift in Sources */,
 				460A663ED56842689C78A398 /* ThemeViewModelSKIE.swift in Sources */,
-				4336041E6BEF4D8BA74DBABA /* ReviewViewModelSKIE.swift in Sources */
+				4336041E6BEF4D8BA74DBABA /* ReviewViewModelSKIE.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -358,8 +354,8 @@
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"../shared/build/cocoapods/publish/debug\""
-			);
+					"\"../shared/build/cocoapods/publish/debug\"",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CocktailCraft/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -370,8 +366,8 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
-					"@executable_path/Frameworks"
-			);
+					"@executable_path/Frameworks",
+				);
 				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.cocktailcraft.CocktailCraft;
 				SDKROOT = iphoneos;
@@ -390,8 +386,8 @@
 				ENABLE_PREVIEWS = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"../shared/build/cocoapods/publish/debug\""
-			);
+					"\"../shared/build/cocoapods/publish/debug\"",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CocktailCraft/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -402,8 +398,8 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
-					"@executable_path/Frameworks"
-			);
+					"@executable_path/Frameworks",
+				);
 				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.cocktailcraft.CocktailCraft;
 				SDKROOT = iphoneos;
@@ -511,8 +507,8 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
-					"DEBUG=1"
-			);
+					"DEBUG=1",
+				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -538,7 +534,7 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				23784922E358FB50794F0359 /* Debug */,
-				80F24C1A2A01E524D482B026 /* Release */
+				80F24C1A2A01E524D482B026 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -547,7 +543,7 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C6F325A4456A804A71AD5EBF /* Debug */,
-				84B28DCA14D3D445CCA92CE4 /* Release */
+				84B28DCA14D3D445CCA92CE4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
