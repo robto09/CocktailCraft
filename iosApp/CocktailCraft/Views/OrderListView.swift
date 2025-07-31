@@ -2,62 +2,56 @@ import SwiftUI
 import shared
 
 struct OrderListView: View {
-    @Environment(\.presentationMode) var presentationMode
     @StateObject private var viewModel = OrderViewModelSKIE()
+    @State private var hasAppeared = false
 
     var body: some View {
-        NavigationView {
-            VStack {
-                if viewModel.isLoading {
-                    ProgressView("Loading orders...")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if viewModel.orders.isEmpty {
-                    EmptyStateView(
-                        icon: "bag",
-                        title: "No orders yet",
-                        message: "Your order history will appear here"
-                    )
-                } else {
-                    List(viewModel.orders, id: \.id) { order in
-                        OrderRowView(order: order)
-                    }
+        VStack {
+            if !hasAppeared || viewModel.isLoading {
+                ProgressView("Loading orders...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if viewModel.orders.isEmpty {
+                EmptyStateView(
+                    icon: "bag",
+                    title: "No orders yet",
+                    message: "Your order history will appear here"
+                )
+            } else {
+                List(viewModel.orders, id: \.id) { order in
+                    OrderRowView(order: order)
                 }
             }
-            .navigationTitle("My Orders")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }
-            }
-            .onAppear {
+        }
+        .navigationTitle("My Orders")
+        .onAppear {
+            if !hasAppeared {
+                hasAppeared = true
                 Task {
                     await viewModel.loadOrders()
                 }
             }
-            .refreshable {
+        }
+        .refreshable {
+            await viewModel.loadOrders()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OrderPlaced"))) { _ in
+            Task {
                 await viewModel.loadOrders()
             }
-            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OrderPlaced"))) { _ in
-                Task {
-                    await viewModel.loadOrders()
-                }
-            }
-            .alert(isPresented: .constant(viewModel.error != nil)) {
-                Alert(
-                    title: Text("Error"),
-                    message: viewModel.error != nil ? Text(viewModel.error!.message) : nil,
-                    primaryButton: .default(Text("Retry")) {
-                        Task {
-                            await viewModel.loadOrders()
-                        }
-                    },
-                    secondaryButton: .cancel {
-                        viewModel.clearError()
+        }
+        .alert(isPresented: .constant(viewModel.error != nil)) {
+            Alert(
+                title: Text("Error"),
+                message: viewModel.error != nil ? Text(viewModel.error!.message) : nil,
+                primaryButton: .default(Text("Retry")) {
+                    Task {
+                        await viewModel.loadOrders()
                     }
-                )
-            }
+                },
+                secondaryButton: .cancel {
+                    viewModel.clearError()
+                }
+            )
         }
     }
 }
