@@ -132,10 +132,10 @@ class OrderViewModelSKIE: ObservableObject {
     }
     
     func placeOrder(cartItems: [shared.CocktailCartItem], totalPrice: Double) async -> Bool {
-        do {
-            return try await sharedViewModel.placeOrder(cartItems: cartItems, totalPrice: totalPrice).boolValue
-        } catch {
-            return false
+        return await withCheckedContinuation { continuation in
+            sharedViewModel.placeOrderWithCallback(cartItems: cartItems, totalPrice: totalPrice) { result in
+                continuation.resume(returning: result.boolValue)
+            }
         }
     }
     
@@ -154,7 +154,7 @@ class OrderViewModelSKIE: ObservableObject {
             return false
         }
     }
-    
+
     func cancelOrder(_ orderId: String) async -> Bool {
         do {
             return try await sharedViewModel.cancelOrder(orderId: orderId).boolValue
@@ -162,7 +162,7 @@ class OrderViewModelSKIE: ObservableObject {
             return false
         }
     }
-    
+
     func reorderItems(_ orderId: String) async -> Bool {
         do {
             return try await sharedViewModel.reorderItems(orderId: orderId).boolValue
