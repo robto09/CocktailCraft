@@ -275,15 +275,12 @@ class HomeScreenTest {
         id = id,
         name = name,
         instructions = "Test instructions",
-        image = "test_image.jpg",
+        imageUrl = "test_image.jpg",
         category = "Test Category",
         alcoholic = "Alcoholic",
         glass = "Test Glass",
         ingredients = emptyList(),
         price = 10.0,
-        rating = 4.5,
-        reviews = emptyList(),
-        isPopular = false,
-        tags = emptyList()
+        rating = 4.5f
     )
 }
