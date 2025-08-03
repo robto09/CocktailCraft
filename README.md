@@ -20,6 +20,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Personalized Recommendations**: "You might also like" suggestions based on viewing history and preferences
 - **Dark Mode Support**: Adaptive UI that supports both light and dark themes with smooth transitions
 - **Offline Mode**: Browse recently viewed cocktails and favorites without internet connection
+- **Background Sync**: Automatic data synchronization when app is backgrounded for fresh content on launch
 - **Robust Error Handling**: User-friendly error messages with recovery options
 - **Polished Animations**: Enhanced user experience with smooth animations and micro-interactions
 - **Cross-Platform**: Same codebase for both Android and iOS platforms with platform-specific UI components
@@ -317,6 +318,21 @@ The application includes comprehensive test coverage:
 - **iOS Builds**: ✅ **Working with SKIE integration!** See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) and [SKIE Status](docs/SKIE_Integration_Complete.md) for details
 - **iOS Build Warnings**: Non-blocking warnings exist (see iOS documentation for details)
 - **Dependency Resolution**: Check Gradle settings and versions.toml file
+
+## Documentation
+
+### 📚 **Core Documentation**
+- [iOS Background Sync Implementation](docs/ios-background-sync.md) - Comprehensive guide to the background sync feature
+- [Background Sync Quick Reference](docs/background-sync-quick-reference.md) - Developer quick start guide
+- [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) - Complete iOS development setup
+- [SKIE Integration Status](docs/SKIE_Integration_Complete.md) - iOS 18.5 compatibility details
+- [Test Cases Documentation](TEST_CASES.md) - Comprehensive testing approach
+
+### 🔧 **Technical Guides**
+- **Background Sync**: Automatic data synchronization for iOS with BGTaskScheduler integration
+- **SKIE Integration**: 100% native Swift async/await patterns for seamless iOS development
+- **Architecture**: Clean Architecture with MVVM pattern and dependency injection
+- **Cross-Platform**: Shared business logic with platform-specific UI implementations
 
 ## Contributing
 Contributions are welcome! Please follow the standard GitHub flow:
