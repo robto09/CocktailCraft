@@ -9,14 +9,14 @@ import Combine
 @MainActor
 class CocktailDetailViewModelSKIE: ObservableObject {
     // Published properties for SwiftUI
-    @Published var cocktail: SharedCocktail? = nil
+    @Published var cocktail: Cocktail? = nil
     @Published var isFavorite = false
     @Published var isInCart = false
     @Published var cartQuantity: Int = 0
-    @Published var relatedCocktails: [SharedCocktail] = []
+    @Published var relatedCocktails: [Cocktail] = []
     @Published var ingredientsByType: [String: [String]] = [:]
     @Published var isLoading = false
-    @Published var error: SharedErrorHandlerUserFriendlyError? = nil
+    @Published var error: ErrorHandler.UserFriendlyError? = nil
     
     // Computed properties
     var hasRelatedCocktails: Bool {
