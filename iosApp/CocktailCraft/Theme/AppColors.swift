@@ -22,7 +22,7 @@ struct AppColors {
     static let textSecondaryDark = Color(hex: "B0B0B0")  // Light gray secondary text
 
     // MARK: - Utility Colors
-    static let success = Color(hex: "34C759")    // Green
+    static let success = Color(hex: "FF8A65")    // Coral success (matches primary dark)
     static let error = Color(hex: "FF3B30")      // Red
     static let warning = Color(hex: "FF9500")    // Orange for stars
     static let gray = Color(hex: "8E8E93")       // Secondary text

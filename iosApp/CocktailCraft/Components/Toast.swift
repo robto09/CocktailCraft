@@ -11,8 +11,8 @@ struct Toast: View {
         
         var backgroundColor: Color {
             switch self {
-            case .success: return .green
-            case .error: return .red
+            case .success: return AppColors.success
+            case .error: return AppColors.error
             case .info: return .blue
             }
         }
