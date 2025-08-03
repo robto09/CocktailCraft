@@ -27,127 +27,41 @@ struct CocktailDetailView: View {
     var body: some View {
         VStack {
             if isLoading {
-                ProgressView("Loading...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                LoadingStateView(message: "Loading cocktail details...")
             } else if let error = error {
-                VStack(spacing: 16) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.largeTitle)
-                        .foregroundColor(.orange)
-
-                    Text(error.title)
-                        .font(.headline)
-
-                    Text(error.message)
-                        .font(.body)
-                        .multilineTextAlignment(.center)
-
-                    Button("Retry") {
-                        loadCocktail()
-                    }
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
-                }
-                .padding()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                ErrorView(
+                    error: error,
+                    onRetry: { loadCocktail() }
+                )
             } else if let cocktail = cocktail {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
                         // Cocktail image
-                        AsyncImage(url: URL(string: cocktail.imageUrl ?? "")) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            ProgressView()
-                                .frame(height: 300)
-                        }
-                        .frame(maxHeight: 300)
-                        .clipped()
-                        
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(cocktail.name)
-                                .font(.largeTitle)
-                                .fontWeight(.bold)
-                            
-                            HStack {
-                                if let category = cocktail.category {
-                                    Label(category, systemImage: "tag")
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
-                                }
-                                
-                                Spacer()
+                        CocktailImageView(
+                            imageUrl: cocktail.imageUrl,
+                            height: 300
+                        )
 
-                                Text("$\(String(format: "%.2f", cocktail.price))")
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.blue)
-                            }
-                            
-                            if let instructions = cocktail.instructions {
-                                Text("Instructions")
-                                    .font(.headline)
-                                    .padding(.top)
-                                
-                                Text(instructions)
-                                    .font(.body)
-                            }
-                            
-                            // Ingredients
-                            Text("Ingredients")
-                                .font(.headline)
-                                .padding(.top)
-                            
-                            VStack(alignment: .leading, spacing: 8) {
-                                ForEach(getIngredients(from: cocktail), id: \.self) { ingredient in
-                                    HStack {
-                                        Text("• \(ingredient)")
-                                            .font(.body)
-                                        Spacer()
-                                    }
-                                }
-                            }
-                            
-                            // Action Buttons
-                            HStack(spacing: 16) {
-                                Button(action: {
-                                    toggleFavorite()
-                                }) {
-                                    Label(
-                                        isFavorite ? "Remove from Favorites" : "Add to Favorites",
-                                        systemImage: isFavorite ? "heart.fill" : "heart"
-                                    )
-                                    .font(.headline)
-                                    .foregroundColor(isFavorite ? .red : .blue)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color(UIColor.secondarySystemBackground))
-                                    .cornerRadius(10)
-                                }
-                                
-                                Button(action: {
-                                    addToCart()
-                                }) {
-                                    Label("Add to Cart", systemImage: "cart.badge.plus")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                        .frame(maxWidth: .infinity)
-                                        .padding()
-                                        .background(Color.blue)
-                                        .cornerRadius(10)
-                                }
-                            }
-                            .padding(.top)
-                        }
-                        .padding()
+                        // Cocktail info
+                        CocktailInfoCard(cocktail: cocktail)
+
+                        // Ingredients
+                        IngredientsListView(ingredients: cocktail.ingredients)
+
+                        // Action Buttons
+                        ActionButtonsRow(
+                            isFavorite: isFavorite,
+                            onFavoriteToggle: { toggleFavorite() },
+                            onAddToCart: { addToCart() }
+                        )
                     }
                 }
             } else {
-                Text("Cocktail not found")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                EmptyStateView(
+                    icon: "wineglass",
+                    title: "Cocktail not found",
+                    message: "The requested cocktail could not be loaded"
+                )
             }
         }
         .onAppear {
@@ -227,15 +141,7 @@ struct CocktailDetailView: View {
         }
     }
     
-    private func getIngredients(from cocktail: Cocktail) -> [String] {
-        return cocktail.ingredients.map { ingredient in
-            if !ingredient.measure.isEmpty {
-                return "\(ingredient.measure) \(ingredient.name)"
-            } else {
-                return ingredient.name
-            }
-        }
-    }
+
     
     private func toggleFavorite() {
         guard let cocktail = cocktail else { return }
