@@ -6,58 +6,41 @@ struct OrderListView: View {
     @State private var hasAppeared = false
 
     var body: some View {
-        VStack {
-            if !hasAppeared || viewModel.isLoading {
-                ProgressView("Loading orders...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if viewModel.orders.isEmpty {
-                EmptyStateView(
-                    icon: "bag",
-                    title: "No orders yet",
-                    message: "Your order history will appear here"
-                )
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: AppTheme.Spacing.lg) {
-                        ForEach(viewModel.orders, id: \.id) { order in
-                            OrderCard(order: order)
-                                .padding(.horizontal, AppTheme.Spacing.lg)
+        NavigationView {
+            VStack {
+                if !hasAppeared || viewModel.isLoading {
+                    ProgressView("Loading orders...")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if viewModel.orders.isEmpty {
+                    Text("No orders yet")
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List {
+                        ForEach(Array(viewModel.orders), id: \.id) { order in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Order #\(order.id)")
+                                    .font(.headline)
+                                Text("Status: \(order.status)")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                Text("Total: $\(order.totalPrice, specifier: "%.2f")")
+                                    .font(.body)
+                            }
+                            .padding(.vertical, 4)
                         }
                     }
-                    .padding(.vertical, AppTheme.Spacing.lg)
                 }
             }
-        }
-        .navigationTitle("My Orders")
-        .onAppear {
-            if !hasAppeared {
-                hasAppeared = true
-                Task {
-                    await viewModel.loadOrders()
-                }
-            }
-        }
-        .refreshable {
-            await viewModel.loadOrders()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OrderPlaced"))) { _ in
-            Task {
-                await viewModel.loadOrders()
-            }
-        }
-        .alert(isPresented: .constant(viewModel.error != nil)) {
-            Alert(
-                title: Text("Error"),
-                message: viewModel.error != nil ? Text(viewModel.error!.message) : nil,
-                primaryButton: .default(Text("Retry")) {
+            .navigationTitle("My Orders")
+            .onAppear {
+                if !hasAppeared {
+                    hasAppeared = true
                     Task {
                         await viewModel.loadOrders()
                     }
-                },
-                secondaryButton: .cancel {
-                    viewModel.clearError()
                 }
-            )
+            }
         }
     }
 }

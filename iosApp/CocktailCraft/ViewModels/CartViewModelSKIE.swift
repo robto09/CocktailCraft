@@ -41,7 +41,7 @@ class CartViewModelSKIE: ObservableObject {
     }
     
     // Shared ViewModel instance
-    private let sharedViewModel: CartViewModel
+    private let sharedViewModel: SharedCartViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []

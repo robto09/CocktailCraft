@@ -66,8 +66,10 @@ struct CocktailDetailView: View {
                         VStack(alignment: .leading) {
                             Text("Ingredients")
                                 .font(.headline)
-                            Text(cocktail.ingredients)
-                                .font(.body)
+                            ForEach(cocktail.ingredients, id: \.name) { ingredient in
+                                Text("• \(ingredient.name): \(ingredient.measure ?? "")")
+                                    .font(.body)
+                            }
                         }
                         .padding()
 

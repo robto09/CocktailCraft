@@ -7,7 +7,7 @@ enum CocktailCardLayout {
 }
 
 struct CocktailCard: View {
-    let cocktail: SharedCocktail
+    let cocktail: Cocktail
     var isFavorite: Bool = false
     var onFavoriteToggle: (() -> Void)? = nil
     var onAddToCart: (() -> Void)? = nil
