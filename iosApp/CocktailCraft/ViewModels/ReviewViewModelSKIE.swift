@@ -9,13 +9,13 @@ import Combine
 @MainActor
 class ReviewViewModelSKIE: ObservableObject {
     // Published properties for SwiftUI - matching actual SharedReviewViewModel StateFlows
-    @Published var reviews: [String: [SharedReview]] = [:]
-    @Published var currentCocktailReviews: [SharedReview] = []
+    @Published var reviews: [String: [Review]] = [:]
+    @Published var currentCocktailReviews: [Review] = []
     @Published var averageRating: Float = 0.0
     @Published var reviewCount: Int = 0
     @Published var currentCocktailId: String? = nil
     @Published var isLoading = false
-    @Published var error: SharedErrorHandlerUserFriendlyError? = nil
+    @Published var error: ErrorHandler.UserFriendlyError? = nil
     
     // Computed properties
     var hasReviews: Bool {
@@ -54,9 +54,9 @@ class ReviewViewModelSKIE: ObservableObject {
             for await reviewMap in sharedViewModel.reviews {
                 await MainActor.run {
                     // Convert Kotlin Map to Swift Dictionary
-                    var swiftDict: [String: [SharedReview]] = [:]
+                    var swiftDict: [String: [Review]] = [:]
                     for (key, value) in reviewMap {
-                        if let stringKey = key as? String, let reviewList = value as? [SharedReview] {
+                        if let stringKey = key as? String, let reviewList = value as? [Review] {
                             swiftDict[stringKey] = reviewList
                         }
                     }
@@ -176,7 +176,7 @@ class ReviewViewModelSKIE: ObservableObject {
     
     // MARK: - Synchronous Methods
     
-    func getReviewsForCocktail(_ cocktailId: String) -> [SharedReview] {
+    func getReviewsForCocktail(_ cocktailId: String) -> [Review] {
         return sharedViewModel.getReviewsForCocktail(cocktailId: cocktailId)
     }
     
@@ -196,26 +196,26 @@ class ReviewViewModelSKIE: ObservableObject {
         let kotlinMap = sharedViewModel.getRatingDistribution(cocktailId: cocktailId)
         var swiftDict: [Int: Int] = [:]
         for (key, value) in kotlinMap {
-            if let intKey = key as? SharedKotlinInt, let intValue = value as? SharedKotlinInt {
+            if let intKey = key as? KotlinInt, let intValue = value as? KotlinInt {
                 swiftDict[intKey.intValue] = intValue.intValue
             }
         }
         return swiftDict
     }
     
-    func getReviewsSortedByRating(_ cocktailId: String) -> [SharedReview] {
+    func getReviewsSortedByRating(_ cocktailId: String) -> [Review] {
         return sharedViewModel.getReviewsSortedByRating(cocktailId: cocktailId)
     }
 
-    func getReviewsSortedByDate(_ cocktailId: String) -> [SharedReview] {
+    func getReviewsSortedByDate(_ cocktailId: String) -> [Review] {
         return sharedViewModel.getReviewsSortedByDate(cocktailId: cocktailId)
     }
 
-    func getRecentReviews(limit: Int = 10) -> [SharedReview] {
+    func getRecentReviews(limit: Int = 10) -> [Review] {
         return sharedViewModel.getRecentReviews(limit: Int32(limit))
     }
 
-    func searchReviews(query: String) -> [SharedReview] {
+    func searchReviews(query: String) -> [Review] {
         return sharedViewModel.searchReviews(query: query)
     }
     
@@ -259,12 +259,12 @@ class ReviewViewModelSKIE: ObservableObject {
         }
     }
     
-    func canEditReview(_ review: SharedReview, currentUserId: String) -> Bool {
+    func canEditReview(_ review: Review, currentUserId: String) -> Bool {
         // In a real app, you'd check if the review belongs to the current user
         return review.userName == currentUserId
     }
 
-    func getTimeSinceReview(_ review: SharedReview) -> String {
+    func getTimeSinceReview(_ review: Review) -> String {
         // Simple time formatting - in a real app you'd use proper date formatting
         return review.date
     }

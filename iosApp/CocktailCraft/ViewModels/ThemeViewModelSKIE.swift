@@ -20,7 +20,7 @@ class ThemeViewModelSKIE: ObservableObject {
     @Published var isHighContrast = false
     @Published var isReducedMotion = false
     @Published var isLoading = false
-    @Published var error: SharedErrorHandlerUserFriendlyError? = nil
+    @Published var error: ErrorHandler.UserFriendlyError? = nil
     
     // Computed properties
     var currentThemeName: String {

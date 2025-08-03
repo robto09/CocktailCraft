@@ -198,7 +198,7 @@ class HomeViewModelSKIE: ObservableObject {
         }
     }
     
-    func toggleFavorite(_ cocktail: SharedCocktail) async {
+    func toggleFavorite(_ cocktail: Cocktail) async {
         do {
             try await sharedViewModel.toggleFavorite(cocktail: cocktail)
         } catch {
@@ -206,7 +206,7 @@ class HomeViewModelSKIE: ObservableObject {
         }
     }
     
-    func addToCart(_ cocktail: SharedCocktail) async {
+    func addToCart(_ cocktail: Cocktail) async {
         do {
             try await cartViewModel.addToCart(cocktail: cocktail, quantity: 1)
         } catch {
@@ -238,7 +238,7 @@ class HomeViewModelSKIE: ObservableObject {
         }
     }
     
-    func getCocktailById(_ id: String) async -> SharedCocktail? {
+    func getCocktailById(_ id: String) async -> Cocktail? {
         do {
             return try await sharedViewModel.getCocktailById(id: id)
         } catch {
@@ -257,7 +257,7 @@ class HomeViewModelSKIE: ObservableObject {
         return sharedViewModel.getCategories()
     }
     
-    func getCocktailsByCategory(_ category: String, limit: Int32 = 3) -> [SharedCocktail] {
+    func getCocktailsByCategory(_ category: String, limit: Int32 = 3) -> [Cocktail] {
         return sharedViewModel.getCocktailsByCategory(category: category, limit: limit)
     }
     
