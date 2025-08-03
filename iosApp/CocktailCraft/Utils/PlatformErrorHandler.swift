@@ -10,8 +10,8 @@ class PlatformErrorHandler {
     func getErrorFromPlatformException(
         exception: NSError,
         defaultMessage: String,
-        recoveryAction: ErrorHandler.RecoveryAction?
-    ) -> ErrorHandler.UserFriendlyError {
+        recoveryAction: SharedErrorHandlerRecoveryAction?
+    ) -> SharedErrorHandlerUserFriendlyError {
         // Map iOS-specific errors to UserFriendlyError
         switch exception.code {
         case NSURLErrorNotConnectedToInternet,

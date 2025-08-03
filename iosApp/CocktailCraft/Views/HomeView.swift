@@ -330,7 +330,7 @@ struct HomeView: View {
         }
     }
     
-    private func cocktailRow(for cocktail: Cocktail) -> some View {
+    private func cocktailRow(for cocktail: SharedCocktail) -> some View {
         NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.id, cartViewModel: cartViewModel)) {
             CocktailCard(
                 cocktail: cocktail,

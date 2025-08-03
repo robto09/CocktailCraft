@@ -52,7 +52,7 @@ struct FavoritesView: View {
         [GridItem(.flexible()), GridItem(.flexible())]
     }
     
-    private func cocktailGridItem(_ cocktail: Cocktail) -> some View {
+    private func cocktailGridItem(_ cocktail: SharedCocktail) -> some View {
         NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.id, cartViewModel: cartViewModel)) {
             CocktailCard(
                 cocktail: cocktail,

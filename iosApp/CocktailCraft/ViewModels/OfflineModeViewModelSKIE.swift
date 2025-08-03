@@ -11,11 +11,11 @@ class OfflineModeViewModelSKIE: ObservableObject {
     // Published properties for SwiftUI
     @Published var isOfflineModeEnabled = false
     @Published var isNetworkAvailable = true
-    @Published var recentlyViewedCocktails: [shared.Cocktail] = []
+    @Published var recentlyViewedCocktails: [SharedCocktail] = []
     @Published var cacheSize = 0
     @Published var lastSyncTime: String? = nil
     @Published var isLoading = false
-    @Published var error: shared.ErrorHandler.UserFriendlyError? = nil
+    @Published var error: SharedErrorHandlerUserFriendlyError? = nil
     
     // Computed properties
     var hasRecentlyViewed: Bool {
@@ -39,7 +39,7 @@ class OfflineModeViewModelSKIE: ObservableObject {
     }
     
     // Shared ViewModel instance
-    private let sharedViewModel: shared.SharedOfflineModeViewModel
+    private let sharedViewModel: SharedOfflineModeViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
@@ -173,11 +173,11 @@ class OfflineModeViewModelSKIE: ObservableObject {
         return Int(sharedViewModel.getCachedCocktailCount())
     }
     
-    func getRecentlyViewedByCategory(_ category: String) -> [shared.Cocktail] {
+    func getRecentlyViewedByCategory(_ category: String) -> [SharedCocktail] {
         return sharedViewModel.getRecentlyViewedByCategory(category: category)
     }
-    
-    func getRecentlyViewedWithLimit(_ limit: Int) -> [shared.Cocktail] {
+
+    func getRecentlyViewedWithLimit(_ limit: Int) -> [SharedCocktail] {
         return sharedViewModel.getRecentlyViewedWithLimit(limit: Int32(limit))
     }
     

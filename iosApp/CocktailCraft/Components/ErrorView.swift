@@ -3,7 +3,7 @@ import SwiftUI
 import shared
 
 struct ErrorView: View {
-    let error: ErrorHandler.UserFriendlyError
+    let error: SharedErrorHandlerUserFriendlyError
     let onRetry: (() -> Void)?
     
     var body: some View {
@@ -51,7 +51,7 @@ struct ErrorView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
-    private func getErrorIcon(for category: shared.__Bridge__ErrorHandler_ErrorCategory) -> String {
+    private func getErrorIcon(for category: Shared__Bridge__ErrorHandler_ErrorCategory) -> String {
         switch category {
         case .network:
             return "wifi.slash"
@@ -66,7 +66,7 @@ struct ErrorView: View {
         }
     }
     
-    private func getErrorColor(for category: shared.__Bridge__ErrorHandler_ErrorCategory) -> Color {
+    private func getErrorColor(for category: Shared__Bridge__ErrorHandler_ErrorCategory) -> Color {
         switch category {
         case .network:
             return .blue

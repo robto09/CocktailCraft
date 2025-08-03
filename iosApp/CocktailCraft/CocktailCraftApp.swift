@@ -29,21 +29,21 @@ class KoinInitializer {
         _koin = koinApplication.koin
     }
 
-    private var _koin: shared.Koin_coreKoin?
-    var koin: shared.Koin_coreKoin {
+    private var _koin: SharedKoin_coreKoin?
+    var koin: SharedKoin_coreKoin {
         return _koin!
     }
 }
 
 // Global accessor for Koin - use lazy initialization
-var koin: shared.Koin_coreKoin {
+var koin: SharedKoin_coreKoin {
     return KoinInitializer.instance.koin
 }
 
 // MARK: - Global Koin Helper Functions
 // Using global functions to avoid namespace conflicts
 
-func getSharedKoinHelper() -> shared.KoinHelper {
+func getSharedKoinHelper() -> SharedKoinHelper {
     return shared.KoinHelper()
 }
 

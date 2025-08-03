@@ -295,7 +295,7 @@ struct OfflineModeView: View {
 
 // MARK: - Cocktail Grid Item
 private struct CocktailGridItem: View {
-    let cocktail: shared.Cocktail
+    let cocktail: SharedCocktail
     let onTap: () -> Void
 
     var body: some View {

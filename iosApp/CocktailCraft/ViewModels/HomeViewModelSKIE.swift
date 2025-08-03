@@ -18,10 +18,10 @@ enum SortOption: CaseIterable {
 @MainActor
 class HomeViewModelSKIE: ObservableObject {
     // Published properties for SwiftUI
-    @Published var cocktails: [shared.Cocktail] = []
-    @Published var filteredCocktails: [shared.Cocktail] = []
+    @Published var cocktails: [SharedCocktail] = []
+    @Published var filteredCocktails: [SharedCocktail] = []
     @Published var isLoading = false
-    @Published var error: shared.ErrorHandler.UserFriendlyError? = nil
+    @Published var error: SharedErrorHandlerUserFriendlyError? = nil
     @Published var selectedCategory: String? = nil
     @Published var selectedIngredient: String? = nil
     @Published var sortOption: SortOption = .nameAsc
@@ -31,11 +31,11 @@ class HomeViewModelSKIE: ObservableObject {
     @Published var isNetworkAvailable = true
     @Published var hasMoreData = false
     @Published var isLoadingMore = false
-    @Published var favorites: [shared.Cocktail] = []
-    
+    @Published var favorites: [SharedCocktail] = []
+
     // Shared ViewModel instances
-    private let sharedViewModel: shared.SharedHomeViewModel
-    private let cartViewModel: shared.SharedCartViewModel
+    private let sharedViewModel: SharedHomeViewModel
+    private let cartViewModel: SharedCartViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
@@ -198,7 +198,7 @@ class HomeViewModelSKIE: ObservableObject {
         }
     }
     
-    func toggleFavorite(_ cocktail: shared.Cocktail) async {
+    func toggleFavorite(_ cocktail: SharedCocktail) async {
         do {
             try await sharedViewModel.toggleFavorite(cocktail: cocktail)
         } catch {
@@ -206,7 +206,7 @@ class HomeViewModelSKIE: ObservableObject {
         }
     }
     
-    func addToCart(_ cocktail: shared.Cocktail) async {
+    func addToCart(_ cocktail: SharedCocktail) async {
         do {
             try await cartViewModel.addToCart(cocktail: cocktail, quantity: 1)
         } catch {
@@ -238,7 +238,7 @@ class HomeViewModelSKIE: ObservableObject {
         }
     }
     
-    func getCocktailById(_ id: String) async -> shared.Cocktail? {
+    func getCocktailById(_ id: String) async -> SharedCocktail? {
         do {
             return try await sharedViewModel.getCocktailById(id: id)
         } catch {
@@ -257,7 +257,7 @@ class HomeViewModelSKIE: ObservableObject {
         return sharedViewModel.getCategories()
     }
     
-    func getCocktailsByCategory(_ category: String, limit: Int32 = 3) -> [shared.Cocktail] {
+    func getCocktailsByCategory(_ category: String, limit: Int32 = 3) -> [SharedCocktail] {
         return sharedViewModel.getCocktailsByCategory(category: category, limit: limit)
     }
     

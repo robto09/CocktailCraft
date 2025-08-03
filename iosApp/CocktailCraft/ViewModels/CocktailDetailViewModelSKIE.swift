@@ -9,14 +9,14 @@ import Combine
 @MainActor
 class CocktailDetailViewModelSKIE: ObservableObject {
     // Published properties for SwiftUI
-    @Published var cocktail: shared.Cocktail? = nil
+    @Published var cocktail: SharedCocktail? = nil
     @Published var isFavorite = false
     @Published var isInCart = false
     @Published var cartQuantity: Int = 0
-    @Published var relatedCocktails: [shared.Cocktail] = []
+    @Published var relatedCocktails: [SharedCocktail] = []
     @Published var ingredientsByType: [String: [String]] = [:]
     @Published var isLoading = false
-    @Published var error: shared.ErrorHandler.UserFriendlyError? = nil
+    @Published var error: SharedErrorHandlerUserFriendlyError? = nil
     
     // Computed properties
     var hasRelatedCocktails: Bool {
@@ -32,7 +32,7 @@ class CocktailDetailViewModelSKIE: ObservableObject {
     }
     
     // Shared ViewModel instance
-    private let sharedViewModel: shared.SharedCocktailDetailViewModel
+    private let sharedViewModel: SharedCocktailDetailViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []

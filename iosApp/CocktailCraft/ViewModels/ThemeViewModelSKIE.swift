@@ -20,7 +20,7 @@ class ThemeViewModelSKIE: ObservableObject {
     @Published var isHighContrast = false
     @Published var isReducedMotion = false
     @Published var isLoading = false
-    @Published var error: shared.ErrorHandler.UserFriendlyError? = nil
+    @Published var error: SharedErrorHandlerUserFriendlyError? = nil
     
     // Computed properties
     var currentThemeName: String {
@@ -40,7 +40,7 @@ class ThemeViewModelSKIE: ObservableObject {
     }
     
     // Shared ViewModel instance
-    private let sharedViewModel: shared.SharedThemeViewModel
+    private let sharedViewModel: SharedThemeViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
