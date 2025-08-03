@@ -7,12 +7,10 @@ struct CocktailDetailView: View {
     let cocktailId: String
     @ObservedObject var cartViewModel: CartViewModelSKIE
     @StateObject private var reviewViewModel = ReviewViewModelSKIE()
-    @StateObject private var favoritesViewModel = FavoritesViewModelSKIE()
+
     @State private var cocktail: Cocktail? = nil
     @State private var isLoading = true
-    @State private var isFavorite = false
-    @State private var showingToast = false
-    @State private var toastMessage = ""
+
     @State private var error: ErrorHandler.UserFriendlyError? = nil
 
     // TODO: Use SharedCocktailDetailViewModel once exported properly
@@ -73,19 +71,7 @@ struct CocktailDetailView: View {
                         }
                         .padding()
 
-                        // Action Buttons
-                        HStack {
-                            Button("Add to Favorites") {
-                                toggleFavorite()
-                            }
-                            .buttonStyle(.borderedProminent)
 
-                            Button("Add to Cart") {
-                                addToCart()
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                        .padding()
                     }
                 }
             } else {
@@ -104,7 +90,6 @@ struct CocktailDetailView: View {
         .onAppear {
             loadCocktail()
         }
-        .toast(isShowing: $showingToast, message: toastMessage, type: .success)
     }
     
     private func loadCocktail() {
@@ -160,9 +145,7 @@ struct CocktailDetailView: View {
                     }
                 }
                 
-                if self.cocktail != nil {
-                    self.isFavorite = self.favoritesViewModel.isFavorite(self.cocktailId)
-                }
+
             } catch {
                 print("CocktailDetailView - Error loading cocktail: \(error)")
                 self.isLoading = false
@@ -179,30 +162,7 @@ struct CocktailDetailView: View {
     }
     
 
-    
-    private func toggleFavorite() {
-        guard let cocktail = cocktail else { return }
-        
-        Task {
-            await favoritesViewModel.toggleFavorite(cocktail)
-            await MainActor.run {
-                self.isFavorite = self.favoritesViewModel.isFavorite(cocktail.id)
-            }
-        }
-    }
-    
-    private func addToCart() {
-        guard let cocktail = cocktail else { return }
-        Task {
-            await cartViewModel.addToCart(cocktail, quantity: 1)
-            
-            // Show toast feedback
-            await MainActor.run {
-                toastMessage = "Added \(cocktail.name) to cart"
-                showingToast = true
-            }
-        }
-    }
+
     
     private func createMockCocktail(for id: String) -> Cocktail? {
         switch id {
