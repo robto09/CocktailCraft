@@ -5,7 +5,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 
 ### Platform Status
 - **Android**: ✅ Fully functional and production-ready
-- **iOS**: ✅ **iOS 18.5 Ready** - Working SKIE integration (~80% complete) with native Swift async/await patterns
+- **iOS**: ✅ **iOS 18.5 Ready** - Complete SKIE integration (100%) with native Swift async/await patterns
 
 ![CocktailCraft Home Screen](docs/images/Screenshot_20250419_014459.png)
 
@@ -22,8 +22,8 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Offline Mode**: Browse recently viewed cocktails and favorites without internet connection
 - **Robust Error Handling**: User-friendly error messages with recovery options
 - **Polished Animations**: Enhanced user experience with smooth animations and micro-interactions
-- **Cross-Platform**: Same codebase for both Android and iOS platforms
-- **iOS 18.5 Ready**: Working SKIE integration (~80% complete) with FlowCollector bridge pattern and modern SwiftUI
+- **Cross-Platform**: Same codebase for both Android and iOS platforms with platform-specific UI components
+- **iOS 18.5 Ready**: Complete SKIE integration (100%) with native Swift async/await and modern SwiftUI reusable components
 
 ## Architecture
 The application follows the **Clean Architecture** pattern with **MVVM** (Model-View-ViewModel) for presentation, reactive state management, and a modular **Dependency Injection** system:
@@ -94,9 +94,11 @@ The application follows the **Clean Architecture** pattern with **MVVM** (Model-
 
 ### Architecture Layers:
 - **Presentation Layer**:
-  - **Screens**: Compose UI components that display data and handle user interactions
+  - **Screens**: Platform-specific UI components that display data and handle user interactions
+    - **Android**: Jetpack Compose UI components (see [Android UI Components Documentation](docs/UI_Components.md))
+    - **iOS**: SwiftUI views and components (see [iOS UI Components Documentation](docs/iOS_UI_Components.md))
   - **ViewModels**: Manage UI state, process user actions, and communicate with the domain layer
-  - **UI Elements**: Reusable Compose components for consistent UI across the app (see [UI Components Documentation](docs/UI_Components.md))
+  - **UI Elements**: Reusable components for consistent UI across platforms
   - **KoinViewModel**: Base class for all ViewModels that provides standardized Koin integration
   - **Navigation**: Compose Navigation for handling screen transitions and deep linking
   - **State Handling**: Kotlin StateFlow and SharedFlow for reactive UI updates
@@ -200,11 +202,13 @@ For detailed information about the dependency injection implementation, see:
 
 For a detailed list of all libraries with versions and purposes, see the [Libraries Documentation](docs/Libraries.md).
 
-For information about the reusable UI components in the app, see the [UI Components Documentation](docs/UI_Components.md).
+For information about the reusable UI components in the app, see:
+- [Android UI Components Documentation](docs/UI_Components.md) - Jetpack Compose components and design system
+- [iOS UI Components Documentation](docs/iOS_UI_Components.md) - SwiftUI components and design system
 
-For details about the iOS 18.5 migration and current SKIE integration status (~80% complete), see the [SKIE Integration Status](docs/SKIE_Integration_Complete.md).
+For details about the iOS 18.5 migration and complete SKIE integration (100%), see the [SKIE Integration Status](docs/SKIE_Integration_Complete.md).
 
-For technical details about the FlowCollector bridge pattern and why we're not at 100% SKIE yet, see the [SKIE FlowCollector Pattern Guide](docs/SKIE_FlowCollector_Pattern.md).
+For technical details about the SKIE implementation and native Swift async/await integration, see the [SKIE Full Migration Guide](docs/SKIE_FULL_MIGRATION_GUIDE.md).
 
 ## Package Structure
 
