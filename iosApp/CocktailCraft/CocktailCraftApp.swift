@@ -1,12 +1,18 @@
 import SwiftUI
 import shared
+import BackgroundTasks
 
 @main
 struct CocktailCraftApp: App {
-    
+
     init() {
         // Initialize Koin
         KoinInitializer.instance.initialize()
+
+        // Initialize background sync
+        Task { @MainActor in
+            BackgroundSyncManager.shared.registerBackgroundTasks()
+        }
     }
     
     var body: some Scene {

@@ -63,6 +63,12 @@
 	<string>CocktailCraft needs network access to fetch cocktail recipes and images.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>CocktailCraft may access local network for enhanced functionality.</string>
+	<!-- Background Modes -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>background-app-refresh</string>
+		<string>background-fetch</string>
+	</array>
 	<!-- iOS 18.5 Compatibility -->
 	<key>NSSupportsLiveActivities</key>
 	<false/>

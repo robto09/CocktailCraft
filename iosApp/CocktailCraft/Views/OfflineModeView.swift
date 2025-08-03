@@ -11,18 +11,21 @@ struct OfflineModeView: View {
                 VStack(spacing: 16) {
                     // Network Status Card
                     networkStatusCard
-                    
+
+                    // Background Sync Card
+                    BackgroundSyncCard()
+
                     // Offline Mode Toggle Card
                     offlineModeToggleCard
-                    
+
                     // Cache Information Card
                     cacheInformationCard
-                    
+
                     // Recently Viewed Cocktails Card
                     if viewModel.hasRecentlyViewed {
                         recentlyViewedCard
                     }
-                    
+
                     // Cache Management Card
                     cacheManagementCard
                 }
