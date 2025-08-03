@@ -118,9 +118,10 @@ struct HomeViewSKIE: View {
                             .shadow(color: selectedCategory == nil ? Color.black.opacity(0.15) : Color.clear, radius: 2, x: 0, y: 1)
                             
                             // Category chips
-                            ForEach(viewModel.getCategories(), id: \.self) { category in
+                            ForEach(availableCategories, id: \.self) { category in
                                 Button(category) {
                                     selectedCategory = category
+                                    removeActiveFilter("Category")  // Remove previous category filter
                                     addActiveFilter("Category: \(category)")
                                     Task {
                                         await viewModel.loadCocktailsByCategory(category)
@@ -207,7 +208,7 @@ struct HomeViewSKIE: View {
                 ScrollView {
                     VStack {
                         Spacer()
-                        EmptyStateView(
+                        HomeEmptyStateView(
                             icon: "wineglass",
                             title: "No Cocktails Found",
                             subtitle: "Try adjusting your search or filters",
@@ -364,6 +365,21 @@ struct HomeViewSKIE: View {
         // Placeholder for advanced filters functionality
         print("Advanced filters applied")
     }
+
+    // Predefined categories from TheCocktailDB API
+    private var availableCategories: [String] {
+        // Always use predefined categories from TheCocktailDB for consistent UI
+        return [
+            "Cocktail",
+            "Shot",
+            "Ordinary Drink",
+            "Coffee / Tea",
+            "Homemade Liqueur",
+            "Punch / Party Drink",
+            "Beer",
+            "Soft Drink"
+        ]
+    }
 }
 
 // MARK: - Filter View using SKIE
@@ -454,7 +470,7 @@ struct FilterViewSKIE: View {
 
 // MARK: - Supporting Views
 
-struct EmptyStateView: View {
+struct HomeEmptyStateView: View {
     let icon: String
     let title: String
     let subtitle: String

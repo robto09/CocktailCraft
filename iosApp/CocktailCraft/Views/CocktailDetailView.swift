@@ -66,7 +66,7 @@ struct CocktailDetailView: View {
                         VStack(alignment: .leading) {
                             Text("Ingredients")
                                 .font(.headline)
-                            ForEach(cocktail.ingredients, id: \.name) { ingredient in
+                            ForEach(Array(cocktail.ingredients.enumerated()), id: \.offset) { index, ingredient in
                                 Text("• \(ingredient.name): \(ingredient.measure ?? "")")
                                     .font(.body)
                             }

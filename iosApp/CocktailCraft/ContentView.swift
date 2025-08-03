@@ -11,7 +11,7 @@ struct ContentView: View {
             TabView(selection: $selectedTab) {
                 // Home Tab
                 NavigationStack {
-                    HomeView(cartViewModel: cartViewModel)
+                    HomeViewSKIE()
                 }
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
