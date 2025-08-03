@@ -9,13 +9,13 @@ import Combine
 @MainActor
 class ProfileViewModelSKIE: ObservableObject {
     // Published properties for SwiftUI
-    @Published var user: SharedUser? = nil
+    @Published var user: User? = nil
     @Published var isLoggedIn = false
     @Published var authStatus = "Unknown"
     @Published var isAuthenticating = false
     @Published var authError: String? = nil
-    @Published var userPreferences = SharedUserPreferences()
-    @Published var error: SharedErrorHandlerUserFriendlyError? = nil
+    @Published var userPreferences = UserPreferences()
+    @Published var error: ErrorHandler.UserFriendlyError? = nil
     
     // Computed properties
     var isGuest: Bool {
@@ -39,7 +39,7 @@ class ProfileViewModelSKIE: ObservableObject {
     }
     
     // Shared ViewModel instance
-    private let sharedViewModel: SharedProfileViewModel
+    private let sharedViewModel: ProfileViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
@@ -175,7 +175,7 @@ class ProfileViewModelSKIE: ObservableObject {
         }
     }
     
-    func updateAddress(address: SharedAddress) async -> Bool {
+    func updateAddress(address: Address) async -> Bool {
         do {
             return try await sharedViewModel.updateAddress(address: address).boolValue
         } catch {

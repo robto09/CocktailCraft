@@ -9,13 +9,13 @@ import Combine
 @MainActor
 class OrderViewModelSKIE: ObservableObject {
     // Published properties for SwiftUI
-    @Published var orders: [SharedOrder] = []
-    @Published var currentOrder: SharedOrder? = nil
+    @Published var orders: [Order] = []
+    @Published var currentOrder: Order? = nil
     @Published var orderCount = 0
     @Published var isPlacingOrder = false
     @Published var totalSpent: Double = 0.0
     @Published var isLoading = false
-    @Published var error: SharedErrorHandlerUserFriendlyError? = nil
+    @Published var error: ErrorHandler.UserFriendlyError? = nil
     
     // Computed properties
     var hasOrders: Bool {
@@ -26,7 +26,7 @@ class OrderViewModelSKIE: ObservableObject {
         orders.isEmpty
     }
     
-    var recentOrders: [SharedOrder] {
+    var recentOrders: [Order] {
         sharedViewModel.getRecentOrders()
     }
     
@@ -35,7 +35,7 @@ class OrderViewModelSKIE: ObservableObject {
     }
     
     // Shared ViewModel instance
-    private let sharedViewModel: SharedOrderViewModel
+    private let sharedViewModel: OrderViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
@@ -131,7 +131,7 @@ class OrderViewModelSKIE: ObservableObject {
         }
     }
     
-    func placeOrder(cartItems: [SharedCocktailCartItem], totalPrice: Double) async -> Bool {
+    func placeOrder(cartItems: [CocktailCartItem], totalPrice: Double) async -> Bool {
         print("Swift: placeOrder called with \(cartItems.count) items, total: \(totalPrice)")
         return await withCheckedContinuation { continuation in
             print("Swift: About to call placeOrderWithCallback")
@@ -142,7 +142,7 @@ class OrderViewModelSKIE: ObservableObject {
         }
     }
     
-    func getOrderById(_ orderId: String) async -> SharedOrder? {
+    func getOrderById(_ orderId: String) async -> Order? {
         do {
             return try await sharedViewModel.getOrderById(orderId: orderId)
         } catch {
@@ -176,19 +176,19 @@ class OrderViewModelSKIE: ObservableObject {
     
     // MARK: - Synchronous Methods
     
-    func getOrdersByStatus(_ status: String) -> [SharedOrder] {
+    func getOrdersByStatus(_ status: String) -> [Order] {
         return sharedViewModel.getOrdersByStatus(status: status)
     }
-    
+
     func getTotalSpent() -> Double {
         return sharedViewModel.getTotalSpent()
     }
-    
-    func getOrderHistory(limit: Int = 10) -> [SharedOrder] {
+
+    func getOrderHistory(limit: Int = 10) -> [Order] {
         return sharedViewModel.getOrderHistory(limit: Int32(limit))
     }
-    
-    func getOrdersByDateRange(startDate: String, endDate: String) -> [SharedOrder] {
+
+    func getOrdersByDateRange(startDate: String, endDate: String) -> [Order] {
         return sharedViewModel.getOrdersByDateRange(startDate: startDate, endDate: endDate)
     }
     
@@ -256,7 +256,7 @@ class OrderViewModelSKIE: ObservableObject {
         }
     }
     
-    func getOrdersGroupedByStatus() -> [String: [SharedOrder]] {
+    func getOrdersGroupedByStatus() -> [String: [Order]] {
         return Dictionary(grouping: orders) { $0.status }
     }
     
@@ -269,11 +269,11 @@ class OrderViewModelSKIE: ObservableObject {
         return formatPrice(getAverageOrderValue())
     }
     
-    func getMostRecentOrder() -> SharedOrder? {
+    func getMostRecentOrder() -> Order? {
         return orders.first
     }
-    
-    func getOrdersThisMonth() -> [SharedOrder] {
+
+    func getOrdersThisMonth() -> [Order] {
         let calendar = Calendar.current
         let now = Date()
         let startOfMonth = calendar.dateInterval(of: .month, for: now)?.start ?? now
