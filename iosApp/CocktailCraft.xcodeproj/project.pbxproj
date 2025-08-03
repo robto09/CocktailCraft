@@ -31,6 +31,10 @@
 
 		5DD5C9541804B1F02B26C2CA /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77C5D3DBDD3CA76A90859F00 /* FavoritesView.swift */; };
 		631932ECF8AC75AFB5416740 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D295EC1E30F565480A8AEB /* EmptyStateView.swift */; };
+		CART001234567890ABCDEF01 /* CartItemCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CART001234567890ABCDEF02 /* CartItemCard.swift */; };
+		CART001234567890ABCDEF03 /* CartSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CART001234567890ABCDEF04 /* CartSummaryCard.swift */; };
+		CART001234567890ABCDEF05 /* CheckoutButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CART001234567890ABCDEF06 /* CheckoutButton.swift */; };
+		CART001234567890ABCDEF07 /* CocktailImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CART001234567890ABCDEF08 /* CocktailImageView.swift */; };
 		7867DEB863AC49819CBF9550 /* ProfileViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5097B9993D604867B5723F89 /* ProfileViewModelSKIE.swift */; };
 		96CF06A65ECCAB15A7E21B07 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EBC388A838EA20284B59381 /* ContentView.swift */; };
 		9CA8A23169EACEE6BAA6168E /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61384C5931B60FCC54CA0D2E /* ProfileView.swift */; };
@@ -60,6 +64,10 @@
 
 /* Begin PBXFileReference section */
 		04D295EC1E30F565480A8AEB /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		CART001234567890ABCDEF02 /* CartItemCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartItemCard.swift; sourceTree = "<group>"; };
+		CART001234567890ABCDEF04 /* CartSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartSummaryCard.swift; sourceTree = "<group>"; };
+		CART001234567890ABCDEF06 /* CheckoutButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckoutButton.swift; sourceTree = "<group>"; };
+		CART001234567890ABCDEF08 /* CocktailImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailImageView.swift; sourceTree = "<group>"; };
 		0EBB34782E33E199005F3BA9 /* CocktailDetailViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailDetailViewModelSKIE.swift; sourceTree = "<group>"; };
 		0EBB34792E33E199005F3BA9 /* FavoritesViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesViewModelSKIE.swift; sourceTree = "<group>"; };
 		0EBB347A2E33E199005F3BA9 /* HomeViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModelSKIE.swift; sourceTree = "<group>"; };
@@ -208,7 +216,11 @@
 		763F7D2C53916801E282D4AC /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				CART001234567890ABCDEF02 /* CartItemCard.swift */,
+				CART001234567890ABCDEF04 /* CartSummaryCard.swift */,
+				CART001234567890ABCDEF06 /* CheckoutButton.swift */,
 				7A00F91ED1F43F12CF3B7400 /* CocktailCard.swift */,
+				CART001234567890ABCDEF08 /* CocktailImageView.swift */,
 				04D295EC1E30F565480A8AEB /* EmptyStateView.swift */,
 				8885ACD7979C44B621ECA874 /* ErrorView.swift */,
 				809D06387624AC9896D7E632 /* LoadingOverlay.swift */,
@@ -331,7 +343,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				A22D24F59CFC34A6C3643DED /* CartView.swift in Sources */,
+				CART001234567890ABCDEF01 /* CartItemCard.swift in Sources */,
+				CART001234567890ABCDEF03 /* CartSummaryCard.swift in Sources */,
+				CART001234567890ABCDEF05 /* CheckoutButton.swift in Sources */,
 				A166DB404CF006A66284D821 /* CocktailCard.swift in Sources */,
+				CART001234567890ABCDEF07 /* CocktailImageView.swift in Sources */,
 				DE8850F09E59ACDA9DA09D48 /* CocktailCraftApp.swift in Sources */,
 				3BF4E2DF43ABEAC1F129FA6B /* CocktailDetailView.swift in Sources */,
 				96CF06A65ECCAB15A7E21B07 /* ContentView.swift in Sources */,

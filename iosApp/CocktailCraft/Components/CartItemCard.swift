@@ -2,7 +2,7 @@ import SwiftUI
 import shared
 
 struct CartItemCard: View {
-    let item: CartItem
+    let item: CocktailCartItem
     let onIncrementQuantity: () -> Void
     let onDecrementQuantity: () -> Void
     let onRemoveFromCart: () -> Void
@@ -127,7 +127,7 @@ struct QuantityControlView: View {
 
 #Preview {
     CartItemCard(
-        item: CartItem(
+        item: CocktailCartItem(
             cocktail: Cocktail(
                 id: "test-1",
                 name: "Classic Margarita",
