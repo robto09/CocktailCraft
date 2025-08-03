@@ -18,10 +18,10 @@ enum SortOption: CaseIterable {
 @MainActor
 class HomeViewModelSKIE: ObservableObject {
     // Published properties for SwiftUI
-    @Published var cocktails: [SharedCocktail] = []
-    @Published var filteredCocktails: [SharedCocktail] = []
+    @Published var cocktails: [Cocktail] = []
+    @Published var filteredCocktails: [Cocktail] = []
     @Published var isLoading = false
-    @Published var error: SharedErrorHandlerUserFriendlyError? = nil
+    @Published var error: ErrorHandler.UserFriendlyError? = nil
     @Published var selectedCategory: String? = nil
     @Published var selectedIngredient: String? = nil
     @Published var sortOption: SortOption = .nameAsc
@@ -31,7 +31,7 @@ class HomeViewModelSKIE: ObservableObject {
     @Published var isNetworkAvailable = true
     @Published var hasMoreData = false
     @Published var isLoadingMore = false
-    @Published var favorites: [SharedCocktail] = []
+    @Published var favorites: [Cocktail] = []
 
     // Shared ViewModel instances
     private let sharedViewModel: SharedHomeViewModel

@@ -35,7 +35,7 @@ class OrderViewModelSKIE: ObservableObject {
     }
     
     // Shared ViewModel instance
-    private let sharedViewModel: OrderViewModel
+    private let sharedViewModel: SharedOrderViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []

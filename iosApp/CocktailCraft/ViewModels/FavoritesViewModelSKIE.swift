@@ -9,10 +9,10 @@ import Combine
 @MainActor
 class FavoritesViewModelSKIE: ObservableObject {
     // Published properties for SwiftUI
-    @Published var favorites: [SharedCocktail] = []
+    @Published var favorites: [Cocktail] = []
     @Published var favoriteCount: Int = 0
     @Published var isLoading = false
-    @Published var error: SharedErrorHandlerUserFriendlyError? = nil
+    @Published var error: ErrorHandler.UserFriendlyError? = nil
     
     // Computed properties
     var isEmpty: Bool {
@@ -93,7 +93,7 @@ class FavoritesViewModelSKIE: ObservableObject {
         }
     }
     
-    func toggleFavorite(_ cocktail: SharedCocktail) async {
+    func toggleFavorite(_ cocktail: Cocktail) async {
         do {
             try await sharedViewModel.toggleFavorite(cocktail: cocktail)
         } catch {
@@ -115,7 +115,7 @@ class FavoritesViewModelSKIE: ObservableObject {
         return sharedViewModel.isFavorite(cocktailId: cocktailId)
     }
     
-    func getFavoritesByCategory(_ category: String) -> [SharedCocktail] {
+    func getFavoritesByCategory(_ category: String) -> [Cocktail] {
         return sharedViewModel.getFavoritesByCategory(category: category)
     }
 
@@ -123,19 +123,19 @@ class FavoritesViewModelSKIE: ObservableObject {
         return sharedViewModel.getFavoriteCategories()
     }
 
-    func searchFavorites(query: String) -> [SharedCocktail] {
+    func searchFavorites(query: String) -> [Cocktail] {
         return sharedViewModel.searchFavorites(query: query)
     }
 
-    func getFavoritesSortedByName() -> [SharedCocktail] {
+    func getFavoritesSortedByName() -> [Cocktail] {
         return sharedViewModel.getFavoritesSortedByName()
     }
 
-    func getFavoritesSortedByDate() -> [SharedCocktail] {
+    func getFavoritesSortedByDate() -> [Cocktail] {
         return sharedViewModel.getFavoritesSortedByDate()
     }
 
-    func getFavoritesSortedByRating() -> [SharedCocktail] {
+    func getFavoritesSortedByRating() -> [Cocktail] {
         return sharedViewModel.getFavoritesSortedByRating()
     }
     
@@ -159,7 +159,7 @@ class FavoritesViewModelSKIE: ObservableObject {
         return getFavoritesByCategory(category).count
     }
     
-    func getTopRatedFavorites(limit: Int = 5) -> [SharedCocktail] {
+    func getTopRatedFavorites(limit: Int = 5) -> [Cocktail] {
         return getFavoritesSortedByRating().prefix(limit).map { $0 }
     }
 }

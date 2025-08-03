@@ -39,7 +39,7 @@ class ProfileViewModelSKIE: ObservableObject {
     }
     
     // Shared ViewModel instance
-    private let sharedViewModel: ProfileViewModel
+    private let sharedViewModel: SharedProfileViewModel
     
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
