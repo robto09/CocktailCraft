@@ -8,15 +8,15 @@ struct CocktailDetailView: View {
     @ObservedObject var cartViewModel: CartViewModelSKIE
     @StateObject private var reviewViewModel = ReviewViewModelSKIE()
     @StateObject private var favoritesViewModel = FavoritesViewModelSKIE()
-    @State private var cocktail: SharedCocktail? = nil
+    @State private var cocktail: Cocktail? = nil
     @State private var isLoading = true
     @State private var isFavorite = false
     @State private var showingToast = false
     @State private var toastMessage = ""
-    @State private var error: SharedErrorHandlerUserFriendlyError? = nil
+    @State private var error: ErrorHandler.UserFriendlyError? = nil
 
     // TODO: Use SharedCocktailDetailViewModel once exported properly
-    private let repository: SharedCocktailRepository?
+    private let repository: CocktailRepository?
 
     init(cocktailId: String, cartViewModel: CartViewModelSKIE) {
         self.cocktailId = cocktailId
@@ -167,7 +167,7 @@ struct CocktailDetailView: View {
         }
     }
     
-    private func createMockCocktail(for id: String) -> SharedCocktail? {
+    private func createMockCocktail(for id: String) -> Cocktail? {
         switch id {
         case "test-1":
             return Cocktail(
