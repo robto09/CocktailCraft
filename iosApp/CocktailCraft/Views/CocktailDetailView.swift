@@ -27,7 +27,10 @@ struct CocktailDetailView: View {
     var body: some View {
         VStack {
             if isLoading {
-                LoadingStateView(message: "Loading cocktail details...")
+                VStack {
+                    ProgressView()
+                    Text("Loading cocktail details...")
+                }
             } else if let error = error {
                 ErrorView(
                     error: error,
@@ -37,31 +40,63 @@ struct CocktailDetailView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
                         // Cocktail image
-                        CocktailImageView(
-                            imageUrl: cocktail.imageUrl,
-                            height: 300
-                        )
+                        AsyncImage(url: URL(string: cocktail.imageUrl ?? "")) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                        }
+                        .frame(height: 300)
+                        .clipped()
 
                         // Cocktail info
-                        CocktailInfoCard(cocktail: cocktail)
+                        VStack(alignment: .leading) {
+                            Text(cocktail.name)
+                                .font(.largeTitle)
+                                .fontWeight(.bold)
+                            Text(cocktail.category ?? "")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
 
                         // Ingredients
-                        IngredientsListView(ingredients: cocktail.ingredients)
+                        VStack(alignment: .leading) {
+                            Text("Ingredients")
+                                .font(.headline)
+                            Text(cocktail.ingredients)
+                                .font(.body)
+                        }
+                        .padding()
 
                         // Action Buttons
-                        ActionButtonsRow(
-                            isFavorite: isFavorite,
-                            onFavoriteToggle: { toggleFavorite() },
-                            onAddToCart: { addToCart() }
-                        )
+                        HStack {
+                            Button("Add to Favorites") {
+                                toggleFavorite()
+                            }
+                            .buttonStyle(.borderedProminent)
+
+                            Button("Add to Cart") {
+                                addToCart()
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        .padding()
                     }
                 }
             } else {
-                EmptyStateView(
-                    icon: "wineglass",
-                    title: "Cocktail not found",
-                    message: "The requested cocktail could not be loaded"
-                )
+                VStack {
+                    Image(systemName: "wineglass")
+                        .font(.largeTitle)
+                        .foregroundColor(.secondary)
+                    Text("Cocktail not found")
+                        .font(.headline)
+                    Text("The requested cocktail could not be loaded")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
             }
         }
         .onAppear {
