@@ -9,6 +9,7 @@ struct ProfileView: View {
     @State private var showingSignUp = false
     @State private var showingLogoutAlert = false
     @State private var showingOfflineMode = false
+    @State private var refreshID = UUID()
     @Environment(\.dismiss) private var dismiss
     @Environment(\.isDarkMode) var isDarkMode
 
@@ -36,16 +37,20 @@ struct ProfileView: View {
 
                     // About Card
                     aboutCard
+
+                    // Bottom spacer to ensure content doesn't overlap with tab bar
+                    Color.clear.frame(height: 80)
                 }
                 .padding(.horizontal)
                 .padding(.top, 8)
-                .padding(.bottom)
             }
+            .id(refreshID) // Force refresh when tab changes
             .background(AppColors.background(isDarkMode: isDarkMode))
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
                 viewModel.refresh()
+                refreshID = UUID() // Generate new ID to force refresh
             }
         }
         .sheet(isPresented: $showingSettings) {
