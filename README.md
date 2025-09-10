@@ -328,6 +328,11 @@ The application includes comprehensive test coverage:
 - [SKIE Integration Status](docs/SKIE_Integration_Complete.md) - iOS 18.5 compatibility details
 - [Test Cases Documentation](TEST_CASES.md) - Comprehensive testing approach
 
+### 🐛 **QA & Debugging Tools**
+- [DebugSwift Complete Installation Guide](docs/DebugSwift_Complete_Installation_Guide.md) - Full integration process with all issues and solutions
+- [DebugSwift Quick Reference](docs/DebugSwift_Quick_Reference.md) - Daily usage guide for QA testing
+- [DebugSwift Integration Details](iosApp/DebugSwift_Integration.md) - Technical implementation details
+
 ### 🔧 **Technical Guides**
 - **Background Sync**: Automatic data synchronization for iOS with BGTaskScheduler integration
 - **SKIE Integration**: 100% native Swift async/await patterns for seamless iOS development

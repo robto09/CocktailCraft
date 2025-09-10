@@ -57,6 +57,31 @@ output.json
 **/build/generated/
 **/build/kotlin/compile*/
 
+# iOS specific
+iosApp/Pods/
+iosApp/DerivedData/
+iosApp/*.xcworkspace/xcuserdata/
+iosApp/*.xcodeproj/xcuserdata/
+iosApp/*.xcodeproj/project.xcworkspace/xcuserdata/
+iosApp/build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# CocoaPods
+# We commit Podfile and Podfile.lock, but not the Pods directory
+iosApp/Pods/*
+!iosApp/Pods/Manifest.lock
+
+# Xcode
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
 # Other system-specific files
 .DS_Store
 Thumbs.db
