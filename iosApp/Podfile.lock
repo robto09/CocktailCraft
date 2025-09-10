@@ -1,0 +1,34 @@
+PODS:
+  - DebugSwift (1.7.13.1)
+  - Kingfisher (7.12.0)
+  - shared (1.0.0)
+
+DEPENDENCIES:
+  - DebugSwift (from `https://github.com/DebugSwift/DebugSwift.git`, tag `1.7.13.1`)
+  - Kingfisher (~> 7.0)
+  - shared (from `../shared`)
+
+SPEC REPOS:
+  trunk:
+    - Kingfisher
+
+EXTERNAL SOURCES:
+  DebugSwift:
+    :git: https://github.com/DebugSwift/DebugSwift.git
+    :tag: 1.7.13.1
+  shared:
+    :path: "../shared"
+
+CHECKOUT OPTIONS:
+  DebugSwift:
+    :git: https://github.com/DebugSwift/DebugSwift.git
+    :tag: 1.7.13.1
+
+SPEC CHECKSUMS:
+  DebugSwift: 2f2a153c5fd343de8f9ffa57761884df31f156ed
+  Kingfisher: 53a10ea35051a436b5fb626ca2dd8f3144d755e9
+  shared: f0fe2ece729075ea1950075f770cff7ab1f4c830
+
+PODFILE CHECKSUM: a345ae6bf35c6eac562e103334d764cd9e2fc592
+
+COCOAPODS: 1.16.2

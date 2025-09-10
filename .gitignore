@@ -13,7 +13,6 @@ local.properties
 captures/
 output.json
 *.log
-*.lock
 *.bin
 
 # OS-specific files
