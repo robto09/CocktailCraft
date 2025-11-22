@@ -49,6 +49,7 @@ output.json
 *.log
 
 # Kotlin specific caches
+.kotlin
 **/build/kotlin/
 **/build/tmp/
 **/build/intermediates/
