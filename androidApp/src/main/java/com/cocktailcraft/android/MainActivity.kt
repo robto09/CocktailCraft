@@ -7,7 +7,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -23,20 +22,18 @@ class MainActivity : ComponentActivity() {
             // Get the ThemeViewModel to observe dark mode preference
             val themeViewModel: ThemeViewModelSKIE = viewModel()
             val isDarkMode by themeViewModel.isDarkMode.collectAsState()
+            val isSystemTheme by themeViewModel.isSystemTheme.collectAsState()
 
             // Get the current system dark mode state
             val isSystemInDarkTheme = isSystemInDarkTheme()
 
-            // Update the ThemeViewModel with the current system dark mode state
-            DisposableEffect(isSystemInDarkTheme) {
-                if (isSystemInDarkTheme) {
-                    themeViewModel.applySystemTheme()
-                }
-                onDispose { }
-            }
+            // Determine actual dark mode:
+            // - If following system theme, use the actual system dark mode setting
+            // - Otherwise, use the user's preference from the ViewModel
+            val effectiveDarkMode = if (isSystemTheme) isSystemInDarkTheme else isDarkMode
 
-            // Use the dark mode value from the ThemeViewModel
-            AnimatedCocktailBarTheme(darkTheme = isDarkMode) {
+            // Use the effective dark mode value for theming
+            AnimatedCocktailBarTheme(darkTheme = effectiveDarkMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

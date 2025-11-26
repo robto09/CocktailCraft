@@ -32,6 +32,7 @@ val domainModule = module {
     
     // Phase 2 ViewModels - User Experience Features (Completed)
     factory { com.cocktailcraft.viewmodel.SharedProfileViewModel() }
-    factory { com.cocktailcraft.viewmodel.SharedThemeViewModel() }
+    // SharedThemeViewModel MUST be a singleton so all screens share the same theme state
+    single { com.cocktailcraft.viewmodel.SharedThemeViewModel() }
     factory { com.cocktailcraft.viewmodel.SharedReviewViewModel() }
 }
