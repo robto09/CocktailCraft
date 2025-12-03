@@ -106,6 +106,7 @@ import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 import androidx.compose.animation.core.*
 import com.cocktailcraft.android.ui.components.shimmerEffect
+import com.cocktailcraft.android.util.rememberHapticHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -135,6 +136,9 @@ fun CocktailDetailScreen(
     val reviews by reviewViewModel.currentCocktailReviews.collectAsState()
     val favorites by favoritesViewModel.favorites.collectAsState()
     val isFavorite = cocktail?.let { c -> favorites.any { fav -> fav.id == c.id } } ?: false
+
+    // Haptic feedback handler
+    val hapticHandler = rememberHapticHandler()
 
     // Check if the cocktail is in cart
     val cartItems by cartViewModel.cartItems.collectAsState()
@@ -267,9 +271,12 @@ fun CocktailDetailScreen(
                                         color = AppColors.Primary
                                     )
 
-                                    // Favorite button
+                                    // Favorite button with haptic feedback
                                     IconButton(
-                                        onClick = { favoritesViewModel.toggleFavorite(cocktailData) },
+                                        onClick = {
+                                            hapticHandler.performToggleFavorite(isFavorite)
+                                            favoritesViewModel.toggleFavorite(cocktailData)
+                                        },
                                         modifier = Modifier.size(36.dp)
                                     ) {
                                         Icon(

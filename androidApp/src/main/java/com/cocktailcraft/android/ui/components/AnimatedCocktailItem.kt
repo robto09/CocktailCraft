@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.android.ui.animation.AnimationUtils
 import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.util.rememberHapticHandler
 
 /**
  * An enhanced version of CocktailItem with animations
@@ -114,6 +115,9 @@ fun CocktailItemContent(
     onAddToCart: (Cocktail) -> Unit,
     onToggleFavorite: (Cocktail) -> Unit
 ) {
+    // Haptic feedback handler for favorite toggle
+    val hapticHandler = rememberHapticHandler()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -229,9 +233,12 @@ fun CocktailItemContent(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Favorite button with animation
+                // Favorite button with animation and haptic feedback
                 AnimatedIconButton(
-                    onClick = { onToggleFavorite(cocktail) },
+                    onClick = {
+                        hapticHandler.performToggleFavorite(isFavorite)
+                        onToggleFavorite(cocktail)
+                    },
                     icon = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                     contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
                     tint = if (isFavorite) AppColors.Secondary else AppColors.Gray

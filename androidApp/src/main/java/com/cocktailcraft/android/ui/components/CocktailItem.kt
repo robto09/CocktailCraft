@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.components.OptimizedImage
+import com.cocktailcraft.android.util.rememberHapticHandler
 
 @Composable
 fun CocktailItem(
@@ -37,6 +38,8 @@ fun CocktailItem(
     isFavorite: Boolean = false,
     onToggleFavorite: (Cocktail) -> Unit = {}
 ) {
+    val hapticHandler = rememberHapticHandler()
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -161,9 +164,12 @@ fun CocktailItem(
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // Favorite button with actual functionality
+                    // Favorite button with haptic feedback
                     IconButton(
-                        onClick = { onToggleFavorite(cocktail) },
+                        onClick = {
+                            hapticHandler.performToggleFavorite(isFavorite)
+                            onToggleFavorite(cocktail)
+                        },
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(

@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.ui.animation.AnimationUtils
 import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.util.HapticHandler
+import com.cocktailcraft.android.util.rememberHapticHandler
 
 /**
  * An animated button that scales when pressed
@@ -79,7 +81,17 @@ fun AnimatedTextButton(
 }
 
 /**
- * An animated icon button with scale and rotation effects
+ * An animated icon button with scale and rotation effects.
+ * Supports optional haptic feedback for enhanced user experience.
+ *
+ * @param onClick Callback when the button is clicked
+ * @param icon The icon to display
+ * @param contentDescription Accessibility description for the icon
+ * @param modifier Modifier for the button
+ * @param tint Color tint for the icon
+ * @param enabled Whether the button is enabled
+ * @param enableHapticFeedback Whether to trigger haptic feedback on click
+ * @param hapticHandler Optional custom haptic handler for specialized feedback
  */
 @Composable
 fun AnimatedIconButton(
@@ -88,11 +100,14 @@ fun AnimatedIconButton(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     tint: Color = AppColors.Primary,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    enableHapticFeedback: Boolean = false,
+    hapticHandler: HapticHandler? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    
+    val defaultHapticHandler = if (enableHapticFeedback) rememberHapticHandler() else null
+
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.85f else 1f,
         animationSpec = spring(
@@ -101,9 +116,15 @@ fun AnimatedIconButton(
         ),
         label = "icon_button_scale"
     )
-    
+
     IconButton(
-        onClick = onClick,
+        onClick = {
+            // Trigger haptic feedback if enabled
+            if (enableHapticFeedback) {
+                (hapticHandler ?: defaultHapticHandler)?.performClick()
+            }
+            onClick()
+        },
         modifier = modifier,
         enabled = enabled,
         interactionSource = interactionSource
