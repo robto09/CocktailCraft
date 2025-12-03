@@ -1,0 +1,89 @@
+package com.cocktailcraft.android.widget
+
+import android.content.Context
+import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.domain.repository.FavoritesRepository
+import kotlinx.coroutines.flow.first
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
+
+/**
+ * Data provider for widgets to access cocktail data.
+ * Bridges widgets with existing repositories and caching layer.
+ * Uses Koin dependency injection to get repositories.
+ */
+class WidgetDataProvider : KoinComponent {
+    
+    private val cocktailRepository: CocktailRepository by inject()
+    private val favoritesRepository: FavoritesRepository by inject()
+    
+    /**
+     * Get a random cocktail from the API.
+     * Falls back to cached cocktails if offline or API fails.
+     */
+    suspend fun getRandomCocktail(): Cocktail? {
+        return try {
+            // Try to get from API first
+            cocktailRepository.getRandomCocktail().first()
+        } catch (e: Exception) {
+            // Fallback to cached cocktails if offline
+            try {
+                val recentlyViewed = cocktailRepository.getRecentlyViewedCocktails().first()
+                if (recentlyViewed.isNotEmpty()) {
+                    recentlyViewed.random()
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+    
+    /**
+     * Get the user's favorite cocktails.
+     * Uses cached data when available for offline support.
+     */
+    suspend fun getFavoriteCocktails(): List<Cocktail> {
+        return try {
+            favoritesRepository.getFavorites().first()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+    
+    /**
+     * Get a single favorite cocktail for display.
+     * Returns the first favorite or null if no favorites.
+     */
+    suspend fun getFirstFavoriteCocktail(): Cocktail? {
+        return getFavoriteCocktails().firstOrNull()
+    }
+    
+    /**
+     * Get the count of favorite cocktails.
+     */
+    suspend fun getFavoritesCount(): Int {
+        return getFavoriteCocktails().size
+    }
+    
+    /**
+     * Get cocktail image URL with fallback.
+     */
+    fun getCocktailImageUrl(cocktail: Cocktail): String {
+        return cocktail.imageUrl ?: ""
+    }
+    
+    companion object {
+        @Volatile
+        private var instance: WidgetDataProvider? = null
+        
+        fun getInstance(): WidgetDataProvider {
+            return instance ?: synchronized(this) {
+                instance ?: WidgetDataProvider().also { instance = it }
+            }
+        }
+    }
+}
+

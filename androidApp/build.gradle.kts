@@ -109,6 +109,13 @@ dependencies {
     // Coil
     implementation("io.coil-kt:coil-compose:2.4.0")
 
+    // Glance for Widgets
+    implementation("androidx.glance:glance-appwidget:1.1.0")
+    implementation("androidx.glance:glance-material3:1.1.0")
+
+    // WorkManager for widget updates
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
     // Accompanist libraries for animations and system UI controller
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.31.0-alpha")
     implementation("com.google.accompanist:accompanist-navigation-animation:0.31.0-alpha")

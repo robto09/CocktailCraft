@@ -52,4 +52,16 @@
     <string name="error_generic">Something went wrong. Please try again.</string>
     <string name="error_invalid_credentials">Invalid email or password</string>
     <string name="error_passwords_dont_match">Passwords don\'t match</string>
-</resources> 
+
+    <!-- Widget -->
+    <string name="random_cocktail_widget_name">Random Cocktail</string>
+    <string name="random_cocktail_widget_description">Discover a random cocktail and tap to view details in the app.</string>
+    <string name="favorites_widget_name">Favorite Cocktails</string>
+    <string name="favorites_widget_description">Quick access to your favorite cocktails.</string>
+    <string name="loading">Loading…</string>
+    <string name="refresh">Refresh</string>
+    <string name="tap_to_view_details">Tap to view details</string>
+    <string name="tap_to_load">Tap to load</string>
+    <string name="no_favorites">No favorites yet</string>
+    <string name="tap_to_add_favorites">Tap to add some!</string>
+</resources>
