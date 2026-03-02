@@ -2,66 +2,62 @@ package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.repository.CartRepository
+import com.cocktailcraft.domain.usecase.ManageCartUseCase
+import com.cocktailcraft.domain.util.getOrDefault
+import com.cocktailcraft.viewmodel.state.CartUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.koin.core.component.inject
 
 /**
  * Shared ViewModel for Cart functionality.
- * Designed for full SKIE interoperability with iOS.
- *
- * Key SKIE features:
- * - StateFlows are automatically converted to Swift AsyncSequence
- * - Suspend functions become Swift async functions
- * - No FlowCollector bridge needed
+ * Uses consolidated [CartUiState] for atomic state updates.
  */
 class SharedCartViewModel : SharedViewModel() {
 
-    private val repository: CartRepository by inject()
-    
-    // UI State - SKIE will convert these to Swift AsyncSequence
-    private val _cartItems = MutableStateFlow<List<CocktailCartItem>>(emptyList())
-    val cartItems: StateFlow<List<CocktailCartItem>> = _cartItems.asStateFlow()
-    
-    private val _totalPrice = MutableStateFlow(0.0)
-    val totalPrice: StateFlow<Double> = _totalPrice.asStateFlow()
-    
-    private val _itemCount = MutableStateFlow(0)
-    val itemCount: StateFlow<Int> = _itemCount.asStateFlow()
+    private val manageCartUseCase: ManageCartUseCase by inject()
+
+    // Consolidated UI State
+    private val _uiState = MutableStateFlow(CartUiState())
+    val uiState: StateFlow<CartUiState> = _uiState.asStateFlow()
+
+    // Derived StateFlows for backward compatibility
+    val cartItems: StateFlow<List<CocktailCartItem>> = _uiState
+        .map { it.cartItems }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val totalPrice: StateFlow<Double> = _uiState
+        .map { it.totalPrice }.stateIn(viewModelScope, SharingStarted.Eagerly, 0.0)
+    val itemCount: StateFlow<Int> = _uiState
+        .map { it.itemCount }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
     
     // Computed properties
     val isEmpty: Boolean
-        get() = _cartItems.value.isEmpty()
-    
+        get() = _uiState.value.cartItems.isEmpty()
+
     val hasItems: Boolean
-        get() = _cartItems.value.isNotEmpty()
-    
+        get() = _uiState.value.cartItems.isNotEmpty()
+
     init {
         loadCart()
     }
-    
+
     private fun loadCart() {
         viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
             setLoading(true)
             try {
-                repository.getCartItems()
-                    .catch { /* Ignore errors */ }
-                    .collect { items ->
-                        _cartItems.value = items
-                        updateTotals()
-                        setLoading(false)
-                    }
+                val items = manageCartUseCase.getCartItems().getOrDefault(emptyList())
+                _uiState.update { it.copy(
+                    cartItems = items,
+                    itemCount = items.sumOf { item -> item.quantity },
+                    totalPrice = items.sumOf { item -> item.cocktail.price * item.quantity },
+                    isLoading = false
+                ) }
+                setLoading(false)
             } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false) }
                 setLoading(false)
             }
         }
-    }
-    
-    private fun updateTotals() {
-        val items = _cartItems.value
-        _itemCount.value = items.sumOf { it.quantity }
-        _totalPrice.value = items.sumOf { it.cocktail.price * it.quantity }
     }
     
     /**
@@ -71,7 +67,7 @@ class SharedCartViewModel : SharedViewModel() {
     suspend fun addToCart(cocktail: Cocktail, quantity: Int = 1) {
         try {
             val cartItem = CocktailCartItem(cocktail, quantity)
-            repository.addToCart(cartItem)
+            manageCartUseCase.addToCart(cartItem)
             loadCart()
         } catch (e: Exception) {
             handleException(e, "Failed to add item to cart", showAsEvent = true)
@@ -84,7 +80,7 @@ class SharedCartViewModel : SharedViewModel() {
      */
     suspend fun removeFromCart(cocktailId: String) {
         try {
-            repository.removeFromCart(cocktailId)
+            manageCartUseCase.removeFromCart(cocktailId)
             loadCart()
         } catch (e: Exception) {
             handleException(e, "Failed to remove item from cart", showAsEvent = true)
@@ -97,7 +93,7 @@ class SharedCartViewModel : SharedViewModel() {
      */
     suspend fun updateQuantity(cocktailId: String, quantity: Int) {
         try {
-            repository.updateQuantity(cocktailId, quantity)
+            manageCartUseCase.updateQuantity(cocktailId, quantity)
             loadCart()
         } catch (e: Exception) {
             handleException(e, "Failed to update quantity", showAsEvent = true)
@@ -109,18 +105,14 @@ class SharedCartViewModel : SharedViewModel() {
      * SKIE will convert this to Swift async function.
      */
     suspend fun incrementQuantity(cocktailId: String) {
-        val currentItem = _cartItems.value.find { it.cocktail.id == cocktailId }
+        val currentItem = _uiState.value.cartItems.find { it.cocktail.id == cocktailId }
         if (currentItem != null) {
             updateQuantity(cocktailId, currentItem.quantity + 1)
         }
     }
-    
-    /**
-     * Decrement the quantity of an item.
-     * SKIE will convert this to Swift async function.
-     */
+
     suspend fun decrementQuantity(cocktailId: String) {
-        val currentItem = _cartItems.value.find { it.cocktail.id == cocktailId }
+        val currentItem = _uiState.value.cartItems.find { it.cocktail.id == cocktailId }
         if (currentItem != null && currentItem.quantity > 1) {
             updateQuantity(cocktailId, currentItem.quantity - 1)
         } else if (currentItem != null) {
@@ -134,69 +126,47 @@ class SharedCartViewModel : SharedViewModel() {
      */
     suspend fun clearCart() {
         try {
-            repository.clearCart()
-            _cartItems.value = emptyList()
-            updateTotals()
+            manageCartUseCase.clearCart()
+            _uiState.update { it.copy(cartItems = emptyList(), itemCount = 0, totalPrice = 0.0) }
         } catch (e: Exception) {
             handleException(e, "Failed to clear cart", showAsEvent = true)
         }
     }
-    
+
     // MARK: - Synchronous Helper Methods
-    
-    /**
-     * Check if a cocktail is in the cart.
-     */
+
     fun isInCart(cocktailId: String): Boolean {
-        return _cartItems.value.any { it.cocktail.id == cocktailId }
+        return _uiState.value.cartItems.any { it.cocktail.id == cocktailId }
     }
-    
-    /**
-     * Get the quantity of a cocktail in the cart.
-     */
+
     fun getQuantity(cocktailId: String): Int {
-        return _cartItems.value.find { it.cocktail.id == cocktailId }?.quantity ?: 0
+        return _uiState.value.cartItems.find { it.cocktail.id == cocktailId }?.quantity ?: 0
     }
-    
-    /**
-     * Get cart item by cocktail ID.
-     */
+
     fun getCartItem(cocktailId: String): CocktailCartItem? {
-        return _cartItems.value.find { it.cocktail.id == cocktailId }
+        return _uiState.value.cartItems.find { it.cocktail.id == cocktailId }
     }
-    
-    /**
-     * Calculate estimated delivery time.
-     */
+
     fun getEstimatedDeliveryTime(): String {
-        val itemCount = _itemCount.value
+        val count = _uiState.value.itemCount
         return when {
-            itemCount == 0 -> "No items"
-            itemCount <= 3 -> "15-20 minutes"
-            itemCount <= 6 -> "20-25 minutes"
+            count == 0 -> "No items"
+            count <= 3 -> "15-20 minutes"
+            count <= 6 -> "20-25 minutes"
             else -> "25-30 minutes"
         }
     }
-    
-    /**
-     * Check if free delivery is applicable.
-     */
+
     fun isFreeDelivery(): Boolean {
-        return _totalPrice.value >= 50.0
+        return _uiState.value.totalPrice >= 50.0
     }
-    
-    /**
-     * Calculate delivery fee.
-     */
+
     fun getDeliveryFee(): Double {
         return if (isFreeDelivery()) 0.0 else 5.99
     }
-    
-    /**
-     * Get the final total including delivery.
-     */
+
     fun getFinalTotal(): Double {
-        return _totalPrice.value + getDeliveryFee()
+        return _uiState.value.totalPrice + getDeliveryFee()
     }
     
     /**

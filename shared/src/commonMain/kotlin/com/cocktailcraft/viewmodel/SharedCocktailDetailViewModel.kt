@@ -1,78 +1,71 @@
 package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.model.CocktailCartItem
-import com.cocktailcraft.domain.repository.CocktailRepository
-import com.cocktailcraft.domain.repository.CartRepository
+import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
+import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
+import com.cocktailcraft.domain.usecase.ManageCartUseCase
+import com.cocktailcraft.domain.util.getOrDefault
+import com.cocktailcraft.viewmodel.state.DetailUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.koin.core.component.inject
 
 /**
  * Shared ViewModel for Cocktail Detail functionality.
- * Designed for full SKIE interoperability with iOS.
- *
- * Key SKIE features:
- * - StateFlows are automatically converted to Swift AsyncSequence
- * - Suspend functions become Swift async functions
- * - No FlowCollector bridge needed
+ * Uses consolidated [DetailUiState] for atomic state updates.
  */
 class SharedCocktailDetailViewModel : SharedViewModel() {
 
-    private val repository: CocktailRepository by inject()
-    private val cartRepository: CartRepository by inject()
-    
-    // UI State - SKIE will convert these to Swift AsyncSequence
-    private val _cocktail = MutableStateFlow<Cocktail?>(null)
-    val cocktail: StateFlow<Cocktail?> = _cocktail.asStateFlow()
-    
-    private val _isFavorite = MutableStateFlow(false)
-    val isFavorite: StateFlow<Boolean> = _isFavorite.asStateFlow()
-    
-    private val _isInCart = MutableStateFlow(false)
-    val isInCart: StateFlow<Boolean> = _isInCart.asStateFlow()
-    
-    private val _cartQuantity = MutableStateFlow(0)
-    val cartQuantity: StateFlow<Int> = _cartQuantity.asStateFlow()
-    
-    private val _relatedCocktails = MutableStateFlow<List<Cocktail>>(emptyList())
-    val relatedCocktails: StateFlow<List<Cocktail>> = _relatedCocktails.asStateFlow()
-    
-    private val _ingredientsByType = MutableStateFlow<Map<String, List<String>>>(emptyMap())
-    val ingredientsByType: StateFlow<Map<String, List<String>>> = _ingredientsByType.asStateFlow()
+    private val getCocktailDetailUseCase: GetCocktailDetailUseCase by inject()
+    private val manageFavoritesUseCase: ManageFavoritesUseCase by inject()
+    private val manageCartUseCase: ManageCartUseCase by inject()
+
+    // Consolidated UI State
+    private val _uiState = MutableStateFlow(DetailUiState())
+    val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
+
+    // Derived StateFlows for backward compatibility
+    val cocktail: StateFlow<Cocktail?> = _uiState
+        .map { it.cocktail }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    val isFavorite: StateFlow<Boolean> = _uiState
+        .map { it.isFavorite }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val isInCart: StateFlow<Boolean> = _uiState
+        .map { it.isInCart }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val cartQuantity: StateFlow<Int> = _uiState
+        .map { it.cartQuantity }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+    val relatedCocktails: StateFlow<List<Cocktail>> = _uiState
+        .map { it.relatedCocktails }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val ingredientsByType: StateFlow<Map<String, List<String>>> = _uiState
+        .map { it.ingredientsByType }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     /**
      * Load cocktail details by ID.
      * SKIE will convert this to Swift async function.
      */
     suspend fun loadCocktail(cocktailId: String) {
+        _uiState.update { it.copy(isLoading = true, error = null) }
         setLoading(true)
         clearError()
 
         try {
-            repository.getCocktailById(cocktailId)
-                .catch { e -> handleException(e, "Failed to load cocktail details") }
-                .collect { loadedCocktail ->
-                    _cocktail.value = loadedCocktail
-                    if (loadedCocktail != null) {
-                        // Check if cocktail is favorite
-                        viewModelScope.launch {
-                            try {
-                                repository.getFavoriteCocktails().collect { favorites ->
-                                    _isFavorite.value = favorites.any { it.id == cocktailId }
-                                }
-                            } catch (e: Exception) {
-                                // Silent fail for favorites check
-                            }
-                        }
-                        updateCartStatus(cocktailId)
-                        loadRelatedCocktails(loadedCocktail)
-                        processIngredients(loadedCocktail)
-                    }
-                    setLoading(false)
+            val loadedCocktail = getCocktailDetailUseCase(cocktailId).getOrNull()
+            _uiState.update { it.copy(cocktail = loadedCocktail) }
+            if (loadedCocktail != null) {
+                viewModelScope.launch {
+                    try {
+                        val fav = getCocktailDetailUseCase.isFavorite(cocktailId)
+                        _uiState.update { it.copy(isFavorite = fav) }
+                    } catch (e: Exception) { /* Silent fail */ }
                 }
+                updateCartStatus(cocktailId)
+                loadRelatedCocktails(loadedCocktail)
+                processIngredients(loadedCocktail)
+            }
+            _uiState.update { it.copy(isLoading = false) }
+            setLoading(false)
         } catch (e: Exception) {
             handleException(e, "Failed to load cocktail details")
+            _uiState.update { it.copy(isLoading = false) }
             setLoading(false)
         }
     }
@@ -82,14 +75,10 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
      * SKIE will convert this to Swift async function.
      */
     suspend fun toggleFavorite() {
-        val currentCocktail = _cocktail.value ?: return
+        val currentCocktail = _uiState.value.cocktail ?: return
         try {
-            if (_isFavorite.value) {
-                repository.removeFromFavorites(currentCocktail)
-            } else {
-                repository.addToFavorites(currentCocktail)
-            }
-            _isFavorite.value = !_isFavorite.value
+            manageFavoritesUseCase.toggle(currentCocktail)
+            _uiState.update { it.copy(isFavorite = !it.isFavorite) }
         } catch (e: Exception) {
             handleException(e, "Failed to update favorites", showAsEvent = true)
         }
@@ -100,42 +89,33 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
      * SKIE will convert this to Swift async function.
      */
     suspend fun addToCart(quantity: Int = 1) {
-        val currentCocktail = _cocktail.value ?: return
+        val currentCocktail = _uiState.value.cocktail ?: return
         try {
-            val cartItem = CocktailCartItem(currentCocktail, quantity)
-            cartRepository.addToCart(cartItem)
+            manageCartUseCase.addToCart(currentCocktail, quantity)
             updateCartStatus(currentCocktail.id)
         } catch (e: Exception) {
             handleException(e, "Failed to add to cart", showAsEvent = true)
         }
     }
-    
-    /**
-     * Update cart quantity.
-     * SKIE will convert this to Swift async function.
-     */
+
     suspend fun updateCartQuantity(quantity: Int) {
-        val currentCocktail = _cocktail.value ?: return
+        val currentCocktail = _uiState.value.cocktail ?: return
         try {
             if (quantity > 0) {
-                cartRepository.updateQuantity(currentCocktail.id, quantity)
+                manageCartUseCase.updateQuantity(currentCocktail.id, quantity)
             } else {
-                cartRepository.removeFromCart(currentCocktail.id)
+                manageCartUseCase.removeFromCart(currentCocktail.id)
             }
             updateCartStatus(currentCocktail.id)
         } catch (e: Exception) {
             handleException(e, "Failed to update cart quantity", showAsEvent = true)
         }
     }
-    
-    /**
-     * Remove from cart.
-     * SKIE will convert this to Swift async function.
-     */
+
     suspend fun removeFromCart() {
-        val currentCocktail = _cocktail.value ?: return
+        val currentCocktail = _uiState.value.cocktail ?: return
         try {
-            cartRepository.removeFromCart(currentCocktail.id)
+            manageCartUseCase.removeFromCart(currentCocktail.id)
             updateCartStatus(currentCocktail.id)
         } catch (e: Exception) {
             handleException(e, "Failed to remove from cart", showAsEvent = true)
@@ -146,41 +126,30 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
     
     private suspend fun updateCartStatus(cocktailId: String) {
         try {
-            cartRepository.getCartItems().collect { cartItems ->
-                val cartItem = cartItems.find { it.cocktail.id == cocktailId }
-                _isInCart.value = cartItem != null
-                _cartQuantity.value = cartItem?.quantity ?: 0
-            }
+            val cartItems = manageCartUseCase.getCartItems().getOrDefault(emptyList())
+            val cartItem = cartItems.find { it.cocktail.id == cocktailId }
+            _uiState.update { it.copy(isInCart = cartItem != null, cartQuantity = cartItem?.quantity ?: 0) }
         } catch (e: Exception) {
             // Silent fail for cart status
         }
     }
-    
+
     private suspend fun loadRelatedCocktails(cocktail: Cocktail) {
         try {
-            // Get cocktails from the same category
-            repository.filterByCategory(cocktail.category ?: "Cocktail")
-                .catch { /* Silent fail */ }
-                .collect { cocktails ->
-                    _relatedCocktails.value = cocktails
-                        .filter { it.id != cocktail.id }
-                        .shuffled()
-                        .take(3)
-                }
+            val related = getCocktailDetailUseCase.getRelatedCocktails(cocktail)
+            _uiState.update { it.copy(relatedCocktails = related) }
         } catch (e: Exception) {
             // Silent fail for related cocktails
         }
     }
-    
+
     private fun processIngredients(cocktail: Cocktail) {
-        val ingredientsByType = mutableMapOf<String, MutableList<String>>()
-        
+        val grouped = mutableMapOf<String, MutableList<String>>()
         cocktail.ingredients.forEach { ingredient ->
             val type = categorizeIngredient(ingredient.name)
-            ingredientsByType.getOrPut(type) { mutableListOf() }.add(ingredient.name)
+            grouped.getOrPut(type) { mutableListOf() }.add(ingredient.name)
         }
-        
-        _ingredientsByType.value = ingredientsByType.mapValues { it.value.toList() }
+        _uiState.update { it.copy(ingredientsByType = grouped.mapValues { entry -> entry.value.toList() }) }
     }
     
     private fun categorizeIngredient(ingredientName: String): String {
@@ -202,7 +171,7 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
      * Get shareable text representation of the cocktail.
      */
     fun getShareableText(): String {
-        val cocktail = _cocktail.value ?: return ""
+        val cocktail = _uiState.value.cocktail ?: return ""
         
         val ingredients = cocktail.ingredients.joinToString("\n") {
             "• ${it.measure} ${it.name}".trim()
@@ -226,7 +195,7 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
      * Get nutrition facts (example calculation).
      */
     fun getNutritionFacts(): Map<String, String> {
-        val cocktail = _cocktail.value ?: return emptyMap()
+        val cocktail = _uiState.value.cocktail ?: return emptyMap()
         
         // Simple estimation based on ingredients
         var calories = 0
@@ -257,7 +226,7 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
      * Refresh cocktail details.
      */
     fun refresh() {
-        val currentCocktail = _cocktail.value
+        val currentCocktail = _uiState.value.cocktail
         if (currentCocktail != null) {
             viewModelScope.launch {
                 loadCocktail(currentCocktail.id)

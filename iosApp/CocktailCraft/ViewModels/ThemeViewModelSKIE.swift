@@ -56,85 +56,30 @@ class ThemeViewModelSKIE: ObservableObject {
     deinit {
         // Cancel all observation tasks
         observationTasks.forEach { $0.cancel() }
-        sharedViewModel.onCleared()
+        // Note: Do NOT call onCleared() — this is a Koin singleton whose
+        // coroutine scope must survive the lifetime of any single wrapper.
     }
     
     // MARK: - SKIE StateFlow Observation
     
     private func startObserving() {
-        // Observe dark mode using SKIE async sequence
+        // Single consolidated observation of uiState
         observationTasks.append(Task {
-            for await darkMode in sharedViewModel.isDarkMode {
+            for await state in sharedViewModel.uiState {
                 await MainActor.run {
-                    self.isDarkMode = darkMode.boolValue
+                    self.isDarkMode = state.isDarkMode
+                    self.themeMode = state.themeMode
+                    self.isSystemTheme = state.isSystemTheme
+                    self.accentColor = state.accentColor
+                    self.fontSize = state.fontSize
+                    self.isHighContrast = state.isHighContrast
+                    self.isReducedMotion = state.isReducedMotion
+                    self.isLoading = state.isLoading
                 }
             }
         })
-        
-        // Observe theme mode
-        observationTasks.append(Task {
-            for await mode in sharedViewModel.themeMode {
-                await MainActor.run {
-                    self.themeMode = mode
-                }
-            }
-        })
-        
-        // Observe system theme
-        observationTasks.append(Task {
-            for await systemTheme in sharedViewModel.isSystemTheme {
-                await MainActor.run {
-                    self.isSystemTheme = systemTheme.boolValue
-                }
-            }
-        })
-        
-        // Observe accent color
-        observationTasks.append(Task {
-            for await color in sharedViewModel.accentColor {
-                await MainActor.run {
-                    self.accentColor = color
-                }
-            }
-        })
-        
-        // Observe font size
-        observationTasks.append(Task {
-            for await size in sharedViewModel.fontSize {
-                await MainActor.run {
-                    self.fontSize = size
-                }
-            }
-        })
-        
-        // Observe high contrast
-        observationTasks.append(Task {
-            for await highContrast in sharedViewModel.isHighContrast {
-                await MainActor.run {
-                    self.isHighContrast = highContrast.boolValue
-                }
-            }
-        })
-        
-        // Observe reduced motion
-        observationTasks.append(Task {
-            for await reducedMotion in sharedViewModel.isReducedMotion {
-                await MainActor.run {
-                    self.isReducedMotion = reducedMotion.boolValue
-                }
-            }
-        })
-        
-        // Observe loading state
-        observationTasks.append(Task {
-            for await loading in sharedViewModel.isLoading {
-                await MainActor.run {
-                    self.isLoading = loading.boolValue
-                }
-            }
-        })
-        
-        // Observe error state
+
+        // Observe error from base class
         observationTasks.append(Task {
             for await errorValue in sharedViewModel.error {
                 await MainActor.run {

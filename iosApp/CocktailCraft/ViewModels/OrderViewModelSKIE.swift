@@ -51,67 +51,28 @@ class OrderViewModelSKIE: ObservableObject {
     deinit {
         // Cancel all observation tasks
         observationTasks.forEach { $0.cancel() }
-        sharedViewModel.onCleared()
+        // Note: Do NOT call onCleared() — this is a Koin singleton whose
+        // coroutine scope must survive the lifetime of any single wrapper.
     }
     
     // MARK: - SKIE StateFlow Observation
     
     private func startObserving() {
-        // Observe orders list
+        // Single consolidated observation of uiState
         observationTasks.append(Task {
-            for await orderList in sharedViewModel.orders {
+            for await state in sharedViewModel.uiState {
                 await MainActor.run {
-                    self.orders = orderList
+                    self.orders = state.orders
+                    self.currentOrder = state.currentOrder
+                    self.orderCount = Int(state.orderCount)
+                    self.isPlacingOrder = state.isPlacingOrder
+                    self.totalSpent = state.totalSpent
+                    self.isLoading = state.isLoading
                 }
             }
         })
-        
-        // Observe current order
-        observationTasks.append(Task {
-            for await order in sharedViewModel.currentOrder {
-                await MainActor.run {
-                    self.currentOrder = order
-                }
-            }
-        })
-        
-        // Observe order count
-        observationTasks.append(Task {
-            for await count in sharedViewModel.orderCount {
-                await MainActor.run {
-                    self.orderCount = Int(truncating: count)
-                }
-            }
-        })
-        
-        // Observe placing order state
-        observationTasks.append(Task {
-            for await placing in sharedViewModel.isPlacingOrder {
-                await MainActor.run {
-                    self.isPlacingOrder = placing.boolValue
-                }
-            }
-        })
-        
-        // Observe total spent
-        observationTasks.append(Task {
-            for await total in sharedViewModel.totalSpent {
-                await MainActor.run {
-                    self.totalSpent = total.doubleValue
-                }
-            }
-        })
-        
-        // Observe loading state
-        observationTasks.append(Task {
-            for await loading in sharedViewModel.isLoading {
-                await MainActor.run {
-                    self.isLoading = loading.boolValue
-                }
-            }
-        })
-        
-        // Observe error state
+
+        // Observe error from base class
         observationTasks.append(Task {
             for await errorValue in sharedViewModel.error {
                 await MainActor.run {

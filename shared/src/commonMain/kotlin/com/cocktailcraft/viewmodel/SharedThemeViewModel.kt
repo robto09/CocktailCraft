@@ -1,63 +1,53 @@
 package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.UserPreferences
-import com.cocktailcraft.domain.repository.AuthRepository
+import com.cocktailcraft.domain.usecase.ManageProfileUseCase
+import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.util.ErrorHandler
+import com.cocktailcraft.viewmodel.state.ThemeUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.koin.core.component.inject
 
 /**
  * Shared ViewModel for Theme functionality.
- * Designed for full SKIE interoperability with iOS.
- * 
- * Key SKIE features:
- * - StateFlows are automatically converted to Swift AsyncSequence
- * - Suspend functions become Swift async functions
- * - No FlowCollector bridge needed
+ * Uses consolidated [ThemeUiState] for atomic state updates.
  */
 class SharedThemeViewModel : SharedViewModel() {
-    
-    private val repository: AuthRepository by inject()
-    
-    // Theme state - SKIE will convert these to Swift AsyncSequence
-    private val _isDarkMode = MutableStateFlow(false)
-    val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
-    
-    private val _themeMode = MutableStateFlow("system")
-    val themeMode: StateFlow<String> = _themeMode.asStateFlow()
-    
-    private val _isSystemTheme = MutableStateFlow(true)
-    val isSystemTheme: StateFlow<Boolean> = _isSystemTheme.asStateFlow()
-    
-    private val _accentColor = MutableStateFlow("blue")
-    val accentColor: StateFlow<String> = _accentColor.asStateFlow()
-    
-    private val _fontSize = MutableStateFlow("medium")
-    val fontSize: StateFlow<String> = _fontSize.asStateFlow()
-    
-    private val _isHighContrast = MutableStateFlow(false)
-    val isHighContrast: StateFlow<Boolean> = _isHighContrast.asStateFlow()
-    
-    private val _isReducedMotion = MutableStateFlow(false)
-    val isReducedMotion: StateFlow<Boolean> = _isReducedMotion.asStateFlow()
-    
-    private val _userPreferences = MutableStateFlow(UserPreferences())
-    val userPreferences: StateFlow<UserPreferences> = _userPreferences.asStateFlow()
-    
-    // Computed properties
+
+    private val manageProfileUseCase: ManageProfileUseCase by inject()
+
+    // Consolidated UI State
+    private val _uiState = MutableStateFlow(ThemeUiState())
+    val uiState: StateFlow<ThemeUiState> = _uiState.asStateFlow()
+
+    // Derived StateFlows for backward compatibility
+    val isDarkMode: StateFlow<Boolean> = _uiState
+        .map { it.isDarkMode }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val themeMode: StateFlow<String> = _uiState
+        .map { it.themeMode }.stateIn(viewModelScope, SharingStarted.Eagerly, "system")
+    val isSystemTheme: StateFlow<Boolean> = _uiState
+        .map { it.isSystemTheme }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val accentColor: StateFlow<String> = _uiState
+        .map { it.accentColor }.stateIn(viewModelScope, SharingStarted.Eagerly, "blue")
+    val fontSize: StateFlow<String> = _uiState
+        .map { it.fontSize }.stateIn(viewModelScope, SharingStarted.Eagerly, "medium")
+    val isHighContrast: StateFlow<Boolean> = _uiState
+        .map { it.isHighContrast }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val isReducedMotion: StateFlow<Boolean> = _uiState
+        .map { it.isReducedMotion }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val userPreferences: StateFlow<UserPreferences> = _uiState
+        .map { it.userPreferences }.stateIn(viewModelScope, SharingStarted.Eagerly, UserPreferences())
+
     val currentThemeName: String
-        get() = getThemeModeDisplayName(_themeMode.value)
-    
+        get() = getThemeModeDisplayName(_uiState.value.themeMode)
     val availableThemes: List<String>
         get() = listOf("system", "light", "dark")
-    
     val availableAccentColors: List<String>
         get() = listOf("blue", "green", "red", "orange", "purple", "pink")
-    
     val availableFontSizes: List<String>
         get() = listOf("small", "medium", "large", "xlarge")
-    
+
     init {
         initialize()
     }
@@ -74,18 +64,12 @@ class SharedThemeViewModel : SharedViewModel() {
      */
     suspend fun setThemeMode(mode: String) {
         try {
-            _themeMode.value = mode
-            when (mode.lowercase()) {
-                "light" -> {
-                    _isDarkMode.value = false
-                    _isSystemTheme.value = false
-                }
-                "dark" -> {
-                    _isDarkMode.value = true
-                    _isSystemTheme.value = false
-                }
-                "system" -> {
-                    _isSystemTheme.value = true
+            _uiState.update { state ->
+                when (mode.lowercase()) {
+                    "light" -> state.copy(themeMode = mode, isDarkMode = false, isSystemTheme = false)
+                    "dark" -> state.copy(themeMode = mode, isDarkMode = true, isSystemTheme = false)
+                    "system" -> state.copy(themeMode = mode, isSystemTheme = true)
+                    else -> state.copy(themeMode = mode)
                 }
             }
             savePreferences()
@@ -93,102 +77,73 @@ class SharedThemeViewModel : SharedViewModel() {
             handleException(e, "Failed to update theme mode", showAsEvent = true)
         }
     }
-    
-    /**
-     * Toggle dark mode.
-     * SKIE will convert this to Swift async function.
-     */
+
     suspend fun toggleDarkMode() {
         try {
-            _isDarkMode.value = !_isDarkMode.value
-            _isSystemTheme.value = false
-            _themeMode.value = if (_isDarkMode.value) "dark" else "light"
+            _uiState.update { it.copy(
+                isDarkMode = !it.isDarkMode,
+                isSystemTheme = false,
+                themeMode = if (!it.isDarkMode) "dark" else "light"
+            ) }
             savePreferences()
         } catch (e: Exception) {
             handleException(e, "Failed to toggle dark mode", showAsEvent = true)
         }
     }
-    
-    /**
-     * Set accent color.
-     * SKIE will convert this to Swift async function.
-     */
+
     suspend fun setAccentColor(color: String) {
         try {
-            _accentColor.value = color
+            _uiState.update { it.copy(accentColor = color) }
             savePreferences()
         } catch (e: Exception) {
             handleException(e, "Failed to update accent color", showAsEvent = true)
         }
     }
-    
-    /**
-     * Set font size.
-     * SKIE will convert this to Swift async function.
-     */
+
     suspend fun setFontSize(size: String) {
         try {
-            _fontSize.value = size
+            _uiState.update { it.copy(fontSize = size) }
             savePreferences()
         } catch (e: Exception) {
             handleException(e, "Failed to update font size", showAsEvent = true)
         }
     }
-    
-    /**
-     * Toggle high contrast mode.
-     * SKIE will convert this to Swift async function.
-     */
+
     suspend fun toggleHighContrast() {
         try {
-            _isHighContrast.value = !_isHighContrast.value
+            _uiState.update { it.copy(isHighContrast = !it.isHighContrast) }
             savePreferences()
         } catch (e: Exception) {
             handleException(e, "Failed to toggle high contrast", showAsEvent = true)
         }
     }
-    
-    /**
-     * Toggle reduced motion.
-     * SKIE will convert this to Swift async function.
-     */
+
     suspend fun toggleReducedMotion() {
         try {
-            _isReducedMotion.value = !_isReducedMotion.value
+            _uiState.update { it.copy(isReducedMotion = !it.isReducedMotion) }
             savePreferences()
         } catch (e: Exception) {
             handleException(e, "Failed to toggle reduced motion", showAsEvent = true)
         }
     }
-    
-    /**
-     * Reset theme to defaults.
-     * SKIE will convert this to Swift async function.
-     */
+
     suspend fun resetToDefaults() {
         try {
-            _isDarkMode.value = false
-            _themeMode.value = "system"
-            _isSystemTheme.value = true
-            _accentColor.value = "blue"
-            _fontSize.value = "medium"
-            _isHighContrast.value = false
-            _isReducedMotion.value = false
+            _uiState.update { ThemeUiState() }
             savePreferences()
         } catch (e: Exception) {
             handleException(e, "Failed to reset theme settings", showAsEvent = true)
         }
     }
-    
-    /**
-     * Apply system theme.
-     * SKIE will convert this to Swift async function.
-     */
+
     suspend fun applySystemTheme() {
         try {
-            _isSystemTheme.value = !_isSystemTheme.value
-            if (_isSystemTheme.value) {
-                _themeMode.value = "system"
+            _uiState.update { state ->
+                val newSystem = !state.isSystemTheme
+                state.copy(
+                    isSystemTheme = newSystem,
+                    themeMode = if (newSystem) "system" else state.themeMode
+                )
             }
             savePreferences()
         } catch (e: Exception) {
@@ -255,7 +210,7 @@ class SharedThemeViewModel : SharedViewModel() {
      * Check if current theme is custom.
      */
     fun isCustomTheme(): Boolean {
-        return !_isSystemTheme.value
+        return !_uiState.value.isSystemTheme
     }
     
     /**
@@ -304,85 +259,78 @@ class SharedThemeViewModel : SharedViewModel() {
      * Export theme settings.
      */
     fun exportThemeSettings(): Map<String, Any> {
+        val s = _uiState.value
         return mapOf(
-            "isDarkMode" to _isDarkMode.value,
-            "themeMode" to _themeMode.value,
-            "isSystemTheme" to _isSystemTheme.value,
-            "accentColor" to _accentColor.value,
-            "fontSize" to _fontSize.value,
-            "isHighContrast" to _isHighContrast.value,
-            "isReducedMotion" to _isReducedMotion.value
+            "isDarkMode" to s.isDarkMode,
+            "themeMode" to s.themeMode,
+            "isSystemTheme" to s.isSystemTheme,
+            "accentColor" to s.accentColor,
+            "fontSize" to s.fontSize,
+            "isHighContrast" to s.isHighContrast,
+            "isReducedMotion" to s.isReducedMotion
         )
     }
-    
-    /**
-     * Import theme settings.
-     */
+
     fun importThemeSettings(settings: Map<String, Any>) {
         viewModelScope.launch {
             try {
-                settings["isDarkMode"]?.let { _isDarkMode.value = it as Boolean }
-                settings["themeMode"]?.let { _themeMode.value = it as String }
-                settings["isSystemTheme"]?.let { _isSystemTheme.value = it as Boolean }
-                settings["accentColor"]?.let { _accentColor.value = it as String }
-                settings["fontSize"]?.let { _fontSize.value = it as String }
-                settings["isHighContrast"]?.let { _isHighContrast.value = it as Boolean }
-                settings["isReducedMotion"]?.let { _isReducedMotion.value = it as Boolean }
+                _uiState.update { state ->
+                    state.copy(
+                        isDarkMode = (settings["isDarkMode"] as? Boolean) ?: state.isDarkMode,
+                        themeMode = (settings["themeMode"] as? String) ?: state.themeMode,
+                        isSystemTheme = (settings["isSystemTheme"] as? Boolean) ?: state.isSystemTheme,
+                        accentColor = (settings["accentColor"] as? String) ?: state.accentColor,
+                        fontSize = (settings["fontSize"] as? String) ?: state.fontSize,
+                        isHighContrast = (settings["isHighContrast"] as? Boolean) ?: state.isHighContrast,
+                        isReducedMotion = (settings["isReducedMotion"] as? Boolean) ?: state.isReducedMotion
+                    )
+                }
                 savePreferences()
             } catch (e: Exception) {
                 handleException(e, "Failed to import theme settings", showAsEvent = true)
             }
         }
     }
-    
+
     // MARK: - Private Helper Methods
-    
+
     private suspend fun loadUserPreferences() {
         try {
-            repository.getUserPreferences()
-                .catch { /* Silent fail */ }
-                .collect { preferences ->
-                    _userPreferences.value = preferences
-                    
-                    // Apply loaded preferences
-                    _isDarkMode.value = preferences.darkMode
-                    _isSystemTheme.value = preferences.followSystemTheme
-                    
-                    // Determine current theme mode
-                    _themeMode.value = when {
-                        preferences.followSystemTheme -> "system"
-                        preferences.darkMode -> "dark"
-                        else -> "light"
-                    }
+            val preferences = manageProfileUseCase.getUserPreferences().getOrDefault(UserPreferences())
+            _uiState.update { it.copy(
+                userPreferences = preferences,
+                isDarkMode = preferences.darkMode,
+                isSystemTheme = preferences.followSystemTheme,
+                themeMode = when {
+                    preferences.followSystemTheme -> "system"
+                    preferences.darkMode -> "dark"
+                    else -> "light"
                 }
+            ) }
         } catch (e: Exception) {
             // Silent fail for preferences loading
         }
     }
-    
+
     private suspend fun savePreferences() {
         try {
-            val updatedPreferences = _userPreferences.value.copy(
-                darkMode = _isDarkMode.value,
-                followSystemTheme = _isSystemTheme.value
+            val state = _uiState.value
+            val updatedPreferences = state.userPreferences.copy(
+                darkMode = state.isDarkMode,
+                followSystemTheme = state.isSystemTheme
             )
-            
-            repository.updateUserPreferences(updatedPreferences)
-                .catch { e ->
-                    handleException(e, "Failed to save theme preferences")
-                }
-                .collect { success ->
-                    if (success) {
-                        _userPreferences.value = updatedPreferences
-                    } else {
-                        setError(
-                            "Save Failed",
-                            "Failed to save theme preferences",
-                            ErrorHandler.ErrorCategory.SERVER,
-                            showAsEvent = true
-                        )
-                    }
-                }
+
+            val success = manageProfileUseCase.updateUserPreferences(updatedPreferences).getOrDefault(false)
+            if (success) {
+                _uiState.update { it.copy(userPreferences = updatedPreferences) }
+            } else {
+                setError(
+                    "Save Failed",
+                    "Failed to save theme preferences",
+                    ErrorHandler.ErrorCategory.SERVER,
+                    showAsEvent = true
+                )
+            }
         } catch (e: Exception) {
             handleException(e, "Failed to save theme preferences", showAsEvent = true)
         }

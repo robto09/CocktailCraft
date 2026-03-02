@@ -7,8 +7,8 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.builtins.ListSerializer
+import co.touchlab.kermit.Logger
 import kotlinx.datetime.Clock
-import com.cocktailcraft.util.CocktailDebugLogger
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.runBlocking
@@ -89,7 +89,7 @@ class CocktailCache(
     private val recentlyViewedCache = SimpleLruCache<String, Cocktail>(MAX_RECENTLY_VIEWED)
     
     init {
-        CocktailDebugLogger.log("🗄️ CocktailCache init()")
+        Logger.d { "CocktailCache init()" }
         // Load persisted cocktails into memory cache on initialization
         runBlocking {
             loadPersistedCocktails()
@@ -97,34 +97,34 @@ class CocktailCache(
     }
     
     private suspend fun loadPersistedCocktails() {
-        CocktailDebugLogger.log("📂 Loading persisted cocktails...")
+        Logger.d { "Loading persisted cocktails..." }
         try {
             // Load all cached cocktails from persistent storage
             val cachedJson = settings.getStringOrNull(ALL_COCKTAILS_KEY)
             if (!cachedJson.isNullOrBlank()) {
                 val cocktails = json.decodeFromString<List<Cocktail>>(cachedJson)
-                CocktailDebugLogger.log("   ✅ Loaded ${cocktails.size} cocktails from persistent storage")
+                Logger.d { "Loaded ${cocktails.size} cocktails from persistent storage" }
                 cocktails.forEach { cocktail ->
                     cocktailCache.put(cocktail.id, cocktail)
                 }
             } else {
-                CocktailDebugLogger.log("   ⚠️ No persisted cocktails found")
+                Logger.d { "No persisted cocktails found" }
             }
-            
+
             // Load recently viewed cocktails
             val recentJson = settings.getStringOrNull(RECENTLY_VIEWED_KEY)
             if (!recentJson.isNullOrBlank()) {
                 val recentCocktails = json.decodeFromString<List<Cocktail>>(recentJson)
-                CocktailDebugLogger.log("   ✅ Loaded ${recentCocktails.size} recently viewed cocktails")
+                Logger.d { "Loaded ${recentCocktails.size} recently viewed cocktails" }
                 recentCocktails.forEach { cocktail ->
                     recentlyViewedCache.put(cocktail.id, cocktail)
                 }
             } else {
-                CocktailDebugLogger.log("   ⚠️ No recently viewed cocktails found")
+                Logger.d { "No recently viewed cocktails found" }
             }
         } catch (e: Exception) {
             // Log error but don't crash - caching is not critical
-            CocktailDebugLogger.log("   ❌ Failed to load persisted cocktails: ${e.message}")
+            Logger.e(e) { "Failed to load persisted cocktails: ${e.message}" }
         }
     }
     
@@ -132,14 +132,14 @@ class CocktailCache(
         try {
             // Persist all cached cocktails
             val allCocktails = cocktailCache.snapshot().values.toList()
-            CocktailDebugLogger.log("💾 Persisting ${allCocktails.size} cocktails to storage")
+            Logger.d { "Persisting ${allCocktails.size} cocktails to storage" }
             if (allCocktails.isNotEmpty()) {
                 val jsonString = json.encodeToString(allCocktails)
                 settings.putString(ALL_COCKTAILS_KEY, jsonString)
-                CocktailDebugLogger.log("   ✅ Successfully persisted cocktails")
+                Logger.d { "Successfully persisted cocktails" }
             }
         } catch (e: Exception) {
-            CocktailDebugLogger.log("   ❌ Failed to persist cocktails: ${e.message}")
+            Logger.e(e) { "Failed to persist cocktails: ${e.message}" }
         }
     }
     
@@ -152,7 +152,7 @@ class CocktailCache(
                 settings.putString(RECENTLY_VIEWED_KEY, jsonString)
             }
         } catch (e: Exception) {
-            CocktailDebugLogger.log("Failed to persist recently viewed: ${e.message}")
+            Logger.e(e) { "Failed to persist recently viewed: ${e.message}" }
         }
     }
     
@@ -176,7 +176,7 @@ class CocktailCache(
      */
     suspend fun getAllCachedCocktails(): List<Cocktail> {
         val cocktails = cocktailCache.snapshot().values.toList()
-        CocktailDebugLogger.log("📦 CocktailCache.getAllCachedCocktails() returning ${cocktails.size} items")
+        Logger.d { "CocktailCache.getAllCachedCocktails() returning ${cocktails.size} items" }
         return cocktails
     }
     
@@ -198,7 +198,7 @@ class CocktailCache(
      */
     suspend fun getRecentlyViewedCocktails(): List<Cocktail> {
         val recent = recentlyViewedCache.snapshot().values.toList().reversed()
-        CocktailDebugLogger.log("👀 CocktailCache.getRecentlyViewedCocktails() returning ${recent.size} items")
+        Logger.d { "CocktailCache.getRecentlyViewedCocktails() returning ${recent.size} items" }
         return recent
     }
     

@@ -1,17 +1,16 @@
 package com.cocktailcraft.android.domain.recommendation
 
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.repository.FavoritesRepository
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
+import com.cocktailcraft.domain.util.getOrDefault
 
 /**
  * Engine for generating cocktail recommendations based on various strategies.
  * This client-side implementation works within the constraints of the free TheCocktailDB API.
  */
 class CocktailRecommendationEngine(
-    private val cocktailRepository: CocktailRepository,
+    private val cocktailRepository: CocktailCatalogRepository,
     private val favoritesRepository: FavoritesRepository
 ) {
     /**
@@ -45,7 +44,7 @@ class CocktailRecommendationEngine(
 
         // Strategy 3: User preferences (favorites)
         if (recommendations.size < limit) {
-            val favorites = favoritesRepository.getFavorites().first()
+            val favorites = favoritesRepository.getFavorites().getOrDefault(emptyList())
             val favoriteCategories = favorites
                 .mapNotNull { it.category }
                 .groupBy { it }
@@ -79,6 +78,7 @@ class CocktailRecommendationEngine(
         limit: Int = 2
     ): List<Cocktail> {
         return cocktailRepository.getCocktailsByCategory(category)
+            .getOrDefault(emptyList())
             .filter { it.id !in excludeIds }
             .shuffled() // Add some randomness
             .take(limit)
@@ -93,6 +93,7 @@ class CocktailRecommendationEngine(
         limit: Int = 2
     ): List<Cocktail> {
         return cocktailRepository.getCocktailsByIngredient(ingredient)
+            .getOrDefault(emptyList())
             .filter { it.id !in excludeIds }
             .shuffled() // Add some randomness
             .take(limit)
@@ -107,6 +108,7 @@ class CocktailRecommendationEngine(
         limit: Int = 2
     ): List<Cocktail> {
         return cocktailRepository.getCocktailsByAlcoholicFilter(alcoholicFilter)
+            .getOrDefault(emptyList())
             .filter { it.id !in excludeIds }
             .shuffled() // Add some randomness
             .take(limit)

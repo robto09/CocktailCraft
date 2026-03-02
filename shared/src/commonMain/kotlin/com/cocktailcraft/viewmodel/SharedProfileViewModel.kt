@@ -3,55 +3,47 @@ package com.cocktailcraft.viewmodel
 import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
-import com.cocktailcraft.domain.repository.AuthRepository
+import com.cocktailcraft.domain.usecase.ManageProfileUseCase
+import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.util.ErrorHandler
+import com.cocktailcraft.viewmodel.state.ProfileUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.koin.core.component.inject
 
 /**
  * Shared ViewModel for Profile functionality.
- * Designed for full SKIE interoperability with iOS.
- * 
- * Key SKIE features:
- * - StateFlows are automatically converted to Swift AsyncSequence
- * - Suspend functions become Swift async functions
- * - No FlowCollector bridge needed
+ * Uses consolidated [ProfileUiState] for atomic state updates.
  */
 class SharedProfileViewModel : SharedViewModel() {
-    
-    private val repository: AuthRepository by inject()
-    
-    // User state - SKIE will convert these to Swift AsyncSequence
-    private val _user = MutableStateFlow<User?>(null)
-    val user: StateFlow<User?> = _user.asStateFlow()
-    
-    private val _isLoggedIn = MutableStateFlow(false)
-    val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
-    
-    private val _authStatus = MutableStateFlow("Unknown")
-    val authStatus: StateFlow<String> = _authStatus.asStateFlow()
-    
-    private val _isAuthenticating = MutableStateFlow(false)
-    val isAuthenticating: StateFlow<Boolean> = _isAuthenticating.asStateFlow()
-    
-    private val _authError = MutableStateFlow<String?>(null)
-    val authError: StateFlow<String?> = _authError.asStateFlow()
-    
-    private val _userPreferences = MutableStateFlow(UserPreferences())
-    val userPreferences: StateFlow<UserPreferences> = _userPreferences.asStateFlow()
-    
-    // Computed properties
+
+    private val manageProfileUseCase: ManageProfileUseCase by inject()
+
+    // Consolidated UI State
+    private val _uiState = MutableStateFlow(ProfileUiState())
+    val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
+
+    // Derived StateFlows for backward compatibility
+    val user: StateFlow<User?> = _uiState
+        .map { it.user }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    val isLoggedIn: StateFlow<Boolean> = _uiState
+        .map { it.isLoggedIn }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val authStatus: StateFlow<String> = _uiState
+        .map { it.authStatus }.stateIn(viewModelScope, SharingStarted.Eagerly, "Unknown")
+    val isAuthenticating: StateFlow<Boolean> = _uiState
+        .map { it.isAuthenticating }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val authError: StateFlow<String?> = _uiState
+        .map { it.authError }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    val userPreferences: StateFlow<UserPreferences> = _uiState
+        .map { it.preferences }.stateIn(viewModelScope, SharingStarted.Eagerly, UserPreferences())
+
     val hasUser: Boolean
-        get() = _user.value != null
-    
+        get() = _uiState.value.user != null
     val isGuest: Boolean
-        get() = !_isLoggedIn.value
-    
+        get() = !_uiState.value.isLoggedIn
     val userName: String
-        get() = _user.value?.name ?: "Guest"
-    
-    
+        get() = _uiState.value.user?.name ?: "Guest"
+
     init {
         initialize()
     }
@@ -72,19 +64,16 @@ class SharedProfileViewModel : SharedViewModel() {
      */
     suspend fun checkAuthStatus() {
         try {
-            repository.isUserSignedIn()
-                .catch { e ->
-                    handleException(e, "Failed to check authentication status")
-                }
-                .collect { signedIn ->
-                    _isLoggedIn.value = signedIn
-                    _authStatus.value = if (signedIn) "Authenticated" else "Not Authenticated"
-                    if (signedIn) {
-                        loadCurrentUser()
-                    } else {
-                        _user.value = null
-                    }
-                }
+            val signedIn = manageProfileUseCase.isUserSignedIn().getOrDefault(false)
+            _uiState.update { it.copy(
+                isLoggedIn = signedIn,
+                authStatus = if (signedIn) "Authenticated" else "Not Authenticated"
+            ) }
+            if (signedIn) {
+                loadCurrentUser()
+            } else {
+                _uiState.update { it.copy(user = null) }
+            }
         } catch (e: Exception) {
             handleException(e, "Failed to check authentication status")
         }
@@ -115,37 +104,29 @@ class SharedProfileViewModel : SharedViewModel() {
             return false
         }
         
-        _isAuthenticating.value = true
+        _uiState.update { it.copy(isAuthenticating = true, isLoading = true) }
         setLoading(true)
-        
+
         return try {
-            repository.signIn(email, password)
-                .catch { e ->
-                    handleException(e, "Failed to sign in")
-                    _isAuthenticating.value = false
-                    setLoading(false)
-                }
-                .collect { success ->
-                    if (success) {
-                        _authError.value = null
-                        _authStatus.value = "Sign In Successful"
-                        checkAuthStatus()
-                    } else {
-                        _authStatus.value = "Sign In Failed"
-                        setError(
-                            "Sign In Failed",
-                            "Invalid email or password",
-                            ErrorHandler.ErrorCategory.AUTHENTICATION,
-                            showAsEvent = true
-                        )
-                    }
-                    _isAuthenticating.value = false
-                    setLoading(false)
-                }
-            true
+            val success = manageProfileUseCase.signIn(email, password).getOrDefault(false)
+            if (success) {
+                _uiState.update { it.copy(authError = null, authStatus = "Sign In Successful") }
+                checkAuthStatus()
+            } else {
+                _uiState.update { it.copy(authStatus = "Sign In Failed") }
+                setError(
+                    "Sign In Failed",
+                    "Invalid email or password",
+                    ErrorHandler.ErrorCategory.AUTHENTICATION,
+                    showAsEvent = true
+                )
+            }
+            _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
+            setLoading(false)
+            success
         } catch (e: Exception) {
             handleException(e, "Failed to sign in", showAsEvent = true)
-            _isAuthenticating.value = false
+            _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
             setLoading(false)
             false
         }
@@ -186,38 +167,29 @@ class SharedProfileViewModel : SharedViewModel() {
             return false
         }
         
-        _isAuthenticating.value = true
+        _uiState.update { it.copy(isAuthenticating = true, isLoading = true) }
         setLoading(true)
-        
+
         return try {
-            repository.signUp(email, password)
-                .catch { e ->
-                    handleException(e, "Failed to create account")
-                    _isAuthenticating.value = false
-                    setLoading(false)
-                }
-                .collect { success ->
-                    if (success) {
-                        _authError.value = null
-                        _authStatus.value = "Sign Up Successful"
-                        // Update user name after successful signup
-                        updateProfile(name, email)
-                    } else {
-                        _authStatus.value = "Sign Up Failed"
-                        setError(
-                            "Sign Up Failed",
-                            "Failed to create account. Email may already be in use.",
-                            ErrorHandler.ErrorCategory.AUTHENTICATION,
-                            showAsEvent = true
-                        )
-                    }
-                    _isAuthenticating.value = false
-                    setLoading(false)
-                }
-            true
+            val success = manageProfileUseCase.signUp(email, password).getOrDefault(false)
+            if (success) {
+                _uiState.update { it.copy(authError = null, authStatus = "Sign Up Successful") }
+                updateProfile(name, email)
+            } else {
+                _uiState.update { it.copy(authStatus = "Sign Up Failed") }
+                setError(
+                    "Sign Up Failed",
+                    "Failed to create account. Email may already be in use.",
+                    ErrorHandler.ErrorCategory.AUTHENTICATION,
+                    showAsEvent = true
+                )
+            }
+            _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
+            setLoading(false)
+            success
         } catch (e: Exception) {
             handleException(e, "Failed to create account", showAsEvent = true)
-            _isAuthenticating.value = false
+            _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
             setLoading(false)
             false
         }
@@ -231,29 +203,20 @@ class SharedProfileViewModel : SharedViewModel() {
         setLoading(true)
         
         return try {
-            repository.signOut()
-                .catch { e ->
-                    handleException(e, "Failed to sign out")
-                    setLoading(false)
-                }
-                .collect { success ->
-                    if (success) {
-                        _user.value = null
-                        _isLoggedIn.value = false
-                        _authError.value = null
-                        _authStatus.value = "Signed Out"
-                    } else {
-                        _authStatus.value = "Sign Out Failed"
-                        setError(
-                            "Sign Out Failed",
-                            "Failed to sign out. Please try again.",
-                            ErrorHandler.ErrorCategory.SERVER,
-                            showAsEvent = true
-                        )
-                    }
-                    setLoading(false)
-                }
-            true
+            val success = manageProfileUseCase.signOut().getOrDefault(false)
+            if (success) {
+                _uiState.update { it.copy(user = null, isLoggedIn = false, authError = null, authStatus = "Signed Out") }
+            } else {
+                _uiState.update { it.copy(authStatus = "Sign Out Failed") }
+                setError(
+                    "Sign Out Failed",
+                    "Failed to sign out. Please try again.",
+                    ErrorHandler.ErrorCategory.SERVER,
+                    showAsEvent = true
+                )
+            }
+            setLoading(false)
+            success
         } catch (e: Exception) {
             handleException(e, "Failed to sign out", showAsEvent = true)
             setLoading(false)
@@ -279,30 +242,24 @@ class SharedProfileViewModel : SharedViewModel() {
         setLoading(true)
         
         return try {
-            repository.resetPassword(email)
-                .catch { e ->
-                    handleException(e, "Failed to send password reset email")
-                    setLoading(false)
-                }
-                .collect { success ->
-                    if (success) {
-                        setError(
-                            "Password Reset Sent",
-                            "Check your email for password reset instructions",
-                            ErrorHandler.ErrorCategory.UNKNOWN,
-                            showAsEvent = true
-                        )
-                    } else {
-                        setError(
-                            "Reset Failed",
-                            "Failed to send password reset email",
-                            ErrorHandler.ErrorCategory.SERVER,
-                            showAsEvent = true
-                        )
-                    }
-                    setLoading(false)
-                }
-            true
+            val success = manageProfileUseCase.resetPassword(email).getOrDefault(false)
+            if (success) {
+                setError(
+                    "Password Reset Sent",
+                    "Check your email for password reset instructions",
+                    ErrorHandler.ErrorCategory.UNKNOWN,
+                    showAsEvent = true
+                )
+            } else {
+                setError(
+                    "Reset Failed",
+                    "Failed to send password reset email",
+                    ErrorHandler.ErrorCategory.SERVER,
+                    showAsEvent = true
+                )
+            }
+            setLoading(false)
+            success
         } catch (e: Exception) {
             handleException(e, "Failed to send password reset email", showAsEvent = true)
             setLoading(false)
@@ -338,27 +295,19 @@ class SharedProfileViewModel : SharedViewModel() {
         setLoading(true)
         
         return try {
-            // Update name first
-            repository.updateUserName(name)
-                .catch { e ->
-                    handleException(e, "Failed to update profile")
-                    setLoading(false)
-                }
-                .collect { nameSuccess ->
-                    if (nameSuccess) {
-                        // Reload user data
-                        loadCurrentUser()
-                    } else {
-                        setError(
-                            "Update Failed",
-                            "Failed to update profile information",
-                            ErrorHandler.ErrorCategory.SERVER,
-                            showAsEvent = true
-                        )
-                    }
-                    setLoading(false)
-                }
-            true
+            val nameSuccess = manageProfileUseCase.updateUserName(name).getOrDefault(false)
+            if (nameSuccess) {
+                loadCurrentUser()
+            } else {
+                setError(
+                    "Update Failed",
+                    "Failed to update profile information",
+                    ErrorHandler.ErrorCategory.SERVER,
+                    showAsEvent = true
+                )
+            }
+            setLoading(false)
+            nameSuccess
         } catch (e: Exception) {
             handleException(e, "Failed to update profile", showAsEvent = true)
             setLoading(false)
@@ -374,25 +323,19 @@ class SharedProfileViewModel : SharedViewModel() {
         setLoading(true)
         
         return try {
-            repository.updateUserAddress(address)
-                .catch { e ->
-                    handleException(e, "Failed to update address")
-                    setLoading(false)
-                }
-                .collect { success ->
-                    if (success) {
-                        loadCurrentUser()
-                    } else {
-                        setError(
-                            "Update Failed",
-                            "Failed to update address",
-                            ErrorHandler.ErrorCategory.SERVER,
-                            showAsEvent = true
-                        )
-                    }
-                    setLoading(false)
-                }
-            true
+            val success = manageProfileUseCase.updateUserAddress(address).getOrDefault(false)
+            if (success) {
+                loadCurrentUser()
+            } else {
+                setError(
+                    "Update Failed",
+                    "Failed to update address",
+                    ErrorHandler.ErrorCategory.SERVER,
+                    showAsEvent = true
+                )
+            }
+            setLoading(false)
+            success
         } catch (e: Exception) {
             handleException(e, "Failed to update address", showAsEvent = true)
             setLoading(false)
@@ -418,30 +361,24 @@ class SharedProfileViewModel : SharedViewModel() {
         setLoading(true)
         
         return try {
-            repository.changePassword(oldPassword, newPassword)
-                .catch { e ->
-                    handleException(e, "Failed to change password")
-                    setLoading(false)
-                }
-                .collect { success ->
-                    if (success) {
-                        setError(
-                            "Password Changed",
-                            "Your password has been updated successfully",
-                            ErrorHandler.ErrorCategory.UNKNOWN,
-                            showAsEvent = true
-                        )
-                    } else {
-                        setError(
-                            "Change Failed",
-                            "Failed to change password. Check your current password.",
-                            ErrorHandler.ErrorCategory.AUTHENTICATION,
-                            showAsEvent = true
-                        )
-                    }
-                    setLoading(false)
-                }
-            true
+            val success = manageProfileUseCase.changePassword(oldPassword, newPassword).getOrDefault(false)
+            if (success) {
+                setError(
+                    "Password Changed",
+                    "Your password has been updated successfully",
+                    ErrorHandler.ErrorCategory.UNKNOWN,
+                    showAsEvent = true
+                )
+            } else {
+                setError(
+                    "Change Failed",
+                    "Failed to change password. Check your current password.",
+                    ErrorHandler.ErrorCategory.AUTHENTICATION,
+                    showAsEvent = true
+                )
+            }
+            setLoading(false)
+            success
         } catch (e: Exception) {
             handleException(e, "Failed to change password", showAsEvent = true)
             setLoading(false)
@@ -499,14 +436,14 @@ class SharedProfileViewModel : SharedViewModel() {
      * Get display name for UI.
      */
     fun getDisplayName(): String {
-        return _user.value?.name?.takeIf { it.isNotBlank() } ?: "User"
+        return _uiState.value.user?.name?.takeIf { it.isNotBlank() } ?: "User"
     }
-    
+
     /**
      * Get user initials for avatar.
      */
     fun getInitials(): String {
-        val name = _user.value?.name ?: return "U"
+        val name = _uiState.value.user?.name ?: return "U"
         val parts = name.trim().split(" ")
         return when {
             parts.size >= 2 -> "${parts[0].firstOrNull()?.uppercase()}${parts[1].firstOrNull()?.uppercase()}"
@@ -526,7 +463,7 @@ class SharedProfileViewModel : SharedViewModel() {
      * Check if user has complete profile.
      */
     fun hasCompleteProfile(): Boolean {
-        val user = _user.value ?: return false
+        val user = _uiState.value.user ?: return false
         return user.name.isNotBlank() && user.email.isNotBlank()
     }
     
@@ -534,14 +471,11 @@ class SharedProfileViewModel : SharedViewModel() {
      * Get user email.
      */
     fun getUserEmail(): String {
-        return _user.value?.email ?: ""
+        return _uiState.value.user?.email ?: ""
     }
-    
-    /**
-     * Check if email is verified.
-     */
+
     fun isEmailVerified(): Boolean {
-        return _user.value?.isEmailVerified ?: false
+        return _uiState.value.user?.isEmailVerified ?: false
     }
     
     /**
@@ -558,23 +492,17 @@ class SharedProfileViewModel : SharedViewModel() {
     
     private suspend fun loadCurrentUser() {
         try {
-            repository.getCurrentUser()
-                .catch { /* Silent fail */ }
-                .collect { user ->
-                    _user.value = user
-                }
+            val loadedUser = manageProfileUseCase.getCurrentUser().getOrNull()
+            _uiState.update { it.copy(user = loadedUser) }
         } catch (e: Exception) {
             // Silent fail for user loading
         }
     }
-    
+
     private suspend fun loadUserPreferences() {
         try {
-            repository.getUserPreferences()
-                .catch { /* Silent fail */ }
-                .collect { preferences ->
-                    _userPreferences.value = preferences
-                }
+            val prefs = manageProfileUseCase.getUserPreferences().getOrDefault(UserPreferences())
+            _uiState.update { it.copy(preferences = prefs) }
         } catch (e: Exception) {
             // Silent fail for preferences loading
         }

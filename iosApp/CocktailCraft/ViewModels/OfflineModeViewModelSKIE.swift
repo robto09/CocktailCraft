@@ -55,67 +55,28 @@ class OfflineModeViewModelSKIE: ObservableObject {
     deinit {
         // Cancel all observation tasks
         observationTasks.forEach { $0.cancel() }
-        sharedViewModel.onCleared()
+        // Note: Do NOT call onCleared() — this is a Koin singleton whose
+        // coroutine scope must survive the lifetime of any single wrapper.
     }
     
     // MARK: - SKIE StateFlow Observation
     
     private func startObserving() {
-        // Observe offline mode enabled state
+        // Single consolidated observation of uiState
         observationTasks.append(Task {
-            for await enabled in sharedViewModel.isOfflineModeEnabled {
+            for await state in sharedViewModel.uiState {
                 await MainActor.run {
-                    self.isOfflineModeEnabled = enabled.boolValue
+                    self.isOfflineModeEnabled = state.isOfflineModeEnabled
+                    self.isNetworkAvailable = state.isNetworkAvailable
+                    self.recentlyViewedCocktails = state.recentlyViewedCocktails
+                    self.cacheSize = Int(state.cacheSize)
+                    self.lastSyncTime = state.lastSyncTime
+                    self.isLoading = state.isLoading
                 }
             }
         })
-        
-        // Observe network availability
-        observationTasks.append(Task {
-            for await available in sharedViewModel.isNetworkAvailable {
-                await MainActor.run {
-                    self.isNetworkAvailable = available.boolValue
-                }
-            }
-        })
-        
-        // Observe recently viewed cocktails
-        observationTasks.append(Task {
-            for await cocktails in sharedViewModel.recentlyViewedCocktails {
-                await MainActor.run {
-                    self.recentlyViewedCocktails = cocktails
-                }
-            }
-        })
-        
-        // Observe cache size
-        observationTasks.append(Task {
-            for await size in sharedViewModel.cacheSize {
-                await MainActor.run {
-                    self.cacheSize = Int(truncating: size)
-                }
-            }
-        })
-        
-        // Observe last sync time
-        observationTasks.append(Task {
-            for await syncTime in sharedViewModel.lastSyncTime {
-                await MainActor.run {
-                    self.lastSyncTime = syncTime
-                }
-            }
-        })
-        
-        // Observe loading state
-        observationTasks.append(Task {
-            for await loading in sharedViewModel.isLoading {
-                await MainActor.run {
-                    self.isLoading = loading.boolValue
-                }
-            }
-        })
-        
-        // Observe error state
+
+        // Observe error from base class
         observationTasks.append(Task {
             for await errorValue in sharedViewModel.error {
                 await MainActor.run {

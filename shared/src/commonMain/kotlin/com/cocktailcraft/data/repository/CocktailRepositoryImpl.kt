@@ -1,19 +1,19 @@
 package com.cocktailcraft.data.repository
 
 import com.cocktailcraft.data.cache.CocktailCache
+import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.data.remote.CocktailApi
 import com.cocktailcraft.data.remote.CocktailDto
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.domain.usecase.FilterCocktailsUseCase
+import com.cocktailcraft.domain.util.Result
+import co.touchlab.kermit.Logger
 import com.cocktailcraft.util.NetworkMonitor
-import com.cocktailcraft.util.CocktailDebugLogger
 import com.russhwolf.settings.Settings
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import com.cocktailcraft.domain.config.AppConfig
 import kotlinx.datetime.Clock
 
@@ -32,17 +32,9 @@ class CocktailRepositoryImpl(
     private val settings: Settings,
     private val appConfig: AppConfig,
     private val networkMonitor: NetworkMonitor,
-    private val cocktailCache: CocktailCache
+    private val cocktailCache: CocktailCache,
+    private val cacheManager: CocktailCacheManager
 ) : CocktailRepository {
-
-    // Store all fetched cocktails for pagination (use companion object for persistence)
-    private var allCocktailsCache: List<Cocktail> 
-        get() = globalCocktailsCache
-        set(value) { globalCocktailsCache = value }
-    
-    private var lastFetchTime: Long
-        get() = globalLastFetchTime
-        set(value) { globalLastFetchTime = value }
 
     // Flag to force offline mode (user preference)
     private var forceOfflineMode: Boolean
@@ -53,59 +45,54 @@ class CocktailRepositoryImpl(
     private suspend fun isOffline(): Boolean {
         val networkOnline = networkMonitor.isOnline.first()
         val result = forceOfflineMode || !networkOnline
-        CocktailDebugLogger.log("   🔍 isOffline check: forceOfflineMode=$forceOfflineMode, networkOnline=$networkOnline, result=$result")
+        Logger.d { "isOffline check: forceOfflineMode=$forceOfflineMode, networkOnline=$networkOnline, result=$result" }
         return result
     }
 
-    override suspend fun searchCocktailsByName(name: String): Flow<List<Cocktail>> = flow {
-        try {
-            val cocktails = api.searchCocktailsByName(name).map { dto ->
+    override suspend fun searchCocktailsByName(name: String): Result<List<Cocktail>> {
+        return try {
+            Result.Success(api.searchCocktailsByName(name).map { dto ->
                 mapDtoToCocktail(dto)
-            }
-            emit(cocktails)
+            })
         } catch (e: Exception) {
-            emit(emptyList())
+            Result.Error(e.message ?: "Failed to search cocktails by name")
         }
     }
 
-    override suspend fun searchCocktailsByFirstLetter(letter: Char): Flow<List<Cocktail>> = flow {
-        try {
-            val cocktails = api.searchCocktailsByFirstLetter(letter).map { dto ->
+    override suspend fun searchCocktailsByFirstLetter(letter: Char): Result<List<Cocktail>> {
+        return try {
+            Result.Success(api.searchCocktailsByFirstLetter(letter).map { dto ->
                 mapDtoToCocktail(dto)
-            }
-            emit(cocktails)
+            })
         } catch (e: Exception) {
-            emit(emptyList())
+            Result.Error(e.message ?: "Failed to search cocktails by first letter")
         }
     }
 
-    override suspend fun getCocktailById(id: String): Flow<Cocktail?> = flow {
-        
-        try {
+    override suspend fun getCocktailById(id: String): Result<Cocktail?> {
+        return try {
             // First check if we have a cached cocktail with full details
             val cachedCocktail = cocktailCache.getCachedCocktail(id)
-            
+
             // If we have a cached cocktail with ingredients (full details), return it
-            if (cachedCocktail != null && 
-                cachedCocktail.ingredients.isNotEmpty() && 
+            if (cachedCocktail != null &&
+                cachedCocktail.ingredients.isNotEmpty() &&
                 cachedCocktail.ingredients.first().name != "Tap to view ingredients") {
                 // Add to recently viewed when accessed from cache
                 cocktailCache.addToRecentlyViewed(cachedCocktail)
-                emit(cachedCocktail)
-                return@flow
+                return Result.Success(cachedCocktail)
             }
-            
+
             // If we're offline, return whatever we have cached
             if (isOffline()) {
-                emit(cachedCocktail)
-                return@flow
+                return Result.Success(cachedCocktail)
             }
 
             // If online, fetch full details from API
             try {
                 // Add a small delay to avoid rate limiting if called rapidly
                 delay(200)
-                
+
                 val dto = api.getCocktailById(id)
 
                 if (dto != null) {
@@ -113,181 +100,153 @@ class CocktailRepositoryImpl(
 
                     // Cache the full cocktail details
                     cocktailCache.cacheCocktail(cocktail)
-                    
+
                     // Add to recently viewed
                     cocktailCache.addToRecentlyViewed(cocktail)
-                    
+
                     // Update the in-memory cache as well
-                    allCocktailsCache = allCocktailsCache.map { 
-                        if (it.id == id) cocktail else it 
+                    cacheManager.updateGlobalCocktailsCache {
+                        if (it.id == id) cocktail else it
                     }
 
-                    emit(cocktail)
+                    Result.Success(cocktail)
                 } else {
                     // If API returns null, use cached version
-                    emit(cachedCocktail)
+                    Result.Success(cachedCocktail)
                 }
             } catch (e: Exception) {
                 // On API error, return cached version
-                // Don't log Flow cancellation as errors - they're expected when using first/firstOrNull
-                if (e.message?.contains("Flow was aborted") != true && 
-                    e.message?.contains("no more elements needed") != true) {
-                    // Log actual errors but not expected Flow cancellations
-                }
-                
-                emit(cachedCocktail)
+                Result.Success(cachedCocktail)
             }
         } catch (e: Exception) {
-            emit(null)
+            Result.Error(e.message ?: "Failed to get cocktail by ID")
         }
     }
 
-    override suspend fun refreshCocktailById(id: String): Cocktail? {
+    override suspend fun refreshCocktailById(id: String): Result<Cocktail?> {
         return try {
             if (isOffline()) {
-                // If offline, return cached version
-                cocktailCache.getCachedCocktail(id)
+                Result.Success(cocktailCache.getCachedCocktail(id))
             } else {
-                // Force refresh from API
                 delay(200) // Avoid rate limiting
                 val dto = api.getCocktailById(id)
-                
+
                 if (dto != null) {
                     val cocktail = mapDtoToCocktail(dto)
-                    
-                    // Update cache
                     cocktailCache.cacheCocktail(cocktail)
                     cocktailCache.addToRecentlyViewed(cocktail)
-                    
-                    // Update in-memory cache
-                    allCocktailsCache = allCocktailsCache.map { 
-                        if (it.id == id) cocktail else it 
+                    cacheManager.updateGlobalCocktailsCache {
+                        if (it.id == id) cocktail else it
                     }
-                    
-                    cocktail
+                    Result.Success(cocktail)
                 } else {
-                    cocktailCache.getCachedCocktail(id)
+                    Result.Success(cocktailCache.getCachedCocktail(id))
                 }
             }
         } catch (e: Exception) {
-            CocktailDebugLogger.log("Error refreshing cocktail $id: ${e.message}")
-            cocktailCache.getCachedCocktail(id)
+            Logger.e { "Error refreshing cocktail $id: ${e.message}" }
+            Result.Error(e.message ?: "Failed to refresh cocktail")
         }
     }
 
-    override suspend fun getRandomCocktail(): Flow<Cocktail?> = flow {
-        try {
+    override suspend fun getRandomCocktail(): Result<Cocktail?> {
+        return try {
             val dto = api.getRandomCocktail()
-            if (dto != null) {
-                emit(mapDtoToCocktail(dto))
-            } else {
-                emit(null)
-            }
+            Result.Success(if (dto != null) mapDtoToCocktail(dto) else null)
         } catch (e: Exception) {
-            emit(null)
+            Result.Error(e.message ?: "Failed to get random cocktail")
         }
     }
 
-    override suspend fun filterByIngredient(ingredient: String): Flow<List<Cocktail>> = flow {
-        try {
-            val cocktails = api.filterByIngredient(ingredient).map { dto ->
+    override suspend fun filterByIngredient(ingredient: String): Result<List<Cocktail>> {
+        return try {
+            Result.Success(api.filterByIngredient(ingredient).map { dto ->
                 mapDtoToCocktail(dto)
-            }
-            emit(cocktails)
+            })
         } catch (e: Exception) {
-            emit(emptyList())
+            Result.Error(e.message ?: "Failed to filter by ingredient")
         }
     }
 
-    override suspend fun filterByAlcoholic(alcoholic: Boolean): Flow<List<Cocktail>> = flow {
-        try {
-            val cocktails = api.filterByAlcoholic(alcoholic).map { dto ->
+    override suspend fun filterByAlcoholic(alcoholic: Boolean): Result<List<Cocktail>> {
+        return try {
+            Result.Success(api.filterByAlcoholic(alcoholic).map { dto ->
                 mapDtoToCocktail(dto)
-            }
-            emit(cocktails)
+            })
         } catch (e: Exception) {
-            emit(emptyList())
+            Result.Error(e.message ?: "Failed to filter by alcoholic")
         }
     }
 
-    override suspend fun filterByCategory(category: String): Flow<List<Cocktail>> = flow {
-        CocktailDebugLogger.log("🏷️ filterByCategory() called with category: $category")
-        
-        // Use the new lazy loading method
-        fetchCocktailsByCategory(category).collect { cocktails ->
-            emit(cocktails)
+    override suspend fun filterByCategory(category: String): Result<List<Cocktail>> {
+        Logger.d { "filterByCategory() called with category: $category" }
+        return try {
+            Result.Success(fetchCocktailsByCategory(category))
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to filter by category")
         }
     }
-    
+
     /**
      * Lazily fetch cocktails by category with caching and rate limiting
      */
-    private suspend fun fetchCocktailsByCategory(category: String): Flow<List<Cocktail>> = flow {
-        CocktailDebugLogger.log("🔄 fetchCocktailsByCategory() called for: $category")
-        
+    private suspend fun fetchCocktailsByCategory(category: String): List<Cocktail> {
+        Logger.d { "fetchCocktailsByCategory() called for: $category" }
+
         try {
             // First check category-specific cache
-            val categoryCachedCocktails = categoryCacheMap[category] ?: emptyList()
-            val categoryLastFetch = categoryLastFetchMap[category] ?: 0L
+            val categoryCachedCocktails = cacheManager.getCategoryCache(category)
+            val categoryLastFetch = cacheManager.getCategoryLastFetchTime(category)
             val categoryCacheAge = Clock.System.now().toEpochMilliseconds() - categoryLastFetch
-            
-            CocktailDebugLogger.log("   - Category cache size: ${categoryCachedCocktails.size}")
-            CocktailDebugLogger.log("   - Category cache age: ${categoryCacheAge/1000}s")
-            
-            // Emit cached data immediately if available
-            if (categoryCachedCocktails.isNotEmpty()) {
-                CocktailDebugLogger.log("   ✅ Emitting ${categoryCachedCocktails.size} cached cocktails for $category")
-                emit(categoryCachedCocktails.sortedByDescending { it.dateAdded })
-                
-                // If cache is fresh, don't fetch from API
-                if (categoryCacheAge < CACHE_VALIDITY_MS) {
-                    CocktailDebugLogger.log("   ✅ Category cache is fresh, skipping API call")
-                    return@flow
-                }
+
+            Logger.d { "Category cache size: ${categoryCachedCocktails.size}" }
+            Logger.d { "Category cache age: ${categoryCacheAge/1000}s" }
+
+            // Return cached data if available and fresh
+            if (categoryCachedCocktails.isNotEmpty() && categoryCacheAge < CocktailCacheManager.CACHE_VALIDITY_MS) {
+                Logger.d { "Category cache is fresh, returning ${categoryCachedCocktails.size} cached cocktails" }
+                return categoryCachedCocktails.sortedByDescending { it.dateAdded }
             }
-            
+
             // Check if we're offline
             if (isOffline()) {
-                CocktailDebugLogger.log("   📴 Offline mode - using cache only")
-                // Try general cache if category cache is empty
-                if (categoryCachedCocktails.isEmpty()) {
-                    val generalCache = cocktailCache.getAllCachedCocktails()
-                        .filter { it.category == category }
-                    if (generalCache.isNotEmpty()) {
-                        emit(generalCache.sortedByDescending { it.dateAdded })
-                    }
+                Logger.d { "Offline mode - using cache only" }
+                if (categoryCachedCocktails.isNotEmpty()) {
+                    return categoryCachedCocktails.sortedByDescending { it.dateAdded }
                 }
-                return@flow
+                val generalCache = cocktailCache.getAllCachedCocktails()
+                    .filter { it.category == category }
+                return generalCache.sortedByDescending { it.dateAdded }
             }
-            
+
             // Apply rate limiting with exponential backoff
-            val timeSinceLastCall = Clock.System.now().toEpochMilliseconds() - lastApiCallTime
-            val requiredInterval = maxOf(MIN_API_CALL_INTERVAL_MS, rateLimitBackoffMs)
-            
+            val timeSinceLastCall = Clock.System.now().toEpochMilliseconds() - cacheManager.getLastApiCallTime()
+            val requiredInterval = maxOf(CocktailCacheManager.MIN_API_CALL_INTERVAL_MS, cacheManager.getRateLimitBackoffMs())
+
             if (timeSinceLastCall < requiredInterval) {
                 val waitTime = requiredInterval - timeSinceLastCall
-                CocktailDebugLogger.log("   ⏳ Rate limiting: waiting ${waitTime}ms before API call")
+                Logger.d { "Rate limiting: waiting ${waitTime}ms before API call" }
                 delay(waitTime)
             }
-            
+
             // Check API connectivity
             if (!pingApiInternal()) {
-                CocktailDebugLogger.log("   ❌ API unreachable")
+                Logger.w { "API unreachable" }
                 if (categoryCachedCocktails.isNotEmpty()) {
-                    return@flow
+                    return categoryCachedCocktails.sortedByDescending { it.dateAdded }
                 }
                 throw Exception("API is not reachable")
             }
-            
-            CocktailDebugLogger.log("   📡 Fetching $category cocktails from API...")
-            lastApiCallTime = Clock.System.now().toEpochMilliseconds()
-            
+
+            Logger.d { "Fetching $category cocktails from API..." }
+            cacheManager.setLastApiCallTime(Clock.System.now().toEpochMilliseconds())
+
             try {
                 val basicCocktails = api.filterByCategory(category)
-                
+
                 // Reset backoff on successful call
-                rateLimitBackoffMs = 0
-                
+                cacheManager.resetBackoff()
+
                 // Map and cache cocktails
                 val enrichedCocktails = basicCocktails.map { basicDto ->
                     try {
@@ -300,8 +259,6 @@ class CocktailRepositoryImpl(
                             if (cachedCocktail != null) {
                                 cachedCocktail
                             } else {
-                                // If not in cache, just use basic data
-                                // Full details will be fetched when user clicks on the cocktail
                                 mapDtoToCocktail(basicDto)
                             }
                         }
@@ -309,221 +266,199 @@ class CocktailRepositoryImpl(
                         mapDtoToCocktail(basicDto)
                     }
                 }
-                
-                CocktailDebugLogger.log("   ✅ Fetched ${enrichedCocktails.size} cocktails for $category")
-                
+
+                Logger.d { "Fetched ${enrichedCocktails.size} cocktails for $category" }
+
                 // Update category cache
-                categoryCacheMap[category] = enrichedCocktails
-                categoryLastFetchMap[category] = Clock.System.now().toEpochMilliseconds()
-                
+                cacheManager.setCategoryCache(category, enrichedCocktails)
+
                 // Cache individual cocktails
                 enrichedCocktails.forEach { cocktail ->
                     cocktailCache.cacheCocktail(cocktail)
                 }
-                
-                emit(enrichedCocktails.sortedByDescending { it.dateAdded })
-                
+
+                return enrichedCocktails.sortedByDescending { it.dateAdded }
+
             } catch (e: Exception) {
-                CocktailDebugLogger.log("   ❌ API call failed: ${e.message}")
-                
+                Logger.e { "API call failed: ${e.message}" }
+
                 // Check if it's a rate limit error
                 if (e.message?.contains("429") == true || e.message?.contains("Too Many Requests") == true) {
-                    CocktailDebugLogger.log("   ⚠️ Rate limited - applying exponential backoff")
-                    // Apply exponential backoff
-                    rateLimitBackoffMs = minOf(
-                        if (rateLimitBackoffMs == 0L) 2000L else rateLimitBackoffMs * 2,
-                        MAX_BACKOFF_MS
-                    )
-                    CocktailDebugLogger.log("   ⏰ Next backoff: ${rateLimitBackoffMs}ms")
+                    Logger.w { "Rate limited - applying exponential backoff" }
+                    cacheManager.applyExponentialBackoff()
+                    Logger.d { "Next backoff: ${cacheManager.getRateLimitBackoffMs()}ms" }
                 }
-                
+
                 // If we have cached data, use it
                 if (categoryCachedCocktails.isNotEmpty()) {
-                    CocktailDebugLogger.log("   ✅ Using stale cache due to API error")
-                    return@flow
+                    Logger.d { "Using stale cache due to API error" }
+                    return categoryCachedCocktails.sortedByDescending { it.dateAdded }
                 }
-                
+
                 // Try general cache as last resort
                 val generalCache = cocktailCache.getAllCachedCocktails()
                     .filter { it.category == category }
                 if (generalCache.isNotEmpty()) {
-                    emit(generalCache.sortedByDescending { it.dateAdded })
+                    return generalCache.sortedByDescending { it.dateAdded }
                 } else {
                     throw e
                 }
             }
         } catch (e: Exception) {
-            CocktailDebugLogger.log("   ❌ fetchCocktailsByCategory failed: ${e.message}")
-            emit(emptyList())
+            Logger.e { "fetchCocktailsByCategory failed: ${e.message}" }
+            return emptyList()
         }
     }
 
-    override suspend fun filterByGlass(glass: String): Flow<List<Cocktail>> = flow {
-        try {
-            val cocktails = api.filterByGlass(glass).map { dto ->
+    override suspend fun filterByGlass(glass: String): Result<List<Cocktail>> {
+        return try {
+            Result.Success(api.filterByGlass(glass).map { dto ->
                 mapDtoToCocktail(dto)
-            }
-            emit(cocktails)
+            })
         } catch (e: Exception) {
-            emit(emptyList())
+            Result.Error(e.message ?: "Failed to filter by glass")
         }
     }
 
-    override suspend fun getCategories(): Flow<List<String>> = flow {
-        try {
-            val categories = api.getCategories().map { it.name }
-            emit(categories)
+    override suspend fun getCategories(): Result<List<String>> {
+        return try {
+            Result.Success(api.getCategories().map { it.name })
         } catch (e: Exception) {
-            emit(emptyList())
+            Result.Error(e.message ?: "Failed to get categories")
         }
     }
 
-    override suspend fun getGlasses(): Flow<List<String>> = flow {
-        try {
-            val glasses = api.getGlasses().map { it.name }
-            emit(glasses)
+    override suspend fun getGlasses(): Result<List<String>> {
+        return try {
+            Result.Success(api.getGlasses().map { it.name })
         } catch (e: Exception) {
-            emit(emptyList())
+            Result.Error(e.message ?: "Failed to get glasses")
         }
     }
 
-    override suspend fun getIngredients(): Flow<List<String>> = flow {
-        try {
-            val ingredients = api.getIngredients().map { it.name }
-            emit(ingredients)
+    override suspend fun getIngredients(): Result<List<String>> {
+        return try {
+            Result.Success(api.getIngredients().map { it.name })
         } catch (e: Exception) {
-            emit(emptyList())
+            Result.Error(e.message ?: "Failed to get ingredients")
         }
     }
 
-    override suspend fun getAlcoholicFilters(): Flow<List<String>> = flow {
-        try {
-            val filters = api.getAlcoholicFilters().map { it.name }
-            emit(filters)
+    override suspend fun getAlcoholicFilters(): Result<List<String>> {
+        return try {
+            Result.Success(api.getAlcoholicFilters().map { it.name })
         } catch (e: Exception) {
-            emit(emptyList())
+            Result.Error(e.message ?: "Failed to get alcoholic filters")
         }
     }
 
-    override suspend fun getFavoriteCocktails(): Flow<List<Cocktail>> = flow {
-        val favoriteIds = settings.getStringOrNull(appConfig.favoritesStorageKey)
-            ?.split(",")
-            ?.filter { it.isNotEmpty() }
-            ?: emptyList()
+    override suspend fun getFavoriteCocktails(): Result<List<Cocktail>> {
+        return try {
+            val favoriteIds = settings.getStringOrNull(appConfig.favoritesStorageKey)
+                ?.split(",")
+                ?.filter { it.isNotEmpty() }
+                ?: emptyList()
 
-        val favoriteCocktails = mutableListOf<Cocktail>()
+            val favoriteCocktails = mutableListOf<Cocktail>()
 
-        // If we're offline, only use cached favorites
-        if (isOffline()) {
-            for (id in favoriteIds) {
-                val cachedCocktail = cocktailCache.getCachedCocktail(id)
-                if (cachedCocktail != null) {
-                    favoriteCocktails.add(cachedCocktail)
+            // If we're offline, only use cached favorites
+            if (isOffline()) {
+                for (id in favoriteIds) {
+                    val cachedCocktail = cocktailCache.getCachedCocktail(id)
+                    if (cachedCocktail != null) {
+                        favoriteCocktails.add(cachedCocktail)
+                    }
                 }
+                return Result.Success(favoriteCocktails)
             }
-            emit(favoriteCocktails)
-            return@flow
-        }
 
-        // If online, get favorites from API and cache them
-        for (id in favoriteIds) {
-            getCocktailById(id).collect { cocktail ->
+            // If online, get favorites from API and cache them
+            for (id in favoriteIds) {
+                val cocktailResult = getCocktailById(id)
+                val cocktail = cocktailResult.getOrNull()
                 if (cocktail != null) {
                     favoriteCocktails.add(cocktail)
-                    // Ensure favorites are cached
                     cocktailCache.cacheCocktail(cocktail)
                 }
             }
-        }
 
-        emit(favoriteCocktails)
+            Result.Success(favoriteCocktails)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to get favorite cocktails")
+        }
     }
 
-    override suspend fun addToFavorites(cocktail: Cocktail) {
-        val currentFavorites = settings.getStringOrNull(appConfig.favoritesStorageKey)
-            ?.split(",")
-            ?.filter { it.isNotEmpty() }
-            ?.toMutableList()
-            ?: mutableListOf()
+    override suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> {
+        return try {
+            val currentFavorites = settings.getStringOrNull(appConfig.favoritesStorageKey)
+                ?.split(",")
+                ?.filter { it.isNotEmpty() }
+                ?.toMutableList()
+                ?: mutableListOf()
 
-        if (!currentFavorites.contains(cocktail.id)) {
-            currentFavorites.add(cocktail.id)
+            if (!currentFavorites.contains(cocktail.id)) {
+                currentFavorites.add(cocktail.id)
+                settings.putString(appConfig.favoritesStorageKey, currentFavorites.joinToString(","))
+            }
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to add to favorites")
+        }
+    }
+
+    override suspend fun removeFromFavorites(cocktail: Cocktail): Result<Unit> {
+        return try {
+            val currentFavorites = settings.getStringOrNull(appConfig.favoritesStorageKey)
+                ?.split(",")
+                ?.filter { it.isNotEmpty() }
+                ?.toMutableList()
+                ?: mutableListOf()
+
+            currentFavorites.remove(cocktail.id)
             settings.putString(appConfig.favoritesStorageKey, currentFavorites.joinToString(","))
-        }
-    }
-
-    override suspend fun removeFromFavorites(cocktail: Cocktail) {
-        val currentFavorites = settings.getStringOrNull(appConfig.favoritesStorageKey)
-            ?.split(",")
-            ?.filter { it.isNotEmpty() }
-            ?.toMutableList()
-            ?: mutableListOf()
-
-        currentFavorites.remove(cocktail.id)
-        settings.putString(appConfig.favoritesStorageKey, currentFavorites.joinToString(","))
-    }
-
-    override suspend fun isCocktailFavorite(id: String): Flow<Boolean> = flow {
-        val favoriteIds = settings.getStringOrNull(appConfig.favoritesStorageKey)
-            ?.split(",")
-            ?.filter { it.isNotEmpty() }
-            ?: emptyList()
-
-        emit(favoriteIds.contains(id))
-    }
-
-    override suspend fun getCocktailsSortedByNewest(): Flow<List<Cocktail>> = flow {
-        CocktailDebugLogger.log("📚 CocktailRepositoryImpl.getCocktailsSortedByNewest() called")
-        CocktailDebugLogger.log("   🎯 LAZY LOADING: Only fetching 'Cocktail' category initially")
-        
-        // Instead of fetching all categories, just fetch "Cocktail" category
-        fetchCocktailsByCategory("Cocktail").collect { cocktails ->
-            emit(cocktails)
-        }
-    }
-
-    override suspend fun getCocktailsSortedByPriceLowToHigh(): Flow<List<Cocktail>> = flow {
-        try {
-            // Use the same method as getCocktailsSortedByNewest to get all cocktails
-            getCocktailsSortedByNewest().collect { allCocktails ->
-                emit(allCocktails.sortedBy { it.price })
-            }
+            Result.Success(Unit)
         } catch (e: Exception) {
-            emit(emptyList())
+            Result.Error(e.message ?: "Failed to remove from favorites")
         }
     }
 
-    override suspend fun getCocktailsSortedByPriceHighToLow(): Flow<List<Cocktail>> = flow {
-        try {
-            // Use the same method as getCocktailsSortedByNewest to get all cocktails
-            getCocktailsSortedByNewest().collect { allCocktails ->
-                emit(allCocktails.sortedByDescending { it.price })
-            }
+    override suspend fun isCocktailFavorite(id: String): Result<Boolean> {
+        return try {
+            val favoriteIds = settings.getStringOrNull(appConfig.favoritesStorageKey)
+                ?.split(",")
+                ?.filter { it.isNotEmpty() }
+                ?: emptyList()
+
+            Result.Success(favoriteIds.contains(id))
         } catch (e: Exception) {
-            emit(emptyList())
+            Result.Error(e.message ?: "Failed to check if cocktail is favorite")
         }
     }
 
-    override suspend fun getCocktailsSortedByPopularity(): Flow<List<Cocktail>> = flow {
-        try {
-            // Use the same method as getCocktailsSortedByNewest to get all cocktails
-            getCocktailsSortedByNewest().collect { allCocktails ->
-                emit(allCocktails.sortedByDescending { it.popularity })
-            }
+    override suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>> {
+        Logger.d { "CocktailRepositoryImpl.getCocktailsSortedByNewest() called" }
+        Logger.d { "LAZY LOADING: Only fetching 'Cocktail' category initially" }
+        return try {
+            Result.Success(fetchCocktailsByCategory("Cocktail"))
         } catch (e: Exception) {
-            emit(emptyList())
+            Result.Error(e.message ?: "Failed to get cocktails sorted by newest")
         }
     }
 
-    override suspend fun getCocktailsByPriceRange(minPrice: Double, maxPrice: Double): Flow<List<Cocktail>> = flow {
-        try {
-            // Use the same method as getCocktailsSortedByNewest to get all cocktails
-            getCocktailsSortedByNewest().collect { allCocktails ->
-                emit(allCocktails.filter { it.price in minPrice..maxPrice })
-            }
-        } catch (e: Exception) {
-            emit(emptyList())
-        }
+    override suspend fun getCocktailsSortedByPriceLowToHigh(): Result<List<Cocktail>> {
+        return getCocktailsSortedByNewest().map { list -> list.sortedBy { it.price } }
+    }
+
+    override suspend fun getCocktailsSortedByPriceHighToLow(): Result<List<Cocktail>> {
+        return getCocktailsSortedByNewest().map { list -> list.sortedByDescending { it.price } }
+    }
+
+    override suspend fun getCocktailsSortedByPopularity(): Result<List<Cocktail>> {
+        return getCocktailsSortedByNewest().map { list -> list.sortedByDescending { it.popularity } }
+    }
+
+    override suspend fun getCocktailsByPriceRange(minPrice: Double, maxPrice: Double): Result<List<Cocktail>> {
+        return getCocktailsSortedByNewest().map { list -> list.filter { it.price in minPrice..maxPrice } }
     }
 
     private fun mapDtoToCocktail(dto: CocktailDto): Cocktail {
@@ -591,16 +526,23 @@ class CocktailRepositoryImpl(
     }
 
     // Implement the interface method
-    override suspend fun checkApiConnectivity(): Flow<Boolean> = flow {
-        emit(pingApiInternal())
+    override suspend fun checkApiConnectivity(): Result<Boolean> {
+        return try {
+            Result.Success(pingApiInternal())
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to check API connectivity")
+        }
     }
 
     /**
      * Get recently viewed cocktails.
      */
-    override suspend fun getRecentlyViewedCocktails(): Flow<List<Cocktail>> = flow {
-        val recentlyViewedCocktails = cocktailCache.getRecentlyViewedCocktails()
-        emit(recentlyViewedCocktails)
+    override suspend fun getRecentlyViewedCocktails(): Result<List<Cocktail>> {
+        return try {
+            Result.Success(cocktailCache.getRecentlyViewedCocktails())
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to get recently viewed cocktails")
+        }
     }
 
     /**
@@ -619,283 +561,100 @@ class CocktailRepositoryImpl(
 
     /**
      * Get cocktails by category for recommendations.
-     * This implementation uses the filterByCategory flow and collects the first result.
      */
-    override suspend fun getCocktailsByCategory(category: String): List<Cocktail> {
+    override suspend fun getCocktailsByCategory(category: String): Result<List<Cocktail>> {
         return try {
-            // Check if we're offline
             if (isOffline()) {
-                // Use cached cocktails when offline
-                cocktailCache.getAllCachedCocktails()
+                Result.Success(cocktailCache.getAllCachedCocktails()
                     .filter { it.category == category }
-                    .take(5)
+                    .take(5))
             } else {
-                filterByCategory(category).first()
+                filterByCategory(category)
             }
         } catch (e: Exception) {
-            // Return empty list on error
-            emptyList()
+            Result.Error(e.message ?: "Failed to get cocktails by category")
         }
     }
 
     /**
      * Get cocktails by ingredient for recommendations.
-     * This implementation uses the filterByIngredient flow and collects the first result.
      */
-    override suspend fun getCocktailsByIngredient(ingredient: String): List<Cocktail> {
+    override suspend fun getCocktailsByIngredient(ingredient: String): Result<List<Cocktail>> {
         return try {
-            // Check if we're offline
             if (isOffline()) {
-                // Use cached cocktails when offline
-                cocktailCache.getAllCachedCocktails()
+                Result.Success(cocktailCache.getAllCachedCocktails()
                     .filter { cocktail ->
                         cocktail.ingredients.any {
                             it.name.contains(ingredient, ignoreCase = true)
                         }
                     }
-                    .take(5)
+                    .take(5))
             } else {
-                filterByIngredient(ingredient).first()
+                filterByIngredient(ingredient)
             }
         } catch (e: Exception) {
-            // Return empty list on error
-            emptyList()
+            Result.Error(e.message ?: "Failed to get cocktails by ingredient")
         }
     }
 
     /**
      * Get cocktails by alcoholic filter for recommendations.
      */
-    override suspend fun getCocktailsByAlcoholicFilter(alcoholicFilter: String): List<Cocktail> {
+    override suspend fun getCocktailsByAlcoholicFilter(alcoholicFilter: String): Result<List<Cocktail>> {
         return try {
-            // Check if we're offline
             if (isOffline()) {
-                // Use cached cocktails when offline
-                cocktailCache.getAllCachedCocktails()
+                Result.Success(cocktailCache.getAllCachedCocktails()
                     .filter { it.alcoholic == alcoholicFilter }
-                    .take(5)
+                    .take(5))
             } else {
-                // Use the existing filter method but convert boolean to string filter
                 val isAlcoholic = alcoholicFilter.equals("Alcoholic", ignoreCase = true)
-                filterByAlcoholic(isAlcoholic).first()
+                filterByAlcoholic(isAlcoholic)
             }
         } catch (e: Exception) {
-            // Return empty list on error
-            emptyList()
+            Result.Error(e.message ?: "Failed to get cocktails by alcoholic filter")
         }
     }
 
     /**
      * Advanced search implementation that combines multiple filters
      */
-    override suspend fun advancedSearch(filters: com.cocktailcraft.domain.model.SearchFilters): Flow<List<Cocktail>> = flow {
-        try {
+    override suspend fun advancedSearch(filters: com.cocktailcraft.domain.model.SearchFilters): Result<List<Cocktail>> {
+        return try {
             // Check if we're offline
             if (isOffline()) {
-                // Use cached cocktails when offline
                 val cachedCocktails = cocktailCache.getAllCachedCocktails()
-                val filteredCocktails = applyFiltersToList(cachedCocktails, filters)
-                emit(filteredCocktails)
-                return@flow
+                return Result.Success(FilterCocktailsUseCase.applyFiltersToList(cachedCocktails, filters))
             }
 
-            // Start with a base list of cocktails
+            // Start with a base list of cocktails - unwrap Result for internal use
             val cocktails = when {
-                // If we have a text query, start with that
-                filters.query.isNotBlank() ->
-                    searchCocktailsByName(filters.query).first()
-
-                // If we have a category, start with that
-                filters.category != null ->
-                    filterByCategory(filters.category).first()
-
-                // If we have an ingredient, start with that
-                filters.ingredient != null ->
-                    filterByIngredient(filters.ingredient).first()
-
-                // If we have alcoholic filter, start with that
-                filters.alcoholic != null ->
-                    filterByAlcoholic(filters.alcoholic).first()
-
-                // If we have glass filter, start with that
-                filters.glass != null ->
-                    filterByGlass(filters.glass).first()
-
-                // If no primary filter, get all cocktails
-                else ->
-                    getCocktailsSortedByNewest().first()
+                filters.query.isNotBlank() -> searchCocktailsByName(filters.query).getOrNull() ?: emptyList()
+                filters.category != null -> filterByCategory(filters.category).getOrNull() ?: emptyList()
+                filters.ingredient != null -> filterByIngredient(filters.ingredient).getOrNull() ?: emptyList()
+                filters.alcoholic != null -> filterByAlcoholic(filters.alcoholic).getOrNull() ?: emptyList()
+                filters.glass != null -> filterByGlass(filters.glass).getOrNull() ?: emptyList()
+                else -> getCocktailsSortedByNewest().getOrNull() ?: emptyList()
             }
 
-            // Apply all remaining filters to the result
-            val filteredCocktails = applyFiltersToList(cocktails, filters)
+            // Apply all remaining filters via the use case (single source of truth)
+            val filteredCocktails = FilterCocktailsUseCase.applyFiltersToList(cocktails, filters)
 
             // Cache the results for offline access
             filteredCocktails.forEach { cocktail ->
                 cocktailCache.cacheCocktail(cocktail)
             }
 
-            emit(filteredCocktails)
+            Result.Success(filteredCocktails)
         } catch (e: Exception) {
             // Try to use cache as fallback
-            val cachedCocktails = cocktailCache.getAllCachedCocktails()
-            val filteredCocktails = applyFiltersToList(cachedCocktails, filters)
-
-            if (filteredCocktails.isNotEmpty()) {
-                emit(filteredCocktails)
-            } else {
-                emit(emptyList())
+            try {
+                val cachedCocktails = cocktailCache.getAllCachedCocktails()
+                val filteredCocktails = FilterCocktailsUseCase.applyFiltersToList(cachedCocktails, filters)
+                Result.Success(filteredCocktails)
+            } catch (cacheError: Exception) {
+                Result.Error(e.message ?: "Failed to perform advanced search")
             }
         }
-    }
-
-    /**
-     * Helper method to apply filters to a list of cocktails
-     */
-    private fun applyFiltersToList(cocktails: List<Cocktail>, filters: com.cocktailcraft.domain.model.SearchFilters): List<Cocktail> {
-        var result = cocktails
-
-        // Apply category filter if not used as primary filter
-        if (filters.category != null && filters.query.isNotBlank()) {
-            result = result.filter { it.category == filters.category }
-        }
-
-        // Apply ingredient filter if not used as primary filter
-        if (filters.ingredient != null && (filters.query.isNotBlank() || filters.category != null)) {
-            result = result.filter { cocktail ->
-                cocktail.ingredients.any { it.name.contains(filters.ingredient, ignoreCase = true) }
-            }
-        }
-
-        // Apply alcoholic filter if not used as primary filter
-        if (filters.alcoholic != null &&
-            (filters.query.isNotBlank() || filters.category != null || filters.ingredient != null)) {
-            val alcoholicString = if (filters.alcoholic) "Alcoholic" else "Non_Alcoholic"
-            result = result.filter { it.alcoholic == alcoholicString }
-        }
-
-        // Apply glass filter if not used as primary filter
-        if (filters.glass != null &&
-            (filters.query.isNotBlank() || filters.category != null ||
-             filters.ingredient != null || filters.alcoholic != null)) {
-            result = result.filter { it.glass == filters.glass }
-        }
-
-        // Apply price range filter
-        if (filters.priceRange != null) {
-            result = result.filter {
-                it.price.toFloat() in filters.priceRange
-            }
-        }
-
-        // Apply multiple ingredients filter
-        if (filters.ingredients.isNotEmpty()) {
-            result = result.filter { cocktail ->
-                filters.ingredients.all { ingredient ->
-                    cocktail.ingredients.any { it.name.contains(ingredient, ignoreCase = true) }
-                }
-            }
-        }
-
-        // Apply excluded ingredients filter
-        if (filters.excludeIngredients.isNotEmpty()) {
-            result = result.filter { cocktail ->
-                filters.excludeIngredients.none { ingredient ->
-                    cocktail.ingredients.any { it.name.contains(ingredient, ignoreCase = true) }
-                }
-            }
-        }
-
-        // Apply taste profile filter (this is more complex and would require ingredient analysis)
-        // For now, we'll use a simplified approach based on common ingredients
-        if (filters.tasteProfile != null) {
-            result = result.filter { cocktail ->
-                when (filters.tasteProfile) {
-                    com.cocktailcraft.domain.model.TasteProfile.SWEET ->
-                        cocktail.ingredients.any {
-                            it.name.contains("sugar", ignoreCase = true) ||
-                            it.name.contains("syrup", ignoreCase = true) ||
-                            it.name.contains("liqueur", ignoreCase = true)
-                        }
-                    com.cocktailcraft.domain.model.TasteProfile.SOUR ->
-                        cocktail.ingredients.any {
-                            it.name.contains("lemon", ignoreCase = true) ||
-                            it.name.contains("lime", ignoreCase = true) ||
-                            it.name.contains("citrus", ignoreCase = true)
-                        }
-                    com.cocktailcraft.domain.model.TasteProfile.BITTER ->
-                        cocktail.ingredients.any {
-                            it.name.contains("bitters", ignoreCase = true) ||
-                            it.name.contains("campari", ignoreCase = true)
-                        }
-                    com.cocktailcraft.domain.model.TasteProfile.SPICY ->
-                        cocktail.ingredients.any {
-                            it.name.contains("pepper", ignoreCase = true) ||
-                            it.name.contains("ginger", ignoreCase = true) ||
-                            it.name.contains("cinnamon", ignoreCase = true)
-                        }
-                    com.cocktailcraft.domain.model.TasteProfile.FRUITY ->
-                        cocktail.ingredients.any {
-                            it.name.contains("fruit", ignoreCase = true) ||
-                            it.name.contains("berry", ignoreCase = true) ||
-                            it.name.contains("apple", ignoreCase = true) ||
-                            it.name.contains("orange", ignoreCase = true) ||
-                            it.name.contains("pineapple", ignoreCase = true)
-                        }
-                    com.cocktailcraft.domain.model.TasteProfile.HERBAL ->
-                        cocktail.ingredients.any {
-                            it.name.contains("herb", ignoreCase = true) ||
-                            it.name.contains("mint", ignoreCase = true) ||
-                            it.name.contains("basil", ignoreCase = true) ||
-                            it.name.contains("rosemary", ignoreCase = true)
-                        }
-                    com.cocktailcraft.domain.model.TasteProfile.CREAMY ->
-                        cocktail.ingredients.any {
-                            it.name.contains("cream", ignoreCase = true) ||
-                            it.name.contains("milk", ignoreCase = true) ||
-                            it.name.contains("coconut", ignoreCase = true)
-                        }
-                }
-            }
-        }
-
-        // Apply complexity filter (based on number of ingredients and preparation steps)
-        if (filters.complexity != null) {
-            result = result.filter { cocktail ->
-                val ingredientCount = cocktail.ingredients.size
-                val instructionLength = cocktail.instructions?.length ?: 0
-
-                when (filters.complexity) {
-                    com.cocktailcraft.domain.model.Complexity.EASY ->
-                        ingredientCount <= 3 && instructionLength < 100
-                    com.cocktailcraft.domain.model.Complexity.MEDIUM ->
-                        ingredientCount in 4..6 && instructionLength in 100..200
-                    com.cocktailcraft.domain.model.Complexity.COMPLEX ->
-                        ingredientCount > 6 || instructionLength > 200
-                }
-            }
-        }
-
-        // Apply preparation time filter (estimated based on complexity)
-        if (filters.preparationTime != null) {
-            result = result.filter { cocktail ->
-                val ingredientCount = cocktail.ingredients.size
-                val instructionLength = cocktail.instructions?.length ?: 0
-                val hasComplexTechniques = cocktail.instructions?.contains("muddle", ignoreCase = true) == true ||
-                                          cocktail.instructions?.contains("shake", ignoreCase = true) == true ||
-                                          cocktail.instructions?.contains("stir", ignoreCase = true) == true
-
-                when (filters.preparationTime) {
-                    com.cocktailcraft.domain.model.PreparationTime.QUICK ->
-                        ingredientCount <= 3 && !hasComplexTechniques
-                    com.cocktailcraft.domain.model.PreparationTime.MEDIUM ->
-                        ingredientCount in 4..6 || hasComplexTechniques
-                    com.cocktailcraft.domain.model.PreparationTime.LONG ->
-                        ingredientCount > 6 || instructionLength > 300
-                }
-            }
-        }
-
-        return result
     }
 
     // Helper method to check API connectivity
@@ -905,61 +664,42 @@ class CocktailRepositoryImpl(
             if (forceOfflineMode) {
                 return false
             }
-            
+
             // Skip ping if we're in backoff period
-            if (rateLimitBackoffMs > 0) {
-                val timeSinceLastCall = Clock.System.now().toEpochMilliseconds() - lastApiCallTime
-                if (timeSinceLastCall < rateLimitBackoffMs) {
-                    CocktailDebugLogger.log("   ⏳ In rate limit backoff period, skipping ping")
+            val currentBackoff = cacheManager.getRateLimitBackoffMs()
+            if (currentBackoff > 0) {
+                val timeSinceLastCall = Clock.System.now().toEpochMilliseconds() - cacheManager.getLastApiCallTime()
+                if (timeSinceLastCall < currentBackoff) {
+                    Logger.d { "In rate limit backoff period, skipping ping" }
                     return false
                 }
             }
-            
+
             // Check if we've made recent API calls to avoid rate limiting
-            val timeSinceLastCall = Clock.System.now().toEpochMilliseconds() - lastApiCallTime
-            if (timeSinceLastCall < MIN_API_CALL_INTERVAL_MS) {
-                CocktailDebugLogger.log("   ⏳ Skipping ping to avoid rate limit (last call ${timeSinceLastCall}ms ago)")
+            val timeSinceLastCall = Clock.System.now().toEpochMilliseconds() - cacheManager.getLastApiCallTime()
+            if (timeSinceLastCall < CocktailCacheManager.MIN_API_CALL_INTERVAL_MS) {
+                Logger.d { "Skipping ping to avoid rate limit (last call ${timeSinceLastCall}ms ago)" }
                 return true // Assume API is reachable
             }
-            
-            lastApiCallTime = Clock.System.now().toEpochMilliseconds()
+
+            cacheManager.setLastApiCallTime(Clock.System.now().toEpochMilliseconds())
             val isConnected = api.pingApi()
-            
+
             // Reset backoff on successful ping
             if (isConnected) {
-                rateLimitBackoffMs = 0
+                cacheManager.resetBackoff()
             }
-            
+
             isConnected
         } catch (e: Exception) {
             // If it's a rate limit error, consider API as reachable but throttled
             if (e.message?.contains("429") == true || e.message?.contains("Too Many Requests") == true) {
-                CocktailDebugLogger.log("   ⚠️ API rate limited but reachable")
+                Logger.w { "API rate limited but reachable" }
                 // Apply exponential backoff
-                rateLimitBackoffMs = minOf(
-                    if (rateLimitBackoffMs == 0L) 2000L else rateLimitBackoffMs * 2,
-                    MAX_BACKOFF_MS
-                )
+                cacheManager.applyExponentialBackoff()
                 return true
             }
             false
         }
-    }
-    
-    companion object {
-        // Global cache to persist across repository instances
-        private var globalCocktailsCache: List<Cocktail> = emptyList()
-        private var globalLastFetchTime: Long = 0
-        private const val CACHE_VALIDITY_MS = 5 * 60 * 1000 // 5 minutes
-        
-        // Category-specific cache
-        private val categoryCacheMap = mutableMapOf<String, List<Cocktail>>()
-        private val categoryLastFetchMap = mutableMapOf<String, Long>()
-        
-        // Rate limit tracking
-        private var lastApiCallTime: Long = 0
-        private var rateLimitBackoffMs: Long = 0
-        private const val MIN_API_CALL_INTERVAL_MS = 1000L // 1 second between calls
-        private const val MAX_BACKOFF_MS = 30000L // Max 30 seconds backoff
     }
 }

@@ -6,7 +6,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.domain.repository.CocktailCatalogRepository
+import com.cocktailcraft.domain.util.getOrDefault
 
 /**
  * A utility class for loading filter options from the repository.
@@ -33,7 +34,7 @@ object FilterOptionsLoader {
      */
     @Composable
     fun rememberFilterOptions(
-        repository: CocktailRepository,
+        repository: CocktailCatalogRepository,
         defaultCategories: List<String> = listOf(
             "Cocktail", "Ordinary Drink", "Shot", "Coffee / Tea",
             "Punch / Party Drink", "Homemade Liqueur", "Beer", "Soft Drink"
@@ -47,17 +48,9 @@ object FilterOptionsLoader {
         
         LaunchedEffect(Unit) {
             try {
-                repository.getCategories().collect { categoryList ->
-                    categories = categoryList
-                }
-                
-                repository.getIngredients().collect { ingredientList ->
-                    ingredients = ingredientList
-                }
-                
-                repository.getGlasses().collect { glassList ->
-                    glasses = glassList
-                }
+                categories = repository.getCategories().getOrDefault(defaultCategories)
+                ingredients = repository.getIngredients().getOrDefault(defaultIngredients)
+                glasses = repository.getGlasses().getOrDefault(defaultGlasses)
             } catch (e: Exception) {
                 // Use default values if loading fails
             }

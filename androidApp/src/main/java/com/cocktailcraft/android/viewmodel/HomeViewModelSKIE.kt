@@ -4,8 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.SearchFilters
+import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -45,8 +48,8 @@ class HomeViewModelSKIE : ViewModel(), KoinComponent {
     val errorString: StateFlow<String> = sharedViewModel.errorString
     val isAdvancedSearchActive: StateFlow<Boolean> = sharedViewModel.isAdvancedSearchActive
     
-    // Add repository access for filter options
-    val repository = sharedViewModel.repository
+    // Catalog repository for filter options (Android-specific; shared ViewModels use use cases)
+    val catalogRepository: CocktailCatalogRepository by inject()
     
     // MARK: - Public Methods (SKIE converts these to proper suspend functions)
     
@@ -142,9 +145,15 @@ class HomeViewModelSKIE : ViewModel(), KoinComponent {
     }
     
     /**
-     * Get cocktail by ID as Flow
+     * Get cocktail by ID as a suspend function returning a StateFlow
      */
-    fun getCocktailById(id: String) = sharedViewModel.getCocktailByIdFlow(id)
+    fun getCocktailByIdAsFlow(id: String): StateFlow<Cocktail?> {
+        val state = MutableStateFlow<Cocktail?>(null)
+        viewModelScope.launch {
+            state.value = sharedViewModel.getCocktailById(id)
+        }
+        return state.asStateFlow()
+    }
     
     /**
      * Force refresh cocktail details

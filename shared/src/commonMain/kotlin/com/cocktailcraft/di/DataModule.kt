@@ -1,6 +1,7 @@
 package com.cocktailcraft.di
 
 import com.cocktailcraft.data.cache.CocktailCache
+import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.data.repository.AuthRepositoryImpl
 import com.cocktailcraft.data.repository.CartRepositoryImpl
 import com.cocktailcraft.data.repository.CocktailRepositoryImpl
@@ -8,7 +9,12 @@ import com.cocktailcraft.data.repository.FavoritesRepositoryImpl
 import com.cocktailcraft.data.repository.OrderRepositoryImpl
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CartRepository
+import com.cocktailcraft.domain.repository.CocktailCatalogRepository
+import com.cocktailcraft.domain.repository.CocktailDetailRepository
+import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
+import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.repository.FavoritesRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import kotlinx.serialization.json.Json
@@ -33,16 +39,25 @@ val dataModule = module {
         appConfig = get()
     ) }
 
-    // Repositories
+    // In-memory cache manager (thread-safe singleton)
+    single { CocktailCacheManager() }
+
+    // Cocktail Repository — single impl bound to all 5 focused interfaces + composite
     single<CocktailRepository> {
         CocktailRepositoryImpl(
             api = get(),
             settings = get(),
             appConfig = get(),
             networkMonitor = get(),
-            cocktailCache = get()
+            cocktailCache = get(),
+            cacheManager = get()
         )
     }
+    single<CocktailSearchRepository> { get<CocktailRepository>() }
+    single<CocktailDetailRepository> { get<CocktailRepository>() }
+    single<CocktailCatalogRepository> { get<CocktailRepository>() }
+    single<CocktailFavoritesRepository> { get<CocktailRepository>() }
+    single<CocktailOfflineRepository> { get<CocktailRepository>() }
 
     single<CartRepository> {
         CartRepositoryImpl(get(), get())
@@ -62,7 +77,7 @@ val dataModule = module {
 
     single<FavoritesRepository> {
         FavoritesRepositoryImpl(
-            cocktailRepository = get(),
+            cocktailRepository = get<CocktailFavoritesRepository>(),
             settings = get(),
             appConfig = get()
         )

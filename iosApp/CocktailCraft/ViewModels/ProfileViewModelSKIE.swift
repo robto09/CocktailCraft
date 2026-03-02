@@ -55,67 +55,29 @@ class ProfileViewModelSKIE: ObservableObject {
     deinit {
         // Cancel all observation tasks
         observationTasks.forEach { $0.cancel() }
-        sharedViewModel.onCleared()
+        // Note: Do NOT call onCleared() — this is a Koin singleton whose
+        // coroutine scope must survive the lifetime of any single wrapper.
     }
     
     // MARK: - SKIE StateFlow Observation
     
     private func startObserving() {
-        // Observe user using SKIE async sequence
+        // Single consolidated observation of uiState
         observationTasks.append(Task {
-            for await userValue in sharedViewModel.user {
+            for await state in sharedViewModel.uiState {
                 await MainActor.run {
-                    self.user = userValue
+                    self.user = state.user
+                    self.isLoggedIn = state.isLoggedIn
+                    self.authStatus = state.authStatus
+                    self.isAuthenticating = state.isAuthenticating
+                    self.authError = state.authError
+                    self.userPreferences = state.preferences
+                    self.isLoading = state.isLoading
                 }
             }
         })
-        
-        // Observe login status
-        observationTasks.append(Task {
-            for await loggedIn in sharedViewModel.isLoggedIn {
-                await MainActor.run {
-                    self.isLoggedIn = loggedIn.boolValue
-                }
-            }
-        })
-        
-        // Observe auth status
-        observationTasks.append(Task {
-            for await status in sharedViewModel.authStatus {
-                await MainActor.run {
-                    self.authStatus = status
-                }
-            }
-        })
-        
-        // Observe authenticating state
-        observationTasks.append(Task {
-            for await authenticating in sharedViewModel.isAuthenticating {
-                await MainActor.run {
-                    self.isAuthenticating = authenticating.boolValue
-                }
-            }
-        })
-        
-        // Observe auth error
-        observationTasks.append(Task {
-            for await authErrorValue in sharedViewModel.authError {
-                await MainActor.run {
-                    self.authError = authErrorValue
-                }
-            }
-        })
-        
-        // Observe user preferences
-        observationTasks.append(Task {
-            for await preferences in sharedViewModel.userPreferences {
-                await MainActor.run {
-                    self.userPreferences = preferences
-                }
-            }
-        })
-        
-        // Observe error state
+
+        // Observe error from base class
         observationTasks.append(Task {
             for await errorValue in sharedViewModel.error {
                 await MainActor.run {

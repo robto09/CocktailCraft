@@ -54,70 +54,22 @@ class CocktailDetailViewModelSKIE: ObservableObject {
     // MARK: - SKIE StateFlow Observation
     
     private func startObserving() {
-        // Observe cocktail using SKIE async sequence
+        // Single consolidated observation of uiState
         observationTasks.append(Task {
-            for await cocktailValue in sharedViewModel.cocktail {
+            for await state in sharedViewModel.uiState {
                 await MainActor.run {
-                    self.cocktail = cocktailValue
+                    self.cocktail = state.cocktail
+                    self.isFavorite = state.isFavorite
+                    self.isInCart = state.isInCart
+                    self.cartQuantity = Int(state.cartQuantity)
+                    self.relatedCocktails = state.relatedCocktails
+                    self.ingredientsByType = state.ingredientsByType
+                    self.isLoading = state.isLoading
                 }
             }
         })
-        
-        // Observe favorite status
-        observationTasks.append(Task {
-            for await favorite in sharedViewModel.isFavorite {
-                await MainActor.run {
-                    self.isFavorite = favorite.boolValue
-                }
-            }
-        })
-        
-        // Observe cart status
-        observationTasks.append(Task {
-            for await inCart in sharedViewModel.isInCart {
-                await MainActor.run {
-                    self.isInCart = inCart.boolValue
-                }
-            }
-        })
-        
-        // Observe cart quantity
-        observationTasks.append(Task {
-            for await quantity in sharedViewModel.cartQuantity {
-                await MainActor.run {
-                    self.cartQuantity = Int(quantity.intValue)
-                }
-            }
-        })
-        
-        // Observe related cocktails
-        observationTasks.append(Task {
-            for await related in sharedViewModel.relatedCocktails {
-                await MainActor.run {
-                    self.relatedCocktails = related
-                }
-            }
-        })
-        
-        // Observe ingredients by type
-        observationTasks.append(Task {
-            for await ingredients in sharedViewModel.ingredientsByType {
-                await MainActor.run {
-                    self.ingredientsByType = ingredients
-                }
-            }
-        })
-        
-        // Observe loading state
-        observationTasks.append(Task {
-            for await loading in sharedViewModel.isLoading {
-                await MainActor.run {
-                    self.isLoading = loading.boolValue
-                }
-            }
-        })
-        
-        // Observe error state
+
+        // Observe error from base class
         observationTasks.append(Task {
             for await errorValue in sharedViewModel.error {
                 await MainActor.run {

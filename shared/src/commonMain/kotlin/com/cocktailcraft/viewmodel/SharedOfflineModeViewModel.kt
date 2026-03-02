@@ -1,108 +1,86 @@
 package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.domain.usecase.ManageOfflineModeUseCase
+import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.util.NetworkMonitor
+import com.cocktailcraft.viewmodel.state.OfflineUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.koin.core.component.inject
 
 /**
  * Shared ViewModel for Offline Mode functionality.
- * Designed for full SKIE interoperability with iOS.
- * 
- * Key SKIE features:
- * - StateFlows are automatically converted to Swift AsyncSequence
- * - Suspend functions become Swift async functions
- * - No FlowCollector bridge needed
+ * Uses consolidated [OfflineUiState] for atomic state updates.
  */
 class SharedOfflineModeViewModel : SharedViewModel() {
-    
-    private val repository: CocktailRepository by inject()
+
+    private val manageOfflineModeUseCase: ManageOfflineModeUseCase by inject()
     private val networkMonitor: NetworkMonitor by inject()
-    
-    // Core state - SKIE will convert these to Swift AsyncSequence
-    private val _isOfflineModeEnabled = MutableStateFlow(false)
-    val isOfflineModeEnabled: StateFlow<Boolean> = _isOfflineModeEnabled.asStateFlow()
-    
-    private val _isNetworkAvailable = MutableStateFlow(true)
-    val isNetworkAvailable: StateFlow<Boolean> = _isNetworkAvailable.asStateFlow()
-    
-    private val _recentlyViewedCocktails = MutableStateFlow<List<Cocktail>>(emptyList())
-    val recentlyViewedCocktails: StateFlow<List<Cocktail>> = _recentlyViewedCocktails.asStateFlow()
-    
-    private val _cacheSize = MutableStateFlow(0)
-    val cacheSize: StateFlow<Int> = _cacheSize.asStateFlow()
-    
-    private val _lastSyncTime = MutableStateFlow<String?>(null)
-    val lastSyncTime: StateFlow<String?> = _lastSyncTime.asStateFlow()
-    
-    // Computed properties
+
+    // Consolidated UI State
+    private val _uiState = MutableStateFlow(OfflineUiState())
+    val uiState: StateFlow<OfflineUiState> = _uiState.asStateFlow()
+
+    // Derived StateFlows for backward compatibility
+    val isOfflineModeEnabled: StateFlow<Boolean> = _uiState
+        .map { it.isOfflineModeEnabled }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val isNetworkAvailable: StateFlow<Boolean> = _uiState
+        .map { it.isNetworkAvailable }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val recentlyViewedCocktails: StateFlow<List<Cocktail>> = _uiState
+        .map { it.recentlyViewedCocktails }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val cacheSize: StateFlow<Int> = _uiState
+        .map { it.cacheSize }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+    val lastSyncTime: StateFlow<String?> = _uiState
+        .map { it.lastSyncTime }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     val hasRecentlyViewed: Boolean
-        get() = _recentlyViewedCocktails.value.isNotEmpty()
-    
+        get() = _uiState.value.recentlyViewedCocktails.isNotEmpty()
     val isOnlineAndOfflineModeDisabled: Boolean
-        get() = _isNetworkAvailable.value && !_isOfflineModeEnabled.value
-    
+        get() = _uiState.value.isNetworkAvailable && !_uiState.value.isOfflineModeEnabled
+
     init {
         initialize()
     }
     
     private fun initialize() {
-        // Initialize offline mode state
-        _isOfflineModeEnabled.value = repository.isOfflineModeEnabled()
-        
-        // Monitor network connectivity
+        _uiState.update { it.copy(isOfflineModeEnabled = manageOfflineModeUseCase.isOfflineModeEnabled()) }
+
         viewModelScope.launch {
             networkMonitor.startMonitoring()
             networkMonitor.isOnline.collectLatest { isOnline ->
-                _isNetworkAvailable.value = isOnline
-                
-                // Auto-enable offline mode when network is lost
-                if (!isOnline && !_isOfflineModeEnabled.value) {
+                _uiState.update { it.copy(isNetworkAvailable = isOnline) }
+                if (!isOnline && !_uiState.value.isOfflineModeEnabled) {
                     setOfflineMode(true)
                 }
-                
-                // Update sync time when network is restored
-                if (isOnline && _isOfflineModeEnabled.value) {
+                if (isOnline && _uiState.value.isOfflineModeEnabled) {
                     updateLastSyncTime()
                 }
             }
         }
-        
-        // Load initial data
+
         viewModelScope.launch {
             loadRecentlyViewedCocktails()
             updateCacheSize()
         }
     }
-    
-    /**
-     * Toggle offline mode.
-     * SKIE will convert this to Swift async function.
-     */
+
     suspend fun toggleOfflineMode() {
-        setOfflineMode(!_isOfflineModeEnabled.value)
+        setOfflineMode(!_uiState.value.isOfflineModeEnabled)
     }
-    
-    /**
-     * Set offline mode enabled/disabled.
-     * SKIE will convert this to Swift async function.
-     */
+
     suspend fun setOfflineMode(enabled: Boolean) {
         try {
-            _isOfflineModeEnabled.value = enabled
-            repository.setOfflineMode(enabled)
-            
+            _uiState.update { it.copy(isOfflineModeEnabled = enabled) }
+            manageOfflineModeUseCase.setOfflineMode(enabled)
+
             if (enabled) {
-                // Cache current data when enabling offline mode
                 syncCachedData()
-            } else if (_isNetworkAvailable.value) {
-                // Refresh data when disabling offline mode and network is available
+            } else if (_uiState.value.isNetworkAvailable) {
                 loadRecentlyViewedCocktails()
             }
-            
+
             updateLastSyncTime()
         } catch (e: Exception) {
             handleException(e, "Failed to update offline mode", showAsEvent = true)
@@ -114,7 +92,7 @@ class SharedOfflineModeViewModel : SharedViewModel() {
      * SKIE will convert this to Swift async function.
      */
     suspend fun syncCachedData() {
-        if (!_isNetworkAvailable.value) {
+        if (!_uiState.value.isNetworkAvailable) {
             setError(
                 "No Network Connection",
                 "Cannot sync data without network connection",
@@ -127,16 +105,10 @@ class SharedOfflineModeViewModel : SharedViewModel() {
         setLoading(true)
         try {
             // Load fresh data from repository
-            repository.getCocktailsSortedByNewest()
-                .catch { e ->
-                    handleException(e, "Failed to sync cached data")
-                }
-                .collect { cocktails ->
-                    // Update cache size based on available cocktails
-                    _cacheSize.value = cocktails.size
-                    updateLastSyncTime()
-                    setLoading(false)
-                }
+            val cocktails = manageOfflineModeUseCase.syncCachedData().getOrDefault(emptyList())
+            _uiState.update { it.copy(cacheSize = cocktails.size) }
+            updateLastSyncTime()
+            setLoading(false)
         } catch (e: Exception) {
             handleException(e, "Failed to sync cached data")
             setLoading(false)
@@ -151,10 +123,7 @@ class SharedOfflineModeViewModel : SharedViewModel() {
         try {
             setLoading(true)
             
-            // Clear recently viewed cocktails
-            _recentlyViewedCocktails.value = emptyList()
-            _cacheSize.value = 0
-            _lastSyncTime.value = null
+            _uiState.update { it.copy(recentlyViewedCocktails = emptyList(), cacheSize = 0, lastSyncTime = null) }
             
             setLoading(false)
         } catch (e: Exception) {
@@ -169,18 +138,10 @@ class SharedOfflineModeViewModel : SharedViewModel() {
      */
     suspend fun loadRecentlyViewedCocktails() {
         try {
-            repository.getRecentlyViewedCocktails()
-                .catch { e ->
-                    if (!_isOfflineModeEnabled.value) {
-                        handleException(e, "Failed to load recently viewed cocktails")
-                    }
-                }
-                .collect { cocktails ->
-                    _recentlyViewedCocktails.value = cocktails
-                    _cacheSize.value = cocktails.size
-                }
+            val cocktails = manageOfflineModeUseCase.getRecentlyViewedCocktails().getOrDefault(emptyList())
+            _uiState.update { it.copy(recentlyViewedCocktails = cocktails, cacheSize = cocktails.size) }
         } catch (e: Exception) {
-            if (!_isOfflineModeEnabled.value) {
+            if (!_uiState.value.isOfflineModeEnabled) {
                 handleException(e, "Failed to load recently viewed cocktails", showAsEvent = true)
             }
         }
@@ -191,51 +152,25 @@ class SharedOfflineModeViewModel : SharedViewModel() {
     /**
      * Get cached cocktail count.
      */
-    fun getCachedCocktailCount(): Int {
-        return _cacheSize.value
-    }
-    
-    /**
-     * Get network status as string.
-     */
-    fun getNetworkStatus(): String {
-        return if (_isNetworkAvailable.value) "Connected" else "Disconnected"
-    }
-    
-    /**
-     * Get offline mode status as string.
-     */
-    fun getOfflineModeStatus(): String {
-        return if (_isOfflineModeEnabled.value) "Enabled" else "Disabled"
-    }
-    
-    /**
-     * Get recently viewed cocktails by category.
-     */
-    fun getRecentlyViewedByCategory(category: String): List<Cocktail> {
-        return _recentlyViewedCocktails.value.filter { it.category == category }
-    }
-    
-    /**
-     * Get recently viewed cocktails with limit.
-     */
-    fun getRecentlyViewedWithLimit(limit: Int): List<Cocktail> {
-        return _recentlyViewedCocktails.value.take(limit)
-    }
-    
-    /**
-     * Check if offline mode is recommended based on network status.
-     */
-    fun isOfflineModeRecommended(): Boolean {
-        return !_isNetworkAvailable.value
-    }
-    
-    /**
-     * Get cache status summary.
-     */
+    fun getCachedCocktailCount(): Int = _uiState.value.cacheSize
+
+    fun getNetworkStatus(): String =
+        if (_uiState.value.isNetworkAvailable) "Connected" else "Disconnected"
+
+    fun getOfflineModeStatus(): String =
+        if (_uiState.value.isOfflineModeEnabled) "Enabled" else "Disabled"
+
+    fun getRecentlyViewedByCategory(category: String): List<Cocktail> =
+        _uiState.value.recentlyViewedCocktails.filter { it.category == category }
+
+    fun getRecentlyViewedWithLimit(limit: Int): List<Cocktail> =
+        _uiState.value.recentlyViewedCocktails.take(limit)
+
+    fun isOfflineModeRecommended(): Boolean = !_uiState.value.isNetworkAvailable
+
     fun getCacheStatusSummary(): String {
-        val count = _cacheSize.value
-        val lastSync = _lastSyncTime.value ?: "Never"
+        val count = _uiState.value.cacheSize
+        val lastSync = _uiState.value.lastSyncTime ?: "Never"
         return "Cached: $count cocktails, Last sync: $lastSync"
     }
     
@@ -252,17 +187,13 @@ class SharedOfflineModeViewModel : SharedViewModel() {
     // MARK: - Private Helper Methods
     
     private fun updateLastSyncTime() {
-        // Simple timestamp - using a basic counter for now
-        _lastSyncTime.value = "Just now"
+        _uiState.update { it.copy(lastSyncTime = "Just now") }
     }
-    
+
     private suspend fun updateCacheSize() {
         try {
-            repository.getRecentlyViewedCocktails()
-                .catch { /* Silent fail */ }
-                .collect { cocktails ->
-                    _cacheSize.value = cocktails.size
-                }
+            val cocktails = manageOfflineModeUseCase.getRecentlyViewedCocktails().getOrDefault(emptyList())
+            _uiState.update { it.copy(cacheSize = cocktails.size) }
         } catch (e: Exception) {
             // Silent fail for cache size update
         }

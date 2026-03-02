@@ -60,49 +60,26 @@ class CartViewModelSKIE: ObservableObject {
     deinit {
         // Cancel all observation tasks
         observationTasks.forEach { $0.cancel() }
-        sharedViewModel.onCleared()
+        // Note: Do NOT call onCleared() — this is a Koin singleton whose
+        // coroutine scope must survive the lifetime of any single wrapper.
     }
     
     // MARK: - SKIE StateFlow Observation
     
     private func startObserving() {
-        // Observe cart items using SKIE async sequence
+        // Single consolidated observation of uiState
         observationTasks.append(Task {
-            for await items in sharedViewModel.cartItems {
+            for await state in sharedViewModel.uiState {
                 await MainActor.run {
-                    self.cartItems = items
+                    self.cartItems = state.cartItems
+                    self.totalPrice = state.totalPrice
+                    self.itemCount = Int(state.itemCount)
+                    self.isLoading = state.isLoading
                 }
             }
         })
-        
-        // Observe total price
-        observationTasks.append(Task {
-            for await total in sharedViewModel.totalPrice {
-                await MainActor.run {
-                    self.totalPrice = total.doubleValue
-                }
-            }
-        })
-        
-        // Observe item count
-        observationTasks.append(Task {
-            for await count in sharedViewModel.itemCount {
-                await MainActor.run {
-                    self.itemCount = Int(count.int32Value)
-                }
-            }
-        })
-        
-        // Observe loading state
-        observationTasks.append(Task {
-            for await loading in sharedViewModel.isLoading {
-                await MainActor.run {
-                    self.isLoading = loading.boolValue
-                }
-            }
-        })
-        
-        // Observe error state
+
+        // Observe error from base class
         observationTasks.append(Task {
             for await errorValue in sharedViewModel.error {
                 await MainActor.run {

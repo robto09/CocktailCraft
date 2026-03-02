@@ -3,11 +3,11 @@ package com.cocktailcraft.data.repository
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.repository.OrderRepository
+import com.cocktailcraft.domain.util.Result
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -42,38 +42,58 @@ class OrderRepositoryImpl(
         settings.putString(appConfig.ordersStorageKey, ordersJson)
     }
 
-    override suspend fun getOrders(): Flow<List<Order>> = _orders.asStateFlow()
+    override fun observeOrders(): Flow<List<Order>> = _orders.asStateFlow()
 
-    override suspend fun addOrder(order: Order) {
-        val updatedOrders = _orders.value.toMutableList().apply {
-            add(order)
+    override suspend fun getOrders(): Result<List<Order>> = Result.Success(_orders.value)
+
+    override suspend fun addOrder(order: Order): Result<Unit> {
+        return try {
+            val updatedOrders = _orders.value.toMutableList().apply {
+                add(order)
+            }
+            _orders.value = updatedOrders
+            saveOrdersToStorage()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to add order")
         }
-        _orders.value = updatedOrders
-        saveOrdersToStorage()
     }
 
-    override suspend fun getOrderById(id: String): Flow<Order?> = flow {
-        emit(_orders.value.find { it.id == id })
-    }
-
-    override suspend fun updateOrderStatus(id: String, status: String) {
-        val updatedOrders = _orders.value.map { order ->
-            if (order.id == id) order.copy(status = status) else order
+    override suspend fun getOrderById(id: String): Result<Order?> {
+        return try {
+            Result.Success(_orders.value.find { it.id == id })
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to get order by ID")
         }
-        _orders.value = updatedOrders
-        saveOrdersToStorage()
     }
 
-    override suspend fun deleteOrder(id: String) {
-        val updatedOrders = _orders.value.filter { it.id != id }
-        _orders.value = updatedOrders
-        saveOrdersToStorage()
+    override suspend fun updateOrderStatus(id: String, status: String): Result<Unit> {
+        return try {
+            val updatedOrders = _orders.value.map { order ->
+                if (order.id == id) order.copy(status = status) else order
+            }
+            _orders.value = updatedOrders
+            saveOrdersToStorage()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to update order status")
+        }
     }
 
-    override suspend fun placeOrder(order: Order): Flow<Boolean> = flow {
-        try {
+    override suspend fun deleteOrder(id: String): Result<Unit> {
+        return try {
+            val updatedOrders = _orders.value.filter { it.id != id }
+            _orders.value = updatedOrders
+            saveOrdersToStorage()
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to delete order")
+        }
+    }
+
+    override suspend fun placeOrder(order: Order): Result<Boolean> {
+        return try {
             val orders = _orders.value.toMutableList()
-            // Generate a new ID if not provided
             val orderWithId = if (order.id.isBlank()) {
                 order.copy(id = UUID.randomUUID())
             } else {
@@ -82,37 +102,36 @@ class OrderRepositoryImpl(
             orders.add(orderWithId)
             _orders.value = orders
             saveOrdersToStorage()
-            emit(true)
+            Result.Success(true)
         } catch (e: Exception) {
-            emit(false)
+            Result.Error(e.message ?: "Failed to place order")
         }
     }
 
-    override suspend fun getOrderHistory(): Flow<List<Order>> = flow {
-        emit(_orders.value)
+    override suspend fun getOrderHistory(): Result<List<Order>> {
+        return Result.Success(_orders.value)
     }
 
-    override suspend fun cancelOrder(orderId: String): Flow<Boolean> = flow {
-        try {
+    override suspend fun cancelOrder(orderId: String): Result<Boolean> {
+        return try {
             val orders = _orders.value.toMutableList()
             val orderIndex = orders.indexOfFirst { it.id == orderId }
-            
+
             if (orderIndex != -1) {
                 val order = orders[orderIndex]
-                // Only allow cancellation if the order is still pending or processing
                 if (order.status == "Processing" || order.status == "Pending") {
                     orders[orderIndex] = order.copy(status = "Cancelled")
                     _orders.value = orders
                     saveOrdersToStorage()
-                    emit(true)
+                    Result.Success(true)
                 } else {
-                    emit(false)
+                    Result.Success(false)
                 }
             } else {
-                emit(false)
+                Result.Success(false)
             }
         } catch (e: Exception) {
-            emit(false)
+            Result.Error(e.message ?: "Failed to cancel order")
         }
     }
-} 
+}

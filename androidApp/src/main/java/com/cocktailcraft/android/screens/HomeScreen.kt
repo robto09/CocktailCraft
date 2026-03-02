@@ -102,7 +102,7 @@ import com.cocktailcraft.android.util.ListOptimizations.itemKey
 import com.cocktailcraft.android.viewmodel.CartViewModelSKIE
 import com.cocktailcraft.android.viewmodel.FavoritesViewModelSKIE
 import com.cocktailcraft.android.viewmodel.HomeViewModelSKIE
-import com.cocktailcraft.util.CocktailDebugLogger
+import android.util.Log
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -148,11 +148,11 @@ fun HomeScreen(
     
     // Effect to load cocktails by category when selected category changes
     LaunchedEffect(selectedCategory) {
-        CocktailDebugLogger.log("🏠 HomeScreen LaunchedEffect(selectedCategory): category=$selectedCategory, isSearchActive=$isSearchActive, isFirst=$isFirstComposition")
+        Log.d("HomeScreen", "LaunchedEffect(selectedCategory): category=$selectedCategory, isSearchActive=$isSearchActive, isFirst=$isFirstComposition")
         
         // Skip loading on first composition if we already have data
         if (isFirstComposition && cocktails.isNotEmpty()) {
-            CocktailDebugLogger.log("   ✅ Skipping load on first composition - already have ${cocktails.size} cocktails")
+            Log.d("HomeScreen", "Skipping load on first composition - already have ${cocktails.size} cocktails")
             isFirstComposition = false
             return@LaunchedEffect
         }
@@ -161,14 +161,14 @@ fun HomeScreen(
         
         // Only load if not in search mode and category has changed
         if (!isSearchActive) {
-            CocktailDebugLogger.log("   🏷️ Loading cocktails for category: $selectedCategory")
+            Log.d("HomeScreen", "Loading cocktails for category: $selectedCategory")
             viewModel.loadCocktailsByCategory(selectedCategory)
         }
     }
     
     // Effect to clear errors when screen is displayed with data
     LaunchedEffect(cocktails) {
-        CocktailDebugLogger.log("🏠 HomeScreen LaunchedEffect(cocktails): count=${cocktails.size}, error='$legacyErrorString'")
+        Log.d("HomeScreen", "LaunchedEffect(cocktails): count=${cocktails.size}, error='$legacyErrorString'")
         if (cocktails.isNotEmpty() && legacyErrorString.isNotBlank()) {
             viewModel.clearLegacyError()
         }
@@ -221,7 +221,7 @@ fun HomeScreen(
         // Advanced search panel
 
         // Load filter options using the utility
-        val filterOptions = FilterOptionsLoader.rememberFilterOptions(repository = viewModel.repository)
+        val filterOptions = FilterOptionsLoader.rememberFilterOptions(repository = viewModel.catalogRepository)
         val categories = filterOptions.categories
         val ingredients = filterOptions.ingredients
         val glasses = filterOptions.glasses

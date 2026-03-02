@@ -2,9 +2,10 @@ package com.cocktailcraft.android.widget
 
 import android.content.Context
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.domain.repository.CocktailDetailRepository
+import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.repository.FavoritesRepository
-import kotlinx.coroutines.flow.first
+import com.cocktailcraft.domain.util.getOrDefault
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -15,7 +16,8 @@ import org.koin.core.component.inject
  */
 class WidgetDataProvider : KoinComponent {
     
-    private val cocktailRepository: CocktailRepository by inject()
+    private val detailRepository: CocktailDetailRepository by inject()
+    private val offlineRepository: CocktailOfflineRepository by inject()
     private val favoritesRepository: FavoritesRepository by inject()
     
     /**
@@ -25,11 +27,11 @@ class WidgetDataProvider : KoinComponent {
     suspend fun getRandomCocktail(): Cocktail? {
         return try {
             // Try to get from API first
-            cocktailRepository.getRandomCocktail().first()
+            detailRepository.getRandomCocktail().getOrNull()
         } catch (e: Exception) {
             // Fallback to cached cocktails if offline
             try {
-                val recentlyViewed = cocktailRepository.getRecentlyViewedCocktails().first()
+                val recentlyViewed = offlineRepository.getRecentlyViewedCocktails().getOrDefault(emptyList())
                 if (recentlyViewed.isNotEmpty()) {
                     recentlyViewed.random()
                 } else {
@@ -47,7 +49,7 @@ class WidgetDataProvider : KoinComponent {
      */
     suspend fun getFavoriteCocktails(): List<Cocktail> {
         return try {
-            favoritesRepository.getFavorites().first()
+            favoritesRepository.getFavorites().getOrDefault(emptyList())
         } catch (e: Exception) {
             emptyList()
         }

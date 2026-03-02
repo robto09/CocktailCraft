@@ -1,49 +1,41 @@
 package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
 import com.cocktailcraft.util.ErrorHandler
+import com.cocktailcraft.viewmodel.state.ReviewUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import org.koin.core.component.inject
 
 /**
  * Shared ViewModel for Review functionality.
- * Designed for full SKIE interoperability with iOS.
- * 
- * Key SKIE features:
- * - StateFlows are automatically converted to Swift AsyncSequence
- * - Suspend functions become Swift async functions
- * - No FlowCollector bridge needed
- * 
- * Note: This implementation uses in-memory storage for reviews.
- * In a production app, this would be backed by a ReviewRepository.
+ * Uses consolidated [ReviewUiState] for atomic state updates.
  */
 class SharedReviewViewModel : SharedViewModel() {
-    
-    // Review state - SKIE will convert these to Swift AsyncSequence
-    private val _reviews = MutableStateFlow<Map<String, List<Review>>>(emptyMap())
-    val reviews: StateFlow<Map<String, List<Review>>> = _reviews.asStateFlow()
-    
-    private val _currentCocktailReviews = MutableStateFlow<List<Review>>(emptyList())
-    val currentCocktailReviews: StateFlow<List<Review>> = _currentCocktailReviews.asStateFlow()
-    
-    private val _averageRating = MutableStateFlow(0.0f)
-    val averageRating: StateFlow<Float> = _averageRating.asStateFlow()
-    
-    private val _reviewCount = MutableStateFlow(0)
-    val reviewCount: StateFlow<Int> = _reviewCount.asStateFlow()
-    
-    private val _currentCocktailId = MutableStateFlow<String?>(null)
-    val currentCocktailId: StateFlow<String?> = _currentCocktailId.asStateFlow()
-    
-    // Computed properties
+
+    private val manageReviewsUseCase: ManageReviewsUseCase by inject()
+
+    // Consolidated UI State
+    private val _uiState = MutableStateFlow(ReviewUiState())
+    val uiState: StateFlow<ReviewUiState> = _uiState.asStateFlow()
+
+    // Derived StateFlows for backward compatibility
+    val reviews: StateFlow<Map<String, List<Review>>> = _uiState
+        .map { it.reviews }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+    val currentCocktailReviews: StateFlow<List<Review>> = _uiState
+        .map { it.currentCocktailReviews }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val averageRating: StateFlow<Float> = _uiState
+        .map { it.averageRating }.stateIn(viewModelScope, SharingStarted.Eagerly, 0.0f)
+    val reviewCount: StateFlow<Int> = _uiState
+        .map { it.reviewCount }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+    val currentCocktailId: StateFlow<String?> = _uiState
+        .map { it.currentCocktailId }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     val hasReviews: Boolean
-        get() = _currentCocktailReviews.value.isNotEmpty()
-    
+        get() = _uiState.value.currentCocktailReviews.isNotEmpty()
     val isEmpty: Boolean
-        get() = _currentCocktailReviews.value.isEmpty()
+        get() = _uiState.value.currentCocktailReviews.isEmpty()
     
     /**
      * Load reviews for a specific cocktail.
@@ -51,23 +43,21 @@ class SharedReviewViewModel : SharedViewModel() {
      */
     suspend fun loadReviewsForCocktail(cocktailId: String) {
         try {
+            _uiState.update { it.copy(isLoading = true) }
             setLoading(true)
-            _currentCocktailId.value = cocktailId
-            
-            val cocktailReviews = _reviews.value[cocktailId] ?: emptyList()
-            _currentCocktailReviews.value = cocktailReviews.sortedByDescending { it.date }
-            _reviewCount.value = cocktailReviews.size
-            
-            // Calculate average rating
-            if (cocktailReviews.isNotEmpty()) {
-                _averageRating.value = cocktailReviews.map { it.rating }.average().toFloat()
-            } else {
-                _averageRating.value = 0.0f
-            }
-            
+
+            val cocktailReviews = _uiState.value.reviews[cocktailId] ?: emptyList()
+            _uiState.update { it.copy(
+                currentCocktailId = cocktailId,
+                currentCocktailReviews = cocktailReviews.sortedByDescending { r -> r.date },
+                reviewCount = cocktailReviews.size,
+                averageRating = manageReviewsUseCase.computeAverageRating(cocktailReviews),
+                isLoading = false
+            ) }
             setLoading(false)
         } catch (e: Exception) {
             handleException(e, "Failed to load reviews")
+            _uiState.update { it.copy(isLoading = false) }
             setLoading(false)
         }
     }
@@ -80,7 +70,7 @@ class SharedReviewViewModel : SharedViewModel() {
         if (!validateReview(rating, comment)) {
             return false
         }
-        
+
         if (userName.isBlank()) {
             setError(
                 "Invalid User",
@@ -90,29 +80,17 @@ class SharedReviewViewModel : SharedViewModel() {
             )
             return false
         }
-        
+
         try {
             setLoading(true)
-            
-            val review = Review(
-                cocktailId = cocktailId,
-                userName = userName.trim(),
-                rating = rating,
-                comment = comment.trim()
-            )
-            
-            // Add review to the map
-            val currentReviews = _reviews.value.toMutableMap()
-            val cocktailReviews = currentReviews[cocktailId]?.toMutableList() ?: mutableListOf()
-            cocktailReviews.add(review)
-            currentReviews[cocktailId] = cocktailReviews
-            _reviews.value = currentReviews
-            
-            // Refresh current cocktail reviews if it matches
-            if (_currentCocktailId.value == cocktailId) {
+
+            val updated = manageReviewsUseCase.submitReview(cocktailId, rating, comment, userName, _uiState.value.reviews)
+            _uiState.update { it.copy(reviews = updated) }
+
+            if (_uiState.value.currentCocktailId == cocktailId) {
                 loadReviewsForCocktail(cocktailId)
             }
-            
+
             setLoading(false)
             return true
         } catch (e: Exception) {
@@ -130,31 +108,13 @@ class SharedReviewViewModel : SharedViewModel() {
         if (!validateReview(rating, comment)) {
             return false
         }
-        
+
         try {
             setLoading(true)
-            
-            val currentReviews = _reviews.value.toMutableMap()
-            var reviewFound = false
-            
-            // Find and update the review
-            for ((cocktailId, reviewList) in currentReviews) {
-                val updatedList = reviewList.map { review ->
-                    if (review.id == reviewId) {
-                        reviewFound = true
-                        review.copy(
-                            rating = rating,
-                            comment = comment.trim(),
-                            date = getCurrentDate()
-                        )
-                    } else {
-                        review
-                    }
-                }
-                currentReviews[cocktailId] = updatedList
-            }
-            
-            if (!reviewFound) {
+
+            val (updatedReviews, found) = manageReviewsUseCase.updateReview(reviewId, rating, comment, _uiState.value.reviews)
+
+            if (!found) {
                 setError(
                     "Review Not Found",
                     "The review you're trying to update was not found",
@@ -164,14 +124,13 @@ class SharedReviewViewModel : SharedViewModel() {
                 setLoading(false)
                 return false
             }
-            
-            _reviews.value = currentReviews
-            
-            // Refresh current cocktail reviews if needed
-            _currentCocktailId.value?.let { cocktailId ->
+
+            _uiState.update { it.copy(reviews = updatedReviews) }
+
+            _uiState.value.currentCocktailId?.let { cocktailId ->
                 loadReviewsForCocktail(cocktailId)
             }
-            
+
             setLoading(false)
             return true
         } catch (e: Exception) {
@@ -188,26 +147,10 @@ class SharedReviewViewModel : SharedViewModel() {
     suspend fun deleteReview(reviewId: String): Boolean {
         try {
             setLoading(true)
-            
-            val currentReviews = _reviews.value.toMutableMap()
-            var reviewFound = false
-            var affectedCocktailId: String? = null
-            
-            // Find and remove the review
-            for ((cocktailId, reviewList) in currentReviews) {
-                val filteredList = reviewList.filter { review ->
-                    if (review.id == reviewId) {
-                        reviewFound = true
-                        affectedCocktailId = cocktailId
-                        false
-                    } else {
-                        true
-                    }
-                }
-                currentReviews[cocktailId] = filteredList
-            }
-            
-            if (!reviewFound) {
+
+            val (updatedReviews, found, affectedCocktailId) = manageReviewsUseCase.deleteReview(reviewId, _uiState.value.reviews)
+
+            if (!found) {
                 setError(
                     "Review Not Found",
                     "The review you're trying to delete was not found",
@@ -217,16 +160,15 @@ class SharedReviewViewModel : SharedViewModel() {
                 setLoading(false)
                 return false
             }
-            
-            _reviews.value = currentReviews
-            
-            // Refresh current cocktail reviews if needed
+
+            _uiState.update { it.copy(reviews = updatedReviews) }
+
             affectedCocktailId?.let { cocktailId ->
-                if (_currentCocktailId.value == cocktailId) {
+                if (_uiState.value.currentCocktailId == cocktailId) {
                     loadReviewsForCocktail(cocktailId)
                 }
             }
-            
+
             setLoading(false)
             return true
         } catch (e: Exception) {
@@ -246,7 +188,7 @@ class SharedReviewViewModel : SharedViewModel() {
             
             // In a real implementation, this would load from a repository
             // For now, we just update the current state
-            val allReviews = _reviews.value.values.flatten()
+            val allReviews = _uiState.value.reviews.values.flatten()
             
             setLoading(false)
         } catch (e: Exception) {
@@ -261,72 +203,33 @@ class SharedReviewViewModel : SharedViewModel() {
      * Get average rating for a cocktail.
      */
     fun getAverageRating(cocktailId: String): Float {
-        val cocktailReviews = _reviews.value[cocktailId] ?: return 0.0f
-        return if (cocktailReviews.isNotEmpty()) {
-            cocktailReviews.map { it.rating }.average().toFloat()
-        } else {
-            0.0f
-        }
+        val cocktailReviews = _uiState.value.reviews[cocktailId] ?: return 0.0f
+        return manageReviewsUseCase.computeAverageRating(cocktailReviews)
     }
     
     /**
      * Get review count for a cocktail.
      */
-    fun getReviewCount(cocktailId: String): Int {
-        return _reviews.value[cocktailId]?.size ?: 0
-    }
-    
-    /**
-     * Get reviews for a specific cocktail.
-     */
-    fun getReviewsForCocktail(cocktailId: String): List<Review> {
-        return _reviews.value[cocktailId]?.sortedByDescending { it.date } ?: emptyList()
-    }
+    fun getReviewCount(cocktailId: String): Int =
+        _uiState.value.reviews[cocktailId]?.size ?: 0
+
+    fun getReviewsForCocktail(cocktailId: String): List<Review> =
+        _uiState.value.reviews[cocktailId]?.sortedByDescending { it.date } ?: emptyList()
     
     /**
      * Validate review input.
      */
     fun validateReview(rating: Float, comment: String): Boolean {
-        if (rating < 1.0f || rating > 5.0f) {
+        val errorMessage = manageReviewsUseCase.validateReview(rating, comment)
+        if (errorMessage != null) {
             setError(
-                "Invalid Rating",
-                "Rating must be between 1 and 5 stars",
+                "Validation Error",
+                errorMessage,
                 ErrorHandler.ErrorCategory.DATA,
                 showAsEvent = true
             )
             return false
         }
-        
-        if (comment.isBlank()) {
-            setError(
-                "Invalid Comment",
-                "Please provide a comment for your review",
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
-            )
-            return false
-        }
-        
-        if (comment.length < 10) {
-            setError(
-                "Comment Too Short",
-                "Review comment must be at least 10 characters long",
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
-            )
-            return false
-        }
-        
-        if (comment.length > 500) {
-            setError(
-                "Comment Too Long",
-                "Review comment must be less than 500 characters",
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
-            )
-            return false
-        }
-        
         return true
     }
     
@@ -348,26 +251,14 @@ class SharedReviewViewModel : SharedViewModel() {
      * Get rating distribution for a cocktail.
      */
     fun getRatingDistribution(cocktailId: String): Map<Int, Int> {
-        val reviews = getReviewsForCocktail(cocktailId)
-        val distribution = mutableMapOf<Int, Int>()
-        
-        for (i in 1..5) {
-            distribution[i] = 0
-        }
-        
-        reviews.forEach { review ->
-            val ratingInt = review.rating.toInt()
-            distribution[ratingInt] = distribution[ratingInt]!! + 1
-        }
-        
-        return distribution
+        return manageReviewsUseCase.getRatingDistribution(getReviewsForCocktail(cocktailId))
     }
     
     /**
      * Get recent reviews across all cocktails.
      */
     fun getRecentReviews(limit: Int = 10): List<Review> {
-        return _reviews.value.values
+        return _uiState.value.reviews.values
             .flatten()
             .sortedByDescending { it.date }
             .take(limit)
@@ -379,7 +270,7 @@ class SharedReviewViewModel : SharedViewModel() {
     fun searchReviews(query: String): List<Review> {
         if (query.isBlank()) return emptyList()
         
-        return _reviews.value.values
+        return _uiState.value.reviews.values
             .flatten()
             .filter { review ->
                 review.comment.contains(query, ignoreCase = true) ||
@@ -393,16 +284,10 @@ class SharedReviewViewModel : SharedViewModel() {
      */
     fun refresh() {
         viewModelScope.launch {
-            _currentCocktailId.value?.let { cocktailId ->
+            _uiState.value.currentCocktailId?.let { cocktailId ->
                 loadReviewsForCocktail(cocktailId)
             }
         }
     }
     
-    // MARK: - Private Helper Methods
-    
-    private fun getCurrentDate(): String {
-        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        return "${now.year}-${now.monthNumber.toString().padStart(2, '0')}-${now.dayOfMonth.toString().padStart(2, '0')}"
-    }
 }

@@ -1,12 +1,14 @@
 package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.domain.usecase.LoadCocktailsByCategoryUseCase
+import com.cocktailcraft.domain.usecase.SearchCocktailsUseCase
+import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.util.ErrorHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
+
 import kotlinx.coroutines.launch
 import org.koin.core.component.inject
 
@@ -21,7 +23,8 @@ import org.koin.core.component.inject
  */
 class SharedCocktailListViewModel : SharedViewModel() {
     
-    private val repository: CocktailRepository by inject()
+    private val loadCocktailsByCategoryUseCase: LoadCocktailsByCategoryUseCase by inject()
+    private val searchCocktailsUseCase: SearchCocktailsUseCase by inject()
     
     // State flows that will be automatically converted to Swift AsyncSequence by SKIE
     private val _cocktails = MutableStateFlow<List<Cocktail>>(emptyList())
@@ -44,13 +47,7 @@ class SharedCocktailListViewModel : SharedViewModel() {
         viewModelScope.launch {
             try {
                 setLoading(true)
-                repository.filterByCategory("Cocktail")
-                    .catch { exception ->
-                        handleException(exception, "Failed to load cocktails")
-                    }
-                    .collect { cocktailList ->
-                        _cocktails.value = cocktailList
-                    }
+                _cocktails.value = loadCocktailsByCategoryUseCase("Cocktail").getOrDefault(emptyList())
             } catch (e: Exception) {
                 handleException(e, "Failed to load cocktails")
             } finally {
@@ -73,13 +70,7 @@ class SharedCocktailListViewModel : SharedViewModel() {
         viewModelScope.launch {
             try {
                 setLoading(true)
-                repository.searchCocktailsByName(query)
-                    .catch { exception ->
-                        handleException(exception, "Failed to search cocktails")
-                    }
-                    .collect { cocktailList ->
-                        _cocktails.value = cocktailList
-                    }
+                _cocktails.value = searchCocktailsUseCase(query).getOrDefault(emptyList())
             } catch (e: Exception) {
                 handleException(e, "Failed to search cocktails")
             } finally {
@@ -97,13 +88,7 @@ class SharedCocktailListViewModel : SharedViewModel() {
         viewModelScope.launch {
             try {
                 setLoading(true)
-                repository.filterByCategory(category)
-                    .catch { exception ->
-                        handleException(exception, "Failed to load cocktails for category: $category")
-                    }
-                    .collect { cocktailList ->
-                        _cocktails.value = cocktailList
-                    }
+                _cocktails.value = loadCocktailsByCategoryUseCase(category).getOrDefault(emptyList())
             } catch (e: Exception) {
                 handleException(e, "Failed to load cocktails for category: $category")
             } finally {

@@ -1,7 +1,9 @@
 package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
+import com.cocktailcraft.domain.util.getOrDefault
+import com.cocktailcraft.viewmodel.state.FavoritesUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.koin.core.component.inject
@@ -17,43 +19,36 @@ import org.koin.core.component.inject
  */
 class SharedFavoritesViewModel : SharedViewModel() {
 
-    private val repository: CocktailRepository by inject()
+    private val manageFavoritesUseCase: ManageFavoritesUseCase by inject()
 
-    // UI State - SKIE will convert these to Swift AsyncSequence
-    private val _favorites = MutableStateFlow<List<Cocktail>>(emptyList())
-    val favorites: StateFlow<List<Cocktail>> = _favorites.asStateFlow()
-    
-    private val _favoriteCount = MutableStateFlow(0)
-    val favoriteCount: StateFlow<Int> = _favoriteCount.asStateFlow()
+    // Consolidated UI State
+    private val _uiState = MutableStateFlow(FavoritesUiState())
+    val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
 
-    // Computed properties
+    // Derived StateFlows for backward compatibility
+    val favorites: StateFlow<List<Cocktail>> = _uiState
+        .map { it.favorites }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val favoriteCount: StateFlow<Int> = _uiState
+        .map { it.favoriteCount }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
     val isEmpty: Boolean
-        get() = _favorites.value.isEmpty()
-    
+        get() = _uiState.value.favorites.isEmpty()
     val hasItems: Boolean
-        get() = _favorites.value.isNotEmpty()
+        get() = _uiState.value.favorites.isNotEmpty()
 
     init {
-        viewModelScope.launch {
-            loadFavorites()
-        }
+        viewModelScope.launch { loadFavorites() }
     }
 
-    /**
-     * Load favorites from repository.
-     * SKIE will convert this to Swift async function.
-     */
     suspend fun loadFavorites() {
+        _uiState.update { it.copy(isLoading = true) }
         setLoading(true)
         try {
-            repository.getFavoriteCocktails()
-                .catch { /* Ignore errors */ }
-                .collect { favoriteCocktails ->
-                    _favorites.value = favoriteCocktails
-                    _favoriteCount.value = favoriteCocktails.size
-                    setLoading(false)
-                }
+            val favs = manageFavoritesUseCase.loadFavorites().getOrDefault(emptyList())
+            _uiState.update { it.copy(favorites = favs, favoriteCount = favs.size, isLoading = false) }
+            setLoading(false)
         } catch (e: Exception) {
+            _uiState.update { it.copy(isLoading = false) }
             setLoading(false)
         }
     }
@@ -64,11 +59,7 @@ class SharedFavoritesViewModel : SharedViewModel() {
      */
     suspend fun toggleFavorite(cocktail: Cocktail) {
         try {
-            if (isFavorite(cocktail.id)) {
-                repository.removeFromFavorites(cocktail)
-            } else {
-                repository.addToFavorites(cocktail)
-            }
+            manageFavoritesUseCase.toggle(cocktail)
             loadFavorites()
         } catch (e: Exception) {
             handleException(e, "Failed to update favorites", showAsEvent = true)
@@ -82,12 +73,11 @@ class SharedFavoritesViewModel : SharedViewModel() {
     suspend fun clearAllFavorites() {
         try {
             // Remove all favorites one by one since clearFavorites doesn't exist
-            val currentFavorites = _favorites.value
+            val currentFavorites = _uiState.value.favorites
             for (cocktail in currentFavorites) {
-                repository.removeFromFavorites(cocktail)
+                manageFavoritesUseCase.removeFromFavorites(cocktail)
             }
-            _favorites.value = emptyList()
-            _favoriteCount.value = 0
+            _uiState.update { it.copy(favorites = emptyList(), favoriteCount = 0) }
         } catch (e: Exception) {
             handleException(e, "Failed to clear favorites", showAsEvent = true)
         }
@@ -95,69 +85,34 @@ class SharedFavoritesViewModel : SharedViewModel() {
 
     // MARK: - Synchronous Helper Methods
 
-    /**
-     * Check if a cocktail is favorite.
-     */
-    fun isFavorite(cocktailId: String): Boolean {
-        return _favorites.value.any { it.id == cocktailId }
-    }
-    
-    /**
-     * Get favorites by category.
-     */
-    fun getFavoritesByCategory(category: String): List<Cocktail> {
-        return _favorites.value.filter { it.category == category }
-    }
-    
-    /**
-     * Get all favorite categories.
-     */
-    fun getFavoriteCategories(): List<String> {
-        return _favorites.value
-            .mapNotNull { it.category }
-            .distinct()
-            .sorted()
-    }
-    
-    /**
-     * Search favorites by name.
-     */
+    fun isFavorite(cocktailId: String): Boolean =
+        _uiState.value.favorites.any { it.id == cocktailId }
+
+    fun getFavoritesByCategory(category: String): List<Cocktail> =
+        _uiState.value.favorites.filter { it.category == category }
+
+    fun getFavoriteCategories(): List<String> =
+        _uiState.value.favorites.mapNotNull { it.category }.distinct().sorted()
+
     fun searchFavorites(query: String): List<Cocktail> {
-        if (query.isBlank()) return _favorites.value
-        
-        return _favorites.value.filter { cocktail ->
+        val favs = _uiState.value.favorites
+        if (query.isBlank()) return favs
+        return favs.filter { cocktail ->
             cocktail.name.contains(query, ignoreCase = true) ||
             cocktail.ingredients.any { it.name.contains(query, ignoreCase = true) }
         }
     }
-    
-    /**
-     * Get favorite cocktails sorted by name.
-     */
-    fun getFavoritesSortedByName(): List<Cocktail> {
-        return _favorites.value.sortedBy { it.name }
-    }
-    
-    /**
-     * Get favorite cocktails sorted by date added.
-     */
-    fun getFavoritesSortedByDate(): List<Cocktail> {
-        return _favorites.value.sortedByDescending { it.dateAdded }
-    }
-    
-    /**
-     * Get favorite cocktails sorted by rating.
-     */
-    fun getFavoritesSortedByRating(): List<Cocktail> {
-        return _favorites.value.sortedByDescending { it.rating }
-    }
-    
-    /**
-     * Refresh favorites data.
-     */
+
+    fun getFavoritesSortedByName(): List<Cocktail> =
+        _uiState.value.favorites.sortedBy { it.name }
+
+    fun getFavoritesSortedByDate(): List<Cocktail> =
+        _uiState.value.favorites.sortedByDescending { it.dateAdded }
+
+    fun getFavoritesSortedByRating(): List<Cocktail> =
+        _uiState.value.favorites.sortedByDescending { it.rating }
+
     fun refresh() {
-        viewModelScope.launch {
-            loadFavorites()
-        }
+        viewModelScope.launch { loadFavorites() }
     }
 }

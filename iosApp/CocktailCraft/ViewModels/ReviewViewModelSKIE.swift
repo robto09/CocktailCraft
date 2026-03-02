@@ -49,68 +49,28 @@ class ReviewViewModelSKIE: ObservableObject {
     // MARK: - SKIE StateFlow Observation
     
     private func startObserving() {
-        // Observe reviews using SKIE async sequence
+        // Single consolidated observation of uiState
         observationTasks.append(Task {
-            for await reviewMap in sharedViewModel.reviews {
+            for await state in sharedViewModel.uiState {
                 await MainActor.run {
-                    // Convert Kotlin Map to Swift Dictionary
+                    // Convert Kotlin Map to Swift Dictionary for reviews
                     var swiftDict: [String: [Review]] = [:]
-                    for (key, value) in reviewMap {
+                    for (key, value) in state.reviews {
                         if let stringKey = key as? String, let reviewList = value as? [Review] {
                             swiftDict[stringKey] = reviewList
                         }
                     }
                     self.reviews = swiftDict
+                    self.currentCocktailReviews = state.currentCocktailReviews
+                    self.averageRating = state.averageRating
+                    self.reviewCount = Int(state.reviewCount)
+                    self.currentCocktailId = state.currentCocktailId
+                    self.isLoading = state.isLoading
                 }
             }
         })
-        
-        // Observe current cocktail reviews
-        observationTasks.append(Task {
-            for await cocktailReviews in sharedViewModel.currentCocktailReviews {
-                await MainActor.run {
-                    self.currentCocktailReviews = cocktailReviews
-                }
-            }
-        })
-        
-        // Observe average rating
-        observationTasks.append(Task {
-            for await rating in sharedViewModel.averageRating {
-                await MainActor.run {
-                    self.averageRating = rating.floatValue
-                }
-            }
-        })
-        
-        // Observe review count
-        observationTasks.append(Task {
-            for await count in sharedViewModel.reviewCount {
-                await MainActor.run {
-                    self.reviewCount = count.intValue
-                }
-            }
-        })
-        
-        // Observe current cocktail ID
-        observationTasks.append(Task {
-            for await cocktailId in sharedViewModel.currentCocktailId {
-                await MainActor.run {
-                    self.currentCocktailId = cocktailId
-                }
-            }
-        })
-        
-        // Observe loading state
-        observationTasks.append(Task {
-            for await loading in sharedViewModel.isLoading {
-                await MainActor.run {
-                    self.isLoading = loading.boolValue
-                }
-            }
-        })
-        
-        // Observe error state
+
+        // Observe error from base class
         observationTasks.append(Task {
             for await errorValue in sharedViewModel.error {
                 await MainActor.run {

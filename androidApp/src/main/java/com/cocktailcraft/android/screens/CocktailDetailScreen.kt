@@ -82,6 +82,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.android.ui.theme.AppColors
@@ -123,9 +124,9 @@ fun CocktailDetailScreen(
     // Add a loading state to track when data is being fetched
     var isLoading by remember { mutableStateOf(true) }
 
-    // Use collectAsState instead of collectAsStateWithLifecycle
-    val cocktailFlow = remember { homeViewModel.getCocktailById(cocktailId) }
-    val cocktail by cocktailFlow.collectAsState(initial = null)
+    // Use suspend getCocktailById via StateFlow instead of one-shot Flow
+    val cocktailState = remember { homeViewModel.getCocktailByIdAsFlow(cocktailId) }
+    val cocktail by cocktailState.collectAsState()
 
     // Load reviews for this cocktail
     LaunchedEffect(cocktailId) {
@@ -534,7 +535,8 @@ fun CocktailDetailScreen(
 
                                 // Use the repository directly to get recommendations from the API
                                 // This bypasses any caching or filtering in the ViewModel
-                                val apiRecommendations = homeViewModel.repository.getCocktailsByCategory(category)
+                                val apiRecommendations = homeViewModel.catalogRepository.getCocktailsByCategory(category)
+                                    .getOrDefault(emptyList())
                                     .filter { it.id != currentId } // Filter out current cocktail
                                     .take(3) // Limit to 3 recommendations
 

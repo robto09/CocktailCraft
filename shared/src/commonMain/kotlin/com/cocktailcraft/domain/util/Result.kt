@@ -23,3 +23,35 @@ sealed class Result<out T> {
         is Loading -> this
     }
 }
+
+// Extension: chain a Result-returning transform on success
+fun <T, R> Result<T>.flatMap(transform: (T) -> Result<R>): Result<R> = when (this) {
+    is Result.Success -> transform(data)
+    is Result.Error -> Result.Error(message, code)
+    is Result.Loading -> Result.Loading
+}
+
+// Extension: perform a side-effect on success
+fun <T> Result<T>.onSuccess(action: (T) -> Unit): Result<T> {
+    if (this is Result.Success) action(data)
+    return this
+}
+
+// Extension: perform a side-effect on error
+fun <T> Result<T>.onError(action: (String, ErrorCode) -> Unit): Result<T> {
+    if (this is Result.Error) action(message, code)
+    return this
+}
+
+// Extension: get data or a default value
+fun <T> Result<T>.getOrDefault(defaultValue: @UnsafeVariance T): T = when (this) {
+    is Result.Success -> data
+    else -> defaultValue
+}
+
+// Extension: get data or throw an exception (useful for bridging to try/catch callers)
+fun <T> Result<T>.getOrThrow(): T = when (this) {
+    is Result.Success -> data
+    is Result.Error -> throw RuntimeException(message)
+    is Result.Loading -> throw IllegalStateException("Result is still loading")
+}

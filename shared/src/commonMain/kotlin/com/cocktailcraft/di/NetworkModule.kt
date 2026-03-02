@@ -1,5 +1,6 @@
 package com.cocktailcraft.di
 
+import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.remote.CocktailApi
 import com.cocktailcraft.data.remote.CocktailApiImpl
 import com.cocktailcraft.domain.config.AppConfig
@@ -51,7 +52,7 @@ val networkModule = module {
                 exponentialDelay()
                 modifyRequest { request ->
                     // Log retry attempts - access retryCount from the context
-                    println("Retrying request to ${request.url} (attempt #${retryCount})")
+                    Logger.d { "Retrying request to ${request.url} (attempt #${retryCount})" }
                 }
             }
 
@@ -72,7 +73,7 @@ val networkModule = module {
                 }
 
                 handleResponseExceptionWithRequest { exception, _ ->
-                    println("Network error: ${exception.message}")
+                    Logger.w { "Network error: ${exception.message}" }
                 }
             }
 

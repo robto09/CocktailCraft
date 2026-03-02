@@ -1,30 +1,26 @@
 package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.repository.CocktailRepository
+import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.util.Result
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.first
 
 class ToggleFavoriteUseCase(
-    private val cocktailRepository: CocktailRepository
+    private val cocktailRepository: CocktailFavoritesRepository
 ) {
-    suspend operator fun invoke(cocktail: Cocktail): Flow<Result<Boolean>> = flow {
-        try {
-            // Check if cocktail is already a favorite
-            val isAlreadyFavorite = cocktailRepository.isCocktailFavorite(cocktail.id).first()
-            
-            // Toggle favorite status
+    suspend operator fun invoke(cocktail: Cocktail): Result<Boolean> {
+        return try {
+            val favoriteResult = cocktailRepository.isCocktailFavorite(cocktail.id)
+            val isAlreadyFavorite = favoriteResult.getOrNull() ?: false
+
             if (isAlreadyFavorite) {
                 cocktailRepository.removeFromFavorites(cocktail)
-                emit(Result.Success(false)) // Now not a favorite
+                Result.Success(false) // Now not a favorite
             } else {
                 cocktailRepository.addToFavorites(cocktail)
-                emit(Result.Success(true)) // Now a favorite
+                Result.Success(true) // Now a favorite
             }
         } catch (e: Exception) {
-            emit(Result.Error(e.message ?: "Unknown error occurred"))
+            Result.Error(e.message ?: "Unknown error occurred")
         }
     }
-} 
+}

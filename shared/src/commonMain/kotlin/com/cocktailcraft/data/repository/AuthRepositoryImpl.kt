@@ -4,9 +4,8 @@ import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.repository.AuthRepository
+import com.cocktailcraft.domain.util.Result
 import com.russhwolf.settings.Settings
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -18,15 +17,10 @@ class AuthRepositoryImpl(
 ) : AuthRepository {
 
     // Authentication methods
-    override suspend fun signUp(email: String, password: String): Flow<Boolean> = flow {
-        try {
-            // Check if user already exists
-            if (getUserByEmail(email) != null) {
-                emit(false)
-                return@flow
-            }
+    override suspend fun signUp(email: String, password: String): Result<Boolean> {
+        return try {
+            if (getUserByEmail(email) != null) return Result.Success(false)
 
-            // Create new user
             val user = User(
                 id = UUID.randomUUID(),
                 email = email,
@@ -34,223 +28,156 @@ class AuthRepositoryImpl(
                 preferences = emptyMap()
             )
 
-            // Save user
             val users = getCurrentUsers().toMutableList()
             users.add(user)
             saveUsers(users)
-
-            // Save credentials
             saveCredentials(email, password)
-
-            // Set as current user
             settings.putString(CURRENT_USER_ID_KEY, user.id)
-
-            emit(true)
+            Result.Success(true)
         } catch (e: Exception) {
-            emit(false)
+            Result.Error(e.message ?: "Failed to sign up")
         }
     }
 
-    override suspend fun signIn(email: String, password: String): Flow<Boolean> = flow {
-        try {
-            // Check credentials
+    override suspend fun signIn(email: String, password: String): Result<Boolean> {
+        return try {
             val storedPassword = settings.getStringOrNull("password_$email")
-            if (storedPassword != password) {
-                emit(false)
-                return@flow
-            }
+            if (storedPassword != password) return Result.Success(false)
 
-            // Get user
-            val user = getUserByEmail(email)
-            if (user == null) {
-                emit(false)
-                return@flow
-            }
-
-            // Set as current user
+            val user = getUserByEmail(email) ?: return Result.Success(false)
             settings.putString(CURRENT_USER_ID_KEY, user.id)
-
-            emit(true)
+            Result.Success(true)
         } catch (e: Exception) {
-            emit(false)
+            Result.Error(e.message ?: "Failed to sign in")
         }
     }
 
-    override suspend fun signOut(): Flow<Boolean> = flow {
-        try {
-            // Clear current user
+    override suspend fun signOut(): Result<Boolean> {
+        return try {
             settings.remove(CURRENT_USER_ID_KEY)
-            emit(true)
+            Result.Success(true)
         } catch (e: Exception) {
-            emit(false)
+            Result.Error(e.message ?: "Failed to sign out")
         }
     }
 
-    override suspend fun resetPassword(email: String): Flow<Boolean> = flow {
-        try {
-            // In a real app, this would send an email with a reset link
-            // For this demo, we'll just reset the password to a default value
-            val user = getUserByEmail(email)
-            if (user == null) {
-                emit(false)
-                return@flow
-            }
-
-            // Reset password to "password123"
+    override suspend fun resetPassword(email: String): Result<Boolean> {
+        return try {
+            val user = getUserByEmail(email) ?: return Result.Success(false)
             saveCredentials(email, "password123")
-            emit(true)
+            Result.Success(true)
         } catch (e: Exception) {
-            emit(false)
+            Result.Error(e.message ?: "Failed to reset password")
         }
     }
 
-    override suspend fun changePassword(oldPassword: String, newPassword: String): Flow<Boolean> = flow {
-        try {
-            val currentUser = getCurrentUserSync()
-            if (currentUser == null) {
-                emit(false)
-                return@flow
-            }
-
-            // Check old password
+    override suspend fun changePassword(oldPassword: String, newPassword: String): Result<Boolean> {
+        return try {
+            val currentUser = getCurrentUserSync() ?: return Result.Success(false)
             val storedPassword = settings.getStringOrNull("password_${currentUser.email}")
-            if (storedPassword != oldPassword) {
-                emit(false)
-                return@flow
-            }
-
-            // Update password
+            if (storedPassword != oldPassword) return Result.Success(false)
             saveCredentials(currentUser.email, newPassword)
-            emit(true)
+            Result.Success(true)
         } catch (e: Exception) {
-            emit(false)
+            Result.Error(e.message ?: "Failed to change password")
         }
     }
 
-    override suspend fun isUserSignedIn(): Flow<Boolean> = flow {
-        val currentUserId = settings.getStringOrNull(CURRENT_USER_ID_KEY)
-        emit(currentUserId != null)
+    override suspend fun isUserSignedIn(): Result<Boolean> {
+        return try {
+            val currentUserId = settings.getStringOrNull(CURRENT_USER_ID_KEY)
+            Result.Success(currentUserId != null)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to check sign-in status")
+        }
     }
 
-    override suspend fun getCurrentUser(): Flow<User?> = flow {
-        emit(getCurrentUserSync())
+    override suspend fun getCurrentUser(): Result<User?> {
+        return try {
+            Result.Success(getCurrentUserSync())
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to get current user")
+        }
     }
 
     // Profile management methods
-    override suspend fun updateUserName(name: String): Flow<Boolean> = flow {
-        try {
-            val currentUser = getCurrentUserSync()
-            if (currentUser == null) {
-                emit(false)
-                return@flow
-            }
-
-            // Update user
+    override suspend fun updateUserName(name: String): Result<Boolean> {
+        return try {
+            val currentUser = getCurrentUserSync() ?: return Result.Success(false)
             val updatedUser = currentUser.copy(name = name)
             updateUser(updatedUser)
-            emit(true)
+            Result.Success(true)
         } catch (e: Exception) {
-            emit(false)
+            Result.Error(e.message ?: "Failed to update user name")
         }
     }
 
-    override suspend fun updateUserEmail(email: String, password: String): Flow<Boolean> = flow {
-        try {
-            val currentUser = getCurrentUserSync()
-            if (currentUser == null) {
-                emit(false)
-                return@flow
-            }
-
-            // Check if email already exists
-            if (getUserByEmail(email) != null && email != currentUser.email) {
-                emit(false)
-                return@flow
-            }
-
-            // Get old credentials
+    override suspend fun updateUserEmail(email: String, password: String): Result<Boolean> {
+        return try {
+            val currentUser = getCurrentUserSync() ?: return Result.Success(false)
+            if (getUserByEmail(email) != null && email != currentUser.email) return Result.Success(false)
             val oldPassword = settings.getStringOrNull("password_${currentUser.email}")
-            if (oldPassword != password) {
-                emit(false)
-                return@flow
-            }
+            if (oldPassword != password) return Result.Success(false)
 
-            // Remove old credentials
             settings.remove("password_${currentUser.email}")
-
-            // Update user
             val updatedUser = currentUser.copy(email = email)
             updateUser(updatedUser)
-
-            // Save new credentials
             saveCredentials(email, password)
-            emit(true)
+            Result.Success(true)
         } catch (e: Exception) {
-            emit(false)
+            Result.Error(e.message ?: "Failed to update email")
         }
     }
 
-    override suspend fun updateUserAddress(address: Address): Flow<Boolean> = flow {
-        try {
-            val currentUser = getCurrentUserSync()
-            if (currentUser == null) {
-                emit(false)
-                return@flow
-            }
-
-            // Update user
+    override suspend fun updateUserAddress(address: Address): Result<Boolean> {
+        return try {
+            val currentUser = getCurrentUserSync() ?: return Result.Success(false)
             val updatedUser = currentUser.copy(address = address)
             updateUser(updatedUser)
-            emit(true)
+            Result.Success(true)
         } catch (e: Exception) {
-            emit(false)
+            Result.Error(e.message ?: "Failed to update address")
         }
     }
 
     // Preferences management
-    override suspend fun updateUserPreferences(preferences: UserPreferences): Flow<Boolean> = flow {
-        try {
-            val currentUser = getCurrentUserSync()
-            if (currentUser == null) {
-                emit(false)
-                return@flow
-            }
-
-            // Convert UserPreferences to Map<String, String>
+    override suspend fun updateUserPreferences(preferences: UserPreferences): Result<Boolean> {
+        return try {
+            val currentUser = getCurrentUserSync() ?: return Result.Success(false)
             val preferencesMap = mapOf(
                 "darkMode" to preferences.darkMode.toString(),
                 "followSystemTheme" to preferences.followSystemTheme.toString(),
                 "notificationsEnabled" to preferences.notificationsEnabled.toString(),
                 "language" to preferences.language
             )
-
-            // Update user
             val updatedUser = currentUser.copy(preferences = preferencesMap)
             updateUser(updatedUser)
-            emit(true)
+            Result.Success(true)
         } catch (e: Exception) {
-            emit(false)
+            Result.Error(e.message ?: "Failed to update preferences")
         }
     }
 
-    override suspend fun getUserPreferences(): Flow<UserPreferences> = flow {
-        val currentUser = getCurrentUserSync()
-        if (currentUser != null) {
-            // Convert Map<String, String> to UserPreferences
-            val prefs = currentUser.preferences
-            val darkMode = prefs["darkMode"]?.toBoolean() ?: false
-            val followSystemTheme = prefs["followSystemTheme"]?.toBoolean() ?: true
-            val notificationsEnabled = prefs["notificationsEnabled"]?.toBoolean() ?: true
-            val language = prefs["language"] ?: "en"
-
-            emit(UserPreferences(
-                darkMode = darkMode,
-                followSystemTheme = followSystemTheme,
-                notificationsEnabled = notificationsEnabled,
-                language = language
-            ))
-        } else {
-            emit(UserPreferences())
+    override suspend fun getUserPreferences(): Result<UserPreferences> {
+        return try {
+            val currentUser = getCurrentUserSync()
+            if (currentUser != null) {
+                val prefs = currentUser.preferences
+                val darkMode = prefs["darkMode"]?.toBoolean() ?: false
+                val followSystemTheme = prefs["followSystemTheme"]?.toBoolean() ?: true
+                val notificationsEnabled = prefs["notificationsEnabled"]?.toBoolean() ?: true
+                val language = prefs["language"] ?: "en"
+                Result.Success(UserPreferences(
+                    darkMode = darkMode,
+                    followSystemTheme = followSystemTheme,
+                    notificationsEnabled = notificationsEnabled,
+                    language = language
+                ))
+            } else {
+                Result.Success(UserPreferences())
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to get user preferences")
         }
     }
 

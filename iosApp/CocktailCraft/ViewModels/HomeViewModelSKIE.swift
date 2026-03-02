@@ -57,108 +57,37 @@ class HomeViewModelSKIE: ObservableObject {
     deinit {
         // Cancel all observation tasks
         observationTasks.forEach { $0.cancel() }
-        sharedViewModel.onCleared()
-        cartViewModel.onCleared()
+        // Note: Do NOT call onCleared() — these are Koin singletons whose
+        // coroutine scope must survive the lifetime of any single wrapper.
     }
     
     // MARK: - SKIE StateFlow Observation
     
     private func startObserving() {
-        // Observe cocktails using SKIE async sequence
+        // Single consolidated observation of uiState
         observationTasks.append(Task {
-            for await cocktailList in sharedViewModel.cocktails {
+            for await state in sharedViewModel.uiState {
                 await MainActor.run {
-                    self.cocktails = cocktailList
-                    self.filteredCocktails = cocktailList
+                    self.cocktails = state.cocktails
+                    self.filteredCocktails = state.cocktails
+                    self.isLoading = state.isLoading
+                    self.selectedCategory = state.selectedCategory
+                    self.isSearchActive = state.isSearchActive
+                    self.searchQuery = state.searchQuery
+                    self.isOfflineMode = state.isOfflineMode
+                    self.isNetworkAvailable = state.isNetworkAvailable
+                    self.hasMoreData = state.hasMoreData
+                    self.isLoadingMore = state.isLoadingMore
+                    self.favorites = state.favorites
                 }
             }
         })
-        
-        // Observe loading state
-        observationTasks.append(Task {
-            for await loading in sharedViewModel.isLoading {
-                await MainActor.run {
-                    self.isLoading = loading.boolValue
-                }
-            }
-        })
-        
-        // Observe error state
+
+        // Observe error from base class
         observationTasks.append(Task {
             for await errorValue in sharedViewModel.error {
                 await MainActor.run {
                     self.error = errorValue
-                }
-            }
-        })
-        
-        // Observe selected category
-        observationTasks.append(Task {
-            for await category in sharedViewModel.selectedCategory {
-                await MainActor.run {
-                    self.selectedCategory = category
-                }
-            }
-        })
-        
-        // Observe search state
-        observationTasks.append(Task {
-            for await active in sharedViewModel.isSearchActive {
-                await MainActor.run {
-                    self.isSearchActive = active.boolValue
-                }
-            }
-        })
-        
-        // Observe search query
-        observationTasks.append(Task {
-            for await query in sharedViewModel.searchQuery {
-                await MainActor.run {
-                    self.searchQuery = query
-                }
-            }
-        })
-        
-        // Observe offline mode
-        observationTasks.append(Task {
-            for await offline in sharedViewModel.isOfflineMode {
-                await MainActor.run {
-                    self.isOfflineMode = offline.boolValue
-                }
-            }
-        })
-        
-        // Observe network availability
-        observationTasks.append(Task {
-            for await available in sharedViewModel.isNetworkAvailable {
-                await MainActor.run {
-                    self.isNetworkAvailable = available.boolValue
-                }
-            }
-        })
-        
-        // Observe pagination state
-        observationTasks.append(Task {
-            for await hasMore in sharedViewModel.hasMoreData {
-                await MainActor.run {
-                    self.hasMoreData = hasMore.boolValue
-                }
-            }
-        })
-        
-        observationTasks.append(Task {
-            for await loadingMore in sharedViewModel.isLoadingMore {
-                await MainActor.run {
-                    self.isLoadingMore = loadingMore.boolValue
-                }
-            }
-        })
-        
-        // Observe favorites
-        observationTasks.append(Task {
-            for await favoritesList in sharedViewModel.favorites {
-                await MainActor.run {
-                    self.favorites = favoritesList
                 }
             }
         })
@@ -278,50 +207,33 @@ class HomeViewModelSKIE: ObservableObject {
     }
     
     // MARK: - Helper Methods for SwiftUI
-    
+
     func refreshCocktails() async {
         // Simulate refresh with delay
         try? await Task.sleep(nanoseconds: 1_000_000_000)
         await loadCocktails()
     }
-    
+
+    /// Apply filters by delegating to the shared ViewModel.
+    /// All filtering/sorting logic lives in the shared Kotlin use cases.
     func applyFilters() {
-        applyFilters(category: selectedCategory, ingredient: selectedIngredient)
+        Task {
+            await applyFiltersAsync(category: selectedCategory, ingredient: selectedIngredient)
+        }
     }
-    
+
+    /// Apply filters with specific category/ingredient via shared ViewModel.
     func applyFilters(category: String? = nil, ingredient: String? = nil) {
-        var filtered = cocktails
-        
-        // Apply category filter
-        let categoryToUse = category ?? selectedCategory
-        if let categoryToUse = categoryToUse {
-            filtered = filtered.filter { $0.category == categoryToUse }
+        Task {
+            await applyFiltersAsync(category: category ?? selectedCategory, ingredient: ingredient ?? selectedIngredient)
         }
-        
-        // Apply ingredient filter
-        let ingredientToUse = ingredient ?? selectedIngredient
-        if let ingredientToUse = ingredientToUse {
-            filtered = filtered.filter { cocktail in
-                cocktail.ingredients.contains { $0.name == ingredientToUse }
-            }
+    }
+
+    private func applyFiltersAsync(category: String?, ingredient: String?) async {
+        do {
+            try await sharedViewModel.applyFilters(category: category, ingredient: ingredient)
+        } catch {
+            print("HomeViewModelSKIE - Error applying filters: \(error)")
         }
-        
-        // Apply sorting
-        switch sortOption {
-        case .nameAsc:
-            filtered = filtered.sorted { $0.name < $1.name }
-        case .nameDesc:
-            filtered = filtered.sorted { $0.name > $1.name }
-        case .priceAsc:
-            filtered = filtered.sorted { $0.price < $1.price }
-        case .priceDesc:
-            filtered = filtered.sorted { $0.price > $1.price }
-        case .ratingDesc:
-            filtered = filtered.sorted { $0.rating > $1.rating }
-        case .popularityDesc:
-            filtered = filtered.sorted { $0.rating > $1.rating } // Using rating as popularity proxy
-        }
-        
-        filteredCocktails = filtered
     }
 }

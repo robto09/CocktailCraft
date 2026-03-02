@@ -40,40 +40,25 @@ class FavoritesViewModelSKIE: ObservableObject {
     deinit {
         // Cancel all observation tasks
         observationTasks.forEach { $0.cancel() }
-        sharedViewModel.onCleared()
+        // Note: Do NOT call onCleared() — this is a Koin singleton whose
+        // coroutine scope must survive the lifetime of any single wrapper.
     }
     
     // MARK: - SKIE StateFlow Observation
     
     private func startObserving() {
-        // Observe favorites using SKIE async sequence
+        // Single consolidated observation of uiState
         observationTasks.append(Task {
-            for await favoritesList in sharedViewModel.favorites {
+            for await state in sharedViewModel.uiState {
                 await MainActor.run {
-                    self.favorites = favoritesList
+                    self.favorites = state.favorites
+                    self.favoriteCount = Int(state.favoriteCount)
+                    self.isLoading = state.isLoading
                 }
             }
         })
-        
-        // Observe favorite count
-        observationTasks.append(Task {
-            for await count in sharedViewModel.favoriteCount {
-                await MainActor.run {
-                    self.favoriteCount = Int(count.intValue)
-                }
-            }
-        })
-        
-        // Observe loading state
-        observationTasks.append(Task {
-            for await loading in sharedViewModel.isLoading {
-                await MainActor.run {
-                    self.isLoading = loading.boolValue
-                }
-            }
-        })
-        
-        // Observe error state
+
+        // Observe error from base class
         observationTasks.append(Task {
             for await errorValue in sharedViewModel.error {
                 await MainActor.run {
