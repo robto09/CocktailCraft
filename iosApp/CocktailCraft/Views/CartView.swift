@@ -71,7 +71,7 @@ struct CartView: View {
         .alert(isPresented: $showCheckoutConfirmation) {
             Alert(
                 title: Text("Confirm Order"),
-                message: Text("Are you sure you want to place this order for $\(cartViewModel.finalTotal, specifier: "%.2f")?"),
+                message: Text("Are you sure you want to place this order for \(cartViewModel.finalTotal.asPrice)?"),
                 primaryButton: .default(Text("Confirm")) {
                     Task {
                         let success = await orderViewModel.placeOrder(cartItems: cartViewModel.state.cartItems, totalPrice: cartViewModel.finalTotal)

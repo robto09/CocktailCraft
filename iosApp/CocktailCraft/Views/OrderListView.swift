@@ -57,7 +57,7 @@ struct OrderListView: View {
             Text("Status: \(order.status)")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
-            Text("Total: $\(order.total, specifier: "%.2f")")
+            Text("Total: " + order.total.asPrice)
                 .font(.body)
         }
         .padding(.vertical, 4)

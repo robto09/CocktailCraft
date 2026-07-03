@@ -47,7 +47,7 @@ struct OrderCard: View {
                 
                 Spacer()
                 
-                Text("$\(order.total, specifier: "%.2f")")
+                Text(order.total.asPrice)
                     .font(AppTheme.Typography.subheadline)
                     .fontWeight(.bold)
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
@@ -110,7 +110,7 @@ struct OrderItemRow: View {
             
             Spacer()
             
-            Text("$\(item.price * Double(item.quantity), specifier: "%.2f")")
+            Text((item.price * Double(item.quantity)).asPrice)
                 .font(AppTheme.Typography.caption)
                 .fontWeight(.medium)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
