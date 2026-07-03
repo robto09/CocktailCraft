@@ -16,6 +16,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.Rule
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.parallel.ResourceLock
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
@@ -29,6 +30,8 @@ import kotlin.test.assertTrue
  * Tests the Android wrapper around SharedFavoritesViewModel.
  */
 @ExperimentalCoroutinesApi
+// Serialized across classes: these tests mutate the global Koin context and Dispatchers.Main.
+@ResourceLock("global-koin-and-main-dispatcher")
 class FavoritesViewModelSKIETest : KoinTest {
 
     @get:Rule
