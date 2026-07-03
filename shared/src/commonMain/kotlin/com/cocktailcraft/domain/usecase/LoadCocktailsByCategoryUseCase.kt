@@ -6,7 +6,7 @@ import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 
-class LoadCocktailsByCategoryUseCase(
+internal class LoadCocktailsByCategoryUseCase(
     private val searchRepository: CocktailSearchRepository,
     private val catalogRepository: CocktailCatalogRepository
 ) {

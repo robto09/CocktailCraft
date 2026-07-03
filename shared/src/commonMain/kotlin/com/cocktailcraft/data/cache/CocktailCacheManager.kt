@@ -15,7 +15,7 @@ import kotlinx.coroutines.sync.withLock
  * Note: This is separate from [CocktailCache] which handles persistent (Settings-based) caching.
  * This class manages volatile in-memory caches and rate-limit tracking only.
  */
-class CocktailCacheManager {
+internal class CocktailCacheManager {
 
     private val mutex = Mutex()
 

@@ -22,7 +22,7 @@ import org.koin.dsl.module
 /**
  * Koin module for network-related dependencies.
  */
-val networkModule = module {
+internal val networkModule = module {
     // HTTP Client
     single {
         HttpClient {

@@ -5,7 +5,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
-class ManageReviewsUseCase {
+internal class ManageReviewsUseCase {
 
     suspend fun submitReview(
         cocktailId: String,

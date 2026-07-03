@@ -4,7 +4,7 @@ import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.util.Result
 
-class ManageOrdersUseCase(
+internal class ManageOrdersUseCase(
     private val orderRepository: OrderRepository
 ) {
     suspend fun getOrders(): Result<List<Order>> {

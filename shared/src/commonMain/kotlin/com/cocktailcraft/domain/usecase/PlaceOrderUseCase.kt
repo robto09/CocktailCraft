@@ -12,7 +12,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
-class PlaceOrderUseCase(
+internal class PlaceOrderUseCase(
     private val orderRepository: OrderRepository
 ) {
     suspend operator fun invoke(cartItems: List<CocktailCartItem>, totalPrice: Double): Result<Order> {

@@ -6,7 +6,7 @@ import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 
-class ManageOfflineModeUseCase(
+internal class ManageOfflineModeUseCase(
     private val offlineRepository: CocktailOfflineRepository,
     private val catalogRepository: CocktailCatalogRepository
 ) {

@@ -2,7 +2,7 @@ package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.Cocktail
 
-class SortCocktailsUseCase {
+internal class SortCocktailsUseCase {
     operator fun invoke(cocktails: List<Cocktail>, sortType: SortType): List<Cocktail> {
         return when (sortType) {
             SortType.PRICE_ASC -> cocktails.sortedBy { it.price }

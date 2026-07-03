@@ -7,7 +7,7 @@ import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 
-class GetCocktailDetailUseCase(
+internal class GetCocktailDetailUseCase(
     private val detailRepository: CocktailDetailRepository,
     private val favoritesRepository: CocktailFavoritesRepository,
     private val searchRepository: CocktailSearchRepository

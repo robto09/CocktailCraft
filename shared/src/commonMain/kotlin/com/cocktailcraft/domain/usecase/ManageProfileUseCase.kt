@@ -7,7 +7,7 @@ import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 
-class ManageProfileUseCase(
+internal class ManageProfileUseCase(
     private val authRepository: AuthRepository
 ) {
     suspend fun signIn(email: String, password: String): Result<Boolean> {

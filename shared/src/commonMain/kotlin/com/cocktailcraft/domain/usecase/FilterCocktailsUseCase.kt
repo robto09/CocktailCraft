@@ -9,7 +9,7 @@ import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 
-class FilterCocktailsUseCase(
+internal class FilterCocktailsUseCase(
     private val catalogRepository: CocktailCatalogRepository
 ) {
     suspend operator fun invoke(category: String? = null, ingredient: String? = null): Result<List<Cocktail>> {

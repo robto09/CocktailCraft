@@ -6,7 +6,7 @@ import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 
-class ManageCartUseCase(
+internal class ManageCartUseCase(
     private val cartRepository: CartRepository
 ) {
     suspend fun getCartItems(): Result<List<CocktailCartItem>> {

@@ -11,7 +11,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-class CartRepositoryImpl(
+internal class CartRepositoryImpl(
     private val settings: Settings,
     private val json: Json
 ) : CartRepository {
