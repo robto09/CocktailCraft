@@ -157,8 +157,13 @@ extension UIWindow {
 // MARK: - Global Koin Helper Functions
 // Using global functions to avoid namespace conflicts
 
+// Constructing KoinHelper resolves nothing, so this global is safe as long as
+// Koin itself is initialized before the first getter call (KoinInitializer
+// runs in CocktailCraftApp.init(), before any view constructs a ViewModel).
+private let sharedKoinHelperInstance = shared.KoinHelper()
+
 func getSharedKoinHelper() -> KoinHelper {
-    return shared.KoinHelper()
+    return sharedKoinHelperInstance
 }
 
 // MARK: - Temporary Content View
