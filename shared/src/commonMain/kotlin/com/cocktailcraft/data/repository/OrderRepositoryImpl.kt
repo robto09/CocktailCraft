@@ -13,7 +13,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import com.cocktailcraft.util.UUID
 
-class OrderRepositoryImpl(
+internal class OrderRepositoryImpl(
     private val settings: Settings,
     private val json: Json,
     private val appConfig: AppConfig

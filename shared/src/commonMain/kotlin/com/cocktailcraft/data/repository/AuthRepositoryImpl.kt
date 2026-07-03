@@ -11,7 +11,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import com.cocktailcraft.util.UUID
 
-class AuthRepositoryImpl(
+internal class AuthRepositoryImpl(
     private val settings: Settings,
     private val json: Json
 ) : AuthRepository {

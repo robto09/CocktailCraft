@@ -11,7 +11,7 @@ import com.russhwolf.settings.Settings
  * Implementation of the FavoritesRepository interface.
  * This implementation delegates to the CocktailRepository for most operations.
  */
-class FavoritesRepositoryImpl(
+internal class FavoritesRepositoryImpl(
     private val cocktailRepository: CocktailFavoritesRepository,
     private val settings: Settings,
     private val appConfig: AppConfig

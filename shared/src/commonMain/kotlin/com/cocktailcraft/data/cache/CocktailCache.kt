@@ -16,7 +16,7 @@ import kotlinx.coroutines.runBlocking
 /**
  * Simple LRU cache implementation
  */
-class SimpleLruCache<K, V>(private val maxSize: Int) {
+internal class SimpleLruCache<K, V>(private val maxSize: Int) {
     private val cache = mutableMapOf<K, V>()
     private val accessOrder = mutableListOf<K>()
     private val mutex = Mutex()
@@ -68,7 +68,7 @@ class SimpleLruCache<K, V>(private val maxSize: Int) {
 /**
  * Manages caching of cocktail data for offline access using a simple LRU cache.
  */
-class CocktailCache(
+internal class CocktailCache(
     private val settings: Settings,
     private val json: Json,
     private val appConfig: AppConfig

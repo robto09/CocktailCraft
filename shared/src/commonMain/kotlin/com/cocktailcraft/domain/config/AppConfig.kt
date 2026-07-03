@@ -5,7 +5,7 @@ package com.cocktailcraft.domain.config
  * This follows the hexagonal architecture by defining a port in the domain layer
  * that will be implemented by adapters in the infrastructure layer.
  */
-interface AppConfig {
+internal interface AppConfig {
     /**
      * Base URL for the API
      */

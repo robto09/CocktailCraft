@@ -27,7 +27,7 @@ import kotlinx.datetime.Clock
  * - Advanced filtering (multi-ingredient, taste profiles) requires local filtering
  * - The free API has rate limits, so we cache aggressively
  */
-class CocktailRepositoryImpl(
+internal class CocktailRepositoryImpl(
     private val api: CocktailApi,
     private val settings: Settings,
     private val appConfig: AppConfig,

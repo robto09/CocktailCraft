@@ -4,7 +4,7 @@ import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.util.Result
 
-class ToggleFavoriteUseCase(
+internal class ToggleFavoriteUseCase(
     private val cocktailRepository: CocktailFavoritesRepository
 ) {
     suspend operator fun invoke(cocktail: Cocktail): Result<Boolean> {

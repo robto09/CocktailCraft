@@ -5,7 +5,7 @@ import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 
-class ManageFavoritesUseCase(
+internal class ManageFavoritesUseCase(
     private val favoritesRepository: CocktailFavoritesRepository
 ) {
     suspend fun toggle(cocktail: Cocktail): Result<Boolean> {

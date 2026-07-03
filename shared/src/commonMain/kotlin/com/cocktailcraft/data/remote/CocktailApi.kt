@@ -6,7 +6,7 @@ import io.ktor.client.plugins.timeout
 import io.ktor.client.request.*
 import io.ktor.http.*
 
-interface CocktailApi {
+internal interface CocktailApi {
     suspend fun searchCocktailsByName(name: String): List<CocktailDto>
     suspend fun searchCocktailsByFirstLetter(letter: Char): List<CocktailDto>
     suspend fun getCocktailById(id: String): CocktailDto?
@@ -24,7 +24,7 @@ interface CocktailApi {
     suspend fun pingApi(): Boolean
 }
 
-class CocktailApiImpl(
+internal class CocktailApiImpl(
     private val client: HttpClient
 ) : CocktailApi {
     
