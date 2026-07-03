@@ -4,7 +4,7 @@ import com.cocktailcraft.android.domain.recommendation.CocktailRecommendationEng
 import com.cocktailcraft.android.viewmodel.CocktailDetailViewModelSKIE
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.repository.FavoritesRepository
-import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 /**
