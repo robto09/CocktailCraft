@@ -3,6 +3,7 @@ package com.cocktailcraft.viewmodel
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.util.ErrorHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,9 +23,12 @@ import org.koin.core.component.KoinComponent
 abstract class SharedViewModel : KoinComponent {
     
     /**
-     * ViewModel scope for launching coroutines
+     * ViewModel scope for launching coroutines.
+     * Main-dispatched so state updates originate on the UI thread on both
+     * platforms, matching AndroidX viewModelScope semantics. (On iOS,
+     * Main.immediate currently behaves like Main - it always dispatches.)
      */
-    protected val viewModelScope = CoroutineScope(SupervisorJob())
+    protected val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     
     // Loading state
     private val _isLoading = MutableStateFlow(false)
