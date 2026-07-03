@@ -1,5 +1,6 @@
 package com.cocktailcraft.domain.model
 
+import kotlin.native.HiddenFromObjC
 import kotlinx.serialization.Serializable
 import kotlinx.datetime.Clock
 
@@ -26,4 +27,9 @@ data class Cocktail(
     val rating: Float = 4.5f,
     val popularity: Int = 0,
     val dateAdded: Long = Clock.System.now().toEpochMilliseconds()
-)
+) {
+    // Hidden so the generated serializer does not drag the
+    // kotlinx-serialization type tree into the Obj-C header.
+    @HiddenFromObjC
+    companion object
+}

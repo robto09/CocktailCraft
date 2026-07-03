@@ -1,5 +1,6 @@
 package com.cocktailcraft.domain.model
 
+import kotlin.native.HiddenFromObjC
 import kotlinx.serialization.Serializable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
@@ -14,4 +15,9 @@ data class Review(
     val comment: String,
     val date: String = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         .let { "${it.year}-${it.monthNumber.toString().padStart(2, '0')}-${it.dayOfMonth.toString().padStart(2, '0')}" }
-) 
+) {
+    // Hidden so the generated serializer does not drag the
+    // kotlinx-serialization type tree into the Obj-C header.
+    @HiddenFromObjC
+    companion object
+}
