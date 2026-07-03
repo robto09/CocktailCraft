@@ -45,7 +45,12 @@ android {
 
 kotlin {
     jvmToolchain(17)
-    
+
+    sourceSets.all {
+        // For @HiddenFromObjC on serializer companions
+        languageSettings.optIn("kotlin.experimental.ExperimentalObjCRefinement")
+    }
+
     androidTarget()
     iosX64()
     iosArm64()
