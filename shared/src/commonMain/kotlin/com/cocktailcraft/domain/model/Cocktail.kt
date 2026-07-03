@@ -2,7 +2,7 @@ package com.cocktailcraft.domain.model
 
 import kotlin.native.HiddenFromObjC
 import kotlinx.serialization.Serializable
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 @Serializable
 data class Cocktail(

@@ -68,7 +68,7 @@ internal class CocktailCacheManager {
 
     suspend fun setCategoryCache(category: String, cocktails: List<Cocktail>) = mutex.withLock {
         _categoryCacheMap[category] = cocktails
-        _categoryLastFetchMap[category] = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+        _categoryLastFetchMap[category] = kotlin.time.Clock.System.now().toEpochMilliseconds()
     }
 
     // --- Rate limiting ---
