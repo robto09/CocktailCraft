@@ -1,12 +1,14 @@
 package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 
 internal class ManageFavoritesUseCase(
-    private val favoritesRepository: CocktailFavoritesRepository
+    private val favoritesRepository: CocktailFavoritesRepository,
+    private val detailRepository: CocktailDetailRepository
 ) {
     suspend fun toggle(cocktail: Cocktail): Result<Boolean> {
         return try {
@@ -15,7 +17,7 @@ internal class ManageFavoritesUseCase(
                 favoritesRepository.removeFromFavorites(cocktail)
                 Result.Success(false)
             } else {
-                favoritesRepository.addToFavorites(cocktail)
+                favoritesRepository.addToFavorites(hydrated(cocktail))
                 Result.Success(true)
             }
         } catch (e: Exception) {
@@ -32,7 +34,20 @@ internal class ManageFavoritesUseCase(
     }
 
     suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> {
-        return favoritesRepository.addToFavorites(cocktail)
+        return favoritesRepository.addToFavorites(hydrated(cocktail))
+    }
+
+    /**
+     * List endpoints fabricate placeholder ingredients/instructions; fetch
+     * full details before persisting so stored favorites are complete.
+     */
+    private suspend fun hydrated(cocktail: Cocktail): Cocktail {
+        if (cocktail.hasFullDetails) return cocktail
+        return try {
+            detailRepository.getCocktailById(cocktail.id).getOrNull() ?: cocktail
+        } catch (e: Exception) {
+            cocktail
+        }
     }
 
     suspend fun removeFromFavorites(cocktail: Cocktail): Result<Unit> {

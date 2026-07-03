@@ -3,23 +3,42 @@ package com.cocktailcraft.domain.usecase
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.repository.CartRepository
+import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 
 internal class ManageCartUseCase(
-    private val cartRepository: CartRepository
+    private val cartRepository: CartRepository,
+    private val detailRepository: CocktailDetailRepository
 ) {
     suspend fun getCartItems(): Result<List<CocktailCartItem>> {
         return cartRepository.getCartItems()
     }
 
     suspend fun addToCart(cocktail: Cocktail, quantity: Int = 1): Result<Unit> {
-        val cartItem = CocktailCartItem(cocktail, quantity)
+        val cartItem = CocktailCartItem(hydrated(cocktail), quantity)
         return cartRepository.addToCart(cartItem)
     }
 
     suspend fun addToCart(cartItem: CocktailCartItem): Result<Unit> {
-        return cartRepository.addToCart(cartItem)
+        val item =
+            if (cartItem.cocktail.hasFullDetails) cartItem
+            else cartItem.copy(cocktail = hydrated(cartItem.cocktail))
+        return cartRepository.addToCart(item)
+    }
+
+    /**
+     * List endpoints fabricate placeholder ingredients/instructions; fetch
+     * full details before persisting so stored items are complete. Falls
+     * back to the partial object when offline or on lookup failure.
+     */
+    private suspend fun hydrated(cocktail: Cocktail): Cocktail {
+        if (cocktail.hasFullDetails) return cocktail
+        return try {
+            detailRepository.getCocktailById(cocktail.id).getOrNull() ?: cocktail
+        } catch (e: Exception) {
+            cocktail
+        }
     }
 
     suspend fun removeFromCart(cocktailId: String): Result<Unit> {

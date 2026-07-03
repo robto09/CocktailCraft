@@ -75,9 +75,7 @@ internal class CocktailRepositoryImpl(
             val cachedCocktail = cocktailCache.getCachedCocktail(id)
 
             // If we have a cached cocktail with ingredients (full details), return it
-            if (cachedCocktail != null &&
-                cachedCocktail.ingredients.isNotEmpty() &&
-                cachedCocktail.ingredients.first().name != "Tap to view ingredients") {
+            if (cachedCocktail != null && cachedCocktail.hasFullDetails) {
                 // Add to recently viewed when accessed from cache
                 cocktailCache.addToRecentlyViewed(cachedCocktail)
                 return Result.Success(cachedCocktail)
@@ -465,12 +463,12 @@ internal class CocktailRepositoryImpl(
         return Cocktail(
             id = dto.id,
             name = dto.name,
-            instructions = dto.instructions ?: "Tap to view recipe",
+            instructions = dto.instructions ?: Cocktail.PLACEHOLDER_INSTRUCTIONS,
             imageUrl = dto.imageUrl,
             price = generateRandomPrice(),
-            ingredients = dto.getIngredients().ifEmpty { 
+            ingredients = dto.getIngredients().ifEmpty {
                 // If no ingredients (from filter endpoint), add placeholder
-                listOf(CocktailIngredient("Tap to view ingredients", ""))
+                listOf(CocktailIngredient(Cocktail.PLACEHOLDER_INGREDIENT_NAME, ""))
             },
             rating = generateRandomRating(),
             category = dto.category,
