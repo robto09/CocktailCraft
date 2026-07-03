@@ -33,7 +33,6 @@ class FavoritesViewModelSKIE : ViewModel(), KoinComponent {
     val loadingState: StateFlow<Boolean> = sharedViewModel.isLoading
     val error = sharedViewModel.error
     val errorState = sharedViewModel.error
-    val errorEventState = sharedViewModel.errorEvent
     
     // Computed properties
     val isEmpty: Boolean

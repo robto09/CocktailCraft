@@ -6,11 +6,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.koin.core.component.KoinComponent
@@ -21,7 +18,7 @@ import org.koin.core.component.KoinComponent
  * and Koin integration.
  */
 abstract class SharedViewModel : KoinComponent {
-    
+
     /**
      * ViewModel scope for launching coroutines.
      * Main-dispatched so state updates originate on the UI thread on both
@@ -29,22 +26,14 @@ abstract class SharedViewModel : KoinComponent {
      * Main.immediate currently behaves like Main - it always dispatches.)
      */
     protected val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    
+
     // Loading state
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    // Error state - can be observed for displaying error UI
+    // The single error channel, observed by both platforms for error UI
     private val _error = MutableStateFlow<ErrorHandler.UserFriendlyError?>(null)
     val error: StateFlow<ErrorHandler.UserFriendlyError?> = _error.asStateFlow()
-
-    // Error events - for one-time error handling (like showing a dialog)
-    private val _errorEvent = MutableSharedFlow<ErrorHandler.UserFriendlyError>()
-    val errorEvent: SharedFlow<ErrorHandler.UserFriendlyError> = _errorEvent.asSharedFlow()
-    
-    // Error string for legacy compatibility
-    private val _errorString = MutableStateFlow("")
-    val errorString: StateFlow<String> = _errorString.asStateFlow()
 
     /**
      * Set loading state
@@ -59,27 +48,13 @@ abstract class SharedViewModel : KoinComponent {
     protected open fun handleException(
         exception: Throwable,
         defaultMessage: String = "Something went wrong. Please try again.",
-        showAsEvent: Boolean = false,
         recoveryAction: ErrorHandler.RecoveryAction? = null
     ) {
-        val userFriendlyError = ErrorHandler.getErrorFromException(
+        _error.value = ErrorHandler.getErrorFromException(
             exception = exception,
             defaultMessage = defaultMessage,
             recoveryAction = recoveryAction
         )
-
-        if (showAsEvent) {
-            // Emit as a one-time event
-            viewModelScope.launch {
-                _errorEvent.emit(userFriendlyError)
-            }
-        } else {
-            // Set as a persistent state
-            _error.value = userFriendlyError
-        }
-        
-        // Also set the error string for legacy compatibility
-        _errorString.value = userFriendlyError.message
 
         // Log the error
         Logger.e("Error in ${this::class.simpleName}", exception)
@@ -92,26 +67,14 @@ abstract class SharedViewModel : KoinComponent {
         title: String,
         message: String,
         category: ErrorHandler.ErrorCategory = ErrorHandler.ErrorCategory.UNKNOWN,
-        showAsEvent: Boolean = false,
         recoveryAction: ErrorHandler.RecoveryAction? = null
     ) {
-        val userFriendlyError = ErrorHandler.UserFriendlyError(
+        _error.value = ErrorHandler.UserFriendlyError(
             title = title,
             message = message,
             category = category,
             recoveryAction = recoveryAction
         )
-
-        if (showAsEvent) {
-            viewModelScope.launch {
-                _errorEvent.emit(userFriendlyError)
-            }
-        } else {
-            _error.value = userFriendlyError
-        }
-        
-        // Also set the error string for legacy compatibility
-        _errorString.value = userFriendlyError.message
     }
 
     /**
@@ -119,7 +82,6 @@ abstract class SharedViewModel : KoinComponent {
      */
     fun clearError() {
         _error.value = null
-        _errorString.value = ""
     }
 
     /**
@@ -130,7 +92,6 @@ abstract class SharedViewModel : KoinComponent {
         onSuccess: (T) -> Unit,
         onError: ((ErrorHandler.UserFriendlyError) -> Unit)? = null,
         defaultErrorMessage: String = "Something went wrong. Please try again.",
-        showAsEvent: Boolean = false,
         showLoading: Boolean = true,
         recoveryAction: ErrorHandler.RecoveryAction? = null
     ) {
@@ -150,11 +111,7 @@ abstract class SharedViewModel : KoinComponent {
                     recoveryAction = recoveryAction
                 )
 
-                if (showAsEvent) {
-                    _errorEvent.emit(error)
-                } else {
-                    _error.value = error
-                }
+                _error.value = error
 
                 onError?.invoke(error)
 
@@ -165,7 +122,7 @@ abstract class SharedViewModel : KoinComponent {
             }
         }
     }
-    
+
     /**
      * Clean up resources when ViewModel is no longer needed
      */

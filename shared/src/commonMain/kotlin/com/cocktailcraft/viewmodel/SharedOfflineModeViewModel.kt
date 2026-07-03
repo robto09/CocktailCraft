@@ -83,7 +83,7 @@ class SharedOfflineModeViewModel : SharedViewModel() {
 
             updateLastSyncTime()
         } catch (e: Exception) {
-            handleException(e, "Failed to update offline mode", showAsEvent = true)
+            handleException(e, "Failed to update offline mode")
         }
     }
     
@@ -96,8 +96,7 @@ class SharedOfflineModeViewModel : SharedViewModel() {
             setError(
                 "No Network Connection",
                 "Cannot sync data without network connection",
-                ErrorHandler.ErrorCategory.NETWORK,
-                showAsEvent = true
+                ErrorHandler.ErrorCategory.NETWORK
             )
             return
         }
@@ -127,7 +126,7 @@ class SharedOfflineModeViewModel : SharedViewModel() {
             
             setLoading(false)
         } catch (e: Exception) {
-            handleException(e, "Failed to clear cache", showAsEvent = true)
+            handleException(e, "Failed to clear cache")
             setLoading(false)
         }
     }
@@ -142,7 +141,7 @@ class SharedOfflineModeViewModel : SharedViewModel() {
             _uiState.update { it.copy(recentlyViewedCocktails = cocktails, cacheSize = cocktails.size) }
         } catch (e: Exception) {
             if (!_uiState.value.isOfflineModeEnabled) {
-                handleException(e, "Failed to load recently viewed cocktails", showAsEvent = true)
+                handleException(e, "Failed to load recently viewed cocktails")
             }
         }
     }

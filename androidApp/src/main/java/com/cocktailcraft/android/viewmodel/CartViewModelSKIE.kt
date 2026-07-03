@@ -33,7 +33,6 @@ class CartViewModelSKIE : ViewModel(), KoinComponent {
     // Expose loading and error from shared base class
     val loadingState: StateFlow<Boolean> = sharedViewModel.isLoading
     val errorState = sharedViewModel.error
-    val errorEventState = sharedViewModel.errorEvent
     
     // Aliases for backward compatibility
     val isLoading: StateFlow<Boolean> = loadingState

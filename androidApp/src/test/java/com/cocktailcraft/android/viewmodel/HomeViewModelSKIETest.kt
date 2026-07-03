@@ -3,6 +3,7 @@ package com.cocktailcraft.android.viewmodel
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.SearchFilters
+import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
@@ -52,7 +53,7 @@ class HomeViewModelSKIETest : KoinTest {
     private val hasMoreDataFlow = MutableStateFlow(true)
     private val isLoadingMoreFlow = MutableStateFlow(false)
     private val isLoadingFlow = MutableStateFlow(false)
-    private val errorStringFlow = MutableStateFlow("")
+    private val errorFlow = MutableStateFlow<ErrorHandler.UserFriendlyError?>(null)
 
     @BeforeEach
     fun setup() {
@@ -78,7 +79,7 @@ class HomeViewModelSKIETest : KoinTest {
             every { hasMoreData } returns hasMoreDataFlow
             every { isLoadingMore } returns isLoadingMoreFlow
             every { isLoading } returns isLoadingFlow
-            every { errorString } returns errorStringFlow
+            every { error } returns errorFlow
         }
 
         // Setup Koin with mocked dependencies
@@ -114,7 +115,7 @@ class HomeViewModelSKIETest : KoinTest {
         // When & Then - Test that StateFlows are accessible
         assertTrue(homeViewModel.hasMoreData.value)
         assertFalse(homeViewModel.isLoadingMore.value)
-        assertEquals("", homeViewModel.errorString.value)
+        assertEquals(null, homeViewModel.errorState.value)
     }
 
     // Note: Complex method verification tests removed due to SKIE wrapper complexity

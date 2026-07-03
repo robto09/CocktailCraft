@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.cocktailcraft.android.viewmodel.FavoritesViewModelSKIE
 import com.cocktailcraft.android.viewmodel.HomeViewModelSKIE
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.util.ErrorHandler
 import io.mockk.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,7 +34,7 @@ class HomeScreenTest {
     private val isLoadingFlow = MutableStateFlow(false)
     private val isLoadingMoreFlow = MutableStateFlow(false)
     private val hasMoreDataFlow = MutableStateFlow(true)
-    private val errorStringFlow = MutableStateFlow("")
+    private val errorFlow = MutableStateFlow<ErrorHandler.UserFriendlyError?>(null)
     private val isSearchActiveFlow = MutableStateFlow(false)
     private val searchQueryFlow = MutableStateFlow("")
     private val isOfflineModeFlow = MutableStateFlow(false)
@@ -51,7 +52,7 @@ class HomeScreenTest {
             every { isLoading } returns isLoadingFlow
             every { isLoadingMore } returns isLoadingMoreFlow
             every { hasMoreData } returns hasMoreDataFlow
-            every { errorString } returns errorStringFlow
+            every { errorState } returns errorFlow
             every { isSearchActive } returns isSearchActiveFlow
             every { searchQuery } returns searchQueryFlow
             every { isOfflineMode } returns isOfflineModeFlow
@@ -156,7 +157,7 @@ class HomeScreenTest {
         // Given
         cocktailsFlow.value = emptyList()
         isLoadingFlow.value = false
-        errorStringFlow.value = ""
+        errorFlow.value = null
 
         // When
         composeTestRule.setContent {
@@ -177,7 +178,11 @@ class HomeScreenTest {
         // Given
         cocktailsFlow.value = emptyList()
         isLoadingFlow.value = false
-        errorStringFlow.value = "Network error occurred"
+        errorFlow.value = ErrorHandler.UserFriendlyError(
+            title = "Error",
+            message = "Network error occurred",
+            category = ErrorHandler.ErrorCategory.NETWORK
+        )
 
         // When
         composeTestRule.setContent {

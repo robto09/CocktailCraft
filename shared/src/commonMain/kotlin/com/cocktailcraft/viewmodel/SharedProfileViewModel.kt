@@ -88,8 +88,7 @@ class SharedProfileViewModel : SharedViewModel() {
             setError(
                 "Invalid Email",
                 "Please enter a valid email address",
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
+                ErrorHandler.ErrorCategory.DATA
             )
             return false
         }
@@ -98,8 +97,7 @@ class SharedProfileViewModel : SharedViewModel() {
             setError(
                 "Invalid Password",
                 "Password must be at least 6 characters long",
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
+                ErrorHandler.ErrorCategory.DATA
             )
             return false
         }
@@ -117,15 +115,14 @@ class SharedProfileViewModel : SharedViewModel() {
                 setError(
                     "Sign In Failed",
                     "Invalid email or password",
-                    ErrorHandler.ErrorCategory.AUTHENTICATION,
-                    showAsEvent = true
+                    ErrorHandler.ErrorCategory.AUTHENTICATION
                 )
             }
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
             setLoading(false)
             success
         } catch (e: Exception) {
-            handleException(e, "Failed to sign in", showAsEvent = true)
+            handleException(e, "Failed to sign in")
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
             setLoading(false)
             false
@@ -141,8 +138,7 @@ class SharedProfileViewModel : SharedViewModel() {
             setError(
                 "Invalid Name",
                 "Please enter your name",
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
+                ErrorHandler.ErrorCategory.DATA
             )
             return false
         }
@@ -151,8 +147,7 @@ class SharedProfileViewModel : SharedViewModel() {
             setError(
                 "Invalid Email",
                 "Please enter a valid email address",
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
+                ErrorHandler.ErrorCategory.DATA
             )
             return false
         }
@@ -161,8 +156,7 @@ class SharedProfileViewModel : SharedViewModel() {
             setError(
                 "Invalid Password",
                 "Password must be at least 6 characters long",
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
+                ErrorHandler.ErrorCategory.DATA
             )
             return false
         }
@@ -180,15 +174,14 @@ class SharedProfileViewModel : SharedViewModel() {
                 setError(
                     "Sign Up Failed",
                     "Failed to create account. Email may already be in use.",
-                    ErrorHandler.ErrorCategory.AUTHENTICATION,
-                    showAsEvent = true
+                    ErrorHandler.ErrorCategory.AUTHENTICATION
                 )
             }
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
             setLoading(false)
             success
         } catch (e: Exception) {
-            handleException(e, "Failed to create account", showAsEvent = true)
+            handleException(e, "Failed to create account")
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
             setLoading(false)
             false
@@ -211,14 +204,13 @@ class SharedProfileViewModel : SharedViewModel() {
                 setError(
                     "Sign Out Failed",
                     "Failed to sign out. Please try again.",
-                    ErrorHandler.ErrorCategory.SERVER,
-                    showAsEvent = true
+                    ErrorHandler.ErrorCategory.SERVER
                 )
             }
             setLoading(false)
             success
         } catch (e: Exception) {
-            handleException(e, "Failed to sign out", showAsEvent = true)
+            handleException(e, "Failed to sign out")
             setLoading(false)
             false
         }
@@ -233,8 +225,7 @@ class SharedProfileViewModel : SharedViewModel() {
             setError(
                 "Invalid Email",
                 "Please enter a valid email address",
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
+                ErrorHandler.ErrorCategory.DATA
             )
             return false
         }
@@ -247,21 +238,19 @@ class SharedProfileViewModel : SharedViewModel() {
                 setError(
                     "Password Reset Sent",
                     "Check your email for password reset instructions",
-                    ErrorHandler.ErrorCategory.UNKNOWN,
-                    showAsEvent = true
+                    ErrorHandler.ErrorCategory.UNKNOWN
                 )
             } else {
                 setError(
                     "Reset Failed",
                     "Failed to send password reset email",
-                    ErrorHandler.ErrorCategory.SERVER,
-                    showAsEvent = true
+                    ErrorHandler.ErrorCategory.SERVER
                 )
             }
             setLoading(false)
             success
         } catch (e: Exception) {
-            handleException(e, "Failed to send password reset email", showAsEvent = true)
+            handleException(e, "Failed to send password reset email")
             setLoading(false)
             false
         }
@@ -276,8 +265,7 @@ class SharedProfileViewModel : SharedViewModel() {
             setError(
                 "Invalid Name",
                 "Please enter your name",
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
+                ErrorHandler.ErrorCategory.DATA
             )
             return false
         }
@@ -286,8 +274,7 @@ class SharedProfileViewModel : SharedViewModel() {
             setError(
                 "Invalid Email",
                 "Please enter a valid email address",
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
+                ErrorHandler.ErrorCategory.DATA
             )
             return false
         }
@@ -302,14 +289,13 @@ class SharedProfileViewModel : SharedViewModel() {
                 setError(
                     "Update Failed",
                     "Failed to update profile information",
-                    ErrorHandler.ErrorCategory.SERVER,
-                    showAsEvent = true
+                    ErrorHandler.ErrorCategory.SERVER
                 )
             }
             setLoading(false)
             nameSuccess
         } catch (e: Exception) {
-            handleException(e, "Failed to update profile", showAsEvent = true)
+            handleException(e, "Failed to update profile")
             setLoading(false)
             false
         }
@@ -330,14 +316,13 @@ class SharedProfileViewModel : SharedViewModel() {
                 setError(
                     "Update Failed",
                     "Failed to update address",
-                    ErrorHandler.ErrorCategory.SERVER,
-                    showAsEvent = true
+                    ErrorHandler.ErrorCategory.SERVER
                 )
             }
             setLoading(false)
             success
         } catch (e: Exception) {
-            handleException(e, "Failed to update address", showAsEvent = true)
+            handleException(e, "Failed to update address")
             setLoading(false)
             false
         }
@@ -352,8 +337,7 @@ class SharedProfileViewModel : SharedViewModel() {
             setError(
                 "Invalid Password",
                 "Passwords must be at least 6 characters long",
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
+                ErrorHandler.ErrorCategory.DATA
             )
             return false
         }
@@ -366,21 +350,19 @@ class SharedProfileViewModel : SharedViewModel() {
                 setError(
                     "Password Changed",
                     "Your password has been updated successfully",
-                    ErrorHandler.ErrorCategory.UNKNOWN,
-                    showAsEvent = true
+                    ErrorHandler.ErrorCategory.UNKNOWN
                 )
             } else {
                 setError(
                     "Change Failed",
                     "Failed to change password. Check your current password.",
-                    ErrorHandler.ErrorCategory.AUTHENTICATION,
-                    showAsEvent = true
+                    ErrorHandler.ErrorCategory.AUTHENTICATION
                 )
             }
             setLoading(false)
             success
         } catch (e: Exception) {
-            handleException(e, "Failed to change password", showAsEvent = true)
+            handleException(e, "Failed to change password")
             setLoading(false)
             false
         }

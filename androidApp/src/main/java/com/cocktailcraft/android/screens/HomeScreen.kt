@@ -116,7 +116,8 @@ fun HomeScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val isLoadingMore by viewModel.isLoadingMore.collectAsState()
     val hasMoreData by viewModel.hasMoreData.collectAsState()
-    val legacyErrorString by viewModel.errorString.collectAsState()
+    val error by viewModel.errorState.collectAsState()
+    val errorMessage = error?.message ?: ""
     val isSearchActive by viewModel.isSearchActive.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val favorites by favoritesViewModel.favorites.collectAsState()
@@ -168,9 +169,9 @@ fun HomeScreen(
     
     // Effect to clear errors when screen is displayed with data
     LaunchedEffect(cocktails) {
-        Log.d("HomeScreen", "LaunchedEffect(cocktails): count=${cocktails.size}, error='$legacyErrorString'")
-        if (cocktails.isNotEmpty() && legacyErrorString.isNotBlank()) {
-            viewModel.clearLegacyError()
+        Log.d("HomeScreen", "LaunchedEffect(cocktails): count=${cocktails.size}, error='$errorMessage'")
+        if (cocktails.isNotEmpty() && errorMessage.isNotBlank()) {
+            viewModel.clearErrorState()
         }
     }
 
@@ -282,9 +283,9 @@ fun HomeScreen(
             if (isLoading && cocktails.isEmpty()) {
                 // Show shimmer loading effect instead of spinner
                 CocktailLoadingShimmer()
-            } else if (legacyErrorString.isNotBlank()) {
+            } else if (errorMessage.isNotBlank()) {
                 NetworkErrorStateDisplay(
-                    errorMessage = legacyErrorString,
+                    errorMessage = errorMessage,
                     isOfflineMode = isOfflineMode,
                     isNetworkAvailable = isNetworkAvailable,
                     hasContent = cocktails.isNotEmpty(),

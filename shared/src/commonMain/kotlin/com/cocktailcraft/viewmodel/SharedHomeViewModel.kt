@@ -123,7 +123,6 @@ class SharedHomeViewModel : SharedViewModel() {
         _uiState.update { it.copy(
             selectedCategory = category,
             isLoading = true,
-            error = null,
             currentPage = 1,
             hasMoreData = true
         ) }
@@ -136,8 +135,7 @@ class SharedHomeViewModel : SharedViewModel() {
             _uiState.update { it.copy(
                 cocktails = paginatedList,
                 hasMoreData = paginatedList.size < cocktailList.size,
-                isLoading = false,
-                error = null
+                isLoading = false
             ) }
             setLoading(false)
             clearError()
@@ -168,7 +166,7 @@ class SharedHomeViewModel : SharedViewModel() {
         if (query.isBlank()) {
             loadCocktails()
         } else {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = true) }
             setLoading(true)
             clearError()
 
@@ -221,7 +219,7 @@ class SharedHomeViewModel : SharedViewModel() {
      * SKIE will convert this to Swift async function.
      */
     suspend fun applyFilters(category: String? = null, ingredient: String? = null) {
-        _uiState.update { it.copy(isLoading = true, error = null) }
+        _uiState.update { it.copy(isLoading = true) }
         setLoading(true)
         clearError()
 
@@ -245,7 +243,7 @@ class SharedHomeViewModel : SharedViewModel() {
             manageFavoritesUseCase.toggle(cocktail)
             loadFavorites()
         } catch (e: Exception) {
-            handleException(e, "Failed to update favorites", showAsEvent = true)
+            handleException(e, "Failed to update favorites")
         }
     }
 
@@ -259,7 +257,7 @@ class SharedHomeViewModel : SharedViewModel() {
             val sortType = if (ascending) SortCocktailsUseCase.SortType.PRICE_ASC else SortCocktailsUseCase.SortType.PRICE_DESC
             _uiState.update { it.copy(cocktails = sortCocktailsUseCase(it.cocktails, sortType)) }
         } catch (e: Exception) {
-            handleException(e, "Failed to sort cocktails", showAsEvent = true)
+            handleException(e, "Failed to sort cocktails")
         } finally {
             setLoading(false)
         }
@@ -273,7 +271,7 @@ class SharedHomeViewModel : SharedViewModel() {
         try {
             _uiState.update { it.copy(cocktails = sortCocktailsUseCase(it.cocktails, SortCocktailsUseCase.SortType.RATING)) }
         } catch (e: Exception) {
-            handleException(e, "Failed to sort cocktails", showAsEvent = true)
+            handleException(e, "Failed to sort cocktails")
         } finally {
             setLoading(false)
         }
@@ -287,7 +285,7 @@ class SharedHomeViewModel : SharedViewModel() {
         try {
             _uiState.update { it.copy(cocktails = sortCocktailsUseCase(it.cocktails, SortCocktailsUseCase.SortType.POPULARITY)) }
         } catch (e: Exception) {
-            handleException(e, "Failed to sort cocktails", showAsEvent = true)
+            handleException(e, "Failed to sort cocktails")
         } finally {
             setLoading(false)
         }
@@ -301,7 +299,7 @@ class SharedHomeViewModel : SharedViewModel() {
         return try {
             getCocktailDetailUseCase(id).getOrNull()
         } catch (e: Exception) {
-            handleException(e, "Failed to load cocktail details", showAsEvent = true)
+            handleException(e, "Failed to load cocktail details")
             null
         }
     }
@@ -316,7 +314,7 @@ class SharedHomeViewModel : SharedViewModel() {
             setLoading(true)
             getCocktailDetailUseCase.refresh(id)
         } catch (e: Exception) {
-            handleException(e, "Failed to refresh cocktail details", showAsEvent = true)
+            handleException(e, "Failed to refresh cocktail details")
         } finally {
             setLoading(false)
         }
@@ -400,7 +398,7 @@ class SharedHomeViewModel : SharedViewModel() {
     // Private helper functions
     
     private suspend fun performSearch() {
-        _uiState.update { it.copy(isLoading = true, error = null) }
+        _uiState.update { it.copy(isLoading = true) }
         setLoading(true)
         clearError()
 
@@ -435,7 +433,7 @@ class SharedHomeViewModel : SharedViewModel() {
                 .filter { category == "Cocktail" || it.category == category }
 
             if (cachedCocktails.isNotEmpty()) {
-                _uiState.update { it.copy(cocktails = cachedCocktails, isLoading = false, error = null) }
+                _uiState.update { it.copy(cocktails = cachedCocktails, isLoading = false) }
                 clearError()
                 setLoading(false)
             } else {

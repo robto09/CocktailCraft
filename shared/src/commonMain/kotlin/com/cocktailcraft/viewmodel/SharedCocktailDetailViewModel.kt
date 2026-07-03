@@ -43,7 +43,7 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
      * SKIE will convert this to Swift async function.
      */
     suspend fun loadCocktail(cocktailId: String) {
-        _uiState.update { it.copy(isLoading = true, error = null) }
+        _uiState.update { it.copy(isLoading = true) }
         setLoading(true)
         clearError()
 
@@ -80,7 +80,7 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
             manageFavoritesUseCase.toggle(currentCocktail)
             _uiState.update { it.copy(isFavorite = !it.isFavorite) }
         } catch (e: Exception) {
-            handleException(e, "Failed to update favorites", showAsEvent = true)
+            handleException(e, "Failed to update favorites")
         }
     }
 
@@ -94,7 +94,7 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
             manageCartUseCase.addToCart(currentCocktail, quantity)
             updateCartStatus(currentCocktail.id)
         } catch (e: Exception) {
-            handleException(e, "Failed to add to cart", showAsEvent = true)
+            handleException(e, "Failed to add to cart")
         }
     }
 
@@ -108,7 +108,7 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
             }
             updateCartStatus(currentCocktail.id)
         } catch (e: Exception) {
-            handleException(e, "Failed to update cart quantity", showAsEvent = true)
+            handleException(e, "Failed to update cart quantity")
         }
     }
 
@@ -118,7 +118,7 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
             manageCartUseCase.removeFromCart(currentCocktail.id)
             updateCartStatus(currentCocktail.id)
         } catch (e: Exception) {
-            handleException(e, "Failed to remove from cart", showAsEvent = true)
+            handleException(e, "Failed to remove from cart")
         }
     }
     
