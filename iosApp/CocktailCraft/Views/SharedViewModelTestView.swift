@@ -26,18 +26,18 @@ struct SharedViewModelTestView: View {
                 
                 // Status Information
                 HStack {
-                    Text("Cocktails: \(viewModel.cocktails.count)")
+                    Text("Cocktails: \(viewModel.state.cocktails.count)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
                     Spacer()
                     
-                    if viewModel.isSearchActive {
-                        Text("Searching: '\(viewModel.searchQuery)'")
+                    if viewModel.state.isSearchActive {
+                        Text("Searching: '\(viewModel.state.searchQuery)'")
                             .font(.caption)
                             .foregroundColor(.blue)
-                    } else if viewModel.selectedCategory != nil {
-                        Text("Category: \(viewModel.selectedCategory ?? "")")
+                    } else if viewModel.state.selectedCategory != nil {
+                        Text("Category: \(viewModel.state.selectedCategory ?? "")")
                             .font(.caption)
                             .foregroundColor(.green)
                     }
@@ -45,11 +45,11 @@ struct SharedViewModelTestView: View {
                 .padding(.horizontal)
                 
                 // Content
-                if viewModel.isLoading {
+                if viewModel.state.isLoading {
                     Spacer()
                     ProgressView("Loading cocktails...")
                     Spacer()
-                } else if viewModel.cocktails.isEmpty {
+                } else if viewModel.state.cocktails.isEmpty {
                     Spacer()
                     VStack {
                         Image(systemName: "wineglass")
@@ -65,7 +65,7 @@ struct SharedViewModelTestView: View {
                     Spacer()
                 } else {
                     // Cocktail List
-                    List(viewModel.cocktails, id: \.id) { cocktail in
+                    List(viewModel.state.cocktails, id: \.id) { cocktail in
                         CocktailRowView(cocktail: cocktail)
                     }
                     .refreshable {
@@ -76,23 +76,23 @@ struct SharedViewModelTestView: View {
                 // Category Buttons
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
-                        CategoryButton(title: "All", isSelected: viewModel.selectedCategory == nil) {
+                        CategoryButton(title: "All", isSelected: viewModel.state.selectedCategory == nil) {
                             viewModel.clearSearch()
                         }
                         
-                        CategoryButton(title: "Cocktail", isSelected: viewModel.selectedCategory == "Cocktail") {
+                        CategoryButton(title: "Cocktail", isSelected: viewModel.state.selectedCategory == "Cocktail") {
                             Task {
                                 await viewModel.loadCocktailsByCategory("Cocktail")
                             }
                         }
                         
-                        CategoryButton(title: "Shot", isSelected: viewModel.selectedCategory == "Shot") {
+                        CategoryButton(title: "Shot", isSelected: viewModel.state.selectedCategory == "Shot") {
                             Task {
                                 await viewModel.loadCocktailsByCategory("Shot")
                             }
                         }
                         
-                        CategoryButton(title: "Beer", isSelected: viewModel.selectedCategory == "Beer") {
+                        CategoryButton(title: "Beer", isSelected: viewModel.state.selectedCategory == "Beer") {
                             Task {
                                 await viewModel.loadCocktailsByCategory("Beer")
                             }

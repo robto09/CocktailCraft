@@ -4,90 +4,82 @@ import Combine
 
 /**
  * iOS ViewModel wrapper for SharedOfflineModeViewModel using pure SKIE integration.
- * No FlowCollector bridge needed - uses native Swift async/await.
+ * Mirrors the consolidated uiState as a single @Published value.
  */
 @MainActor
 class OfflineModeViewModelSKIE: ObservableObject {
-    // Published properties for SwiftUI
-    @Published var isOfflineModeEnabled = false
-    @Published var isNetworkAvailable = true
-    @Published var recentlyViewedCocktails: [Cocktail] = []
-    @Published var cacheSize = 0
-    @Published var lastSyncTime: String? = nil
-    @Published var isLoading = false
+    // Consolidated UI state from the shared ViewModel
+    @Published private(set) var state: OfflineUiState
+    // Base-class error flow (distinct from state.error, matching prior behavior)
     @Published var error: ErrorHandler.UserFriendlyError? = nil
-    
+
     // Computed properties
     var hasRecentlyViewed: Bool {
-        !recentlyViewedCocktails.isEmpty
+        !state.recentlyViewedCocktails.isEmpty
     }
-    
+
     var isOnlineAndOfflineModeDisabled: Bool {
-        isNetworkAvailable && !isOfflineModeEnabled
+        state.isNetworkAvailable && !state.isOfflineModeEnabled
     }
-    
+
     var cacheStatusSummary: String {
         sharedViewModel.getCacheStatusSummary()
     }
-    
+
     var networkStatus: String {
         sharedViewModel.getNetworkStatus()
     }
-    
+
     var offlineModeStatus: String {
         sharedViewModel.getOfflineModeStatus()
     }
-    
+
     // Shared ViewModel instance
     private let sharedViewModel: SharedOfflineModeViewModel
-    
+
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
-    
+
     init() {
         // Get shared ViewModel from Koin
         self.sharedViewModel = getSharedKoinHelper().getSharedOfflineModeViewModel()
-        
+
+        // Seed synchronously so the first frame renders the current state
+        self.state = sharedViewModel.uiState.value
+
         // Start observing StateFlows using SKIE async/await
         startObserving()
     }
-    
+
     deinit {
         // Cancel all observation tasks
         observationTasks.forEach { $0.cancel() }
-        // Note: Do NOT call onCleared() — this is a Koin singleton whose
-        // coroutine scope must survive the lifetime of any single wrapper.
+        // Note: Do NOT call onCleared() — this wraps a Koin `single` whose
+        // coroutine scope must survive the lifetime of any one wrapper.
+        // (Factory-scoped wrappers — CocktailDetail, Review — do call it.)
     }
-    
+
     // MARK: - SKIE StateFlow Observation
-    
+
     private func startObserving() {
-        // Single consolidated observation of uiState
-        observationTasks.append(Task {
-            for await state in sharedViewModel.uiState {
-                await MainActor.run {
-                    self.isOfflineModeEnabled = state.isOfflineModeEnabled
-                    self.isNetworkAvailable = state.isNetworkAvailable
-                    self.recentlyViewedCocktails = state.recentlyViewedCocktails
-                    self.cacheSize = Int(state.cacheSize)
-                    self.lastSyncTime = state.lastSyncTime
-                    self.isLoading = state.isLoading
-                }
+        // These Tasks inherit @MainActor, so assignments land on the main thread.
+        observationTasks.append(Task { [weak self] in
+            guard let flow = self?.sharedViewModel.uiState else { return }
+            for await state in flow {
+                self?.state = state
             }
         })
 
-        // Observe error from base class
-        observationTasks.append(Task {
-            for await errorValue in sharedViewModel.error {
-                await MainActor.run {
-                    self.error = errorValue
-                }
+        observationTasks.append(Task { [weak self] in
+            guard let flow = self?.sharedViewModel.error else { return }
+            for await errorValue in flow {
+                self?.error = errorValue
             }
         })
     }
-    
+
     // MARK: - Public Methods (using SKIE async/await)
-    
+
     func toggleOfflineMode() async {
         do {
             try await sharedViewModel.toggleOfflineMode()
@@ -95,7 +87,7 @@ class OfflineModeViewModelSKIE: ObservableObject {
             print("OfflineModeViewModelSKIE - Error toggling offline mode: \(error)")
         }
     }
-    
+
     func setOfflineMode(_ enabled: Bool) async {
         do {
             try await sharedViewModel.setOfflineMode(enabled: enabled)
@@ -103,7 +95,7 @@ class OfflineModeViewModelSKIE: ObservableObject {
             print("OfflineModeViewModelSKIE - Error setting offline mode: \(error)")
         }
     }
-    
+
     func syncCachedData() async {
         do {
             try await sharedViewModel.syncCachedData()
@@ -111,7 +103,7 @@ class OfflineModeViewModelSKIE: ObservableObject {
             print("OfflineModeViewModelSKIE - Error syncing cached data: \(error)")
         }
     }
-    
+
     func clearCache() async {
         do {
             try await sharedViewModel.clearCache()
@@ -119,7 +111,7 @@ class OfflineModeViewModelSKIE: ObservableObject {
             print("OfflineModeViewModelSKIE - Error clearing cache: \(error)")
         }
     }
-    
+
     func loadRecentlyViewedCocktails() async {
         do {
             try await sharedViewModel.loadRecentlyViewedCocktails()
@@ -127,13 +119,13 @@ class OfflineModeViewModelSKIE: ObservableObject {
             print("OfflineModeViewModelSKIE - Error loading recently viewed cocktails: \(error)")
         }
     }
-    
+
     // MARK: - Synchronous Methods
-    
+
     func getCachedCocktailCount() -> Int {
         return Int(sharedViewModel.getCachedCocktailCount())
     }
-    
+
     func getRecentlyViewedByCategory(_ category: String) -> [Cocktail] {
         return sharedViewModel.getRecentlyViewedByCategory(category: category)
     }
@@ -141,42 +133,42 @@ class OfflineModeViewModelSKIE: ObservableObject {
     func getRecentlyViewedWithLimit(_ limit: Int) -> [Cocktail] {
         return sharedViewModel.getRecentlyViewedWithLimit(limit: Int32(limit))
     }
-    
+
     func isOfflineModeRecommended() -> Bool {
         return sharedViewModel.isOfflineModeRecommended()
     }
-    
+
     func clearError() {
         sharedViewModel.clearError()
     }
-    
+
     func refresh() {
         sharedViewModel.refresh()
     }
-    
+
     // MARK: - Helper Methods for SwiftUI
-    
+
     func formatLastSyncTime() -> String {
-        guard let syncTime = lastSyncTime else {
+        guard let syncTime = state.lastSyncTime else {
             return "Never synced"
         }
         return "Last sync: \(syncTime)"
     }
-    
+
     func getCacheSizeText() -> String {
         let count = getCachedCocktailCount()
         return "\(count) cocktail\(count == 1 ? "" : "s") cached"
     }
-    
+
     func getNetworkStatusColor() -> Color {
-        return isNetworkAvailable ? .green : .red
+        return state.isNetworkAvailable ? .green : .red
     }
-    
+
     func getOfflineModeColor() -> Color {
-        return isOfflineModeEnabled ? .orange : .blue
+        return state.isOfflineModeEnabled ? .orange : .blue
     }
-    
+
     func shouldShowOfflineRecommendation() -> Bool {
-        return !isNetworkAvailable && !isOfflineModeEnabled
+        return !state.isNetworkAvailable && !state.isOfflineModeEnabled
     }
 }

@@ -1,18 +1,30 @@
 import SwiftUI
+import Kingfisher
 
 struct CocktailImageView: View {
     let imageUrl: String?
     var height: CGFloat = 300
     var cornerRadius: CGFloat = 0
-    
+
     var body: some View {
-        AsyncImage(url: URL(string: imageUrl ?? "")) { image in
-            image
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-        } placeholder: {
-            ProgressView()
-                .frame(height: height)
+        Group {
+            if let urlString = imageUrl, !urlString.isEmpty, let url = URL(string: urlString) {
+                KFImage(url)
+                    .placeholder {
+                        ProgressView()
+                            .frame(height: height)
+                    }
+                    .retry(maxCount: 3, interval: .seconds(2))
+                    .onFailureImage(UIImage(systemName: "photo"))
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                // No URL to load: show a static fallback, never a spinner
+                Image(systemName: "photo")
+                    .font(.largeTitle)
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity, minHeight: min(height, 80))
+            }
         }
         .frame(maxHeight: height)
         .clipped()

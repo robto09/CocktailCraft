@@ -4,84 +4,81 @@ import Combine
 
 /**
  * iOS ViewModel wrapper for SharedReviewViewModel using pure SKIE integration.
- * No FlowCollector bridge needed - uses native Swift async/await.
+ * Mirrors the consolidated uiState as a single @Published value.
  */
 @MainActor
 class ReviewViewModelSKIE: ObservableObject {
-    // Published properties for SwiftUI - matching actual SharedReviewViewModel StateFlows
-    @Published var reviews: [String: [Review]] = [:]
-    @Published var currentCocktailReviews: [Review] = []
-    @Published var averageRating: Float = 0.0
-    @Published var reviewCount: Int = 0
-    @Published var currentCocktailId: String? = nil
-    @Published var isLoading = false
+    // Consolidated UI state from the shared ViewModel
+    @Published private(set) var state: ReviewUiState
+    // Base-class error flow (distinct from state.error, matching prior behavior)
     @Published var error: ErrorHandler.UserFriendlyError? = nil
-    
+
     // Computed properties
     var hasReviews: Bool {
         sharedViewModel.hasReviews
     }
-    
+
     var isEmpty: Bool {
         sharedViewModel.isEmpty
     }
-    
+
+    /// state.reviews bridged to a native Swift dictionary.
+    var reviews: [String: [Review]] {
+        var swiftDict: [String: [Review]] = [:]
+        for (key, value) in state.reviews {
+            if let stringKey = key as? String, let reviewList = value as? [Review] {
+                swiftDict[stringKey] = reviewList
+            }
+        }
+        return swiftDict
+    }
+
     // Shared ViewModel instance
     private let sharedViewModel: SharedReviewViewModel
-    
+
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
-    
+
     init() {
         // Get shared ViewModel from Koin
         self.sharedViewModel = getSharedKoinHelper().getSharedReviewViewModel()
-        
+
+        // Seed synchronously so the first frame renders the current state
+        self.state = sharedViewModel.uiState.value
+
         // Start observing StateFlows using SKIE async/await
         startObserving()
     }
-    
+
     deinit {
         // Cancel all observation tasks
         observationTasks.forEach { $0.cancel() }
+        // This wraps a Koin `factory` instance owned by this wrapper, so its
+        // scope is cancelled here. (Singleton-backed wrappers must NOT do this.)
         sharedViewModel.onCleared()
     }
-    
+
     // MARK: - SKIE StateFlow Observation
-    
+
     private func startObserving() {
-        // Single consolidated observation of uiState
-        observationTasks.append(Task {
-            for await state in sharedViewModel.uiState {
-                await MainActor.run {
-                    // Convert Kotlin Map to Swift Dictionary for reviews
-                    var swiftDict: [String: [Review]] = [:]
-                    for (key, value) in state.reviews {
-                        if let stringKey = key as? String, let reviewList = value as? [Review] {
-                            swiftDict[stringKey] = reviewList
-                        }
-                    }
-                    self.reviews = swiftDict
-                    self.currentCocktailReviews = state.currentCocktailReviews
-                    self.averageRating = state.averageRating
-                    self.reviewCount = Int(state.reviewCount)
-                    self.currentCocktailId = state.currentCocktailId
-                    self.isLoading = state.isLoading
-                }
+        // These Tasks inherit @MainActor, so assignments land on the main thread.
+        observationTasks.append(Task { [weak self] in
+            guard let flow = self?.sharedViewModel.uiState else { return }
+            for await state in flow {
+                self?.state = state
             }
         })
 
-        // Observe error from base class
-        observationTasks.append(Task {
-            for await errorValue in sharedViewModel.error {
-                await MainActor.run {
-                    self.error = errorValue
-                }
+        observationTasks.append(Task { [weak self] in
+            guard let flow = self?.sharedViewModel.error else { return }
+            for await errorValue in flow {
+                self?.error = errorValue
             }
         })
     }
-    
+
     // MARK: - Public Methods (using SKIE async/await)
-    
+
     func submitReview(cocktailId: String, rating: Float, comment: String, userName: String) async -> Bool {
         do {
             let result = try await sharedViewModel.submitReview(
@@ -95,7 +92,7 @@ class ReviewViewModelSKIE: ObservableObject {
             return false
         }
     }
-    
+
     func loadReviewsForCocktail(_ cocktailId: String) async {
         do {
             try await sharedViewModel.loadReviewsForCocktail(cocktailId: cocktailId)
@@ -103,7 +100,7 @@ class ReviewViewModelSKIE: ObservableObject {
             // Error handling is done in the shared ViewModel
         }
     }
-    
+
     func updateReview(_ reviewId: String, rating: Float, comment: String) async -> Bool {
         do {
             let result = try await sharedViewModel.updateReview(
@@ -116,7 +113,7 @@ class ReviewViewModelSKIE: ObservableObject {
             return false
         }
     }
-    
+
     func deleteReview(_ reviewId: String) async -> Bool {
         do {
             let result = try await sharedViewModel.deleteReview(reviewId: reviewId)
@@ -125,7 +122,7 @@ class ReviewViewModelSKIE: ObservableObject {
             return false
         }
     }
-    
+
     func loadAllReviews() async {
         do {
             try await sharedViewModel.loadAllReviews()
@@ -133,25 +130,25 @@ class ReviewViewModelSKIE: ObservableObject {
             // Error handling is done in the shared ViewModel
         }
     }
-    
+
     // MARK: - Synchronous Methods
-    
+
     func getReviewsForCocktail(_ cocktailId: String) -> [Review] {
         return sharedViewModel.getReviewsForCocktail(cocktailId: cocktailId)
     }
-    
+
     func getAverageRating(_ cocktailId: String) -> Float {
         return sharedViewModel.getAverageRating(cocktailId: cocktailId)
     }
-    
+
     func getReviewCount(_ cocktailId: String) -> Int {
         return Int(sharedViewModel.getReviewCount(cocktailId: cocktailId))
     }
-    
+
     func validateReview(rating: Float, comment: String) -> Bool {
         return sharedViewModel.validateReview(rating: rating, comment: comment)
     }
-    
+
     func getRatingDistribution(_ cocktailId: String) -> [Int: Int] {
         let kotlinMap = sharedViewModel.getRatingDistribution(cocktailId: cocktailId)
         var swiftDict: [Int: Int] = [:]
@@ -162,7 +159,7 @@ class ReviewViewModelSKIE: ObservableObject {
         }
         return swiftDict
     }
-    
+
     func getReviewsSortedByRating(_ cocktailId: String) -> [Review] {
         return sharedViewModel.getReviewsSortedByRating(cocktailId: cocktailId)
     }
@@ -178,27 +175,27 @@ class ReviewViewModelSKIE: ObservableObject {
     func searchReviews(query: String) -> [Review] {
         return sharedViewModel.searchReviews(query: query)
     }
-    
+
     func refresh() {
         sharedViewModel.refresh()
     }
-    
+
     // MARK: - Helper Methods for SwiftUI
-    
+
     func getStarRating(_ rating: Float) -> String {
         let fullStars = Int(rating)
         let hasHalfStar = rating - Float(fullStars) >= 0.5
         let emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
-        
+
         return String(repeating: "★", count: fullStars) +
                (hasHalfStar ? "☆" : "") +
                String(repeating: "☆", count: emptyStars)
     }
-    
+
     func formatRating(_ rating: Float) -> String {
         return String(format: "%.1f", rating)
     }
-    
+
     func getRatingColor(_ rating: Float) -> Color {
         switch rating {
         case 4.5...5.0: return .green
@@ -207,9 +204,9 @@ class ReviewViewModelSKIE: ObservableObject {
         default: return .red
         }
     }
-    
+
     func getReviewCountText() -> String {
-        let count = reviewCount
+        let count = Int(state.reviewCount)
         if count == 0 {
             return "No reviews"
         } else if count == 1 {
@@ -218,7 +215,7 @@ class ReviewViewModelSKIE: ObservableObject {
             return "\(count) reviews"
         }
     }
-    
+
     func canEditReview(_ review: Review, currentUserId: String) -> Bool {
         // In a real app, you'd check if the review belongs to the current user
         return review.userName == currentUserId
@@ -228,7 +225,7 @@ class ReviewViewModelSKIE: ObservableObject {
         // Simple time formatting - in a real app you'd use proper date formatting
         return review.date
     }
-    
+
     func getRatingPercentage(_ rating: Int, for cocktailId: String) -> Double {
         let distribution = getRatingDistribution(cocktailId)
         let totalCount = distribution.values.reduce(0, +)

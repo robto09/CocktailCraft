@@ -4,86 +4,78 @@ import Combine
 
 /**
  * iOS ViewModel wrapper for SharedOrderViewModel using pure SKIE integration.
- * No FlowCollector bridge needed - uses native Swift async/await.
+ * Mirrors the consolidated uiState as a single @Published value.
  */
 @MainActor
 class OrderViewModelSKIE: ObservableObject {
-    // Published properties for SwiftUI
-    @Published var orders: [Order] = []
-    @Published var currentOrder: Order? = nil
-    @Published var orderCount = 0
-    @Published var isPlacingOrder = false
-    @Published var totalSpent: Double = 0.0
-    @Published var isLoading = false
+    // Consolidated UI state from the shared ViewModel
+    @Published private(set) var state: OrderUiState
+    // Base-class error flow (distinct from state.error, matching prior behavior)
     @Published var error: ErrorHandler.UserFriendlyError? = nil
-    
+
     // Computed properties
     var hasOrders: Bool {
-        !orders.isEmpty
+        !state.orders.isEmpty
     }
-    
+
     var isEmpty: Bool {
-        orders.isEmpty
+        state.orders.isEmpty
     }
-    
+
     var recentOrders: [Order] {
         sharedViewModel.getRecentOrders()
     }
-    
+
     var orderStatistics: [String: Any] {
         sharedViewModel.getOrderStatistics()
     }
-    
+
     // Shared ViewModel instance
     private let sharedViewModel: SharedOrderViewModel
-    
+
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
-    
+
     init() {
         // Get shared ViewModel from Koin
         self.sharedViewModel = getSharedKoinHelper().getSharedOrderViewModel()
-        
+
+        // Seed synchronously so the first frame renders the current state
+        self.state = sharedViewModel.uiState.value
+
         // Start observing StateFlows using SKIE async/await
         startObserving()
     }
-    
+
     deinit {
         // Cancel all observation tasks
         observationTasks.forEach { $0.cancel() }
-        // Note: Do NOT call onCleared() — this is a Koin singleton whose
-        // coroutine scope must survive the lifetime of any single wrapper.
+        // Note: Do NOT call onCleared() — this wraps a Koin `single` whose
+        // coroutine scope must survive the lifetime of any one wrapper.
+        // (Factory-scoped wrappers — CocktailDetail, Review — do call it.)
     }
-    
+
     // MARK: - SKIE StateFlow Observation
-    
+
     private func startObserving() {
-        // Single consolidated observation of uiState
-        observationTasks.append(Task {
-            for await state in sharedViewModel.uiState {
-                await MainActor.run {
-                    self.orders = state.orders
-                    self.currentOrder = state.currentOrder
-                    self.orderCount = Int(state.orderCount)
-                    self.isPlacingOrder = state.isPlacingOrder
-                    self.totalSpent = state.totalSpent
-                    self.isLoading = state.isLoading
-                }
+        // These Tasks inherit @MainActor, so assignments land on the main thread.
+        observationTasks.append(Task { [weak self] in
+            guard let flow = self?.sharedViewModel.uiState else { return }
+            for await state in flow {
+                self?.state = state
             }
         })
 
-        // Observe error from base class
-        observationTasks.append(Task {
-            for await errorValue in sharedViewModel.error {
-                await MainActor.run {
-                    self.error = errorValue
-                }
+        observationTasks.append(Task { [weak self] in
+            guard let flow = self?.sharedViewModel.error else { return }
+            for await errorValue in flow {
+                self?.error = errorValue
             }
         })
     }
-    
+
     // MARK: - Public Methods (using SKIE async/await)
-    
+
     func loadOrders() async {
         do {
             try await sharedViewModel.loadOrders()
@@ -91,7 +83,7 @@ class OrderViewModelSKIE: ObservableObject {
             // Handle error silently
         }
     }
-    
+
     func placeOrder(cartItems: [CocktailCartItem], totalPrice: Double) async -> Bool {
         print("Swift: placeOrder called with \(cartItems.count) items, total: \(totalPrice)")
         return await withCheckedContinuation { continuation in
@@ -102,7 +94,7 @@ class OrderViewModelSKIE: ObservableObject {
             }
         }
     }
-    
+
     func getOrderById(_ orderId: String) async -> Order? {
         do {
             return try await sharedViewModel.getOrderById(orderId: orderId)
@@ -110,7 +102,7 @@ class OrderViewModelSKIE: ObservableObject {
             return nil
         }
     }
-    
+
     func updateOrderStatus(_ orderId: String, status: String) async -> Bool {
         do {
             return try await sharedViewModel.updateOrderStatus(orderId: orderId, status: status).boolValue
@@ -134,9 +126,9 @@ class OrderViewModelSKIE: ObservableObject {
             return false
         }
     }
-    
+
     // MARK: - Synchronous Methods
-    
+
     func getOrdersByStatus(_ status: String) -> [Order] {
         return sharedViewModel.getOrdersByStatus(status: status)
     }
@@ -152,37 +144,37 @@ class OrderViewModelSKIE: ObservableObject {
     func getOrdersByDateRange(startDate: String, endDate: String) -> [Order] {
         return sharedViewModel.getOrdersByDateRange(startDate: startDate, endDate: endDate)
     }
-    
+
     func canCancelOrder(_ orderId: String) -> Bool {
         return sharedViewModel.canCancelOrder(orderId: orderId)
     }
-    
+
     func getOrderStatusDisplay(_ status: String) -> String {
         return sharedViewModel.getOrderStatusDisplay(status: status)
     }
-    
+
     func getEstimatedDeliveryTime(_ orderId: String) -> String {
         return sharedViewModel.getEstimatedDeliveryTime(orderId: orderId)
     }
-    
+
     func clearError() {
         sharedViewModel.clearError()
     }
-    
+
     func refresh() {
         sharedViewModel.refresh()
     }
-    
+
     // MARK: - Helper Methods for SwiftUI
-    
+
     func formatPrice(_ price: Double) -> String {
         return String(format: "$%.2f", price)
     }
-    
+
     func formatTotalSpent() -> String {
-        return formatPrice(totalSpent)
+        return formatPrice(state.totalSpent)
     }
-    
+
     func getOrderStatusColor(_ status: String) -> Color {
         switch status.lowercased() {
         case "pending":
@@ -199,7 +191,7 @@ class OrderViewModelSKIE: ObservableObject {
             return .gray
         }
     }
-    
+
     func getOrderStatusIcon(_ status: String) -> String {
         switch status.lowercased() {
         case "pending":
@@ -216,34 +208,34 @@ class OrderViewModelSKIE: ObservableObject {
             return "questionmark.circle"
         }
     }
-    
+
     func getOrdersGroupedByStatus() -> [String: [Order]] {
-        return Dictionary(grouping: orders) { $0.status }
+        return Dictionary(grouping: state.orders) { $0.status }
     }
-    
+
     func getAverageOrderValue() -> Double {
-        guard !orders.isEmpty else { return 0.0 }
-        return orders.reduce(0.0) { $0 + $1.total } / Double(orders.count)
+        guard !state.orders.isEmpty else { return 0.0 }
+        return state.orders.reduce(0.0) { $0 + $1.total } / Double(state.orders.count)
     }
-    
+
     func formatAverageOrderValue() -> String {
         return formatPrice(getAverageOrderValue())
     }
-    
+
     func getMostRecentOrder() -> Order? {
-        return orders.first
+        return state.orders.first
     }
 
     func getOrdersThisMonth() -> [Order] {
         let calendar = Calendar.current
         let now = Date()
         let startOfMonth = calendar.dateInterval(of: .month, for: now)?.start ?? now
-        
+
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         let startDateString = formatter.string(from: startOfMonth)
         let endDateString = formatter.string(from: now)
-        
+
         return getOrdersByDateRange(startDate: startDateString, endDate: endDateString)
     }
 }
