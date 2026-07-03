@@ -9,7 +9,7 @@ struct CartView: View {
     
     var body: some View {
         Group {
-            if cartViewModel.cartItems.isEmpty {
+            if cartViewModel.state.cartItems.isEmpty {
                 EmptyStateView(
                     icon: "cart",
                     title: "Your cart is empty",
@@ -21,7 +21,7 @@ struct CartView: View {
                     VStack(spacing: AppTheme.Spacing.xl) {
                         // Cart Items
                         VStack(spacing: AppTheme.Spacing.lg) {
-                            ForEach(cartViewModel.cartItems, id: \.cocktail.id) { item in
+                            ForEach(cartViewModel.state.cartItems, id: \.cocktail.id) { item in
                                 CartItemCard(
                                     item: item,
                                     onIncrementQuantity: {
@@ -48,7 +48,7 @@ struct CartView: View {
 
                         // Order Summary
                         CartSummaryCard(
-                            subtotal: cartViewModel.totalPrice,
+                            subtotal: cartViewModel.state.totalPrice,
                             deliveryFee: cartViewModel.deliveryFee,
                             total: cartViewModel.finalTotal
                         )
@@ -56,8 +56,8 @@ struct CartView: View {
                         // Place Order Button
                         CheckoutButton(
                             title: "Place Order",
-                            isEnabled: !cartViewModel.cartItems.isEmpty,
-                            isLoading: orderViewModel.isLoading,
+                            isEnabled: !cartViewModel.state.cartItems.isEmpty,
+                            isLoading: orderViewModel.state.isLoading,
                             action: {
                                 showCheckoutConfirmation = true
                             }
@@ -74,7 +74,7 @@ struct CartView: View {
                 message: Text("Are you sure you want to place this order for $\(cartViewModel.finalTotal, specifier: "%.2f")?"),
                 primaryButton: .default(Text("Confirm")) {
                     Task {
-                        let success = await orderViewModel.placeOrder(cartItems: cartViewModel.cartItems, totalPrice: cartViewModel.finalTotal)
+                        let success = await orderViewModel.placeOrder(cartItems: cartViewModel.state.cartItems, totalPrice: cartViewModel.finalTotal)
                         print("Order placement result: \(success)")
                         if success {
                             // Clear cart after successful order

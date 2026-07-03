@@ -6,7 +6,6 @@ import SwiftUI
 struct CocktailDetailView: View {
     let cocktailId: String
     @ObservedObject var cartViewModel: CartViewModelSKIE
-    @StateObject private var reviewViewModel = ReviewViewModelSKIE()
 
     @State private var cocktail: Cocktail? = nil
     @State private var isLoading = true

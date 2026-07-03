@@ -22,9 +22,9 @@ struct OrderListView: View {
 
     @ViewBuilder
     private var contentView: some View {
-        if !hasAppeared || viewModel.isLoading {
+        if !hasAppeared || viewModel.state.isLoading {
             loadingView
-        } else if viewModel.orders.isEmpty {
+        } else if viewModel.state.orders.isEmpty {
             emptyView
         } else {
             ordersList
@@ -44,7 +44,7 @@ struct OrderListView: View {
 
     private var ordersList: some View {
         List {
-            ForEach(Array(viewModel.orders), id: \.id) { order in
+            ForEach(Array(viewModel.state.orders), id: \.id) { order in
                 orderRow(order: order)
             }
         }

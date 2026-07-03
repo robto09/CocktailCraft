@@ -11,7 +11,7 @@ struct SettingsView: View {
             Form {
                 Section(header: Text("Appearance")) {
                     Toggle("Dark Mode", isOn: Binding(
-                        get: { themeViewModel.isDarkMode },
+                        get: { themeViewModel.state.isDarkMode },
                         set: { _ in
                             Task {
                                 await themeViewModel.toggleDarkMode()
@@ -20,7 +20,7 @@ struct SettingsView: View {
                     ))
                     
                     Toggle("Follow System Theme", isOn: Binding(
-                        get: { themeViewModel.isSystemTheme },
+                        get: { themeViewModel.state.isSystemTheme },
                         set: { _ in
                             Task {
                                 await themeViewModel.applySystemTheme()
@@ -30,7 +30,7 @@ struct SettingsView: View {
                     
                     if !themeViewModel.availableAccentColors.isEmpty {
                         Picker("Accent Color", selection: Binding(
-                            get: { themeViewModel.accentColor },
+                            get: { themeViewModel.state.accentColor },
                             set: { newColor in
                                 Task {
                                     await themeViewModel.setAccentColor(newColor)
@@ -46,7 +46,7 @@ struct SettingsView: View {
                     
                     if !themeViewModel.availableFontSizes.isEmpty {
                         Picker("Font Size", selection: Binding(
-                            get: { themeViewModel.fontSize },
+                            get: { themeViewModel.state.fontSize },
                             set: { newSize in
                                 Task {
                                     await themeViewModel.setFontSize(newSize)
@@ -61,7 +61,7 @@ struct SettingsView: View {
                     }
                     
                     Toggle("High Contrast", isOn: Binding(
-                        get: { themeViewModel.isHighContrast },
+                        get: { themeViewModel.state.isHighContrast },
                         set: { _ in
                             Task {
                                 await themeViewModel.toggleHighContrast()
@@ -70,7 +70,7 @@ struct SettingsView: View {
                     ))
                     
                     Toggle("Reduce Motion", isOn: Binding(
-                        get: { themeViewModel.isReducedMotion },
+                        get: { themeViewModel.state.isReducedMotion },
                         set: { _ in
                             Task {
                                 await themeViewModel.toggleReducedMotion()

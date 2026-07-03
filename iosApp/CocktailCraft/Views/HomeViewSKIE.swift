@@ -144,7 +144,7 @@ struct HomeViewSKIE: View {
             .background(backgroundColor)
             
             // Content Area with Pull-to-Refresh
-            if viewModel.isLoading && viewModel.cocktails.isEmpty {
+            if viewModel.state.isLoading && viewModel.state.cocktails.isEmpty {
                 ScrollView {
                     LazyVStack(spacing: 12) {
                         ForEach(0..<6, id: \.self) { _ in
@@ -204,7 +204,7 @@ struct HomeViewSKIE: View {
                 }
                 .background(backgroundColor)
                 .transition(.opacity)
-            } else if viewModel.cocktails.isEmpty && !viewModel.isLoading {
+            } else if viewModel.state.cocktails.isEmpty && !viewModel.state.isLoading {
                 ScrollView {
                     VStack {
                         Spacer()
@@ -224,7 +224,7 @@ struct HomeViewSKIE: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 12) {
-                        ForEach(viewModel.filteredCocktails, id: \.id) { cocktail in
+                        ForEach(viewModel.state.cocktails, id: \.id) { cocktail in
                             NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.id, cartViewModel: CartViewModelSKIE())) {
                                 CocktailCard(
                                     cocktail: cocktail,
@@ -252,7 +252,7 @@ struct HomeViewSKIE: View {
                         }
                         
                         // Load More Section
-                        if viewModel.hasMoreData && !viewModel.isLoadingMore {
+                        if viewModel.state.hasMoreData && !viewModel.state.isLoadingMore {
                             Button(action: {
                                 Task {
                                     await viewModel.loadMoreCocktails()
@@ -270,7 +270,7 @@ struct HomeViewSKIE: View {
                             }
                             .buttonStyle(.plain)
                             .padding(.bottom, 32)
-                        } else if viewModel.isLoadingMore {
+                        } else if viewModel.state.isLoadingMore {
                             HStack {
                                 ProgressView()
                                     .foregroundColor(primaryColor)
@@ -331,7 +331,7 @@ struct HomeViewSKIE: View {
         }
         .task {
             // Initial load when view appears
-            if viewModel.cocktails.isEmpty {
+            if viewModel.state.cocktails.isEmpty {
                 await viewModel.loadCocktails()
             }
         }

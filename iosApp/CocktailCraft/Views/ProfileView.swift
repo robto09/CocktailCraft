@@ -28,7 +28,7 @@ struct ProfileView: View {
                     profileHeaderCard
 
                     // Account Settings Card (only if logged in)
-                    if viewModel.isLoggedIn {
+                    if viewModel.state.isLoggedIn {
                         accountSettingsCard
                     }
 
@@ -127,7 +127,7 @@ struct ProfileView: View {
             }
 
             // Sign In/Sign Up Buttons (if not logged in)
-            if !viewModel.isLoggedIn {
+            if !viewModel.state.isLoggedIn {
                 VStack(spacing: 12) {
                     Text("Sign in to access your profile")
                         .font(.body)
@@ -233,9 +233,9 @@ struct ProfileView: View {
                 // Follow System Theme Toggle
                 ThemeToggleRow(
                     title: "Follow System Theme",
-                    subtitle: themeViewModel.isSystemTheme ? "On" : "Off",
+                    subtitle: themeViewModel.state.isSystemTheme ? "On" : "Off",
                     icon: "gear",
-                    isChecked: themeViewModel.isSystemTheme,
+                    isChecked: themeViewModel.state.isSystemTheme,
                     onToggle: {
                         Task {
                             await themeViewModel.applySystemTheme()
@@ -248,21 +248,21 @@ struct ProfileView: View {
                 // Dark Mode Toggle
                 ThemeToggleRow(
                     title: "Dark Mode",
-                    subtitle: themeViewModel.isSystemTheme ? "Controlled by system" : (themeViewModel.isDarkMode ? "On" : "Off"),
-                    icon: themeViewModel.isDarkMode ? "moon.fill" : "sun.max.fill",
-                    isChecked: themeViewModel.isDarkMode,
+                    subtitle: themeViewModel.state.isSystemTheme ? "Controlled by system" : (themeViewModel.state.isDarkMode ? "On" : "Off"),
+                    icon: themeViewModel.state.isDarkMode ? "moon.fill" : "sun.max.fill",
+                    isChecked: themeViewModel.state.isDarkMode,
                     onToggle: {
-                        if !themeViewModel.isSystemTheme {
+                        if !themeViewModel.state.isSystemTheme {
                             Task {
                                 await themeViewModel.toggleDarkMode()
                             }
                         }
                     },
-                    enabled: !themeViewModel.isSystemTheme
+                    enabled: !themeViewModel.state.isSystemTheme
                 )
 
                 // Logout (only if logged in)
-                if viewModel.isLoggedIn {
+                if viewModel.state.isLoggedIn {
                     Divider()
 
                     SettingsRow(

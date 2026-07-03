@@ -22,20 +22,18 @@ struct FilterView: View {
                         HStack {
                             FilterChip(
                                 title: "All",
-                                isSelected: viewModel.selectedCategory == nil,
+                                isSelected: viewModel.state.selectedCategory == nil,
                                 action: {
-                                    viewModel.selectedCategory = nil
-                                    viewModel.applyFilters()
+                                    viewModel.setCategory(nil)
                                 }
                             )
                             
                             ForEach(["Cocktail", "Shot", "Ordinary Drink"], id: \.self) { category in
                                 FilterChip(
                                     title: category,
-                                    isSelected: viewModel.selectedCategory == category,
+                                    isSelected: viewModel.state.selectedCategory == category,
                                     action: {
-                                        viewModel.selectedCategory = category
-                                        viewModel.applyFilters()
+                                        viewModel.setCategory(category)
                                     }
                                 )
                             }
@@ -48,10 +46,9 @@ struct FilterView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Clear") {
-                        viewModel.selectedCategory = nil
                         viewModel.selectedIngredient = nil
                         viewModel.sortOption = SortOption.nameAsc
-                        viewModel.applyFilters()
+                        viewModel.setCategory(nil)
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {

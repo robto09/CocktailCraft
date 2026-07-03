@@ -8,7 +8,7 @@ struct FavoritesView: View {
 
     var body: some View {
         Group {
-            if viewModel.favorites.isEmpty {
+            if viewModel.state.favorites.isEmpty {
                 emptyStateView
             } else {
                 favoritesGridView
@@ -42,7 +42,7 @@ struct FavoritesView: View {
     
     private var gridContent: some View {
         LazyVGrid(columns: gridColumns, spacing: 16) {
-            ForEach(viewModel.favorites, id: \.id) { cocktail in
+            ForEach(viewModel.state.favorites, id: \.id) { cocktail in
                 cocktailGridItem(cocktail)
             }
         }

@@ -25,7 +25,7 @@ struct ContentView: View {
                 .tabItem {
                     Label("Cart", systemImage: "cart.fill")
                 }
-                .badge(cartViewModel.itemCount)
+                .badge(Int(cartViewModel.state.itemCount))
                 .tag(1)
 
                 // Favorites Tab
@@ -62,9 +62,9 @@ struct ContentView: View {
                 Spacer()
             }
         }
-        .background(AppColors.background(isDarkMode: themeViewModel.isDarkMode))
-        .environment(\.isDarkMode, themeViewModel.isDarkMode)
-        .preferredColorScheme(themeViewModel.isSystemTheme ? nil : (themeViewModel.isDarkMode ? .dark : .light))
+        .background(AppColors.background(isDarkMode: themeViewModel.state.isDarkMode))
+        .environment(\.isDarkMode, themeViewModel.state.isDarkMode)
+        .preferredColorScheme(themeViewModel.state.isSystemTheme ? nil : (themeViewModel.state.isDarkMode ? .dark : .light))
     }
 }
 

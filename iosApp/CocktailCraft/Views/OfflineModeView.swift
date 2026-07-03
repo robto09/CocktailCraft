@@ -53,11 +53,11 @@ struct OfflineModeView: View {
     private var networkStatusCard: some View {
         VStack(spacing: 12) {
             HStack {
-                Image(systemName: viewModel.isNetworkAvailable ? "wifi" : "wifi.slash")
+                Image(systemName: viewModel.state.isNetworkAvailable ? "wifi" : "wifi.slash")
                     .foregroundColor(.white)
                     .font(.title2)
                 
-                Text(viewModel.isNetworkAvailable ? "Network Available" : "Network Unavailable")
+                Text(viewModel.state.isNetworkAvailable ? "Network Available" : "Network Unavailable")
                     .font(.headline)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
@@ -67,7 +67,7 @@ struct OfflineModeView: View {
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(viewModel.isNetworkAvailable ? Color.green : Color.red)
+                    .fill(viewModel.state.isNetworkAvailable ? Color.green : Color.red)
             )
         }
         .cardStyle()
@@ -96,7 +96,7 @@ struct OfflineModeView: View {
                     Spacer()
                     
                     Toggle("", isOn: Binding(
-                        get: { viewModel.isOfflineModeEnabled },
+                        get: { viewModel.state.isOfflineModeEnabled },
                         set: { _ in
                             Task {
                                 await viewModel.toggleOfflineMode()
@@ -194,7 +194,7 @@ struct OfflineModeView: View {
                 .fontWeight(.bold)
                 .foregroundColor(.primary)
 
-            if viewModel.recentlyViewedCocktails.isEmpty {
+            if viewModel.state.recentlyViewedCocktails.isEmpty {
                 Text("No recently viewed cocktails")
                     .font(.body)
                     .foregroundColor(.secondary)
@@ -204,15 +204,15 @@ struct OfflineModeView: View {
                     GridItem(.flexible()),
                     GridItem(.flexible())
                 ], spacing: 12) {
-                    ForEach(Array(viewModel.recentlyViewedCocktails.prefix(6)), id: \.id) { cocktail in
+                    ForEach(Array(viewModel.state.recentlyViewedCocktails.prefix(6)), id: \.id) { cocktail in
                         CocktailGridItem(cocktail: cocktail) {
                             // Handle cocktail tap
                         }
                     }
                 }
 
-                if viewModel.recentlyViewedCocktails.count > 6 {
-                    Button("View All (\(viewModel.recentlyViewedCocktails.count))") {
+                if viewModel.state.recentlyViewedCocktails.count > 6 {
+                    Button("View All (\(viewModel.state.recentlyViewedCocktails.count))") {
                         // Handle view all
                     }
                     .font(.caption)
@@ -254,7 +254,7 @@ struct OfflineModeView: View {
                     .background(.blue)
                     .cornerRadius(8)
                 }
-                .disabled(!viewModel.isNetworkAvailable || viewModel.isLoading)
+                .disabled(!viewModel.state.isNetworkAvailable || viewModel.state.isLoading)
 
                 // Clear Cache Button
                 Button(action: {
@@ -276,9 +276,9 @@ struct OfflineModeView: View {
                     .background(Color.red)
                     .cornerRadius(8)
                 }
-                .disabled(viewModel.getCachedCocktailCount() == 0 || viewModel.isLoading)
+                .disabled(viewModel.getCachedCocktailCount() == 0 || viewModel.state.isLoading)
 
-                if viewModel.isLoading {
+                if viewModel.state.isLoading {
                     HStack {
                         ProgressView()
                             .scaleEffect(0.8)

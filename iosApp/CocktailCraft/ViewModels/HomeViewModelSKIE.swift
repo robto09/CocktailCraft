@@ -13,88 +13,74 @@ enum SortOption: CaseIterable {
 
 /**
  * iOS ViewModel wrapper for SharedHomeViewModel using pure SKIE integration.
- * No FlowCollector bridge needed - uses native Swift async/await.
+ * Mirrors the consolidated uiState as a single @Published value; views read
+ * `viewModel.state.<field>` for everything the shared ViewModel owns.
  */
 @MainActor
 class HomeViewModelSKIE: ObservableObject {
-    // Published properties for SwiftUI
-    @Published var cocktails: [Cocktail] = []
-    @Published var filteredCocktails: [Cocktail] = []
-    @Published var isLoading = false
+    // Consolidated UI state from the shared ViewModel
+    @Published private(set) var state: HomeUiState
+    // Base-class error flow (distinct from state.error, matching prior behavior)
     @Published var error: ErrorHandler.UserFriendlyError? = nil
-    @Published var selectedCategory: String? = nil
-    @Published var selectedIngredient: String? = nil
+
+    // Swift-local UI state (never sent to the shared ViewModel wholesale;
+    // sortOption backs a SwiftUI binding so it must stay settable @Published)
     @Published var sortOption: SortOption = .nameAsc
-    @Published var isSearchActive = false
-    @Published var searchQuery = ""
-    @Published var isOfflineMode = false
-    @Published var isNetworkAvailable = true
-    @Published var hasMoreData = false
-    @Published var isLoadingMore = false
-    @Published var favorites: [Cocktail] = []
+    @Published var selectedIngredient: String? = nil
 
     // Shared ViewModel instances
     private let sharedViewModel: SharedHomeViewModel
     private let cartViewModel: SharedCartViewModel
-    
+
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
-    
+
     init() {
         // Get shared ViewModels from Koin
         self.sharedViewModel = getSharedKoinHelper().getSharedHomeViewModel()
         self.cartViewModel = getSharedKoinHelper().getSharedCartViewModel()
-        
+
+        // Seed synchronously so the first frame renders the current state
+        self.state = sharedViewModel.uiState.value
+
         // Start observing StateFlows using SKIE async/await
         startObserving()
-        
+
         // Initial load
         Task {
             await loadCocktails()
         }
     }
-    
+
     deinit {
         // Cancel all observation tasks
         observationTasks.forEach { $0.cancel() }
-        // Note: Do NOT call onCleared() — these are Koin singletons whose
-        // coroutine scope must survive the lifetime of any single wrapper.
+        // Note: Do NOT call onCleared() — this wraps Koin `single` instances
+        // whose coroutine scope must survive the lifetime of any one wrapper.
+        // (Factory-scoped wrappers — CocktailDetail, Review — do call it.)
     }
-    
+
     // MARK: - SKIE StateFlow Observation
-    
+
     private func startObserving() {
-        // Single consolidated observation of uiState
-        observationTasks.append(Task {
-            for await state in sharedViewModel.uiState {
-                await MainActor.run {
-                    self.cocktails = state.cocktails
-                    self.filteredCocktails = state.cocktails
-                    self.isLoading = state.isLoading
-                    self.selectedCategory = state.selectedCategory
-                    self.isSearchActive = state.isSearchActive
-                    self.searchQuery = state.searchQuery
-                    self.isOfflineMode = state.isOfflineMode
-                    self.isNetworkAvailable = state.isNetworkAvailable
-                    self.hasMoreData = state.hasMoreData
-                    self.isLoadingMore = state.isLoadingMore
-                    self.favorites = state.favorites
-                }
+        // These Tasks inherit @MainActor, so assignments land on the main thread.
+        observationTasks.append(Task { [weak self] in
+            guard let flow = self?.sharedViewModel.uiState else { return }
+            for await state in flow {
+                self?.state = state
             }
         })
 
-        // Observe error from base class
-        observationTasks.append(Task {
-            for await errorValue in sharedViewModel.error {
-                await MainActor.run {
-                    self.error = errorValue
-                }
+        observationTasks.append(Task { [weak self] in
+            guard let flow = self?.sharedViewModel.error else { return }
+            for await errorValue in flow {
+                self?.error = errorValue
             }
         })
     }
-    
+
     // MARK: - Public Methods (using SKIE async/await)
-    
+
     func loadCocktails() async {
         do {
             try await sharedViewModel.loadCocktails()
@@ -102,7 +88,7 @@ class HomeViewModelSKIE: ObservableObject {
             print("HomeViewModelSKIE - Error loading cocktails: \(error)")
         }
     }
-    
+
     func loadCocktailsByCategory(_ category: String?) async {
         do {
             try await sharedViewModel.loadCocktailsByCategory(category: category)
@@ -110,7 +96,7 @@ class HomeViewModelSKIE: ObservableObject {
             print("HomeViewModelSKIE - Error loading cocktails by category: \(error)")
         }
     }
-    
+
     func searchCocktails(query: String) async {
         do {
             try await sharedViewModel.searchCocktails(query: query)
@@ -118,7 +104,7 @@ class HomeViewModelSKIE: ObservableObject {
             print("HomeViewModelSKIE - Error searching cocktails: \(error)")
         }
     }
-    
+
     func loadMoreCocktails() async {
         do {
             try await sharedViewModel.loadMoreCocktails()
@@ -126,7 +112,7 @@ class HomeViewModelSKIE: ObservableObject {
             print("HomeViewModelSKIE - Error loading more cocktails: \(error)")
         }
     }
-    
+
     func toggleFavorite(_ cocktail: Cocktail) async {
         do {
             try await sharedViewModel.toggleFavorite(cocktail: cocktail)
@@ -134,7 +120,7 @@ class HomeViewModelSKIE: ObservableObject {
             print("HomeViewModelSKIE - Error toggling favorite: \(error)")
         }
     }
-    
+
     func addToCart(_ cocktail: Cocktail) async {
         do {
             try await cartViewModel.addToCart(cocktail: cocktail, quantity: 1)
@@ -142,7 +128,7 @@ class HomeViewModelSKIE: ObservableObject {
             print("HomeViewModelSKIE - Error adding to cart: \(error)")
         }
     }
-    
+
     func sortByPrice(ascending: Bool) async {
         do {
             try await sharedViewModel.sortByPrice(ascending: ascending)
@@ -150,7 +136,7 @@ class HomeViewModelSKIE: ObservableObject {
             print("HomeViewModelSKIE - Error sorting by price: \(error)")
         }
     }
-    
+
     func sortByRating() async {
         do {
             try await sharedViewModel.sortByRating()
@@ -158,7 +144,7 @@ class HomeViewModelSKIE: ObservableObject {
             print("HomeViewModelSKIE - Error sorting by rating: \(error)")
         }
     }
-    
+
     func sortByPopularity() async {
         do {
             try await sharedViewModel.sortByPopularity()
@@ -166,7 +152,7 @@ class HomeViewModelSKIE: ObservableObject {
             print("HomeViewModelSKIE - Error sorting by popularity: \(error)")
         }
     }
-    
+
     func getCocktailById(_ id: String) async -> Cocktail? {
         do {
             return try await sharedViewModel.getCocktailById(id: id)
@@ -175,37 +161,37 @@ class HomeViewModelSKIE: ObservableObject {
             return nil
         }
     }
-    
+
     // MARK: - Synchronous Methods
-    
+
     func isFavorite(_ cocktailId: String) -> Bool {
         return sharedViewModel.isFavorite(cocktailId: cocktailId)
     }
-    
+
     func getCategories() -> [String] {
         return sharedViewModel.getCategories()
     }
-    
+
     func getCocktailsByCategory(_ category: String, limit: Int32 = 3) -> [Cocktail] {
         return sharedViewModel.getCocktailsByCategory(category: category, limit: limit)
     }
-    
+
     func setOfflineMode(_ enabled: Bool) {
         sharedViewModel.setOfflineMode(enabled: enabled)
     }
-    
+
     func clearSearch() {
         sharedViewModel.clearSearch()
     }
-    
+
     func clearError() {
         sharedViewModel.clearError()
     }
-    
+
     func retry() {
         sharedViewModel.retry()
     }
-    
+
     // MARK: - Helper Methods for SwiftUI
 
     func refreshCocktails() async {
@@ -214,18 +200,26 @@ class HomeViewModelSKIE: ObservableObject {
         await loadCocktails()
     }
 
+    /// Set the category filter (nil clears it) and re-apply filters.
+    /// Category selection lives in shared state, so writes go through here.
+    func setCategory(_ category: String?) {
+        Task {
+            await applyFiltersAsync(category: category, ingredient: selectedIngredient)
+        }
+    }
+
     /// Apply filters by delegating to the shared ViewModel.
     /// All filtering/sorting logic lives in the shared Kotlin use cases.
     func applyFilters() {
         Task {
-            await applyFiltersAsync(category: selectedCategory, ingredient: selectedIngredient)
+            await applyFiltersAsync(category: state.selectedCategory, ingredient: selectedIngredient)
         }
     }
 
     /// Apply filters with specific category/ingredient via shared ViewModel.
     func applyFilters(category: String? = nil, ingredient: String? = nil) {
         Task {
-            await applyFiltersAsync(category: category ?? selectedCategory, ingredient: ingredient ?? selectedIngredient)
+            await applyFiltersAsync(category: category ?? state.selectedCategory, ingredient: ingredient ?? selectedIngredient)
         }
     }
 

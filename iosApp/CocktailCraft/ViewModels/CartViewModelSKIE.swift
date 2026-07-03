@@ -4,93 +4,103 @@ import Combine
 
 /**
  * iOS ViewModel wrapper for SharedCartViewModel using pure SKIE integration.
- * No FlowCollector bridge needed - uses native Swift async/await.
+ * Mirrors the consolidated uiState as a single @Published value.
  */
 @MainActor
 class CartViewModelSKIE: ObservableObject {
-    // Published properties for SwiftUI
-    @Published var cartItems: [CocktailCartItem] = []
-    @Published var totalPrice: Double = 0.0
-    @Published var itemCount: Int = 0
-    @Published var isLoading = false
+    // Consolidated UI state from the shared ViewModel
+    @Published private(set) var state: CartUiState
+    // Base-class error flow (distinct from state.error, matching prior behavior)
     @Published var error: ErrorHandler.UserFriendlyError? = nil
-    
+
     // Computed properties
     var isEmpty: Bool {
-        cartItems.isEmpty
+        state.cartItems.isEmpty
     }
-    
+
     var hasItems: Bool {
-        !cartItems.isEmpty
+        !state.cartItems.isEmpty
     }
-    
+
     var estimatedDeliveryTime: String {
         sharedViewModel.getEstimatedDeliveryTime()
     }
-    
+
     var isFreeDelivery: Bool {
         sharedViewModel.isFreeDelivery()
     }
-    
+
     var deliveryFee: Double {
         sharedViewModel.getDeliveryFee()
     }
-    
+
     var finalTotal: Double {
         sharedViewModel.getFinalTotal()
     }
-    
+
     // Shared ViewModel instance
     private let sharedViewModel: SharedCartViewModel
-    
+
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
 
     // Prevent concurrent updates
     private var isUpdating = false
-    
+
     init() {
         // Get shared ViewModel from Koin
         self.sharedViewModel = getSharedKoinHelper().getSharedCartViewModel()
-        
+
+        // Seed synchronously so the first frame renders the current state
+        self.state = sharedViewModel.uiState.value
+
         // Start observing StateFlows using SKIE async/await
         startObserving()
     }
-    
+
     deinit {
         // Cancel all observation tasks
         observationTasks.forEach { $0.cancel() }
-        // Note: Do NOT call onCleared() — this is a Koin singleton whose
-        // coroutine scope must survive the lifetime of any single wrapper.
+        // Note: Do NOT call onCleared() — this wraps a Koin `single` whose
+        // coroutine scope must survive the lifetime of any one wrapper.
+        // (Factory-scoped wrappers — CocktailDetail, Review — do call it.)
     }
-    
+
     // MARK: - SKIE StateFlow Observation
-    
+
     private func startObserving() {
-        // Single consolidated observation of uiState
-        observationTasks.append(Task {
-            for await state in sharedViewModel.uiState {
-                await MainActor.run {
-                    self.cartItems = state.cartItems
-                    self.totalPrice = state.totalPrice
-                    self.itemCount = Int(state.itemCount)
-                    self.isLoading = state.isLoading
-                }
+        // These Tasks inherit @MainActor, so assignments land on the main thread.
+        observationTasks.append(Task { [weak self] in
+            guard let flow = self?.sharedViewModel.uiState else { return }
+            for await state in flow {
+                self?.state = state
             }
         })
 
-        // Observe error from base class
-        observationTasks.append(Task {
-            for await errorValue in sharedViewModel.error {
-                await MainActor.run {
-                    self.error = errorValue
-                }
+        observationTasks.append(Task { [weak self] in
+            guard let flow = self?.sharedViewModel.error else { return }
+            for await errorValue in flow {
+                self?.error = errorValue
             }
         })
     }
-    
+
+    /// Replace the published state with a locally-modified copy for instant
+    /// UI feedback while the shared update round-trips.
+    private func applyOptimisticCartItems(_ items: [CocktailCartItem]) {
+        let totalPrice = items.reduce(0.0) { $0 + ($1.cocktail.price * Double($1.quantity)) }
+        let itemCount = items.reduce(Int32(0)) { $0 + $1.quantity }
+        state = CartUiState(
+            cartItems: items,
+            totalPrice: totalPrice,
+            itemCount: itemCount,
+            isLoading: state.isLoading,
+            error: state.error
+        )
+    }
+
     // MARK: - Public Methods (using SKIE async/await)
-    
+
     func addToCart(_ cocktail: Cocktail, quantity: Int = 1) async {
         do {
             try await sharedViewModel.addToCart(cocktail: cocktail, quantity: Int32(quantity))
@@ -100,7 +110,7 @@ class CartViewModelSKIE: ObservableObject {
             // Handle error silently
         }
     }
-    
+
     func decrementQuantity(_ cocktailId: String) async {
         // Prevent concurrent updates
         guard !isUpdating else { return }
@@ -108,39 +118,24 @@ class CartViewModelSKIE: ObservableObject {
         defer { isUpdating = false }
 
         // Find the current item first
-        let currentItem = cartItems.first { $0.cocktail.id == cocktailId }
+        let currentItem = state.cartItems.first { $0.cocktail.id == cocktailId }
         guard let item = currentItem else { return }
 
         // Update local state immediately for instant UI feedback
-        await MainActor.run {
-            if item.quantity > 1 {
-                // Decrease quantity
-                let newQuantity = item.quantity - 1
-
-                // Update the local cart items array
-                if let index = self.cartItems.firstIndex(where: { $0.cocktail.id == cocktailId }) {
-                    var updatedItem = self.cartItems[index]
-                    updatedItem = CocktailCartItem(cocktail: updatedItem.cocktail, quantity: Int32(newQuantity))
-                    self.cartItems[index] = updatedItem
-                }
-
-                // Update totals
-                self.totalPrice = self.cartItems.reduce(0.0) { $0 + ($1.cocktail.price * Double($1.quantity)) }
-                self.itemCount = Int(self.cartItems.reduce(0) { $0 + $1.quantity })
-            } else {
-                // Remove item
-                self.cartItems.removeAll { $0.cocktail.id == cocktailId }
-
-                // Update totals
-                self.totalPrice = self.cartItems.reduce(0.0) { $0 + ($1.cocktail.price * Double($1.quantity)) }
-                self.itemCount = Int(self.cartItems.reduce(0) { $0 + $1.quantity })
+        var items = state.cartItems
+        if item.quantity > 1 {
+            if let index = items.firstIndex(where: { $0.cocktail.id == cocktailId }) {
+                items[index] = CocktailCartItem(cocktail: items[index].cocktail, quantity: item.quantity - 1)
             }
+        } else {
+            items.removeAll { $0.cocktail.id == cocktailId }
         }
+        applyOptimisticCartItems(items)
 
         // Then update the shared state
         do {
             if item.quantity > 1 {
-                try await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: Int32(item.quantity - 1))
+                try await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: item.quantity - 1)
             } else {
                 try await sharedViewModel.removeFromCart(cocktailId: cocktailId)
             }
@@ -157,28 +152,21 @@ class CartViewModelSKIE: ObservableObject {
         defer { isUpdating = false }
 
         // Find the current item first
-        let currentItem = cartItems.first { $0.cocktail.id == cocktailId }
+        let currentItem = state.cartItems.first { $0.cocktail.id == cocktailId }
         guard let item = currentItem else { return }
 
         let newQuantity = item.quantity + 1
 
         // Update local state immediately for instant UI feedback
-        await MainActor.run {
-            // Update the local cart items array
-            if let index = self.cartItems.firstIndex(where: { $0.cocktail.id == cocktailId }) {
-                var updatedItem = self.cartItems[index]
-                updatedItem = CocktailCartItem(cocktail: updatedItem.cocktail, quantity: Int32(newQuantity))
-                self.cartItems[index] = updatedItem
-            }
-
-            // Update totals
-            self.totalPrice = self.cartItems.reduce(0.0) { $0 + ($1.cocktail.price * Double($1.quantity)) }
-            self.itemCount = Int(self.cartItems.reduce(0) { $0 + $1.quantity })
+        var items = state.cartItems
+        if let index = items.firstIndex(where: { $0.cocktail.id == cocktailId }) {
+            items[index] = CocktailCartItem(cocktail: items[index].cocktail, quantity: newQuantity)
         }
+        applyOptimisticCartItems(items)
 
         // Then update the shared state
         do {
-            try await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: Int32(newQuantity))
+            try await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: newQuantity)
         } catch {
             // If the shared update fails, revert the local state
             await refreshCartState()
@@ -207,18 +195,14 @@ class CartViewModelSKIE: ObservableObject {
 
     private func refreshCartState() async {
         // Force a UI update to ensure the state changes are reflected
-        await MainActor.run {
-            self.objectWillChange.send()
-        }
+        objectWillChange.send()
 
         // Give a small delay to allow the shared state to propagate
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
 
-        await MainActor.run {
-            self.objectWillChange.send()
-        }
+        objectWillChange.send()
     }
-    
+
     func clearCart() async {
         do {
             try await sharedViewModel.clearCart()
@@ -228,35 +212,35 @@ class CartViewModelSKIE: ObservableObject {
             // Handle error silently
         }
     }
-    
+
     // MARK: - Synchronous Methods
-    
+
     func isInCart(_ cocktailId: String) -> Bool {
         return sharedViewModel.isInCart(cocktailId: cocktailId)
     }
-    
+
     func getQuantity(_ cocktailId: String) -> Int {
         return Int(sharedViewModel.getQuantity(cocktailId: cocktailId))
     }
-    
+
     func getCartItem(_ cocktailId: String) -> CocktailCartItem? {
         return sharedViewModel.getCartItem(cocktailId: cocktailId)
     }
-    
+
     func clearError() {
         sharedViewModel.clearError()
     }
-    
+
     func refresh() {
         sharedViewModel.refresh()
     }
-    
+
     // MARK: - Helper Methods for SwiftUI
-    
+
     func formatPrice(_ price: Double) -> String {
         return String(format: "$%.2f", price)
     }
-    
+
     func getDeliveryText() -> String {
         if isFreeDelivery {
             return "FREE Delivery"
@@ -264,10 +248,10 @@ class CartViewModelSKIE: ObservableObject {
             return formatPrice(deliveryFee) + " Delivery"
         }
     }
-    
+
     func getSavingsAmount() -> Double? {
-        if totalPrice >= 30.0 && totalPrice < 50.0 {
-            return 50.0 - totalPrice // Amount needed for free delivery
+        if state.totalPrice >= 30.0 && state.totalPrice < 50.0 {
+            return 50.0 - state.totalPrice // Amount needed for free delivery
         }
         return nil
     }
