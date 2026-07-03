@@ -58,6 +58,7 @@ output.json
 **/build/kotlin/compile*/
 
 # iOS specific
+# We commit Podfile and Podfile.lock, but never the Pods directory
 iosApp/Pods/
 iosApp/DerivedData/
 iosApp/*.xcworkspace/xcuserdata/
@@ -67,11 +68,6 @@ iosApp/build/
 *.ipa
 *.dSYM.zip
 *.dSYM
-
-# CocoaPods
-# We commit Podfile and Podfile.lock, but not the Pods directory
-iosApp/Pods/*
-!iosApp/Pods/Manifest.lock
 
 # Xcode
 *.pbxuser
