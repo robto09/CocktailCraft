@@ -87,9 +87,9 @@ class ThemeViewModelSKIE: ObservableObject {
         }
     }
 
-    func toggleDarkMode() async {
+    func setDarkMode(_ enabled: Bool) async {
         do {
-            try await sharedViewModel.toggleDarkMode()
+            try await sharedViewModel.setDarkMode(enabled: enabled)
         } catch {
             // Handle error silently
         }
@@ -135,9 +135,9 @@ class ThemeViewModelSKIE: ObservableObject {
         }
     }
 
-    func applySystemTheme() async {
+    func setFollowSystemTheme(_ enabled: Bool) async {
         do {
-            try await sharedViewModel.applySystemTheme()
+            try await sharedViewModel.setFollowSystemTheme(enabled: enabled)
         } catch {
             // Handle error silently
         }
@@ -223,10 +223,10 @@ class ThemeViewModelSKIE: ObservableObject {
     }
 
     func getThemeModeIcon() -> String {
-        switch state.themeMode.lowercased() {
-        case "light": return "sun.max"
-        case "dark": return "moon"
-        case "system": return "gear"
+        switch state.themeMode {
+        case .light: return "sun.max"
+        case .dark: return "moon"
+        case .system: return "gear"
         default: return "gear"
         }
     }

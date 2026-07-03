@@ -236,9 +236,9 @@ struct ProfileView: View {
                     subtitle: themeViewModel.state.isSystemTheme ? "On" : "Off",
                     icon: "gear",
                     isChecked: themeViewModel.state.isSystemTheme,
-                    onToggle: {
+                    onToggle: { target in
                         Task {
-                            await themeViewModel.applySystemTheme()
+                            await themeViewModel.setFollowSystemTheme(target)
                         }
                     }
                 )
@@ -251,10 +251,10 @@ struct ProfileView: View {
                     subtitle: themeViewModel.state.isSystemTheme ? "Controlled by system" : (themeViewModel.state.isDarkMode ? "On" : "Off"),
                     icon: themeViewModel.state.isDarkMode ? "moon.fill" : "sun.max.fill",
                     isChecked: themeViewModel.state.isDarkMode,
-                    onToggle: {
+                    onToggle: { target in
                         if !themeViewModel.state.isSystemTheme {
                             Task {
-                                await themeViewModel.toggleDarkMode()
+                                await themeViewModel.setDarkMode(target)
                             }
                         }
                     },
@@ -350,10 +350,12 @@ struct ThemeToggleRow: View {
     let subtitle: String
     let icon: String
     let isChecked: Bool
-    let onToggle: () -> Void
+    // Receives the Toggle's target value so repeated/duplicate firings are
+    // idempotent (a computed-at-tap flip can flip twice and undo itself).
+    let onToggle: (Bool) -> Void
     let enabled: Bool
 
-    init(title: String, subtitle: String, icon: String, isChecked: Bool, onToggle: @escaping () -> Void, enabled: Bool = true) {
+    init(title: String, subtitle: String, icon: String, isChecked: Bool, onToggle: @escaping (Bool) -> Void, enabled: Bool = true) {
         self.title = title
         self.subtitle = subtitle
         self.icon = icon
@@ -386,7 +388,7 @@ struct ThemeToggleRow: View {
 
             Toggle("", isOn: Binding(
                 get: { isChecked },
-                set: { _ in onToggle() }
+                set: { newValue in onToggle(newValue) }
             ))
             .disabled(!enabled)
             .opacity(enabled ? 1.0 : 0.5)

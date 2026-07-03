@@ -339,7 +339,7 @@ fun ProfileScreen(
                     subtitle = if (isSystemTheme) "On" else "Off",
                     icon = Icons.Default.DateRange,
                     isChecked = isSystemTheme,
-                    onToggle = { themeViewModel.applySystemTheme() },
+                    onToggle = { themeViewModel.setFollowSystemTheme(!isSystemTheme) },
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -353,7 +353,7 @@ fun ProfileScreen(
                     icon = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
                     isChecked = isDarkMode,
                     onToggle = {
-                        if (!isSystemTheme) themeViewModel.toggleDarkMode()
+                        if (!isSystemTheme) themeViewModel.setDarkMode(!isDarkMode)
                     },
                     enabled = !isSystemTheme,
                     modifier = Modifier.fillMaxWidth()

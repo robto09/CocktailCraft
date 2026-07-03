@@ -143,7 +143,13 @@ internal class AuthRepositoryImpl(
     // Preferences management
     override suspend fun updateUserPreferences(preferences: UserPreferences): Result<Boolean> {
         return try {
-            val currentUser = getCurrentUserSync() ?: return Result.Success(false)
+            val currentUser = getCurrentUserSync()
+            if (currentUser == null) {
+                // Guests keep preferences in a local store so theme and
+                // settings choices survive relaunches without an account.
+                settings.putString(GUEST_PREFERENCES_KEY, json.encodeToString(preferences))
+                return Result.Success(true)
+            }
             val preferencesMap = mapOf(
                 "darkMode" to preferences.darkMode.toString(),
                 "followSystemTheme" to preferences.followSystemTheme.toString(),
@@ -174,7 +180,10 @@ internal class AuthRepositoryImpl(
                     language = language
                 ))
             } else {
-                Result.Success(UserPreferences())
+                val stored = settings.getStringOrNull(GUEST_PREFERENCES_KEY)
+                Result.Success(
+                    stored?.let { json.decodeFromString<UserPreferences>(it) } ?: UserPreferences()
+                )
             }
         } catch (e: Exception) {
             Result.Error(e.message ?: "Failed to get user preferences")
@@ -223,5 +232,6 @@ internal class AuthRepositoryImpl(
     companion object {
         private const val USERS_KEY = "users"
         private const val CURRENT_USER_ID_KEY = "current_user_id"
+        private const val GUEST_PREFERENCES_KEY = "guest_preferences"
     }
 }
