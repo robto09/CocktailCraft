@@ -17,7 +17,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.with
+import androidx.compose.animation.togetherWith
 
 /**
  * Utility object containing reusable animations for the app
@@ -104,8 +104,8 @@ object AnimationUtils {
     val exitWithFadeAndSlideToBottom: ExitTransition = fadeOutMedium + slideOutToBottom
 
     // Content transform for animated content
-    val fadeAndSlideContentTransform: ContentTransform = fadeInMedium with fadeOutMedium
-    val scaleAndFadeContentTransform: ContentTransform = (fadeInMedium + scaleInMedium) with (fadeOutMedium + scaleOutMedium)
+    val fadeAndSlideContentTransform: ContentTransform = fadeInMedium togetherWith fadeOutMedium
+    val scaleAndFadeContentTransform: ContentTransform = (fadeInMedium + scaleInMedium) togetherWith (fadeOutMedium + scaleOutMedium)
 
     // Navigation transitions
     fun slideIntoContainerFromRight(): EnterTransition {

@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    id("kotlin-kapt")
+    alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
@@ -100,7 +99,7 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
-    kapt(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
 
     // Koin
     implementation(libs.koin.android)
@@ -124,6 +123,8 @@ dependencies {
     testImplementation(libs.junit4)
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.junit.jupiter.engine)
+    // Gradle 9 no longer injects the platform launcher
+    testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.junit.jupiter.params)
     testImplementation(libs.mockk.core)
     testImplementation(libs.kotlinx.coroutines.test)
