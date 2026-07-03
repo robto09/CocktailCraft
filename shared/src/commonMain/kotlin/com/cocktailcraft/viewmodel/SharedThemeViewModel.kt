@@ -1,5 +1,6 @@
 package com.cocktailcraft.viewmodel
 
+import com.cocktailcraft.domain.model.ThemeMode
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.usecase.ManageProfileUseCase
 import com.cocktailcraft.domain.util.getOrDefault
@@ -12,6 +13,9 @@ import org.koin.core.component.inject
 /**
  * Shared ViewModel for Theme functionality.
  * Uses consolidated [ThemeUiState] for atomic state updates.
+ *
+ * All theme mutations are value-based setters (never flip-style toggles),
+ * so a re-fired UI callback can only re-assert the same state.
  */
 class SharedThemeViewModel : SharedViewModel() {
 
@@ -24,8 +28,8 @@ class SharedThemeViewModel : SharedViewModel() {
     // Derived StateFlows for backward compatibility
     val isDarkMode: StateFlow<Boolean> = _uiState
         .map { it.isDarkMode }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val themeMode: StateFlow<String> = _uiState
-        .map { it.themeMode }.stateIn(viewModelScope, SharingStarted.Eagerly, "system")
+    val themeMode: StateFlow<ThemeMode> = _uiState
+        .map { it.themeMode }.stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.SYSTEM)
     val isSystemTheme: StateFlow<Boolean> = _uiState
         .map { it.isSystemTheme }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
     val accentColor: StateFlow<String> = _uiState
@@ -40,7 +44,7 @@ class SharedThemeViewModel : SharedViewModel() {
         .map { it.userPreferences }.stateIn(viewModelScope, SharingStarted.Eagerly, UserPreferences())
 
     val currentThemeName: String
-        get() = getThemeModeDisplayName(_uiState.value.themeMode)
+        get() = getThemeModeDisplayName(themeModeToString(_uiState.value.themeMode))
     val availableThemes: List<String>
         get() = listOf("system", "light", "dark")
     val availableAccentColors: List<String>
@@ -51,44 +55,53 @@ class SharedThemeViewModel : SharedViewModel() {
     init {
         initialize()
     }
-    
+
     private fun initialize() {
         viewModelScope.launch {
             loadUserPreferences()
         }
     }
-    
+
     /**
-     * Set theme mode.
+     * Set the theme mode. The single mutation point for theme selection.
      * SKIE will convert this to Swift async function.
      */
-    suspend fun setThemeMode(mode: String) {
+    suspend fun setThemeMode(mode: ThemeMode) {
         try {
-            _uiState.update { state ->
-                when (mode.lowercase()) {
-                    "light" -> state.copy(themeMode = mode, isDarkMode = false, isSystemTheme = false)
-                    "dark" -> state.copy(themeMode = mode, isDarkMode = true, isSystemTheme = false)
-                    "system" -> state.copy(themeMode = mode, isSystemTheme = true)
-                    else -> state.copy(themeMode = mode)
-                }
-            }
+            _uiState.update { it.copy(themeMode = mode) }
             savePreferences()
         } catch (e: Exception) {
             handleException(e, "Failed to update theme mode")
         }
     }
 
-    suspend fun toggleDarkMode() {
-        try {
-            _uiState.update { it.copy(
-                isDarkMode = !it.isDarkMode,
-                isSystemTheme = false,
-                themeMode = if (!it.isDarkMode) "dark" else "light"
-            ) }
-            savePreferences()
-        } catch (e: Exception) {
-            handleException(e, "Failed to toggle dark mode")
-        }
+    /**
+     * String convenience for callers driven by the availableThemes list.
+     */
+    suspend fun setThemeMode(mode: String) {
+        setThemeMode(ThemeMode.fromString(mode))
+    }
+
+    /**
+     * Value-based dark mode setter: enabling/disabling always leaves
+     * system-following off, because the user expressed an explicit choice.
+     */
+    suspend fun setDarkMode(enabled: Boolean) {
+        setThemeMode(if (enabled) ThemeMode.DARK else ThemeMode.LIGHT)
+    }
+
+    /**
+     * Value-based system-following setter. Turning it off falls back to the
+     * last persisted explicit choice.
+     */
+    suspend fun setFollowSystemTheme(enabled: Boolean) {
+        setThemeMode(
+            when {
+                enabled -> ThemeMode.SYSTEM
+                _uiState.value.userPreferences.darkMode -> ThemeMode.DARK
+                else -> ThemeMode.LIGHT
+            }
+        )
     }
 
     suspend fun setAccentColor(color: String) {
@@ -136,44 +149,29 @@ class SharedThemeViewModel : SharedViewModel() {
         }
     }
 
-    suspend fun applySystemTheme() {
-        try {
-            _uiState.update { state ->
-                val newSystem = !state.isSystemTheme
-                state.copy(
-                    isSystemTheme = newSystem,
-                    themeMode = if (newSystem) "system" else state.themeMode
-                )
-            }
-            savePreferences()
-        } catch (e: Exception) {
-            handleException(e, "Failed to apply system theme")
-        }
-    }
-    
     // MARK: - Synchronous Helper Methods
-    
+
     /**
      * Validate theme mode.
      */
     fun isValidThemeMode(mode: String): Boolean {
         return availableThemes.contains(mode.lowercase())
     }
-    
+
     /**
      * Validate accent color.
      */
     fun isValidAccentColor(color: String): Boolean {
         return availableAccentColors.contains(color.lowercase())
     }
-    
+
     /**
      * Validate font size.
      */
     fun isValidFontSize(size: String): Boolean {
         return availableFontSizes.contains(size.lowercase())
     }
-    
+
     /**
      * Get theme mode display name.
      */
@@ -185,14 +183,14 @@ class SharedThemeViewModel : SharedViewModel() {
             else -> "Unknown"
         }
     }
-    
+
     /**
      * Get accent color display name.
      */
     fun getAccentColorDisplayName(color: String): String {
         return color.replaceFirstChar { it.uppercase() }
     }
-    
+
     /**
      * Get font size display name.
      */
@@ -205,14 +203,14 @@ class SharedThemeViewModel : SharedViewModel() {
             else -> "Unknown"
         }
     }
-    
+
     /**
      * Check if current theme is custom.
      */
     fun isCustomTheme(): Boolean {
         return !_uiState.value.isSystemTheme
     }
-    
+
     /**
      * Get theme preview colors.
      */
@@ -238,14 +236,14 @@ class SharedThemeViewModel : SharedViewModel() {
             )
         }
     }
-    
+
     /**
      * Check if system supports dark mode.
      */
     fun systemSupportsDarkMode(): Boolean {
         return true // Most modern systems support dark mode
     }
-    
+
     /**
      * Refresh theme settings.
      */
@@ -254,7 +252,7 @@ class SharedThemeViewModel : SharedViewModel() {
             loadUserPreferences()
         }
     }
-    
+
     /**
      * Export theme settings.
      */
@@ -262,7 +260,7 @@ class SharedThemeViewModel : SharedViewModel() {
         val s = _uiState.value
         return mapOf(
             "isDarkMode" to s.isDarkMode,
-            "themeMode" to s.themeMode,
+            "themeMode" to themeModeToString(s.themeMode),
             "isSystemTheme" to s.isSystemTheme,
             "accentColor" to s.accentColor,
             "fontSize" to s.fontSize,
@@ -276,9 +274,8 @@ class SharedThemeViewModel : SharedViewModel() {
             try {
                 _uiState.update { state ->
                     state.copy(
-                        isDarkMode = (settings["isDarkMode"] as? Boolean) ?: state.isDarkMode,
-                        themeMode = (settings["themeMode"] as? String) ?: state.themeMode,
-                        isSystemTheme = (settings["isSystemTheme"] as? Boolean) ?: state.isSystemTheme,
+                        themeMode = (settings["themeMode"] as? String)
+                            ?.let { ThemeMode.fromString(it) } ?: state.themeMode,
                         accentColor = (settings["accentColor"] as? String) ?: state.accentColor,
                         fontSize = (settings["fontSize"] as? String) ?: state.fontSize,
                         isHighContrast = (settings["isHighContrast"] as? Boolean) ?: state.isHighContrast,
@@ -294,17 +291,21 @@ class SharedThemeViewModel : SharedViewModel() {
 
     // MARK: - Private Helper Methods
 
+    private fun themeModeToString(mode: ThemeMode): String = when (mode) {
+        ThemeMode.LIGHT -> "light"
+        ThemeMode.DARK -> "dark"
+        ThemeMode.SYSTEM -> "system"
+    }
+
     private suspend fun loadUserPreferences() {
         try {
             val preferences = manageProfileUseCase.getUserPreferences().getOrDefault(UserPreferences())
             _uiState.update { it.copy(
                 userPreferences = preferences,
-                isDarkMode = preferences.darkMode,
-                isSystemTheme = preferences.followSystemTheme,
                 themeMode = when {
-                    preferences.followSystemTheme -> "system"
-                    preferences.darkMode -> "dark"
-                    else -> "light"
+                    preferences.followSystemTheme -> ThemeMode.SYSTEM
+                    preferences.darkMode -> ThemeMode.DARK
+                    else -> ThemeMode.LIGHT
                 }
             ) }
         } catch (e: Exception) {
@@ -316,7 +317,13 @@ class SharedThemeViewModel : SharedViewModel() {
         try {
             val state = _uiState.value
             val updatedPreferences = state.userPreferences.copy(
-                darkMode = state.isDarkMode,
+                // Under SYSTEM, keep the last explicit choice so turning
+                // system-following off restores it.
+                darkMode = when (state.themeMode) {
+                    ThemeMode.DARK -> true
+                    ThemeMode.LIGHT -> false
+                    ThemeMode.SYSTEM -> state.userPreferences.darkMode
+                },
                 followSystemTheme = state.isSystemTheme
             )
 

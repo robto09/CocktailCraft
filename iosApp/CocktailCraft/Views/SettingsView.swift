@@ -12,18 +12,18 @@ struct SettingsView: View {
                 Section(header: Text("Appearance")) {
                     Toggle("Dark Mode", isOn: Binding(
                         get: { themeViewModel.state.isDarkMode },
-                        set: { _ in
+                        set: { enabled in
                             Task {
-                                await themeViewModel.toggleDarkMode()
+                                await themeViewModel.setDarkMode(enabled)
                             }
                         }
                     ))
                     
                     Toggle("Follow System Theme", isOn: Binding(
                         get: { themeViewModel.state.isSystemTheme },
-                        set: { _ in
+                        set: { enabled in
                             Task {
-                                await themeViewModel.applySystemTheme()
+                                await themeViewModel.setFollowSystemTheme(enabled)
                             }
                         }
                     ))

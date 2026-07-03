@@ -2,6 +2,7 @@ package com.cocktailcraft.android.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cocktailcraft.domain.model.ThemeMode
 import com.cocktailcraft.viewmodel.SharedThemeViewModel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -25,7 +26,7 @@ class ThemeViewModelSKIE : ViewModel(), KoinComponent {
     
     // Expose StateFlows from shared ViewModel (SKIE handles the interop)
     val isDarkMode: StateFlow<Boolean> = sharedViewModel.isDarkMode
-    val themeMode: StateFlow<String> = sharedViewModel.themeMode
+    val themeMode: StateFlow<ThemeMode> = sharedViewModel.themeMode
     val isSystemTheme: StateFlow<Boolean> = sharedViewModel.isSystemTheme
     val accentColor: StateFlow<String> = sharedViewModel.accentColor
     val fontSize: StateFlow<String> = sharedViewModel.fontSize
@@ -61,11 +62,11 @@ class ThemeViewModelSKIE : ViewModel(), KoinComponent {
     }
     
     /**
-     * Toggle dark mode using SKIE async interop
+     * Value-based dark mode setter
      */
-    fun toggleDarkMode() {
+    fun setDarkMode(enabled: Boolean) {
         viewModelScope.launch {
-            sharedViewModel.toggleDarkMode()
+            sharedViewModel.setDarkMode(enabled)
         }
     }
     
@@ -117,9 +118,9 @@ class ThemeViewModelSKIE : ViewModel(), KoinComponent {
     /**
      * Apply system theme using SKIE async interop
      */
-    fun applySystemTheme() {
+    fun setFollowSystemTheme(enabled: Boolean) {
         viewModelScope.launch {
-            sharedViewModel.applySystemTheme()
+            sharedViewModel.setFollowSystemTheme(enabled)
         }
     }
     
