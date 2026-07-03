@@ -96,7 +96,7 @@ struct CocktailCard: View {
                 // Price and Actions Row
                 HStack(alignment: .center) {
                     // Price - Larger and more prominent
-                    Text(String(format: "$%.2f", cocktail.price ?? 12.99))
+                    Text((cocktail.price ?? 12.99).asPrice)
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
                     
@@ -208,7 +208,7 @@ struct CocktailCard: View {
                 // Price and Actions Row
                 HStack(alignment: .center) {
                     // Price - Prominent
-                    Text(String(format: "$%.2f", cocktail.price ?? 12.99))
+                    Text((cocktail.price ?? 12.99).asPrice)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
                     

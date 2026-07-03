@@ -159,7 +159,7 @@ class CartViewModelSKIE: ObservableObject {
     // MARK: - Helper Methods for SwiftUI
 
     func formatPrice(_ price: Double) -> String {
-        return String(format: "$%.2f", price)
+        return price.asPrice
     }
 
     func getDeliveryText() -> String {

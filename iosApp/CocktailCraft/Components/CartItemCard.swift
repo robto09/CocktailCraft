@@ -47,7 +47,7 @@ struct CartItemCard: View {
                 }
 
                 // Price
-                Text("$\(item.cocktail.price, specifier: "%.2f")")
+                Text(item.cocktail.price.asPrice)
                     .font(AppTheme.Typography.headline)
                     .fontWeight(.bold)
                     .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
@@ -67,7 +67,7 @@ struct CartItemCard: View {
 
                     // Item Total and Delete
                     HStack(spacing: AppTheme.Spacing.sm) {
-                        Text("$\(item.cocktail.price * Double(item.quantity), specifier: "%.2f")")
+                        Text((item.cocktail.price * Double(item.quantity)).asPrice)
                             .font(AppTheme.Typography.headline)
                             .fontWeight(.bold)
                             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))

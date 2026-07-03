@@ -143,7 +143,7 @@ class CocktailDetailViewModelSKIE: ObservableObject {
 
     func formatPrice() -> String {
         guard let cocktail = state.cocktail else { return "$0.00" }
-        return String(format: "$%.2f", cocktail.price)
+        return cocktail.price.asPrice
     }
 
     func formatRating() -> String {

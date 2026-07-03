@@ -63,7 +63,7 @@ struct SummaryRow: View {
             
             Spacer()
             
-            Text("$\(value, specifier: "%.2f")")
+            Text(value.asPrice)
                 .font(isTotal ? AppTheme.Typography.headline : AppTheme.Typography.body)
                 .fontWeight(isTotal ? .bold : .medium)
                 .foregroundColor(isTotal ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.textPrimary(isDarkMode: isDarkMode))
