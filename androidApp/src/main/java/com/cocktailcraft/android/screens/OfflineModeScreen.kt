@@ -51,17 +51,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import android.app.Activity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.viewmodel.OfflineModeViewModelSKIE
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,17 +78,22 @@ fun OfflineModeScreen(
     val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsState()
     val recentlyViewedCocktails by viewModel.recentlyViewedCocktails.collectAsState()
 
-    // Hide the system navigation bar
-    val systemUiController = rememberSystemUiController()
+    // Hide the system navigation bar (immersive) while this screen is shown
+    val view = LocalView.current
     SideEffect {
-        // Hide the navigation bar and make it immersive
-        systemUiController.isNavigationBarVisible = false
+        val window = (view.context as Activity).window
+        WindowCompat.getInsetsController(window, view).apply {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            hide(WindowInsetsCompat.Type.navigationBars())
+        }
     }
 
     // Restore the system navigation bar when leaving the screen
     DisposableEffect(Unit) {
         onDispose {
-            systemUiController.isNavigationBarVisible = true
+            val window = (view.context as Activity).window
+            WindowCompat.getInsetsController(window, view)
+                .show(WindowInsetsCompat.Type.navigationBars())
         }
     }
 

@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.android.library)
+    alias(libs.plugins.android.kotlinMultiplatformLibrary)
     kotlin("native.cocoapods")
     alias(libs.plugins.skie)
 }
@@ -26,23 +26,6 @@ skie {
     }
 }
 
-android {
-    namespace = "com.cocktailcraft"
-    compileSdk = 34
-    defaultConfig {
-        minSdk = 24
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    lint {
-        disable.add("MissingPermission")
-    }
-}
-
 kotlin {
     jvmToolchain(17)
 
@@ -53,7 +36,18 @@ kotlin {
         languageSettings.optIn("kotlin.time.ExperimentalTime")
     }
 
-    androidTarget()
+    androidLibrary {
+        namespace = "com.cocktailcraft"
+        compileSdk = 36
+        minSdk = 24
+
+        // Host-side (JVM) unit tests, equivalent of the old androidUnitTest
+        withHostTestBuilder {}
+
+        lint {
+            disable.add("MissingPermission")
+        }
+    }
     iosX64()
     iosArm64()
     iosSimulatorArm64()
@@ -138,7 +132,7 @@ kotlin {
             }
         }
 
-        val androidUnitTest by getting {
+        val androidHostTest by getting {
             dependencies {
                 implementation(libs.mockk.core)
                 implementation(libs.robolectric)

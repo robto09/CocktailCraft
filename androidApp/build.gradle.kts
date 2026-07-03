@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    id("kotlin-kapt")
+    alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
@@ -9,11 +8,11 @@ plugins {
 
 android {
     namespace = "com.cocktailcraft.android"
-    compileSdk = 34
+    compileSdk = 36
     defaultConfig {
         applicationId = "com.cocktailcraft.android"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -100,7 +99,7 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
-    kapt(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
 
     // Koin
     implementation(libs.koin.android)
@@ -116,14 +115,12 @@ dependencies {
     // WorkManager for widget updates
     implementation(libs.androidx.work.runtime.ktx)
 
-    // Accompanist libraries for animations and system UI controller
-    implementation(libs.accompanist.systemuicontroller)
-    implementation(libs.accompanist.navigation.animation)
-
     // Unit Testing
     testImplementation(libs.junit4)
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.junit.jupiter.engine)
+    // Gradle 9 no longer injects the platform launcher
+    testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.junit.jupiter.params)
     testImplementation(libs.mockk.core)
     testImplementation(libs.kotlinx.coroutines.test)
