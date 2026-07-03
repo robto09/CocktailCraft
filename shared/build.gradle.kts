@@ -1,9 +1,9 @@
 plugins {
-    kotlin("multiplatform")
-    kotlin("plugin.serialization")
-    id("com.android.library")
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.android.library)
     kotlin("native.cocoapods")
-    id("co.touchlab.skie") version "0.10.4"
+    alias(libs.plugins.skie)
 }
 
 // Configure SKIE for enhanced Swift interop
@@ -69,30 +69,28 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // Ktor
-                implementation("io.ktor:ktor-client-core:2.0.0")
-                implementation("io.ktor:ktor-client-content-negotiation:2.0.0")
-                implementation("io.ktor:ktor-client-logging:2.0.0")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:2.0.0")
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.client.logging)
+                implementation(libs.ktor.serialization.kotlinx.json)
 
                 // Serialization
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+                implementation(libs.kotlinx.serialization.json)
 
                 // Coroutines
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                implementation(libs.kotlinx.coroutines.core)
 
                 // DateTime
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+                implementation(libs.kotlinx.datetime)
 
                 // Settings
-                implementation("com.russhwolf:multiplatform-settings:1.1.1")
+                implementation(libs.multiplatform.settings.core)
 
                 // DI
-                implementation("io.insert-koin:koin-core:3.5.6")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+                implementation(libs.koin.core)
 
-                
                 // Multiplatform logging
-                implementation("co.touchlab:kermit:2.0.2")
+                implementation(libs.kermit)
 
                 // No external caching library needed - using custom implementation
             }
@@ -100,11 +98,11 @@ kotlin {
 
         val androidMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-android:2.0.0")
-                implementation("androidx.datastore:datastore-preferences:1.0.0")
-                implementation("com.russhwolf:multiplatform-settings:1.1.1")
-                implementation("com.russhwolf:multiplatform-settings-datastore:1.1.1")
-                implementation("com.russhwolf:multiplatform-settings-coroutines:1.1.1")
+                implementation(libs.ktor.client.android)
+                implementation(libs.androidx.datastore.preferences)
+                implementation(libs.multiplatform.settings.core)
+                implementation(libs.multiplatform.settings.datastore)
+                implementation(libs.multiplatform.settings.coroutines)
             }
         }
 
@@ -118,30 +116,30 @@ kotlin {
             iosSimulatorArm64Main.dependsOn(this)
 
             dependencies {
-                implementation("io.ktor:ktor-client-darwin:2.0.0")
+                implementation(libs.ktor.client.darwin)
             }
         }
 
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
-                implementation("io.insert-koin:koin-test:3.5.6")
-                implementation("app.cash.turbine:turbine:1.0.0")
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.koin.test.core)
+                implementation(libs.turbine)
             }
         }
 
         val androidUnitTest by getting {
             dependencies {
-                implementation("io.mockk:mockk:1.13.8")
-                implementation("org.robolectric:robolectric:4.11.1")
-                implementation("androidx.test:core:1.5.0")
-                implementation("androidx.test.ext:junit:1.1.5")
+                implementation(libs.mockk.core)
+                implementation(libs.robolectric)
+                implementation(libs.androidx.test.core)
+                implementation(libs.androidx.test.ext.junit)
 
                 // JUnit Jupiter for modern testing (Android only)
-                implementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
-                implementation("org.junit.jupiter:junit-jupiter-engine:5.10.1")
-                implementation("org.junit.jupiter:junit-jupiter-params:5.10.1")
+                implementation(libs.junit.jupiter.api)
+                implementation(libs.junit.jupiter.engine)
+                implementation(libs.junit.jupiter.params)
             }
         }
 
