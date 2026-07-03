@@ -15,7 +15,7 @@ import com.russhwolf.settings.Settings
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import com.cocktailcraft.domain.config.AppConfig
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 /**
  * Implementation of CocktailRepository that handles API interactions and data caching.
