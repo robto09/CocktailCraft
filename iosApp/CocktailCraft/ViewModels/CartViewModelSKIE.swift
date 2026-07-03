@@ -44,9 +44,6 @@ class CartViewModelSKIE: ObservableObject {
     // Tasks for async observation
     private var observationTasks: [Task<Void, Never>] = []
 
-    // Prevent concurrent updates
-    private var isUpdating = false
-
     init() {
         // Get shared ViewModel from Koin
         self.sharedViewModel = getSharedKoinHelper().getSharedCartViewModel()
@@ -85,98 +82,37 @@ class CartViewModelSKIE: ObservableObject {
         })
     }
 
-    /// Replace the published state with a locally-modified copy for instant
-    /// UI feedback while the shared update round-trips.
-    private func applyOptimisticCartItems(_ items: [CocktailCartItem]) {
-        let totalPrice = items.reduce(0.0) { $0 + ($1.cocktail.price * Double($1.quantity)) }
-        let itemCount = items.reduce(Int32(0)) { $0 + $1.quantity }
-        state = CartUiState(
-            cartItems: items,
-            totalPrice: totalPrice,
-            itemCount: itemCount,
-            isLoading: state.isLoading
-        )
-    }
-
     // MARK: - Public Methods (using SKIE async/await)
 
     func addToCart(_ cocktail: Cocktail, quantity: Int = 1) async {
         do {
             try await sharedViewModel.addToCart(cocktail: cocktail, quantity: Int32(quantity))
-            // Force a refresh of the cart state to ensure UI updates
-            await refreshCartState()
         } catch {
             // Handle error silently
         }
     }
 
     func decrementQuantity(_ cocktailId: String) async {
-        // Prevent concurrent updates
-        guard !isUpdating else { return }
-        isUpdating = true
-        defer { isUpdating = false }
-
-        // Find the current item first
-        let currentItem = state.cartItems.first { $0.cocktail.id == cocktailId }
-        guard let item = currentItem else { return }
-
-        // Update local state immediately for instant UI feedback
-        var items = state.cartItems
-        if item.quantity > 1 {
-            if let index = items.firstIndex(where: { $0.cocktail.id == cocktailId }) {
-                items[index] = CocktailCartItem(cocktail: items[index].cocktail, quantity: item.quantity - 1)
-            }
-        } else {
-            items.removeAll { $0.cocktail.id == cocktailId }
-        }
-        applyOptimisticCartItems(items)
-
-        // Then update the shared state
+        // Optimistic apply/revert lives in the shared ViewModel
         do {
-            if item.quantity > 1 {
-                try await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: item.quantity - 1)
-            } else {
-                try await sharedViewModel.removeFromCart(cocktailId: cocktailId)
-            }
+            try await sharedViewModel.decrementQuantity(cocktailId: cocktailId)
         } catch {
-            // If the shared update fails, revert the local state
-            await refreshCartState()
+            // Handle error silently
         }
     }
 
     func incrementQuantity(_ cocktailId: String) async {
-        // Prevent concurrent updates
-        guard !isUpdating else { return }
-        isUpdating = true
-        defer { isUpdating = false }
-
-        // Find the current item first
-        let currentItem = state.cartItems.first { $0.cocktail.id == cocktailId }
-        guard let item = currentItem else { return }
-
-        let newQuantity = item.quantity + 1
-
-        // Update local state immediately for instant UI feedback
-        var items = state.cartItems
-        if let index = items.firstIndex(where: { $0.cocktail.id == cocktailId }) {
-            items[index] = CocktailCartItem(cocktail: items[index].cocktail, quantity: newQuantity)
-        }
-        applyOptimisticCartItems(items)
-
-        // Then update the shared state
+        // Optimistic apply/revert lives in the shared ViewModel
         do {
-            try await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: newQuantity)
+            try await sharedViewModel.incrementQuantity(cocktailId: cocktailId)
         } catch {
-            // If the shared update fails, revert the local state
-            await refreshCartState()
+            // Handle error silently
         }
     }
 
     func removeFromCart(_ cocktailId: String) async {
         do {
             try await sharedViewModel.removeFromCart(cocktailId: cocktailId)
-            // Force a refresh of the cart state to ensure UI updates
-            await refreshCartState()
         } catch {
             // Handle error silently
         }
@@ -185,28 +121,14 @@ class CartViewModelSKIE: ObservableObject {
     func updateQuantity(_ cocktailId: String, quantity: Int) async {
         do {
             try await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: Int32(quantity))
-            // Force a refresh of the cart state to ensure UI updates
-            await refreshCartState()
         } catch {
             // Handle error silently
         }
     }
 
-    private func refreshCartState() async {
-        // Force a UI update to ensure the state changes are reflected
-        objectWillChange.send()
-
-        // Give a small delay to allow the shared state to propagate
-        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-
-        objectWillChange.send()
-    }
-
     func clearCart() async {
         do {
             try await sharedViewModel.clearCart()
-            // Force a refresh of the cart state to ensure UI updates
-            await refreshCartState()
         } catch {
             // Handle error silently
         }

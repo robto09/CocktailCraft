@@ -3,6 +3,7 @@ package com.cocktailcraft.viewmodel
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
+import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.viewmodel.state.CartUiState
 import kotlinx.coroutines.flow.*
@@ -45,19 +46,28 @@ class SharedCartViewModel : SharedViewModel() {
             _uiState.update { it.copy(isLoading = true) }
             setLoading(true)
             try {
-                val items = manageCartUseCase.getCartItems().getOrDefault(emptyList())
-                _uiState.update { it.copy(
-                    cartItems = items,
-                    itemCount = items.sumOf { item -> item.quantity },
-                    totalPrice = items.sumOf { item -> item.cocktail.price * item.quantity },
-                    isLoading = false
-                ) }
+                reloadItems()
+                _uiState.update { it.copy(isLoading = false) }
                 setLoading(false)
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false) }
                 setLoading(false)
             }
         }
+    }
+
+    /** Reconcile state with the repository without toggling the loading flag. */
+    private suspend fun reloadItems() {
+        applyItems(manageCartUseCase.getCartItems().getOrDefault(emptyList()))
+    }
+
+    /** Atomically publish an item list with its derived totals. */
+    private fun applyItems(items: List<CocktailCartItem>) {
+        _uiState.update { it.copy(
+            cartItems = items,
+            itemCount = items.sumOf { item -> item.quantity },
+            totalPrice = items.sumOf { item -> item.cocktail.price * item.quantity }
+        ) }
     }
     
     /**
@@ -68,7 +78,7 @@ class SharedCartViewModel : SharedViewModel() {
         try {
             val cartItem = CocktailCartItem(cocktail, quantity)
             manageCartUseCase.addToCart(cartItem)
-            loadCart()
+            reloadItems()
         } catch (e: Exception) {
             handleException(e, "Failed to add item to cart")
         }
@@ -79,10 +89,19 @@ class SharedCartViewModel : SharedViewModel() {
      * SKIE will convert this to Swift async function.
      */
     suspend fun removeFromCart(cocktailId: String) {
+        val previous = _uiState.value.cartItems
+        // Optimistic: reflect the removal immediately, revert if it fails
+        applyItems(previous.filterNot { it.cocktail.id == cocktailId })
         try {
-            manageCartUseCase.removeFromCart(cocktailId)
-            loadCart()
+            val result = manageCartUseCase.removeFromCart(cocktailId)
+            if (result is Result.Error) {
+                applyItems(previous)
+                setError("Cart Error", "Failed to remove item from cart")
+            } else {
+                reloadItems()
+            }
         } catch (e: Exception) {
+            applyItems(previous)
             handleException(e, "Failed to remove item from cart")
         }
     }
@@ -92,10 +111,21 @@ class SharedCartViewModel : SharedViewModel() {
      * SKIE will convert this to Swift async function.
      */
     suspend fun updateQuantity(cocktailId: String, quantity: Int) {
+        val previous = _uiState.value.cartItems
+        // Optimistic: reflect the new quantity immediately, revert if it fails
+        applyItems(previous.map {
+            if (it.cocktail.id == cocktailId) it.copy(quantity = quantity) else it
+        })
         try {
-            manageCartUseCase.updateQuantity(cocktailId, quantity)
-            loadCart()
+            val result = manageCartUseCase.updateQuantity(cocktailId, quantity)
+            if (result is Result.Error) {
+                applyItems(previous)
+                setError("Cart Error", "Failed to update quantity")
+            } else {
+                reloadItems()
+            }
         } catch (e: Exception) {
+            applyItems(previous)
             handleException(e, "Failed to update quantity")
         }
     }
