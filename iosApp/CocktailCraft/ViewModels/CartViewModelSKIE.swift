@@ -10,7 +10,7 @@ import Combine
 class CartViewModelSKIE: ObservableObject {
     // Consolidated UI state from the shared ViewModel
     @Published private(set) var state: CartUiState
-    // Base-class error flow (distinct from state.error, matching prior behavior)
+    // The single error channel from the shared ViewModel base class
     @Published var error: ErrorHandler.UserFriendlyError? = nil
 
     // Computed properties
@@ -94,8 +94,7 @@ class CartViewModelSKIE: ObservableObject {
             cartItems: items,
             totalPrice: totalPrice,
             itemCount: itemCount,
-            isLoading: state.isLoading,
-            error: state.error
+            isLoading: state.isLoading
         )
     }
 

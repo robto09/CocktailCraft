@@ -44,8 +44,6 @@ class HomeViewModelSKIE : ViewModel(), KoinComponent {
     val isLoading: StateFlow<Boolean> = sharedViewModel.isLoading
     val loadingState: StateFlow<Boolean> = sharedViewModel.isLoading
     val errorState = sharedViewModel.error
-    val errorEventState = sharedViewModel.errorEvent
-    val errorString: StateFlow<String> = sharedViewModel.errorString
     val isAdvancedSearchActive: StateFlow<Boolean> = sharedViewModel.isAdvancedSearchActive
     
     // Catalog repository for filter options (Android-specific; shared ViewModels use use cases)
@@ -183,15 +181,7 @@ class HomeViewModelSKIE : ViewModel(), KoinComponent {
      */
     fun clearSearchFilters() {
         sharedViewModel.clearSearchFilters()
-    }
-    
-    /**
-     * Clear legacy error
-     */
-    fun clearLegacyError() {
-        sharedViewModel.clearError()
-    }
-    
+    }    
     // MARK: - Synchronous Methods (direct delegation)
     
     /**

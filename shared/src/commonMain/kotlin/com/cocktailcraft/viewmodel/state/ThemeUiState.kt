@@ -1,7 +1,6 @@
 package com.cocktailcraft.viewmodel.state
 
 import com.cocktailcraft.domain.model.UserPreferences
-import com.cocktailcraft.util.ErrorHandler
 
 /**
  * Consolidated UI state for the Theme screen.
@@ -15,7 +14,6 @@ data class ThemeUiState(
     val isHighContrast: Boolean = false,
     val isReducedMotion: Boolean = false,
     val userPreferences: UserPreferences = UserPreferences(),
-    val isLoading: Boolean = false,
-    val error: ErrorHandler.UserFriendlyError? = null
+    val isLoading: Boolean = false
 )
 

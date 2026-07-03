@@ -70,7 +70,7 @@ class SharedCartViewModel : SharedViewModel() {
             manageCartUseCase.addToCart(cartItem)
             loadCart()
         } catch (e: Exception) {
-            handleException(e, "Failed to add item to cart", showAsEvent = true)
+            handleException(e, "Failed to add item to cart")
         }
     }
     
@@ -83,7 +83,7 @@ class SharedCartViewModel : SharedViewModel() {
             manageCartUseCase.removeFromCart(cocktailId)
             loadCart()
         } catch (e: Exception) {
-            handleException(e, "Failed to remove item from cart", showAsEvent = true)
+            handleException(e, "Failed to remove item from cart")
         }
     }
     
@@ -96,7 +96,7 @@ class SharedCartViewModel : SharedViewModel() {
             manageCartUseCase.updateQuantity(cocktailId, quantity)
             loadCart()
         } catch (e: Exception) {
-            handleException(e, "Failed to update quantity", showAsEvent = true)
+            handleException(e, "Failed to update quantity")
         }
     }
     
@@ -129,7 +129,7 @@ class SharedCartViewModel : SharedViewModel() {
             manageCartUseCase.clearCart()
             _uiState.update { it.copy(cartItems = emptyList(), itemCount = 0, totalPrice = 0.0) }
         } catch (e: Exception) {
-            handleException(e, "Failed to clear cart", showAsEvent = true)
+            handleException(e, "Failed to clear cart")
         }
     }
 

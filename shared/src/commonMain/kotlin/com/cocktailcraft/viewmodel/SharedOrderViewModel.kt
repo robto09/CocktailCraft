@@ -79,8 +79,7 @@ class SharedOrderViewModel : SharedViewModel() {
             setError(
                 "Empty Cart",
                 "Cannot place order with empty cart",
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
+                ErrorHandler.ErrorCategory.DATA
             )
             return false
         }
@@ -101,8 +100,7 @@ class SharedOrderViewModel : SharedViewModel() {
                     setError(
                         "Order Failed",
                         result.message,
-                        ErrorHandler.ErrorCategory.SERVER,
-                        showAsEvent = true
+                        ErrorHandler.ErrorCategory.SERVER
                     )
                     _uiState.update { it.copy(isPlacingOrder = false, isLoading = false) }
                     setLoading(false)
@@ -113,7 +111,7 @@ class SharedOrderViewModel : SharedViewModel() {
                 }
             }
         } catch (e: Exception) {
-            handleException(e, "Failed to place order", showAsEvent = true)
+            handleException(e, "Failed to place order")
             _uiState.update { it.copy(isPlacingOrder = false, isLoading = false) }
             setLoading(false)
             return false
@@ -131,8 +129,7 @@ class SharedOrderViewModel : SharedViewModel() {
             setError(
                 "Empty Cart",
                 "Cannot place order with empty cart",
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
+                ErrorHandler.ErrorCategory.DATA
             )
             callback(false)
             return
@@ -160,8 +157,7 @@ class SharedOrderViewModel : SharedViewModel() {
                         setError(
                             "Order Failed",
                             result.message,
-                            ErrorHandler.ErrorCategory.SERVER,
-                            showAsEvent = true
+                            ErrorHandler.ErrorCategory.SERVER
                         )
                         _uiState.update { it.copy(isPlacingOrder = false, isLoading = false) }
                         setLoading(false)
@@ -175,7 +171,7 @@ class SharedOrderViewModel : SharedViewModel() {
                 Logger.d { "SharedOrderViewModel: Order placement completed" }
             } catch (e: Exception) {
                 Logger.e(e) { "SharedOrderViewModel: Exception in viewModelScope: ${e.message}" }
-                handleException(e, "Failed to place order", showAsEvent = true)
+                handleException(e, "Failed to place order")
                 _uiState.update { it.copy(isPlacingOrder = false, isLoading = false) }
                 setLoading(false)
                 Logger.d { "SharedOrderViewModel: Exception occurred, calling callback with false" }
@@ -192,7 +188,7 @@ class SharedOrderViewModel : SharedViewModel() {
         return try {
             manageOrdersUseCase.getOrderById(orderId).getOrNull()
         } catch (e: Exception) {
-            handleException(e, "Failed to load order details", showAsEvent = true)
+            handleException(e, "Failed to load order details")
             null
         }
     }
@@ -208,11 +204,11 @@ class SharedOrderViewModel : SharedViewModel() {
                 loadOrders() // Refresh orders list
                 true
             } else {
-                handleException(Exception("Failed to update order status"), "Failed to update order status", showAsEvent = true)
+                handleException(Exception("Failed to update order status"), "Failed to update order status")
                 false
             }
         } catch (e: Exception) {
-            handleException(e, "Failed to update order status", showAsEvent = true)
+            handleException(e, "Failed to update order status")
             false
         }
     }
@@ -231,14 +227,13 @@ class SharedOrderViewModel : SharedViewModel() {
                 setError(
                     "Cancellation Failed",
                     "Unable to cancel order at this time",
-                    ErrorHandler.ErrorCategory.SERVER,
-                    showAsEvent = true
+                    ErrorHandler.ErrorCategory.SERVER
                 )
             }
             setLoading(false)
             success
         } catch (e: Exception) {
-            handleException(e, "Failed to cancel order", showAsEvent = true)
+            handleException(e, "Failed to cancel order")
             setLoading(false)
             false
         }
@@ -264,21 +259,19 @@ class SharedOrderViewModel : SharedViewModel() {
                 setError(
                     "Reorder Feature",
                     "Reorder functionality needs cart integration",
-                    ErrorHandler.ErrorCategory.CLIENT,
-                    showAsEvent = true
+                    ErrorHandler.ErrorCategory.CLIENT
                 )
                 false
             } else {
                 setError(
                     "Order Not Found",
                     "Cannot reorder - original order not found",
-                    ErrorHandler.ErrorCategory.DATA,
-                    showAsEvent = true
+                    ErrorHandler.ErrorCategory.DATA
                 )
                 false
             }
         } catch (e: Exception) {
-            handleException(e, "Failed to reorder items", showAsEvent = true)
+            handleException(e, "Failed to reorder items")
             false
         }
     }

@@ -62,7 +62,7 @@ class SharedFavoritesViewModel : SharedViewModel() {
             manageFavoritesUseCase.toggle(cocktail)
             loadFavorites()
         } catch (e: Exception) {
-            handleException(e, "Failed to update favorites", showAsEvent = true)
+            handleException(e, "Failed to update favorites")
         }
     }
 
@@ -79,7 +79,7 @@ class SharedFavoritesViewModel : SharedViewModel() {
             }
             _uiState.update { it.copy(favorites = emptyList(), favoriteCount = 0) }
         } catch (e: Exception) {
-            handleException(e, "Failed to clear favorites", showAsEvent = true)
+            handleException(e, "Failed to clear favorites")
         }
     }
 

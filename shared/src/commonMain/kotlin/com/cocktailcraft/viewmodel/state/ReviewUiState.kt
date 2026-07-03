@@ -1,7 +1,6 @@
 package com.cocktailcraft.viewmodel.state
 
 import com.cocktailcraft.domain.model.Review
-import com.cocktailcraft.util.ErrorHandler
 
 /**
  * Consolidated UI state for the Review screen.
@@ -12,7 +11,6 @@ data class ReviewUiState(
     val averageRating: Float = 0.0f,
     val reviewCount: Int = 0,
     val currentCocktailId: String? = null,
-    val isLoading: Boolean = false,
-    val error: ErrorHandler.UserFriendlyError? = null
+    val isLoading: Boolean = false
 )
 

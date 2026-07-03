@@ -10,7 +10,7 @@ import Combine
 class OrderViewModelSKIE: ObservableObject {
     // Consolidated UI state from the shared ViewModel
     @Published private(set) var state: OrderUiState
-    // Base-class error flow (distinct from state.error, matching prior behavior)
+    // The single error channel from the shared ViewModel base class
     @Published var error: ErrorHandler.UserFriendlyError? = nil
 
     // Computed properties

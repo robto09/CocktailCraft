@@ -2,7 +2,6 @@ package com.cocktailcraft.viewmodel.state
 
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.SearchFilters
-import com.cocktailcraft.util.ErrorHandler
 
 /**
  * Consolidated UI state for the Home screen.
@@ -12,7 +11,6 @@ data class HomeUiState(
     val cocktails: List<Cocktail> = emptyList(),
     val favorites: List<Cocktail> = emptyList(),
     val isLoading: Boolean = false,
-    val error: ErrorHandler.UserFriendlyError? = null,
     val searchQuery: String = "",
     val isSearchActive: Boolean = false,
     val isAdvancedSearchActive: Boolean = false,

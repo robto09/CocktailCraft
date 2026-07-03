@@ -74,7 +74,7 @@ class SharedThemeViewModel : SharedViewModel() {
             }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to update theme mode", showAsEvent = true)
+            handleException(e, "Failed to update theme mode")
         }
     }
 
@@ -87,7 +87,7 @@ class SharedThemeViewModel : SharedViewModel() {
             ) }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to toggle dark mode", showAsEvent = true)
+            handleException(e, "Failed to toggle dark mode")
         }
     }
 
@@ -96,7 +96,7 @@ class SharedThemeViewModel : SharedViewModel() {
             _uiState.update { it.copy(accentColor = color) }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to update accent color", showAsEvent = true)
+            handleException(e, "Failed to update accent color")
         }
     }
 
@@ -105,7 +105,7 @@ class SharedThemeViewModel : SharedViewModel() {
             _uiState.update { it.copy(fontSize = size) }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to update font size", showAsEvent = true)
+            handleException(e, "Failed to update font size")
         }
     }
 
@@ -114,7 +114,7 @@ class SharedThemeViewModel : SharedViewModel() {
             _uiState.update { it.copy(isHighContrast = !it.isHighContrast) }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to toggle high contrast", showAsEvent = true)
+            handleException(e, "Failed to toggle high contrast")
         }
     }
 
@@ -123,7 +123,7 @@ class SharedThemeViewModel : SharedViewModel() {
             _uiState.update { it.copy(isReducedMotion = !it.isReducedMotion) }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to toggle reduced motion", showAsEvent = true)
+            handleException(e, "Failed to toggle reduced motion")
         }
     }
 
@@ -132,7 +132,7 @@ class SharedThemeViewModel : SharedViewModel() {
             _uiState.update { ThemeUiState() }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to reset theme settings", showAsEvent = true)
+            handleException(e, "Failed to reset theme settings")
         }
     }
 
@@ -147,7 +147,7 @@ class SharedThemeViewModel : SharedViewModel() {
             }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to apply system theme", showAsEvent = true)
+            handleException(e, "Failed to apply system theme")
         }
     }
     
@@ -287,7 +287,7 @@ class SharedThemeViewModel : SharedViewModel() {
                 }
                 savePreferences()
             } catch (e: Exception) {
-                handleException(e, "Failed to import theme settings", showAsEvent = true)
+                handleException(e, "Failed to import theme settings")
             }
         }
     }
@@ -327,12 +327,11 @@ class SharedThemeViewModel : SharedViewModel() {
                 setError(
                     "Save Failed",
                     "Failed to save theme preferences",
-                    ErrorHandler.ErrorCategory.SERVER,
-                    showAsEvent = true
+                    ErrorHandler.ErrorCategory.SERVER
                 )
             }
         } catch (e: Exception) {
-            handleException(e, "Failed to save theme preferences", showAsEvent = true)
+            handleException(e, "Failed to save theme preferences")
         }
     }
 }

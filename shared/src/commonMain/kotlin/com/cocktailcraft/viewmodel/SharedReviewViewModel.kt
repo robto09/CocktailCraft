@@ -75,8 +75,7 @@ class SharedReviewViewModel : SharedViewModel() {
             setError(
                 "Invalid User",
                 "User name is required to submit a review",
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
+                ErrorHandler.ErrorCategory.DATA
             )
             return false
         }
@@ -94,7 +93,7 @@ class SharedReviewViewModel : SharedViewModel() {
             setLoading(false)
             return true
         } catch (e: Exception) {
-            handleException(e, "Failed to submit review", showAsEvent = true)
+            handleException(e, "Failed to submit review")
             setLoading(false)
             return false
         }
@@ -118,8 +117,7 @@ class SharedReviewViewModel : SharedViewModel() {
                 setError(
                     "Review Not Found",
                     "The review you're trying to update was not found",
-                    ErrorHandler.ErrorCategory.DATA,
-                    showAsEvent = true
+                    ErrorHandler.ErrorCategory.DATA
                 )
                 setLoading(false)
                 return false
@@ -134,7 +132,7 @@ class SharedReviewViewModel : SharedViewModel() {
             setLoading(false)
             return true
         } catch (e: Exception) {
-            handleException(e, "Failed to update review", showAsEvent = true)
+            handleException(e, "Failed to update review")
             setLoading(false)
             return false
         }
@@ -154,8 +152,7 @@ class SharedReviewViewModel : SharedViewModel() {
                 setError(
                     "Review Not Found",
                     "The review you're trying to delete was not found",
-                    ErrorHandler.ErrorCategory.DATA,
-                    showAsEvent = true
+                    ErrorHandler.ErrorCategory.DATA
                 )
                 setLoading(false)
                 return false
@@ -172,7 +169,7 @@ class SharedReviewViewModel : SharedViewModel() {
             setLoading(false)
             return true
         } catch (e: Exception) {
-            handleException(e, "Failed to delete review", showAsEvent = true)
+            handleException(e, "Failed to delete review")
             setLoading(false)
             return false
         }
@@ -225,8 +222,7 @@ class SharedReviewViewModel : SharedViewModel() {
             setError(
                 "Validation Error",
                 errorMessage,
-                ErrorHandler.ErrorCategory.DATA,
-                showAsEvent = true
+                ErrorHandler.ErrorCategory.DATA
             )
             return false
         }
