@@ -13,6 +13,7 @@ class ProfileViewModelSKIE: ObservableObject {
     @Published var isLoggedIn = false
     @Published var authStatus = "Unknown"
     @Published var isAuthenticating = false
+    @Published var isLoading = false
     @Published var authError: String? = nil
     @Published var userPreferences = UserPreferences()
     @Published var error: ErrorHandler.UserFriendlyError? = nil
