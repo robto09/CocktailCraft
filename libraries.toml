@@ -1,5 +1,4 @@
 [versions]
-accompanist = "0.31.0-alpha"
 agp = "9.2.1"
 androidxActivityCompose = "1.13.0"
 androidxAppCompat = "1.6.1"
@@ -97,10 +96,6 @@ androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-com
 
 # Images
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
-
-# Accompanist
-accompanist-systemuicontroller = { module = "com.google.accompanist:accompanist-systemuicontroller", version.ref = "accompanist" }
-accompanist-navigation-animation = { module = "com.google.accompanist:accompanist-navigation-animation", version.ref = "accompanist" }
 
 # Testing
 junit4 = { module = "junit:junit", version.ref = "junit4" }

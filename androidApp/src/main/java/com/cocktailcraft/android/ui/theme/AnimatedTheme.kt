@@ -14,9 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import android.app.Activity
-import androidx.compose.ui.graphics.toArgb
 import androidx.core.view.WindowCompat
 
 // Animation specifications
@@ -119,23 +117,14 @@ fun AnimatedCocktailBarTheme(
         )
     }
     
-    // Handle system UI colors with animation
-    val statusBarColor by animateColorAsState(
-        targetValue = if (darkTheme) AppColors.BackgroundDark else AppColors.PrimaryLight,
-        animationSpec = ColorAnimationSpec,
-        label = "statusBarColor"
-    )
-    
+    // Under edge-to-edge the status bar is transparent over the app's own
+    // background; only the icon appearance needs managing (light icons on
+    // dark theme, dark icons on light theme).
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            
-            // Set status bar color with animation
-            window.statusBarColor = statusBarColor.toArgb()
-            
-            // Set status bar icons to be light or dark based on theme
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
     

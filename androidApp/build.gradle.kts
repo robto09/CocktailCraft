@@ -115,10 +115,6 @@ dependencies {
     // WorkManager for widget updates
     implementation(libs.androidx.work.runtime.ktx)
 
-    // Accompanist libraries for animations and system UI controller
-    implementation(libs.accompanist.systemuicontroller)
-    implementation(libs.accompanist.navigation.animation)
-
     // Unit Testing
     testImplementation(libs.junit4)
     testImplementation(libs.junit.jupiter.api)

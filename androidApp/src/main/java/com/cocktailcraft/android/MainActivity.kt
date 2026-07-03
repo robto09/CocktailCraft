@@ -3,6 +3,7 @@ package com.cocktailcraft.android
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -18,6 +19,9 @@ import com.cocktailcraft.android.viewmodel.ThemeViewModelSKIE
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // targetSdk 35+ enforces edge-to-edge; opt in explicitly so older
+        // API levels get the same window behavior.
+        enableEdgeToEdge()
         setContent {
             // Get the ThemeViewModel to observe dark mode preference
             val themeViewModel: ThemeViewModelSKIE = viewModel()
