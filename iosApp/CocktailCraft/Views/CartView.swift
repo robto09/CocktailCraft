@@ -2,8 +2,8 @@ import SwiftUI
 import shared
 
 struct CartView: View {
-    @ObservedObject var cartViewModel: CartViewModelSKIE
-    @StateObject private var orderViewModel = OrderViewModelSKIE()
+    let cartViewModel: CartViewModelSKIE
+    @State private var orderViewModel = OrderViewModelSKIE()
     @Binding var selectedTab: Int
     @State private var showCheckoutConfirmation = false
     

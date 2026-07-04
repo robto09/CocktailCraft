@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct OfflineBanner: View {
-    @ObservedObject var networkMonitor = NetworkMonitor.shared
+    private let networkMonitor = NetworkMonitor.shared
     @State private var showBanner = false
     
     var body: some View {

@@ -169,7 +169,7 @@ func getSharedKoinHelper() -> KoinHelper {
 // MARK: - Temporary Content View
 struct TemporaryContentView: View {
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 20) {
                 Image(systemName: "wineglass")
                     .font(.system(size: 60))

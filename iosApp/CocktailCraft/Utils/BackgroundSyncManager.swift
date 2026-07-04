@@ -3,13 +3,15 @@ import BackgroundTasks
 import UIKit
 import shared
 import Combine
+import Observation
 
 /**
  * Manages background sync operations for keeping cached data fresh.
  * Handles background app refresh and periodic sync tasks.
  */
 @MainActor
-class BackgroundSyncManager: ObservableObject {
+@Observable
+class BackgroundSyncManager {
     static let shared = BackgroundSyncManager()
     
     // Background task identifiers
@@ -22,12 +24,12 @@ class BackgroundSyncManager: ObservableObject {
     
     // Dependencies
     private let networkMonitor = NetworkMonitor.shared
-    private var cancellables = Set<AnyCancellable>()
-    
+    @ObservationIgnored private var cancellables = Set<AnyCancellable>()
+
     // Sync state
-    @Published var lastBackgroundSync: Date?
-    @Published var backgroundSyncEnabled = true
-    @Published var syncInProgress = false
+    var lastBackgroundSync: Date?
+    var backgroundSyncEnabled = true
+    var syncInProgress = false
     
     // UserDefaults keys
     private let lastSyncKey = "last_background_sync"

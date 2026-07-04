@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct BackgroundSyncCard: View {
-    @ObservedObject private var backgroundSyncManager = BackgroundSyncManager.shared
+    private let backgroundSyncManager = BackgroundSyncManager.shared
     @Environment(\.isDarkMode) var isDarkMode
     
     var body: some View {

@@ -2,8 +2,8 @@ import SwiftUI
 import shared
 
 struct ProfileView: View {
-    @StateObject private var viewModel = ProfileViewModelSKIE()
-    @ObservedObject private var themeViewModel = ThemeViewModelSKIE.shared
+    @State private var viewModel = ProfileViewModelSKIE()
+    private let themeViewModel = ThemeViewModelSKIE.shared
     @State private var showingSettings = false
     @State private var showingSignIn = false
     @State private var showingSignUp = false
@@ -21,37 +21,37 @@ struct ProfileView: View {
     }
 
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 16) {
-                    // Profile Header Card
-                    profileHeaderCard
+        // No nav container here: ContentView already wraps this tab in a
+        // NavigationStack (the old inner NavigationView double-nested it).
+        ScrollView {
+            VStack(spacing: 16) {
+                // Profile Header Card
+                profileHeaderCard
 
-                    // Account Settings Card (only if logged in)
-                    if viewModel.state.isLoggedIn {
-                        accountSettingsCard
-                    }
-
-                    // App Settings Card
-                    appSettingsCard
-
-                    // About Card
-                    aboutCard
-
-                    // Bottom spacer to ensure content doesn't overlap with tab bar
-                    Color.clear.frame(height: 80)
+                // Account Settings Card (only if logged in)
+                if viewModel.state.isLoggedIn {
+                    accountSettingsCard
                 }
-                .padding(.horizontal)
-                .padding(.top, 8)
+
+                // App Settings Card
+                appSettingsCard
+
+                // About Card
+                aboutCard
+
+                // Bottom spacer to ensure content doesn't overlap with tab bar
+                Color.clear.frame(height: 80)
             }
-            .id(refreshID) // Force refresh when tab changes
-            .background(AppColors.background(isDarkMode: isDarkMode))
-            .navigationTitle("Profile")
-            .navigationBarTitleDisplayMode(.large)
-            .onAppear {
-                viewModel.refresh()
-                refreshID = UUID() // Generate new ID to force refresh
-            }
+            .padding(.horizontal)
+            .padding(.top, 8)
+        }
+        .id(refreshID) // Force refresh when tab changes
+        .background(AppColors.background(isDarkMode: isDarkMode))
+        .navigationTitle("Profile")
+        .navigationBarTitleDisplayMode(.large)
+        .onAppear {
+            viewModel.refresh()
+            refreshID = UUID() // Generate new ID to force refresh
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()

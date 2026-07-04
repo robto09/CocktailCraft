@@ -1,17 +1,18 @@
 import SwiftUI
 import shared
-import Combine
+import Observation
 
 /**
  * iOS ViewModel wrapper for SharedOrderViewModel using pure SKIE integration.
- * Mirrors the consolidated uiState as a single @Published value.
+ * Mirrors the consolidated uiState as Observation-tracked state.
  */
 @MainActor
-class OrderViewModelSKIE: ObservableObject {
+@Observable
+class OrderViewModelSKIE {
     // Consolidated UI state from the shared ViewModel
-    @Published private(set) var state: OrderUiState
+    private(set) var state: OrderUiState
     // The single error channel from the shared ViewModel base class
-    @Published var error: ErrorHandler.UserFriendlyError? = nil
+    var error: ErrorHandler.UserFriendlyError? = nil
 
     // Computed properties
     var hasOrders: Bool {
@@ -34,7 +35,7 @@ class OrderViewModelSKIE: ObservableObject {
     private let sharedViewModel: SharedOrderViewModel
 
     // Tasks for async observation
-    private var observationTasks: [Task<Void, Never>] = []
+    @ObservationIgnored private var observationTasks: [Task<Void, Never>] = []
 
     init() {
         // Get shared ViewModel from Koin

@@ -3,11 +3,12 @@ import SwiftUI
 import shared
 
 struct FilterView: View {
-    @ObservedObject var viewModel: HomeViewModelSKIE
-    @Environment(\.presentationMode) var presentationMode
-    
+    // @Bindable: the Picker below needs a $viewModel.sortOption binding
+    @Bindable var viewModel: HomeViewModelSKIE
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section(header: Text("Sort By")) {
                     Picker("Sort", selection: $viewModel.sortOption) {
@@ -53,7 +54,7 @@ struct FilterView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        presentationMode.wrappedValue.dismiss()
+                        dismiss()
                     }
                 }
             }

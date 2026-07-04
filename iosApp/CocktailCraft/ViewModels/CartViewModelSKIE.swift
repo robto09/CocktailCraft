@@ -1,17 +1,18 @@
 import SwiftUI
 import shared
-import Combine
+import Observation
 
 /**
  * iOS ViewModel wrapper for SharedCartViewModel using pure SKIE integration.
- * Mirrors the consolidated uiState as a single @Published value.
+ * Mirrors the consolidated uiState as Observation-tracked state.
  */
 @MainActor
-class CartViewModelSKIE: ObservableObject {
+@Observable
+class CartViewModelSKIE {
     // Consolidated UI state from the shared ViewModel
-    @Published private(set) var state: CartUiState
+    private(set) var state: CartUiState
     // The single error channel from the shared ViewModel base class
-    @Published var error: ErrorHandler.UserFriendlyError? = nil
+    var error: ErrorHandler.UserFriendlyError? = nil
 
     // Computed properties
     var isEmpty: Bool {
@@ -42,7 +43,7 @@ class CartViewModelSKIE: ObservableObject {
     private let sharedViewModel: SharedCartViewModel
 
     // Tasks for async observation
-    private var observationTasks: [Task<Void, Never>] = []
+    @ObservationIgnored private var observationTasks: [Task<Void, Never>] = []
 
     init() {
         // Get shared ViewModel from Koin

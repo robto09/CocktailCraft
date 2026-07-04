@@ -2,11 +2,11 @@ import SwiftUI
 import shared
 
 struct OfflineModeView: View {
-    @StateObject private var viewModel = OfflineModeViewModelSKIE()
-    @Environment(\.presentationMode) var presentationMode
-    
+    @State private var viewModel = OfflineModeViewModelSKIE()
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
                     // Network Status Card
@@ -37,7 +37,7 @@ struct OfflineModeView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        presentationMode.wrappedValue.dismiss()
+                        dismiss()
                     }
                 }
             }

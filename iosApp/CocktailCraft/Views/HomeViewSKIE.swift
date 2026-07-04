@@ -6,7 +6,7 @@ import shared
  * This demonstrates how to use shared ViewModels with pure SKIE integration.
  */
 struct HomeViewSKIE: View {
-    @StateObject private var viewModel = HomeViewModelSKIE()
+    @State private var viewModel = HomeViewModelSKIE()
     @State private var searchText = ""
     @State private var showingFilters = false
     @State private var showingAdvancedSearch = false
@@ -225,7 +225,10 @@ struct HomeViewSKIE: View {
                 ScrollView {
                     LazyVStack(spacing: 12) {
                         ForEach(viewModel.state.cocktails, id: \.id) { cocktail in
-                            NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.id, cartViewModel: CartViewModelSKIE())) {
+                            // Value-based link: the destination (and its
+                            // factory-scoped detail ViewModel) is only built
+                            // on push, not eagerly for every visible row.
+                            NavigationLink(value: cocktail.id) {
                                 CocktailCard(
                                     cocktail: cocktail,
                                     isFavorite: viewModel.isFavorite(cocktail.id),
@@ -291,13 +294,18 @@ struct HomeViewSKIE: View {
         }
 
         .navigationBarTitleDisplayMode(.large)
+        .navigationDestination(for: String.self) { cocktailId in
+            // CartViewModelSKIE wraps a Koin single, so a fresh wrapper here
+            // sees the same cart state as ContentView's instance.
+            CocktailDetailView(cocktailId: cocktailId, cartViewModel: CartViewModelSKIE())
+        }
         .sheet(isPresented: $showingFilters) {
             FilterViewSKIE(viewModel: viewModel)
                 .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showingAdvancedSearch) {
             // Simple advanced search placeholder
-            NavigationView {
+            NavigationStack {
                 Text("Advanced Search Coming Soon")
                     .navigationTitle("Advanced Search")
                     .navigationBarTitleDisplayMode(.inline)
@@ -322,7 +330,7 @@ struct HomeViewSKIE: View {
         } message: {
             Text(viewModel.error?.message ?? "An error occurred")
         }
-        .onChange(of: searchText) { newValue in
+        .onChange(of: searchText) { _, newValue in
             if !newValue.isEmpty {
                 Task {
                     await viewModel.searchCocktails(query: newValue)
@@ -391,7 +399,7 @@ struct FilterViewSKIE: View {
     @State private var selectedSort = "nameAsc"
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section("Category") {
                     ForEach(viewModel.getCategories(), id: \.self) { category in
@@ -516,7 +524,7 @@ struct HomeEmptyStateView: View {
 
 struct HomeViewSKIE_Previews: PreviewProvider {
     static var previews: some View {
-        NavigationView {
+        NavigationStack {
             HomeViewSKIE()
         }
     }

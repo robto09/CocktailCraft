@@ -1,17 +1,18 @@
 import SwiftUI
 import shared
-import Combine
+import Observation
 
 /**
  * iOS ViewModel wrapper for SharedFavoritesViewModel using pure SKIE integration.
- * Mirrors the consolidated uiState as a single @Published value.
+ * Mirrors the consolidated uiState as Observation-tracked state.
  */
 @MainActor
-class FavoritesViewModelSKIE: ObservableObject {
+@Observable
+class FavoritesViewModelSKIE {
     // Consolidated UI state from the shared ViewModel
-    @Published private(set) var state: FavoritesUiState
+    private(set) var state: FavoritesUiState
     // The single error channel from the shared ViewModel base class
-    @Published var error: ErrorHandler.UserFriendlyError? = nil
+    var error: ErrorHandler.UserFriendlyError? = nil
 
     // Computed properties
     var isEmpty: Bool {
@@ -26,7 +27,7 @@ class FavoritesViewModelSKIE: ObservableObject {
     private let sharedViewModel: SharedFavoritesViewModel
 
     // Tasks for async observation
-    private var observationTasks: [Task<Void, Never>] = []
+    @ObservationIgnored private var observationTasks: [Task<Void, Never>] = []
 
     init() {
         // Get shared ViewModel from Koin

@@ -3,8 +3,8 @@ import SwiftUI
 import shared
 
 struct FavoritesView: View {
-    @ObservedObject var cartViewModel: CartViewModelSKIE
-    @StateObject private var viewModel = FavoritesViewModelSKIE()
+    let cartViewModel: CartViewModelSKIE
+    @State private var viewModel = FavoritesViewModelSKIE()
 
     var body: some View {
         Group {
@@ -15,6 +15,9 @@ struct FavoritesView: View {
             }
         }
         .navigationTitle("Favorites")
+        .navigationDestination(for: String.self) { cocktailId in
+            CocktailDetailView(cocktailId: cocktailId, cartViewModel: cartViewModel)
+        }
         .onAppear {
             Task {
                 await viewModel.loadFavorites()
@@ -53,7 +56,9 @@ struct FavoritesView: View {
     }
     
     private func cocktailGridItem(_ cocktail: Cocktail) -> some View {
-        NavigationLink(destination: CocktailDetailView(cocktailId: cocktail.id, cartViewModel: cartViewModel)) {
+        // Value-based link: the destination (and its factory-scoped detail
+        // ViewModel) is only built on push, not eagerly per grid item.
+        NavigationLink(value: cocktail.id) {
             CocktailCard(
                 cocktail: cocktail,
                 isFavorite: true,
