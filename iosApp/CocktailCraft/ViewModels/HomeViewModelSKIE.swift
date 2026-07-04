@@ -1,68 +1,29 @@
 import SwiftUI
 import shared
-import Observation
 
 /**
  * iOS ViewModel wrapper for SharedHomeViewModel using pure SKIE integration.
- * Mirrors the consolidated uiState as Observation-tracked state; views read
- * `viewModel.state.<field>` for everything the shared ViewModel owns.
+ * State/error mirroring and observation-task lifecycle live in
+ * SharedViewModelWrapper; views read `viewModel.state.<field>`.
  */
-@MainActor
-@Observable
-class HomeViewModelSKIE {
-    // Consolidated UI state from the shared ViewModel
-    private(set) var state: HomeUiState
-    // The single error channel from the shared ViewModel base class
-    var error: ErrorHandler.UserFriendlyError? = nil
+final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
 
     // Shared ViewModel instances
     private let sharedViewModel: SharedHomeViewModel
     private let cartViewModel: SharedCartViewModel
 
-    // Tasks for async observation
-    @ObservationIgnored private var observationTasks: [Task<Void, Never>] = []
-
     init() {
-        // Get shared ViewModels from Koin
-        self.sharedViewModel = getSharedKoinHelper().getSharedHomeViewModel()
+        let viewModel = getSharedKoinHelper().getSharedHomeViewModel()
+        self.sharedViewModel = viewModel
         self.cartViewModel = getSharedKoinHelper().getSharedCartViewModel()
-
-        // Seed synchronously so the first frame renders the current state
-        self.state = sharedViewModel.uiState.value
-
-        // Start observing StateFlows using SKIE async/await
-        startObserving()
         // No initial load here: @State (unlike @StateObject) evaluates its
         // initial value eagerly on every parent re-render, and discarded
         // instances must not fire side effects. HomeViewSKIE's .task loads.
+        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
     }
 
-    deinit {
-        // Cancel all observation tasks
-        observationTasks.forEach { $0.cancel() }
-        // Note: Do NOT call onCleared() — this wraps Koin `single` instances
-        // whose coroutine scope must survive the lifetime of any one wrapper.
-        // (Factory-scoped wrappers — CocktailDetail, Review — do call it.)
-    }
-
-    // MARK: - SKIE StateFlow Observation
-
-    private func startObserving() {
-        // These Tasks inherit @MainActor, so assignments land on the main thread.
-        observationTasks.append(Task { [weak self] in
-            guard let flow = self?.sharedViewModel.uiState else { return }
-            for await state in flow {
-                self?.state = state
-            }
-        })
-
-        observationTasks.append(Task { [weak self] in
-            guard let flow = self?.sharedViewModel.error else { return }
-            for await errorValue in flow {
-                self?.error = errorValue
-            }
-        })
-    }
+    // No deinit: the base class cancels observation. Wraps a Koin `single`
+    // whose coroutine scope must survive any one wrapper — never onCleared().
 
     // MARK: - Public Methods (using SKIE async/await)
 

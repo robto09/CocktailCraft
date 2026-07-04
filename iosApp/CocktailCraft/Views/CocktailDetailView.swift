@@ -3,7 +3,6 @@ import SwiftUI
 
 struct CocktailDetailView: View {
     let cocktailId: String
-    let cartViewModel: CartViewModelSKIE
     @State private var viewModel = CocktailDetailViewModelSKIE()
 
     // Distinguishes "load not started yet" from "loaded but not found"

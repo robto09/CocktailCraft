@@ -3,7 +3,6 @@ import SwiftUI
 import shared
 
 struct FavoritesView: View {
-    let cartViewModel: CartViewModelSKIE
     @State private var viewModel = FavoritesViewModelSKIE()
 
     var body: some View {
@@ -16,7 +15,7 @@ struct FavoritesView: View {
         }
         .navigationTitle("Favorites")
         .navigationDestination(for: String.self) { cocktailId in
-            CocktailDetailView(cocktailId: cocktailId, cartViewModel: cartViewModel)
+            CocktailDetailView(cocktailId: cocktailId)
         }
         .onAppear {
             Task {

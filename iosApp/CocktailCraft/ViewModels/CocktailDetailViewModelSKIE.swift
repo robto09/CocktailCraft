@@ -1,18 +1,12 @@
 import SwiftUI
 import shared
-import Observation
 
 /**
  * iOS ViewModel wrapper for SharedCocktailDetailViewModel using pure SKIE integration.
- * Mirrors the consolidated uiState as Observation-tracked state.
+ * State/error mirroring and observation-task lifecycle live in
+ * SharedViewModelWrapper.
  */
-@MainActor
-@Observable
-class CocktailDetailViewModelSKIE {
-    // Consolidated UI state from the shared ViewModel
-    private(set) var state: DetailUiState
-    // The single error channel from the shared ViewModel base class
-    var error: ErrorHandler.UserFriendlyError? = nil
+final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
 
     // Computed properties
     var hasRelatedCocktails: Bool {
@@ -30,45 +24,17 @@ class CocktailDetailViewModelSKIE {
     // Shared ViewModel instance
     private let sharedViewModel: SharedCocktailDetailViewModel
 
-    // Tasks for async observation
-    @ObservationIgnored private var observationTasks: [Task<Void, Never>] = []
-
     init() {
-        // Get shared ViewModel from Koin
-        self.sharedViewModel = getSharedKoinHelper().getSharedCocktailDetailViewModel()
-
-        // Seed synchronously so the first frame renders the current state
-        self.state = sharedViewModel.uiState.value
-
-        // Start observing StateFlows using SKIE async/await
-        startObserving()
+        let viewModel = getSharedKoinHelper().getSharedCocktailDetailViewModel()
+        self.sharedViewModel = viewModel
+        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
     }
 
     deinit {
-        // Cancel all observation tasks
-        observationTasks.forEach { $0.cancel() }
         // This wraps a Koin `factory` instance owned by this wrapper, so its
-        // scope is cancelled here. (Singleton-backed wrappers must NOT do this.)
+        // scope is cancelled here; the base deinit cancels observation tasks.
+        // (Singleton-backed wrappers must NOT call onCleared().)
         sharedViewModel.onCleared()
-    }
-
-    // MARK: - SKIE StateFlow Observation
-
-    private func startObserving() {
-        // These Tasks inherit @MainActor, so assignments land on the main thread.
-        observationTasks.append(Task { [weak self] in
-            guard let flow = self?.sharedViewModel.uiState else { return }
-            for await state in flow {
-                self?.state = state
-            }
-        })
-
-        observationTasks.append(Task { [weak self] in
-            guard let flow = self?.sharedViewModel.error else { return }
-            for await errorValue in flow {
-                self?.error = errorValue
-            }
-        })
     }
 
     // MARK: - Public Methods (using SKIE async/await)

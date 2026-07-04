@@ -2,7 +2,8 @@ import SwiftUI
 import shared
 
 struct CartView: View {
-    let cartViewModel: CartViewModelSKIE
+    // Injected via .environment(cartViewModel) at the ContentView root
+    @Environment(CartViewModelSKIE.self) private var cartViewModel
     @State private var orderViewModel = OrderViewModelSKIE()
     @Binding var selectedTab: Int
     @State private var showCheckoutConfirmation = false

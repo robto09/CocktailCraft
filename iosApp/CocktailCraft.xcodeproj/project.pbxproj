@@ -47,6 +47,7 @@
 		DE8850F09E59ACDA9DA09D48 /* CocktailCraftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E192F0B9BFCD6DE2579690 /* CocktailCraftApp.swift */; };
 		EF018FBC5C1312DB79C5D641 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62F8C00AB4F768E2258F18A6 /* Toast.swift */; };
 		F025AA2D6B5B4502A3023799 /* CartViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5FBEA761F8A4EB995742D08 /* CartViewModelSKIE.swift */; };
+		AB12CD34EF5678901234ABCE /* SharedViewModelWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5678901234ABCD /* SharedViewModelWrapper.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -101,6 +102,7 @@
 		A72ABE76F0454E87B6F8C307 /* ThemeViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeViewModelSKIE.swift; sourceTree = "<group>"; };
 		C33609CC7CE44DBCE6EA103C /* ShimmerEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShimmerEffect.swift; sourceTree = "<group>"; };
 		D5FBEA761F8A4EB995742D08 /* CartViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartViewModelSKIE.swift; sourceTree = "<group>"; };
+		AB12CD34EF5678901234ABCD /* SharedViewModelWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedViewModelWrapper.swift; sourceTree = "<group>"; };
 		D83136CACC331BFA65BF22E1 /* Pods-CocktailCraft.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraft.release.xcconfig"; path = "Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft.release.xcconfig"; sourceTree = "<group>"; };
 		E2B26ED3A3ACF1E6DAEE3D49 /* OrderListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderListView.swift; sourceTree = "<group>"; };
 		E88E12E1DD858DB8B9E22AC7 /* CocktailCraft.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CocktailCraft.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -205,6 +207,7 @@
 				0EBB347A2E33E199005F3BA9 /* HomeViewModelSKIE.swift */,
 				0EBB347B2E33E199005F3BA9 /* OfflineModeViewModelSKIE.swift */,
 				D5FBEA761F8A4EB995742D08 /* CartViewModelSKIE.swift */,
+				AB12CD34EF5678901234ABCD /* SharedViewModelWrapper.swift */,
 				5BDC12B4B38A45DB93627603 /* OrderViewModelSKIE.swift */,
 				5097B9993D604867B5723F89 /* ProfileViewModelSKIE.swift */,
 				A72ABE76F0454E87B6F8C307 /* ThemeViewModelSKIE.swift */,
@@ -372,6 +375,7 @@
 				5E6F7890ABCD123456789ABC /* AppTheme.swift in Sources */,
 				EF018FBC5C1312DB79C5D641 /* Toast.swift in Sources */,
 				F025AA2D6B5B4502A3023799 /* CartViewModelSKIE.swift in Sources */,
+				AB12CD34EF5678901234ABCE /* SharedViewModelWrapper.swift in Sources */,
 				0EBB347C2E33E199005F3BA9 /* OfflineModeViewModelSKIE.swift in Sources */,
 				0EBB347D2E33E199005F3BA9 /* CocktailDetailViewModelSKIE.swift in Sources */,
 				0EBB347E2E33E199005F3BA9 /* HomeViewModelSKIE.swift in Sources */,
