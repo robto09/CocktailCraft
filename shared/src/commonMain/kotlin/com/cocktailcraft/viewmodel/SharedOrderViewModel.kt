@@ -26,18 +26,6 @@ class SharedOrderViewModel : SharedViewModel() {
     private val _uiState = MutableStateFlow(OrderUiState())
     val uiState: StateFlow<OrderUiState> = _uiState.asStateFlow()
 
-    // Derived StateFlows for backward compatibility
-    val orders: StateFlow<List<Order>> = _uiState
-        .map { it.orders }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    val currentOrder: StateFlow<Order?> = _uiState
-        .map { it.currentOrder }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-    val orderCount: StateFlow<Int> = _uiState
-        .map { it.orderCount }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
-    val isPlacingOrder: StateFlow<Boolean> = _uiState
-        .map { it.isPlacingOrder }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val totalSpent: StateFlow<Double> = _uiState
-        .map { it.totalSpent }.stateIn(viewModelScope, SharingStarted.Eagerly, 0.0)
-
     val hasOrders: Boolean
         get() = _uiState.value.orders.isNotEmpty()
     val isEmpty: Boolean

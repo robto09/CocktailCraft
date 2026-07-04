@@ -66,6 +66,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -82,6 +83,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.model.Review
@@ -95,16 +97,14 @@ import com.cocktailcraft.android.ui.components.RatingDisplay
 import com.cocktailcraft.android.ui.components.RecommendationsSection
 import com.cocktailcraft.android.ui.components.SectionHeader
 import com.cocktailcraft.android.ui.components.WriteReviewDialog
-import com.cocktailcraft.android.viewmodel.CartViewModelSKIE
-import com.cocktailcraft.android.viewmodel.CocktailDetailViewModelSKIE
-import com.cocktailcraft.android.viewmodel.FavoritesViewModelSKIE
-import com.cocktailcraft.android.viewmodel.HomeViewModelSKIE
-import com.cocktailcraft.android.viewmodel.ReviewViewModelSKIE
+import com.cocktailcraft.viewmodel.SharedCartViewModel
+import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
+import com.cocktailcraft.viewmodel.SharedHomeViewModel
+import com.cocktailcraft.viewmodel.SharedReviewViewModel
 import com.cocktailcraft.android.navigation.NavigationManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import org.koin.androidx.compose.koinViewModel
-import org.koin.core.parameter.parametersOf
+import org.koin.compose.koinInject
 import androidx.compose.animation.core.*
 import com.cocktailcraft.android.ui.components.shimmerEffect
 import com.cocktailcraft.android.util.rememberHapticHandler
@@ -113,10 +113,10 @@ import com.cocktailcraft.android.util.rememberHapticHandler
 @Composable
 fun CocktailDetailScreen(
     cocktailId: String,
-    homeViewModel: HomeViewModelSKIE,
-    cartViewModel: CartViewModelSKIE,
-    reviewViewModel: ReviewViewModelSKIE,
-    favoritesViewModel: FavoritesViewModelSKIE,
+    homeViewModel: SharedHomeViewModel,
+    cartViewModel: SharedCartViewModel,
+    reviewViewModel: SharedReviewViewModel,
+    favoritesViewModel: SharedFavoritesViewModel,
     navigationManager: NavigationManager,
     onBackClick: () -> Unit,
     onAddToCart: (Cocktail) -> Unit
@@ -124,25 +124,32 @@ fun CocktailDetailScreen(
     // Add a loading state to track when data is being fetched
     var isLoading by remember { mutableStateOf(true) }
 
-    // Use suspend getCocktailById via StateFlow instead of one-shot Flow
-    val cocktailState = remember { homeViewModel.getCocktailByIdAsFlow(cocktailId) }
-    val cocktail by cocktailState.collectAsState()
+    // Catalog repository for recommendations (previously exposed by the wrapper ViewModel)
+    val catalogRepository = koinInject<CocktailCatalogRepository>()
+
+    // Load the cocktail via the suspend getCocktailById
+    val cocktail by produceState<Cocktail?>(initialValue = null, cocktailId) {
+        value = homeViewModel.getCocktailById(cocktailId)
+    }
 
     // Load reviews for this cocktail
     LaunchedEffect(cocktailId) {
         reviewViewModel.loadReviewsForCocktail(cocktailId)
     }
-    
+
     // Properly collect reviews as a state
-    val reviews by reviewViewModel.currentCocktailReviews.collectAsState()
-    val favorites by favoritesViewModel.favorites.collectAsState()
+    val reviewState by reviewViewModel.uiState.collectAsState()
+    val reviews = reviewState.currentCocktailReviews
+    val favoritesState by favoritesViewModel.uiState.collectAsState()
+    val favorites = favoritesState.favorites
     val isFavorite = cocktail?.let { c -> favorites.any { fav -> fav.id == c.id } } ?: false
 
     // Haptic feedback handler
     val hapticHandler = rememberHapticHandler()
 
     // Check if the cocktail is in cart
-    val cartItems by cartViewModel.cartItems.collectAsState()
+    val cartState by cartViewModel.uiState.collectAsState()
+    val cartItems = cartState.cartItems
     val isInCart = cocktail?.let { c -> cartItems.any { it.cocktail.id == c.id } } ?: false
 
     // Add snackbar state
@@ -163,12 +170,14 @@ fun CocktailDetailScreen(
         onDismiss = { showReviewDialog = false },
         onSubmit = { userName, rating, comment ->
             try {
-                reviewViewModel.submitReview(
-                    cocktailId = cocktailId,
-                    rating = rating,
-                    comment = comment,
-                    userName = userName
-                )
+                coroutineScope.launch {
+                    reviewViewModel.submitReview(
+                        cocktailId = cocktailId,
+                        rating = rating,
+                        comment = comment,
+                        userName = userName
+                    )
+                }
                 showReviewDialog = false
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -276,7 +285,9 @@ fun CocktailDetailScreen(
                                     IconButton(
                                         onClick = {
                                             hapticHandler.performToggleFavorite(isFavorite)
-                                            favoritesViewModel.toggleFavorite(cocktailData)
+                                            coroutineScope.launch {
+                                                favoritesViewModel.toggleFavorite(cocktailData)
+                                            }
                                         },
                                         modifier = Modifier.size(36.dp)
                                     ) {
@@ -406,7 +417,9 @@ fun CocktailDetailScreen(
                                             OutlinedButton(
                                                 onClick = {
                                                     // Attempt to reload the data
-                                                    homeViewModel.forceRefreshCocktailDetails(cocktailId)
+                                                    coroutineScope.launch {
+                                                        homeViewModel.refreshCocktailDetails(cocktailId)
+                                                    }
                                                 },
                                                 border = BorderStroke(1.dp, AppColors.Primary),
                                                 shape = RoundedCornerShape(8.dp)
@@ -535,7 +548,7 @@ fun CocktailDetailScreen(
 
                                 // Use the repository directly to get recommendations from the API
                                 // This bypasses any caching or filtering in the ViewModel
-                                val apiRecommendations = homeViewModel.catalogRepository.getCocktailsByCategory(category)
+                                val apiRecommendations = catalogRepository.getCocktailsByCategory(category)
                                     .getOrDefault(emptyList())
                                     .filter { it.id != currentId } // Filter out current cocktail
                                     .take(3) // Limit to 3 recommendations

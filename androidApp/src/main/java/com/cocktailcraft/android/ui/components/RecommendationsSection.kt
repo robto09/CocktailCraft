@@ -45,19 +45,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.android.ui.theme.AppColors
-import com.cocktailcraft.android.viewmodel.CocktailDetailViewModelSKIE
+import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
 
 /**
  * A section that displays cocktail recommendations.
  */
 @Composable
 fun RecommendationsSection(
-    viewModel: CocktailDetailViewModelSKIE,
+    viewModel: SharedCocktailDetailViewModel,
     onCocktailClick: (Cocktail) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val recommendations by viewModel.recommendations.collectAsState()
-    val isLoading by viewModel.isLoadingRecommendations.collectAsState()
+    val state by viewModel.uiState.collectAsState()
+    val recommendations = state.relatedCocktails
+    val isLoading by viewModel.isLoading.collectAsState()
 
     // Determine visibility based on loading state and recommendations
     val isVisible = isLoading || recommendations.isNotEmpty()

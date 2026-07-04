@@ -24,20 +24,6 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
     private val _uiState = MutableStateFlow(DetailUiState())
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
 
-    // Derived StateFlows for backward compatibility
-    val cocktail: StateFlow<Cocktail?> = _uiState
-        .map { it.cocktail }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-    val isFavorite: StateFlow<Boolean> = _uiState
-        .map { it.isFavorite }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val isInCart: StateFlow<Boolean> = _uiState
-        .map { it.isInCart }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val cartQuantity: StateFlow<Int> = _uiState
-        .map { it.cartQuantity }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
-    val relatedCocktails: StateFlow<List<Cocktail>> = _uiState
-        .map { it.relatedCocktails }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    val ingredientsByType: StateFlow<Map<String, List<String>>> = _uiState
-        .map { it.ingredientsByType }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
-
     /**
      * Load cocktail details by ID.
      * SKIE will convert this to Swift async function.

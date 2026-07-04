@@ -22,14 +22,6 @@ class SharedCartViewModel : SharedViewModel() {
     private val _uiState = MutableStateFlow(CartUiState())
     val uiState: StateFlow<CartUiState> = _uiState.asStateFlow()
 
-    // Derived StateFlows for backward compatibility
-    val cartItems: StateFlow<List<CocktailCartItem>> = _uiState
-        .map { it.cartItems }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    val totalPrice: StateFlow<Double> = _uiState
-        .map { it.totalPrice }.stateIn(viewModelScope, SharingStarted.Eagerly, 0.0)
-    val itemCount: StateFlow<Int> = _uiState
-        .map { it.itemCount }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
-    
     // Computed properties
     val isEmpty: Boolean
         get() = _uiState.value.cartItems.isEmpty()

@@ -20,18 +20,6 @@ class SharedReviewViewModel : SharedViewModel() {
     private val _uiState = MutableStateFlow(ReviewUiState())
     val uiState: StateFlow<ReviewUiState> = _uiState.asStateFlow()
 
-    // Derived StateFlows for backward compatibility
-    val reviews: StateFlow<Map<String, List<Review>>> = _uiState
-        .map { it.reviews }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
-    val currentCocktailReviews: StateFlow<List<Review>> = _uiState
-        .map { it.currentCocktailReviews }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    val averageRating: StateFlow<Float> = _uiState
-        .map { it.averageRating }.stateIn(viewModelScope, SharingStarted.Eagerly, 0.0f)
-    val reviewCount: StateFlow<Int> = _uiState
-        .map { it.reviewCount }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
-    val currentCocktailId: StateFlow<String?> = _uiState
-        .map { it.currentCocktailId }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-
     val hasReviews: Boolean
         get() = _uiState.value.currentCocktailReviews.isNotEmpty()
     val isEmpty: Boolean

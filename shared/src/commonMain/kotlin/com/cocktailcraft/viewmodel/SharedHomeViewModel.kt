@@ -42,30 +42,6 @@ class SharedHomeViewModel : SharedViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    // Derived StateFlows for backward compatibility (Android wrappers reference these)
-    val cocktails: StateFlow<List<Cocktail>> = _uiState
-        .map { it.cocktails }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    val favorites: StateFlow<List<Cocktail>> = _uiState
-        .map { it.favorites }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    val isOfflineMode: StateFlow<Boolean> = _uiState
-        .map { it.isOfflineMode }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val isNetworkAvailable: StateFlow<Boolean> = _uiState
-        .map { it.isNetworkAvailable }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
-    val searchQuery: StateFlow<String> = _uiState
-        .map { it.searchQuery }.stateIn(viewModelScope, SharingStarted.Eagerly, "")
-    val isSearchActive: StateFlow<Boolean> = _uiState
-        .map { it.isSearchActive }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val searchFilters: StateFlow<SearchFilters> = _uiState
-        .map { it.searchFilters }.stateIn(viewModelScope, SharingStarted.Eagerly, SearchFilters())
-    val isAdvancedSearchActive: StateFlow<Boolean> = _uiState
-        .map { it.isAdvancedSearchActive }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val hasMoreData: StateFlow<Boolean> = _uiState
-        .map { it.hasMoreData }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
-    val isLoadingMore: StateFlow<Boolean> = _uiState
-        .map { it.isLoadingMore }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val selectedCategory: StateFlow<String?> = _uiState
-        .map { it.selectedCategory }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-
     private var searchJob: Job? = null
     private val PAGE_SIZE = 10
     
@@ -303,8 +279,6 @@ class SharedHomeViewModel : SharedViewModel() {
             null
         }
     }
-
-
 
     /**
      * Force refresh cocktail details.

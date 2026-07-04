@@ -22,6 +22,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -34,26 +35,30 @@ import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.OrderSummaryCard
 import com.cocktailcraft.android.ui.components.SectionHeader
 import com.cocktailcraft.android.ui.theme.AppColors
-import com.cocktailcraft.android.viewmodel.CartViewModelSKIE
-import com.cocktailcraft.android.viewmodel.FavoritesViewModelSKIE
-import com.cocktailcraft.android.viewmodel.OrderViewModelSKIE
+import com.cocktailcraft.viewmodel.SharedCartViewModel
+import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
+import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.android.navigation.NavigationManager
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
 @Composable
 fun CartScreen(
-    viewModel: CartViewModelSKIE,
-    orderViewModel: OrderViewModelSKIE,
-    navigationManager: NavigationManager,
+    viewModel: SharedCartViewModel,
     onStartShopping: () -> Unit,
-    favoritesViewModel: FavoritesViewModelSKIE
+    navigationManager: NavigationManager,
+    orderViewModel: SharedOrderViewModel,
+    favoritesViewModel: SharedFavoritesViewModel
 ) {
-    val cartItems by viewModel.cartItems.collectAsState()
-    val totalPrice by viewModel.totalPrice.collectAsState()
+    val state by viewModel.uiState.collectAsState()
+    val cartItems = state.cartItems
+    val totalPrice = state.totalPrice
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
-    val favorites by favoritesViewModel.favorites.collectAsState()
+    val favoritesState by favoritesViewModel.uiState.collectAsState()
+    val favorites = favoritesState.favorites
+    val scope = rememberCoroutineScope()
 
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
 
@@ -105,17 +110,19 @@ fun CartScreen(
                 itemsIndexed(cartItems) { _, item ->
                     CartItemCard(
                         item = item,
-                        onIncreaseQuantity = { viewModel.updateQuantity(item.cocktail.id, item.quantity + 1) },
+                        onIncreaseQuantity = { scope.launch { viewModel.updateQuantity(item.cocktail.id, item.quantity + 1) } },
                         onDecreaseQuantity = {
-                            if (item.quantity > 1) {
-                                viewModel.updateQuantity(item.cocktail.id, item.quantity - 1)
-                            } else {
-                                viewModel.removeFromCart(item.cocktail.id)
+                            scope.launch {
+                                if (item.quantity > 1) {
+                                    viewModel.updateQuantity(item.cocktail.id, item.quantity - 1)
+                                } else {
+                                    viewModel.removeFromCart(item.cocktail.id)
+                                }
                             }
                         },
-                        onRemove = { viewModel.removeFromCart(item.cocktail.id) },
+                        onRemove = { scope.launch { viewModel.removeFromCart(item.cocktail.id) } },
                         isFavorite = favorites.any { it.id == item.cocktail.id },
-                        onToggleFavorite = { favoritesViewModel.toggleFavorite(item.cocktail) }
+                        onToggleFavorite = { scope.launch { favoritesViewModel.toggleFavorite(item.cocktail) } }
                     )
                 }
             }
@@ -160,13 +167,17 @@ fun CartScreen(
         confirmButtonText = "Confirm",
         dismissButtonText = "Cancel",
         onConfirm = {
-            orderViewModel.placeOrder(
-                cartItems = cartItems,
-                totalPrice = totalPrice + 5.99 // Include delivery fee
-            )
-            viewModel.clearCart()
             showPlaceOrderDialog = false
-            navigationManager.navigateToOrderList()
+            // Navigate only after the order is persisted and the cart cleared —
+            // this scope dies with the screen, so leaving early would cancel the work.
+            scope.launch {
+                orderViewModel.placeOrder(
+                    cartItems = cartItems,
+                    totalPrice = totalPrice + 5.99 // Include delivery fee
+                )
+                viewModel.clearCart()
+                navigationManager.navigateToOrderList()
+            }
         },
         onDismiss = { showPlaceOrderDialog = false }
     )

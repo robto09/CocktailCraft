@@ -24,16 +24,17 @@ import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.navigation.Screen
 import com.cocktailcraft.android.navigation.NavigationManager
+import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import androidx.compose.material3.Divider
 
 @Composable
 fun OrderListScreen(
-    orderViewModel: com.cocktailcraft.android.viewmodel.OrderViewModelSKIE,
+    orderViewModel: SharedOrderViewModel,
     navigationManager: NavigationManager
 ) {
-    val orders by orderViewModel.orders.collectAsState()
-    val isLoading by orderViewModel.loadingState.collectAsState()
-    val error by orderViewModel.errorState.collectAsState()
+    val state by orderViewModel.uiState.collectAsState()
+    val isLoading by orderViewModel.isLoading.collectAsState()
+    val error by orderViewModel.error.collectAsState()
 
     // Load orders when the screen is first displayed
     LaunchedEffect(Unit) {
@@ -64,7 +65,7 @@ fun OrderListScreen(
                     modifier = Modifier.padding(16.dp)
                 )
             }
-        } else if (orders.isEmpty()) {
+        } else if (state.orders.isEmpty()) {
             // Empty state
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -131,7 +132,7 @@ fun OrderListScreen(
                     )
                 }
 
-                itemsIndexed(orders) { _, order ->
+                itemsIndexed(state.orders) { _, order ->
                     OrderItem(order = order)
                 }
             }

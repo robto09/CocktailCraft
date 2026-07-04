@@ -29,7 +29,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -47,15 +46,17 @@ import com.cocktailcraft.android.screens.OfflineModeScreen
 import com.cocktailcraft.android.screens.OrderListScreen
 import com.cocktailcraft.android.screens.ProfileScreen
 import com.cocktailcraft.android.ui.theme.AppColors
-import com.cocktailcraft.android.viewmodel.CartViewModelSKIE
-import com.cocktailcraft.android.viewmodel.FavoritesViewModelSKIE
-import com.cocktailcraft.android.viewmodel.HomeViewModelSKIE
-import com.cocktailcraft.android.viewmodel.OfflineModeViewModelSKIE
-import com.cocktailcraft.android.viewmodel.OrderViewModelSKIE
-import com.cocktailcraft.android.viewmodel.ReviewViewModelSKIE
-import com.cocktailcraft.android.viewmodel.ThemeViewModelSKIE
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
+import com.cocktailcraft.viewmodel.SharedCartViewModel
+import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
+import com.cocktailcraft.viewmodel.SharedHomeViewModel
+import com.cocktailcraft.viewmodel.SharedOfflineModeViewModel
+import com.cocktailcraft.viewmodel.SharedOrderViewModel
+import com.cocktailcraft.viewmodel.SharedReviewViewModel
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,14 +73,15 @@ fun MainScreen() {
         Screen.Profile
     )
 
-    // Create shared ViewModels for the entire app
-    val sharedOrderViewModel: OrderViewModelSKIE = viewModel()
-    val sharedCartViewModel: CartViewModelSKIE = viewModel()
-    val sharedReviewViewModel: ReviewViewModelSKIE = viewModel()
-    val sharedHomeViewModel: HomeViewModelSKIE = viewModel()
-    val sharedFavoritesViewModel: FavoritesViewModelSKIE = viewModel()
-    val sharedThemeViewModel: ThemeViewModelSKIE = viewModel()
-    val sharedOfflineModeViewModel: OfflineModeViewModelSKIE = viewModel()
+    // Shared KMP ViewModels (Koin singles; SharedReviewViewModel is a factory
+    // resolved once here and reused for the app's lifetime)
+    val sharedOrderViewModel: SharedOrderViewModel = koinInject()
+    val sharedCartViewModel: SharedCartViewModel = koinInject()
+    val sharedReviewViewModel: SharedReviewViewModel = koinInject()
+    val sharedHomeViewModel: SharedHomeViewModel = koinInject()
+    val sharedFavoritesViewModel: SharedFavoritesViewModel = koinInject()
+    val sharedOfflineModeViewModel: SharedOfflineModeViewModel = koinInject()
+    val scope = rememberCoroutineScope()
 
     // Get the current route for conditional rendering
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -87,8 +89,9 @@ fun MainScreen() {
     val isDetailScreen = currentRoute?.startsWith("cocktail_detail") == true
 
     // Get offline mode state
-    val isOfflineModeEnabled by sharedOfflineModeViewModel.isOfflineModeEnabled.collectAsState()
-    val isNetworkAvailable by sharedOfflineModeViewModel.isNetworkAvailable.collectAsState()
+    val offlineState by sharedOfflineModeViewModel.uiState.collectAsState()
+    val isOfflineModeEnabled = offlineState.isOfflineModeEnabled
+    val isNetworkAvailable = offlineState.isNetworkAvailable
 
     Scaffold(
         topBar = {
@@ -204,7 +207,7 @@ fun MainScreen() {
                     favoritesViewModel = sharedFavoritesViewModel,
                     onAddToCart = { cocktail ->
                         // Add to cart and then navigate to cart
-                        sharedCartViewModel.addToCart(cocktail)
+                        scope.launch { sharedCartViewModel.addToCart(cocktail) }
                         navigationManager.navigateToCart()
                     },
                     onCocktailClick = { cocktail ->
@@ -238,7 +241,7 @@ fun MainScreen() {
                     },
                     onAddToCart = { cocktail ->
                         // Add to cart and then navigate to cart
-                        sharedCartViewModel.addToCart(cocktail)
+                        scope.launch { sharedCartViewModel.addToCart(cocktail) }
                         navigationManager.navigateToCart()
                     }
                 )
@@ -273,7 +276,7 @@ fun MainScreen() {
                     navigationManager = navigationManager,
                     onBackClick = { navigationManager.navigateBack() },
                     onAddToCart = { cocktailToAdd ->
-                        sharedCartViewModel.addToCart(cocktailToAdd)
+                        scope.launch { sharedCartViewModel.addToCart(cocktailToAdd) }
                         navigationManager.navigateToCart()
                     }
                 )

@@ -50,6 +50,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import android.app.Activity
 import androidx.compose.ui.Alignment
@@ -65,18 +66,18 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.theme.AppColors
-import com.cocktailcraft.android.viewmodel.OfflineModeViewModelSKIE
+import com.cocktailcraft.viewmodel.SharedOfflineModeViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OfflineModeScreen(
-    viewModel: OfflineModeViewModelSKIE,
+    viewModel: SharedOfflineModeViewModel,
     onBackClick: () -> Unit,
     onCocktailClick: (Cocktail) -> Unit
 ) {
-    val isOfflineModeEnabled by viewModel.isOfflineModeEnabled.collectAsState()
-    val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsState()
-    val recentlyViewedCocktails by viewModel.recentlyViewedCocktails.collectAsState()
+    val state by viewModel.uiState.collectAsState()
+    val scope = rememberCoroutineScope()
 
     // Hide the system navigation bar (immersive) while this screen is shown
     val view = LocalView.current
@@ -107,7 +108,7 @@ fun OfflineModeScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.clearCache()
+                        scope.launch { viewModel.clearCache() }
                         showClearCacheDialog = false
                     }
                 ) {
@@ -139,7 +140,7 @@ fun OfflineModeScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (isNetworkAvailable) Color(0xFF4CAF50) else Color(0xFFE57373)
+                    containerColor = if (state.isNetworkAvailable) Color(0xFF4CAF50) else Color(0xFFE57373)
                 ),
                 shape = RoundedCornerShape(12.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -152,11 +153,11 @@ fun OfflineModeScreen(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        imageVector = if (isNetworkAvailable)
+                        imageVector = if (state.isNetworkAvailable)
                             Icons.Default.Wifi
                         else
                             Icons.Default.WifiOff,
-                        contentDescription = if (isNetworkAvailable) "Online" else "Offline",
+                        contentDescription = if (state.isNetworkAvailable) "Online" else "Offline",
                         tint = Color.White,
                         modifier = Modifier.size(28.dp)
                     )
@@ -164,7 +165,7 @@ fun OfflineModeScreen(
                     Spacer(modifier = Modifier.width(12.dp))
 
                     Text(
-                        text = if (isNetworkAvailable) "Network Available" else "Network Unavailable",
+                        text = if (state.isNetworkAvailable) "Network Available" else "Network Unavailable",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
@@ -206,7 +207,7 @@ fun OfflineModeScreen(
                                     Icon(
                                         imageVector = Icons.Default.AirplanemodeActive,
                                         contentDescription = "Offline Mode",
-                                        tint = if (isOfflineModeEnabled) AppColors.Primary else AppColors.Gray,
+                                        tint = if (state.isOfflineModeEnabled) AppColors.Primary else AppColors.Gray,
                                         modifier = Modifier.size(24.dp)
                                     )
 
@@ -219,9 +220,9 @@ fun OfflineModeScreen(
                                 }
 
                                 Switch(
-                                    checked = isOfflineModeEnabled,
-                                    onCheckedChange = { viewModel.setOfflineMode(it) },
-                                    thumbContent = if (isOfflineModeEnabled) {
+                                    checked = state.isOfflineModeEnabled,
+                                    onCheckedChange = { scope.launch { viewModel.setOfflineMode(it) } },
+                                    thumbContent = if (state.isOfflineModeEnabled) {
                                         {
                                             Icon(
                                                 imageVector = Icons.Default.AirplanemodeActive,
@@ -288,7 +289,7 @@ fun OfflineModeScreen(
                                 )
 
                                 Text(
-                                    text = "${recentlyViewedCocktails.size}",
+                                    text = "${state.recentlyViewedCocktails.size}",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = AppColors.TextPrimary
@@ -340,7 +341,7 @@ fun OfflineModeScreen(
                 }
 
                 // Recently viewed cocktails
-                if (recentlyViewedCocktails.isEmpty()) {
+                if (state.recentlyViewedCocktails.isEmpty()) {
                     item {
                         Box(
                             modifier = Modifier
@@ -393,7 +394,7 @@ fun OfflineModeScreen(
                         }
                     }
                 } else {
-                    items(recentlyViewedCocktails) { cocktail ->
+                    items(state.recentlyViewedCocktails) { cocktail ->
                         CocktailItem(
                             cocktail = cocktail,
                             onClick = { onCocktailClick(cocktail) },
