@@ -25,24 +25,6 @@ class SharedThemeViewModel : SharedViewModel() {
     private val _uiState = MutableStateFlow(ThemeUiState())
     val uiState: StateFlow<ThemeUiState> = _uiState.asStateFlow()
 
-    // Derived StateFlows for backward compatibility
-    val isDarkMode: StateFlow<Boolean> = _uiState
-        .map { it.isDarkMode }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val themeMode: StateFlow<ThemeMode> = _uiState
-        .map { it.themeMode }.stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.SYSTEM)
-    val isSystemTheme: StateFlow<Boolean> = _uiState
-        .map { it.isSystemTheme }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
-    val accentColor: StateFlow<String> = _uiState
-        .map { it.accentColor }.stateIn(viewModelScope, SharingStarted.Eagerly, "blue")
-    val fontSize: StateFlow<String> = _uiState
-        .map { it.fontSize }.stateIn(viewModelScope, SharingStarted.Eagerly, "medium")
-    val isHighContrast: StateFlow<Boolean> = _uiState
-        .map { it.isHighContrast }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val isReducedMotion: StateFlow<Boolean> = _uiState
-        .map { it.isReducedMotion }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val userPreferences: StateFlow<UserPreferences> = _uiState
-        .map { it.userPreferences }.stateIn(viewModelScope, SharingStarted.Eagerly, UserPreferences())
-
     val currentThemeName: String
         get() = getThemeModeDisplayName(themeModeToString(_uiState.value.themeMode))
     val availableThemes: List<String>

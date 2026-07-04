@@ -25,12 +25,6 @@ class SharedFavoritesViewModel : SharedViewModel() {
     private val _uiState = MutableStateFlow(FavoritesUiState())
     val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
 
-    // Derived StateFlows for backward compatibility
-    val favorites: StateFlow<List<Cocktail>> = _uiState
-        .map { it.favorites }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    val favoriteCount: StateFlow<Int> = _uiState
-        .map { it.favoriteCount }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
-
     val isEmpty: Boolean
         get() = _uiState.value.favorites.isEmpty()
     val hasItems: Boolean

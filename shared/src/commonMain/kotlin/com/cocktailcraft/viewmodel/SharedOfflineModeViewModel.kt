@@ -23,18 +23,6 @@ class SharedOfflineModeViewModel : SharedViewModel() {
     private val _uiState = MutableStateFlow(OfflineUiState())
     val uiState: StateFlow<OfflineUiState> = _uiState.asStateFlow()
 
-    // Derived StateFlows for backward compatibility
-    val isOfflineModeEnabled: StateFlow<Boolean> = _uiState
-        .map { it.isOfflineModeEnabled }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val isNetworkAvailable: StateFlow<Boolean> = _uiState
-        .map { it.isNetworkAvailable }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
-    val recentlyViewedCocktails: StateFlow<List<Cocktail>> = _uiState
-        .map { it.recentlyViewedCocktails }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    val cacheSize: StateFlow<Int> = _uiState
-        .map { it.cacheSize }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
-    val lastSyncTime: StateFlow<String?> = _uiState
-        .map { it.lastSyncTime }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-
     val hasRecentlyViewed: Boolean
         get() = _uiState.value.recentlyViewedCocktails.isNotEmpty()
     val isOnlineAndOfflineModeDisabled: Boolean

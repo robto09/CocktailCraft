@@ -23,20 +23,6 @@ class SharedProfileViewModel : SharedViewModel() {
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    // Derived StateFlows for backward compatibility
-    val user: StateFlow<User?> = _uiState
-        .map { it.user }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-    val isLoggedIn: StateFlow<Boolean> = _uiState
-        .map { it.isLoggedIn }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val authStatus: StateFlow<String> = _uiState
-        .map { it.authStatus }.stateIn(viewModelScope, SharingStarted.Eagerly, "Unknown")
-    val isAuthenticating: StateFlow<Boolean> = _uiState
-        .map { it.isAuthenticating }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-    val authError: StateFlow<String?> = _uiState
-        .map { it.authError }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-    val userPreferences: StateFlow<UserPreferences> = _uiState
-        .map { it.preferences }.stateIn(viewModelScope, SharingStarted.Eagerly, UserPreferences())
-
     val hasUser: Boolean
         get() = _uiState.value.user != null
     val isGuest: Boolean
