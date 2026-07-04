@@ -295,9 +295,7 @@ struct HomeViewSKIE: View {
 
         .navigationBarTitleDisplayMode(.large)
         .navigationDestination(for: String.self) { cocktailId in
-            // CartViewModelSKIE wraps a Koin single, so a fresh wrapper here
-            // sees the same cart state as ContentView's instance.
-            CocktailDetailView(cocktailId: cocktailId, cartViewModel: CartViewModelSKIE())
+            CocktailDetailView(cocktailId: cocktailId)
         }
         .sheet(isPresented: $showingFilters) {
             FilterViewSKIE(viewModel: viewModel)

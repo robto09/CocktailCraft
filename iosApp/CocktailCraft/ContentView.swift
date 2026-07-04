@@ -20,7 +20,7 @@ struct ContentView: View {
 
                 // Cart Tab
                 NavigationStack {
-                    CartView(cartViewModel: cartViewModel, selectedTab: $selectedTab)
+                    CartView(selectedTab: $selectedTab)
                 }
                 .tabItem {
                     Label("Cart", systemImage: "cart.fill")
@@ -30,7 +30,7 @@ struct ContentView: View {
 
                 // Favorites Tab
                 NavigationStack {
-                    FavoritesView(cartViewModel: cartViewModel)
+                    FavoritesView()
                 }
                 .tabItem {
                     Label("Favorites", systemImage: "heart.fill")
@@ -63,6 +63,7 @@ struct ContentView: View {
             }
         }
         .background(AppColors.background(isDarkMode: themeViewModel.state.isDarkMode))
+        .environment(cartViewModel)
         .environment(\.isDarkMode, themeViewModel.state.isDarkMode)
         .preferredColorScheme(themeViewModel.state.isSystemTheme ? nil : (themeViewModel.state.isDarkMode ? .dark : .light))
     }

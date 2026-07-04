@@ -1,18 +1,12 @@
 import SwiftUI
 import shared
-import Observation
 
 /**
  * iOS ViewModel wrapper for SharedProfileViewModel using pure SKIE integration.
- * Mirrors the consolidated uiState as Observation-tracked state.
+ * State/error mirroring and observation-task lifecycle live in
+ * SharedViewModelWrapper.
  */
-@MainActor
-@Observable
-class ProfileViewModelSKIE {
-    // Consolidated UI state from the shared ViewModel
-    private(set) var state: ProfileUiState
-    // The single error channel from the shared ViewModel base class
-    var error: ErrorHandler.UserFriendlyError? = nil
+final class ProfileViewModelSKIE: SharedViewModelWrapper<ProfileUiState> {
 
     // Computed properties
     var isGuest: Bool {
@@ -38,46 +32,14 @@ class ProfileViewModelSKIE {
     // Shared ViewModel instance
     private let sharedViewModel: SharedProfileViewModel
 
-    // Tasks for async observation
-    @ObservationIgnored private var observationTasks: [Task<Void, Never>] = []
-
     init() {
-        // Get shared ViewModel from Koin
-        self.sharedViewModel = getSharedKoinHelper().getSharedProfileViewModel()
-
-        // Seed synchronously so the first frame renders the current state
-        self.state = sharedViewModel.uiState.value
-
-        // Start observing StateFlows using SKIE async/await
-        startObserving()
+        let viewModel = getSharedKoinHelper().getSharedProfileViewModel()
+        self.sharedViewModel = viewModel
+        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
     }
 
-    deinit {
-        // Cancel all observation tasks
-        observationTasks.forEach { $0.cancel() }
-        // Note: Do NOT call onCleared() — this wraps a Koin `single` whose
-        // coroutine scope must survive the lifetime of any one wrapper.
-        // (Factory-scoped wrappers — CocktailDetail, Review — do call it.)
-    }
-
-    // MARK: - SKIE StateFlow Observation
-
-    private func startObserving() {
-        // These Tasks inherit @MainActor, so assignments land on the main thread.
-        observationTasks.append(Task { [weak self] in
-            guard let flow = self?.sharedViewModel.uiState else { return }
-            for await state in flow {
-                self?.state = state
-            }
-        })
-
-        observationTasks.append(Task { [weak self] in
-            guard let flow = self?.sharedViewModel.error else { return }
-            for await errorValue in flow {
-                self?.error = errorValue
-            }
-        })
-    }
+    // No deinit: the base class cancels observation. Wraps a Koin `single`
+    // whose coroutine scope must survive any one wrapper — never onCleared().
 
     // MARK: - Public Methods (using SKIE async/await)
 
