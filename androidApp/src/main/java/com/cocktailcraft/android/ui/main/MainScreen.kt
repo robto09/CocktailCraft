@@ -53,7 +53,7 @@ import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import com.cocktailcraft.viewmodel.SharedOfflineModeViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.viewmodel.SharedReviewViewModel
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -89,7 +89,7 @@ fun MainScreen() {
     val isDetailScreen = currentRoute?.startsWith("cocktail_detail") == true
 
     // Get offline mode state
-    val offlineState by sharedOfflineModeViewModel.uiState.collectAsState()
+    val offlineState by sharedOfflineModeViewModel.uiState.collectAsStateWithLifecycle()
     val isOfflineModeEnabled = offlineState.isOfflineModeEnabled
     val isNetworkAvailable = offlineState.isNetworkAvailable
 

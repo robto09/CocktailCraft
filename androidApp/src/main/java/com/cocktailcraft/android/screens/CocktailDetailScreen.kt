@@ -63,7 +63,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -138,9 +138,9 @@ fun CocktailDetailScreen(
     }
 
     // Properly collect reviews as a state
-    val reviewState by reviewViewModel.uiState.collectAsState()
+    val reviewState by reviewViewModel.uiState.collectAsStateWithLifecycle()
     val reviews = reviewState.currentCocktailReviews
-    val favoritesState by favoritesViewModel.uiState.collectAsState()
+    val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
     val favorites = favoritesState.favorites
     val isFavorite = cocktail?.let { c -> favorites.any { fav -> fav.id == c.id } } ?: false
 
@@ -148,7 +148,7 @@ fun CocktailDetailScreen(
     val hapticHandler = rememberHapticHandler()
 
     // Check if the cocktail is in cart
-    val cartState by cartViewModel.uiState.collectAsState()
+    val cartState by cartViewModel.uiState.collectAsStateWithLifecycle()
     val cartItems = cartState.cartItems
     val isInCart = cocktail?.let { c -> cartItems.any { it.cocktail.id == c.id } } ?: false
 
