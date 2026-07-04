@@ -1,32 +1,33 @@
 import Foundation
-import Network
+import shared
 import Observation
 
+/// Observation bridge over the shared KMP NetworkMonitor.
+///
+/// Connectivity has a single source of truth in shared code (an
+/// NWPathMonitor lives in shared's iosMain implementation and feeds the
+/// same StateFlow the shared ViewModels consume); this class only mirrors
+/// that flow into an Observation-tracked property for SwiftUI.
 @MainActor
 @Observable
-class NetworkMonitor {
+final class NetworkMonitor {
     static let shared = NetworkMonitor()
 
-    private let monitor = NWPathMonitor()
-    private let queue = DispatchQueue(label: "NetworkMonitor")
+    private(set) var isConnected = true
 
-    var isConnected = true
-    var connectionType = NWInterface.InterfaceType.other
-    
+    @ObservationIgnored private var observationTask: Task<Void, Never>?
+
     private init() {
-        monitor.pathUpdateHandler = { [weak self] path in
-            DispatchQueue.main.async {
-                self?.isConnected = path.status == .satisfied
-                self?.connectionType = path.availableInterfaces.filter { 
-                    path.usesInterfaceType($0.type) 
-                }.first?.type ?? .other
+        let monitor = getSharedKoinHelper().getNetworkMonitor()
+        isConnected = monitor.isOnline.value.boolValue
+        observationTask = Task { [weak self] in
+            for await online in monitor.isOnline {
+                self?.isConnected = online.boolValue
             }
         }
-        
-        monitor.start(queue: queue)
     }
-    
+
     deinit {
-        monitor.cancel()
+        observationTask?.cancel()
     }
 }

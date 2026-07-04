@@ -1,6 +1,7 @@
 package com.cocktailcraft
 
 import com.cocktailcraft.domain.repository.AuthRepository
+import com.cocktailcraft.domain.service.BackgroundSyncService
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailRepository
 import com.cocktailcraft.domain.repository.OrderRepository
@@ -13,6 +14,7 @@ import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.viewmodel.SharedProfileViewModel
 import com.cocktailcraft.viewmodel.SharedThemeViewModel
 import com.cocktailcraft.viewmodel.SharedReviewViewModel
+import com.cocktailcraft.util.NetworkMonitor
 import org.koin.core.KoinApplication
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
@@ -29,6 +31,10 @@ class KoinHelper : KoinComponent {
     fun getCartRepository(): CartRepository = get()
 
     fun getOrderRepository(): OrderRepository = get()
+
+    fun getNetworkMonitor(): NetworkMonitor = get()
+
+    fun getBackgroundSyncService(): BackgroundSyncService = get()
 
     // Shared ViewModels
 

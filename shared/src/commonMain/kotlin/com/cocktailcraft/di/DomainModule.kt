@@ -49,4 +49,7 @@ val domainModule = module {
     single { com.cocktailcraft.viewmodel.SharedProfileViewModel() }
     single { com.cocktailcraft.viewmodel.SharedOfflineModeViewModel() }
     single { com.cocktailcraft.viewmodel.SharedThemeViewModel() }
+
+    // Cross-platform sync orchestration (schedulers are platform-side)
+    single { com.cocktailcraft.domain.service.BackgroundSyncService(catalogRepository = get(), networkMonitor = get()) }
 }
