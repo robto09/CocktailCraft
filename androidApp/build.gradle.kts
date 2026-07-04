@@ -86,8 +86,9 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.appcompat)
 
-    // Compose Navigation
+    // Compose Navigation (type-safe routes need the serialization runtime)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.kotlinx.serialization.json)
 
     // ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.ktx)

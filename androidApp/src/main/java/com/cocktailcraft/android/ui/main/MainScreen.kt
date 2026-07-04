@@ -29,14 +29,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import androidx.navigation.toRoute
+import com.cocktailcraft.android.navigation.CartRoute
+import com.cocktailcraft.android.navigation.CocktailDetailRoute
+import com.cocktailcraft.android.navigation.FavoritesRoute
+import com.cocktailcraft.android.navigation.HomeRoute
 import com.cocktailcraft.android.navigation.NavigationManager
+import com.cocktailcraft.android.navigation.OfflineModeRoute
+import com.cocktailcraft.android.navigation.OrderListRoute
+import com.cocktailcraft.android.navigation.ProfileRoute
 import com.cocktailcraft.android.navigation.Screen
 import com.cocktailcraft.android.screens.CartScreen
 import com.cocktailcraft.android.screens.CocktailDetailScreen
@@ -83,10 +90,11 @@ fun MainScreen() {
     val sharedOfflineModeViewModel: SharedOfflineModeViewModel = koinInject()
     val scope = rememberCoroutineScope()
 
-    // Get the current route for conditional rendering
+    // Current destination for conditional rendering (type-safe checks)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-    val isDetailScreen = currentRoute?.startsWith("cocktail_detail") == true
+    val currentDestination = navBackStackEntry?.destination
+    val isDetailScreen = currentDestination?.hasRoute<CocktailDetailRoute>() == true
+    val isOfflineModeScreen = currentDestination?.hasRoute<OfflineModeRoute>() == true
 
     // Get offline mode state
     val offlineState by sharedOfflineModeViewModel.uiState.collectAsStateWithLifecycle()
@@ -99,7 +107,7 @@ fun MainScreen() {
             if (!isDetailScreen) {
                 Column {
                     // Show offline mode indicator if offline and not already on the offline mode screen
-                    if (currentRoute != Screen.OfflineMode.route) {
+                    if (!isOfflineModeScreen) {
                         OfflineModeIndicator(
                             isOffline = !isNetworkAvailable || isOfflineModeEnabled,
                             isOfflineModeEnabled = isOfflineModeEnabled,
@@ -114,13 +122,13 @@ fun MainScreen() {
                         title = {
                             // Normal title without search functionality
                             Text(
-                                text = when (currentRoute) {
-                                    Screen.Home.route -> "My Bar"
-                                    Screen.Cart.route -> "Cart"
-                                    Screen.Favorites.route -> "Favorites"
-                                    Screen.OrderList.route -> "Recipes"
-                                    Screen.Profile.route -> "Profile"
-                                    Screen.OfflineMode.route -> "Offline Mode"
+                                text = when {
+                                    currentDestination?.hasRoute<HomeRoute>() == true -> "My Bar"
+                                    currentDestination?.hasRoute<CartRoute>() == true -> "Cart"
+                                    currentDestination?.hasRoute<FavoritesRoute>() == true -> "Favorites"
+                                    currentDestination?.hasRoute<OrderListRoute>() == true -> "Recipes"
+                                    currentDestination?.hasRoute<ProfileRoute>() == true -> "Profile"
+                                    isOfflineModeScreen -> "Offline Mode"
                                     else -> "Cocktail Bar"
                                 },
                                 color = Color.White,
@@ -130,7 +138,7 @@ fun MainScreen() {
                         },
                         navigationIcon = {
                             // Show back button only for the OfflineMode screen
-                            if (currentRoute == Screen.OfflineMode.route) {
+                            if (isOfflineModeScreen) {
                                 IconButton(onClick = { navigationManager.navigateBack() }) {
                                     Icon(
                                         imageVector = Icons.Filled.ArrowBack,
@@ -161,15 +169,12 @@ fun MainScreen() {
         },
         bottomBar = {
             // Only show the bottom navigation bar if we're NOT on the detail screen or offline mode screen
-            val currentScreenRoute = navController.currentDestination?.route
-            if (!isDetailScreen && currentScreenRoute != Screen.OfflineMode.route) {
+            if (!isDetailScreen && !isOfflineModeScreen) {
                 NavigationBar(
                     containerColor = AppColors.Surface,
                     contentColor = AppColors.Primary,
                     tonalElevation = 8.dp
                 ) {
-                    val currentDestination = navBackStackEntry?.destination
-
                     items.forEach { screen ->
                         NavigationBarItem(
                             icon = {
@@ -178,7 +183,7 @@ fun MainScreen() {
                             label = {
                                 Text(screen.title, fontSize = 12.sp)
                             },
-                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                            selected = currentDestination?.hierarchy?.any { it.hasRoute(screen.route::class) } == true,
                             onClick = {
                                 navigationManager.navigateToBottomNavDestination(screen)
                             },
@@ -198,10 +203,10 @@ fun MainScreen() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Home.route,
+            startDestination = HomeRoute,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Home.route) {
+            composable<HomeRoute> {
                 HomeScreen(
                     viewModel = sharedHomeViewModel,
                     favoritesViewModel = sharedFavoritesViewModel,
@@ -216,7 +221,7 @@ fun MainScreen() {
                     }
                 )
             }
-            composable(Screen.Cart.route) {
+            composable<CartRoute> {
                 CartScreen(
                     viewModel = sharedCartViewModel,
                     onStartShopping = {
@@ -227,12 +232,12 @@ fun MainScreen() {
                     favoritesViewModel = sharedFavoritesViewModel
                 )
             }
-            composable(Screen.Profile.route) {
+            composable<ProfileRoute> {
                 ProfileScreen(
                     navigationManager = navigationManager
                 )
             }
-            composable(Screen.Favorites.route) {
+            composable<FavoritesRoute> {
                 FavoritesScreen(
                     cartViewModel = sharedCartViewModel,
                     favoritesViewModel = sharedFavoritesViewModel,
@@ -246,13 +251,13 @@ fun MainScreen() {
                     }
                 )
             }
-            composable(Screen.OrderList.route) {
+            composable<OrderListRoute> {
                 OrderListScreen(
                     orderViewModel = sharedOrderViewModel,
                     navigationManager = navigationManager
                 )
             }
-            composable(Screen.OfflineMode.route) {
+            composable<OfflineModeRoute> {
                 OfflineModeScreen(
                     viewModel = sharedOfflineModeViewModel,
                     onBackClick = { navigationManager.navigateBack() },
@@ -262,13 +267,10 @@ fun MainScreen() {
                 )
             }
 
-            composable(
-                route = Screen.CocktailDetail.route,
-                arguments = listOf(navArgument("cocktailId") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val cocktailId = backStackEntry.arguments?.getString("cocktailId") ?: ""
+            composable<CocktailDetailRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<CocktailDetailRoute>()
                 CocktailDetailScreen(
-                    cocktailId = cocktailId,
+                    cocktailId = route.cocktailId,
                     homeViewModel = sharedHomeViewModel,
                     cartViewModel = sharedCartViewModel,
                     reviewViewModel = sharedReviewViewModel,
