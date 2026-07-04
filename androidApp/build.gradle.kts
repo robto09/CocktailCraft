@@ -26,7 +26,15 @@ android {
     }
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            // No release keystore exists in this repo; debug-sign release
+            // builds so they stay locally installable for verification.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
