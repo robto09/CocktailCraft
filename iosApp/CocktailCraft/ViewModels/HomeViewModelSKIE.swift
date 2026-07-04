@@ -2,15 +2,6 @@ import SwiftUI
 import shared
 import Observation
 
-enum SortOption: CaseIterable {
-    case nameAsc
-    case nameDesc
-    case priceAsc
-    case priceDesc
-    case ratingDesc
-    case popularityDesc
-}
-
 /**
  * iOS ViewModel wrapper for SharedHomeViewModel using pure SKIE integration.
  * Mirrors the consolidated uiState as Observation-tracked state; views read
@@ -23,11 +14,6 @@ class HomeViewModelSKIE {
     private(set) var state: HomeUiState
     // The single error channel from the shared ViewModel base class
     var error: ErrorHandler.UserFriendlyError? = nil
-
-    // Swift-local UI state (never sent to the shared ViewModel wholesale;
-    // sortOption backs a SwiftUI binding so it must stay settable)
-    var sortOption: SortOption = .nameAsc
-    var selectedIngredient: String? = nil
 
     // Shared ViewModel instances
     private let sharedViewModel: SharedHomeViewModel
@@ -197,36 +183,5 @@ class HomeViewModelSKIE {
         // Simulate refresh with delay
         try? await Task.sleep(nanoseconds: 1_000_000_000)
         await loadCocktails()
-    }
-
-    /// Set the category filter (nil clears it) and re-apply filters.
-    /// Category selection lives in shared state, so writes go through here.
-    func setCategory(_ category: String?) {
-        Task {
-            await applyFiltersAsync(category: category, ingredient: selectedIngredient)
-        }
-    }
-
-    /// Apply filters by delegating to the shared ViewModel.
-    /// All filtering/sorting logic lives in the shared Kotlin use cases.
-    func applyFilters() {
-        Task {
-            await applyFiltersAsync(category: state.selectedCategory, ingredient: selectedIngredient)
-        }
-    }
-
-    /// Apply filters with specific category/ingredient via shared ViewModel.
-    func applyFilters(category: String? = nil, ingredient: String? = nil) {
-        Task {
-            await applyFiltersAsync(category: category ?? state.selectedCategory, ingredient: ingredient ?? selectedIngredient)
-        }
-    }
-
-    private func applyFiltersAsync(category: String?, ingredient: String?) async {
-        do {
-            try await sharedViewModel.applyFilters(category: category, ingredient: ingredient)
-        } catch {
-            print("HomeViewModelSKIE - Error applying filters: \(error)")
-        }
     }
 }

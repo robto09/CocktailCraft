@@ -9,7 +9,6 @@ struct ProfileView: View {
     @State private var showingSignUp = false
     @State private var showingLogoutAlert = false
     @State private var showingOfflineMode = false
-    @State private var refreshID = UUID()
     @Environment(\.dismiss) private var dismiss
     @Environment(\.isDarkMode) var isDarkMode
 
@@ -45,13 +44,13 @@ struct ProfileView: View {
             .padding(.horizontal)
             .padding(.top, 8)
         }
-        .id(refreshID) // Force refresh when tab changes
         .background(AppColors.background(isDarkMode: isDarkMode))
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.large)
         .onAppear {
+            // Observation tracking keeps the UI current; the old
+            // .id(UUID())-on-appear force-rebuild hack is gone.
             viewModel.refresh()
-            refreshID = UUID() // Generate new ID to force refresh
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
@@ -340,6 +339,10 @@ struct SettingsRow: View {
                     .font(.caption)
             }
             .padding(.vertical, 12)
+            // Without an explicit content shape, PlainButtonStyle only
+            // hit-tests opaque pixels — the stretch around the Spacer was
+            // a tap dead zone.
+            .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
     }

@@ -165,35 +165,3 @@ private let sharedKoinHelperInstance = shared.KoinHelper()
 func getSharedKoinHelper() -> KoinHelper {
     return sharedKoinHelperInstance
 }
-
-// MARK: - Temporary Content View
-struct TemporaryContentView: View {
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                Image(systemName: "wineglass")
-                    .font(.system(size: 60))
-                    .foregroundColor(.blue)
-
-                Text("CocktailCraft")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-
-                Text("iOS App")
-                    .font(.title2)
-                    .foregroundColor(.secondary)
-
-                Text("Building shared framework...")
-                    .font(.body)
-                    .foregroundColor(.orange)
-                    .padding()
-                    .background(Color.orange.opacity(0.1))
-                    .cornerRadius(8)
-
-                Spacer()
-            }
-            .padding()
-            .navigationTitle("CocktailCraft")
-        }
-    }
-}

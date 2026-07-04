@@ -4,7 +4,6 @@ import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailRepository
 import com.cocktailcraft.domain.repository.OrderRepository
-import com.cocktailcraft.viewmodel.SharedCocktailListViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import com.cocktailcraft.viewmodel.SharedCartViewModel
@@ -32,7 +31,6 @@ class KoinHelper : KoinComponent {
     fun getOrderRepository(): OrderRepository = get()
 
     // Shared ViewModels
-    fun getSharedCocktailListViewModel(): SharedCocktailListViewModel = get()
 
     fun getSharedFavoritesViewModel(): SharedFavoritesViewModel = get()
 

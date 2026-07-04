@@ -38,7 +38,6 @@ val domainModule = module {
     factory { PlaceOrderUseCase(orderRepository = get()) }
 
     // Screen-scoped ViewModels — factory (new instance per screen)
-    factory { com.cocktailcraft.viewmodel.SharedCocktailListViewModel() }
     factory { com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel() }
     factory { com.cocktailcraft.viewmodel.SharedReviewViewModel() }
 

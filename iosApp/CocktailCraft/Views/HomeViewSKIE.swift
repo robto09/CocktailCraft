@@ -14,14 +14,14 @@ struct HomeViewSKIE: View {
     @State private var activeFilters: [String] = []
     @State private var showingToast = false
     @State private var toastMessage = ""
+    @Environment(\.isDarkMode) private var isDarkMode
 
-    
-    // Android-style colors
-    private let primaryColor = Color(red: 0.92, green: 0.42, blue: 0.26) // #EB6A43
-    private let secondaryColor = Color(red: 1.0, green: 0.78, blue: 0.30) // #FFC84D
-    private let backgroundColor = Color(red: 0.98, green: 0.98, blue: 0.98) // #FAFAFA
-    private let surfaceColor = Color(UIColor.systemBackground)
-    private let textSecondary = Color.secondary
+    // Theme-derived colors (the old hardcoded hex values bypassed AppTheme,
+    // so Home ignored dark mode)
+    private var primaryColor: Color { AppColors.primary(isDarkMode: isDarkMode) }
+    private var backgroundColor: Color { AppColors.background(isDarkMode: isDarkMode) }
+    private var surfaceColor: Color { AppColors.surface(isDarkMode: isDarkMode) }
+    private var textSecondary: Color { AppColors.textSecondary(isDarkMode: isDarkMode) }
     
     var body: some View {
         VStack(spacing: 0) {
