@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.baselineprofile)
 }
 
 android {
@@ -69,6 +70,9 @@ android {
 
 dependencies {
     implementation(project(":shared"))
+    // Installs the generated baseline profile for AOT compilation
+    implementation(libs.androidx.profileinstaller)
+    "baselineProfile"(project(":baselineprofile"))
 
     // Compose BOM
     val composeBom = platform(libs.compose.bom)
