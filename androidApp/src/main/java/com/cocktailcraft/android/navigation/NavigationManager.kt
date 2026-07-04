@@ -14,7 +14,7 @@ class NavigationManager(private val navController: NavController) {
      * Navigate to the cocktail detail screen
      */
     fun navigateToCocktailDetail(cocktailId: String) {
-        navController.navigate(Screen.CocktailDetail.createRoute(cocktailId))
+        navController.navigate(CocktailDetailRoute(cocktailId))
     }
 
     /**
@@ -28,14 +28,14 @@ class NavigationManager(private val navController: NavController) {
      * Navigate to the cart screen
      */
     fun navigateToCart() {
-        navController.navigate(Screen.Cart.route)
+        navController.navigate(CartRoute)
     }
 
     /**
      * Navigate to the home screen
      */
     fun navigateToHome() {
-        navController.navigate(Screen.Home.route) {
+        navController.navigate(HomeRoute) {
             popUpTo(navController.graph.findStartDestination().id)
             launchSingleTop = true
         }
@@ -45,7 +45,7 @@ class NavigationManager(private val navController: NavController) {
      * Navigate to the favorites screen
      */
     fun navigateToFavorites() {
-        navController.navigate(Screen.Favorites.route) {
+        navController.navigate(FavoritesRoute) {
             popUpTo(navController.graph.findStartDestination().id)
             launchSingleTop = true
         }
@@ -55,7 +55,7 @@ class NavigationManager(private val navController: NavController) {
      * Navigate to the profile screen
      */
     fun navigateToProfile() {
-        navController.navigate(Screen.Profile.route) {
+        navController.navigate(ProfileRoute) {
             popUpTo(navController.graph.findStartDestination().id)
             launchSingleTop = true
         }
@@ -65,7 +65,7 @@ class NavigationManager(private val navController: NavController) {
      * Navigate to the order list screen
      */
     fun navigateToOrderList() {
-        navController.navigate(Screen.OrderList.route) {
+        navController.navigate(OrderListRoute) {
             popUpTo(navController.graph.findStartDestination().id)
             launchSingleTop = true
         }
@@ -82,14 +82,7 @@ class NavigationManager(private val navController: NavController) {
      * Navigate to the offline mode screen
      */
     fun navigateToOfflineMode() {
-        navController.navigate(Screen.OfflineMode.route)
-    }
-
-    /**
-     * Navigate to the reviews screen for a specific cocktail
-     */
-    fun navigateToReviews(cocktailId: String) {
-        navController.navigate(Screen.Reviews.createRoute(cocktailId))
+        navController.navigate(OfflineModeRoute)
     }
 
     /**
