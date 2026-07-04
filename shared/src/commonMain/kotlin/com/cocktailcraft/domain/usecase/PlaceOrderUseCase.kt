@@ -10,6 +10,7 @@ import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrThrow
 import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 
 internal class PlaceOrderUseCase(
@@ -21,7 +22,7 @@ internal class PlaceOrderUseCase(
             val orderId = "ORD-${Clock.System.now().toEpochMilliseconds()}"
             val currentInstant = Clock.System.now()
             val currentDate = currentInstant.toLocalDateTime(TimeZone.currentSystemDefault())
-                .let { "${it.year}-${it.monthNumber.toString().padStart(2, '0')}-${it.dayOfMonth.toString().padStart(2, '0')}" }
+                .let { "${it.year}-${it.month.number.toString().padStart(2, '0')}-${it.day.toString().padStart(2, '0')}" }
 
             Logger.d { "PlaceOrderUseCase: Generated order ID: $orderId" }
 

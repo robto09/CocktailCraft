@@ -4,6 +4,7 @@ import kotlin.native.HiddenFromObjC
 import kotlinx.serialization.Serializable
 import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 
 @Serializable
@@ -14,7 +15,7 @@ data class Review(
     val rating: Float,
     val comment: String,
     val date: String = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        .let { "${it.year}-${it.monthNumber.toString().padStart(2, '0')}-${it.dayOfMonth.toString().padStart(2, '0')}" }
+        .let { "${it.year}-${it.month.number.toString().padStart(2, '0')}-${it.day.toString().padStart(2, '0')}" }
 ) {
     // Hidden so the generated serializer does not drag the
     // kotlinx-serialization type tree into the Obj-C header.
