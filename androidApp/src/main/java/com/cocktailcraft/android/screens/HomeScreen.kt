@@ -60,6 +60,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -75,8 +76,10 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import kotlin.math.abs
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.cocktailcraft.android.navigation.Screen
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.android.ui.components.AdvancedSearchPanel
 import com.cocktailcraft.android.ui.components.AnimatedCocktailItem
 import com.cocktailcraft.android.ui.components.AnimatedCocktailList
@@ -99,32 +102,35 @@ import com.cocktailcraft.android.util.ErrorUtils
 import com.cocktailcraft.android.util.ListOptimizations.OnBottomReached
 import com.cocktailcraft.android.util.ListOptimizations.OnScrollPastThreshold
 import com.cocktailcraft.android.util.ListOptimizations.itemKey
-import com.cocktailcraft.android.viewmodel.CartViewModelSKIE
-import com.cocktailcraft.android.viewmodel.FavoritesViewModelSKIE
-import com.cocktailcraft.android.viewmodel.HomeViewModelSKIE
+import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
+import com.cocktailcraft.viewmodel.SharedHomeViewModel
+import org.koin.compose.koinInject
 import android.util.Log
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModelSKIE,
-    favoritesViewModel: FavoritesViewModelSKIE,
+    viewModel: SharedHomeViewModel,
+    favoritesViewModel: SharedFavoritesViewModel,
     onAddToCart: (Cocktail) -> Unit,
     onCocktailClick: (Cocktail) -> Unit
 ) {
-    val cocktails by viewModel.cocktails.collectAsState()
+    val state by viewModel.uiState.collectAsState()
+    val favoritesState by favoritesViewModel.uiState.collectAsState()
+    val scope = rememberCoroutineScope()
+    val cocktails = state.cocktails
     val isLoading by viewModel.isLoading.collectAsState()
-    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
-    val hasMoreData by viewModel.hasMoreData.collectAsState()
-    val error by viewModel.errorState.collectAsState()
+    val isLoadingMore = state.isLoadingMore
+    val hasMoreData = state.hasMoreData
+    val error by viewModel.error.collectAsState()
     val errorMessage = error?.message ?: ""
-    val isSearchActive by viewModel.isSearchActive.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val favorites by favoritesViewModel.favorites.collectAsState()
-    val isOfflineMode by viewModel.isOfflineMode.collectAsState()
-    val isNetworkAvailable by viewModel.isNetworkAvailable.collectAsState()
-    val searchFilters by viewModel.searchFilters.collectAsState()
-    val isAdvancedSearchActive by viewModel.isAdvancedSearchActive.collectAsState()
+    val isSearchActive = state.isSearchActive
+    val searchQuery = state.searchQuery
+    val favorites = favoritesState.favorites
+    val isOfflineMode = state.isOfflineMode
+    val isNetworkAvailable = state.isNetworkAvailable
+    val searchFilters = state.searchFilters
+    val isAdvancedSearchActive = state.isAdvancedSearchActive
 
     // State for advanced search panel
     var showAdvancedSearch by remember { mutableStateOf(false) }
@@ -171,7 +177,7 @@ fun HomeScreen(
     LaunchedEffect(cocktails) {
         Log.d("HomeScreen", "LaunchedEffect(cocktails): count=${cocktails.size}, error='$errorMessage'")
         if (cocktails.isNotEmpty() && errorMessage.isNotBlank()) {
-            viewModel.clearErrorState()
+            viewModel.clearError()
         }
     }
 
@@ -188,7 +194,7 @@ fun HomeScreen(
             searchQuery = searchQuery,
             isAdvancedSearchActive = isAdvancedSearchActive,
             hasActiveFilters = searchFilters.hasActiveFilters(),
-            onSearchQueryChange = { viewModel.searchCocktails(it) },
+            onSearchQueryChange = { scope.launch { viewModel.searchCocktails(it) } },
             onClearSearch = { viewModel.toggleSearchMode(false) },
             onToggleAdvancedSearch = { viewModel.toggleAdvancedSearchMode(!isAdvancedSearchActive) },
             onShowAdvancedSearchDialog = { showAdvancedSearch = true }
@@ -212,7 +218,7 @@ fun HomeScreen(
                     "preparationTime" -> searchFilters.copy(preparationTime = null)
                     else -> searchFilters
                 }
-                viewModel.updateSearchFilters(updatedFilters)
+                scope.launch { viewModel.applyFilters(updatedFilters.category, updatedFilters.ingredient) }
             },
             onClearAllFilters = {
                 viewModel.clearSearchFilters()
@@ -222,7 +228,8 @@ fun HomeScreen(
         // Advanced search panel
 
         // Load filter options using the utility
-        val filterOptions = FilterOptionsLoader.rememberFilterOptions(repository = viewModel.catalogRepository)
+        val catalogRepository = koinInject<CocktailCatalogRepository>()
+        val filterOptions = FilterOptionsLoader.rememberFilterOptions(repository = catalogRepository)
         val categories = filterOptions.categories
         val ingredients = filterOptions.ingredients
         val glasses = filterOptions.glasses
@@ -236,7 +243,7 @@ fun HomeScreen(
                 ingredients = ingredients,
                 glasses = glasses,
                 onApplyFilters = { filters ->
-                    viewModel.updateSearchFilters(filters)
+                    scope.launch { viewModel.applyFilters(filters.category, filters.ingredient) }
                     showAdvancedSearch = false
                 },
                 onClearFilters = {
@@ -256,7 +263,7 @@ fun HomeScreen(
             ingredients = ingredients,
             glasses = glasses,
             onApplyFilters = { filters ->
-                viewModel.updateSearchFilters(filters)
+                scope.launch { viewModel.applyFilters(filters.category, filters.ingredient) }
             },
             onClearFilters = {
                 viewModel.clearSearchFilters()
@@ -323,10 +330,10 @@ fun HomeScreen(
                     onCocktailClick = onCocktailClick,
                     onAddToCart = onAddToCart,
                     onToggleFavorite = { cocktailToToggle ->
-                        favoritesViewModel.toggleFavorite(cocktailToToggle)
+                        scope.launch { favoritesViewModel.toggleFavorite(cocktailToToggle) }
                     },
                     onLoadMore = {
-                        viewModel.loadMoreCocktails()
+                        scope.launch { viewModel.loadMoreCocktails() }
                     }
                 )
             }

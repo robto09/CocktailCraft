@@ -11,10 +11,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cocktailcraft.android.ui.main.MainScreen
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.android.viewmodel.ThemeViewModelSKIE
+import com.cocktailcraft.viewmodel.SharedThemeViewModel
+import org.koin.compose.koinInject
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,10 +23,11 @@ class MainActivity : ComponentActivity() {
         // API levels get the same window behavior.
         enableEdgeToEdge()
         setContent {
-            // Get the ThemeViewModel to observe dark mode preference
-            val themeViewModel: ThemeViewModelSKIE = viewModel()
-            val isDarkMode by themeViewModel.isDarkMode.collectAsState()
-            val isSystemTheme by themeViewModel.isSystemTheme.collectAsState()
+            // Observe the shared theme state (single source of truth)
+            val themeViewModel: SharedThemeViewModel = koinInject()
+            val themeState by themeViewModel.uiState.collectAsState()
+            val isDarkMode = themeState.isDarkMode
+            val isSystemTheme = themeState.isSystemTheme
 
             // Get the current system dark mode state
             val isSystemInDarkTheme = isSystemInDarkTheme()

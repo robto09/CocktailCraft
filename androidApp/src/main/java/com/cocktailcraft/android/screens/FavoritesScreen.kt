@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.domain.model.Cocktail
@@ -21,19 +22,22 @@ import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.SectionHeader
 import com.cocktailcraft.android.ui.theme.AppColors
-import com.cocktailcraft.android.viewmodel.CartViewModelSKIE
-import com.cocktailcraft.android.viewmodel.FavoritesViewModelSKIE
+import com.cocktailcraft.viewmodel.SharedCartViewModel
+import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun FavoritesScreen(
-    cartViewModel: CartViewModelSKIE,
-    favoritesViewModel: FavoritesViewModelSKIE,
+    cartViewModel: SharedCartViewModel,
+    favoritesViewModel: SharedFavoritesViewModel,
     onBrowseProducts: () -> Unit,
     onAddToCart: (Cocktail) -> Unit
 ) {
-    val favorites by favoritesViewModel.favorites.collectAsState()
+    val state by favoritesViewModel.uiState.collectAsState()
+    val favorites = state.favorites
     val isLoading by favoritesViewModel.isLoading.collectAsState()
     val error by favoritesViewModel.error.collectAsState()
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -85,12 +89,12 @@ fun FavoritesScreen(
                         cocktail = cocktail,
                         onClick = { /* Navigate to detail */ },
                         onAddToCart = { _ ->
-                            cartViewModel.addToCart(cocktail)
+                            scope.launch { cartViewModel.addToCart(cocktail) }
                             onAddToCart(cocktail)
                         },
                         isFavorite = true,
                         onToggleFavorite = { _ ->
-                            favoritesViewModel.toggleFavorite(cocktail)
+                            scope.launch { favoritesViewModel.toggleFavorite(cocktail) }
                         }
                     )
                 }

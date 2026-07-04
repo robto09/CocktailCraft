@@ -49,6 +49,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,28 +63,33 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.AnimatedThemeToggleRow
 import com.cocktailcraft.android.ui.theme.AppColors
-import com.cocktailcraft.android.viewmodel.ProfileViewModelSKIE
-import com.cocktailcraft.android.viewmodel.ThemeViewModelSKIE
+import com.cocktailcraft.viewmodel.SharedProfileViewModel
+import com.cocktailcraft.viewmodel.SharedThemeViewModel
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 
 @Composable
 fun ProfileScreen(
     navigationManager: NavigationManager,
-    profileViewModel: ProfileViewModelSKIE = viewModel(),
-    themeViewModel: ThemeViewModelSKIE = viewModel()
+    profileViewModel: SharedProfileViewModel = koinInject(),
+    themeViewModel: SharedThemeViewModel = koinInject()
 ) {
+    val scope = rememberCoroutineScope()
+
     // Get user data from ViewModel
-    val user by profileViewModel.user.collectAsState()
-    val isLoggedIn by profileViewModel.isLoggedIn.collectAsState()
+    val profileState by profileViewModel.uiState.collectAsState()
+    val user = profileState.user
+    val isLoggedIn = profileState.isLoggedIn
     val isLoading by profileViewModel.isLoading.collectAsState()
     val error by profileViewModel.error.collectAsState()
 
     // Get theme data from ThemeViewModel
-    val isDarkMode by themeViewModel.isDarkMode.collectAsState()
-    val isSystemTheme by themeViewModel.isSystemTheme.collectAsState()
+    val themeState by themeViewModel.uiState.collectAsState()
+    val isDarkMode = themeState.isDarkMode
+    val isSystemTheme = themeState.isSystemTheme
 
     // Dialog states
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -99,7 +105,7 @@ fun ProfileScreen(
         SignInDialog(
             onDismiss = { showSignInDialog = false },
             onSignIn = { email, password ->
-                profileViewModel.signIn(email, password)
+                scope.launch { profileViewModel.signIn(email, password) }
                 showSignInDialog = false
             }
         )
@@ -110,7 +116,7 @@ fun ProfileScreen(
         SignUpDialog(
             onDismiss = { showSignUpDialog = false },
             onSignUp = { name, email, password ->
-                profileViewModel.signUp(name, email, password)
+                scope.launch { profileViewModel.signUp(name, email, password) }
                 showSignUpDialog = false
             }
         )
@@ -125,10 +131,13 @@ fun ProfileScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        profileViewModel.signOut()
                         showLogoutDialog = false
-                        // Navigate to Home screen after logout
-                        navigationManager.navigateToHome()
+                        // Navigate only after sign-out completes — leaving the
+                        // screen would cancel this composition-scoped coroutine.
+                        scope.launch {
+                            profileViewModel.signOut()
+                            navigationManager.navigateToHome()
+                        }
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AppColors.Primary
@@ -339,7 +348,7 @@ fun ProfileScreen(
                     subtitle = if (isSystemTheme) "On" else "Off",
                     icon = Icons.Default.DateRange,
                     isChecked = isSystemTheme,
-                    onToggle = { themeViewModel.setFollowSystemTheme(!isSystemTheme) },
+                    onToggle = { scope.launch { themeViewModel.setFollowSystemTheme(!isSystemTheme) } },
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -353,7 +362,7 @@ fun ProfileScreen(
                     icon = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
                     isChecked = isDarkMode,
                     onToggle = {
-                        if (!isSystemTheme) themeViewModel.setDarkMode(!isDarkMode)
+                        if (!isSystemTheme) scope.launch { themeViewModel.setDarkMode(!isDarkMode) }
                     },
                     enabled = !isSystemTheme,
                     modifier = Modifier.fillMaxWidth()

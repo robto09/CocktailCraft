@@ -1,10 +1,8 @@
 package com.cocktailcraft.android.di
 
 import com.cocktailcraft.android.domain.recommendation.CocktailRecommendationEngine
-import com.cocktailcraft.android.viewmodel.CocktailDetailViewModelSKIE
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.repository.FavoritesRepository
-import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 /**
@@ -13,7 +11,4 @@ import org.koin.dsl.module
 val recommendationModule = module {
     // Recommendation Engine
     single { CocktailRecommendationEngine(get<CocktailCatalogRepository>(), get<FavoritesRepository>()) }
-
-    // ViewModels
-    viewModel { CocktailDetailViewModelSKIE() }
 }
