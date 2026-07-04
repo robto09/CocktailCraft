@@ -208,33 +208,15 @@ class BackgroundSyncManager {
         }
         
         print("BackgroundSyncManager: Starting \(isBackground ? "background" : "foreground") sync")
-        
-        // Get shared ViewModels for sync operations
-        let koinHelper = getSharedKoinHelper()
-        let homeViewModel = koinHelper.getSharedHomeViewModel()
-        let offlineViewModel = koinHelper.getSharedOfflineModeViewModel()
 
-        // Check if we have enough time remaining
-        let timeElapsed = Date().timeIntervalSince(startTime)
-        guard timeElapsed < maxDuration - 5 else {
-            print("BackgroundSyncManager: Time limit approaching, stopping sync")
-            return
-        }
+        // What "a sync" means lives in shared code (BackgroundSyncService,
+        // including the offline check and time budget); this class only
+        // decides when to run it and mirrors sync state for the UI.
+        let syncService = getSharedKoinHelper().getBackgroundSyncService()
+        let budgetMs = Int64((maxDuration - 5) * 1000)
+        let success = (try? await syncService.performSync(maxDurationMs: budgetMs))?.boolValue ?? false
 
-        // Sync cocktails data (priority: high)
-        try? await homeViewModel.loadCocktails()
-
-        // Check time again
-        let timeElapsed2 = Date().timeIntervalSince(startTime)
-        guard timeElapsed2 < maxDuration - 3 else {
-            print("BackgroundSyncManager: Time limit approaching after cocktails sync")
-            return
-        }
-
-        // Sync cached data (priority: medium)
-        try? await offlineViewModel.syncCachedData()
-
-        print("BackgroundSyncManager: Sync completed successfully in \(Date().timeIntervalSince(startTime))s")
+        print("BackgroundSyncManager: Sync \(success ? "completed" : "skipped/failed") in \(Date().timeIntervalSince(startTime))s")
     }
     
     private func checkForForegroundSync() async {
