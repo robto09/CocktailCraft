@@ -7,7 +7,6 @@ androidxComposeBom = "2026.06.01"
 androidxDataStore = "1.0.0"
 androidxEspresso = "3.5.1"
 androidxGlance = "1.1.1"
-androidxHiltNavigationCompose = "1.3.0"
 androidxLifecycle = "2.10.0"
 androidxNavigation = "2.9.8"
 androidxNavigationTesting = "2.9.8"
@@ -16,7 +15,6 @@ androidxTestExtJunit = "1.1.5"
 androidxTestRunner = "1.5.2"
 androidxWork = "2.9.0"
 coil = "2.7.0"
-hilt = "2.60"
 junit4 = "4.13.2"
 junitJupiter = "5.10.1"
 junitPlatform = "1.10.1"
@@ -26,7 +24,6 @@ kotlin = "2.3.21"
 kotlinxCoroutines = "1.11.0"
 kotlinxDatetime = "0.8.0"
 kotlinxSerializationJson = "1.11.0"
-ksp = "2.3.9"
 ktor = "3.5.1"
 mockk = "1.13.8"
 multiplatformSettings = "1.3.0"
@@ -89,11 +86,6 @@ compose-materialIconsExtended = { module = "androidx.compose.material:material-i
 compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
-# Hilt
-hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
-hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
-androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "androidxHiltNavigationCompose" }
-
 # Images
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 
@@ -117,13 +109,10 @@ androidx-navigation-testing = { module = "androidx.navigation:navigation-testing
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-kotlinMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
-hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 skie = { id = "co.touchlab.skie", version.ref = "skie" }
