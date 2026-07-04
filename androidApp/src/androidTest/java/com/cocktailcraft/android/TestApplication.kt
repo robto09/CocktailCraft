@@ -9,7 +9,7 @@ import org.koin.core.context.startKoin
 /**
  * Test Application class for Android instrumented tests.
  * Configures Koin dependency injection for testing environment.
- * Note: Hilt is excluded to avoid compatibility issues in test environment.
+ *
  */
 class TestApplication : Application() {
     override fun onCreate() {
