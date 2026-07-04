@@ -1,17 +1,18 @@
 import SwiftUI
 import shared
-import Combine
+import Observation
 
 /**
  * iOS ViewModel wrapper for SharedReviewViewModel using pure SKIE integration.
- * Mirrors the consolidated uiState as a single @Published value.
+ * Mirrors the consolidated uiState as Observation-tracked state.
  */
 @MainActor
-class ReviewViewModelSKIE: ObservableObject {
+@Observable
+class ReviewViewModelSKIE {
     // Consolidated UI state from the shared ViewModel
-    @Published private(set) var state: ReviewUiState
+    private(set) var state: ReviewUiState
     // The single error channel from the shared ViewModel base class
-    @Published var error: ErrorHandler.UserFriendlyError? = nil
+    var error: ErrorHandler.UserFriendlyError? = nil
 
     // Computed properties
     var hasReviews: Bool {
@@ -37,7 +38,7 @@ class ReviewViewModelSKIE: ObservableObject {
     private let sharedViewModel: SharedReviewViewModel
 
     // Tasks for async observation
-    private var observationTasks: [Task<Void, Never>] = []
+    @ObservationIgnored private var observationTasks: [Task<Void, Never>] = []
 
     init() {
         // Get shared ViewModel from Koin

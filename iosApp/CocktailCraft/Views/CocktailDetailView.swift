@@ -3,8 +3,8 @@ import SwiftUI
 
 struct CocktailDetailView: View {
     let cocktailId: String
-    @ObservedObject var cartViewModel: CartViewModelSKIE
-    @StateObject private var viewModel = CocktailDetailViewModelSKIE()
+    let cartViewModel: CartViewModelSKIE
+    @State private var viewModel = CocktailDetailViewModelSKIE()
 
     // Distinguishes "load not started yet" from "loaded but not found"
     @State private var hasLoaded = false

@@ -1,20 +1,21 @@
 import SwiftUI
 import shared
-import Combine
+import Observation
 
 /**
  * iOS ViewModel wrapper for SharedThemeViewModel using pure SKIE integration.
- * Mirrors the consolidated uiState as a single @Published value.
+ * Mirrors the consolidated uiState as Observation-tracked state.
  */
 @MainActor
-class ThemeViewModelSKIE: ObservableObject {
+@Observable
+class ThemeViewModelSKIE {
     // Singleton instance
     static let shared = ThemeViewModelSKIE()
 
     // Consolidated UI state from the shared ViewModel
-    @Published private(set) var state: ThemeUiState
+    private(set) var state: ThemeUiState
     // The single error channel from the shared ViewModel base class
-    @Published var error: ErrorHandler.UserFriendlyError? = nil
+    var error: ErrorHandler.UserFriendlyError? = nil
 
     // Computed properties
     var currentThemeName: String {
@@ -37,7 +38,7 @@ class ThemeViewModelSKIE: ObservableObject {
     private let sharedViewModel: SharedThemeViewModel
 
     // Tasks for async observation
-    private var observationTasks: [Task<Void, Never>] = []
+    @ObservationIgnored private var observationTasks: [Task<Void, Never>] = []
 
     private init() {
         // Get shared ViewModel from Koin

@@ -2,22 +2,22 @@ import SwiftUI
 import shared
 
 struct OrderListView: View {
-    @StateObject private var viewModel = OrderViewModelSKIE()
+    @State private var viewModel = OrderViewModelSKIE()
     @State private var hasAppeared = false
 
     var body: some View {
-        NavigationView {
-            contentView
-                .navigationTitle("My Orders")
-                .onAppear {
-                    if !hasAppeared {
-                        hasAppeared = true
-                        Task {
-                            await viewModel.loadOrders()
-                        }
+        // No nav container here: ContentView already wraps this tab in a
+        // NavigationStack (the old inner NavigationView double-nested it).
+        contentView
+            .navigationTitle("My Orders")
+            .onAppear {
+                if !hasAppeared {
+                    hasAppeared = true
+                    Task {
+                        await viewModel.loadOrders()
                     }
                 }
-        }
+            }
     }
 
     @ViewBuilder

@@ -3,8 +3,8 @@ import shared
 
 struct ContentView: View {
     @State private var selectedTab = 0
-    @StateObject private var cartViewModel = CartViewModelSKIE()
-    @StateObject private var themeViewModel = ThemeViewModelSKIE.shared
+    @State private var cartViewModel = CartViewModelSKIE()
+    private let themeViewModel = ThemeViewModelSKIE.shared
 
     var body: some View {
         ZStack {

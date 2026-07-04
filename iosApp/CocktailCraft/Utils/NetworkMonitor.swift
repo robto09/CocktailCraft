@@ -1,16 +1,17 @@
 import Foundation
 import Network
-import Combine
+import Observation
 
 @MainActor
-class NetworkMonitor: ObservableObject {
+@Observable
+class NetworkMonitor {
     static let shared = NetworkMonitor()
-    
+
     private let monitor = NWPathMonitor()
     private let queue = DispatchQueue(label: "NetworkMonitor")
-    
-    @Published var isConnected = true
-    @Published var connectionType = NWInterface.InterfaceType.other
+
+    var isConnected = true
+    var connectionType = NWInterface.InterfaceType.other
     
     private init() {
         monitor.pathUpdateHandler = { [weak self] path in

@@ -2,12 +2,12 @@ import SwiftUI
 import shared
 
 struct SettingsView: View {
-    @Environment(\.presentationMode) var presentationMode
-    @ObservedObject private var themeViewModel = ThemeViewModelSKIE.shared
+    @Environment(\.dismiss) private var dismiss
+    private let themeViewModel = ThemeViewModelSKIE.shared
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
-    
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section(header: Text("Appearance")) {
                     Toggle("Dark Mode", isOn: Binding(
@@ -112,7 +112,7 @@ struct SettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
-                        presentationMode.wrappedValue.dismiss()
+                        dismiss()
                     }
                 }
             }

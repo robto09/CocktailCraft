@@ -1,17 +1,18 @@
 import SwiftUI
 import shared
-import Combine
+import Observation
 
 /**
  * iOS ViewModel wrapper for SharedCocktailDetailViewModel using pure SKIE integration.
- * Mirrors the consolidated uiState as a single @Published value.
+ * Mirrors the consolidated uiState as Observation-tracked state.
  */
 @MainActor
-class CocktailDetailViewModelSKIE: ObservableObject {
+@Observable
+class CocktailDetailViewModelSKIE {
     // Consolidated UI state from the shared ViewModel
-    @Published private(set) var state: DetailUiState
+    private(set) var state: DetailUiState
     // The single error channel from the shared ViewModel base class
-    @Published var error: ErrorHandler.UserFriendlyError? = nil
+    var error: ErrorHandler.UserFriendlyError? = nil
 
     // Computed properties
     var hasRelatedCocktails: Bool {
@@ -30,7 +31,7 @@ class CocktailDetailViewModelSKIE: ObservableObject {
     private let sharedViewModel: SharedCocktailDetailViewModel
 
     // Tasks for async observation
-    private var observationTasks: [Task<Void, Never>] = []
+    @ObservationIgnored private var observationTasks: [Task<Void, Never>] = []
 
     init() {
         // Get shared ViewModel from Koin

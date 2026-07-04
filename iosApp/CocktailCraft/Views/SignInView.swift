@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct SignInView: View {
-    @Environment(\.presentationMode) var presentationMode
     @State private var email = ""
     @State private var password = ""
     @State private var isPasswordVisible = false
@@ -11,7 +10,7 @@ struct SignInView: View {
     let onSignIn: (String, String) -> Void
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 24) {
                 // Header
                 VStack(spacing: 8) {

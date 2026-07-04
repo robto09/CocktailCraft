@@ -1,6 +1,6 @@
 import SwiftUI
 import shared
-import Combine
+import Observation
 
 enum SortOption: CaseIterable {
     case nameAsc
@@ -13,27 +13,28 @@ enum SortOption: CaseIterable {
 
 /**
  * iOS ViewModel wrapper for SharedHomeViewModel using pure SKIE integration.
- * Mirrors the consolidated uiState as a single @Published value; views read
+ * Mirrors the consolidated uiState as Observation-tracked state; views read
  * `viewModel.state.<field>` for everything the shared ViewModel owns.
  */
 @MainActor
-class HomeViewModelSKIE: ObservableObject {
+@Observable
+class HomeViewModelSKIE {
     // Consolidated UI state from the shared ViewModel
-    @Published private(set) var state: HomeUiState
+    private(set) var state: HomeUiState
     // The single error channel from the shared ViewModel base class
-    @Published var error: ErrorHandler.UserFriendlyError? = nil
+    var error: ErrorHandler.UserFriendlyError? = nil
 
     // Swift-local UI state (never sent to the shared ViewModel wholesale;
-    // sortOption backs a SwiftUI binding so it must stay settable @Published)
-    @Published var sortOption: SortOption = .nameAsc
-    @Published var selectedIngredient: String? = nil
+    // sortOption backs a SwiftUI binding so it must stay settable)
+    var sortOption: SortOption = .nameAsc
+    var selectedIngredient: String? = nil
 
     // Shared ViewModel instances
     private let sharedViewModel: SharedHomeViewModel
     private let cartViewModel: SharedCartViewModel
 
     // Tasks for async observation
-    private var observationTasks: [Task<Void, Never>] = []
+    @ObservationIgnored private var observationTasks: [Task<Void, Never>] = []
 
     init() {
         // Get shared ViewModels from Koin
@@ -45,11 +46,9 @@ class HomeViewModelSKIE: ObservableObject {
 
         // Start observing StateFlows using SKIE async/await
         startObserving()
-
-        // Initial load
-        Task {
-            await loadCocktails()
-        }
+        // No initial load here: @State (unlike @StateObject) evaluates its
+        // initial value eagerly on every parent re-render, and discarded
+        // instances must not fire side effects. HomeViewSKIE's .task loads.
     }
 
     deinit {
