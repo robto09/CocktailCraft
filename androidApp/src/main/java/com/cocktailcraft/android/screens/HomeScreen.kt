@@ -55,7 +55,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -115,14 +115,14 @@ fun HomeScreen(
     onAddToCart: (Cocktail) -> Unit,
     onCocktailClick: (Cocktail) -> Unit
 ) {
-    val state by viewModel.uiState.collectAsState()
-    val favoritesState by favoritesViewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val cocktails = state.cocktails
-    val isLoading by viewModel.isLoading.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isLoadingMore = state.isLoadingMore
     val hasMoreData = state.hasMoreData
-    val error by viewModel.error.collectAsState()
+    val error by viewModel.error.collectAsStateWithLifecycle()
     val errorMessage = error?.message ?: ""
     val isSearchActive = state.isSearchActive
     val searchQuery = state.searchQuery

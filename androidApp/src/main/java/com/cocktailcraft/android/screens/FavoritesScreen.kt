@@ -11,7 +11,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -33,10 +33,10 @@ fun FavoritesScreen(
     onBrowseProducts: () -> Unit,
     onAddToCart: (Cocktail) -> Unit
 ) {
-    val state by favoritesViewModel.uiState.collectAsState()
+    val state by favoritesViewModel.uiState.collectAsStateWithLifecycle()
     val favorites = state.favorites
-    val isLoading by favoritesViewModel.isLoading.collectAsState()
-    val error by favoritesViewModel.error.collectAsState()
+    val isLoading by favoritesViewModel.isLoading.collectAsStateWithLifecycle()
+    val error by favoritesViewModel.error.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
     Column(

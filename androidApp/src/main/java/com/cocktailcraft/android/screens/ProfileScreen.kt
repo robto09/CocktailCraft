@@ -45,7 +45,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,14 +80,14 @@ fun ProfileScreen(
     val scope = rememberCoroutineScope()
 
     // Get user data from ViewModel
-    val profileState by profileViewModel.uiState.collectAsState()
+    val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
     val user = profileState.user
     val isLoggedIn = profileState.isLoggedIn
-    val isLoading by profileViewModel.isLoading.collectAsState()
-    val error by profileViewModel.error.collectAsState()
+    val isLoading by profileViewModel.isLoading.collectAsStateWithLifecycle()
+    val error by profileViewModel.error.collectAsStateWithLifecycle()
 
     // Get theme data from ThemeViewModel
-    val themeState by themeViewModel.uiState.collectAsState()
+    val themeState by themeViewModel.uiState.collectAsStateWithLifecycle()
     val isDarkMode = themeState.isDarkMode
     val isSystemTheme = themeState.isSystemTheme
 

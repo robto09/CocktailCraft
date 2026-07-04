@@ -8,7 +8,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.cocktailcraft.android.ui.main.MainScreen
@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             // Observe the shared theme state (single source of truth)
             val themeViewModel: SharedThemeViewModel = koinInject()
-            val themeState by themeViewModel.uiState.collectAsState()
+            val themeState by themeViewModel.uiState.collectAsStateWithLifecycle()
             val isDarkMode = themeState.isDarkMode
             val isSystemTheme = themeState.isSystemTheme
 

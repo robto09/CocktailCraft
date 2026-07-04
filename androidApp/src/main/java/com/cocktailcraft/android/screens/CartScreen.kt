@@ -18,7 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,12 +51,12 @@ fun CartScreen(
     orderViewModel: SharedOrderViewModel,
     favoritesViewModel: SharedFavoritesViewModel
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val cartItems = state.cartItems
     val totalPrice = state.totalPrice
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
-    val favoritesState by favoritesViewModel.uiState.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
+    val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
     val favorites = favoritesState.favorites
     val scope = rememberCoroutineScope()
 

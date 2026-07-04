@@ -11,7 +11,7 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,9 +32,9 @@ fun OrderListScreen(
     orderViewModel: SharedOrderViewModel,
     navigationManager: NavigationManager
 ) {
-    val state by orderViewModel.uiState.collectAsState()
-    val isLoading by orderViewModel.isLoading.collectAsState()
-    val error by orderViewModel.error.collectAsState()
+    val state by orderViewModel.uiState.collectAsStateWithLifecycle()
+    val isLoading by orderViewModel.isLoading.collectAsStateWithLifecycle()
+    val error by orderViewModel.error.collectAsStateWithLifecycle()
 
     // Load orders when the screen is first displayed
     LaunchedEffect(Unit) {

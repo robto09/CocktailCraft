@@ -3,6 +3,7 @@ package com.cocktailcraft.domain.usecase
 import com.cocktailcraft.domain.model.Review
 import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 
 internal class ManageReviewsUseCase {
@@ -97,7 +98,7 @@ internal class ManageReviewsUseCase {
 
     private fun getCurrentDate(): String {
         val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        return "${now.year}-${now.monthNumber.toString().padStart(2, '0')}-${now.dayOfMonth.toString().padStart(2, '0')}"
+        return "${now.year}-${now.month.number.toString().padStart(2, '0')}-${now.day.toString().padStart(2, '0')}"
     }
 }
 
