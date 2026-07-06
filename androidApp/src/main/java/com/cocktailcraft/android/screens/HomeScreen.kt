@@ -116,10 +116,10 @@ fun HomeScreen(
     onCocktailClick: (Cocktail) -> Unit
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val isLoading = state.isLoading
     val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val cocktails = state.cocktails
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val isLoadingMore = state.isLoadingMore
     val hasMoreData = state.hasMoreData
     val error by viewModel.error.collectAsStateWithLifecycle()

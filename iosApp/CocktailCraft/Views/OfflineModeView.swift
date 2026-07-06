@@ -47,6 +47,7 @@ struct OfflineModeView: View {
                 await viewModel.loadRecentlyViewedCocktails()
             }
         }
+        .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
     }
     
     // MARK: - Network Status Card

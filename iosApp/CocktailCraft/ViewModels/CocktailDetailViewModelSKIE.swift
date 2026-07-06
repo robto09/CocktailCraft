@@ -17,7 +17,7 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
         sharedViewModel.getShareableText()
     }
 
-    var nutritionFacts: [String: String] {
+    var nutritionFacts: NutritionFacts? {
         sharedViewModel.getNutritionFacts()
     }
 
@@ -149,9 +149,5 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
 
     func shareContent() -> String {
         return shareableText
-    }
-
-    func getNutritionValue(for key: String) -> String {
-        return nutritionFacts[key] ?? "N/A"
     }
 }

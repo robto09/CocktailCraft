@@ -118,6 +118,11 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
         return sharedViewModel.getCategories()
     }
 
+    /// Canonical curated category list from shared (CocktailCategories.CURATED).
+    var curatedCategories: [String] {
+        return sharedViewModel.curatedCategories
+    }
+
     func getCocktailsByCategory(_ category: String, limit: Int32 = 3) -> [Cocktail] {
         return sharedViewModel.getCocktailsByCategory(category: category, limit: limit)
     }

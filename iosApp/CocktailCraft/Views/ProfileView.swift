@@ -96,6 +96,7 @@ struct ProfileView: View {
         } message: {
             Text("Are you sure you want to logout?")
         }
+        .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
     }
 
     // MARK: - Profile Header Card

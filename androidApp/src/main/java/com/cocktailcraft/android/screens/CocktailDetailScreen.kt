@@ -62,6 +62,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -83,8 +84,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.repository.CocktailCatalogRepository
-import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.android.ui.theme.AppColors
@@ -94,10 +93,10 @@ import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.OptimizedImage
 import com.cocktailcraft.android.ui.components.RatingBar
 import com.cocktailcraft.android.ui.components.RatingDisplay
-import com.cocktailcraft.android.ui.components.RecommendationsSection
 import com.cocktailcraft.android.ui.components.SectionHeader
 import com.cocktailcraft.android.ui.components.WriteReviewDialog
 import com.cocktailcraft.viewmodel.SharedCartViewModel
+import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import com.cocktailcraft.viewmodel.SharedReviewViewModel
@@ -124,8 +123,15 @@ fun CocktailDetailScreen(
     // Add a loading state to track when data is being fetched
     var isLoading by remember { mutableStateOf(true) }
 
-    // Catalog repository for recommendations (previously exposed by the wrapper ViewModel)
-    val catalogRepository = koinInject<CocktailCatalogRepository>()
+    // Shared Detail ViewModel owns recommendations; factory-scoped, so clean it up on dispose
+    val detailViewModel = koinInject<SharedCocktailDetailViewModel>()
+    DisposableEffect(Unit) {
+        onDispose { detailViewModel.onCleared() }
+    }
+    val detailState by detailViewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(cocktailId) {
+        detailViewModel.loadCocktail(cocktailId)
+    }
 
     // Load the cocktail via the suspend getCocktailById
     val cocktail by produceState<Cocktail?>(initialValue = null, cocktailId) {
@@ -532,47 +538,10 @@ fun CocktailDetailScreen(
                         )
                     }
 
-                    // Recommendations section - ONLY SHOW WHEN WE HAVE REAL RECOMMENDATIONS
+                    // Recommendations come from the shared Detail ViewModel state
                     item {
-                        // Get recommendations for this cocktail
-                        var similarCocktails by remember { mutableStateOf<List<Cocktail>>(emptyList()) }
-                        var isLoadingRecommendations by remember { mutableStateOf(true) }
-
-                        // Load recommendations when the cocktail data is available
-                        LaunchedEffect(cocktailData) {
-                            isLoadingRecommendations = true
-                            try {
-                                // Get the category or use a default
-                                val category = cocktailData.category ?: "Cocktail"
-                                val currentId = cocktailData.id
-
-                                // Use the repository directly to get recommendations from the API
-                                // This bypasses any caching or filtering in the ViewModel
-                                val apiRecommendations = catalogRepository.getCocktailsByCategory(category)
-                                    .getOrDefault(emptyList())
-                                    .filter { it.id != currentId } // Filter out current cocktail
-                                    .take(3) // Limit to 3 recommendations
-
-                                // If we got recommendations from the API, use them
-                                if (apiRecommendations.isNotEmpty()) {
-                                    similarCocktails = apiRecommendations
-                                } else {
-                                    // If no recommendations from API, try to get any cocktails from the ViewModel
-                                    val viewModelRecommendations = homeViewModel.getCocktailsByCategory("Cocktail", 6)
-                                        .filter { it.id != currentId }
-                                        .take(3)
-
-                                    similarCocktails = viewModelRecommendations
-                                }
-                            } catch (e: Exception) {
-                                // Just log the error, don't show to user
-                                println("Failed to load recommendations: ${e.message}")
-                                // Use empty list - the UI will handle this
-                                similarCocktails = emptyList()
-                            } finally {
-                                isLoadingRecommendations = false
-                            }
-                        }
+                        val similarCocktails = detailState.relatedCocktails
+                        val isLoadingRecommendations = detailState.isLoading && similarCocktails.isEmpty()
 
                         // Always show the recommendations section - we'll have fallback data if needed
                         // Add a spacer before recommendations

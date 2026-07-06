@@ -372,19 +372,9 @@ struct HomeViewSKIE: View {
         print("Advanced filters applied")
     }
 
-    // Predefined categories from TheCocktailDB API
+    // Canonical curated categories come from shared — single source of truth
     private var availableCategories: [String] {
-        // Always use predefined categories from TheCocktailDB for consistent UI
-        return [
-            "Cocktail",
-            "Shot",
-            "Ordinary Drink",
-            "Coffee / Tea",
-            "Homemade Liqueur",
-            "Punch / Party Drink",
-            "Beer",
-            "Soft Drink"
-        ]
+        viewModel.curatedCategories
     }
 }
 

@@ -34,8 +34,8 @@ fun FavoritesScreen(
     onAddToCart: (Cocktail) -> Unit
 ) {
     val state by favoritesViewModel.uiState.collectAsStateWithLifecycle()
+    val isLoading = state.isLoading
     val favorites = state.favorites
-    val isLoading by favoritesViewModel.isLoading.collectAsStateWithLifecycle()
     val error by favoritesViewModel.error.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 

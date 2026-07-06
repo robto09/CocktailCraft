@@ -21,7 +21,7 @@ final class OrderViewModelSKIE: SharedViewModelWrapper<OrderUiState> {
         sharedViewModel.getRecentOrders()
     }
 
-    var orderStatistics: [String: Any] {
+    var orderStatistics: OrderStatistics {
         sharedViewModel.getOrderStatistics()
     }
 
@@ -48,13 +48,10 @@ final class OrderViewModelSKIE: SharedViewModelWrapper<OrderUiState> {
     }
 
     func placeOrder(cartItems: [CocktailCartItem], totalPrice: Double) async -> Bool {
-        print("Swift: placeOrder called with \(cartItems.count) items, total: \(totalPrice)")
-        return await withCheckedContinuation { continuation in
-            print("Swift: About to call placeOrderWithCallback")
-            sharedViewModel.placeOrderWithCallback(cartItems: cartItems, totalPrice: totalPrice) { result in
-                print("Swift: Callback received with result: \(result.boolValue)")
-                continuation.resume(returning: result.boolValue)
-            }
+        do {
+            return try await sharedViewModel.placeOrder(cartItems: cartItems, totalPrice: totalPrice).boolValue
+        } catch {
+            return false
         }
     }
 
@@ -77,14 +74,6 @@ final class OrderViewModelSKIE: SharedViewModelWrapper<OrderUiState> {
     func cancelOrder(_ orderId: String) async -> Bool {
         do {
             return try await sharedViewModel.cancelOrder(orderId: orderId).boolValue
-        } catch {
-            return false
-        }
-    }
-
-    func reorderItems(_ orderId: String) async -> Bool {
-        do {
-            return try await sharedViewModel.reorderItems(orderId: orderId).boolValue
         } catch {
             return false
         }
@@ -177,8 +166,7 @@ final class OrderViewModelSKIE: SharedViewModelWrapper<OrderUiState> {
     }
 
     func getAverageOrderValue() -> Double {
-        guard !state.orders.isEmpty else { return 0.0 }
-        return state.orders.reduce(0.0) { $0 + $1.total } / Double(state.orders.count)
+        return sharedViewModel.getAverageOrderValue()
     }
 
     func formatAverageOrderValue() -> String {
@@ -190,15 +178,6 @@ final class OrderViewModelSKIE: SharedViewModelWrapper<OrderUiState> {
     }
 
     func getOrdersThisMonth() -> [Order] {
-        let calendar = Calendar.current
-        let now = Date()
-        let startOfMonth = calendar.dateInterval(of: .month, for: now)?.start ?? now
-
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        let startDateString = formatter.string(from: startOfMonth)
-        let endDateString = formatter.string(from: now)
-
-        return getOrdersByDateRange(startDate: startDateString, endDate: endDateString)
+        return sharedViewModel.getOrdersThisMonth()
     }
 }
