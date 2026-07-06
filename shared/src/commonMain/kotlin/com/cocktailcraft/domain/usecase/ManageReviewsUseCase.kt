@@ -1,76 +1,42 @@
 package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.domain.repository.ReviewRepository
+import com.cocktailcraft.domain.util.Result
+import kotlinx.coroutines.flow.Flow
 import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 
-internal class ManageReviewsUseCase {
+internal class ManageReviewsUseCase(
+    private val repository: ReviewRepository
+) {
+
+    fun observeReviews(): Flow<List<Review>> = repository.observeReviews()
 
     suspend fun submitReview(
         cocktailId: String,
         rating: Float,
         comment: String,
-        userName: String,
-        existingReviews: Map<String, List<Review>>
-    ): Map<String, List<Review>> {
+        userName: String
+    ): Result<Review> {
         val review = Review(
             cocktailId = cocktailId,
             userName = userName.trim(),
             rating = rating,
             comment = comment.trim()
         )
-        val updatedReviews = existingReviews.toMutableMap()
-        val cocktailReviews = updatedReviews[cocktailId]?.toMutableList() ?: mutableListOf()
-        cocktailReviews.add(review)
-        updatedReviews[cocktailId] = cocktailReviews
-        return updatedReviews
+        return repository.addReview(review).map { review }
     }
 
-    suspend fun updateReview(
-        reviewId: String,
-        rating: Float,
-        comment: String,
-        existingReviews: Map<String, List<Review>>
-    ): Pair<Map<String, List<Review>>, Boolean> {
-        val updatedReviews = existingReviews.toMutableMap()
-        var found = false
-        for ((cocktailId, reviewList) in updatedReviews) {
-            val updatedList = reviewList.map { review ->
-                if (review.id == reviewId) {
-                    found = true
-                    review.copy(rating = rating, comment = comment.trim(), date = getCurrentDate())
-                } else {
-                    review
-                }
-            }
-            updatedReviews[cocktailId] = updatedList
-        }
-        return Pair(updatedReviews, found)
-    }
+    /** Returns false when no review with [reviewId] exists. */
+    suspend fun updateReview(reviewId: String, rating: Float, comment: String): Result<Boolean> =
+        repository.updateReview(reviewId, rating, comment.trim(), getCurrentDate())
 
-    suspend fun deleteReview(
-        reviewId: String,
-        existingReviews: Map<String, List<Review>>
-    ): Triple<Map<String, List<Review>>, Boolean, String?> {
-        val updatedReviews = existingReviews.toMutableMap()
-        var found = false
-        var affectedCocktailId: String? = null
-        for ((cocktailId, reviewList) in updatedReviews) {
-            val filteredList = reviewList.filter { review ->
-                if (review.id == reviewId) {
-                    found = true
-                    affectedCocktailId = cocktailId
-                    false
-                } else {
-                    true
-                }
-            }
-            updatedReviews[cocktailId] = filteredList
-        }
-        return Triple(updatedReviews, found, affectedCocktailId)
-    }
+    /** Returns false when no review with [reviewId] exists. */
+    suspend fun deleteReview(reviewId: String): Result<Boolean> =
+        repository.deleteReview(reviewId)
 
     fun computeAverageRating(reviews: List<Review>): Float {
         return if (reviews.isNotEmpty()) reviews.map { it.rating }.average().toFloat() else 0.0f
@@ -101,4 +67,3 @@ internal class ManageReviewsUseCase {
         return "${now.year}-${now.month.number.toString().padStart(2, '0')}-${now.day.toString().padStart(2, '0')}"
     }
 }
-

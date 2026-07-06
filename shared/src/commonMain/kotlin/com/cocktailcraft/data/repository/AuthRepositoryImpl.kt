@@ -1,5 +1,6 @@
 package com.cocktailcraft.data.repository
 
+import com.cocktailcraft.data.security.PasswordHasher
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.model.Address
@@ -41,8 +42,7 @@ internal class AuthRepositoryImpl(
 
     override suspend fun signIn(email: String, password: String): Result<Boolean> {
         return try {
-            val storedPassword = settings.getStringOrNull("password_$email")
-            if (storedPassword != password) return Result.Success(false)
+            if (!verifyCredentials(email, password)) return Result.Success(false)
 
             val user = getUserByEmail(email) ?: return Result.Success(false)
             settings.putString(CURRENT_USER_ID_KEY, user.id)
@@ -61,21 +61,10 @@ internal class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun resetPassword(email: String): Result<Boolean> {
-        return try {
-            val user = getUserByEmail(email) ?: return Result.Success(false)
-            saveCredentials(email, "password123")
-            Result.Success(true)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to reset password")
-        }
-    }
-
     override suspend fun changePassword(oldPassword: String, newPassword: String): Result<Boolean> {
         return try {
             val currentUser = getCurrentUserSync() ?: return Result.Success(false)
-            val storedPassword = settings.getStringOrNull("password_${currentUser.email}")
-            if (storedPassword != oldPassword) return Result.Success(false)
+            if (!verifyCredentials(currentUser.email, oldPassword)) return Result.Success(false)
             saveCredentials(currentUser.email, newPassword)
             Result.Success(true)
         } catch (e: Exception) {
@@ -116,10 +105,9 @@ internal class AuthRepositoryImpl(
         return try {
             val currentUser = getCurrentUserSync() ?: return Result.Success(false)
             if (getUserByEmail(email) != null && email != currentUser.email) return Result.Success(false)
-            val oldPassword = settings.getStringOrNull("password_${currentUser.email}")
-            if (oldPassword != password) return Result.Success(false)
+            if (!verifyCredentials(currentUser.email, password)) return Result.Success(false)
 
-            settings.remove("password_${currentUser.email}")
+            settings.remove(passwordKey(currentUser.email))
             val updatedUser = currentUser.copy(email = email)
             updateUser(updatedUser)
             saveCredentials(email, password)
@@ -226,8 +214,19 @@ internal class AuthRepositoryImpl(
     }
 
     private fun saveCredentials(email: String, password: String) {
-        settings.putString("password_$email", password)
+        settings.putString(passwordKey(email), PasswordHasher.hash(password))
     }
+
+    private fun verifyCredentials(email: String, password: String): Boolean {
+        val stored = settings.getStringOrNull(passwordKey(email)) ?: return false
+        if (PasswordHasher.isHashed(stored)) return PasswordHasher.verify(password, stored)
+        // Legacy installs stored the raw password; verify once, then upgrade in place.
+        if (stored != password) return false
+        saveCredentials(email, password)
+        return true
+    }
+
+    private fun passwordKey(email: String) = "password_$email"
 
     companion object {
         private const val USERS_KEY = "users"

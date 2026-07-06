@@ -38,10 +38,6 @@ internal class ManageProfileUseCase(
         return authRepository.updateUserAddress(address)
     }
 
-    suspend fun resetPassword(email: String): Result<Boolean> {
-        return authRepository.resetPassword(email)
-    }
-
     suspend fun changePassword(oldPassword: String, newPassword: String): Result<Boolean> {
         return authRepository.changePassword(oldPassword, newPassword)
     }
