@@ -1,5 +1,6 @@
 package com.cocktailcraft.domain.model
 
+import com.cocktailcraft.util.UUID
 import kotlin.native.HiddenFromObjC
 import kotlinx.serialization.Serializable
 import kotlin.time.Clock
@@ -9,7 +10,8 @@ import kotlinx.datetime.toLocalDateTime
 
 @Serializable
 data class Review(
-    val id: String = Clock.System.now().toEpochMilliseconds().toString(),
+    // UUID, not a timestamp: ids drive update/delete, so they must never collide
+    val id: String = UUID.randomUUID(),
     val cocktailId: String,
     val userName: String,
     val rating: Float,

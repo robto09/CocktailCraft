@@ -31,6 +31,7 @@ internal class AppConfigImpl : AppConfig {
     // Storage keys
     override val favoritesStorageKey: String = "favorite_cocktails"
     override val ordersStorageKey: String = "orders_data"
+    override val reviewsStorageKey: String = "user_reviews"
     override val recentlyViewedStorageKey: String = "recently_viewed_cocktails"
     override val offlineModeEnabledKey: String = "offline_mode_enabled"
 

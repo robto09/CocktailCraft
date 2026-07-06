@@ -60,6 +60,11 @@ internal interface AppConfig {
     val ordersStorageKey: String
 
     /**
+     * Key for storing user reviews in local storage
+     */
+    val reviewsStorageKey: String
+
+    /**
      * Expiration time for cached data in milliseconds
      */
     val cacheExpirationMs: Long

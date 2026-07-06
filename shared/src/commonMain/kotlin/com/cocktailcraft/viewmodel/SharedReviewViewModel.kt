@@ -3,6 +3,7 @@ package com.cocktailcraft.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
+import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.ReviewUiState
 import kotlinx.coroutines.flow.*
@@ -10,7 +11,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Shared ViewModel for Review functionality.
- * Uses consolidated [ReviewUiState] for atomic state updates.
+ * Collects the persisted review store reactively, so submitted reviews
+ * survive restarts and every state change flows through [uiState].
  */
 class SharedReviewViewModel internal constructor(
     private val manageReviewsUseCase: ManageReviewsUseCase
@@ -24,29 +26,27 @@ class SharedReviewViewModel internal constructor(
         get() = _uiState.value.currentCocktailReviews.isNotEmpty()
     val isEmpty: Boolean
         get() = _uiState.value.currentCocktailReviews.isEmpty()
-    
+
+    init {
+        viewModelScope.launch {
+            manageReviewsUseCase.observeReviews().collect { allReviews ->
+                _uiState.update { state ->
+                    state.withReviews(allReviews.groupBy { it.cocktailId })
+                }
+            }
+        }
+    }
+
     /**
      * Load reviews for a specific cocktail.
      * SKIE will convert this to Swift async function.
      */
     suspend fun loadReviewsForCocktail(cocktailId: String) {
-        try {
-            _uiState.update { it.copy(isLoading = true) }
-
-            val cocktailReviews = _uiState.value.reviews[cocktailId] ?: emptyList()
-            _uiState.update { it.copy(
-                currentCocktailId = cocktailId,
-                currentCocktailReviews = cocktailReviews.sortedByDescending { r -> r.date },
-                reviewCount = cocktailReviews.size,
-                averageRating = manageReviewsUseCase.computeAverageRating(cocktailReviews),
-                isLoading = false
-            ) }
-        } catch (e: Exception) {
-            handleException(e, "Failed to load reviews")
-            _uiState.update { it.copy(isLoading = false) }
+        _uiState.update { state ->
+            state.copy(currentCocktailId = cocktailId).withReviews(state.reviews)
         }
     }
-    
+
     /**
      * Submit a new review for a cocktail.
      * SKIE will convert this to Swift async function.
@@ -65,22 +65,15 @@ class SharedReviewViewModel internal constructor(
             return false
         }
 
-        try {
-
-            val updated = manageReviewsUseCase.submitReview(cocktailId, rating, comment, userName, _uiState.value.reviews)
-            _uiState.update { it.copy(reviews = updated) }
-
-            if (_uiState.value.currentCocktailId == cocktailId) {
-                loadReviewsForCocktail(cocktailId)
-            }
-
-            return true
+        return try {
+            manageReviewsUseCase.submitReview(cocktailId, rating, comment, userName).getOrThrow()
+            true
         } catch (e: Exception) {
             handleException(e, "Failed to submit review")
-            return false
+            false
         }
     }
-    
+
     /**
      * Update an existing review.
      * SKIE will convert this to Swift async function.
@@ -90,83 +83,45 @@ class SharedReviewViewModel internal constructor(
             return false
         }
 
-        try {
-
-            val (updatedReviews, found) = manageReviewsUseCase.updateReview(reviewId, rating, comment, _uiState.value.reviews)
-
+        return try {
+            val found = manageReviewsUseCase.updateReview(reviewId, rating, comment).getOrThrow()
             if (!found) {
                 setError(
                     "Review Not Found",
                     "The review you're trying to update was not found",
                     ErrorHandler.ErrorCategory.DATA
                 )
-                return false
             }
-
-            _uiState.update { it.copy(reviews = updatedReviews) }
-
-            _uiState.value.currentCocktailId?.let { cocktailId ->
-                loadReviewsForCocktail(cocktailId)
-            }
-
-            return true
+            found
         } catch (e: Exception) {
             handleException(e, "Failed to update review")
-            return false
+            false
         }
     }
-    
+
     /**
      * Delete a review.
      * SKIE will convert this to Swift async function.
      */
     suspend fun deleteReview(reviewId: String): Boolean {
-        try {
-
-            val (updatedReviews, found, affectedCocktailId) = manageReviewsUseCase.deleteReview(reviewId, _uiState.value.reviews)
-
+        return try {
+            val found = manageReviewsUseCase.deleteReview(reviewId).getOrThrow()
             if (!found) {
                 setError(
                     "Review Not Found",
                     "The review you're trying to delete was not found",
                     ErrorHandler.ErrorCategory.DATA
                 )
-                return false
             }
-
-            _uiState.update { it.copy(reviews = updatedReviews) }
-
-            affectedCocktailId?.let { cocktailId ->
-                if (_uiState.value.currentCocktailId == cocktailId) {
-                    loadReviewsForCocktail(cocktailId)
-                }
-            }
-
-            return true
+            found
         } catch (e: Exception) {
             handleException(e, "Failed to delete review")
-            return false
+            false
         }
     }
-    
-    /**
-     * Load all reviews.
-     * SKIE will convert this to Swift async function.
-     */
-    suspend fun loadAllReviews() {
-        try {
-            
-            // In a real implementation, this would load from a repository
-            // For now, we just update the current state
-            val allReviews = _uiState.value.reviews.values.flatten()
-            
-        } catch (e: Exception) {
-            handleException(e, "Failed to load all reviews")
-        }
-    }
-    
+
     // MARK: - Synchronous Helper Methods
-    
+
     /**
      * Get average rating for a cocktail.
      */
@@ -174,7 +129,7 @@ class SharedReviewViewModel internal constructor(
         val cocktailReviews = _uiState.value.reviews[cocktailId] ?: return 0.0f
         return manageReviewsUseCase.computeAverageRating(cocktailReviews)
     }
-    
+
     /**
      * Get review count for a cocktail.
      */
@@ -183,7 +138,7 @@ class SharedReviewViewModel internal constructor(
 
     fun getReviewsForCocktail(cocktailId: String): List<Review> =
         _uiState.value.reviews[cocktailId]?.sortedByDescending { it.date } ?: emptyList()
-    
+
     /**
      * Validate review input.
      */
@@ -199,62 +154,26 @@ class SharedReviewViewModel internal constructor(
         }
         return true
     }
-    
-    /**
-     * Get reviews sorted by rating (highest first).
-     */
-    fun getReviewsSortedByRating(cocktailId: String): List<Review> {
-        return getReviewsForCocktail(cocktailId).sortedByDescending { it.rating }
-    }
-    
-    /**
-     * Get reviews sorted by date (newest first).
-     */
-    fun getReviewsSortedByDate(cocktailId: String): List<Review> {
-        return getReviewsForCocktail(cocktailId).sortedByDescending { it.date }
-    }
-    
+
     /**
      * Get rating distribution for a cocktail.
      */
     fun getRatingDistribution(cocktailId: String): Map<Int, Int> {
         return manageReviewsUseCase.getRatingDistribution(getReviewsForCocktail(cocktailId))
     }
-    
-    /**
-     * Get recent reviews across all cocktails.
-     */
-    fun getRecentReviews(limit: Int = 10): List<Review> {
-        return _uiState.value.reviews.values
-            .flatten()
+
+    /** Re-derives the per-cocktail slices from the grouped store. */
+    private fun ReviewUiState.withReviews(grouped: Map<String, List<Review>>): ReviewUiState {
+        val currentReviews = currentCocktailId
+            ?.let { grouped[it].orEmpty() }
+            .orEmpty()
             .sortedByDescending { it.date }
-            .take(limit)
+        return copy(
+            reviews = grouped,
+            currentCocktailReviews = currentReviews,
+            reviewCount = currentReviews.size,
+            averageRating = manageReviewsUseCase.computeAverageRating(currentReviews),
+            isLoading = false
+        )
     }
-    
-    /**
-     * Search reviews by comment content.
-     */
-    fun searchReviews(query: String): List<Review> {
-        if (query.isBlank()) return emptyList()
-        
-        return _uiState.value.reviews.values
-            .flatten()
-            .filter { review ->
-                review.comment.contains(query, ignoreCase = true) ||
-                review.userName.contains(query, ignoreCase = true)
-            }
-            .sortedByDescending { it.date }
-    }
-    
-    /**
-     * Refresh review data.
-     */
-    fun refresh() {
-        viewModelScope.launch {
-            _uiState.value.currentCocktailId?.let { cocktailId ->
-                loadReviewsForCocktail(cocktailId)
-            }
-        }
-    }
-    
 }
