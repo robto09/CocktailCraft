@@ -3,21 +3,21 @@ package com.cocktailcraft.viewmodel
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.usecase.ManageOfflineModeUseCase
 import com.cocktailcraft.domain.util.getOrDefault
+import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.viewmodel.state.OfflineUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import org.koin.core.component.inject
 
 /**
  * Shared ViewModel for Offline Mode functionality.
  * Uses consolidated [OfflineUiState] for atomic state updates.
  */
-class SharedOfflineModeViewModel : SharedViewModel() {
-
-    private val manageOfflineModeUseCase: ManageOfflineModeUseCase by inject()
-    private val networkMonitor: NetworkMonitor by inject()
+class SharedOfflineModeViewModel internal constructor(
+    private val manageOfflineModeUseCase: ManageOfflineModeUseCase,
+    private val networkMonitor: NetworkMonitor
+) : SharedViewModel() {
 
     // Consolidated UI State
     private val _uiState = MutableStateFlow(OfflineUiState())
@@ -89,16 +89,13 @@ class SharedOfflineModeViewModel : SharedViewModel() {
             return
         }
         
-        setLoading(true)
         try {
             // Load fresh data from repository
-            val cocktails = manageOfflineModeUseCase.syncCachedData().getOrDefault(emptyList())
+            val cocktails = manageOfflineModeUseCase.syncCachedData().getOrThrow()
             _uiState.update { it.copy(cacheSize = cocktails.size) }
             updateLastSyncTime()
-            setLoading(false)
         } catch (e: Exception) {
             handleException(e, "Failed to sync cached data")
-            setLoading(false)
         }
     }
     
@@ -108,14 +105,11 @@ class SharedOfflineModeViewModel : SharedViewModel() {
      */
     suspend fun clearCache() {
         try {
-            setLoading(true)
             
             _uiState.update { it.copy(recentlyViewedCocktails = emptyList(), cacheSize = 0, lastSyncTime = null) }
             
-            setLoading(false)
         } catch (e: Exception) {
             handleException(e, "Failed to clear cache")
-            setLoading(false)
         }
     }
     
@@ -125,7 +119,7 @@ class SharedOfflineModeViewModel : SharedViewModel() {
      */
     suspend fun loadRecentlyViewedCocktails() {
         try {
-            val cocktails = manageOfflineModeUseCase.getRecentlyViewedCocktails().getOrDefault(emptyList())
+            val cocktails = manageOfflineModeUseCase.getRecentlyViewedCocktails().getOrThrow()
             _uiState.update { it.copy(recentlyViewedCocktails = cocktails, cacheSize = cocktails.size) }
         } catch (e: Exception) {
             if (!_uiState.value.isOfflineModeEnabled) {

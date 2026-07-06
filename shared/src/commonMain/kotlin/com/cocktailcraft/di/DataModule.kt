@@ -2,8 +2,11 @@ package com.cocktailcraft.di
 
 import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.CocktailCacheManager
+import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.data.repository.AuthRepositoryImpl
 import com.cocktailcraft.data.repository.CartRepositoryImpl
+import com.cocktailcraft.data.repository.CocktailFavoritesRepositoryImpl
+import com.cocktailcraft.data.repository.CocktailOfflineRepositoryImpl
 import com.cocktailcraft.data.repository.CocktailRepositoryImpl
 import com.cocktailcraft.data.repository.FavoritesRepositoryImpl
 import com.cocktailcraft.data.repository.OrderRepositoryImpl
@@ -42,22 +45,46 @@ val dataModule = module {
     // In-memory cache manager (thread-safe singleton)
     single { CocktailCacheManager() }
 
-    // Cocktail Repository — single impl bound to all 5 focused interfaces + composite
-    single<CocktailRepository> {
-        CocktailRepositoryImpl(
-            api = get(),
+    // Remote data source: API access, DTO mapping, rate-limit bookkeeping
+    single { CocktailRemoteDataSource(api = get(), cacheManager = get()) }
+
+    // Focused repositories, each owning one concern
+    single {
+        CocktailOfflineRepositoryImpl(
             settings = get(),
             appConfig = get(),
             networkMonitor = get(),
             cocktailCache = get(),
-            cacheManager = get()
+            remote = get()
+        )
+    }
+    single<CocktailOfflineRepository> { get<CocktailOfflineRepositoryImpl>() }
+
+    single<CocktailFavoritesRepository> {
+        CocktailFavoritesRepositoryImpl(
+            settings = get(),
+            appConfig = get(),
+            cocktailCache = get(),
+            remote = get(),
+            offlineRepository = get()
+        )
+    }
+
+    // Search/detail/catalog repository; composite binding delegates the
+    // favorites and offline portions to the focused impls above
+    single<CocktailRepository> {
+        CocktailRepositoryImpl(
+            remote = get(),
+            cocktailCache = get(),
+            cacheManager = get(),
+            appConfig = get(),
+            offlineRepository = get(),
+            favoritesRepository = get()
         )
     }
     single<CocktailSearchRepository> { get<CocktailRepository>() }
     single<CocktailDetailRepository> { get<CocktailRepository>() }
     single<CocktailCatalogRepository> { get<CocktailRepository>() }
-    single<CocktailFavoritesRepository> { get<CocktailRepository>() }
-    single<CocktailOfflineRepository> { get<CocktailRepository>() }
 
     single<CartRepository> {
         CartRepositoryImpl(get(), get())

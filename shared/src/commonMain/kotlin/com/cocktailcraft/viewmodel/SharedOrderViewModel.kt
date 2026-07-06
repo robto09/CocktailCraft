@@ -1,26 +1,31 @@
 package com.cocktailcraft.viewmodel
 
-import co.touchlab.kermit.Logger
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.config.DeliveryPolicy
 import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.OrderStatistics
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.usecase.ManageOrdersUseCase
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
+import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.OrderUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import org.koin.core.component.inject
 
 /**
  * Shared ViewModel for Order functionality.
  * Uses consolidated [OrderUiState] for atomic state updates.
  */
-class SharedOrderViewModel : SharedViewModel() {
-
-    private val manageOrdersUseCase: ManageOrdersUseCase by inject()
-    private val placeOrderUseCase: PlaceOrderUseCase by inject()
+class SharedOrderViewModel internal constructor(
+    private val manageOrdersUseCase: ManageOrdersUseCase,
+    private val placeOrderUseCase: PlaceOrderUseCase
+) : SharedViewModel() {
 
     // Consolidated UI State
     private val _uiState = MutableStateFlow(OrderUiState())
@@ -32,7 +37,18 @@ class SharedOrderViewModel : SharedViewModel() {
         get() = _uiState.value.orders.isEmpty()
 
     init {
-        viewModelScope.launch { loadOrders() }
+        // The repository exposes a hot StateFlow seeded from persistence —
+        // collecting it is the single way orders enter this ViewModel.
+        viewModelScope.launch {
+            manageOrdersUseCase.observeOrders().collect { orderList ->
+                _uiState.update { it.copy(
+                    orders = orderList.sortedByDescending { o -> o.date },
+                    orderCount = orderList.size,
+                    totalSpent = orderList.sumOf { o -> o.total },
+                    isLoading = false
+                ) }
+            }
+        }
     }
     
     /**
@@ -41,20 +57,17 @@ class SharedOrderViewModel : SharedViewModel() {
      */
     suspend fun loadOrders() {
         _uiState.update { it.copy(isLoading = true) }
-        setLoading(true)
         try {
-            val orderList = manageOrdersUseCase.getOrders().getOrDefault(emptyList())
+            val orderList = manageOrdersUseCase.getOrders().getOrThrow()
             _uiState.update { it.copy(
                 orders = orderList.sortedByDescending { o -> o.date },
                 orderCount = orderList.size,
                 totalSpent = orderList.sumOf { o -> o.total },
                 isLoading = false
             ) }
-            setLoading(false)
         } catch (e: Exception) {
             handleException(e, "Failed to load orders")
             _uiState.update { it.copy(isLoading = false) }
-            setLoading(false)
         }
     }
     
@@ -73,15 +86,13 @@ class SharedOrderViewModel : SharedViewModel() {
         }
 
         _uiState.update { it.copy(isPlacingOrder = true, isLoading = true) }
-        setLoading(true)
 
         try {
             val result = placeOrderUseCase(cartItems, totalPrice)
             return when (result) {
                 is Result.Success -> {
+                    // The observed orders flow picks up the new order automatically
                     _uiState.update { it.copy(currentOrder = result.data, isPlacingOrder = false, isLoading = false) }
-                    setLoading(false)
-                    loadOrders()
                     true
                 }
                 is Result.Error -> {
@@ -91,7 +102,6 @@ class SharedOrderViewModel : SharedViewModel() {
                         ErrorHandler.ErrorCategory.SERVER
                     )
                     _uiState.update { it.copy(isPlacingOrder = false, isLoading = false) }
-                    setLoading(false)
                     false
                 }
                 is Result.Loading -> {
@@ -101,73 +111,10 @@ class SharedOrderViewModel : SharedViewModel() {
         } catch (e: Exception) {
             handleException(e, "Failed to place order")
             _uiState.update { it.copy(isPlacingOrder = false, isLoading = false) }
-            setLoading(false)
             return false
         }
     }
 
-    /**
-     * Place order with callback for iOS integration.
-     * This method provides a callback-based interface for better iOS interop.
-     */
-    fun placeOrderWithCallback(cartItems: List<CocktailCartItem>, totalPrice: Double, callback: (Boolean) -> Unit) {
-        Logger.d { "SharedOrderViewModel.placeOrderWithCallback called with ${cartItems.size} items, total: $totalPrice" }
-
-        if (cartItems.isEmpty()) {
-            setError(
-                "Empty Cart",
-                "Cannot place order with empty cart",
-                ErrorHandler.ErrorCategory.DATA
-            )
-            callback(false)
-            return
-        }
-
-        _uiState.update { it.copy(isPlacingOrder = true, isLoading = true) }
-        setLoading(true)
-
-        viewModelScope.launch {
-            try {
-                Logger.d { "SharedOrderViewModel: Starting order placement" }
-                val result = placeOrderUseCase(cartItems, totalPrice)
-                Logger.d { "SharedOrderViewModel: Received result: $result" }
-                when (result) {
-                    is Result.Success -> {
-                        Logger.d { "SharedOrderViewModel: Processing success result" }
-                        _uiState.update { it.copy(currentOrder = result.data, isPlacingOrder = false, isLoading = false) }
-                        setLoading(false)
-                        Logger.d { "SharedOrderViewModel: Order placed successfully, calling callback with true" }
-                        callback(true)
-                        loadOrders()
-                    }
-                    is Result.Error -> {
-                        Logger.w { "SharedOrderViewModel: Processing error result: ${result.message}" }
-                        setError(
-                            "Order Failed",
-                            result.message,
-                            ErrorHandler.ErrorCategory.SERVER
-                        )
-                        _uiState.update { it.copy(isPlacingOrder = false, isLoading = false) }
-                        setLoading(false)
-                        Logger.d { "SharedOrderViewModel: Order failed, calling callback with false" }
-                        callback(false)
-                    }
-                    is Result.Loading -> {
-                        Logger.d { "SharedOrderViewModel: Processing loading result" }
-                    }
-                }
-                Logger.d { "SharedOrderViewModel: Order placement completed" }
-            } catch (e: Exception) {
-                Logger.e(e) { "SharedOrderViewModel: Exception in viewModelScope: ${e.message}" }
-                handleException(e, "Failed to place order")
-                _uiState.update { it.copy(isPlacingOrder = false, isLoading = false) }
-                setLoading(false)
-                Logger.d { "SharedOrderViewModel: Exception occurred, calling callback with false" }
-                callback(false)
-            }
-        }
-    }
-    
     /**
      * Get order by ID.
      * SKIE will convert this to Swift async function returning optional.
@@ -207,7 +154,6 @@ class SharedOrderViewModel : SharedViewModel() {
      */
     suspend fun cancelOrder(orderId: String): Boolean {
         return try {
-            setLoading(true)
             val success = manageOrdersUseCase.cancelOrder(orderId).getOrDefault(false)
             if (success) {
                 loadOrders()
@@ -218,53 +164,14 @@ class SharedOrderViewModel : SharedViewModel() {
                     ErrorHandler.ErrorCategory.SERVER
                 )
             }
-            setLoading(false)
             success
         } catch (e: Exception) {
             handleException(e, "Failed to cancel order")
-            setLoading(false)
             false
         }
     }
     
-    /**
-     * Reorder items from a previous order.
-     * SKIE will convert this to Swift async function.
-     */
-    suspend fun reorderItems(orderId: String): Boolean {
-        return try {
-            val order = getOrderById(orderId)
-            if (order != null) {
-                // Convert order items back to cart items for reordering
-                // This is a simplified implementation - in a real app you'd need to
-                // convert OrderItems back to CocktailCartItems properly
-                val totalPrice = order.total
-                
-                // For now, we'll create a new order with the same total
-                // In a real implementation, you'd reconstruct the cart items
-                val emptyCartItems = emptyList<CocktailCartItem>()
-                
-                setError(
-                    "Reorder Feature",
-                    "Reorder functionality needs cart integration",
-                    ErrorHandler.ErrorCategory.CLIENT
-                )
-                false
-            } else {
-                setError(
-                    "Order Not Found",
-                    "Cannot reorder - original order not found",
-                    ErrorHandler.ErrorCategory.DATA
-                )
-                false
-            }
-        } catch (e: Exception) {
-            handleException(e, "Failed to reorder items")
-            false
-        }
-    }
-    
-    // MARK: - Synchronous Helper Methods
+// MARK: - Synchronous Helper Methods
     
     /**
      * Get orders by status.
@@ -283,15 +190,25 @@ class SharedOrderViewModel : SharedViewModel() {
     fun getOrdersByDateRange(startDate: String, endDate: String): List<Order> =
         _uiState.value.orders.filter { it.date >= startDate && it.date <= endDate }
 
-    fun getOrderStatistics(): Map<String, Any> {
+    fun getAverageOrderValue(): Double {
         val orders = _uiState.value.orders
-        val statusCounts = orders.groupBy { it.status }.mapValues { it.value.size }
-        val averageOrderValue = if (orders.isNotEmpty()) orders.sumOf { it.total } / orders.size else 0.0
-        return mapOf(
-            "totalOrders" to orders.size,
-            "totalSpent" to _uiState.value.totalSpent,
-            "averageOrderValue" to averageOrderValue,
-            "statusBreakdown" to statusCounts
+        return if (orders.isNotEmpty()) orders.sumOf { it.total } / orders.size else 0.0
+    }
+
+    /** Orders placed in the current calendar month (order dates are ISO yyyy-MM-dd strings). */
+    fun getOrdersThisMonth(): List<Order> {
+        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+        val startOfMonth = LocalDate(today.year, today.month, 1)
+        return getOrdersByDateRange(startOfMonth.toString(), today.toString())
+    }
+
+    fun getOrderStatistics(): OrderStatistics {
+        val orders = _uiState.value.orders
+        return OrderStatistics(
+            totalOrders = orders.size,
+            totalSpent = _uiState.value.totalSpent,
+            averageOrderValue = getAverageOrderValue(),
+            statusBreakdown = orders.groupBy { it.status }.mapValues { it.value.size }
         )
     }
 
@@ -319,14 +236,7 @@ class SharedOrderViewModel : SharedViewModel() {
      */
     fun getEstimatedDeliveryTime(orderId: String): String {
         val order = _uiState.value.orders.find { it.id == orderId }
-        return when (order?.status?.lowercase()) {
-            "pending" -> "Processing will begin shortly"
-            "processing" -> "15-25 minutes"
-            "shipped" -> "5-10 minutes"
-            "delivered" -> "Delivered"
-            "cancelled" -> "Cancelled"
-            else -> "Unknown"
-        }
+        return DeliveryPolicy.estimatedDeliveryTimeForStatus(order?.status)
     }
     
     /**

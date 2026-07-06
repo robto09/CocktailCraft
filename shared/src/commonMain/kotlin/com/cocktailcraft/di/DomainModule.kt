@@ -35,20 +35,39 @@ val domainModule = module {
     factory { ManageProfileUseCase(authRepository = get()) }
     factory { ManageReviewsUseCase() }
     factory { ManageOrdersUseCase(orderRepository = get()) }
+    factory { com.cocktailcraft.domain.usecase.AnalyzeCocktailUseCase() }
     factory { PlaceOrderUseCase(orderRepository = get()) }
 
     // Screen-scoped ViewModels — factory (new instance per screen)
-    factory { com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel() }
-    factory { com.cocktailcraft.viewmodel.SharedReviewViewModel() }
+    factory {
+        com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel(
+            getCocktailDetailUseCase = get(),
+            manageFavoritesUseCase = get(),
+            manageCartUseCase = get(),
+            analyzeCocktailUseCase = get()
+        )
+    }
+    factory { com.cocktailcraft.viewmodel.SharedReviewViewModel(manageReviewsUseCase = get()) }
 
     // Global-state ViewModels — single (shared across screens, persist across navigation)
-    single { com.cocktailcraft.viewmodel.SharedHomeViewModel() }
-    single { com.cocktailcraft.viewmodel.SharedCartViewModel() }
-    single { com.cocktailcraft.viewmodel.SharedFavoritesViewModel() }
-    single { com.cocktailcraft.viewmodel.SharedOrderViewModel() }
-    single { com.cocktailcraft.viewmodel.SharedProfileViewModel() }
-    single { com.cocktailcraft.viewmodel.SharedOfflineModeViewModel() }
-    single { com.cocktailcraft.viewmodel.SharedThemeViewModel() }
+    single {
+        com.cocktailcraft.viewmodel.SharedHomeViewModel(
+            searchCocktailsUseCase = get(),
+            loadCocktailsByCategoryUseCase = get(),
+            sortCocktailsUseCase = get(),
+            filterCocktailsUseCase = get(),
+            manageFavoritesUseCase = get(),
+            manageOfflineModeUseCase = get(),
+            getCocktailDetailUseCase = get(),
+            networkMonitor = get()
+        )
+    }
+    single { com.cocktailcraft.viewmodel.SharedCartViewModel(manageCartUseCase = get()) }
+    single { com.cocktailcraft.viewmodel.SharedFavoritesViewModel(manageFavoritesUseCase = get()) }
+    single { com.cocktailcraft.viewmodel.SharedOrderViewModel(manageOrdersUseCase = get(), placeOrderUseCase = get()) }
+    single { com.cocktailcraft.viewmodel.SharedProfileViewModel(manageProfileUseCase = get()) }
+    single { com.cocktailcraft.viewmodel.SharedOfflineModeViewModel(manageOfflineModeUseCase = get(), networkMonitor = get()) }
+    single { com.cocktailcraft.viewmodel.SharedThemeViewModel(manageProfileUseCase = get()) }
 
     // Cross-platform sync orchestration (schedulers are platform-side)
     single { com.cocktailcraft.domain.service.BackgroundSyncService(catalogRepository = get(), networkMonitor = get()) }

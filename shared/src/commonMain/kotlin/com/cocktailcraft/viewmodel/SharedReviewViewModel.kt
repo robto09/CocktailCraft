@@ -6,15 +6,14 @@ import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.ReviewUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import org.koin.core.component.inject
 
 /**
  * Shared ViewModel for Review functionality.
  * Uses consolidated [ReviewUiState] for atomic state updates.
  */
-class SharedReviewViewModel : SharedViewModel() {
-
-    private val manageReviewsUseCase: ManageReviewsUseCase by inject()
+class SharedReviewViewModel internal constructor(
+    private val manageReviewsUseCase: ManageReviewsUseCase
+) : SharedViewModel() {
 
     // Consolidated UI State
     private val _uiState = MutableStateFlow(ReviewUiState())
@@ -32,7 +31,6 @@ class SharedReviewViewModel : SharedViewModel() {
     suspend fun loadReviewsForCocktail(cocktailId: String) {
         try {
             _uiState.update { it.copy(isLoading = true) }
-            setLoading(true)
 
             val cocktailReviews = _uiState.value.reviews[cocktailId] ?: emptyList()
             _uiState.update { it.copy(
@@ -42,11 +40,9 @@ class SharedReviewViewModel : SharedViewModel() {
                 averageRating = manageReviewsUseCase.computeAverageRating(cocktailReviews),
                 isLoading = false
             ) }
-            setLoading(false)
         } catch (e: Exception) {
             handleException(e, "Failed to load reviews")
             _uiState.update { it.copy(isLoading = false) }
-            setLoading(false)
         }
     }
     
@@ -69,7 +65,6 @@ class SharedReviewViewModel : SharedViewModel() {
         }
 
         try {
-            setLoading(true)
 
             val updated = manageReviewsUseCase.submitReview(cocktailId, rating, comment, userName, _uiState.value.reviews)
             _uiState.update { it.copy(reviews = updated) }
@@ -78,11 +73,9 @@ class SharedReviewViewModel : SharedViewModel() {
                 loadReviewsForCocktail(cocktailId)
             }
 
-            setLoading(false)
             return true
         } catch (e: Exception) {
             handleException(e, "Failed to submit review")
-            setLoading(false)
             return false
         }
     }
@@ -97,7 +90,6 @@ class SharedReviewViewModel : SharedViewModel() {
         }
 
         try {
-            setLoading(true)
 
             val (updatedReviews, found) = manageReviewsUseCase.updateReview(reviewId, rating, comment, _uiState.value.reviews)
 
@@ -107,7 +99,6 @@ class SharedReviewViewModel : SharedViewModel() {
                     "The review you're trying to update was not found",
                     ErrorHandler.ErrorCategory.DATA
                 )
-                setLoading(false)
                 return false
             }
 
@@ -117,11 +108,9 @@ class SharedReviewViewModel : SharedViewModel() {
                 loadReviewsForCocktail(cocktailId)
             }
 
-            setLoading(false)
             return true
         } catch (e: Exception) {
             handleException(e, "Failed to update review")
-            setLoading(false)
             return false
         }
     }
@@ -132,7 +121,6 @@ class SharedReviewViewModel : SharedViewModel() {
      */
     suspend fun deleteReview(reviewId: String): Boolean {
         try {
-            setLoading(true)
 
             val (updatedReviews, found, affectedCocktailId) = manageReviewsUseCase.deleteReview(reviewId, _uiState.value.reviews)
 
@@ -142,7 +130,6 @@ class SharedReviewViewModel : SharedViewModel() {
                     "The review you're trying to delete was not found",
                     ErrorHandler.ErrorCategory.DATA
                 )
-                setLoading(false)
                 return false
             }
 
@@ -154,11 +141,9 @@ class SharedReviewViewModel : SharedViewModel() {
                 }
             }
 
-            setLoading(false)
             return true
         } catch (e: Exception) {
             handleException(e, "Failed to delete review")
-            setLoading(false)
             return false
         }
     }
@@ -169,16 +154,13 @@ class SharedReviewViewModel : SharedViewModel() {
      */
     suspend fun loadAllReviews() {
         try {
-            setLoading(true)
             
             // In a real implementation, this would load from a repository
             // For now, we just update the current state
             val allReviews = _uiState.value.reviews.values.flatten()
             
-            setLoading(false)
         } catch (e: Exception) {
             handleException(e, "Failed to load all reviews")
-            setLoading(false)
         }
     }
     

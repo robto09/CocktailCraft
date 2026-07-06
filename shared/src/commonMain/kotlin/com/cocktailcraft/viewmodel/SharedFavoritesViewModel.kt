@@ -2,11 +2,10 @@ package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
-import com.cocktailcraft.domain.util.getOrDefault
+import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.viewmodel.state.FavoritesUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import org.koin.core.component.inject
 
 /**
  * Shared ViewModel for Favorites functionality.
@@ -17,9 +16,9 @@ import org.koin.core.component.inject
  * - Suspend functions become Swift async functions
  * - No FlowCollector bridge needed
  */
-class SharedFavoritesViewModel : SharedViewModel() {
-
-    private val manageFavoritesUseCase: ManageFavoritesUseCase by inject()
+class SharedFavoritesViewModel internal constructor(
+    private val manageFavoritesUseCase: ManageFavoritesUseCase
+) : SharedViewModel() {
 
     // Consolidated UI State
     private val _uiState = MutableStateFlow(FavoritesUiState())
@@ -36,14 +35,12 @@ class SharedFavoritesViewModel : SharedViewModel() {
 
     suspend fun loadFavorites() {
         _uiState.update { it.copy(isLoading = true) }
-        setLoading(true)
         try {
-            val favs = manageFavoritesUseCase.loadFavorites().getOrDefault(emptyList())
+            val favs = manageFavoritesUseCase.loadFavorites().getOrThrow()
             _uiState.update { it.copy(favorites = favs, favoriteCount = favs.size, isLoading = false) }
-            setLoading(false)
         } catch (e: Exception) {
+            handleException(e, "Failed to load favorites")
             _uiState.update { it.copy(isLoading = false) }
-            setLoading(false)
         }
     }
 

@@ -1,24 +1,27 @@
 package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.NutritionFacts
+import com.cocktailcraft.domain.usecase.AnalyzeCocktailUseCase
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.util.getOrDefault
+import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.viewmodel.state.DetailUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import org.koin.core.component.inject
 
 /**
  * Shared ViewModel for Cocktail Detail functionality.
  * Uses consolidated [DetailUiState] for atomic state updates.
  */
-class SharedCocktailDetailViewModel : SharedViewModel() {
-
-    private val getCocktailDetailUseCase: GetCocktailDetailUseCase by inject()
-    private val manageFavoritesUseCase: ManageFavoritesUseCase by inject()
-    private val manageCartUseCase: ManageCartUseCase by inject()
+class SharedCocktailDetailViewModel internal constructor(
+    private val getCocktailDetailUseCase: GetCocktailDetailUseCase,
+    private val manageFavoritesUseCase: ManageFavoritesUseCase,
+    private val manageCartUseCase: ManageCartUseCase,
+    private val analyzeCocktailUseCase: AnalyzeCocktailUseCase
+) : SharedViewModel() {
 
     // Consolidated UI State
     private val _uiState = MutableStateFlow(DetailUiState())
@@ -30,11 +33,10 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
      */
     suspend fun loadCocktail(cocktailId: String) {
         _uiState.update { it.copy(isLoading = true) }
-        setLoading(true)
         clearError()
 
         try {
-            val loadedCocktail = getCocktailDetailUseCase(cocktailId).getOrNull()
+            val loadedCocktail = getCocktailDetailUseCase(cocktailId).getOrThrow()
             _uiState.update { it.copy(cocktail = loadedCocktail) }
             if (loadedCocktail != null) {
                 viewModelScope.launch {
@@ -48,11 +50,9 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
                 processIngredients(loadedCocktail)
             }
             _uiState.update { it.copy(isLoading = false) }
-            setLoading(false)
         } catch (e: Exception) {
             handleException(e, "Failed to load cocktail details")
             _uiState.update { it.copy(isLoading = false) }
-            setLoading(false)
         }
     }
 
@@ -130,25 +130,7 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
     }
 
     private fun processIngredients(cocktail: Cocktail) {
-        val grouped = mutableMapOf<String, MutableList<String>>()
-        cocktail.ingredients.forEach { ingredient ->
-            val type = categorizeIngredient(ingredient.name)
-            grouped.getOrPut(type) { mutableListOf() }.add(ingredient.name)
-        }
-        _uiState.update { it.copy(ingredientsByType = grouped.mapValues { entry -> entry.value.toList() }) }
-    }
-    
-    private fun categorizeIngredient(ingredientName: String): String {
-        val name = ingredientName.lowercase()
-        return when {
-            name.contains("rum") || name.contains("vodka") || name.contains("gin") ||
-            name.contains("whiskey") || name.contains("tequila") || name.contains("bourbon") -> "Spirits"
-            name.contains("juice") || name.contains("lime") || name.contains("lemon") ||
-            name.contains("orange") -> "Citrus & Juices"
-            name.contains("syrup") || name.contains("sugar") || name.contains("honey") -> "Sweeteners"
-            name.contains("bitters") || name.contains("salt") || name.contains("pepper") -> "Seasonings"
-            else -> "Other"
-        }
+        _uiState.update { it.copy(ingredientsByType = analyzeCocktailUseCase.ingredientsByType(cocktail)) }
     }
     
     // MARK: - Synchronous Helper Methods
@@ -178,34 +160,11 @@ class SharedCocktailDetailViewModel : SharedViewModel() {
     }
     
     /**
-     * Get nutrition facts (example calculation).
+     * Get estimated nutrition facts (typed; heuristic estimation in domain).
      */
-    fun getNutritionFacts(): Map<String, String> {
-        val cocktail = _uiState.value.cocktail ?: return emptyMap()
-        
-        // Simple estimation based on ingredients
-        var calories = 0
-        var alcohol = 0.0
-        
-        cocktail.ingredients.forEach { ingredient ->
-            val name = ingredient.name.lowercase()
-            when {
-                name.contains("rum") || name.contains("vodka") || name.contains("gin") ||
-                name.contains("whiskey") || name.contains("tequila") -> {
-                    calories += 65 // ~65 calories per oz of spirits
-                    alcohol += 14.0 // ~14g alcohol per oz
-                }
-                name.contains("juice") -> calories += 15 // ~15 calories per oz of juice
-                name.contains("syrup") || name.contains("sugar") -> calories += 25 // ~25 calories per oz
-            }
-        }
-        
-        return mapOf(
-            "Calories" to "${calories} kcal",
-            "Alcohol" to "${alcohol.toInt()}g",
-            "Carbs" to "${(calories * 0.1).toInt()}g",
-            "Sugar" to "${(calories * 0.15).toInt()}g"
-        )
+    fun getNutritionFacts(): NutritionFacts? {
+        val cocktail = _uiState.value.cocktail ?: return null
+        return analyzeCocktailUseCase.nutritionFacts(cocktail)
     }
     
     /**

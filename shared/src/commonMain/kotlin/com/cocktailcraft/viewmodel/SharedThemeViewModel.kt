@@ -4,11 +4,11 @@ import com.cocktailcraft.domain.model.ThemeMode
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.usecase.ManageProfileUseCase
 import com.cocktailcraft.domain.util.getOrDefault
+import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.ThemeUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import org.koin.core.component.inject
 
 /**
  * Shared ViewModel for Theme functionality.
@@ -17,9 +17,9 @@ import org.koin.core.component.inject
  * All theme mutations are value-based setters (never flip-style toggles),
  * so a re-fired UI callback can only re-assert the same state.
  */
-class SharedThemeViewModel : SharedViewModel() {
-
-    private val manageProfileUseCase: ManageProfileUseCase by inject()
+class SharedThemeViewModel internal constructor(
+    private val manageProfileUseCase: ManageProfileUseCase
+) : SharedViewModel() {
 
     // Consolidated UI State
     private val _uiState = MutableStateFlow(ThemeUiState())
@@ -309,7 +309,7 @@ class SharedThemeViewModel : SharedViewModel() {
                 followSystemTheme = state.isSystemTheme
             )
 
-            val success = manageProfileUseCase.updateUserPreferences(updatedPreferences).getOrDefault(false)
+            val success = manageProfileUseCase.updateUserPreferences(updatedPreferences).getOrThrow()
             if (success) {
                 _uiState.update { it.copy(userPreferences = updatedPreferences) }
             } else {

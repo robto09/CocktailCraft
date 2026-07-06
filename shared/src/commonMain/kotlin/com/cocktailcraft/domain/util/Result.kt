@@ -49,9 +49,15 @@ fun <T> Result<T>.getOrDefault(defaultValue: @UnsafeVariance T): T = when (this)
     else -> defaultValue
 }
 
+/**
+ * Exception carrying a domain [ErrorCode], thrown when a [Result.Error] is
+ * unwrapped via [getOrThrow]. Lets try/catch error paths keep the typed code.
+ */
+class DomainException(val code: ErrorCode, message: String) : Exception(message)
+
 // Extension: get data or throw an exception (useful for bridging to try/catch callers)
 fun <T> Result<T>.getOrThrow(): T = when (this) {
     is Result.Success -> data
-    is Result.Error -> throw RuntimeException(message)
+    is Result.Error -> throw DomainException(code, message)
     is Result.Loading -> throw IllegalStateException("Result is still loading")
 }
