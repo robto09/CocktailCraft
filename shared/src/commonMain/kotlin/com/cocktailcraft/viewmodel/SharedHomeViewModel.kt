@@ -16,7 +16,6 @@ import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.viewmodel.state.HomeUiState
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -44,7 +43,6 @@ class SharedHomeViewModel internal constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    private var searchJob: Job? = null
     private val PAGE_SIZE = 10
     
     init {
@@ -360,24 +358,6 @@ class SharedHomeViewModel internal constructor(
     }
     
     // Private helper functions
-    
-    private suspend fun performSearch() {
-        _uiState.update { it.copy(isLoading = true) }
-        clearError()
-
-        try {
-            val state = _uiState.value
-            val cocktailList = if (state.searchFilters.hasActiveFilters()) {
-                searchCocktailsUseCase.advancedSearch(state.searchFilters).getOrThrow()
-            } else {
-                searchCocktailsUseCase(state.searchQuery).getOrThrow()
-            }
-            _uiState.update { it.copy(cocktails = cocktailList, isLoading = false) }
-        } catch (e: Exception) {
-            handleException(e, "Failed to search cocktails")
-            _uiState.update { it.copy(isLoading = false) }
-        }
-    }
 
     private suspend fun loadFavorites() {
         try {
