@@ -8,11 +8,11 @@ struct ErrorView: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: getErrorIcon(for: error.category as! shared.__Bridge__ErrorHandler_ErrorCategory))
+            Image(systemName: getErrorIcon(for: error.category))
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 60, height: 60)
-                .foregroundColor(getErrorColor(for: error.category as! shared.__Bridge__ErrorHandler_ErrorCategory))
+                .foregroundColor(getErrorColor(for: error.category))
             
             Text(error.title)
                 .font(.title3)

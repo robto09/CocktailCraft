@@ -22,6 +22,7 @@ struct FavoritesView: View {
                 await viewModel.loadFavorites()
             }
         }
+        .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
     }
     
     private var emptyStateView: some View {

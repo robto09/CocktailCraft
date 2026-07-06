@@ -75,28 +75,20 @@ struct CartView: View {
                 message: Text("Are you sure you want to place this order for \(cartViewModel.finalTotal.asPrice)?"),
                 primaryButton: .default(Text("Confirm")) {
                     Task {
+                        // Order state propagates reactively from the shared
+                        // orders flow — no notifications or delays needed.
                         let success = await orderViewModel.placeOrder(cartItems: cartViewModel.state.cartItems, totalPrice: cartViewModel.finalTotal)
-                        print("Order placement result: \(success)")
                         if success {
-                            // Clear cart after successful order
                             await cartViewModel.clearCart()
-                            // Post notification for order placed
-                            NotificationCenter.default.post(name: NSNotification.Name("OrderPlaced"), object: nil)
-                            // Small delay to ensure order is saved
-                            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-                            // Navigate to Orders tab (tag 3) - ensure this runs on main thread
-                            await MainActor.run {
-                                print("Navigating to Orders tab")
-                                selectedTab = 3
-                            }
-                        } else {
-                            print("Order placement failed")
+                            selectedTab = 3
                         }
                     }
                 },
                 secondaryButton: .cancel()
             )
         }
+        .sharedErrorAlert(cartViewModel.error, clear: { cartViewModel.clearError() })
+        .sharedErrorAlert(orderViewModel.error, clear: { orderViewModel.clearError() })
     }
 }
 

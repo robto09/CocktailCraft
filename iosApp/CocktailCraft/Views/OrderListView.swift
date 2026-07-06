@@ -18,6 +18,7 @@ struct OrderListView: View {
                     }
                 }
             }
+            .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
     }
 
     @ViewBuilder
