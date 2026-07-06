@@ -52,9 +52,9 @@ fun CartScreen(
     favoritesViewModel: SharedFavoritesViewModel
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val isLoading = state.isLoading
     val cartItems = state.cartItems
     val totalPrice = state.totalPrice
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
     val favorites = favoritesState.favorites

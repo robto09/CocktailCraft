@@ -33,7 +33,7 @@ fun OrderListScreen(
     navigationManager: NavigationManager
 ) {
     val state by orderViewModel.uiState.collectAsStateWithLifecycle()
-    val isLoading by orderViewModel.isLoading.collectAsStateWithLifecycle()
+    val isLoading = state.isLoading
     val error by orderViewModel.error.collectAsStateWithLifecycle()
 
     // Load orders when the screen is first displayed

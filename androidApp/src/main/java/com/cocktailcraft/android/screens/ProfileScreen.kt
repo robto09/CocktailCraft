@@ -81,9 +81,9 @@ fun ProfileScreen(
 
     // Get user data from ViewModel
     val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
+    val isLoading = profileState.isLoading
     val user = profileState.user
     val isLoggedIn = profileState.isLoggedIn
-    val isLoading by profileViewModel.isLoading.collectAsStateWithLifecycle()
     val error by profileViewModel.error.collectAsStateWithLifecycle()
 
     // Get theme data from ThemeViewModel
