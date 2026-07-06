@@ -39,7 +39,31 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8EF711437FB0AF93564F1FFA"
+               BuildableName = "CocktailCraftTests.xctest"
+               BlueprintName = "CocktailCraftTests"
+               ReferencedContainer = "container:CocktailCraft.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "23D0C6112AACE145B24E38D2"
+               BuildableName = "CocktailCraftUITests.xctest"
+               BlueprintName = "CocktailCraftUITests"
+               ReferencedContainer = "container:CocktailCraft.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
+      <CommandLineArguments>
+      </CommandLineArguments>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"

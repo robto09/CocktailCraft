@@ -14,6 +14,12 @@ target 'CocktailCraft' do
   # Debug tools (only in debug builds)
   pod 'DebugSwift', :git => 'https://github.com/DebugSwift/DebugSwift.git', :tag => '1.7.13.1', :configurations => ['Debug']
 
+  # Unit tests import the shared framework directly; search paths come from
+  # the host app target. (UI tests only drive the app, so they need no pods.)
+  target 'CocktailCraftTests' do
+    inherit! :search_paths
+  end
+
 end
 
 post_install do |installer|
