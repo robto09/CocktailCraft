@@ -3,131 +3,158 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0EBB347C2E33E199005F3BA9 /* OfflineModeViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EBB347B2E33E199005F3BA9 /* OfflineModeViewModelSKIE.swift */; };
-		0EBB347D2E33E199005F3BA9 /* CocktailDetailViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EBB34782E33E199005F3BA9 /* CocktailDetailViewModelSKIE.swift */; };
-		0EBB347E2E33E199005F3BA9 /* HomeViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EBB347A2E33E199005F3BA9 /* HomeViewModelSKIE.swift */; };
-		0EBB347F2E33E199005F3BA9 /* FavoritesViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EBB34792E33E199005F3BA9 /* FavoritesViewModelSKIE.swift */; };
-		1A2B3C4D5E6F7890ABCD1234 /* OfflineModeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7890ABCD1235 /* OfflineModeView.swift */; };
-		2B3C4D5E6F7890ABCD123456 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B3C4D5E6F7890ABCD123457 /* SignInView.swift */; };
-		3C4D5E6F7890ABCD12345678 /* SignUpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C4D5E6F7890ABCD12345679 /* SignUpView.swift */; };
-		4D5E6F7890ABCD123456789A /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D5E6F7890ABCD123456789B /* AppColors.swift */; };
-		5E6F7890ABCD123456789ABC /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E6F7890ABCD123456789ABD /* AppTheme.swift */; };
+		00146292C621392C71E37E0C /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED40DA08D38951B4D2DEEFA0 /* AppColors.swift */; };
+		009F3B5A400B6282D5641221 /* HomeViewSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF2F70830C783F8DE90EECC8 /* HomeViewSKIE.swift */; };
 		103C311FC2DD28DEC408D64A /* ShimmerEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33609CC7CE44DBCE6EA103C /* ShimmerEffect.swift */; };
+		11EC08719812BBF953E8CEAA /* FavoritesScreenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFC19C339408793D3B6051E8 /* FavoritesScreenTests.swift */; };
+		1ABC1FAFD32D199EF8772B5C /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96ACDD93E0EC4E181BA48B11 /* SignInView.swift */; };
+		1EB8E911E712FD47811095E5 /* Pods_CocktailCraft.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 12514B543D149FB79D918788 /* Pods_CocktailCraft.framework */; };
 		24890AC789C7126C99DEC28B /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8885ACD7979C44B621ECA874 /* ErrorView.swift */; };
-		8119167910F97D68E9D03CC4 /* LoadingStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D63B33C12D901D87F172A53 /* LoadingStateView.swift */; };
-		87491508CB632ACCD053B171 /* ProfileSupportViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BE5F650F295A63C6E77D4F5 /* ProfileSupportViews.swift */; };
-		79C9C6079E6F36A9855A92CB /* HomeEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3723F7BFFA810C9FD002121 /* HomeEmptyStateView.swift */; };
-		0872103190B51797ADB447E9 /* SharedErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96DB4D6BD947EAE1AEC723B8 /* SharedErrorAlert.swift */; };
-		39405B15883513D4C9A4C2C5 /* HomeViewSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 781E4068C6D09E26A2F6F660 /* HomeViewSKIE.swift */; };
-		A12FB6B1D3269F9BAC7BFE8F /* FilterViewSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE5F38625BFE9A97CA1A3287 /* FilterViewSKIE.swift */; };
+		305A2B554DA3EAE2020E2E67 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63786090651668CDB0593815 /* AppRouter.swift */; };
+		32BAAF705B9E5F683CE82611 /* CocktailDetailViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFB2F5C575682386E25C6505 /* CocktailDetailViewModelSKIE.swift */; };
+		38A2C94D0875C566231EDC2C /* LoadingStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E78CE3278A16F644AACFE37 /* LoadingStateView.swift */; };
 		3BF4E2DF43ABEAC1F129FA6B /* CocktailDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80D5D04492BF6D891CC9B192 /* CocktailDetailView.swift */; };
-		43288984DF6D79F9037FA2CF /* Pods_CocktailCraft.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4D99D0DAF68B0F452E9368E9 /* Pods_CocktailCraft.framework */; };
-		460A663ED56842689C78A398 /* ThemeViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = A72ABE76F0454E87B6F8C307 /* ThemeViewModelSKIE.swift */; };
-
 		4B1843A05358F5B1489781B5 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F79C3BBEFD0B2BE551CBB4A8 /* SettingsView.swift */; };
 		4BFEB7F904D60ED73FC3E3DA /* OfflineBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5353458E21534CF1929CE2C8 /* OfflineBanner.swift */; };
 		556B8A0A0C717207D3369E23 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509CBA5BD785E60D138BA5C8 /* NetworkMonitor.swift */; };
-		2AE15D0F5BB3B857C40A01F4 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 886B6E734A66F9B56577B105 /* AppRouter.swift */; };
-
+		55C58DB4D92784E7A2670D8F /* OfflineModeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 162F81601E778C80EAE10557 /* OfflineModeView.swift */; };
+		5A2723FCDFFBA08B1EFBD337 /* HomeViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CE2BAB7B77BB7B44AA60E88 /* HomeViewModelSKIE.swift */; };
 		5DD5C9541804B1F02B26C2CA /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77C5D3DBDD3CA76A90859F00 /* FavoritesView.swift */; };
+		626F24717F53ED7C42C93FE9 /* TestSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C722B2F49CF2565F2E2703B /* TestSetup.swift */; };
 		631932ECF8AC75AFB5416740 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D295EC1E30F565480A8AEB /* EmptyStateView.swift */; };
-		CART001234567890ABCDEF01 /* CartItemCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CART001234567890ABCDEF02 /* CartItemCard.swift */; };
-		CART001234567890ABCDEF03 /* CartSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CART001234567890ABCDEF04 /* CartSummaryCard.swift */; };
-		CART001234567890ABCDEF05 /* CheckoutButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CART001234567890ABCDEF06 /* CheckoutButton.swift */; };
-		CART001234567890ABCDEF07 /* CocktailImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CART001234567890ABCDEF08 /* CocktailImageView.swift */; };
-		BGSYNC1234567890ABCDEF01 /* BackgroundSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BGSYNC1234567890ABCDEF02 /* BackgroundSyncManager.swift */; };
-		BGSYNC1234567890ABCDEF03 /* BackgroundSyncCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = BGSYNC1234567890ABCDEF04 /* BackgroundSyncCard.swift */; };
-		7867DEB863AC49819CBF9550 /* ProfileViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5097B9993D604867B5723F89 /* ProfileViewModelSKIE.swift */; };
+		684AED4CBBCA62E12ED45267 /* HomeEmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F439C65AE3707FFC942F8D0C /* HomeEmptyStateView.swift */; };
+		70A2D664D871ECC8DDB95D8E /* SharedErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD98A7B406A27881A66A031B /* SharedErrorAlert.swift */; };
+		7666400114820764D3FF3EA7 /* CartScreenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60D905093AD2FAAC7A5105EB /* CartScreenTests.swift */; };
+		7FEA1EA6B431A96104100455 /* CoreUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AC758FEB87EDF17D2FFE28E /* CoreUnitTests.swift */; };
+		828F55B7A7BB7A8F7F50D014 /* FilterViewSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB01B85F7FED89BE5C5FBC22 /* FilterViewSKIE.swift */; };
+		898DCF28C1C51C8468E76962 /* CartSummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F5736A8DCA291A70555FB8F /* CartSummaryCard.swift */; };
+		8ECA50D697B7F3495C59CE80 /* CartViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = E448D2FDA894B81BD197C49C /* CartViewModelSKIE.swift */; };
+		9567ABFD564D27BE73445A06 /* CheckoutButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0C4D551F91412F5FD5C211A /* CheckoutButton.swift */; };
 		96CF06A65ECCAB15A7E21B07 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EBC388A838EA20284B59381 /* ContentView.swift */; };
 		9CA8A23169EACEE6BAA6168E /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61384C5931B60FCC54CA0D2E /* ProfileView.swift */; };
-		A11198AEB00E48BAB113C476 /* OrderViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BDC12B4B38A45DB93627603 /* OrderViewModelSKIE.swift */; };
+		9D4151CBB7895BB06CB1EC6A /* OfflineModeViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00D78385E5C1E0C2B7620238 /* OfflineModeViewModelSKIE.swift */; };
+		A0FF029431994B1ECD80D88F /* SharedViewModelWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = E59065E611A6E07B1D9DCACB /* SharedViewModelWrapper.swift */; };
 		A166DB404CF006A66284D821 /* CocktailCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A00F91ED1F43F12CF3B7400 /* CocktailCard.swift */; };
 		A22D24F59CFC34A6C3643DED /* CartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BD10A6D0C4EF128674C822C /* CartView.swift */; };
 		A8E64AE208119647DAB79C75 /* PlatformErrorHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A93B6E8F24572E413E46A2 /* PlatformErrorHandler.swift */; };
+		BF8BE75EA2A85E669160547D /* ProfileSupportViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCD7B48C5A8B2B9FF154993D /* ProfileSupportViews.swift */; };
+		C6FA7C1DC6BE170E8BEBA260 /* Pods_CocktailCraftTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CBB2D94F9889C34B7C24382A /* Pods_CocktailCraftTests.framework */; };
+		CC48B2BA1BDE316893EC3B2A /* OrderViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 105923BA1B2DFAA8FE9244E1 /* OrderViewModelSKIE.swift */; };
 		D3BD0756F33F51BAF8873DEF /* LoadingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 809D06387624AC9896D7E632 /* LoadingOverlay.swift */; };
+		D58974F73AAB59227A39CBEE /* ProfileViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 022159D9A840F5786580579C /* ProfileViewModelSKIE.swift */; };
+		D8812ACCBB87AF678F14A2DF /* SignUpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C9824BB27230081BF0DE7E /* SignUpView.swift */; };
+		DA5E1498FB4BC7963478C359 /* ThemeViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F2290935721E307B997FFA6 /* ThemeViewModelSKIE.swift */; };
 		DB7D7BA10D5729B4F84CCEDB /* OrderListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2B26ED3A3ACF1E6DAEE3D49 /* OrderListView.swift */; };
 		DE8850F09E59ACDA9DA09D48 /* CocktailCraftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E192F0B9BFCD6DE2579690 /* CocktailCraftApp.swift */; };
+		DF7ECCBD18760F3E25322423 /* BackgroundSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB4B26FD4FCE3F970E06C960 /* BackgroundSyncManager.swift */; };
+		E0D0224CA12C296EE91FE101 /* HomeScreenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29B0A6017C3D9E28B0246A96 /* HomeScreenTests.swift */; };
+		E5EA303DF9376412C78428A3 /* UITestSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DFADB5617C594B52D575942 /* UITestSetup.swift */; };
+		EA04EA28A1FC71555578322B /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD14EE492DD75C2B42FCE09F /* AppTheme.swift */; };
 		EF018FBC5C1312DB79C5D641 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62F8C00AB4F768E2258F18A6 /* Toast.swift */; };
-		F025AA2D6B5B4502A3023799 /* CartViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5FBEA761F8A4EB995742D08 /* CartViewModelSKIE.swift */; };
-		AB12CD34EF5678901234ABCE /* SharedViewModelWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5678901234ABCD /* SharedViewModelWrapper.swift */; };
+		F34D8705F2D659CE7F39731F /* FavoritesViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C55BEB921D8925895E81992 /* FavoritesViewModelSKIE.swift */; };
+		F3F82A7C15DBBBEC9EB9A896 /* CartItemCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D96106BD86624E97659C1E4 /* CartItemCard.swift */; };
+		F58F67F45D838D7246E7837A /* BackgroundSyncCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E8B658FF9565D6F161ECFBB /* BackgroundSyncCard.swift */; };
+		FA7E31BA8D2A30728866D896 /* CocktailImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E70DFA9A4A015542687047 /* CocktailImageView.swift */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		C1C4DC418C24FA0BE5E5FA16 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
+/* Begin PBXContainerItemProxy section */
+		26E3A7C336F163021F00D301 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8D54CE997381E20208816DC4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9F9F4C6B41AB384902D1C81C;
+			remoteInfo = CocktailCraft;
 		};
-/* End PBXCopyFilesBuildPhase section */
+		30FEA3EB451EA5D5374978C1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8D54CE997381E20208816DC4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9F9F4C6B41AB384902D1C81C;
+			remoteInfo = CocktailCraft;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		00D78385E5C1E0C2B7620238 /* OfflineModeViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineModeViewModelSKIE.swift; sourceTree = "<group>"; };
+		022159D9A840F5786580579C /* ProfileViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModelSKIE.swift; sourceTree = "<group>"; };
 		04D295EC1E30F565480A8AEB /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
-		CART001234567890ABCDEF02 /* CartItemCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartItemCard.swift; sourceTree = "<group>"; };
-		CART001234567890ABCDEF04 /* CartSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartSummaryCard.swift; sourceTree = "<group>"; };
-		CART001234567890ABCDEF06 /* CheckoutButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckoutButton.swift; sourceTree = "<group>"; };
-		CART001234567890ABCDEF08 /* CocktailImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailImageView.swift; sourceTree = "<group>"; };
-		BGSYNC1234567890ABCDEF02 /* BackgroundSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSyncManager.swift; sourceTree = "<group>"; };
-		BGSYNC1234567890ABCDEF04 /* BackgroundSyncCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSyncCard.swift; sourceTree = "<group>"; };
-		0EBB34782E33E199005F3BA9 /* CocktailDetailViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailDetailViewModelSKIE.swift; sourceTree = "<group>"; };
-		0EBB34792E33E199005F3BA9 /* FavoritesViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesViewModelSKIE.swift; sourceTree = "<group>"; };
-		0EBB347A2E33E199005F3BA9 /* HomeViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModelSKIE.swift; sourceTree = "<group>"; };
-		0EBB347B2E33E199005F3BA9 /* OfflineModeViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineModeViewModelSKIE.swift; sourceTree = "<group>"; };
-	1A2B3C4D5E6F7890ABCD1235 /* OfflineModeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineModeView.swift; sourceTree = "<group>"; };
-	2B3C4D5E6F7890ABCD123457 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
-	3C4D5E6F7890ABCD12345679 /* SignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpView.swift; sourceTree = "<group>"; };
-	4D5E6F7890ABCD123456789B /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
-	5E6F7890ABCD123456789ABD /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
-
+		105923BA1B2DFAA8FE9244E1 /* OrderViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderViewModelSKIE.swift; sourceTree = "<group>"; };
+		12514B543D149FB79D918788 /* Pods_CocktailCraft.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CocktailCraft.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		162F81601E778C80EAE10557 /* OfflineModeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineModeView.swift; sourceTree = "<group>"; };
+		29B0A6017C3D9E28B0246A96 /* HomeScreenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenTests.swift; sourceTree = "<group>"; };
 		2BD10A6D0C4EF128674C822C /* CartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartView.swift; sourceTree = "<group>"; };
+		3F9007E23E3A44E4D3DF0DA4 /* Pods-CocktailCraftTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraftTests.release.xcconfig"; path = "Target Support Files/Pods-CocktailCraftTests/Pods-CocktailCraftTests.release.xcconfig"; sourceTree = "<group>"; };
 		4231148A0AE075220A7C4774 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		4D99D0DAF68B0F452E9368E9 /* Pods_CocktailCraft.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CocktailCraft.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		5097B9993D604867B5723F89 /* ProfileViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModelSKIE.swift; sourceTree = "<group>"; };
 		509CBA5BD785E60D138BA5C8 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
-		886B6E734A66F9B56577B105 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
 		5353458E21534CF1929CE2C8 /* OfflineBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineBanner.swift; sourceTree = "<group>"; };
-		5BDC12B4B38A45DB93627603 /* OrderViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderViewModelSKIE.swift; sourceTree = "<group>"; };
+		55470DC64238809F378E69A3 /* Pods-CocktailCraft.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraft.debug.xcconfig"; path = "Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft.debug.xcconfig"; sourceTree = "<group>"; };
+		58E70DFA9A4A015542687047 /* CocktailImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailImageView.swift; sourceTree = "<group>"; };
+		5C55BEB921D8925895E81992 /* FavoritesViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesViewModelSKIE.swift; sourceTree = "<group>"; };
+		60D905093AD2FAAC7A5105EB /* CartScreenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartScreenTests.swift; sourceTree = "<group>"; };
 		61384C5931B60FCC54CA0D2E /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		62F8C00AB4F768E2258F18A6 /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
+		63786090651668CDB0593815 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
+		6C722B2F49CF2565F2E2703B /* TestSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSetup.swift; sourceTree = "<group>"; };
+		6F5736A8DCA291A70555FB8F /* CartSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartSummaryCard.swift; sourceTree = "<group>"; };
 		77C5D3DBDD3CA76A90859F00 /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
-		781E4068C6D09E26A2F6F660 /* HomeViewSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewSKIE.swift; sourceTree = "<group>"; };
-		BE5F38625BFE9A97CA1A3287 /* FilterViewSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterViewSKIE.swift; sourceTree = "<group>"; };
 		7A00F91ED1F43F12CF3B7400 /* CocktailCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailCard.swift; sourceTree = "<group>"; };
+		7AC758FEB87EDF17D2FFE28E /* CoreUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreUnitTests.swift; sourceTree = "<group>"; };
 		7EBC388A838EA20284B59381 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		809D06387624AC9896D7E632 /* LoadingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingOverlay.swift; sourceTree = "<group>"; };
 		80D5D04492BF6D891CC9B192 /* CocktailDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailDetailView.swift; sourceTree = "<group>"; };
 		87E192F0B9BFCD6DE2579690 /* CocktailCraftApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailCraftApp.swift; sourceTree = "<group>"; };
 		8885ACD7979C44B621ECA874 /* ErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorView.swift; sourceTree = "<group>"; };
-		8D63B33C12D901D87F172A53 /* LoadingStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingStateView.swift; sourceTree = "<group>"; };
-		8BE5F650F295A63C6E77D4F5 /* ProfileSupportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSupportViews.swift; sourceTree = "<group>"; };
-		D3723F7BFFA810C9FD002121 /* HomeEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeEmptyStateView.swift; sourceTree = "<group>"; };
-		96DB4D6BD947EAE1AEC723B8 /* SharedErrorAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedErrorAlert.swift; sourceTree = "<group>"; };
-		8CDCE3DE2A8B6A4D03D294FC /* Pods-CocktailCraft.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraft.debug.xcconfig"; path = "Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft.debug.xcconfig"; sourceTree = "<group>"; };
-		A72ABE76F0454E87B6F8C307 /* ThemeViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeViewModelSKIE.swift; sourceTree = "<group>"; };
+		8E78CE3278A16F644AACFE37 /* LoadingStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingStateView.swift; sourceTree = "<group>"; };
+		8E8B658FF9565D6F161ECFBB /* BackgroundSyncCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSyncCard.swift; sourceTree = "<group>"; };
+		96ACDD93E0EC4E181BA48B11 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		9CE2BAB7B77BB7B44AA60E88 /* HomeViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModelSKIE.swift; sourceTree = "<group>"; };
+		9D96106BD86624E97659C1E4 /* CartItemCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartItemCard.swift; sourceTree = "<group>"; };
+		9DFADB5617C594B52D575942 /* UITestSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestSetup.swift; sourceTree = "<group>"; };
+		9F2290935721E307B997FFA6 /* ThemeViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeViewModelSKIE.swift; sourceTree = "<group>"; };
+		A3C7DC400A8E325910868C64 /* CocktailCraftTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CocktailCraftTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB4B26FD4FCE3F970E06C960 /* BackgroundSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundSyncManager.swift; sourceTree = "<group>"; };
+		AD14EE492DD75C2B42FCE09F /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
+		B3C9824BB27230081BF0DE7E /* SignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpView.swift; sourceTree = "<group>"; };
+		B9FC1C3F54C84F0D60DDBC00 /* Pods-CocktailCraft.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraft.release.xcconfig"; path = "Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft.release.xcconfig"; sourceTree = "<group>"; };
+		BCD7B48C5A8B2B9FF154993D /* ProfileSupportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSupportViews.swift; sourceTree = "<group>"; };
+		BD98A7B406A27881A66A031B /* SharedErrorAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedErrorAlert.swift; sourceTree = "<group>"; };
 		C33609CC7CE44DBCE6EA103C /* ShimmerEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShimmerEffect.swift; sourceTree = "<group>"; };
-		D5FBEA761F8A4EB995742D08 /* CartViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartViewModelSKIE.swift; sourceTree = "<group>"; };
-		AB12CD34EF5678901234ABCD /* SharedViewModelWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedViewModelWrapper.swift; sourceTree = "<group>"; };
-		D83136CACC331BFA65BF22E1 /* Pods-CocktailCraft.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraft.release.xcconfig"; path = "Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft.release.xcconfig"; sourceTree = "<group>"; };
+		C94AC12750658C154846E82E /* CocktailCraftUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CocktailCraftUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CBB2D94F9889C34B7C24382A /* Pods_CocktailCraftTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CocktailCraftTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		DB01B85F7FED89BE5C5FBC22 /* FilterViewSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterViewSKIE.swift; sourceTree = "<group>"; };
+		DF2F70830C783F8DE90EECC8 /* HomeViewSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewSKIE.swift; sourceTree = "<group>"; };
 		E2B26ED3A3ACF1E6DAEE3D49 /* OrderListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderListView.swift; sourceTree = "<group>"; };
-		E88E12E1DD858DB8B9E22AC7 /* CocktailCraft.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CocktailCraft.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E448D2FDA894B81BD197C49C /* CartViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartViewModelSKIE.swift; sourceTree = "<group>"; };
+		E59065E611A6E07B1D9DCACB /* SharedViewModelWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedViewModelWrapper.swift; sourceTree = "<group>"; };
+		E88E12E1DD858DB8B9E22AC7 /* CocktailCraft.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CocktailCraft.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ED40DA08D38951B4D2DEEFA0 /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
+		EFB2F5C575682386E25C6505 /* CocktailDetailViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailDetailViewModelSKIE.swift; sourceTree = "<group>"; };
+		F0C4D551F91412F5FD5C211A /* CheckoutButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckoutButton.swift; sourceTree = "<group>"; };
+		F439C65AE3707FFC942F8D0C /* HomeEmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeEmptyStateView.swift; sourceTree = "<group>"; };
 		F5A93B6E8F24572E413E46A2 /* PlatformErrorHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformErrorHandler.swift; sourceTree = "<group>"; };
+		F5E6F64F16ABD13A913A020F /* Pods-CocktailCraftTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraftTests.debug.xcconfig"; path = "Target Support Files/Pods-CocktailCraftTests/Pods-CocktailCraftTests.debug.xcconfig"; sourceTree = "<group>"; };
 		F79C3BBEFD0B2BE551CBB4A8 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		FFC19C339408793D3B6051E8 /* FavoritesScreenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesScreenTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		FE87D19B269F1080AEABCDAE /* Frameworks */ = {
+		3484B1F9292F7ECA13F4124B /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				43288984DF6D79F9037FA2CF /* Pods_CocktailCraft.framework in Frameworks */,
+				1EB8E911E712FD47811095E5 /* Pods_CocktailCraft.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		95E50F15EAD687D2D1609FE6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C6FA7C1DC6BE170E8BEBA260 /* Pods_CocktailCraftTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -141,7 +168,7 @@
 				7EBC388A838EA20284B59381 /* ContentView.swift */,
 				4231148A0AE075220A7C4774 /* Info.plist */,
 				763F7D2C53916801E282D4AC /* Components */,
-				ABC123DEF456789012345678 /* Theme */,
+				3EDD2927213CCCACEF1003CD /* Theme */,
 				2100EB78E12FFADB14DB2966 /* Utils */,
 				6045566B216A43A8FCC133C5 /* ViewModels */,
 				3F6D58A9E066A0CF397C86A2 /* Views */,
@@ -149,41 +176,46 @@
 			path = CocktailCraft;
 			sourceTree = "<group>";
 		};
+		0A2EEEF274517C1C933BFC49 /* CocktailCraftUITests */ = {
+			isa = PBXGroup;
+			children = (
+				60D905093AD2FAAC7A5105EB /* CartScreenTests.swift */,
+				FFC19C339408793D3B6051E8 /* FavoritesScreenTests.swift */,
+				29B0A6017C3D9E28B0246A96 /* HomeScreenTests.swift */,
+				9DFADB5617C594B52D575942 /* UITestSetup.swift */,
+			);
+			path = CocktailCraftUITests;
+			sourceTree = "<group>";
+		};
+		165E90FCA40109DB98A0D458 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				12514B543D149FB79D918788 /* Pods_CocktailCraft.framework */,
+				CBB2D94F9889C34B7C24382A /* Pods_CocktailCraftTests.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		2100EB78E12FFADB14DB2966 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
-				BGSYNC1234567890ABCDEF02 /* BackgroundSyncManager.swift */,
-				886B6E734A66F9B56577B105 /* AppRouter.swift */,
+				63786090651668CDB0593815 /* AppRouter.swift */,
+				AB4B26FD4FCE3F970E06C960 /* BackgroundSyncManager.swift */,
 				509CBA5BD785E60D138BA5C8 /* NetworkMonitor.swift */,
 				F5A93B6E8F24572E413E46A2 /* PlatformErrorHandler.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
 		};
-		ABC123DEF456789012345678 /* Theme */ = {
-			isa = PBXGroup;
-			children = (
-				4D5E6F7890ABCD123456789B /* AppColors.swift */,
-				5E6F7890ABCD123456789ABD /* AppTheme.swift */,
-			);
-			path = Theme;
-			sourceTree = "<group>";
-		};
-		2E0DD283B5F68345B12032EE /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				4D99D0DAF68B0F452E9368E9 /* Pods_CocktailCraft.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		3AE844851B04A04D60BFD763 = {
 			isa = PBXGroup;
 			children = (
 				03BB8F276EF1BB27252E582F /* CocktailCraft */,
-				2E0DD283B5F68345B12032EE /* Frameworks */,
+				6F156CDB368D01D8D246AF74 /* CocktailCraftTests */,
+				0A2EEEF274517C1C933BFC49 /* CocktailCraftUITests */,
 				3B97070C3DB6D5BF27718617 /* Products */,
-				EFE3F31D031D21C06D2D3241 /* Pods */,
+				8007CA26A1AD7B3478A3C55D /* Pods */,
+				165E90FCA40109DB98A0D458 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -191,8 +223,19 @@
 			isa = PBXGroup;
 			children = (
 				E88E12E1DD858DB8B9E22AC7 /* CocktailCraft.app */,
+				A3C7DC400A8E325910868C64 /* CocktailCraftTests.xctest */,
+				C94AC12750658C154846E82E /* CocktailCraftUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		3EDD2927213CCCACEF1003CD /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				ED40DA08D38951B4D2DEEFA0 /* AppColors.swift */,
+				AD14EE492DD75C2B42FCE09F /* AppTheme.swift */,
+			);
+			path = Theme;
 			sourceTree = "<group>";
 		};
 		3F6D58A9E066A0CF397C86A2 /* Views */ = {
@@ -201,14 +244,14 @@
 				2BD10A6D0C4EF128674C822C /* CartView.swift */,
 				80D5D04492BF6D891CC9B192 /* CocktailDetailView.swift */,
 				77C5D3DBDD3CA76A90859F00 /* FavoritesView.swift */,
-				781E4068C6D09E26A2F6F660 /* HomeViewSKIE.swift */,
-				BE5F38625BFE9A97CA1A3287 /* FilterViewSKIE.swift */,
-				1A2B3C4D5E6F7890ABCD1235 /* OfflineModeView.swift */,
+				DB01B85F7FED89BE5C5FBC22 /* FilterViewSKIE.swift */,
+				DF2F70830C783F8DE90EECC8 /* HomeViewSKIE.swift */,
+				162F81601E778C80EAE10557 /* OfflineModeView.swift */,
 				E2B26ED3A3ACF1E6DAEE3D49 /* OrderListView.swift */,
 				61384C5931B60FCC54CA0D2E /* ProfileView.swift */,
 				F79C3BBEFD0B2BE551CBB4A8 /* SettingsView.swift */,
-				2B3C4D5E6F7890ABCD123457 /* SignInView.swift */,
-				3C4D5E6F7890ABCD12345679 /* SignUpView.swift */,
+				96ACDD93E0EC4E181BA48B11 /* SignInView.swift */,
+				B3C9824BB27230081BF0DE7E /* SignUpView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -216,63 +259,108 @@
 		6045566B216A43A8FCC133C5 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
-				0EBB34782E33E199005F3BA9 /* CocktailDetailViewModelSKIE.swift */,
-				0EBB34792E33E199005F3BA9 /* FavoritesViewModelSKIE.swift */,
-				0EBB347A2E33E199005F3BA9 /* HomeViewModelSKIE.swift */,
-				0EBB347B2E33E199005F3BA9 /* OfflineModeViewModelSKIE.swift */,
-				D5FBEA761F8A4EB995742D08 /* CartViewModelSKIE.swift */,
-				AB12CD34EF5678901234ABCD /* SharedViewModelWrapper.swift */,
-				5BDC12B4B38A45DB93627603 /* OrderViewModelSKIE.swift */,
-				5097B9993D604867B5723F89 /* ProfileViewModelSKIE.swift */,
-				A72ABE76F0454E87B6F8C307 /* ThemeViewModelSKIE.swift */,
+				E448D2FDA894B81BD197C49C /* CartViewModelSKIE.swift */,
+				EFB2F5C575682386E25C6505 /* CocktailDetailViewModelSKIE.swift */,
+				5C55BEB921D8925895E81992 /* FavoritesViewModelSKIE.swift */,
+				9CE2BAB7B77BB7B44AA60E88 /* HomeViewModelSKIE.swift */,
+				00D78385E5C1E0C2B7620238 /* OfflineModeViewModelSKIE.swift */,
+				105923BA1B2DFAA8FE9244E1 /* OrderViewModelSKIE.swift */,
+				022159D9A840F5786580579C /* ProfileViewModelSKIE.swift */,
+				E59065E611A6E07B1D9DCACB /* SharedViewModelWrapper.swift */,
+				9F2290935721E307B997FFA6 /* ThemeViewModelSKIE.swift */,
 			);
 			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		6F156CDB368D01D8D246AF74 /* CocktailCraftTests */ = {
+			isa = PBXGroup;
+			children = (
+				7AC758FEB87EDF17D2FFE28E /* CoreUnitTests.swift */,
+				6C722B2F49CF2565F2E2703B /* TestSetup.swift */,
+			);
+			path = CocktailCraftTests;
 			sourceTree = "<group>";
 		};
 		763F7D2C53916801E282D4AC /* Components */ = {
 			isa = PBXGroup;
 			children = (
-				BGSYNC1234567890ABCDEF04 /* BackgroundSyncCard.swift */,
-				CART001234567890ABCDEF02 /* CartItemCard.swift */,
-				CART001234567890ABCDEF04 /* CartSummaryCard.swift */,
-				CART001234567890ABCDEF06 /* CheckoutButton.swift */,
+				8E8B658FF9565D6F161ECFBB /* BackgroundSyncCard.swift */,
+				9D96106BD86624E97659C1E4 /* CartItemCard.swift */,
+				6F5736A8DCA291A70555FB8F /* CartSummaryCard.swift */,
+				F0C4D551F91412F5FD5C211A /* CheckoutButton.swift */,
 				7A00F91ED1F43F12CF3B7400 /* CocktailCard.swift */,
-				CART001234567890ABCDEF08 /* CocktailImageView.swift */,
+				58E70DFA9A4A015542687047 /* CocktailImageView.swift */,
 				04D295EC1E30F565480A8AEB /* EmptyStateView.swift */,
 				8885ACD7979C44B621ECA874 /* ErrorView.swift */,
-				8D63B33C12D901D87F172A53 /* LoadingStateView.swift */,
-				8BE5F650F295A63C6E77D4F5 /* ProfileSupportViews.swift */,
-				D3723F7BFFA810C9FD002121 /* HomeEmptyStateView.swift */,
-				96DB4D6BD947EAE1AEC723B8 /* SharedErrorAlert.swift */,
+				F439C65AE3707FFC942F8D0C /* HomeEmptyStateView.swift */,
 				809D06387624AC9896D7E632 /* LoadingOverlay.swift */,
+				8E78CE3278A16F644AACFE37 /* LoadingStateView.swift */,
 				5353458E21534CF1929CE2C8 /* OfflineBanner.swift */,
+				BCD7B48C5A8B2B9FF154993D /* ProfileSupportViews.swift */,
+				BD98A7B406A27881A66A031B /* SharedErrorAlert.swift */,
 				C33609CC7CE44DBCE6EA103C /* ShimmerEffect.swift */,
 				62F8C00AB4F768E2258F18A6 /* Toast.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
 		};
-		EFE3F31D031D21C06D2D3241 /* Pods */ = {
+		8007CA26A1AD7B3478A3C55D /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				8CDCE3DE2A8B6A4D03D294FC /* Pods-CocktailCraft.debug.xcconfig */,
-				D83136CACC331BFA65BF22E1 /* Pods-CocktailCraft.release.xcconfig */,
+				55470DC64238809F378E69A3 /* Pods-CocktailCraft.debug.xcconfig */,
+				B9FC1C3F54C84F0D60DDBC00 /* Pods-CocktailCraft.release.xcconfig */,
+				F5E6F64F16ABD13A913A020F /* Pods-CocktailCraftTests.debug.xcconfig */,
+				3F9007E23E3A44E4D3DF0DA4 /* Pods-CocktailCraftTests.release.xcconfig */,
 			);
+			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		23D0C6112AACE145B24E38D2 /* CocktailCraftUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1D91F4E6A9BFC8771B9E217E /* Build configuration list for PBXNativeTarget "CocktailCraftUITests" */;
+			buildPhases = (
+				3D21F1F613041FEE01CC28CE /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4F579968522B6A9FA8AA1B0A /* PBXTargetDependency */,
+			);
+			name = CocktailCraftUITests;
+			productName = CocktailCraftUITests;
+			productReference = C94AC12750658C154846E82E /* CocktailCraftUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		8EF711437FB0AF93564F1FFA /* CocktailCraftTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5BEADB2EC0E4075E3913D51A /* Build configuration list for PBXNativeTarget "CocktailCraftTests" */;
+			buildPhases = (
+				49F41BF981B79CEA3D9EE019 /* [CP] Check Pods Manifest.lock */,
+				7BD30F96315688EC83520820 /* Sources */,
+				95E50F15EAD687D2D1609FE6 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AF7BD19F1C890052E5CE1ED1 /* PBXTargetDependency */,
+			);
+			name = CocktailCraftTests;
+			productName = CocktailCraftTests;
+			productReference = A3C7DC400A8E325910868C64 /* CocktailCraftTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		9F9F4C6B41AB384902D1C81C /* CocktailCraft */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 6B903AD635163E4B7D594652 /* Build configuration list for PBXNativeTarget "CocktailCraft" */;
 			buildPhases = (
-				7DA3039BBC383216E3CCE0AC /* [CP] Check Pods Manifest.lock */,
+				9D83231DF18095EAE34D75CF /* [CP] Check Pods Manifest.lock */,
 				B7BE29C2D9427FF20A890F5D /* Sources */,
-				FE87D19B269F1080AEABCDAE /* Frameworks */,
-				C1C4DC418C24FA0BE5E5FA16 /* Embed Frameworks */,
-				9D29150C73F595AE9D60614F /* [CP] Embed Pods Frameworks */,
+				3484B1F9292F7ECA13F4124B /* Frameworks */,
+				33FD91E5776118C942A68573 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -292,13 +380,15 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					23D0C6112AACE145B24E38D2 = {
+						TestTargetID = 9F9F4C6B41AB384902D1C81C;
+					};
 					9F9F4C6B41AB384902D1C81C = {
 						DevelopmentTeam = "";
 					};
 				};
 			};
 			buildConfigurationList = BA6816A34C8504BB9BCBB924 /* Build configuration list for PBXProject "CocktailCraft" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -307,17 +397,59 @@
 			);
 			mainGroup = 3AE844851B04A04D60BFD763;
 			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
 			productRefGroup = 3B97070C3DB6D5BF27718617 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				9F9F4C6B41AB384902D1C81C /* CocktailCraft */,
+				8EF711437FB0AF93564F1FFA /* CocktailCraftTests */,
+				23D0C6112AACE145B24E38D2 /* CocktailCraftUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		7DA3039BBC383216E3CCE0AC /* [CP] Check Pods Manifest.lock */ = {
+		33FD91E5776118C942A68573 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		49F41BF981B79CEA3D9EE019 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-CocktailCraftTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		9D83231DF18095EAE34D75CF /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -339,91 +471,123 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		9D29150C73F595AE9D60614F /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		3D21F1F613041FEE01CC28CE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7666400114820764D3FF3EA7 /* CartScreenTests.swift in Sources */,
+				11EC08719812BBF953E8CEAA /* FavoritesScreenTests.swift in Sources */,
+				E0D0224CA12C296EE91FE101 /* HomeScreenTests.swift in Sources */,
+				E5EA303DF9376412C78428A3 /* UITestSetup.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7BD30F96315688EC83520820 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7FEA1EA6B431A96104100455 /* CoreUnitTests.swift in Sources */,
+				626F24717F53ED7C42C93FE9 /* TestSetup.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B7BE29C2D9427FF20A890F5D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BGSYNC1234567890ABCDEF03 /* BackgroundSyncCard.swift in Sources */,
-				BGSYNC1234567890ABCDEF01 /* BackgroundSyncManager.swift in Sources */,
+				00146292C621392C71E37E0C /* AppColors.swift in Sources */,
+				305A2B554DA3EAE2020E2E67 /* AppRouter.swift in Sources */,
+				EA04EA28A1FC71555578322B /* AppTheme.swift in Sources */,
+				F58F67F45D838D7246E7837A /* BackgroundSyncCard.swift in Sources */,
+				DF7ECCBD18760F3E25322423 /* BackgroundSyncManager.swift in Sources */,
+				F3F82A7C15DBBBEC9EB9A896 /* CartItemCard.swift in Sources */,
+				898DCF28C1C51C8468E76962 /* CartSummaryCard.swift in Sources */,
 				A22D24F59CFC34A6C3643DED /* CartView.swift in Sources */,
-				CART001234567890ABCDEF01 /* CartItemCard.swift in Sources */,
-				CART001234567890ABCDEF03 /* CartSummaryCard.swift in Sources */,
-				CART001234567890ABCDEF05 /* CheckoutButton.swift in Sources */,
+				8ECA50D697B7F3495C59CE80 /* CartViewModelSKIE.swift in Sources */,
+				9567ABFD564D27BE73445A06 /* CheckoutButton.swift in Sources */,
 				A166DB404CF006A66284D821 /* CocktailCard.swift in Sources */,
-				CART001234567890ABCDEF07 /* CocktailImageView.swift in Sources */,
 				DE8850F09E59ACDA9DA09D48 /* CocktailCraftApp.swift in Sources */,
 				3BF4E2DF43ABEAC1F129FA6B /* CocktailDetailView.swift in Sources */,
+				32BAAF705B9E5F683CE82611 /* CocktailDetailViewModelSKIE.swift in Sources */,
+				FA7E31BA8D2A30728866D896 /* CocktailImageView.swift in Sources */,
 				96CF06A65ECCAB15A7E21B07 /* ContentView.swift in Sources */,
 				631932ECF8AC75AFB5416740 /* EmptyStateView.swift in Sources */,
 				24890AC789C7126C99DEC28B /* ErrorView.swift in Sources */,
-				8119167910F97D68E9D03CC4 /* LoadingStateView.swift in Sources */,
-				87491508CB632ACCD053B171 /* ProfileSupportViews.swift in Sources */,
-				79C9C6079E6F36A9855A92CB /* HomeEmptyStateView.swift in Sources */,
-				0872103190B51797ADB447E9 /* SharedErrorAlert.swift in Sources */,
 				5DD5C9541804B1F02B26C2CA /* FavoritesView.swift in Sources */,
-				39405B15883513D4C9A4C2C5 /* HomeViewSKIE.swift in Sources */,
-				A12FB6B1D3269F9BAC7BFE8F /* FilterViewSKIE.swift in Sources */,
+				F34D8705F2D659CE7F39731F /* FavoritesViewModelSKIE.swift in Sources */,
+				828F55B7A7BB7A8F7F50D014 /* FilterViewSKIE.swift in Sources */,
+				684AED4CBBCA62E12ED45267 /* HomeEmptyStateView.swift in Sources */,
+				5A2723FCDFFBA08B1EFBD337 /* HomeViewModelSKIE.swift in Sources */,
+				009F3B5A400B6282D5641221 /* HomeViewSKIE.swift in Sources */,
 				D3BD0756F33F51BAF8873DEF /* LoadingOverlay.swift in Sources */,
-				2AE15D0F5BB3B857C40A01F4 /* AppRouter.swift in Sources */,
+				38A2C94D0875C566231EDC2C /* LoadingStateView.swift in Sources */,
 				556B8A0A0C717207D3369E23 /* NetworkMonitor.swift in Sources */,
 				4BFEB7F904D60ED73FC3E3DA /* OfflineBanner.swift in Sources */,
-				1A2B3C4D5E6F7890ABCD1234 /* OfflineModeView.swift in Sources */,
+				55C58DB4D92784E7A2670D8F /* OfflineModeView.swift in Sources */,
+				9D4151CBB7895BB06CB1EC6A /* OfflineModeViewModelSKIE.swift in Sources */,
 				DB7D7BA10D5729B4F84CCEDB /* OrderListView.swift in Sources */,
+				CC48B2BA1BDE316893EC3B2A /* OrderViewModelSKIE.swift in Sources */,
 				A8E64AE208119647DAB79C75 /* PlatformErrorHandler.swift in Sources */,
+				BF8BE75EA2A85E669160547D /* ProfileSupportViews.swift in Sources */,
 				9CA8A23169EACEE6BAA6168E /* ProfileView.swift in Sources */,
+				D58974F73AAB59227A39CBEE /* ProfileViewModelSKIE.swift in Sources */,
 				4B1843A05358F5B1489781B5 /* SettingsView.swift in Sources */,
-				2B3C4D5E6F7890ABCD123456 /* SignInView.swift in Sources */,
-				3C4D5E6F7890ABCD12345678 /* SignUpView.swift in Sources */,
+				70A2D664D871ECC8DDB95D8E /* SharedErrorAlert.swift in Sources */,
+				A0FF029431994B1ECD80D88F /* SharedViewModelWrapper.swift in Sources */,
 				103C311FC2DD28DEC408D64A /* ShimmerEffect.swift in Sources */,
-				4D5E6F7890ABCD123456789A /* AppColors.swift in Sources */,
-				5E6F7890ABCD123456789ABC /* AppTheme.swift in Sources */,
+				1ABC1FAFD32D199EF8772B5C /* SignInView.swift in Sources */,
+				D8812ACCBB87AF678F14A2DF /* SignUpView.swift in Sources */,
+				DA5E1498FB4BC7963478C359 /* ThemeViewModelSKIE.swift in Sources */,
 				EF018FBC5C1312DB79C5D641 /* Toast.swift in Sources */,
-				F025AA2D6B5B4502A3023799 /* CartViewModelSKIE.swift in Sources */,
-				AB12CD34EF5678901234ABCE /* SharedViewModelWrapper.swift in Sources */,
-				0EBB347C2E33E199005F3BA9 /* OfflineModeViewModelSKIE.swift in Sources */,
-				0EBB347D2E33E199005F3BA9 /* CocktailDetailViewModelSKIE.swift in Sources */,
-				0EBB347E2E33E199005F3BA9 /* HomeViewModelSKIE.swift in Sources */,
-				0EBB347F2E33E199005F3BA9 /* FavoritesViewModelSKIE.swift in Sources */,
-				A11198AEB00E48BAB113C476 /* OrderViewModelSKIE.swift in Sources */,
-				7867DEB863AC49819CBF9550 /* ProfileViewModelSKIE.swift in Sources */,
-				460A663ED56842689C78A398 /* ThemeViewModelSKIE.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		4F579968522B6A9FA8AA1B0A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9F9F4C6B41AB384902D1C81C /* CocktailCraft */;
+			targetProxy = 26E3A7C336F163021F00D301 /* PBXContainerItemProxy */;
+		};
+		AF7BD19F1C890052E5CE1ED1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9F9F4C6B41AB384902D1C81C /* CocktailCraft */;
+			targetProxy = 30FEA3EB451EA5D5374978C1 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		015690ACD5FB67C7FC3C9D99 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.cocktailcraft.CocktailCraftUITests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CocktailCraft;
+			};
+			name = Release;
+		};
 		23784922E358FB50794F0359 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8CDCE3DE2A8B6A4D03D294FC /* Pods-CocktailCraft.debug.xcconfig */;
+			baseConfigurationReference = 55470DC64238809F378E69A3 /* Pods-CocktailCraft.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-				);
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CocktailCraft/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -444,17 +608,52 @@
 			};
 			name = Debug;
 		};
+		477A8C0AACC4660135A925D1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3F9007E23E3A44E4D3DF0DA4 /* Pods-CocktailCraftTests.release.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.cocktailcraft.CocktailCraftTests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CocktailCraft.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CocktailCraft";
+			};
+			name = Release;
+		};
+		76C41D3E3692F5A503DD5990 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.cocktailcraft.CocktailCraftUITests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CocktailCraft;
+			};
+			name = Debug;
+		};
 		80F24C1A2A01E524D482B026 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = D83136CACC331BFA65BF22E1 /* Pods-CocktailCraft.release.xcconfig */;
+			baseConfigurationReference = B9FC1C3F54C84F0D60DDBC00 /* Pods-CocktailCraft.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-				);
+				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CocktailCraft/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -527,9 +726,28 @@
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				SWIFT_VERSION = 5.10;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
+		};
+		BCE60B0AF04D964E9EDA03E7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = F5E6F64F16ABD13A913A020F /* Pods-CocktailCraftTests.debug.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.cocktailcraft.CocktailCraftTests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CocktailCraft.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CocktailCraft";
+			};
+			name = Debug;
 		};
 		C6F325A4456A804A71AD5EBF /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -590,13 +808,31 @@
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.10;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		1D91F4E6A9BFC8771B9E217E /* Build configuration list for PBXNativeTarget "CocktailCraftUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				76C41D3E3692F5A503DD5990 /* Debug */,
+				015690ACD5FB67C7FC3C9D99 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		5BEADB2EC0E4075E3913D51A /* Build configuration list for PBXNativeTarget "CocktailCraftTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BCE60B0AF04D964E9EDA03E7 /* Debug */,
+				477A8C0AACC4660135A925D1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		6B903AD635163E4B7D594652 /* Build configuration list for PBXNativeTarget "CocktailCraft" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

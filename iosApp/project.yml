@@ -42,6 +42,7 @@ targets:
       TEST_HOST: "$(BUILT_PRODUCTS_DIR)/CocktailCraft.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CocktailCraft"
       BUNDLE_LOADER: "$(TEST_HOST)"
       SWIFT_VERSION: "5.10"
+      GENERATE_INFOPLIST_FILE: true
 
   CocktailCraftUITests:
     type: bundle.ui-testing
@@ -53,6 +54,7 @@ targets:
     settings:
       TEST_TARGET_NAME: CocktailCraft
       SWIFT_VERSION: "5.10"
+      GENERATE_INFOPLIST_FILE: true
 
 schemes:
   CocktailCraft:
