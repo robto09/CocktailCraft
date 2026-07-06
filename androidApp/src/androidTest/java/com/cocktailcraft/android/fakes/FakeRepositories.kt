@@ -179,7 +179,6 @@ class FakeAuthRepository : AuthRepository {
         user = null
         return Result.Success(true)
     }
-    override suspend fun resetPassword(email: String): Result<Boolean> = Result.Success(true)
     override suspend fun changePassword(oldPassword: String, newPassword: String): Result<Boolean> =
         Result.Success(true)
     override suspend fun isUserSignedIn(): Result<Boolean> = Result.Success(user != null)

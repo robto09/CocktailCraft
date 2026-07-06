@@ -75,14 +75,6 @@ final class ProfileViewModelSKIE: SharedViewModelWrapper<ProfileUiState> {
         }
     }
 
-    func resetPassword(email: String) async -> Bool {
-        do {
-            return try await sharedViewModel.resetPassword(email: email).boolValue
-        } catch {
-            return false
-        }
-    }
-
     func changePassword(oldPassword: String, newPassword: String) async -> Bool {
         do {
             return try await sharedViewModel.changePassword(oldPassword: oldPassword, newPassword: newPassword).boolValue

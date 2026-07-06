@@ -5,6 +5,7 @@ import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.usecase.ManageProfileUseCase
+import com.cocktailcraft.domain.util.AuthInputValidator
 import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.util.ErrorHandler
@@ -71,7 +72,7 @@ class SharedProfileViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun signIn(email: String, password: String): Boolean {
-        if (!isEmailValid(email)) {
+        if (!isValidEmail(email)) {
             setError(
                 "Invalid Email",
                 "Please enter a valid email address",
@@ -80,7 +81,7 @@ class SharedProfileViewModel internal constructor(
             return false
         }
         
-        if (!isPasswordValid(password)) {
+        if (!isValidPassword(password)) {
             setError(
                 "Invalid Password",
                 "Password must be at least 6 characters long",
@@ -127,7 +128,7 @@ class SharedProfileViewModel internal constructor(
             return false
         }
         
-        if (!isEmailValid(email)) {
+        if (!isValidEmail(email)) {
             setError(
                 "Invalid Email",
                 "Please enter a valid email address",
@@ -136,7 +137,7 @@ class SharedProfileViewModel internal constructor(
             return false
         }
         
-        if (!isPasswordValid(password)) {
+        if (!isValidPassword(password)) {
             setError(
                 "Invalid Password",
                 "Password must be at least 6 characters long",
@@ -195,43 +196,6 @@ class SharedProfileViewModel internal constructor(
     }
     
     /**
-     * Reset password for given email.
-     * SKIE will convert this to Swift async function.
-     */
-    suspend fun resetPassword(email: String): Boolean {
-        if (!isEmailValid(email)) {
-            setError(
-                "Invalid Email",
-                "Please enter a valid email address",
-                ErrorHandler.ErrorCategory.DATA
-            )
-            return false
-        }
-        
-        
-        return try {
-            val success = manageProfileUseCase.resetPassword(email).getOrThrow()
-            if (success) {
-                setError(
-                    "Password Reset Sent",
-                    "Check your email for password reset instructions",
-                    ErrorHandler.ErrorCategory.UNKNOWN
-                )
-            } else {
-                setError(
-                    "Reset Failed",
-                    "Failed to send password reset email",
-                    ErrorHandler.ErrorCategory.SERVER
-                )
-            }
-            success
-        } catch (e: Exception) {
-            handleException(e, "Failed to send password reset email")
-            false
-        }
-    }
-    
-    /**
      * Update user profile information.
      * SKIE will convert this to Swift async function.
      */
@@ -245,7 +209,7 @@ class SharedProfileViewModel internal constructor(
             return false
         }
         
-        if (!isEmailValid(email)) {
+        if (!isValidEmail(email)) {
             setError(
                 "Invalid Email",
                 "Please enter a valid email address",
@@ -302,7 +266,7 @@ class SharedProfileViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun changePassword(oldPassword: String, newPassword: String): Boolean {
-        if (!isPasswordValid(oldPassword) || !isPasswordValid(newPassword)) {
+        if (!isValidPassword(oldPassword) || !isValidPassword(newPassword)) {
             setError(
                 "Invalid Password",
                 "Passwords must be at least 6 characters long",
@@ -335,51 +299,22 @@ class SharedProfileViewModel internal constructor(
     }
     
     // MARK: - Synchronous Helper Methods
-    
+
     /**
      * Validate email format.
      */
-    fun isEmailValid(email: String): Boolean {
-        return email.isNotBlank() &&
-               email.contains("@") &&
-               email.contains(".") &&
-               email.length >= 5
-    }
-    
-    /**
-     * Validate email format (alias for SKIE compatibility).
-     */
-    fun isValidEmail(email: String): Boolean {
-        return isEmailValid(email)
-    }
-    
+    fun isValidEmail(email: String): Boolean = AuthInputValidator.isValidEmail(email)
+
     /**
      * Validate password strength.
      */
-    fun isPasswordValid(password: String): Boolean {
-        return password.length >= 6
-    }
-    
-    /**
-     * Validate password strength (alias for SKIE compatibility).
-     */
-    fun isValidPassword(password: String): Boolean {
-        return isPasswordValid(password)
-    }
-    
+    fun isValidPassword(password: String): Boolean = AuthInputValidator.isValidPassword(password)
+
     /**
      * Get password strength score.
      */
-    fun getPasswordStrength(password: String): Int {
-        var score = 0
-        if (password.length >= 8) score++
-        if (password.any { it.isUpperCase() }) score++
-        if (password.any { it.isLowerCase() }) score++
-        if (password.any { it.isDigit() }) score++
-        if (password.any { !it.isLetterOrDigit() }) score++
-        return score
-    }
-    
+    fun getPasswordStrength(password: String): Int = AuthInputValidator.passwordStrength(password)
+
     /**
      * Get display name for UI.
      */
@@ -390,7 +325,7 @@ class SharedProfileViewModel internal constructor(
     /**
      * Get user initials for avatar.
      */
-    fun getInitials(): String {
+    fun getUserInitials(): String {
         val name = _uiState.value.user?.name ?: return "U"
         val parts = name.trim().split(" ")
         return when {
@@ -398,13 +333,6 @@ class SharedProfileViewModel internal constructor(
             parts.isNotEmpty() -> parts[0].take(2).uppercase()
             else -> "U"
         }
-    }
-    
-    /**
-     * Get user initials for avatar (alias for SKIE compatibility).
-     */
-    fun getUserInitials(): String {
-        return getInitials()
     }
     
     /**
