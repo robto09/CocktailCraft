@@ -33,8 +33,7 @@ struct OrderListView: View {
     }
 
     private var loadingView: some View {
-        ProgressView("Loading orders...")
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        LoadingStateView(message: "Loading orders...")
     }
 
     private var emptyView: some View {

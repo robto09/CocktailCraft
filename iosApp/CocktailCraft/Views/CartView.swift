@@ -5,7 +5,7 @@ struct CartView: View {
     // Injected via .environment(cartViewModel) at the ContentView root
     @Environment(CartViewModelSKIE.self) private var cartViewModel
     @State private var orderViewModel = OrderViewModelSKIE()
-    @Binding var selectedTab: Int
+    @Environment(AppRouter.self) private var router
     @State private var showCheckoutConfirmation = false
     
     var body: some View {
@@ -80,7 +80,7 @@ struct CartView: View {
                         let success = await orderViewModel.placeOrder(cartItems: cartViewModel.state.cartItems, totalPrice: cartViewModel.finalTotal)
                         if success {
                             await cartViewModel.clearCart()
-                            selectedTab = 3
+                            router.selectedTab = .orders
                         }
                     }
                 },

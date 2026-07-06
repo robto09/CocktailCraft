@@ -2,13 +2,13 @@ import SwiftUI
 import shared
 
 struct ContentView: View {
-    @State private var selectedTab = 0
+    @State private var router = AppRouter()
     @State private var cartViewModel = CartViewModelSKIE()
     private let themeViewModel = ThemeViewModelSKIE.shared
 
     var body: some View {
         ZStack {
-            TabView(selection: $selectedTab) {
+            TabView(selection: $router.selectedTab) {
                 // Home Tab
                 NavigationStack {
                     HomeViewSKIE()
@@ -16,17 +16,17 @@ struct ContentView: View {
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
                 }
-                .tag(0)
+                .tag(AppRouter.Tab.home)
 
                 // Cart Tab
                 NavigationStack {
-                    CartView(selectedTab: $selectedTab)
+                    CartView()
                 }
                 .tabItem {
                     Label("Cart", systemImage: "cart.fill")
                 }
                 .badge(Int(cartViewModel.state.itemCount))
-                .tag(1)
+                .tag(AppRouter.Tab.cart)
 
                 // Favorites Tab
                 NavigationStack {
@@ -35,7 +35,7 @@ struct ContentView: View {
                 .tabItem {
                     Label("Favorites", systemImage: "heart.fill")
                 }
-                .tag(2)
+                .tag(AppRouter.Tab.favorites)
 
                 // Orders Tab
                 NavigationStack {
@@ -44,16 +44,16 @@ struct ContentView: View {
                 .tabItem {
                     Label("Orders", systemImage: "list.bullet")
                 }
-                .tag(3)
+                .tag(AppRouter.Tab.orders)
 
                 // Profile Tab
                 NavigationStack {
-                    ProfileView(selectedTab: $selectedTab)
+                    ProfileView()
                 }
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")
                 }
-                .tag(4)
+                .tag(AppRouter.Tab.profile)
             }
 
             // Offline Banner
@@ -64,6 +64,7 @@ struct ContentView: View {
         }
         .background(AppColors.background(isDarkMode: themeViewModel.state.isDarkMode))
         .environment(cartViewModel)
+        .environment(router)
         .environment(\.isDarkMode, themeViewModel.state.isDarkMode)
         .preferredColorScheme(themeViewModel.state.isSystemTheme ? nil : (themeViewModel.state.isDarkMode ? .dark : .light))
     }
