@@ -14,6 +14,7 @@ import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
 import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.usecase.SearchCocktailsUseCase
 import com.cocktailcraft.domain.usecase.SortCocktailsUseCase
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 /**
@@ -38,8 +39,9 @@ val domainModule = module {
     factory { com.cocktailcraft.domain.usecase.AnalyzeCocktailUseCase() }
     factory { PlaceOrderUseCase(orderRepository = get()) }
 
-    // Screen-scoped ViewModels — factory (new instance per screen)
-    factory {
+    // Screen-scoped ViewModels — new instance per screen; the viewModel DSL
+    // lets Android's koinViewModel() scope them to the nav back-stack entry
+    viewModel {
         com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel(
             getCocktailDetailUseCase = get(),
             manageFavoritesUseCase = get(),
@@ -47,7 +49,7 @@ val domainModule = module {
             analyzeCocktailUseCase = get()
         )
     }
-    factory { com.cocktailcraft.viewmodel.SharedReviewViewModel(manageReviewsUseCase = get()) }
+    viewModel { com.cocktailcraft.viewmodel.SharedReviewViewModel(manageReviewsUseCase = get()) }
 
     // Global-state ViewModels — single (shared across screens, persist across navigation)
     single {

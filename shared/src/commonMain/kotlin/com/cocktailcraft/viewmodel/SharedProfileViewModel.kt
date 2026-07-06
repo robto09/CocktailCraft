@@ -1,5 +1,6 @@
 package com.cocktailcraft.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences

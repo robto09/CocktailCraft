@@ -89,6 +89,10 @@ kotlin {
 
                 // DI
                 implementation(libs.koin.core)
+            implementation(libs.koin.core.viewmodel)
+            // VMs extend the multiplatform androidx ViewModel — api so Android
+            // consumers see the supertype for koinViewModel scoping
+            api(libs.androidx.lifecycle.viewmodel)
 
                 // Multiplatform logging
                 implementation(libs.kermit)

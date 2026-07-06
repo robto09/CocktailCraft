@@ -1,5 +1,6 @@
 package com.cocktailcraft.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.ThemeMode
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.usecase.ManageProfileUseCase

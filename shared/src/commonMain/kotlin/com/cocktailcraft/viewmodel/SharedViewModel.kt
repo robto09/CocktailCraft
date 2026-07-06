@@ -1,30 +1,20 @@
 package com.cocktailcraft.viewmodel
 
+import androidx.lifecycle.ViewModel
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.ErrorHandler
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Base ViewModel class for multiplatform ViewModels.
- * Provides common functionality including error handling and loading state management.
+ * Base ViewModel class for multiplatform ViewModels, on top of the official
+ * multiplatform androidx [ViewModel] (Main-dispatched viewModelScope, cleared
+ * automatically when owned by a ViewModelStore).
  * Dependencies are constructor-injected so subclasses can be built without a Koin container.
  */
-abstract class SharedViewModel {
-
-    /**
-     * ViewModel scope for launching coroutines.
-     * Main-dispatched so state updates originate on the UI thread on both
-     * platforms, matching AndroidX viewModelScope semantics. (On iOS,
-     * Main.immediate currently behaves like Main - it always dispatches.)
-     */
-    protected val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+abstract class SharedViewModel : ViewModel() {
 
     // The single error channel, observed by both platforms for error UI.
     // Loading state lives in each screen's UiState — there is deliberately
@@ -97,9 +87,10 @@ abstract class SharedViewModel {
     }
 
     /**
-     * Clean up resources when ViewModel is no longer needed
+     * Public so manually-owned instances (iOS factory-scoped wrappers) can
+     * clear themselves; store-owned instances are cleared by the platform.
      */
-    open fun onCleared() {
-        viewModelScope.cancel()
+    public override fun onCleared() {
+        super.onCleared()
     }
 }
