@@ -80,7 +80,6 @@ import kotlinx.coroutines.launch
 import com.cocktailcraft.android.navigation.Screen
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
-import com.cocktailcraft.android.ui.components.AdvancedSearchPanel
 import com.cocktailcraft.android.ui.components.AnimatedCocktailItem
 import com.cocktailcraft.android.ui.components.AnimatedCocktailList
 import com.cocktailcraft.android.ui.components.CategoryFilterRow
@@ -133,7 +132,6 @@ fun HomeScreen(
     val isAdvancedSearchActive = state.isAdvancedSearchActive
 
     // State for advanced search panel
-    var showAdvancedSearch by remember { mutableStateOf(false) }
 
     // Add state for selected category - use rememberSaveable to persist across navigation
     // Default to "Cocktail" to match lazy loading behavior
@@ -196,8 +194,7 @@ fun HomeScreen(
             hasActiveFilters = searchFilters.hasActiveFilters(),
             onSearchQueryChange = { scope.launch { viewModel.searchCocktails(it) } },
             onClearSearch = { viewModel.toggleSearchMode(false) },
-            onToggleAdvancedSearch = { viewModel.toggleAdvancedSearchMode(!isAdvancedSearchActive) },
-            onShowAdvancedSearchDialog = { showAdvancedSearch = true }
+            onToggleAdvancedSearch = { viewModel.toggleAdvancedSearchMode(!isAdvancedSearchActive) }
         )
 
         // Active filters display
@@ -234,28 +231,7 @@ fun HomeScreen(
         val ingredients = filterOptions.ingredients
         val glasses = filterOptions.glasses
 
-        // Use the dialog version when in dialog mode
-        if (showAdvancedSearch) {
-            AdvancedSearchPanel(
-                isVisible = true,
-                currentFilters = searchFilters,
-                categories = categories,
-                ingredients = ingredients,
-                glasses = glasses,
-                onApplyFilters = { filters ->
-                    scope.launch { viewModel.applyFilters(filters.category, filters.ingredient) }
-                    showAdvancedSearch = false
-                },
-                onClearFilters = {
-                    viewModel.clearSearchFilters()
-                },
-                onDismiss = {
-                    showAdvancedSearch = false
-                }
-            )
-        }
-
-        // Use the expandable panel version for inline display
+        // Single advanced-search UI: the inline expandable panel
         ExpandableAdvancedSearchPanel(
             isExpanded = isAdvancedSearchActive,
             currentFilters = searchFilters,

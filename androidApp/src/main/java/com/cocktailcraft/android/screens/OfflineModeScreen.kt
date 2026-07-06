@@ -58,12 +58,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.SharedOfflineModeViewModel
@@ -103,8 +105,8 @@ fun OfflineModeScreen(
     if (showClearCacheDialog) {
         AlertDialog(
             onDismissRequest = { showClearCacheDialog = false },
-            title = { Text("Clear Offline Cache") },
-            text = { Text("Are you sure you want to clear all cached cocktails? You won't be able to view them offline.") },
+            title = { Text(stringResource(R.string.clear_offline_cache_title)) },
+            text = { Text(stringResource(R.string.clear_offline_cache_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -112,14 +114,14 @@ fun OfflineModeScreen(
                         showClearCacheDialog = false
                     }
                 ) {
-                    Text("Clear Cache")
+                    Text(stringResource(R.string.clear_cache))
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { showClearCacheDialog = false }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -310,7 +312,7 @@ fun OfflineModeScreen(
                                     contentDescription = "Clear Cache",
                                     modifier = Modifier.padding(end = 8.dp)
                                 )
-                                Text("Clear Cache")
+                                Text(stringResource(R.string.clear_cache))
                             }
                         }
                     }
@@ -388,7 +390,7 @@ fun OfflineModeScreen(
                                         contentDescription = "Go to Home",
                                         modifier = Modifier.padding(end = 8.dp)
                                     )
-                                    Text("Go to Home")
+                                    Text(stringResource(R.string.go_to_home))
                                 }
                             }
                         }

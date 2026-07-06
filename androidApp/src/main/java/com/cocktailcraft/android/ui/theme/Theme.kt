@@ -7,6 +7,9 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
@@ -39,8 +42,10 @@ object AppColors {
     val LightGray = Color(0xFFE5E5EA) // Light gray for backgrounds
     val ChipBackground = Color(0xFF9C5C38) // Brown for category chips like "Vodka"
 
-    // Dynamic colors based on theme - these will be set by the theme
-    var isDarkTheme = false
+    // Dynamic colors based on theme. Snapshot-backed so any composable that
+    // reads AppColors.* subscribes and recomposes when the theme flips —
+    // a plain var here silently served stale colors after theme changes.
+    var isDarkTheme by mutableStateOf(false)
 
     val Primary get() = if (isDarkTheme) PrimaryDark else PrimaryLight
     val Secondary get() = if (isDarkTheme) SecondaryDark else SecondaryLight

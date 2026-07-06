@@ -11,10 +11,7 @@ struct CocktailDetailView: View {
     var body: some View {
         VStack {
             if viewModel.state.isLoading || !hasLoaded {
-                VStack {
-                    ProgressView()
-                    Text("Loading cocktail details...")
-                }
+                LoadingStateView(message: "Loading cocktail details...")
             } else if let error = viewModel.error {
                 ErrorView(
                     error: error,

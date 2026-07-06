@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -36,6 +37,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.navigation.CartRoute
 import com.cocktailcraft.android.navigation.CocktailDetailRoute
 import com.cocktailcraft.android.navigation.FavoritesRoute
@@ -59,7 +61,6 @@ import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import com.cocktailcraft.viewmodel.SharedOfflineModeViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
-import com.cocktailcraft.viewmodel.SharedReviewViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
@@ -80,11 +81,10 @@ fun MainScreen() {
         Screen.Profile
     )
 
-    // Shared KMP ViewModels (Koin singles; SharedReviewViewModel is a factory
-    // resolved once here and reused for the app's lifetime)
+    // Shared KMP ViewModels (Koin singles — app-scoped by design; screen-scoped
+    // VMs are resolved with koinViewModel inside their destinations)
     val sharedOrderViewModel: SharedOrderViewModel = koinInject()
     val sharedCartViewModel: SharedCartViewModel = koinInject()
-    val sharedReviewViewModel: SharedReviewViewModel = koinInject()
     val sharedHomeViewModel: SharedHomeViewModel = koinInject()
     val sharedFavoritesViewModel: SharedFavoritesViewModel = koinInject()
     val sharedOfflineModeViewModel: SharedOfflineModeViewModel = koinInject()
@@ -123,11 +123,11 @@ fun MainScreen() {
                             // Normal title without search functionality
                             Text(
                                 text = when {
-                                    currentDestination?.hasRoute<HomeRoute>() == true -> "My Bar"
-                                    currentDestination?.hasRoute<CartRoute>() == true -> "Cart"
-                                    currentDestination?.hasRoute<FavoritesRoute>() == true -> "Favorites"
-                                    currentDestination?.hasRoute<OrderListRoute>() == true -> "Recipes"
-                                    currentDestination?.hasRoute<ProfileRoute>() == true -> "Profile"
+                                    currentDestination?.hasRoute<HomeRoute>() == true -> stringResource(R.string.my_bar)
+                                    currentDestination?.hasRoute<CartRoute>() == true -> stringResource(R.string.cart)
+                                    currentDestination?.hasRoute<FavoritesRoute>() == true -> stringResource(R.string.favorites)
+                                    currentDestination?.hasRoute<OrderListRoute>() == true -> stringResource(R.string.recipes)
+                                    currentDestination?.hasRoute<ProfileRoute>() == true -> stringResource(R.string.profile)
                                     isOfflineModeScreen -> "Offline Mode"
                                     else -> "Cocktail Bar"
                                 },
@@ -178,10 +178,10 @@ fun MainScreen() {
                     items.forEach { screen ->
                         NavigationBarItem(
                             icon = {
-                                Icon(screen.icon, contentDescription = screen.title)
+                                Icon(screen.icon, contentDescription = stringResource(screen.titleRes))
                             },
                             label = {
-                                Text(screen.title, fontSize = 12.sp)
+                                Text(stringResource(screen.titleRes), fontSize = 12.sp)
                             },
                             selected = currentDestination?.hierarchy?.any { it.hasRoute(screen.route::class) } == true,
                             onClick = {
@@ -273,7 +273,6 @@ fun MainScreen() {
                     cocktailId = route.cocktailId,
                     homeViewModel = sharedHomeViewModel,
                     cartViewModel = sharedCartViewModel,
-                    reviewViewModel = sharedReviewViewModel,
                     favoritesViewModel = sharedFavoritesViewModel,
                     navigationManager = navigationManager,
                     onBackClick = { navigationManager.navigateBack() },

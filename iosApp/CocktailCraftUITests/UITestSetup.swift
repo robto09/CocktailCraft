@@ -15,11 +15,6 @@ class UITestSetup: XCTestCase {
         // Initialize and configure the app
         app = XCUIApplication()
         
-        // Set test environment variables
-        app.launchEnvironment["IS_TESTING"] = "YES"
-        app.launchEnvironment["DISABLE_ANIMATIONS"] = "YES"
-        app.launchEnvironment["USE_MOCK_DATA"] = "YES"
-        
         // Launch the app
         app.launch()
     }

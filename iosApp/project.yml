@@ -10,13 +10,13 @@ targets:
     platform: iOS
     sources:
       - CocktailCraft
-    dependencies:
-      - framework: ../shared/build/cocoapods/publish/debug/shared.xcframework
-        embed: true
+    # The shared KMP framework is integrated via CocoaPods (pod 'shared',
+    # :path => '../shared'). After regenerating with `xcodegen generate`,
+    # run `pod install` to re-attach the Pods build phases and workspace.
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.cocktailcraft.CocktailCraft
       DEVELOPMENT_TEAM: ""
-      SWIFT_VERSION: "6.0"
+      SWIFT_VERSION: "5.10"
       IPHONEOS_DEPLOYMENT_TARGET: "18.5"
       ENABLE_PREVIEWS: true
       GENERATE_INFOPLIST_FILE: true
@@ -31,6 +31,29 @@ targets:
       OTHER_LDFLAGS:
         - "$(inherited)"
     
+  CocktailCraftTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - CocktailCraftTests
+    dependencies:
+      - target: CocktailCraft
+    settings:
+      TEST_HOST: "$(BUILT_PRODUCTS_DIR)/CocktailCraft.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CocktailCraft"
+      BUNDLE_LOADER: "$(TEST_HOST)"
+      SWIFT_VERSION: "5.10"
+
+  CocktailCraftUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - CocktailCraftUITests
+    dependencies:
+      - target: CocktailCraft
+    settings:
+      TEST_TARGET_NAME: CocktailCraft
+      SWIFT_VERSION: "5.10"
+
 schemes:
   CocktailCraft:
     build:
@@ -38,5 +61,10 @@ schemes:
         CocktailCraft: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - CocktailCraftTests
+        - CocktailCraftUITests
     archive:
       config: Release
