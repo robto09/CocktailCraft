@@ -1,5 +1,6 @@
 package com.cocktailcraft.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
 import com.cocktailcraft.util.ErrorHandler

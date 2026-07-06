@@ -1,5 +1,6 @@
 package com.cocktailcraft.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.config.DeliveryPolicy
 import com.cocktailcraft.domain.model.Order

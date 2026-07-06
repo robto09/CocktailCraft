@@ -1,5 +1,6 @@
 package com.cocktailcraft.viewmodel
 
+import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.domain.util.getOrThrow
