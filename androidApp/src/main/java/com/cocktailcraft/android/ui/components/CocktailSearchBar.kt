@@ -34,7 +34,6 @@ import com.cocktailcraft.android.ui.theme.AppColors
  * @param onSearchQueryChange Callback when the search query changes
  * @param onClearSearch Callback when the search is cleared
  * @param onToggleAdvancedSearch Callback when the advanced search button is clicked and filters are active
- * @param onShowAdvancedSearchDialog Callback when the advanced search button is clicked and no filters are active
  * @param modifier The modifier for the component
  * @param placeholder The placeholder text for the search field
  * @param searchIconTint The tint color for the search icon
@@ -53,7 +52,6 @@ fun CocktailSearchBar(
     onSearchQueryChange: (String) -> Unit,
     onClearSearch: () -> Unit,
     onToggleAdvancedSearch: () -> Unit,
-    onShowAdvancedSearchDialog: () -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = "Search cocktails...",
     searchIconTint: Color = AppColors.Gray,
@@ -108,21 +106,7 @@ fun CocktailSearchBar(
 
         // Advanced search button
         IconButton(
-            onClick = {
-                if (isAdvancedSearchActive) {
-                    // If already expanded, just collapse it
-                    onToggleAdvancedSearch()
-                } else {
-                    // If not expanded, toggle between dialog and expandable panel
-                    if (hasActiveFilters) {
-                        // If filters are already applied, just expand the panel
-                        onToggleAdvancedSearch()
-                    } else {
-                        // If no filters applied, show the dialog for better UX
-                        onShowAdvancedSearchDialog()
-                    }
-                }
-            },
+            onClick = { onToggleAdvancedSearch() },
             modifier = Modifier
                 .background(
                     color = if (isAdvancedSearchActive || hasActiveFilters)

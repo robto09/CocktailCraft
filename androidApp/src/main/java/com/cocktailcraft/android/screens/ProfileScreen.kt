@@ -50,6 +50,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,10 +62,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.AnimatedThemeToggleRow
+import com.cocktailcraft.android.R
+import com.cocktailcraft.android.ui.components.SignInDialog
+import com.cocktailcraft.android.ui.components.SignUpDialog
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.SharedProfileViewModel
 import com.cocktailcraft.viewmodel.SharedThemeViewModel
@@ -92,9 +97,9 @@ fun ProfileScreen(
     val isSystemTheme = themeState.isSystemTheme
 
     // Dialog states
-    var showLogoutDialog by remember { mutableStateOf(false) }
-    var showSignInDialog by remember { mutableStateOf(false) }
-    var showSignUpDialog by remember { mutableStateOf(false) }
+    var showLogoutDialog by rememberSaveable { mutableStateOf(false) }
+    var showSignInDialog by rememberSaveable { mutableStateOf(false) }
+    var showSignUpDialog by rememberSaveable { mutableStateOf(false) }
 
     // Sample profile data (in a real app, this would come from a ViewModel)
     val userName = user?.name ?: "Guest User"
@@ -126,8 +131,8 @@ fun ProfileScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            title = { Text("Logout") },
-            text = { Text("Are you sure you want to logout?") },
+            title = { Text(stringResource(R.string.logout)) },
+            text = { Text(stringResource(R.string.logout_confirm)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -143,14 +148,14 @@ fun ProfileScreen(
                         containerColor = AppColors.Primary
                     )
                 ) {
-                    Text("Logout")
+                    Text(stringResource(R.string.logout))
                 }
             },
             dismissButton = {
                 OutlinedButton(
                     onClick = { showLogoutDialog = false }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -234,7 +239,7 @@ fun ProfileScreen(
                             .fillMaxWidth(0.8f)
                             .padding(vertical = 4.dp)
                     ) {
-                        Text("Sign In")
+                        Text(stringResource(R.string.sign_in))
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -245,7 +250,7 @@ fun ProfileScreen(
                             .fillMaxWidth(0.8f)
                             .padding(vertical = 4.dp)
                     ) {
-                        Text("Create Account")
+                        Text(stringResource(R.string.create_account))
                     }
                 }
             }
@@ -277,25 +282,25 @@ fun ProfileScreen(
 
                     SettingsItem(
                         icon = Icons.Default.Person,
-                        title = "Edit Profile",
+                        title = stringResource(R.string.edit_profile),
                         onClick = { /* Handle edit profile */ }
                     )
 
                     SettingsItem(
                         icon = Icons.Default.Lock,
-                        title = "Change Password",
+                        title = stringResource(R.string.change_password),
                         onClick = { /* Handle change password */ }
                     )
 
                     SettingsItem(
                         icon = Icons.Default.Email,
-                        title = "Email Preferences",
+                        title = stringResource(R.string.email_preferences),
                         onClick = { /* Handle email preferences */ }
                     )
 
                     SettingsItem(
                         icon = Icons.Default.Notifications,
-                        title = "Notification Settings",
+                        title = stringResource(R.string.notification_settings),
                         onClick = { /* Handle notification settings */ }
                     )
                 }
@@ -326,25 +331,25 @@ fun ProfileScreen(
 
                 SettingsItem(
                     icon = Icons.Default.DateRange,
-                    title = "Order History",
+                    title = stringResource(R.string.order_history),
                     onClick = { navigationManager.navigateToOrderList() }
                 )
 
                 SettingsItem(
                     icon = Icons.Default.Help,
-                    title = "Help & Support",
+                    title = stringResource(R.string.help_support),
                     onClick = { /* Handle help & support */ }
                 )
 
                 SettingsItem(
                     icon = Icons.Default.CloudOff,
-                    title = "Offline Mode",
+                    title = stringResource(R.string.offline_mode),
                     onClick = { navigationManager.navigateToOfflineMode() }
                 )
 
                 // Follow System Theme Toggle with animated switch
                 AnimatedThemeToggleRow(
-                    title = "Follow System Theme",
+                    title = stringResource(R.string.follow_system_theme),
                     subtitle = if (isSystemTheme) "On" else "Off",
                     icon = Icons.Default.DateRange,
                     isChecked = isSystemTheme,
@@ -354,7 +359,7 @@ fun ProfileScreen(
 
                 // Dark Mode Toggle with animated switch (only enabled if not following system theme)
                 AnimatedThemeToggleRow(
-                    title = "Dark Mode",
+                    title = stringResource(R.string.dark_mode),
                     subtitle = if (isSystemTheme)
                         "Controlled by system"
                     else
@@ -372,7 +377,7 @@ fun ProfileScreen(
                 if (isLoggedIn) {
                     SettingsItem(
                         icon = Icons.Default.ExitToApp,
-                        title = "Logout",
+                        title = stringResource(R.string.logout),
                         onClick = { showLogoutDialog = true },
                         textColor = AppColors.Error
                     )
@@ -442,7 +447,7 @@ fun ProfileScreen(
     error?.let { errorInfo ->
         AlertDialog(
             onDismissRequest = { profileViewModel.clearError() },
-            title = { Text("Error") },
+            title = { Text(stringResource(R.string.error)) },
             text = { Text(errorInfo.message) },
             confirmButton = {
                 Button(
@@ -451,152 +456,11 @@ fun ProfileScreen(
                         containerColor = AppColors.Primary
                     )
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.ok))
                 }
             }
         )
     }
-}
-
-@Composable
-fun SignInDialog(
-    onDismiss: () -> Unit,
-    onSignIn: (email: String, password: String) -> Unit
-) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Sign In") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email") },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
-                )
-
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Password") },
-                    singleLine = true,
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = if (passwordVisible) "Hide password" else "Show password"
-                            )
-                        }
-                    }
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onSignIn(email, password) },
-                enabled = email.isNotBlank() && password.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.Primary
-                )
-            ) {
-                Text("Sign In")
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun SignUpDialog(
-    onDismiss: () -> Unit,
-    onSignUp: (name: String, email: String, password: String) -> Unit
-) {
-    var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Create Account") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Name") },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                )
-
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email") },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
-                )
-
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Password") },
-                    singleLine = true,
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                contentDescription = if (passwordVisible) "Hide password" else "Show password"
-                            )
-                        }
-                    }
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onSignUp(name, email, password) },
-                enabled = name.isNotBlank() && email.isNotBlank() && password.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.Primary
-                )
-            ) {
-                Text("Create Account")
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
 }
 
 @Composable

@@ -15,8 +15,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
@@ -50,7 +52,7 @@ fun FavoritesScreen(
         // Show error state
         if (!isLoading && error != null) {
             EmptyStateComponent(
-                title = "Error",
+                title = stringResource(R.string.error),
                 message = error?.toString() ?: "An unknown error occurred",
                 actionButtonText = "Try Again",
                 onActionButtonClick = { /* Add retry logic here */ }
@@ -59,8 +61,8 @@ fun FavoritesScreen(
         // Show empty favorites state
         else if (!isLoading && favorites.isEmpty()) {
             EmptyStateComponent(
-                title = "No favorites yet",
-                message = "Add cocktails to your favorites to see them here",
+                title = stringResource(R.string.no_favorites),
+                message = stringResource(R.string.favorites_empty_message),
                 actionButtonText = "Browse Cocktails",
                 onActionButtonClick = onBrowseProducts,
                 icon = Icons.Filled.Favorite
@@ -78,7 +80,7 @@ fun FavoritesScreen(
             ) {
                 item {
                     SectionHeader(
-                        title = "Your Favorite Cocktails",
+                        title = stringResource(R.string.favorites_section_title),
                         fontSize = 20,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )

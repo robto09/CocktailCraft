@@ -26,8 +26,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.CartItemCard
 import com.cocktailcraft.android.ui.components.ConfirmationDialog
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
@@ -76,7 +78,7 @@ fun CartScreen(
         // Show error state
         if (!isLoading && error != null) {
             EmptyStateComponent(
-                title = "Error",
+                title = stringResource(R.string.error),
                 message = error?.toString() ?: "An unknown error occurred",
                 actionButtonText = "Try Again",
                 onActionButtonClick = { /* Add retry logic here */ }
@@ -85,8 +87,8 @@ fun CartScreen(
         // Show empty cart state
         else if (!isLoading && cartItems.isEmpty()) {
             EmptyStateComponent(
-                title = "Your cart is empty",
-                message = "Add some cocktails to your cart and they will appear here",
+                title = stringResource(R.string.cart_empty_title),
+                message = stringResource(R.string.cart_empty_message),
                 actionButtonText = "Start Shopping",
                 onActionButtonClick = onStartShopping,
                 icon = Icons.Filled.ShoppingCart
@@ -95,7 +97,7 @@ fun CartScreen(
         // Show cart items
         else if (!isLoading) {
             SectionHeader(
-                title = "Your Cart",
+                title = stringResource(R.string.cart_section_title),
                 fontSize = 20,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -162,8 +164,8 @@ fun CartScreen(
     // Order Confirmation Dialog
     ConfirmationDialog(
         showDialog = showPlaceOrderDialog,
-        title = "Confirm Order",
-        message = "Are you sure you want to place this order for ${currencyFormatter.format(totalPrice + 5.99)}?",
+        title = stringResource(R.string.confirm_order_title),
+        message = stringResource(R.string.confirm_order_message, currencyFormatter.format(totalPrice + 5.99)),
         confirmButtonText = "Confirm",
         dismissButtonText = "Cancel",
         onConfirm = {

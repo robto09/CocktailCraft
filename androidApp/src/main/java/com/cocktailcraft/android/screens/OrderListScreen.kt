@@ -18,9 +18,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.navigation.Screen
 import com.cocktailcraft.android.navigation.NavigationManager
@@ -109,7 +111,7 @@ fun OrderListScreen(
                         ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Browse Cocktails")
+                        Text(stringResource(R.string.browse_cocktails))
                     }
                 }
             }

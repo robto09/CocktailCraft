@@ -81,11 +81,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.components.DetailHeaderImage
 import com.cocktailcraft.android.ui.components.DetailInfoCard
@@ -103,7 +105,7 @@ import com.cocktailcraft.viewmodel.SharedReviewViewModel
 import com.cocktailcraft.android.navigation.NavigationManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
+import org.koin.androidx.compose.koinViewModel
 import androidx.compose.animation.core.*
 import com.cocktailcraft.android.ui.components.shimmerEffect
 import com.cocktailcraft.android.util.rememberHapticHandler
@@ -114,7 +116,6 @@ fun CocktailDetailScreen(
     cocktailId: String,
     homeViewModel: SharedHomeViewModel,
     cartViewModel: SharedCartViewModel,
-    reviewViewModel: SharedReviewViewModel,
     favoritesViewModel: SharedFavoritesViewModel,
     navigationManager: NavigationManager,
     onBackClick: () -> Unit,
@@ -123,11 +124,10 @@ fun CocktailDetailScreen(
     // Add a loading state to track when data is being fetched
     var isLoading by remember { mutableStateOf(true) }
 
-    // Shared Detail ViewModel owns recommendations; factory-scoped, so clean it up on dispose
-    val detailViewModel = koinInject<SharedCocktailDetailViewModel>()
-    DisposableEffect(Unit) {
-        onDispose { detailViewModel.onCleared() }
-    }
+    // Nav-entry-scoped shared ViewModels — cleared automatically when the
+    // destination leaves the back stack
+    val detailViewModel = koinViewModel<SharedCocktailDetailViewModel>()
+    val reviewViewModel = koinViewModel<SharedReviewViewModel>()
     val detailState by detailViewModel.uiState.collectAsStateWithLifecycle()
     LaunchedEffect(cocktailId) {
         detailViewModel.loadCocktail(cocktailId)
@@ -351,6 +351,7 @@ fun CocktailDetailScreen(
                                 Spacer(modifier = Modifier.height(24.dp))
 
                                 // Add to cart button
+                                val addedToCartMessage = stringResource(R.string.added_to_cart, cocktailData.name)
                                 Button(
                                     onClick = {
                                         cocktailData.let {
@@ -359,7 +360,7 @@ fun CocktailDetailScreen(
                                             // Show snackbar confirmation
                                             coroutineScope.launch {
                                                 snackbarHostState.showSnackbar(
-                                                    message = "${cocktailData.name} added to cart",
+                                                    message = addedToCartMessage,
                                                     duration = SnackbarDuration.Short
                                                 )
                                             }
@@ -392,7 +393,7 @@ fun CocktailDetailScreen(
 
                                 // Instructions
                                 DetailInfoCard(
-                                    title = "How to Prepare",
+                                    title = stringResource(R.string.how_to_prepare),
                                     modifier = Modifier.padding(vertical = 8.dp),
                                     content = {
                                     // Add debug print to console to verify instructions are available
@@ -449,7 +450,7 @@ fun CocktailDetailScreen(
                     // Ingredients section
                     item {
                         DetailInfoCard(
-                            title = "Ingredients",
+                            title = stringResource(R.string.ingredients),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             content = {
 
@@ -487,7 +488,7 @@ fun CocktailDetailScreen(
                     // Details chips section
                     item {
                         DetailInfoCard(
-                            title = "Details",
+                            title = stringResource(R.string.details),
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             content = {
                             LazyRow(
@@ -498,7 +499,7 @@ fun CocktailDetailScreen(
                                         item {
                                             SuggestionChip(
                                                 onClick = {},
-                                                label = { Text("Category: $it") },
+                                                label = { Text(stringResource(R.string.category_label, it)) },
                                                 colors = SuggestionChipDefaults.suggestionChipColors(
                                                     containerColor = AppColors.ChipBackground.copy(alpha = 0.2f),
                                                     labelColor = AppColors.TextPrimary
@@ -512,7 +513,7 @@ fun CocktailDetailScreen(
                                         item {
                                             SuggestionChip(
                                                 onClick = {},
-                                                label = { Text("Glass: $it") },
+                                                label = { Text(stringResource(R.string.glass_label, it)) },
                                                 colors = SuggestionChipDefaults.suggestionChipColors(
                                                     containerColor = AppColors.ChipBackground.copy(alpha = 0.2f),
                                                     labelColor = AppColors.TextPrimary
@@ -525,7 +526,7 @@ fun CocktailDetailScreen(
                                     item {
                                         SuggestionChip(
                                             onClick = {},
-                                            label = { Text(if (cocktailData.alcoholic == "Alcoholic") "Alcoholic" else "Non-Alcoholic") },
+                                            label = { Text(if (cocktailData.alcoholic == "Alcoholic") stringResource(R.string.alcoholic) else stringResource(R.string.non_alcoholic)) },
                                             colors = SuggestionChipDefaults.suggestionChipColors(
                                                 containerColor = AppColors.ChipBackground.copy(alpha = 0.2f),
                                                 labelColor = AppColors.TextPrimary
@@ -703,7 +704,7 @@ fun CocktailDetailScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     SectionHeader(
-                                        title = "Reviews (${reviews.size})",
+                                        title = stringResource(R.string.reviews_title, reviews.size),
                                         modifier = Modifier.weight(1f),
                                         fontSize = 18
                                     )
@@ -720,7 +721,7 @@ fun CocktailDetailScreen(
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Write a Review")
+                                        Text(stringResource(R.string.write_review))
                                     }
                                 }
 

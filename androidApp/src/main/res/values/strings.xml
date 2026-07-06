@@ -64,4 +64,58 @@
     <string name="tap_to_load">Tap to load</string>
     <string name="no_favorites">No favorites yet</string>
     <string name="tap_to_add_favorites">Tap to add some!</string>
+
+    <!-- Common -->
+    <string name="error">Error</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="name">Name</string>
+
+    <!-- Navigation titles -->
+    <string name="my_bar">My Bar</string>
+    <string name="recipes">Recipes</string>
+
+    <!-- Home / search -->
+    <string name="browse_cocktails">Browse Cocktails</string>
+
+    <!-- Favorites -->
+    <string name="favorites_empty_message">Add cocktails to your favorites to see them here</string>
+    <string name="favorites_section_title">Your Favorite Cocktails</string>
+
+    <!-- Cart -->
+    <string name="cart_empty_title">Your cart is empty</string>
+    <string name="cart_empty_message">Add some cocktails to your cart and they will appear here</string>
+    <string name="cart_section_title">Your Cart</string>
+    <string name="confirm_order_title">Confirm Order</string>
+    <string name="confirm_order_message">Are you sure you want to place this order for %1$s?</string>
+
+    <!-- Offline mode -->
+    <string name="clear_cache">Clear Cache</string>
+    <string name="clear_offline_cache_title">Clear Offline Cache</string>
+    <string name="clear_offline_cache_message">Are you sure you want to clear all cached cocktails? You won\'t be able to view them offline.</string>
+    <string name="go_to_home">Go to Home</string>
+
+    <!-- Cocktail detail -->
+    <string name="how_to_prepare">How to Prepare</string>
+    <string name="ingredients">Ingredients</string>
+    <string name="details">Details</string>
+    <string name="category_label">Category: %1$s</string>
+    <string name="glass_label">Glass: %1$s</string>
+    <string name="reviews_title">Reviews (%1$d)</string>
+    <string name="write_review">Write a Review</string>
+    <string name="added_to_cart">%1$s added to cart</string>
+    <string name="alcoholic">Alcoholic</string>
+    <string name="non_alcoholic">Non-Alcoholic</string>
+
+    <!-- Profile -->
+    <string name="create_account">Create Account</string>
+    <string name="edit_profile">Edit Profile</string>
+    <string name="change_password">Change Password</string>
+    <string name="email_preferences">Email Preferences</string>
+    <string name="notification_settings">Notification Settings</string>
+    <string name="order_history">Order History</string>
+    <string name="help_support">Help &amp; Support</string>
+    <string name="offline_mode">Offline Mode</string>
+    <string name="follow_system_theme">Follow System Theme</string>
+    <string name="logout_confirm">Are you sure you want to logout?</string>
 </resources>
