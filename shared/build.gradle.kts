@@ -120,6 +120,7 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.koin.test.core)
                 implementation(libs.turbine)
+                implementation(libs.multiplatform.settings.test)
             }
         }
 

@@ -1,6 +1,7 @@
 package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailCategories
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.usecase.SearchCocktailsUseCase
 import com.cocktailcraft.domain.usecase.LoadCocktailsByCategoryUseCase
@@ -10,6 +11,7 @@ import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.domain.usecase.ManageOfflineModeUseCase
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
 import com.cocktailcraft.domain.util.getOrDefault
+import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.viewmodel.state.HomeUiState
@@ -17,7 +19,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import org.koin.core.component.inject
 
 /**
  * Shared ViewModel for Home screen functionality.
@@ -27,16 +28,16 @@ import org.koin.core.component.inject
  * iOS SKIE wrappers observe the single [uiState] flow.
  * Individual StateFlow properties are derived for backward compatibility with Android.
  */
-class SharedHomeViewModel : SharedViewModel() {
-
-    private val searchCocktailsUseCase: SearchCocktailsUseCase by inject()
-    private val loadCocktailsByCategoryUseCase: LoadCocktailsByCategoryUseCase by inject()
-    private val sortCocktailsUseCase: SortCocktailsUseCase by inject()
-    private val filterCocktailsUseCase: FilterCocktailsUseCase by inject()
-    private val manageFavoritesUseCase: ManageFavoritesUseCase by inject()
-    private val manageOfflineModeUseCase: ManageOfflineModeUseCase by inject()
-    private val getCocktailDetailUseCase: GetCocktailDetailUseCase by inject()
-    private val networkMonitor: NetworkMonitor by inject()
+class SharedHomeViewModel internal constructor(
+    private val searchCocktailsUseCase: SearchCocktailsUseCase,
+    private val loadCocktailsByCategoryUseCase: LoadCocktailsByCategoryUseCase,
+    private val sortCocktailsUseCase: SortCocktailsUseCase,
+    private val filterCocktailsUseCase: FilterCocktailsUseCase,
+    private val manageFavoritesUseCase: ManageFavoritesUseCase,
+    private val manageOfflineModeUseCase: ManageOfflineModeUseCase,
+    private val getCocktailDetailUseCase: GetCocktailDetailUseCase,
+    private val networkMonitor: NetworkMonitor
+) : SharedViewModel() {
 
     // Consolidated UI State — single source of truth
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -102,18 +103,16 @@ class SharedHomeViewModel : SharedViewModel() {
             currentPage = 1,
             hasMoreData = true
         ) }
-        setLoading(true)
         clearError()
 
         try {
-            val cocktailList = loadCocktailsByCategoryUseCase(targetCategory).getOrDefault(emptyList())
+            val cocktailList = loadCocktailsByCategoryUseCase(targetCategory).getOrThrow()
             val paginatedList = cocktailList.take(PAGE_SIZE)
             _uiState.update { it.copy(
                 cocktails = paginatedList,
                 hasMoreData = paginatedList.size < cocktailList.size,
                 isLoading = false
             ) }
-            setLoading(false)
             clearError()
         } catch (e: Exception) {
             val state = _uiState.value
@@ -143,17 +142,14 @@ class SharedHomeViewModel : SharedViewModel() {
             loadCocktails()
         } else {
             _uiState.update { it.copy(isLoading = true) }
-            setLoading(true)
             clearError()
 
             try {
-                val cocktailList = searchCocktailsUseCase(query).getOrDefault(emptyList())
+                val cocktailList = searchCocktailsUseCase(query).getOrThrow()
                 _uiState.update { it.copy(cocktails = cocktailList, isLoading = false) }
-                setLoading(false)
             } catch (e: Exception) {
                 handleException(e, "Failed to search cocktails")
                 _uiState.update { it.copy(isLoading = false) }
-                setLoading(false)
             }
         }
     }
@@ -196,17 +192,14 @@ class SharedHomeViewModel : SharedViewModel() {
      */
     suspend fun applyFilters(category: String? = null, ingredient: String? = null) {
         _uiState.update { it.copy(isLoading = true) }
-        setLoading(true)
         clearError()
 
         try {
-            val filtered = filterCocktailsUseCase(category, ingredient).getOrDefault(emptyList())
+            val filtered = filterCocktailsUseCase(category, ingredient).getOrThrow()
             _uiState.update { it.copy(cocktails = filtered, isLoading = false) }
-            setLoading(false)
         } catch (e: Exception) {
             handleException(e, "Failed to apply filters")
             _uiState.update { it.copy(isLoading = false) }
-            setLoading(false)
         }
     }
     
@@ -228,14 +221,12 @@ class SharedHomeViewModel : SharedViewModel() {
      * SKIE will convert this to Swift async function.
      */
     suspend fun sortByPrice(ascending: Boolean) {
-        setLoading(true)
         try {
             val sortType = if (ascending) SortCocktailsUseCase.SortType.PRICE_ASC else SortCocktailsUseCase.SortType.PRICE_DESC
             _uiState.update { it.copy(cocktails = sortCocktailsUseCase(it.cocktails, sortType)) }
         } catch (e: Exception) {
             handleException(e, "Failed to sort cocktails")
         } finally {
-            setLoading(false)
         }
     }
 
@@ -243,13 +234,11 @@ class SharedHomeViewModel : SharedViewModel() {
      * Sort cocktails by rating.
      */
     suspend fun sortByRating() {
-        setLoading(true)
         try {
             _uiState.update { it.copy(cocktails = sortCocktailsUseCase(it.cocktails, SortCocktailsUseCase.SortType.RATING)) }
         } catch (e: Exception) {
             handleException(e, "Failed to sort cocktails")
         } finally {
-            setLoading(false)
         }
     }
 
@@ -257,13 +246,11 @@ class SharedHomeViewModel : SharedViewModel() {
      * Sort cocktails by popularity.
      */
     suspend fun sortByPopularity() {
-        setLoading(true)
         try {
             _uiState.update { it.copy(cocktails = sortCocktailsUseCase(it.cocktails, SortCocktailsUseCase.SortType.POPULARITY)) }
         } catch (e: Exception) {
             handleException(e, "Failed to sort cocktails")
         } finally {
-            setLoading(false)
         }
     }
 
@@ -285,12 +272,10 @@ class SharedHomeViewModel : SharedViewModel() {
      */
     suspend fun refreshCocktailDetails(id: String) {
         try {
-            setLoading(true)
             getCocktailDetailUseCase.refresh(id)
         } catch (e: Exception) {
             handleException(e, "Failed to refresh cocktail details")
         } finally {
-            setLoading(false)
         }
     }
     
@@ -314,6 +299,10 @@ class SharedHomeViewModel : SharedViewModel() {
                 .take(limit)
         }
     }
+
+    /** Canonical curated category list — single source of truth for category chips on both platforms. */
+    val curatedCategories: List<String>
+        get() = CocktailCategories.CURATED
 
     fun getCategories(): List<String> {
         return _uiState.value.cocktails
@@ -373,22 +362,19 @@ class SharedHomeViewModel : SharedViewModel() {
     
     private suspend fun performSearch() {
         _uiState.update { it.copy(isLoading = true) }
-        setLoading(true)
         clearError()
 
         try {
             val state = _uiState.value
             val cocktailList = if (state.searchFilters.hasActiveFilters()) {
-                searchCocktailsUseCase.advancedSearch(state.searchFilters).getOrDefault(emptyList())
+                searchCocktailsUseCase.advancedSearch(state.searchFilters).getOrThrow()
             } else {
-                searchCocktailsUseCase(state.searchQuery).getOrDefault(emptyList())
+                searchCocktailsUseCase(state.searchQuery).getOrThrow()
             }
             _uiState.update { it.copy(cocktails = cocktailList, isLoading = false) }
-            setLoading(false)
         } catch (e: Exception) {
             handleException(e, "Failed to search cocktails")
             _uiState.update { it.copy(isLoading = false) }
-            setLoading(false)
         }
     }
 
@@ -409,7 +395,6 @@ class SharedHomeViewModel : SharedViewModel() {
             if (cachedCocktails.isNotEmpty()) {
                 _uiState.update { it.copy(cocktails = cachedCocktails, isLoading = false) }
                 clearError()
-                setLoading(false)
             } else {
                 throw originalError
             }
@@ -420,7 +405,6 @@ class SharedHomeViewModel : SharedViewModel() {
                 recoveryAction = ErrorHandler.RecoveryAction("Retry") { retry() }
             )
             _uiState.update { it.copy(isLoading = false) }
-            setLoading(false)
         }
     }
 }

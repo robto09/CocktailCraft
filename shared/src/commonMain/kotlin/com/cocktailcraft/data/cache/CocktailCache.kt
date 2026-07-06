@@ -11,7 +11,6 @@ import co.touchlab.kermit.Logger
 import kotlin.time.Clock
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.runBlocking
 
 /**
  * Simple LRU cache implementation
@@ -88,14 +87,21 @@ internal class CocktailCache(
     // In-memory cache for recently viewed cocktails
     private val recentlyViewedCache = SimpleLruCache<String, Cocktail>(MAX_RECENTLY_VIEWED)
     
-    init {
-        Logger.d { "CocktailCache init()" }
-        // Load persisted cocktails into memory cache on initialization
-        runBlocking {
-            loadPersistedCocktails()
+    // Persisted entries are loaded lazily on first access — a Koin `single`
+    // must not block whichever thread first resolves it.
+    private val loadMutex = Mutex()
+    private var loaded = false
+
+    private suspend fun ensureLoaded() {
+        if (loaded) return
+        loadMutex.withLock {
+            if (!loaded) {
+                loadPersistedCocktails()
+                loaded = true
+            }
         }
     }
-    
+
     private suspend fun loadPersistedCocktails() {
         Logger.d { "Loading persisted cocktails..." }
         try {
@@ -160,6 +166,7 @@ internal class CocktailCache(
      * Cache a cocktail for offline access.
      */
     suspend fun cacheCocktail(cocktail: Cocktail) {
+        ensureLoaded()
         cocktailCache.put(cocktail.id, cocktail)
         persistCocktails() // Persist to storage
     }
@@ -168,6 +175,7 @@ internal class CocktailCache(
      * Get a cached cocktail by ID.
      */
     suspend fun getCachedCocktail(id: String): Cocktail? {
+        ensureLoaded()
         return cocktailCache.get(id)
     }
     
@@ -175,6 +183,7 @@ internal class CocktailCache(
      * Get all cached cocktails.
      */
     suspend fun getAllCachedCocktails(): List<Cocktail> {
+        ensureLoaded()
         val cocktails = cocktailCache.snapshot().values.toList()
         Logger.d { "CocktailCache.getAllCachedCocktails() returning ${cocktails.size} items" }
         return cocktails
@@ -184,6 +193,7 @@ internal class CocktailCache(
      * Add a cocktail to the recently viewed list.
      */
     suspend fun addToRecentlyViewed(cocktail: Cocktail) {
+        ensureLoaded()
         recentlyViewedCache.put(cocktail.id, cocktail)
         // Also add to main cache if not already there
         if (cocktailCache.get(cocktail.id) == null) {
@@ -197,6 +207,7 @@ internal class CocktailCache(
      * Get the list of recently viewed cocktails.
      */
     suspend fun getRecentlyViewedCocktails(): List<Cocktail> {
+        ensureLoaded()
         val recent = recentlyViewedCache.snapshot().values.toList().reversed()
         Logger.d { "CocktailCache.getRecentlyViewedCocktails() returning ${recent.size} items" }
         return recent
@@ -206,6 +217,7 @@ internal class CocktailCache(
      * Clear all cached cocktails.
      */
     suspend fun clearCache() {
+        loadMutex.withLock { loaded = true } // nothing worth loading over a clear
         cocktailCache.clear()
         recentlyViewedCache.clear()
         // Clear from persistent storage
@@ -217,6 +229,7 @@ internal class CocktailCache(
      * Check if a cocktail is cached.
      */
     suspend fun isCocktailCached(id: String): Boolean {
+        ensureLoaded()
         return cocktailCache.get(id) != null
     }
     
@@ -224,6 +237,7 @@ internal class CocktailCache(
      * Get the number of cached cocktails.
      */
     suspend fun getCachedCocktailCount(): Int {
+        ensureLoaded()
         return cocktailCache.size()
     }
 }

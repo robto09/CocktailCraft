@@ -1,6 +1,7 @@
 package com.cocktailcraft.viewmodel
 
 import co.touchlab.kermit.Logger
+import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.ErrorHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -9,15 +10,13 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import org.koin.core.component.KoinComponent
 
 /**
  * Base ViewModel class for multiplatform ViewModels.
- * Provides common functionality including error handling, loading state management,
- * and Koin integration.
+ * Provides common functionality including error handling and loading state management.
+ * Dependencies are constructor-injected so subclasses can be built without a Koin container.
  */
-abstract class SharedViewModel : KoinComponent {
+abstract class SharedViewModel {
 
     /**
      * ViewModel scope for launching coroutines.
@@ -27,20 +26,11 @@ abstract class SharedViewModel : KoinComponent {
      */
     protected val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    // Loading state
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
-    // The single error channel, observed by both platforms for error UI
+    // The single error channel, observed by both platforms for error UI.
+    // Loading state lives in each screen's UiState — there is deliberately
+    // no parallel isLoading flow here.
     private val _error = MutableStateFlow<ErrorHandler.UserFriendlyError?>(null)
     val error: StateFlow<ErrorHandler.UserFriendlyError?> = _error.asStateFlow()
-
-    /**
-     * Set loading state
-     */
-    protected open fun setLoading(isLoading: Boolean) {
-        _isLoading.value = isLoading
-    }
 
     /**
      * Handle an exception and convert it to a user-friendly error
@@ -85,42 +75,25 @@ abstract class SharedViewModel : KoinComponent {
     }
 
     /**
-     * Execute a suspending operation with automatic error handling
+     * Unwrap a [Result], reporting a [Result.Error] to the error channel
+     * (typed via its ErrorCode) instead of silently discarding it.
      */
-    protected open fun <T> executeWithErrorHandling(
-        operation: suspend () -> T,
-        onSuccess: (T) -> Unit,
-        onError: ((ErrorHandler.UserFriendlyError) -> Unit)? = null,
-        defaultErrorMessage: String = "Something went wrong. Please try again.",
-        showLoading: Boolean = true,
+    protected fun <T> Result<T>.getOrReport(
+        default: T,
+        fallbackMessage: String = "Something went wrong. Please try again.",
         recoveryAction: ErrorHandler.RecoveryAction? = null
-    ) {
-        viewModelScope.launch {
-            try {
-                if (showLoading) {
-                    setLoading(true)
-                }
-
-                val result = operation()
-                onSuccess(result)
-
-            } catch (e: Exception) {
-                val error = ErrorHandler.getErrorFromException(
-                    exception = e,
-                    defaultMessage = defaultErrorMessage,
-                    recoveryAction = recoveryAction
-                )
-
-                _error.value = error
-
-                onError?.invoke(error)
-
-            } finally {
-                if (showLoading) {
-                    setLoading(false)
-                }
-            }
+    ): T = when (this) {
+        is Result.Success -> data
+        is Result.Error -> {
+            _error.value = ErrorHandler.errorFromCode(
+                code = code,
+                message = message.ifBlank { fallbackMessage },
+                recoveryAction = recoveryAction
+            )
+            Logger.e { "Error in ${this@SharedViewModel::class.simpleName}: $message ($code)" }
+            default
         }
+        is Result.Loading -> default
     }
 
     /**

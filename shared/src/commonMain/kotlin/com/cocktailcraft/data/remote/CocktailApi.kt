@@ -1,5 +1,6 @@
 package com.cocktailcraft.data.remote
 
+import com.cocktailcraft.domain.config.AppConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.call.*
 import io.ktor.client.plugins.timeout
@@ -25,11 +26,15 @@ internal interface CocktailApi {
 }
 
 internal class CocktailApiImpl(
-    private val client: HttpClient
+    private val client: HttpClient,
+    appConfig: AppConfig
 ) : CocktailApi {
+
+    private val baseUrl: String = appConfig.apiBaseUrl
+
     
     override suspend fun searchCocktailsByName(name: String): List<CocktailDto> {
-        val response = client.get("$BASE_URL/search.php") {
+        val response = client.get("$baseUrl/search.php") {
             parameter("s", name)
         }.body<CocktailResponse>()
         
@@ -37,7 +42,7 @@ internal class CocktailApiImpl(
     }
     
     override suspend fun searchCocktailsByFirstLetter(letter: Char): List<CocktailDto> {
-        val response = client.get("$BASE_URL/search.php") {
+        val response = client.get("$baseUrl/search.php") {
             parameter("f", letter.toString())
         }.body<CocktailResponse>()
         
@@ -47,7 +52,7 @@ internal class CocktailApiImpl(
     override suspend fun getCocktailById(id: String): CocktailDto? {
         try {
             // Force API call to specifically use the lookup endpoint for full details
-            val response = client.get("$BASE_URL/lookup.php") {
+            val response = client.get("$baseUrl/lookup.php") {
                 parameter("i", id)
                 // Add a timeout to ensure the request doesn't hang
                 timeout {
@@ -68,14 +73,14 @@ internal class CocktailApiImpl(
     }
     
     override suspend fun getRandomCocktail(): CocktailDto? {
-        val response = client.get("$BASE_URL/random.php")
+        val response = client.get("$baseUrl/random.php")
             .body<CocktailResponse>()
         
         return response.drinks?.firstOrNull()
     }
     
     override suspend fun filterByIngredient(ingredient: String): List<CocktailDto> {
-        val response = client.get("$BASE_URL/filter.php") {
+        val response = client.get("$baseUrl/filter.php") {
             parameter("i", ingredient)
         }.body<CocktailResponse>()
         
@@ -84,7 +89,7 @@ internal class CocktailApiImpl(
     
     override suspend fun filterByAlcoholic(alcoholic: Boolean): List<CocktailDto> {
         val filter = if (alcoholic) "Alcoholic" else "Non_Alcoholic"
-        val response = client.get("$BASE_URL/filter.php") {
+        val response = client.get("$baseUrl/filter.php") {
             parameter("a", filter)
         }.body<CocktailResponse>()
         
@@ -94,7 +99,7 @@ internal class CocktailApiImpl(
     override suspend fun filterByCategory(category: String): List<CocktailDto> {
         try {
             // First get the list of cocktails in this category (only ID, name, and thumbnail)
-            val response = client.get("$BASE_URL/filter.php") {
+            val response = client.get("$baseUrl/filter.php") {
                 parameter("c", category)
             }.body<CocktailResponse>()
             
@@ -109,7 +114,7 @@ internal class CocktailApiImpl(
     }
     
     override suspend fun filterByGlass(glass: String): List<CocktailDto> {
-        val response = client.get("$BASE_URL/filter.php") {
+        val response = client.get("$baseUrl/filter.php") {
             parameter("g", glass)
         }.body<CocktailResponse>()
         
@@ -117,7 +122,7 @@ internal class CocktailApiImpl(
     }
     
     override suspend fun getCategories(): List<CategoryDto> {
-        val response = client.get("$BASE_URL/list.php") {
+        val response = client.get("$baseUrl/list.php") {
             parameter("c", "list")
         }.body<CategoryResponse>()
         
@@ -125,7 +130,7 @@ internal class CocktailApiImpl(
     }
     
     override suspend fun getGlasses(): List<GlassDto> {
-        val response = client.get("$BASE_URL/list.php") {
+        val response = client.get("$baseUrl/list.php") {
             parameter("g", "list")
         }.body<GlassResponse>()
         
@@ -133,7 +138,7 @@ internal class CocktailApiImpl(
     }
     
     override suspend fun getIngredients(): List<IngredientDto> {
-        val response = client.get("$BASE_URL/list.php") {
+        val response = client.get("$baseUrl/list.php") {
             parameter("i", "list")
         }.body<IngredientResponse>()
         
@@ -141,7 +146,7 @@ internal class CocktailApiImpl(
     }
     
     override suspend fun getAlcoholicFilters(): List<AlcoholicFilterDto> {
-        val response = client.get("$BASE_URL/list.php") {
+        val response = client.get("$baseUrl/list.php") {
             parameter("a", "list")
         }.body<AlcoholicFilterResponse>()
         
@@ -152,20 +157,11 @@ internal class CocktailApiImpl(
     override suspend fun pingApi(): Boolean {
         return try {
             // Use a lightweight endpoint for checking connectivity
-            val response = client.get("$BASE_URL/random.php")
+            val response = client.get("$baseUrl/random.php")
             response.status.isSuccess()
         } catch (e: Exception) {
             false
         }
     }
     
-    companion object {
-        private const val BASE_URL = "https://www.thecocktaildb.com/api/json/v1/1"
-        
-        fun create(): CocktailApi {
-            return CocktailApiImpl(
-                client = HttpClient() // Assuming a default client setup
-            )
-        }
-    }
 } 

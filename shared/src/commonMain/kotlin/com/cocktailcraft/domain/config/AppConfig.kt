@@ -11,6 +11,9 @@ internal interface AppConfig {
      */
     val apiBaseUrl: String
 
+    /** When true, Ktor logs full request/response bodies — development only. */
+    val verboseNetworkLogging: Boolean
+
     /**
      * Base URL for images
      */

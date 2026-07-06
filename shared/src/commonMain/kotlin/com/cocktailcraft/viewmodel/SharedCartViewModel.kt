@@ -2,21 +2,21 @@ package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.config.DeliveryPolicy
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.util.Result
-import com.cocktailcraft.domain.util.getOrDefault
+import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.viewmodel.state.CartUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import org.koin.core.component.inject
 
 /**
  * Shared ViewModel for Cart functionality.
  * Uses consolidated [CartUiState] for atomic state updates.
  */
-class SharedCartViewModel : SharedViewModel() {
-
-    private val manageCartUseCase: ManageCartUseCase by inject()
+class SharedCartViewModel internal constructor(
+    private val manageCartUseCase: ManageCartUseCase
+) : SharedViewModel() {
 
     // Consolidated UI State
     private val _uiState = MutableStateFlow(CartUiState())
@@ -30,27 +30,11 @@ class SharedCartViewModel : SharedViewModel() {
         get() = _uiState.value.cartItems.isNotEmpty()
 
     init {
-        loadCart()
-    }
-
-    private fun loadCart() {
+        // The repository exposes a hot StateFlow seeded from persistence —
+        // collecting it is the single way cart contents enter this ViewModel.
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            setLoading(true)
-            try {
-                reloadItems()
-                _uiState.update { it.copy(isLoading = false) }
-                setLoading(false)
-            } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false) }
-                setLoading(false)
-            }
+            manageCartUseCase.observeCartItems().collect { applyItems(it) }
         }
-    }
-
-    /** Reconcile state with the repository without toggling the loading flag. */
-    private suspend fun reloadItems() {
-        applyItems(manageCartUseCase.getCartItems().getOrDefault(emptyList()))
     }
 
     /** Atomically publish an item list with its derived totals. */
@@ -69,8 +53,7 @@ class SharedCartViewModel : SharedViewModel() {
     suspend fun addToCart(cocktail: Cocktail, quantity: Int = 1) {
         try {
             val cartItem = CocktailCartItem(cocktail, quantity)
-            manageCartUseCase.addToCart(cartItem)
-            reloadItems()
+            manageCartUseCase.addToCart(cartItem).getOrThrow()
         } catch (e: Exception) {
             handleException(e, "Failed to add item to cart")
         }
@@ -89,8 +72,6 @@ class SharedCartViewModel : SharedViewModel() {
             if (result is Result.Error) {
                 applyItems(previous)
                 setError("Cart Error", "Failed to remove item from cart")
-            } else {
-                reloadItems()
             }
         } catch (e: Exception) {
             applyItems(previous)
@@ -113,8 +94,6 @@ class SharedCartViewModel : SharedViewModel() {
             if (result is Result.Error) {
                 applyItems(previous)
                 setError("Cart Error", "Failed to update quantity")
-            } else {
-                reloadItems()
             }
         } catch (e: Exception) {
             applyItems(previous)
@@ -169,32 +148,22 @@ class SharedCartViewModel : SharedViewModel() {
         return _uiState.value.cartItems.find { it.cocktail.id == cocktailId }
     }
 
-    fun getEstimatedDeliveryTime(): String {
-        val count = _uiState.value.itemCount
-        return when {
-            count == 0 -> "No items"
-            count <= 3 -> "15-20 minutes"
-            count <= 6 -> "20-25 minutes"
-            else -> "25-30 minutes"
-        }
-    }
+    fun getEstimatedDeliveryTime(): String =
+        DeliveryPolicy.estimatedDeliveryTime(_uiState.value.itemCount)
 
-    fun isFreeDelivery(): Boolean {
-        return _uiState.value.totalPrice >= 50.0
-    }
+    fun isFreeDelivery(): Boolean = DeliveryPolicy.isFreeDelivery(_uiState.value.totalPrice)
 
-    fun getDeliveryFee(): Double {
-        return if (isFreeDelivery()) 0.0 else 5.99
-    }
+    fun getDeliveryFee(): Double = DeliveryPolicy.deliveryFee(_uiState.value.totalPrice)
 
-    fun getFinalTotal(): Double {
-        return _uiState.value.totalPrice + getDeliveryFee()
-    }
+    fun getFinalTotal(): Double = DeliveryPolicy.finalTotal(_uiState.value.totalPrice)
     
     /**
-     * Refresh cart data.
+     * Explicitly resync state with the repository (normally the collected
+     * flow keeps it current on its own).
      */
     fun refresh() {
-        loadCart()
+        viewModelScope.launch {
+            applyItems(manageCartUseCase.getCartItems().getOrReport(_uiState.value.cartItems, "Failed to refresh cart"))
+        }
     }
 }

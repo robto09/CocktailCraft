@@ -5,19 +5,19 @@ import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.usecase.ManageProfileUseCase
 import com.cocktailcraft.domain.util.getOrDefault
+import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.ProfileUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import org.koin.core.component.inject
 
 /**
  * Shared ViewModel for Profile functionality.
  * Uses consolidated [ProfileUiState] for atomic state updates.
  */
-class SharedProfileViewModel : SharedViewModel() {
-
-    private val manageProfileUseCase: ManageProfileUseCase by inject()
+class SharedProfileViewModel internal constructor(
+    private val manageProfileUseCase: ManageProfileUseCase
+) : SharedViewModel() {
 
     // Consolidated UI State
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -50,7 +50,7 @@ class SharedProfileViewModel : SharedViewModel() {
      */
     suspend fun checkAuthStatus() {
         try {
-            val signedIn = manageProfileUseCase.isUserSignedIn().getOrDefault(false)
+            val signedIn = manageProfileUseCase.isUserSignedIn().getOrThrow()
             _uiState.update { it.copy(
                 isLoggedIn = signedIn,
                 authStatus = if (signedIn) "Authenticated" else "Not Authenticated"
@@ -89,10 +89,9 @@ class SharedProfileViewModel : SharedViewModel() {
         }
         
         _uiState.update { it.copy(isAuthenticating = true, isLoading = true) }
-        setLoading(true)
 
         return try {
-            val success = manageProfileUseCase.signIn(email, password).getOrDefault(false)
+            val success = manageProfileUseCase.signIn(email, password).getOrThrow()
             if (success) {
                 _uiState.update { it.copy(authError = null, authStatus = "Sign In Successful") }
                 checkAuthStatus()
@@ -105,12 +104,10 @@ class SharedProfileViewModel : SharedViewModel() {
                 )
             }
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
-            setLoading(false)
             success
         } catch (e: Exception) {
             handleException(e, "Failed to sign in")
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
-            setLoading(false)
             false
         }
     }
@@ -148,10 +145,9 @@ class SharedProfileViewModel : SharedViewModel() {
         }
         
         _uiState.update { it.copy(isAuthenticating = true, isLoading = true) }
-        setLoading(true)
 
         return try {
-            val success = manageProfileUseCase.signUp(email, password).getOrDefault(false)
+            val success = manageProfileUseCase.signUp(email, password).getOrThrow()
             if (success) {
                 _uiState.update { it.copy(authError = null, authStatus = "Sign Up Successful") }
                 updateProfile(name, email)
@@ -164,12 +160,10 @@ class SharedProfileViewModel : SharedViewModel() {
                 )
             }
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
-            setLoading(false)
             success
         } catch (e: Exception) {
             handleException(e, "Failed to create account")
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
-            setLoading(false)
             false
         }
     }
@@ -179,10 +173,9 @@ class SharedProfileViewModel : SharedViewModel() {
      * SKIE will convert this to Swift async function.
      */
     suspend fun signOut(): Boolean {
-        setLoading(true)
         
         return try {
-            val success = manageProfileUseCase.signOut().getOrDefault(false)
+            val success = manageProfileUseCase.signOut().getOrThrow()
             if (success) {
                 _uiState.update { it.copy(user = null, isLoggedIn = false, authError = null, authStatus = "Signed Out") }
             } else {
@@ -193,11 +186,9 @@ class SharedProfileViewModel : SharedViewModel() {
                     ErrorHandler.ErrorCategory.SERVER
                 )
             }
-            setLoading(false)
             success
         } catch (e: Exception) {
             handleException(e, "Failed to sign out")
-            setLoading(false)
             false
         }
     }
@@ -216,10 +207,9 @@ class SharedProfileViewModel : SharedViewModel() {
             return false
         }
         
-        setLoading(true)
         
         return try {
-            val success = manageProfileUseCase.resetPassword(email).getOrDefault(false)
+            val success = manageProfileUseCase.resetPassword(email).getOrThrow()
             if (success) {
                 setError(
                     "Password Reset Sent",
@@ -233,11 +223,9 @@ class SharedProfileViewModel : SharedViewModel() {
                     ErrorHandler.ErrorCategory.SERVER
                 )
             }
-            setLoading(false)
             success
         } catch (e: Exception) {
             handleException(e, "Failed to send password reset email")
-            setLoading(false)
             false
         }
     }
@@ -265,10 +253,9 @@ class SharedProfileViewModel : SharedViewModel() {
             return false
         }
         
-        setLoading(true)
         
         return try {
-            val nameSuccess = manageProfileUseCase.updateUserName(name).getOrDefault(false)
+            val nameSuccess = manageProfileUseCase.updateUserName(name).getOrThrow()
             if (nameSuccess) {
                 loadCurrentUser()
             } else {
@@ -278,11 +265,9 @@ class SharedProfileViewModel : SharedViewModel() {
                     ErrorHandler.ErrorCategory.SERVER
                 )
             }
-            setLoading(false)
             nameSuccess
         } catch (e: Exception) {
             handleException(e, "Failed to update profile")
-            setLoading(false)
             false
         }
     }
@@ -292,10 +277,9 @@ class SharedProfileViewModel : SharedViewModel() {
      * SKIE will convert this to Swift async function.
      */
     suspend fun updateAddress(address: Address): Boolean {
-        setLoading(true)
         
         return try {
-            val success = manageProfileUseCase.updateUserAddress(address).getOrDefault(false)
+            val success = manageProfileUseCase.updateUserAddress(address).getOrThrow()
             if (success) {
                 loadCurrentUser()
             } else {
@@ -305,11 +289,9 @@ class SharedProfileViewModel : SharedViewModel() {
                     ErrorHandler.ErrorCategory.SERVER
                 )
             }
-            setLoading(false)
             success
         } catch (e: Exception) {
             handleException(e, "Failed to update address")
-            setLoading(false)
             false
         }
     }
@@ -328,10 +310,9 @@ class SharedProfileViewModel : SharedViewModel() {
             return false
         }
         
-        setLoading(true)
         
         return try {
-            val success = manageProfileUseCase.changePassword(oldPassword, newPassword).getOrDefault(false)
+            val success = manageProfileUseCase.changePassword(oldPassword, newPassword).getOrThrow()
             if (success) {
                 setError(
                     "Password Changed",
@@ -345,11 +326,9 @@ class SharedProfileViewModel : SharedViewModel() {
                     ErrorHandler.ErrorCategory.AUTHENTICATION
                 )
             }
-            setLoading(false)
             success
         } catch (e: Exception) {
             handleException(e, "Failed to change password")
-            setLoading(false)
             false
         }
     }
@@ -460,7 +439,7 @@ class SharedProfileViewModel : SharedViewModel() {
     
     private suspend fun loadCurrentUser() {
         try {
-            val loadedUser = manageProfileUseCase.getCurrentUser().getOrNull()
+            val loadedUser = manageProfileUseCase.getCurrentUser().getOrThrow()
             _uiState.update { it.copy(user = loadedUser) }
         } catch (e: Exception) {
             // Silent fail for user loading

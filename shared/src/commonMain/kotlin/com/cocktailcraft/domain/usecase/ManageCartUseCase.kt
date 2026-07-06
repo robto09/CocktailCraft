@@ -6,11 +6,15 @@ import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
+import kotlinx.coroutines.flow.Flow
 
 internal class ManageCartUseCase(
     private val cartRepository: CartRepository,
     private val detailRepository: CocktailDetailRepository
 ) {
+    /** Hot stream of cart contents, seeded from persistence. */
+    fun observeCartItems(): Flow<List<CocktailCartItem>> = cartRepository.observeCartItems()
+
     suspend fun getCartItems(): Result<List<CocktailCartItem>> {
         return cartRepository.getCartItems()
     }

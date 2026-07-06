@@ -7,7 +7,6 @@ package com.cocktailcraft.domain.util
 enum class ErrorCode {
     // Network related errors
     NETWORK,
-    NETWORK_ERROR,  // Legacy name, same as NETWORK
     TIMEOUT,
 
     // Authentication errors
@@ -16,7 +15,6 @@ enum class ErrorCode {
 
     // Data errors
     INVALID_DATA,
-    VALIDATION_ERROR,  // Legacy name, same as INVALID_DATA
     NOT_FOUND,
 
     // Server errors

@@ -9,6 +9,9 @@ import com.cocktailcraft.domain.config.AppConfig
 internal class AppConfigImpl : AppConfig {
     override val apiBaseUrl: String = "https://www.thecocktaildb.com/api/json/v1/1"
 
+    // Flip locally when debugging network traffic; keeps prod logs quiet
+    override val verboseNetworkLogging: Boolean = false
+
     override val imageBaseUrl: String = "https://www.thecocktaildb.com/images"
 
     override val ingredientsImagePath: String = "ingredients"
