@@ -103,6 +103,7 @@ class FakeCocktailRepository(
     override suspend fun getRecentlyViewedCocktails(): Result<List<Cocktail>> = Result.Success(emptyList())
     override fun setOfflineMode(enabled: Boolean) { offlineMode = enabled }
     override fun isOfflineModeEnabled(): Boolean = offlineMode
+    override suspend fun isOffline(): Boolean = offlineMode
 }
 
 class FakeCartRepository : CartRepository {
