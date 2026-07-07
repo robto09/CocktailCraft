@@ -7,6 +7,10 @@ import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.util.Result
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -14,13 +18,14 @@ import com.cocktailcraft.util.UUID
 
 internal class AuthRepositoryImpl(
     private val settings: Settings,
-    private val json: Json
+    private val json: Json,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : AuthRepository {
 
     // Authentication methods
-    override suspend fun signUp(email: String, password: String): Result<Boolean> {
-        return try {
-            if (getUserByEmail(email) != null) return Result.Success(false)
+    override suspend fun signUp(email: String, password: String): Result<Boolean> = withContext(ioDispatcher) {
+        try {
+            if (getUserByEmail(email) != null) return@withContext Result.Success(false)
 
             val user = User(
                 id = UUID.randomUUID(),
@@ -40,11 +45,11 @@ internal class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun signIn(email: String, password: String): Result<Boolean> {
-        return try {
-            if (!verifyCredentials(email, password)) return Result.Success(false)
+    override suspend fun signIn(email: String, password: String): Result<Boolean> = withContext(ioDispatcher) {
+        try {
+            if (!verifyCredentials(email, password)) return@withContext Result.Success(false)
 
-            val user = getUserByEmail(email) ?: return Result.Success(false)
+            val user = getUserByEmail(email) ?: return@withContext Result.Success(false)
             settings.putString(CURRENT_USER_ID_KEY, user.id)
             Result.Success(true)
         } catch (e: Exception) {
@@ -52,8 +57,8 @@ internal class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun signOut(): Result<Boolean> {
-        return try {
+    override suspend fun signOut(): Result<Boolean> = withContext(ioDispatcher) {
+        try {
             settings.remove(CURRENT_USER_ID_KEY)
             Result.Success(true)
         } catch (e: Exception) {
@@ -61,10 +66,10 @@ internal class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun changePassword(oldPassword: String, newPassword: String): Result<Boolean> {
-        return try {
-            val currentUser = getCurrentUserSync() ?: return Result.Success(false)
-            if (!verifyCredentials(currentUser.email, oldPassword)) return Result.Success(false)
+    override suspend fun changePassword(oldPassword: String, newPassword: String): Result<Boolean> = withContext(ioDispatcher) {
+        try {
+            val currentUser = getCurrentUserSync() ?: return@withContext Result.Success(false)
+            if (!verifyCredentials(currentUser.email, oldPassword)) return@withContext Result.Success(false)
             saveCredentials(currentUser.email, newPassword)
             Result.Success(true)
         } catch (e: Exception) {
@@ -72,8 +77,8 @@ internal class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun isUserSignedIn(): Result<Boolean> {
-        return try {
+    override suspend fun isUserSignedIn(): Result<Boolean> = withContext(ioDispatcher) {
+        try {
             val currentUserId = settings.getStringOrNull(CURRENT_USER_ID_KEY)
             Result.Success(currentUserId != null)
         } catch (e: Exception) {
@@ -81,8 +86,8 @@ internal class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun getCurrentUser(): Result<User?> {
-        return try {
+    override suspend fun getCurrentUser(): Result<User?> = withContext(ioDispatcher) {
+        try {
             Result.Success(getCurrentUserSync())
         } catch (e: Exception) {
             Result.Error(e.message ?: "Failed to get current user")
@@ -90,9 +95,9 @@ internal class AuthRepositoryImpl(
     }
 
     // Profile management methods
-    override suspend fun updateUserName(name: String): Result<Boolean> {
-        return try {
-            val currentUser = getCurrentUserSync() ?: return Result.Success(false)
+    override suspend fun updateUserName(name: String): Result<Boolean> = withContext(ioDispatcher) {
+        try {
+            val currentUser = getCurrentUserSync() ?: return@withContext Result.Success(false)
             val updatedUser = currentUser.copy(name = name)
             updateUser(updatedUser)
             Result.Success(true)
@@ -101,11 +106,11 @@ internal class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun updateUserEmail(email: String, password: String): Result<Boolean> {
-        return try {
-            val currentUser = getCurrentUserSync() ?: return Result.Success(false)
-            if (getUserByEmail(email) != null && email != currentUser.email) return Result.Success(false)
-            if (!verifyCredentials(currentUser.email, password)) return Result.Success(false)
+    override suspend fun updateUserEmail(email: String, password: String): Result<Boolean> = withContext(ioDispatcher) {
+        try {
+            val currentUser = getCurrentUserSync() ?: return@withContext Result.Success(false)
+            if (getUserByEmail(email) != null && email != currentUser.email) return@withContext Result.Success(false)
+            if (!verifyCredentials(currentUser.email, password)) return@withContext Result.Success(false)
 
             settings.remove(passwordKey(currentUser.email))
             val updatedUser = currentUser.copy(email = email)
@@ -117,9 +122,9 @@ internal class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun updateUserAddress(address: Address): Result<Boolean> {
-        return try {
-            val currentUser = getCurrentUserSync() ?: return Result.Success(false)
+    override suspend fun updateUserAddress(address: Address): Result<Boolean> = withContext(ioDispatcher) {
+        try {
+            val currentUser = getCurrentUserSync() ?: return@withContext Result.Success(false)
             val updatedUser = currentUser.copy(address = address)
             updateUser(updatedUser)
             Result.Success(true)
@@ -129,14 +134,14 @@ internal class AuthRepositoryImpl(
     }
 
     // Preferences management
-    override suspend fun updateUserPreferences(preferences: UserPreferences): Result<Boolean> {
-        return try {
+    override suspend fun updateUserPreferences(preferences: UserPreferences): Result<Boolean> = withContext(ioDispatcher) {
+        try {
             val currentUser = getCurrentUserSync()
             if (currentUser == null) {
                 // Guests keep preferences in a local store so theme and
                 // settings choices survive relaunches without an account.
                 settings.putString(GUEST_PREFERENCES_KEY, json.encodeToString(preferences))
-                return Result.Success(true)
+                return@withContext Result.Success(true)
             }
             val preferencesMap = mapOf(
                 "darkMode" to preferences.darkMode.toString(),
@@ -152,8 +157,8 @@ internal class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun getUserPreferences(): Result<UserPreferences> {
-        return try {
+    override suspend fun getUserPreferences(): Result<UserPreferences> = withContext(ioDispatcher) {
+        try {
             val currentUser = getCurrentUserSync()
             if (currentUser != null) {
                 val prefs = currentUser.preferences

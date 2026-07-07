@@ -5,9 +5,13 @@ import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.util.Result
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -15,7 +19,8 @@ import kotlinx.serialization.json.Json
 internal class ReviewRepositoryImpl(
     private val settings: Settings,
     private val json: Json,
-    private val appConfig: AppConfig
+    private val appConfig: AppConfig,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ReviewRepository {
 
     // In-memory cache of reviews, backed by a JSON blob in Settings
@@ -42,8 +47,8 @@ internal class ReviewRepositoryImpl(
 
     override suspend fun getReviews(): Result<List<Review>> = Result.Success(_reviews.value)
 
-    override suspend fun addReview(review: Review): Result<Unit> {
-        return try {
+    override suspend fun addReview(review: Review): Result<Unit> = withContext(ioDispatcher) {
+        try {
             _reviews.value = _reviews.value + review
             saveReviewsToStorage()
             Result.Success(Unit)
@@ -57,8 +62,8 @@ internal class ReviewRepositoryImpl(
         rating: Float,
         comment: String,
         date: String
-    ): Result<Boolean> {
-        return try {
+    ): Result<Boolean> = withContext(ioDispatcher) {
+        try {
             var found = false
             _reviews.value = _reviews.value.map { review ->
                 if (review.id == reviewId) {
@@ -75,8 +80,8 @@ internal class ReviewRepositoryImpl(
         }
     }
 
-    override suspend fun deleteReview(reviewId: String): Result<Boolean> {
-        return try {
+    override suspend fun deleteReview(reviewId: String): Result<Boolean> = withContext(ioDispatcher) {
+        try {
             val remaining = _reviews.value.filterNot { it.id == reviewId }
             val removed = remaining.size != _reviews.value.size
             if (removed) {

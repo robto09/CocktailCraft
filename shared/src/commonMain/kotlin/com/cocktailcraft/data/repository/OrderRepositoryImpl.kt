@@ -5,9 +5,13 @@ import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.util.Result
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -16,7 +20,8 @@ import com.cocktailcraft.util.UUID
 internal class OrderRepositoryImpl(
     private val settings: Settings,
     private val json: Json,
-    private val appConfig: AppConfig
+    private val appConfig: AppConfig,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : OrderRepository {
 
     // In-memory cache of orders
@@ -46,8 +51,8 @@ internal class OrderRepositoryImpl(
 
     override suspend fun getOrders(): Result<List<Order>> = Result.Success(_orders.value)
 
-    override suspend fun addOrder(order: Order): Result<Unit> {
-        return try {
+    override suspend fun addOrder(order: Order): Result<Unit> = withContext(ioDispatcher) {
+        try {
             val updatedOrders = _orders.value.toMutableList().apply {
                 add(order)
             }
@@ -67,8 +72,8 @@ internal class OrderRepositoryImpl(
         }
     }
 
-    override suspend fun updateOrderStatus(id: String, status: String): Result<Unit> {
-        return try {
+    override suspend fun updateOrderStatus(id: String, status: String): Result<Unit> = withContext(ioDispatcher) {
+        try {
             val updatedOrders = _orders.value.map { order ->
                 if (order.id == id) order.copy(status = status) else order
             }
@@ -80,8 +85,8 @@ internal class OrderRepositoryImpl(
         }
     }
 
-    override suspend fun deleteOrder(id: String): Result<Unit> {
-        return try {
+    override suspend fun deleteOrder(id: String): Result<Unit> = withContext(ioDispatcher) {
+        try {
             val updatedOrders = _orders.value.filter { it.id != id }
             _orders.value = updatedOrders
             saveOrdersToStorage()
@@ -91,8 +96,8 @@ internal class OrderRepositoryImpl(
         }
     }
 
-    override suspend fun placeOrder(order: Order): Result<Boolean> {
-        return try {
+    override suspend fun placeOrder(order: Order): Result<Boolean> = withContext(ioDispatcher) {
+        try {
             val orders = _orders.value.toMutableList()
             val orderWithId = if (order.id.isBlank()) {
                 order.copy(id = UUID.randomUUID())
@@ -112,8 +117,8 @@ internal class OrderRepositoryImpl(
         return Result.Success(_orders.value)
     }
 
-    override suspend fun cancelOrder(orderId: String): Result<Boolean> {
-        return try {
+    override suspend fun cancelOrder(orderId: String): Result<Boolean> = withContext(ioDispatcher) {
+        try {
             val orders = _orders.value.toMutableList()
             val orderIndex = orders.indexOfFirst { it.id == orderId }
 

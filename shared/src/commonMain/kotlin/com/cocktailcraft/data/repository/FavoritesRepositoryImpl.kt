@@ -6,6 +6,10 @@ import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.FavoritesRepository
 import com.cocktailcraft.domain.util.Result
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.withContext
 
 /**
  * Implementation of the FavoritesRepository interface.
@@ -14,7 +18,8 @@ import com.russhwolf.settings.Settings
 internal class FavoritesRepositoryImpl(
     private val cocktailRepository: CocktailFavoritesRepository,
     private val settings: Settings,
-    private val appConfig: AppConfig
+    private val appConfig: AppConfig,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : FavoritesRepository {
 
     override suspend fun getFavorites(): Result<List<Cocktail>> {
@@ -36,11 +41,13 @@ internal class FavoritesRepositoryImpl(
     override suspend fun toggleFavorite(cocktail: Cocktail): Result<Unit> {
         return try {
             // Check if the cocktail is already a favorite
-            val isFav = settings.getStringOrNull(appConfig.favoritesStorageKey)
-                ?.split(",")
-                ?.filter { it.isNotEmpty() }
-                ?.contains(cocktail.id)
-                ?: false
+            val isFav = withContext(ioDispatcher) {
+                settings.getStringOrNull(appConfig.favoritesStorageKey)
+                    ?.split(",")
+                    ?.filter { it.isNotEmpty() }
+                    ?.contains(cocktail.id)
+                    ?: false
+            }
 
             if (isFav) {
                 removeFromFavorites(cocktail)

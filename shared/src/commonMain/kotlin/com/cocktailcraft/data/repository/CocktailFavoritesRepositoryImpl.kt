@@ -7,6 +7,10 @@ import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.util.Result
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.withContext
 
 /**
  * Favorites persistence (comma-separated ids in Settings, full objects
@@ -18,7 +22,8 @@ internal class CocktailFavoritesRepositoryImpl(
     private val appConfig: AppConfig,
     private val cocktailCache: CocktailCache,
     private val remote: CocktailRemoteDataSource,
-    private val offlineRepository: CocktailOfflineRepositoryImpl
+    private val offlineRepository: CocktailOfflineRepositoryImpl,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : CocktailFavoritesRepository {
 
     private fun favoriteIds(): List<String> =
@@ -31,8 +36,8 @@ internal class CocktailFavoritesRepositoryImpl(
         settings.putString(appConfig.favoritesStorageKey, ids.joinToString(","))
     }
 
-    override suspend fun getFavoriteCocktails(): Result<List<Cocktail>> {
-        return try {
+    override suspend fun getFavoriteCocktails(): Result<List<Cocktail>> = withContext(ioDispatcher) {
+        try {
             val offline = offlineRepository.isOffline()
             val favorites = mutableListOf<Cocktail>()
             for (id in favoriteIds()) {
@@ -46,8 +51,8 @@ internal class CocktailFavoritesRepositoryImpl(
         }
     }
 
-    override suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> {
-        return try {
+    override suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> = withContext(ioDispatcher) {
+        try {
             val ids = favoriteIds()
             if (!ids.contains(cocktail.id)) {
                 saveFavoriteIds(ids + cocktail.id)
@@ -58,8 +63,8 @@ internal class CocktailFavoritesRepositoryImpl(
         }
     }
 
-    override suspend fun removeFromFavorites(cocktail: Cocktail): Result<Unit> {
-        return try {
+    override suspend fun removeFromFavorites(cocktail: Cocktail): Result<Unit> = withContext(ioDispatcher) {
+        try {
             saveFavoriteIds(favoriteIds() - cocktail.id)
             Result.Success(Unit)
         } catch (e: Exception) {
@@ -67,8 +72,8 @@ internal class CocktailFavoritesRepositoryImpl(
         }
     }
 
-    override suspend fun isCocktailFavorite(id: String): Result<Boolean> {
-        return try {
+    override suspend fun isCocktailFavorite(id: String): Result<Boolean> = withContext(ioDispatcher) {
+        try {
             Result.Success(favoriteIds().contains(id))
         } catch (e: Exception) {
             Result.Error(e.message ?: "Failed to check if cocktail is favorite")

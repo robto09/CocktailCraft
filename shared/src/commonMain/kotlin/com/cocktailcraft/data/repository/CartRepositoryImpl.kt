@@ -4,16 +4,21 @@ import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.util.Result
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 internal class CartRepositoryImpl(
     private val settings: Settings,
-    private val json: Json
+    private val json: Json,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : CartRepository {
 
     // Use a StateFlow to ensure proper state updates
@@ -38,8 +43,8 @@ internal class CartRepositoryImpl(
         }
     }
 
-    override suspend fun addToCart(cartItem: CocktailCartItem): Result<Unit> {
-        return try {
+    override suspend fun addToCart(cartItem: CocktailCartItem): Result<Unit> = withContext(ioDispatcher) {
+        try {
             val currentItems = _cartItems.value.toMutableList()
             val existingItemIndex = currentItems.indexOfFirst { it.cocktail.id == cartItem.cocktail.id }
 
@@ -59,8 +64,8 @@ internal class CartRepositoryImpl(
         }
     }
 
-    override suspend fun removeFromCart(cocktailId: String): Result<Unit> {
-        return try {
+    override suspend fun removeFromCart(cocktailId: String): Result<Unit> = withContext(ioDispatcher) {
+        try {
             val currentItems = _cartItems.value.toMutableList()
             currentItems.removeAll { it.cocktail.id == cocktailId }
             saveCartItems(currentItems)
@@ -70,8 +75,8 @@ internal class CartRepositoryImpl(
         }
     }
 
-    override suspend fun updateQuantity(cocktailId: String, quantity: Int): Result<Unit> {
-        return try {
+    override suspend fun updateQuantity(cocktailId: String, quantity: Int): Result<Unit> = withContext(ioDispatcher) {
+        try {
             val currentItems = _cartItems.value.toMutableList()
             val itemIndex = currentItems.indexOfFirst { it.cocktail.id == cocktailId }
 
@@ -90,8 +95,8 @@ internal class CartRepositoryImpl(
         }
     }
 
-    override suspend fun clearCart(): Result<Unit> {
-        return try {
+    override suspend fun clearCart(): Result<Unit> = withContext(ioDispatcher) {
+        try {
             settings.remove(CART_ITEMS_KEY)
             _cartItems.value = emptyList()
             Result.Success(Unit)

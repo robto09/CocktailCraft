@@ -22,7 +22,11 @@ import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.repository.FavoritesRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.repository.ReviewRepository
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.serialization.json.Json
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 /**
@@ -37,11 +41,15 @@ val dataModule = module {
         }
     }
 
+    // Background dispatcher for Settings I/O and JSON (de)serialization
+    single<CoroutineDispatcher>(named("ioDispatcher")) { Dispatchers.IO }
+
     // Cache
     single { CocktailCache(
         settings = get(),
         json = get(),
-        appConfig = get()
+        appConfig = get(),
+        ioDispatcher = get(named("ioDispatcher"))
     ) }
 
     // In-memory cache manager (thread-safe singleton)
@@ -57,7 +65,8 @@ val dataModule = module {
             appConfig = get(),
             networkMonitor = get(),
             cocktailCache = get(),
-            remote = get()
+            remote = get(),
+            ioDispatcher = get(named("ioDispatcher"))
         )
     }
     single<CocktailOfflineRepository> { get<CocktailOfflineRepositoryImpl>() }
@@ -68,7 +77,8 @@ val dataModule = module {
             appConfig = get(),
             cocktailCache = get(),
             remote = get(),
-            offlineRepository = get()
+            offlineRepository = get(),
+            ioDispatcher = get(named("ioDispatcher"))
         )
     }
 
@@ -89,18 +99,19 @@ val dataModule = module {
     single<CocktailCatalogRepository> { get<CocktailRepository>() }
 
     single<CartRepository> {
-        CartRepositoryImpl(get(), get())
+        CartRepositoryImpl(get(), get(), get(named("ioDispatcher")))
     }
 
     single<AuthRepository> {
-        AuthRepositoryImpl(get(), get())
+        AuthRepositoryImpl(get(), get(), get(named("ioDispatcher")))
     }
 
     single<OrderRepository> {
         OrderRepositoryImpl(
             settings = get(),
             json = get(),
-            appConfig = get()
+            appConfig = get(),
+            ioDispatcher = get(named("ioDispatcher"))
         )
     }
 
@@ -108,7 +119,8 @@ val dataModule = module {
         ReviewRepositoryImpl(
             settings = get(),
             json = get(),
-            appConfig = get()
+            appConfig = get(),
+            ioDispatcher = get(named("ioDispatcher"))
         )
     }
 
@@ -116,7 +128,8 @@ val dataModule = module {
         FavoritesRepositoryImpl(
             cocktailRepository = get<CocktailFavoritesRepository>(),
             settings = get(),
-            appConfig = get()
+            appConfig = get(),
+            ioDispatcher = get(named("ioDispatcher"))
         )
     }
 }
