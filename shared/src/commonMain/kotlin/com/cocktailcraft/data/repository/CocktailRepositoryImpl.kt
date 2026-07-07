@@ -35,13 +35,11 @@ internal class CocktailRepositoryImpl(
     private val cocktailCache: CocktailCache,
     private val cacheManager: CocktailCacheManager,
     private val appConfig: AppConfig,
-    private val offlineRepository: CocktailOfflineRepositoryImpl,
+    offlineRepository: CocktailOfflineRepository,
     favoritesRepository: CocktailFavoritesRepository
 ) : CocktailRepository,
     CocktailFavoritesRepository by favoritesRepository,
     CocktailOfflineRepository by offlineRepository {
-
-    private suspend fun isOffline(): Boolean = offlineRepository.isOffline()
 
     override suspend fun searchCocktailsByName(name: String): Result<List<Cocktail>> {
         return try {

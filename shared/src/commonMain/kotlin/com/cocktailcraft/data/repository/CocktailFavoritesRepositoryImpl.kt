@@ -5,6 +5,7 @@ import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
+import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.util.Result
 import com.russhwolf.settings.Settings
 
@@ -18,7 +19,7 @@ internal class CocktailFavoritesRepositoryImpl(
     private val appConfig: AppConfig,
     private val cocktailCache: CocktailCache,
     private val remote: CocktailRemoteDataSource,
-    private val offlineRepository: CocktailOfflineRepositoryImpl
+    private val offlineRepository: CocktailOfflineRepository
 ) : CocktailFavoritesRepository {
 
     private fun favoriteIds(): List<String> =
