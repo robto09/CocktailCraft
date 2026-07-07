@@ -25,7 +25,7 @@ val domainModule = module {
 
     // Use Cases
     factory { SearchCocktailsUseCase(searchRepository = get()) }
-    factory { LoadCocktailsByCategoryUseCase(searchRepository = get(), catalogRepository = get()) }
+    factory { LoadCocktailsByCategoryUseCase(searchRepository = get()) }
     factory { SortCocktailsUseCase() }
     factory { GetCocktailDetailUseCase(detailRepository = get(), favoritesRepository = get(), searchRepository = get()) }
     factory { ManageFavoritesUseCase(favoritesRepository = get(), detailRepository = get()) }

@@ -159,7 +159,8 @@ class SharedHomeViewModel internal constructor(
 
         try {
             val nextPage = state.currentPage + 1
-            val newItems = loadCocktailsByCategoryUseCase.loadMore(emptyList(), state.currentPage, PAGE_SIZE)
+            val category = state.selectedCategory ?: "Cocktail"
+            val newItems = loadCocktailsByCategoryUseCase.loadMore(category, state.currentPage, PAGE_SIZE)
 
             _uiState.update { cur ->
                 if (newItems.isNotEmpty()) {
