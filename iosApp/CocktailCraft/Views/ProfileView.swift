@@ -19,31 +19,43 @@ struct ProfileView: View {
     var body: some View {
         // No nav container here: ContentView already wraps this tab in a
         // NavigationStack (the old inner NavigationView double-nested it).
-        ScrollView {
-            VStack(spacing: 16) {
-                // Profile Header Card
-                profileHeaderCard
-
-                // Account Settings Card (only if logged in)
-                if viewModel.state.isLoggedIn {
-                    accountSettingsCard
-                }
-
-                // App Settings Card
-                appSettingsCard
-
-                // About Card
-                aboutCard
-
-                // Bottom spacer to ensure content doesn't overlap with tab bar
-                Color.clear.frame(height: 80)
+        VStack(spacing: 0) {
+            // Brand-color header matching the Android TopAppBar
+            HStack {
+                Text("Profile")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.white)
+                Spacer()
             }
-            .padding(.horizontal)
-            .padding(.top, 8)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(AppColors.primary(isDarkMode: isDarkMode).ignoresSafeArea(edges: .top))
+
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Profile Header Card
+                    profileHeaderCard
+
+                    // Account Settings Card (only if logged in)
+                    if viewModel.state.isLoggedIn {
+                        accountSettingsCard
+                    }
+
+                    // App Settings Card
+                    appSettingsCard
+
+                    // About Card
+                    aboutCard
+
+                    // Bottom spacer to ensure content doesn't overlap with tab bar
+                    Color.clear.frame(height: 80)
+                }
+                .padding(.horizontal)
+                .padding(.top, 8)
+            }
+            .background(AppColors.background(isDarkMode: isDarkMode))
         }
-        .background(AppColors.background(isDarkMode: isDarkMode))
-        .navigationTitle("Profile")
-        .navigationBarTitleDisplayMode(.large)
+        .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             // Observation tracking keeps the UI current; the old
             // .id(UUID())-on-appear force-rebuild hack is gone.
@@ -141,6 +153,8 @@ struct ProfileView: View {
                     }
                     .buttonStyle(SecondaryButtonStyle())
                 }
+                // Inset like Android's 80%-width buttons
+                .padding(.horizontal, 32)
             }
         }
         .padding()
@@ -201,7 +215,7 @@ struct ProfileView: View {
 
             VStack(spacing: 0) {
                 SettingsRow(
-                    icon: "list.bullet",
+                    icon: "calendar",
                     title: "Order History",
                     action: {
                         // Navigate to Orders tab
@@ -212,7 +226,7 @@ struct ProfileView: View {
                 Divider()
 
                 SettingsRow(
-                    icon: "questionmark.circle",
+                    icon: "questionmark.circle.fill",
                     title: "Help & Support",
                     action: { /* Handle help & support */ }
                 )
@@ -220,18 +234,18 @@ struct ProfileView: View {
                 Divider()
 
                 SettingsRow(
-                    icon: "wifi.slash",
+                    icon: "icloud.slash",
                     title: "Offline Mode",
                     action: { showingOfflineMode = true }
                 )
 
                 Divider()
 
-                // Follow System Theme Toggle
+                // Follow System Theme Toggle (calendar icon matches Android)
                 ThemeToggleRow(
                     title: "Follow System Theme",
                     subtitle: themeViewModel.state.isSystemTheme ? "On" : "Off",
-                    icon: "gear",
+                    icon: "calendar",
                     isChecked: themeViewModel.state.isSystemTheme,
                     onToggle: { target in
                         Task {
@@ -299,6 +313,9 @@ struct ProfileView: View {
                     .padding(.top, 8)
             }
         }
+        // Fill the column like the other cards — text-only content otherwise
+        // hugs and renders as a narrow centered card.
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .cardStyle()
     }

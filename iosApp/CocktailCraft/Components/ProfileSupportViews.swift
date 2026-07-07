@@ -83,19 +83,52 @@ struct ThemeToggleRow: View {
 
             Spacer()
 
-            Toggle("", isOn: Binding(
-                get: { isChecked },
-                set: { newValue in onToggle(newValue) }
-            ))
-            .disabled(!enabled)
+            AnimatedThemeSwitch(
+                isChecked: isChecked,
+                enabled: enabled,
+                onToggle: { onToggle(!isChecked) }
+            )
             .opacity(enabled ? 1.0 : 0.5)
         }
         .padding(.vertical, 12)
     }
 }
 
+/// SwiftUI port of the Android AnimatedThemeSwitch: a capsule track that
+/// darkens when checked, with an orange circular thumb carrying a sun/moon
+/// icon that springs across.
+struct AnimatedThemeSwitch: View {
+    let isChecked: Bool
+    let enabled: Bool
+    let onToggle: () -> Void
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            Capsule()
+                .fill(isChecked ? Color(hex: "3C4043") : Color(hex: "E4E4E4"))
+                .frame(width: 72, height: 40)
+
+            Circle()
+                .fill(isChecked ? AppColors.primaryDark : AppColors.primaryLight)
+                .frame(width: 24, height: 24)
+                .overlay(
+                    Image(systemName: isChecked ? "moon.fill" : "sun.max.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white)
+                )
+                .offset(x: isChecked ? 44 : 4)
+        }
+        .contentShape(Capsule())
+        .onTapGesture {
+            if enabled { onToggle() }
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.65), value: isChecked)
+    }
+}
 
 
+
+// Capsule shapes matching Material 3's default button shape on Android.
 struct PrimaryButtonStyle: ButtonStyle {
     @Environment(\.isDarkMode) var isDarkMode
 
@@ -106,7 +139,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .padding()
             .background(AppColors.primary(isDarkMode: isDarkMode))
-            .cornerRadius(8)
+            .clipShape(Capsule())
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
     }
 }
@@ -121,9 +154,10 @@ struct SecondaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .padding()
             .background(Color.clear)
+            // Gray outline like Android's Material 3 OutlinedButton
             .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(AppColors.primary(isDarkMode: isDarkMode), lineWidth: 1)
+                Capsule()
+                    .stroke(Color.gray.opacity(0.5), lineWidth: 1)
             )
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
     }
