@@ -130,9 +130,10 @@ fun HomeScreen(
 
     // State for advanced search panel
 
-    // Add state for selected category - use rememberSaveable to persist across navigation
-    // Default to "Cocktail" to match lazy loading behavior
-    var selectedCategory by rememberSaveable { mutableStateOf<String?>("Cocktail") }
+    // Add state for selected category - use rememberSaveable to persist across navigation.
+    // null = "All" chip selected (matches iOS); the shared VM browses the
+    // default "Cocktail" category for null.
+    var selectedCategory by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Function to handle category selection
     val onCategorySelected: (String?) -> Unit = { category ->
@@ -239,10 +240,12 @@ fun HomeScreen(
             }
         )
 
-        // Add Category Filter Chips - only shown when not searching
+        // Add Category Filter Chips - only shown when not searching.
+        // Uses the shared curated list so the row matches iOS ("All" + curated
+        // categories); the full API list above is only for the advanced panel.
         if (!isSearchActive) {
             CategoryFilterRow(
-                categories = categories,
+                categories = viewModel.curatedCategories,
                 selectedCategory = selectedCategory,
                 onCategorySelected = onCategorySelected
             )

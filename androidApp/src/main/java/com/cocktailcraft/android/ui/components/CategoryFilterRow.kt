@@ -38,18 +38,19 @@ fun CategoryFilterRow(
             .padding(vertical = verticalPadding.dp, horizontal = horizontalPadding.dp),
         horizontalArrangement = Arrangement.spacedBy(chipSpacing.dp)
     ) {
-        items(categories) { category ->
-            val isSelected = if (category == allCategoryLabel) {
-                selectedCategory == null
-            } else {
-                selectedCategory == category
-            }
-            
+        // "All" clears the category selection (null = default browse)
+        item {
             FilterChip(
-                selected = isSelected,
-                onClick = {
-                    onCategorySelected(if (category == allCategoryLabel) null else category)
-                },
+                selected = selectedCategory == null,
+                onClick = { onCategorySelected(null) },
+                label = allCategoryLabel
+            )
+        }
+
+        items(categories) { category ->
+            FilterChip(
+                selected = selectedCategory == category,
+                onClick = { onCategorySelected(category) },
                 label = category
             )
         }
