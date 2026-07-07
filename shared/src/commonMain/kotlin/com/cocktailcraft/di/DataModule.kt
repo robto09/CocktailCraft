@@ -10,7 +10,6 @@ import com.cocktailcraft.data.repository.CocktailCategoryFetcher
 import com.cocktailcraft.data.repository.CocktailDetailRepositoryImpl
 import com.cocktailcraft.data.repository.CocktailFavoritesRepositoryImpl
 import com.cocktailcraft.data.repository.CocktailOfflineRepositoryImpl
-import com.cocktailcraft.data.repository.CocktailRepositoryImpl
 import com.cocktailcraft.data.repository.CocktailSearchRepositoryImpl
 import com.cocktailcraft.data.repository.OrderRepositoryImpl
 import com.cocktailcraft.data.repository.ReviewRepositoryImpl
@@ -20,7 +19,6 @@ import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
-import com.cocktailcraft.domain.repository.CocktailRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.repository.ReviewRepository
@@ -117,18 +115,6 @@ val dataModule = module {
         CocktailCatalogRepositoryImpl(
             remote = get(),
             categoryFetcher = get()
-        )
-    }
-
-    // Composite binding survives only for the iOS KoinHelper's exported
-    // Objective-C surface; it delegates every call to the focused impls above
-    single<CocktailRepository> {
-        CocktailRepositoryImpl(
-            searchRepository = get(),
-            detailRepository = get(),
-            catalogRepository = get(),
-            favoritesRepository = get(),
-            offlineRepository = get()
         )
     }
 

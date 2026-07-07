@@ -6,7 +6,6 @@ import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
-import com.cocktailcraft.domain.repository.CocktailRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.repository.ReviewRepository
@@ -67,7 +66,6 @@ class KoinDependencyGraphTest : MainDispatcherTest() {
     fun everyRepositoryBindingResolves() {
         val koin = startTestKoin()
 
-        assertNotNull(koin.get<CocktailRepository>())
         assertNotNull(koin.get<CocktailSearchRepository>())
         assertNotNull(koin.get<CocktailDetailRepository>())
         assertNotNull(koin.get<CocktailCatalogRepository>())
@@ -98,12 +96,10 @@ class KoinDependencyGraphTest : MainDispatcherTest() {
     }
 
     @Test
-    fun repositoryBindingsAreSingletonsAndCompositeResolves() {
+    fun repositoryBindingsAreSingletons() {
         val koin = startTestKoin()
 
-        // Post-split: each narrow interface is its own focused singleton, and
-        // the composite (kept for the iOS KoinHelper surface) still resolves.
-        assertNotNull(koin.get<CocktailRepository>())
+        // Post-split: each narrow interface is its own focused singleton.
         assertSame(koin.get<CocktailSearchRepository>(), koin.get<CocktailSearchRepository>())
         assertSame(koin.get<CocktailDetailRepository>(), koin.get<CocktailDetailRepository>())
         assertSame(koin.get<CocktailCatalogRepository>(), koin.get<CocktailCatalogRepository>())
