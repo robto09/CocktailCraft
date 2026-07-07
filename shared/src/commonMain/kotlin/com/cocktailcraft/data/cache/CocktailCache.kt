@@ -170,6 +170,18 @@ internal class CocktailCache(
         cocktailCache.put(cocktail.id, cocktail)
         persistCocktails() // Persist to storage
     }
+
+    /**
+     * Cache a batch of cocktails for offline access, persisting to storage once
+     * instead of once per item. Insertion order matches sequential
+     * [cacheCocktail] calls, so LRU eviction behaves identically.
+     */
+    suspend fun cacheCocktails(cocktails: List<Cocktail>) {
+        if (cocktails.isEmpty()) return
+        ensureLoaded()
+        cocktails.forEach { cocktailCache.put(it.id, it) }
+        persistCocktails() // Persist once for the whole batch
+    }
     
     /**
      * Get a cached cocktail by ID.

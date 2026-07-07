@@ -193,7 +193,7 @@ internal class CocktailRepositoryImpl(
                 }
 
                 cacheManager.setCategoryCache(category, enrichedCocktails)
-                enrichedCocktails.forEach { cocktailCache.cacheCocktail(it) }
+                cocktailCache.cacheCocktails(enrichedCocktails)
 
                 return enrichedCocktails.sortedByDescending { it.dateAdded }
             } catch (e: Exception) {
@@ -301,7 +301,7 @@ internal class CocktailRepositoryImpl(
             }
 
             // Cache the results for offline access
-            result.forEach { cocktailCache.cacheCocktail(it) }
+            cocktailCache.cacheCocktails(result)
 
             Result.Success(result)
         } catch (e: Exception) {
