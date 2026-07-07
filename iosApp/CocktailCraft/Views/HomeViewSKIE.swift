@@ -367,12 +367,20 @@ struct HomeViewSKIE: View {
 
 // MARK: - Advanced Search Sheet
 
-/// Tri-state selection for the alcoholic segmented control, bridging to the
+/// Tri-state selection for the alcoholic filter chips, bridging to the
 /// shared `SearchFilters.alcoholic` (`KotlinBoolean?`, where nil means "any").
-private enum AlcoholicFilter: Hashable {
+private enum AlcoholicFilter: Hashable, CaseIterable {
     case any
     case alcoholic
     case nonAlcoholic
+
+    var label: String {
+        switch self {
+        case .any: return "Any"
+        case .alcoholic: return "Alcoholic"
+        case .nonAlcoholic: return "Non-Alcoholic"
+        }
+    }
 
     var kotlinValue: KotlinBoolean? {
         switch self {
@@ -394,10 +402,13 @@ private enum AlcoholicFilter: Hashable {
 private struct AdvancedSearchSheet: View {
     let viewModel: HomeViewModelSKIE
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.isDarkMode) private var isDarkMode
 
     @State private var selectedCategory: String?
     @State private var selectedIngredient: String?
     @State private var alcoholic: AlcoholicFilter
+
+    private var primaryColor: Color { AppColors.primary(isDarkMode: isDarkMode) }
 
     init(viewModel: HomeViewModelSKIE) {
         self.viewModel = viewModel
@@ -429,12 +440,24 @@ private struct AdvancedSearchSheet: View {
                 }
 
                 Section("Alcoholic") {
-                    Picker("Alcoholic", selection: $alcoholic) {
-                        Text("Any").tag(AlcoholicFilter.any)
-                        Text("Alcoholic").tag(AlcoholicFilter.alcoholic)
-                        Text("Non-Alcoholic").tag(AlcoholicFilter.nonAlcoholic)
+                    // Chip styling mirrors the Android FilterChip: selected =
+                    // brand-color fill with white text, unselected = brand-color
+                    // text on the row background.
+                    HStack(spacing: 8) {
+                        ForEach(AlcoholicFilter.allCases, id: \.self) { option in
+                            Button(action: { alcoholic = option }) {
+                                Text(option.label)
+                                    .font(.system(size: 14, weight: alcoholic == option ? .bold : .medium))
+                                    .foregroundColor(alcoholic == option ? .white : primaryColor)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 6)
+                                    .background(alcoholic == option ? primaryColor : Color.clear)
+                                    .cornerRadius(16)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        Spacer()
                     }
-                    .pickerStyle(.segmented)
                 }
             }
             .navigationTitle("Advanced Search")
@@ -445,6 +468,7 @@ private struct AdvancedSearchSheet: View {
                         viewModel.clearSearchFilters()
                         dismiss()
                     }
+                    .tint(primaryColor)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Apply") {
@@ -454,11 +478,16 @@ private struct AdvancedSearchSheet: View {
                             ingredient: selectedIngredient,
                             alcoholic: alcoholic.kotlinValue
                         )
+                        // Close immediately; the rate-limited search runs in
+                        // the background and the list updates via shared state.
+                        dismiss()
                         Task {
                             await viewModel.applyFilters(filters)
-                            dismiss()
                         }
                     }
+                    // Filled brand-color pill, matching the Android sheet's Apply
+                    .buttonStyle(.borderedProminent)
+                    .tint(primaryColor)
                 }
             }
             .task {
