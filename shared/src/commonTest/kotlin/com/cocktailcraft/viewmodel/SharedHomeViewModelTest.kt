@@ -1,6 +1,6 @@
 package com.cocktailcraft.viewmodel
 
-import com.cocktailcraft.domain.usecase.FilterCocktailsUseCase
+import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
 import com.cocktailcraft.domain.usecase.LoadCocktailsByCategoryUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
@@ -39,10 +39,10 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
             searchCocktailsUseCase = SearchCocktailsUseCase(search),
             loadCocktailsByCategoryUseCase = LoadCocktailsByCategoryUseCase(search, catalog),
             sortCocktailsUseCase = SortCocktailsUseCase(),
-            filterCocktailsUseCase = FilterCocktailsUseCase(catalog),
             manageFavoritesUseCase = ManageFavoritesUseCase(favorites, detail),
             manageOfflineModeUseCase = ManageOfflineModeUseCase(offline, catalog),
             getCocktailDetailUseCase = GetCocktailDetailUseCase(detail, favorites, search),
+            catalogRepository = catalog,
             networkMonitor = network
         )
     }
@@ -146,6 +146,63 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
 
         vm.toggleFavorite(cocktail)
         assertFalse(vm.isFavorite("1"))
+    }
+
+    @Test
+    fun applyFiltersPopulatesSearchFiltersAndCocktails() = runTest {
+        val harness = Harness()
+        harness.search.all = listOf(
+            testCocktail("1", name = "Margarita", category = "Ordinary Drink"),
+            testCocktail("2", name = "Mojito", category = "Cocktail"),
+            testCocktail("3", name = "Daiquiri", category = "Cocktail")
+        )
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        vm.applyFilters(SearchFilters(category = "Cocktail"))
+
+        assertEquals(SearchFilters(category = "Cocktail"), vm.uiState.value.searchFilters)
+        assertEquals(listOf("2", "3"), vm.uiState.value.cocktails.map { it.id })
+    }
+
+    @Test
+    fun clearSearchFiltersResetsFiltersAndReloadsDefault() = runTest {
+        val harness = Harness()
+        harness.search.all = listOf(
+            testCocktail("1", category = "Cocktail"),
+            testCocktail("2", category = "Cocktail"),
+            testCocktail("3", category = "Shot")
+        )
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+        vm.applyFilters(SearchFilters(category = "Shot"))
+        assertEquals(listOf("3"), vm.uiState.value.cocktails.map { it.id })
+
+        vm.clearSearchFilters()
+        advanceUntilIdle()
+
+        assertEquals(SearchFilters(), vm.uiState.value.searchFilters)
+        assertEquals("", vm.uiState.value.searchQuery)
+        assertEquals(listOf("1", "2"), vm.uiState.value.cocktails.map { it.id })
+    }
+
+    @Test
+    fun searchComposesWithActiveFilters() = runTest {
+        val harness = Harness()
+        harness.search.all = listOf(
+            testCocktail("1", name = "Mojito", category = "Cocktail"),
+            testCocktail("2", name = "Mojito Especial", category = "Ordinary Drink"),
+            testCocktail("3", name = "Daiquiri", category = "Cocktail")
+        )
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        vm.applyFilters(SearchFilters(category = "Cocktail"))
+        vm.searchCocktails("mojito")
+
+        assertEquals("mojito", vm.uiState.value.searchQuery)
+        assertEquals(SearchFilters(query = "mojito", category = "Cocktail"), vm.uiState.value.searchFilters)
+        assertEquals(listOf("1"), vm.uiState.value.cocktails.map { it.id })
     }
 
     @Test
