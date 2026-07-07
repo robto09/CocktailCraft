@@ -5,9 +5,13 @@ import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.data.repository.AuthRepositoryImpl
 import com.cocktailcraft.data.repository.CartRepositoryImpl
+import com.cocktailcraft.data.repository.CocktailCatalogRepositoryImpl
+import com.cocktailcraft.data.repository.CocktailCategoryFetcher
+import com.cocktailcraft.data.repository.CocktailDetailRepositoryImpl
 import com.cocktailcraft.data.repository.CocktailFavoritesRepositoryImpl
 import com.cocktailcraft.data.repository.CocktailOfflineRepositoryImpl
 import com.cocktailcraft.data.repository.CocktailRepositoryImpl
+import com.cocktailcraft.data.repository.CocktailSearchRepositoryImpl
 import com.cocktailcraft.data.repository.OrderRepositoryImpl
 import com.cocktailcraft.data.repository.ReviewRepositoryImpl
 import com.cocktailcraft.domain.repository.AuthRepository
@@ -80,21 +84,53 @@ val dataModule = module {
         )
     }
 
-    // Search/detail/catalog repository; composite binding delegates the
-    // favorites and offline portions to the focused impls above
-    single<CocktailRepository> {
-        CocktailRepositoryImpl(
+    // Category fetch-and-cache path shared by the search and catalog repositories
+    single {
+        CocktailCategoryFetcher(
+            remote = get(),
+            cocktailCache = get(),
+            cacheManager = get(),
+            offlineRepository = get()
+        )
+    }
+
+    single<CocktailSearchRepository> {
+        CocktailSearchRepositoryImpl(
+            remote = get(),
+            cocktailCache = get(),
+            offlineRepository = get(),
+            categoryFetcher = get()
+        )
+    }
+
+    single<CocktailDetailRepository> {
+        CocktailDetailRepositoryImpl(
             remote = get(),
             cocktailCache = get(),
             cacheManager = get(),
             appConfig = get(),
-            offlineRepository = get(),
-            favoritesRepository = get()
+            offlineRepository = get()
         )
     }
-    single<CocktailSearchRepository> { get<CocktailRepository>() }
-    single<CocktailDetailRepository> { get<CocktailRepository>() }
-    single<CocktailCatalogRepository> { get<CocktailRepository>() }
+
+    single<CocktailCatalogRepository> {
+        CocktailCatalogRepositoryImpl(
+            remote = get(),
+            categoryFetcher = get()
+        )
+    }
+
+    // Composite binding survives only for the iOS KoinHelper's exported
+    // Objective-C surface; it delegates every call to the focused impls above
+    single<CocktailRepository> {
+        CocktailRepositoryImpl(
+            searchRepository = get(),
+            detailRepository = get(),
+            catalogRepository = get(),
+            favoritesRepository = get(),
+            offlineRepository = get()
+        )
+    }
 
     single<CartRepository> {
         CartRepositoryImpl(get(), get(), get(named("ioDispatcher")))
