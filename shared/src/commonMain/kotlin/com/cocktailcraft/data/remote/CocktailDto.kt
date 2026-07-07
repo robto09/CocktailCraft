@@ -199,18 +199,6 @@ internal data class CategoryDto(
 )
 
 @Serializable
-internal data class GlassResponse(
-    @SerialName("drinks")
-    val glasses: List<GlassDto>? = null
-)
-
-@Serializable
-internal data class GlassDto(
-    @SerialName("strGlass")
-    val name: String
-)
-
-@Serializable
 internal data class IngredientResponse(
     @SerialName("drinks")
     val ingredients: List<IngredientDto>? = null

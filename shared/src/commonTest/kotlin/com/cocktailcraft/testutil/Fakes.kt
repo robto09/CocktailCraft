@@ -3,7 +3,6 @@ package com.cocktailcraft.testutil
 import com.cocktailcraft.data.remote.CategoryDto
 import com.cocktailcraft.data.remote.CocktailApi
 import com.cocktailcraft.data.remote.CocktailDto
-import com.cocktailcraft.data.remote.GlassDto
 import com.cocktailcraft.data.remote.IngredientDto
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
@@ -109,7 +108,7 @@ class FakeSearchRepository(var all: List<Cocktail> = emptyList()) : CocktailSear
     override suspend fun searchCocktailsByName(name: String): Result<List<Cocktail>> =
         Result.Success(all.filter { it.name.contains(name, ignoreCase = true) })
 
-    /** Mirrors the real intersection logic: AND the 5 supported fields over [all]. */
+    /** Mirrors the real intersection logic: AND the 4 supported fields over [all]. */
     override suspend fun advancedSearch(filters: SearchFilters): Result<List<Cocktail>> {
         var result = all
         if (filters.query.isNotBlank()) {
@@ -126,7 +125,6 @@ class FakeSearchRepository(var all: List<Cocktail> = emptyList()) : CocktailSear
                 else value.equals("Non alcoholic", ignoreCase = true)
             }
         }
-        filters.glass?.let { g -> result = result.filter { it.glass == g } }
         return Result.Success(result)
     }
 
@@ -135,15 +133,12 @@ class FakeSearchRepository(var all: List<Cocktail> = emptyList()) : CocktailSear
 
     override suspend fun filterByCategory(category: String): Result<List<Cocktail>> =
         Result.Success(all.filter { it.category == category })
-
-    override suspend fun filterByGlass(glass: String): Result<List<Cocktail>> = Result.Success(all)
 }
 
 class FakeCatalogRepository(var all: List<Cocktail> = emptyList()) : CocktailCatalogRepository {
     override suspend fun getCategories(): Result<List<String>> =
         Result.Success(all.mapNotNull { it.category }.distinct())
 
-    override suspend fun getGlasses(): Result<List<String>> = Result.Success(emptyList())
     override suspend fun getIngredients(): Result<List<String>> = Result.Success(emptyList())
     override suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>> = Result.Success(all)
 }
@@ -189,13 +184,7 @@ internal class FakeCocktailApi(var drinks: List<CocktailDto> = emptyList()) : Co
     override suspend fun filterByCategory(category: String): List<CocktailDto> =
         drinks.filter { it.category == category }
 
-    override suspend fun filterByGlass(glass: String): List<CocktailDto> {
-        endpointError?.let { throw it }
-        return drinks.filter { it.glass.equals(glass, ignoreCase = true) }
-    }
-
     override suspend fun getCategories(): List<CategoryDto> = emptyList()
-    override suspend fun getGlasses(): List<GlassDto> = emptyList()
     override suspend fun getIngredients(): List<IngredientDto> = emptyList()
     override suspend fun pingApi(): Boolean = true
 }

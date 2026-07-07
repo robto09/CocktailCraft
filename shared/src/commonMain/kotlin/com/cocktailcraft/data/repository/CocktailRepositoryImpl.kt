@@ -220,27 +220,11 @@ internal class CocktailRepositoryImpl(
         }
     }
 
-    override suspend fun filterByGlass(glass: String): Result<List<Cocktail>> {
-        return try {
-            Result.Success(remote.filterByGlass(glass))
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to filter by glass")
-        }
-    }
-
     override suspend fun getCategories(): Result<List<String>> {
         return try {
             Result.Success(remote.getCategories())
         } catch (e: Exception) {
             Result.Error(e.message ?: "Failed to get categories")
-        }
-    }
-
-    override suspend fun getGlasses(): Result<List<String>> {
-        return try {
-            Result.Success(remote.getGlasses())
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to get glasses")
         }
     }
 
@@ -272,7 +256,7 @@ internal class CocktailRepositoryImpl(
     }
 
     /**
-     * Advanced search over the 5 supported filters.
+     * Advanced search over the 4 supported filters.
      *
      * TheCocktailDB cannot combine filters server-side, but every filter.php call
      * returns a complete id set for its dimension, so combining = intersecting id
@@ -305,9 +289,6 @@ internal class CocktailRepositoryImpl(
             if (filters.ingredient != null) {
                 activeSets.add(filterByIngredient(filters.ingredient).getOrThrow())
             }
-            if (filters.glass != null) {
-                activeSets.add(filterByGlass(filters.glass).getOrThrow())
-            }
             if (filters.alcoholic != null) {
                 activeSets.add(filterByAlcoholic(filters.alcoholic).getOrThrow())
             }
@@ -328,14 +309,13 @@ internal class CocktailRepositoryImpl(
         }
     }
 
-    /** Offline path: filter the in-memory cache on the 5 supported fields. */
+    /** Offline path: filter the in-memory cache on the 4 supported fields. */
     private fun applyFiltersInMemory(cocktails: List<Cocktail>, filters: SearchFilters): List<Cocktail> {
         var result = cocktails
         val query = filters.query
         val category = filters.category
         val ingredient = filters.ingredient
         val alcoholic = filters.alcoholic
-        val glass = filters.glass
 
         if (query.isNotBlank()) {
             result = result.filter { it.name.contains(query, ignoreCase = true) }
@@ -356,9 +336,6 @@ internal class CocktailRepositoryImpl(
                 if (alcoholic) value.equals("Alcoholic", ignoreCase = true)
                 else value.equals("Non alcoholic", ignoreCase = true)
             }
-        }
-        if (glass != null) {
-            result = result.filter { it.glass == glass }
         }
         return result
     }

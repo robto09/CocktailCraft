@@ -9,7 +9,6 @@ import com.cocktailcraft.domain.util.Result
  */
 interface CocktailCatalogRepository {
     suspend fun getCategories(): Result<List<String>>
-    suspend fun getGlasses(): Result<List<String>>
     suspend fun getIngredients(): Result<List<String>>
     suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>>
 }

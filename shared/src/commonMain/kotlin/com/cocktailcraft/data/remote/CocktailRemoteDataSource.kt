@@ -32,14 +32,10 @@ internal class CocktailRemoteDataSource(
     suspend fun filterByAlcoholic(alcoholic: Boolean): List<Cocktail> =
         api.filterByAlcoholic(alcoholic).map(::mapToDomain)
 
-    suspend fun filterByGlass(glass: String): List<Cocktail> =
-        api.filterByGlass(glass).map(::mapToDomain)
-
     /** Raw DTOs so the catalog layer can decide between mapping and cache enrichment. */
     suspend fun filterByCategoryRaw(category: String): List<CocktailDto> = api.filterByCategory(category)
 
     suspend fun getCategories(): List<String> = api.getCategories().map { it.name }
-    suspend fun getGlasses(): List<String> = api.getGlasses().map { it.name }
     suspend fun getIngredients(): List<String> = api.getIngredients().map { it.name }
 
     // --- Rate limiting / connectivity ---

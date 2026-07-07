@@ -198,7 +198,7 @@ class SharedHomeViewModel internal constructor(
     }
 
     /**
-     * Load the option lists (categories / ingredients / glasses) that back the
+     * Load the option lists (categories / ingredients) that back the
      * advanced-search filter UI on both platforms, via [CocktailCatalogRepository]'s
      * list.php endpoints. Failures leave the current options untouched.
      * SKIE will convert this to Swift async function.
@@ -207,11 +207,9 @@ class SharedHomeViewModel internal constructor(
         try {
             val categories = catalogRepository.getCategories().getOrDefault(emptyList())
             val ingredients = catalogRepository.getIngredients().getOrDefault(emptyList())
-            val glasses = catalogRepository.getGlasses().getOrDefault(emptyList())
             _uiState.update { it.copy(
                 filterCategories = categories,
-                filterIngredients = ingredients,
-                filterGlasses = glasses
+                filterIngredients = ingredients
             ) }
         } catch (e: Exception) {
             // Non-fatal: the filter UI simply has no options to offer.
