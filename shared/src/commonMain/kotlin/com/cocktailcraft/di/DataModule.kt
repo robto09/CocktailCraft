@@ -8,7 +8,6 @@ import com.cocktailcraft.data.repository.CartRepositoryImpl
 import com.cocktailcraft.data.repository.CocktailFavoritesRepositoryImpl
 import com.cocktailcraft.data.repository.CocktailOfflineRepositoryImpl
 import com.cocktailcraft.data.repository.CocktailRepositoryImpl
-import com.cocktailcraft.data.repository.FavoritesRepositoryImpl
 import com.cocktailcraft.data.repository.OrderRepositoryImpl
 import com.cocktailcraft.data.repository.ReviewRepositoryImpl
 import com.cocktailcraft.domain.repository.AuthRepository
@@ -19,7 +18,6 @@ import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.repository.CocktailRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
-import com.cocktailcraft.domain.repository.FavoritesRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.repository.ReviewRepository
 import kotlinx.serialization.json.Json
@@ -108,14 +106,6 @@ val dataModule = module {
         ReviewRepositoryImpl(
             settings = get(),
             json = get(),
-            appConfig = get()
-        )
-    }
-
-    single<FavoritesRepository> {
-        FavoritesRepositoryImpl(
-            cocktailRepository = get<CocktailFavoritesRepository>(),
-            settings = get(),
             appConfig = get()
         )
     }

@@ -23,7 +23,6 @@ import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
-import com.cocktailcraft.domain.repository.FavoritesRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.util.NetworkMonitor
 import org.junit.After
@@ -64,7 +63,6 @@ class MainScreenSharedVmTest {
                     single<CocktailDetailRepository> { cocktailRepo }
                     single<CocktailFavoritesRepository> { cocktailRepo }
                     single<CocktailOfflineRepository> { cocktailRepo }
-                    single<FavoritesRepository> { cocktailRepo }
                     single<CartRepository> { FakeCartRepository() }
                     single<OrderRepository> { FakeOrderRepository() }
                     single<AuthRepository> { FakeAuthRepository() }
