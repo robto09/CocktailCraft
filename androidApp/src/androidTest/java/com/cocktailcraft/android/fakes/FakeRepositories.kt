@@ -47,9 +47,28 @@ class FakeCocktailRepository(
     // Search
     override suspend fun searchCocktailsByName(name: String): Result<List<Cocktail>> =
         Result.Success(cocktails.filter { it.name.contains(name, ignoreCase = true) })
-    override suspend fun searchCocktailsByFirstLetter(letter: Char): Result<List<Cocktail>> =
-        Result.Success(cocktails.filter { it.name.startsWith(letter, ignoreCase = true) })
-    override suspend fun advancedSearch(filters: SearchFilters): Result<List<Cocktail>> = Result.Success(cocktails)
+
+    /** Mirrors the real intersection logic: AND the 5 supported fields over [cocktails]. */
+    override suspend fun advancedSearch(filters: SearchFilters): Result<List<Cocktail>> {
+        var result = cocktails
+        if (filters.query.isNotBlank()) {
+            result = result.filter { it.name.contains(filters.query, ignoreCase = true) }
+        }
+        filters.category?.let { cat -> result = result.filter { it.category == cat } }
+        filters.ingredient?.let { ing ->
+            result = result.filter { c -> c.ingredients.any { it.name.contains(ing, ignoreCase = true) } }
+        }
+        filters.alcoholic?.let { alc ->
+            result = result.filter {
+                val value = it.alcoholic?.replace('_', ' ')
+                if (alc) value.equals("Alcoholic", ignoreCase = true)
+                else value.equals("Non alcoholic", ignoreCase = true)
+            }
+        }
+        filters.glass?.let { g -> result = result.filter { it.glass == g } }
+        return Result.Success(result)
+    }
+
     override suspend fun filterByIngredient(ingredient: String): Result<List<Cocktail>> = Result.Success(cocktails)
     override suspend fun filterByAlcoholic(alcoholic: Boolean): Result<List<Cocktail>> = Result.Success(cocktails)
     override suspend fun filterByCategory(category: String): Result<List<Cocktail>> =
@@ -61,20 +80,7 @@ class FakeCocktailRepository(
         Result.Success(cocktails.mapNotNull { it.category }.distinct())
     override suspend fun getGlasses(): Result<List<String>> = Result.Success(emptyList())
     override suspend fun getIngredients(): Result<List<String>> = Result.Success(emptyList())
-    override suspend fun getAlcoholicFilters(): Result<List<String>> = Result.Success(emptyList())
     override suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>> = Result.Success(cocktails)
-    override suspend fun getCocktailsSortedByPriceLowToHigh(): Result<List<Cocktail>> =
-        Result.Success(cocktails.sortedBy { it.price })
-    override suspend fun getCocktailsSortedByPriceHighToLow(): Result<List<Cocktail>> =
-        Result.Success(cocktails.sortedByDescending { it.price })
-    override suspend fun getCocktailsSortedByPopularity(): Result<List<Cocktail>> = Result.Success(cocktails)
-    override suspend fun getCocktailsByPriceRange(minPrice: Double, maxPrice: Double): Result<List<Cocktail>> =
-        Result.Success(cocktails.filter { it.price in minPrice..maxPrice })
-    override suspend fun getCocktailsByCategory(category: String): Result<List<Cocktail>> =
-        Result.Success(cocktails.filter { it.category == category })
-    override suspend fun getCocktailsByIngredient(ingredient: String): Result<List<Cocktail>> = Result.Success(cocktails)
-    override suspend fun getCocktailsByAlcoholicFilter(alcoholicFilter: String): Result<List<Cocktail>> =
-        Result.Success(cocktails)
 
     // Detail
     override suspend fun getCocktailById(id: String): Result<Cocktail?> =
