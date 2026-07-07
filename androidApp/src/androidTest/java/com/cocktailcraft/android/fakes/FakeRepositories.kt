@@ -14,7 +14,6 @@ import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
-import com.cocktailcraft.domain.repository.FavoritesRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.NetworkMonitor
@@ -39,7 +38,7 @@ object TestCocktails {
 class FakeCocktailRepository(
     private val cocktails: List<Cocktail> = TestCocktails.all
 ) : CocktailSearchRepository, CocktailCatalogRepository, CocktailDetailRepository,
-    CocktailFavoritesRepository, CocktailOfflineRepository, FavoritesRepository {
+    CocktailFavoritesRepository, CocktailOfflineRepository {
 
     private val favorites = MutableStateFlow<List<Cocktail>>(emptyList())
     private var offlineMode = false
@@ -86,9 +85,8 @@ class FakeCocktailRepository(
     override suspend fun getRandomCocktail(): Result<Cocktail?> = Result.Success(cocktails.firstOrNull())
     override fun getCocktailImageUrl(cocktail: Cocktail): String = cocktail.imageUrl ?: ""
 
-    // Favorites (both interfaces)
+    // Favorites
     override suspend fun getFavoriteCocktails(): Result<List<Cocktail>> = Result.Success(favorites.value)
-    override suspend fun getFavorites(): Result<List<Cocktail>> = Result.Success(favorites.value)
     override suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> {
         favorites.update { it + cocktail }
         return Result.Success(Unit)
@@ -99,9 +97,6 @@ class FakeCocktailRepository(
     }
     override suspend fun isCocktailFavorite(id: String): Result<Boolean> =
         Result.Success(favorites.value.any { it.id == id })
-    override suspend fun isFavorite(id: String): Result<Boolean> = isCocktailFavorite(id)
-    override suspend fun toggleFavorite(cocktail: Cocktail): Result<Unit> =
-        if (favorites.value.any { it.id == cocktail.id }) removeFromFavorites(cocktail) else addToFavorites(cocktail)
 
     // Offline
     override suspend fun checkApiConnectivity(): Result<Boolean> = Result.Success(true)
