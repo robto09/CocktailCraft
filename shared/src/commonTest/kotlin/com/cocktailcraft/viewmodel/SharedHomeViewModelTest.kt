@@ -37,7 +37,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
 
         fun viewModel() = SharedHomeViewModel(
             searchCocktailsUseCase = SearchCocktailsUseCase(search),
-            loadCocktailsByCategoryUseCase = LoadCocktailsByCategoryUseCase(search, catalog),
+            loadCocktailsByCategoryUseCase = LoadCocktailsByCategoryUseCase(search),
             sortCocktailsUseCase = SortCocktailsUseCase(),
             manageFavoritesUseCase = ManageFavoritesUseCase(favorites, detail),
             manageOfflineModeUseCase = ManageOfflineModeUseCase(offline, catalog),
@@ -64,6 +64,32 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         assertEquals(1, vm.uiState.value.favorites.size)
         assertTrue(vm.isFavorite("2"))
         assertFalse(vm.uiState.value.isLoading)
+    }
+
+    @Test
+    fun loadMorePagesWithinSelectedCategory() = runTest {
+        val harness = Harness()
+        val shots = (1..12).map { testCocktail("shot$it", category = "Shot") }
+        val defaults = (1..12).map { testCocktail("cocktail$it", category = "Cocktail") }
+        harness.search.all = shots + defaults
+        // Mirrors the real repository, whose newest-sorted list only holds the default category.
+        harness.catalog.all = defaults
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        vm.loadCocktailsByCategory("Shot")
+        assertEquals(10, vm.uiState.value.cocktails.size)
+        assertTrue(vm.uiState.value.hasMoreData)
+
+        vm.loadMoreCocktails()
+
+        assertEquals(
+            shots.map { it.id },
+            vm.uiState.value.cocktails.map { it.id },
+            "page 2 must come from the selected category"
+        )
+        assertEquals(2, vm.uiState.value.currentPage)
+        assertFalse(vm.uiState.value.hasMoreData)
     }
 
     @Test
