@@ -47,8 +47,8 @@ class PlatformErrorHandler {
             )
             
         default:
-            // Fallback to shared error handler
-            return ErrorHandler.shared.createUserFriendlyError(
+            // Fallback: build the error directly, like the branches above
+            return ErrorHandler.UserFriendlyError(
                 title: "Error",
                 message: exception.localizedDescription.isEmpty ? defaultMessage : exception.localizedDescription,
                 category: ErrorHandler.ErrorCategory.unknown,

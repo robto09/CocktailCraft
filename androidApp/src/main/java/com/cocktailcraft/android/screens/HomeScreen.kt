@@ -95,7 +95,6 @@ import com.cocktailcraft.android.ui.components.NetworkErrorStateDisplay
 import com.cocktailcraft.android.ui.components.SearchFilterChips
 import com.cocktailcraft.android.ui.components.shimmerEffect
 import com.cocktailcraft.android.ui.theme.AppColors
-import com.cocktailcraft.android.util.ErrorUtils
 import com.cocktailcraft.android.util.ListOptimizations.OnBottomReached
 import com.cocktailcraft.android.util.ListOptimizations.OnScrollPastThreshold
 import com.cocktailcraft.android.util.ListOptimizations.itemKey
