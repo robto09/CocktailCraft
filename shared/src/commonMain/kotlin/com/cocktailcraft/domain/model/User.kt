@@ -38,7 +38,12 @@ data class UserPreferences(
     val darkMode: Boolean = false,
     val followSystemTheme: Boolean = true,
     val notificationsEnabled: Boolean = true,
-    val language: String = "en"
+    val language: String = "en",
+    // Defaults let JSON persisted before these fields existed still decode.
+    val accentColor: String = "blue",
+    val fontSize: String = "medium",
+    val isHighContrast: Boolean = false,
+    val isReducedMotion: Boolean = false
 ) {
     // Hidden so the generated serializer does not drag the
     // kotlinx-serialization type tree into the Obj-C header.
