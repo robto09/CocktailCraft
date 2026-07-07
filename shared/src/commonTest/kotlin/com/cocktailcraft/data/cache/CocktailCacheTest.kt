@@ -23,8 +23,8 @@ class CocktailCacheTest {
     private val config = AppConfigImpl()
     private val json = Json { ignoreUnknownKeys = true }
 
-    // Same key as CocktailCache.ALL_COCKTAILS_KEY — tests write persisted JSON directly.
-    private val allCocktailsKey = "all_cached_cocktails"
+    // Tests write persisted JSON directly under the cache's real storage key.
+    private val allCocktailsKey = CocktailCache.ALL_COCKTAILS_KEY
 
     /** Wraps a [Settings] so tests can count how many disk writes a code path performs. */
     private class CountingSettings(private val delegate: Settings) : Settings by delegate {

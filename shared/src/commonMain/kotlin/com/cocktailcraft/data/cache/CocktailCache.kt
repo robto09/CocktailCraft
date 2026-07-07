@@ -105,7 +105,8 @@ internal class CocktailCache(
     companion object {
         private const val CACHE_PREFIX = "cocktail_cache_"
         private const val RECENTLY_VIEWED_KEY = "recently_viewed_cocktails"
-        private const val ALL_COCKTAILS_KEY = "all_cached_cocktails"
+        // internal (not private) so tests can seed persisted fixtures under the real key
+        internal const val ALL_COCKTAILS_KEY = "all_cached_cocktails"
         private const val CACHE_METADATA_PREFIX = "cache_metadata_"
         private const val MAX_RECENTLY_VIEWED = 20
     }
