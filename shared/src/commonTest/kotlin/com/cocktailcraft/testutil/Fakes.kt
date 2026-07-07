@@ -154,6 +154,8 @@ class FakeOfflineRepository : CocktailOfflineRepository {
     }
 
     override fun isOfflineModeEnabled(): Boolean = offlineModeEnabled
+
+    override suspend fun isOffline(): Boolean = offlineModeEnabled
 }
 
 internal class FakeCocktailApi(var drinks: List<CocktailDto> = emptyList()) : CocktailApi {

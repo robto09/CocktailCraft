@@ -12,5 +12,8 @@ interface CocktailOfflineRepository {
     suspend fun getRecentlyViewedCocktails(): Result<List<Cocktail>>
     fun setOfflineMode(enabled: Boolean)
     fun isOfflineModeEnabled(): Boolean
+
+    /** True when the user forced offline mode or the network is currently down. */
+    suspend fun isOffline(): Boolean
 }
 

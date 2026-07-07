@@ -30,7 +30,7 @@ internal class CocktailOfflineRepositoryImpl(
         settings.getBoolean(appConfig.offlineModeEnabledKey, false)
 
     /** True when the user forced offline mode or the network is down. */
-    suspend fun isOffline(): Boolean = isOfflineModeEnabled() || !networkMonitor.isOnline.first()
+    override suspend fun isOffline(): Boolean = isOfflineModeEnabled() || !networkMonitor.isOnline.first()
 
     override suspend fun checkApiConnectivity(): Result<Boolean> {
         return try {

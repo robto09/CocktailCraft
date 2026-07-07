@@ -49,7 +49,7 @@ val dataModule = module {
     single { CocktailRemoteDataSource(api = get(), cacheManager = get()) }
 
     // Focused repositories, each owning one concern
-    single {
+    single<CocktailOfflineRepository> {
         CocktailOfflineRepositoryImpl(
             settings = get(),
             appConfig = get(),
@@ -58,7 +58,6 @@ val dataModule = module {
             remote = get()
         )
     }
-    single<CocktailOfflineRepository> { get<CocktailOfflineRepositoryImpl>() }
 
     single<CocktailFavoritesRepository> {
         CocktailFavoritesRepositoryImpl(
