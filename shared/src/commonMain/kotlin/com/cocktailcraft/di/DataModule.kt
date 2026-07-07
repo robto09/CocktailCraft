@@ -47,7 +47,8 @@ val dataModule = module {
         settings = get(),
         json = get(),
         appConfig = get(),
-        ioDispatcher = get(named("ioDispatcher"))
+        ioDispatcher = get(named("ioDispatcher")),
+        networkMonitor = get()
     ) }
 
     // In-memory cache manager (thread-safe singleton)

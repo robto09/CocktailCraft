@@ -35,7 +35,7 @@ internal class AppConfigImpl : AppConfig {
     override val recentlyViewedStorageKey: String = "recently_viewed_cocktails"
     override val offlineModeEnabledKey: String = "offline_mode_enabled"
 
-    // Cache configuration
+    // Cache configuration (enforced by CocktailCache)
     override val cacheExpirationMs: Long = 86400000 // 24 hours cache expiration
-    override val maxOfflineCocktails: Int = 50 // Maximum number of cocktails to cache
+    override val maxOfflineCocktails: Int = 100 // Maximum number of cocktails to cache
 }

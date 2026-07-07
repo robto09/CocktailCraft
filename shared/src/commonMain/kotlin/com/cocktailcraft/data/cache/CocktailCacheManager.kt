@@ -33,6 +33,9 @@ internal class CocktailCacheManager {
 
     // Constants
     companion object {
+        // Short freshness window for the volatile in-memory caches only.
+        // The persistent CocktailCache has its own, much longer lifetime
+        // (AppConfig.cacheExpirationMs, 24 h) — the two are deliberately separate.
         const val CACHE_VALIDITY_MS = 5 * 60 * 1000 // 5 minutes
         const val MIN_API_CALL_INTERVAL_MS = 1000L // 1 second between calls
         const val MAX_BACKOFF_MS = 30000L // Max 30 seconds backoff
