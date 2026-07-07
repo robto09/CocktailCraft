@@ -4,10 +4,10 @@ import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCategories
 import com.cocktailcraft.domain.model.SearchFilters
+import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.usecase.SearchCocktailsUseCase
 import com.cocktailcraft.domain.usecase.LoadCocktailsByCategoryUseCase
 import com.cocktailcraft.domain.usecase.SortCocktailsUseCase
-import com.cocktailcraft.domain.usecase.FilterCocktailsUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.domain.usecase.ManageOfflineModeUseCase
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
@@ -32,10 +32,10 @@ class SharedHomeViewModel internal constructor(
     private val searchCocktailsUseCase: SearchCocktailsUseCase,
     private val loadCocktailsByCategoryUseCase: LoadCocktailsByCategoryUseCase,
     private val sortCocktailsUseCase: SortCocktailsUseCase,
-    private val filterCocktailsUseCase: FilterCocktailsUseCase,
     private val manageFavoritesUseCase: ManageFavoritesUseCase,
     private val manageOfflineModeUseCase: ManageOfflineModeUseCase,
     private val getCocktailDetailUseCase: GetCocktailDetailUseCase,
+    private val catalogRepository: CocktailCatalogRepository,
     private val networkMonitor: NetworkMonitor
 ) : SharedViewModel() {
 
@@ -131,25 +131,19 @@ class SharedHomeViewModel internal constructor(
     }
     
     /**
-     * Search cocktails with debouncing.
+     * Search cocktails by name, composed with any active advanced-search filters.
      * SKIE will convert this to Swift async function.
      */
     suspend fun searchCocktails(query: String) {
+        val filters = _uiState.value.searchFilters.copy(query = query)
         _uiState.update { it.copy(searchQuery = query) }
 
-        if (query.isBlank()) {
+        if (query.isBlank() && !filters.hasActiveFilters()) {
+            // Nothing left to search — fall back to the current category listing.
+            _uiState.update { it.copy(searchFilters = filters) }
             loadCocktails()
         } else {
-            _uiState.update { it.copy(isLoading = true) }
-            clearError()
-
-            try {
-                val cocktailList = searchCocktailsUseCase(query).getOrThrow()
-                _uiState.update { it.copy(cocktails = cocktailList, isLoading = false) }
-            } catch (e: Exception) {
-                handleException(e, "Failed to search cocktails")
-                _uiState.update { it.copy(isLoading = false) }
-            }
+            applyFilters(filters)
         }
     }
     
@@ -186,19 +180,41 @@ class SharedHomeViewModel internal constructor(
     }
     
     /**
-     * Update search filters and perform search.
+     * Apply the advanced-search [filters] and refresh the cocktail list.
+     * Stores [filters] into state so the active-filter chips reflect them.
      * SKIE will convert this to Swift async function.
      */
-    suspend fun applyFilters(category: String? = null, ingredient: String? = null) {
-        _uiState.update { it.copy(isLoading = true) }
+    suspend fun applyFilters(filters: SearchFilters) {
+        _uiState.update { it.copy(searchFilters = filters, isLoading = true) }
         clearError()
 
         try {
-            val filtered = filterCocktailsUseCase(category, ingredient).getOrThrow()
+            val filtered = searchCocktailsUseCase.search(filters).getOrThrow()
             _uiState.update { it.copy(cocktails = filtered, isLoading = false) }
         } catch (e: Exception) {
             handleException(e, "Failed to apply filters")
             _uiState.update { it.copy(isLoading = false) }
+        }
+    }
+
+    /**
+     * Load the option lists (categories / ingredients / glasses) that back the
+     * advanced-search filter UI on both platforms, via [CocktailCatalogRepository]'s
+     * list.php endpoints. Failures leave the current options untouched.
+     * SKIE will convert this to Swift async function.
+     */
+    suspend fun loadFilterOptions() {
+        try {
+            val categories = catalogRepository.getCategories().getOrDefault(emptyList())
+            val ingredients = catalogRepository.getIngredients().getOrDefault(emptyList())
+            val glasses = catalogRepository.getGlasses().getOrDefault(emptyList())
+            _uiState.update { it.copy(
+                filterCategories = categories,
+                filterIngredients = ingredients,
+                filterGlasses = glasses
+            ) }
+        } catch (e: Exception) {
+            // Non-fatal: the filter UI simply has no options to offer.
         }
     }
     
@@ -320,9 +336,10 @@ class SharedHomeViewModel internal constructor(
         }
     }
 
+    /** Clear only the query text; any active advanced-search filters are kept. */
     fun clearSearch() {
-        _uiState.update { it.copy(searchQuery = "", searchFilters = SearchFilters(), isSearchActive = false) }
-        viewModelScope.launch { loadCocktails() }
+        _uiState.update { it.copy(isSearchActive = false) }
+        viewModelScope.launch { searchCocktails("") }
     }
 
     fun toggleSearchMode(active: Boolean) {
@@ -337,9 +354,10 @@ class SharedHomeViewModel internal constructor(
         _uiState.update { it.copy(isAdvancedSearchActive = active) }
     }
 
+    /** Reset all advanced-search filters (and the query) and reload the default list. */
     fun clearSearchFilters() {
-        _uiState.update { it.copy(searchFilters = SearchFilters()) }
-        viewModelScope.launch { searchCocktails(_uiState.value.searchQuery) }
+        _uiState.update { it.copy(searchQuery = "", searchFilters = SearchFilters()) }
+        viewModelScope.launch { loadCocktails() }
     }
 
     fun isFavorite(cocktailId: String): Boolean {

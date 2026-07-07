@@ -15,6 +15,10 @@ data class HomeUiState(
     val isSearchActive: Boolean = false,
     val isAdvancedSearchActive: Boolean = false,
     val searchFilters: SearchFilters = SearchFilters(),
+    // Option lists backing the advanced-search filter UI (loaded from list.php).
+    val filterCategories: List<String> = emptyList(),
+    val filterIngredients: List<String> = emptyList(),
+    val filterGlasses: List<String> = emptyList(),
     val selectedCategory: String? = null,
     val currentPage: Int = 1,
     val hasMoreData: Boolean = true,

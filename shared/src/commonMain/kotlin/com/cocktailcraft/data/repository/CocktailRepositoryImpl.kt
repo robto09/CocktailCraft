@@ -10,8 +10,8 @@ import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.repository.CocktailRepository
-import com.cocktailcraft.domain.usecase.FilterCocktailsUseCase
 import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.domain.util.getOrThrow
 import kotlinx.coroutines.delay
 import kotlin.time.Clock
 
@@ -48,14 +48,6 @@ internal class CocktailRepositoryImpl(
             Result.Success(remote.searchByName(name))
         } catch (e: Exception) {
             Result.Error(e.message ?: "Failed to search cocktails by name")
-        }
-    }
-
-    override suspend fun searchCocktailsByFirstLetter(letter: Char): Result<List<Cocktail>> {
-        return try {
-            Result.Success(remote.searchByFirstLetter(letter))
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to search cocktails by first letter")
         }
     }
 
@@ -260,36 +252,12 @@ internal class CocktailRepositoryImpl(
         }
     }
 
-    override suspend fun getAlcoholicFilters(): Result<List<String>> {
-        return try {
-            Result.Success(remote.getAlcoholicFilters())
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to get alcoholic filters")
-        }
-    }
-
     override suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>> {
         return try {
             Result.Success(fetchCocktailsByCategory("Cocktail"))
         } catch (e: Exception) {
             Result.Error(e.message ?: "Failed to get cocktails sorted by newest")
         }
-    }
-
-    override suspend fun getCocktailsSortedByPriceLowToHigh(): Result<List<Cocktail>> {
-        return getCocktailsSortedByNewest().map { list -> list.sortedBy { it.price } }
-    }
-
-    override suspend fun getCocktailsSortedByPriceHighToLow(): Result<List<Cocktail>> {
-        return getCocktailsSortedByNewest().map { list -> list.sortedByDescending { it.price } }
-    }
-
-    override suspend fun getCocktailsSortedByPopularity(): Result<List<Cocktail>> {
-        return getCocktailsSortedByNewest().map { list -> list.sortedByDescending { it.popularity } }
-    }
-
-    override suspend fun getCocktailsByPriceRange(minPrice: Double, maxPrice: Double): Result<List<Cocktail>> {
-        return getCocktailsSortedByNewest().map { list -> list.filter { it.price in minPrice..maxPrice } }
     }
 
     override fun getCocktailImageUrl(cocktail: Cocktail): String {
@@ -303,86 +271,95 @@ internal class CocktailRepositoryImpl(
         }
     }
 
-    override suspend fun getCocktailsByCategory(category: String): Result<List<Cocktail>> {
-        return try {
-            if (isOffline()) {
-                Result.Success(cocktailCache.getAllCachedCocktails()
-                    .filter { it.category == category }
-                    .take(5))
-            } else {
-                filterByCategory(category)
-            }
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to get cocktails by category")
-        }
-    }
-
-    override suspend fun getCocktailsByIngredient(ingredient: String): Result<List<Cocktail>> {
-        return try {
-            if (isOffline()) {
-                Result.Success(cocktailCache.getAllCachedCocktails()
-                    .filter { cocktail ->
-                        cocktail.ingredients.any { it.name.contains(ingredient, ignoreCase = true) }
-                    }
-                    .take(5))
-            } else {
-                filterByIngredient(ingredient)
-            }
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to get cocktails by ingredient")
-        }
-    }
-
-    override suspend fun getCocktailsByAlcoholicFilter(alcoholicFilter: String): Result<List<Cocktail>> {
-        return try {
-            if (isOffline()) {
-                Result.Success(cocktailCache.getAllCachedCocktails()
-                    .filter { it.alcoholic == alcoholicFilter }
-                    .take(5))
-            } else {
-                val isAlcoholic = alcoholicFilter.equals("Alcoholic", ignoreCase = true)
-                filterByAlcoholic(isAlcoholic)
-            }
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to get cocktails by alcoholic filter")
-        }
-    }
-
     /**
-     * Advanced search implementation that combines multiple filters.
+     * Advanced search over the 5 supported filters.
+     *
+     * TheCocktailDB cannot combine filters server-side, but every filter.php call
+     * returns a complete id set for its dimension, so combining = intersecting id
+     * sets client-side. One rate-limited call per active filter; the first
+     * successful result (priority order below, preferring full name-search records)
+     * is the base list, narrowed to ids present in every other active set. Any
+     * active call failing surfaces as [Result.Error] — a filter is never silently
+     * dropped.
      */
     override suspend fun advancedSearch(filters: SearchFilters): Result<List<Cocktail>> {
         return try {
             if (isOffline()) {
-                val cachedCocktails = cocktailCache.getAllCachedCocktails()
-                return Result.Success(FilterCocktailsUseCase.applyFiltersToList(cachedCocktails, filters))
+                return Result.Success(applyFiltersInMemory(cocktailCache.getAllCachedCocktails(), filters))
             }
 
-            // Start with a base list of cocktails - unwrap Result for internal use
-            val cocktails = when {
-                filters.query.isNotBlank() -> searchCocktailsByName(filters.query).getOrNull() ?: emptyList()
-                filters.category != null -> filterByCategory(filters.category).getOrNull() ?: emptyList()
-                filters.ingredient != null -> filterByIngredient(filters.ingredient).getOrNull() ?: emptyList()
-                filters.alcoholic != null -> filterByAlcoholic(filters.alcoholic).getOrNull() ?: emptyList()
-                filters.glass != null -> filterByGlass(filters.glass).getOrNull() ?: emptyList()
-                else -> getCocktailsSortedByNewest().getOrNull() ?: emptyList()
+            // Nothing active → same default list as category browsing.
+            if (filters.query.isBlank() && !filters.hasActiveFilters()) {
+                return filterByCategory("Cocktail")
             }
 
-            // Apply all remaining filters via the use case (single source of truth)
-            val filteredCocktails = FilterCocktailsUseCase.applyFiltersToList(cocktails, filters)
+            // One call per active filter, in priority order. getOrThrow bubbles a
+            // failed call out to the catch below as Result.Error.
+            val activeSets = mutableListOf<List<Cocktail>>()
+            if (filters.query.isNotBlank()) {
+                activeSets.add(searchCocktailsByName(filters.query).getOrThrow())
+            }
+            if (filters.category != null) {
+                activeSets.add(filterByCategory(filters.category).getOrThrow())
+            }
+            if (filters.ingredient != null) {
+                activeSets.add(filterByIngredient(filters.ingredient).getOrThrow())
+            }
+            if (filters.glass != null) {
+                activeSets.add(filterByGlass(filters.glass).getOrThrow())
+            }
+            if (filters.alcoholic != null) {
+                activeSets.add(filterByAlcoholic(filters.alcoholic).getOrThrow())
+            }
+
+            // Base list = first active set; keep only ids present in every other set.
+            val base = activeSets.first()
+            val result = activeSets.drop(1).fold(base) { acc, set ->
+                val ids = set.mapTo(HashSet()) { it.id }
+                acc.filter { it.id in ids }
+            }
 
             // Cache the results for offline access
-            filteredCocktails.forEach { cocktailCache.cacheCocktail(it) }
+            result.forEach { cocktailCache.cacheCocktail(it) }
 
-            Result.Success(filteredCocktails)
+            Result.Success(result)
         } catch (e: Exception) {
-            // Try to use cache as fallback
-            try {
-                val cachedCocktails = cocktailCache.getAllCachedCocktails()
-                Result.Success(FilterCocktailsUseCase.applyFiltersToList(cachedCocktails, filters))
-            } catch (cacheError: Exception) {
-                Result.Error(e.message ?: "Failed to perform advanced search")
+            Result.Error(e.message ?: "Failed to perform advanced search")
+        }
+    }
+
+    /** Offline path: filter the in-memory cache on the 5 supported fields. */
+    private fun applyFiltersInMemory(cocktails: List<Cocktail>, filters: SearchFilters): List<Cocktail> {
+        var result = cocktails
+        val query = filters.query
+        val category = filters.category
+        val ingredient = filters.ingredient
+        val alcoholic = filters.alcoholic
+        val glass = filters.glass
+
+        if (query.isNotBlank()) {
+            result = result.filter { it.name.contains(query, ignoreCase = true) }
+        }
+        if (category != null) {
+            result = result.filter { it.category == category }
+        }
+        if (ingredient != null) {
+            result = result.filter { cocktail ->
+                cocktail.ingredients.any { it.name.contains(ingredient, ignoreCase = true) }
             }
         }
+        if (alcoholic != null) {
+            // Full records store TheCocktailDB's display strings ("Alcoholic" /
+            // "Non alcoholic"); the underscore form only exists as a URL token.
+            result = result.filter {
+                val value = it.alcoholic?.replace('_', ' ')
+                if (alcoholic) value.equals("Alcoholic", ignoreCase = true)
+                else value.equals("Non alcoholic", ignoreCase = true)
+            }
+        }
+        if (glass != null) {
+            result = result.filter { it.glass == glass }
+        }
+        return result
     }
 }
