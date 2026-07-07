@@ -117,6 +117,18 @@
 
 ---
 
+## Section 1 integration status
+
+All 15 task branches are merged into **`integration/shared-phase-1`** (verified: 136 shared tests green, Android debug + androidTest compile, iOS Kotlin compile). Follow-up fixes landed on the same branch:
+- `540377d` — signUp now refreshes auth status (`isLoggedIn` was stale after sign-up)
+- `bfe0438` — composite `CocktailRepository` interface/impl/binding and unused `KoinIOS.getCocktailRepository()` deleted
+- `51ba491` — cache tests use the shared `ALL_COCKTAILS_KEY` constant instead of a retyped literal
+- `0a80466` — androidTest fake implements the new `isOffline()` interface member
+
+Still open from 1.4's caveats: `init {}` eager loads in Cart/Order/Review repos and the non-suspend `setOfflineMode` remain unconfined. Before merging to `dev`: run one full iOS app build (SKIE surface changed: OrderRepository methods, composite removal).
+
+---
+
 # 2. Security
 
 ## P1 — Fix before any real distribution
