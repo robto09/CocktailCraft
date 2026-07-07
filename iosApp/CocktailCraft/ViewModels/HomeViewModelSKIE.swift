@@ -51,6 +51,27 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
         }
     }
 
+    /// Apply the advanced-search filters. The shared ViewModel stores them in
+    /// `state.searchFilters` (driving the active-filter chips) and loads the
+    /// intersected results.
+    func applyFilters(_ filters: SearchFilters) async {
+        do {
+            try await sharedViewModel.applyFilters(filters: filters)
+        } catch {
+            print("HomeViewModelSKIE - Error applying filters: \(error)")
+        }
+    }
+
+    /// Load the API-backed option lists (categories / ingredients / glasses)
+    /// that back the advanced-search filter sheet.
+    func loadFilterOptions() async {
+        do {
+            try await sharedViewModel.loadFilterOptions()
+        } catch {
+            print("HomeViewModelSKIE - Error loading filter options: \(error)")
+        }
+    }
+
     func loadMoreCocktails() async {
         do {
             try await sharedViewModel.loadMoreCocktails()
@@ -133,6 +154,11 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
 
     func clearSearch() {
         sharedViewModel.clearSearch()
+    }
+
+    /// Reset all advanced-search filters (and the query) and reload the default list.
+    func clearSearchFilters() {
+        sharedViewModel.clearSearchFilters()
     }
 
     func clearError() {

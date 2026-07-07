@@ -5,18 +5,14 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -25,36 +21,23 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.FilterAlt
-import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RangeSlider
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -62,17 +45,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.cocktailcraft.domain.model.Complexity
-import com.cocktailcraft.domain.model.PreparationTime
-import com.cocktailcraft.domain.model.SearchFilters
-import com.cocktailcraft.domain.model.TasteProfile
 import com.cocktailcraft.android.ui.theme.AppColors
-import com.cocktailcraft.android.ui.components.FilterChip
 
 /**
  * Section component for filter categories
@@ -259,230 +235,49 @@ fun GlassSelector(
 }
 
 /**
- * Alcoholic filter content component
+ * Alcoholic filter content: tri-state choice chips (Any / Alcoholic / Non-Alcoholic).
+ * null = any, true = alcoholic, false = non-alcoholic.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AlcoholicFilterContent(
     alcoholic: Boolean?,
     onAlcoholicChanged: (Boolean?) -> Unit
 ) {
-    Column {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = "Show only alcoholic drinks",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Switch(
-                checked = alcoholic == true,
-                onCheckedChange = { isChecked ->
-                    onAlcoholicChanged(if (isChecked) true else null)
-                }
-            )
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = "Show only non-alcoholic drinks",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Switch(
-                checked = alcoholic == false,
-                onCheckedChange = { isChecked ->
-                    onAlcoholicChanged(if (isChecked) false else null)
-                }
-            )
-        }
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        FilterChip(
+            selected = alcoholic == null,
+            onClick = { onAlcoholicChanged(null) },
+            label = "Any"
+        )
+        FilterChip(
+            selected = alcoholic == true,
+            onClick = { onAlcoholicChanged(true) },
+            label = "Alcoholic"
+        )
+        FilterChip(
+            selected = alcoholic == false,
+            onClick = { onAlcoholicChanged(false) },
+            label = "Non-Alcoholic"
+        )
     }
 }
 
 /**
- * Price range filter content component
- */
-@Composable
-fun PriceRangeFilterContent(
-    priceRange: ClosedFloatingPointRange<Float>?,
-    onPriceRangeChanged: (ClosedFloatingPointRange<Float>?) -> Unit
-) {
-    var currentPriceRange by remember {
-        mutableStateOf(priceRange ?: 5f..15f)
-    }
-    var isPriceFilterActive by remember {
-        mutableStateOf(priceRange != null)
-    }
-
-    Column {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = "Filter by price",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.weight(1f))
-            Switch(
-                checked = isPriceFilterActive,
-                onCheckedChange = { isChecked ->
-                    isPriceFilterActive = isChecked
-                    onPriceRangeChanged(if (isChecked) currentPriceRange else null)
-                }
-            )
-        }
-
-        if (isPriceFilterActive) {
-            Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                RangeSlider(
-                    value = currentPriceRange,
-                    onValueChange = { range ->
-                        currentPriceRange = range
-                        onPriceRangeChanged(range)
-                    },
-                    valueRange = 5f..30f,
-                    steps = 25,
-                    colors = SliderDefaults.colors(
-                        thumbColor = AppColors.Primary,
-                        activeTrackColor = AppColors.Primary
-                    )
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "$${currentPriceRange.start.toInt()}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text = "$${currentPriceRange.endInclusive.toInt()}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * Taste profile selector component
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun TasteProfileSelector(
-    selectedProfile: TasteProfile?,
-    onProfileSelected: (TasteProfile?) -> Unit
-) {
-    Column {
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Add "All" option
-            FilterChip(
-                selected = selectedProfile == null,
-                onClick = { onProfileSelected(null) },
-                label = "All"
-            )
-
-            // Add all taste profiles
-            TasteProfile.values().forEach { profile ->
-                FilterChip(
-                    selected = selectedProfile == profile,
-                    onClick = { onProfileSelected(profile) },
-                    label = profile.toString()
-                )
-            }
-        }
-    }
-}
-
-/**
- * Complexity selector component
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun ComplexitySelector(
-    selectedComplexity: Complexity?,
-    onComplexitySelected: (Complexity?) -> Unit
-) {
-    Column {
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Add "All" option
-            FilterChip(
-                selected = selectedComplexity == null,
-                onClick = { onComplexitySelected(null) },
-                label = "All"
-            )
-
-            // Add all complexity levels
-            Complexity.values().forEach { complexity ->
-                FilterChip(
-                    selected = selectedComplexity == complexity,
-                    onClick = { onComplexitySelected(complexity) },
-                    label = complexity.toString()
-                )
-            }
-        }
-    }
-}
-
-/**
- * Preparation time selector component
- */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun PrepTimeSelector(
-    selectedPrepTime: PreparationTime?,
-    onPrepTimeSelected: (PreparationTime?) -> Unit
-) {
-    Column {
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Add "All" option
-            FilterChip(
-                selected = selectedPrepTime == null,
-                onClick = { onPrepTimeSelected(null) },
-                label = "All"
-            )
-
-            // Add all preparation times
-            PreparationTime.values().forEach { prepTime ->
-                FilterChip(
-                    selected = selectedPrepTime == prepTime,
-                    onClick = { onPrepTimeSelected(prepTime) },
-                    label = prepTime.toString()
-                )
-            }
-        }
-    }
-}
-
-/**
- * Ingredient selection dialog component
+ * Single-select ingredient selection dialog with a search box.
+ * Selecting a row (or "Any ingredient") applies the choice immediately and dismisses.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IngredientSelectionDialog(
     ingredients: List<String>,
-    selectedIngredients: List<String>,
-    dialogTitle: String,
+    selectedIngredient: String?,
     onDismiss: () -> Unit,
-    onIngredientsSelected: (List<String>) -> Unit
+    onIngredientSelected: (String?) -> Unit
 ) {
-    val selected = remember { mutableStateListOf<String>().apply { addAll(selectedIngredients) } }
     var searchQuery by remember { mutableStateOf("") }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -497,7 +292,7 @@ fun IngredientSelectionDialog(
             ) {
                 // Dialog title
                 Text(
-                    text = dialogTitle,
+                    text = "Select Ingredient",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -540,29 +335,37 @@ fun IngredientSelectionDialog(
                         .weight(1f)
                         .verticalScroll(rememberScrollState())
                 ) {
+                    // "Any" option clears the ingredient filter
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clickable { onIngredientSelected(null) },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedIngredient == null,
+                            onClick = { onIngredientSelected(null) }
+                        )
+
+                        Text(
+                            text = "Any ingredient",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+
                     filteredIngredients.forEach { ingredient ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp)
-                                .clickable {
-                                    if (selected.contains(ingredient)) {
-                                        selected.remove(ingredient)
-                                    } else {
-                                        selected.add(ingredient)
-                                    }
-                                },
+                                .clickable { onIngredientSelected(ingredient) },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Checkbox(
-                                checked = selected.contains(ingredient),
-                                onCheckedChange = { isChecked ->
-                                    if (isChecked) {
-                                        selected.add(ingredient)
-                                    } else {
-                                        selected.remove(ingredient)
-                                    }
-                                }
+                            RadioButton(
+                                selected = selectedIngredient == ingredient,
+                                onClick = { onIngredientSelected(ingredient) }
                             )
 
                             Text(
@@ -584,17 +387,6 @@ fun IngredientSelectionDialog(
                     TextButton(onClick = onDismiss) {
                         Text("Cancel")
                     }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Button(
-                        onClick = { onIngredientsSelected(selected.toList()) },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AppColors.Primary
-                        )
-                    ) {
-                        Text("Apply")
-                    }
                 }
             }
         }
@@ -602,148 +394,53 @@ fun IngredientSelectionDialog(
 }
 
 /**
- * Ingredient selector component
+ * Single-select ingredient selector: a dropdown-styled row that opens the
+ * searchable [IngredientSelectionDialog].
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun IngredientSelector(
     ingredients: List<String>,
-    selectedIngredients: List<String>,
-    excludedIngredients: List<String>,
-    onIngredientsChanged: (List<String>, List<String>) -> Unit
+    selectedIngredient: String?,
+    onIngredientSelected: (String?) -> Unit
 ) {
     var showIngredientDialog by remember { mutableStateOf(false) }
-    var dialogMode by remember { mutableStateOf("include") }
 
     Column {
-        // Selected ingredients
-        if (selectedIngredients.isNotEmpty()) {
-            Text(
-                text = "Must include:",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                selectedIngredients.forEach { ingredient ->
-                    FilterChip(
-                        selected = true,
-                        onClick = {
-                            val updated = selectedIngredients.toMutableList().apply {
-                                remove(ingredient)
-                            }
-                            onIngredientsChanged(updated, excludedIngredients)
-                        },
-                        label = ingredient,
-                        trailingIcon = Icons.Default.Clear
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        // Excluded ingredients
-        if (excludedIngredients.isNotEmpty()) {
-            Text(
-                text = "Must exclude:",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 4.dp, top = 8.dp)
-            )
-
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                excludedIngredients.forEach { ingredient ->
-                    FilterChip(
-                        selected = true,
-                        onClick = {
-                            val updated = excludedIngredients.toMutableList().apply {
-                                remove(ingredient)
-                            }
-                            onIngredientsChanged(selectedIngredients, updated)
-                        },
-                        label = ingredient,
-                        trailingIcon = Icons.Default.Clear,
-                        selectedColor = Color.Red.copy(alpha = 0.1f),
-                        selectedTextColor = Color.Red,
-                        selectedIconColor = Color.Red
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        // Add ingredient buttons
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 1.dp,
+                    color = AppColors.LightGray,
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { showIngredientDialog = true }
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Button(
-                onClick = {
-                    dialogMode = "include"
-                    showIngredientDialog = true
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.Primary.copy(alpha = 0.1f)
-                ),
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Ingredient",
-                    tint = AppColors.Primary
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "Include",
-                    color = AppColors.Primary
-                )
-            }
+            Text(
+                text = selectedIngredient ?: "Select an ingredient",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (selectedIngredient != null) AppColors.TextPrimary else AppColors.TextSecondary
+            )
 
-            Button(
-                onClick = {
-                    dialogMode = "exclude"
-                    showIngredientDialog = true
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Red.copy(alpha = 0.1f)
-                ),
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Exclude Ingredient",
-                    tint = Color.Red
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "Exclude",
-                    color = Color.Red
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.ExpandMore,
+                contentDescription = "Expand",
+                tint = AppColors.TextSecondary
+            )
         }
 
         // Ingredient selection dialog
         if (showIngredientDialog) {
             IngredientSelectionDialog(
                 ingredients = ingredients,
-                selectedIngredients = if (dialogMode == "include") selectedIngredients else excludedIngredients,
-                dialogTitle = if (dialogMode == "include") "Include Ingredients" else "Exclude Ingredients",
+                selectedIngredient = selectedIngredient,
                 onDismiss = { showIngredientDialog = false },
-                onIngredientsSelected = { selected: List<String> ->
-                    if (dialogMode == "include") {
-                        onIngredientsChanged(selected, excludedIngredients)
-                    } else {
-                        onIngredientsChanged(selectedIngredients, selected)
-                    }
+                onIngredientSelected = { ingredient: String? ->
+                    onIngredientSelected(ingredient)
                     showIngredientDialog = false
                 }
             )

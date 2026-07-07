@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.SearchOff
@@ -52,6 +53,7 @@ import com.cocktailcraft.android.ui.theme.AppColors
 fun EmptySearchResultsMessage(
     searchQuery: String,
     selectedCategory: String? = null,
+    hasActiveFilters: Boolean = false,
     onClearSearch: () -> Unit,
     onClearCategory: (() -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -89,6 +91,7 @@ fun EmptySearchResultsMessage(
             ) {
                 // Icon based on context
                 val icon = when {
+                    hasActiveFilters -> Icons.Filled.FilterAlt
                     selectedCategory != null -> Icons.Outlined.Category
                     searchQuery.isNotBlank() -> Icons.Outlined.SearchOff
                     else -> Icons.Filled.Search
@@ -101,6 +104,10 @@ fun EmptySearchResultsMessage(
                 // Main message
                 Text(
                     text = when {
+                        hasActiveFilters && searchQuery.isNotBlank() ->
+                            "No cocktails match \"$searchQuery\" with your active filters"
+                        hasActiveFilters ->
+                            "No cocktails match your active filters"
                         selectedCategory != null && searchQuery.isNotBlank() ->
                             "No cocktails found matching \"$searchQuery\" in \"$selectedCategory\""
                         selectedCategory != null ->
@@ -121,6 +128,8 @@ fun EmptySearchResultsMessage(
                 // Subtitle with suggestions
                 Text(
                     text = when {
+                        hasActiveFilters ->
+                            "Try adjusting or clearing your filters"
                         selectedCategory != null && searchQuery.isNotBlank() ->
                             "Try a different search term or category"
                         selectedCategory != null ->

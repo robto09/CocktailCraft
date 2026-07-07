@@ -79,7 +79,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.cocktailcraft.android.navigation.Screen
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.android.ui.components.AnimatedCocktailItem
 import com.cocktailcraft.android.ui.components.AnimatedCocktailList
 import com.cocktailcraft.android.ui.components.CategoryFilterRow
@@ -95,7 +94,6 @@ import com.cocktailcraft.android.ui.components.FilterChip
 import com.cocktailcraft.android.ui.components.NetworkErrorStateDisplay
 import com.cocktailcraft.android.ui.components.SearchFilterChips
 import com.cocktailcraft.android.ui.components.shimmerEffect
-import com.cocktailcraft.android.util.FilterOptionsLoader
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.util.ErrorUtils
 import com.cocktailcraft.android.util.ListOptimizations.OnBottomReached
@@ -103,7 +101,6 @@ import com.cocktailcraft.android.util.ListOptimizations.OnScrollPastThreshold
 import com.cocktailcraft.android.util.ListOptimizations.itemKey
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
-import org.koin.compose.koinInject
 import android.util.Log
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -205,17 +202,11 @@ fun HomeScreen(
                 val updatedFilters = when (filterType) {
                     "category" -> searchFilters.copy(category = null)
                     "ingredient" -> searchFilters.copy(ingredient = null)
-                    "ingredients" -> searchFilters.copy(ingredients = emptyList())
-                    "excludeIngredients" -> searchFilters.copy(excludeIngredients = emptyList())
                     "alcoholic" -> searchFilters.copy(alcoholic = null)
                     "glass" -> searchFilters.copy(glass = null)
-                    "priceRange" -> searchFilters.copy(priceRange = null)
-                    "tasteProfile" -> searchFilters.copy(tasteProfile = null)
-                    "complexity" -> searchFilters.copy(complexity = null)
-                    "preparationTime" -> searchFilters.copy(preparationTime = null)
                     else -> searchFilters
                 }
-                scope.launch { viewModel.applyFilters(updatedFilters.category, updatedFilters.ingredient) }
+                scope.launch { viewModel.applyFilters(updatedFilters) }
             },
             onClearAllFilters = {
                 viewModel.clearSearchFilters()
@@ -224,12 +215,14 @@ fun HomeScreen(
 
         // Advanced search panel
 
-        // Load filter options using the utility
-        val catalogRepository = koinInject<CocktailCatalogRepository>()
-        val filterOptions = FilterOptionsLoader.rememberFilterOptions(repository = catalogRepository)
-        val categories = filterOptions.categories
-        val ingredients = filterOptions.ingredients
-        val glasses = filterOptions.glasses
+        // Load the shared filter-option lists (categories / ingredients / glasses)
+        // into the ViewModel state once; the panel and category row read them below.
+        LaunchedEffect(Unit) {
+            viewModel.loadFilterOptions()
+        }
+        val categories = state.filterCategories
+        val ingredients = state.filterIngredients
+        val glasses = state.filterGlasses
 
         // Single advanced-search UI: the inline expandable panel
         ExpandableAdvancedSearchPanel(
@@ -239,7 +232,7 @@ fun HomeScreen(
             ingredients = ingredients,
             glasses = glasses,
             onApplyFilters = { filters ->
-                scope.launch { viewModel.applyFilters(filters.category, filters.ingredient) }
+                scope.launch { viewModel.applyFilters(filters) }
             },
             onClearFilters = {
                 viewModel.clearSearchFilters()
@@ -287,6 +280,7 @@ fun HomeScreen(
                 EmptySearchResultsMessage(
                     searchQuery = searchQuery,
                     selectedCategory = selectedCategory,
+                    hasActiveFilters = searchFilters.hasActiveFilters(),
                     onClearSearch = {
                         viewModel.toggleSearchMode(false)
                     },

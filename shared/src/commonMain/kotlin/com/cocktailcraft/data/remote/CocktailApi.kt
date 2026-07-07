@@ -9,7 +9,6 @@ import io.ktor.http.*
 
 internal interface CocktailApi {
     suspend fun searchCocktailsByName(name: String): List<CocktailDto>
-    suspend fun searchCocktailsByFirstLetter(letter: Char): List<CocktailDto>
     suspend fun getCocktailById(id: String): CocktailDto?
     suspend fun getRandomCocktail(): CocktailDto?
     suspend fun filterByIngredient(ingredient: String): List<CocktailDto>
@@ -19,8 +18,7 @@ internal interface CocktailApi {
     suspend fun getCategories(): List<CategoryDto>
     suspend fun getGlasses(): List<GlassDto>
     suspend fun getIngredients(): List<IngredientDto>
-    suspend fun getAlcoholicFilters(): List<AlcoholicFilterDto>
-    
+
     // New method to check API connectivity
     suspend fun pingApi(): Boolean
 }
@@ -36,14 +34,6 @@ internal class CocktailApiImpl(
     override suspend fun searchCocktailsByName(name: String): List<CocktailDto> {
         val response = client.get("$baseUrl/search.php") {
             parameter("s", name)
-        }.body<CocktailResponse>()
-        
-        return response.drinks ?: emptyList()
-    }
-    
-    override suspend fun searchCocktailsByFirstLetter(letter: Char): List<CocktailDto> {
-        val response = client.get("$baseUrl/search.php") {
-            parameter("f", letter.toString())
         }.body<CocktailResponse>()
         
         return response.drinks ?: emptyList()
@@ -143,14 +133,6 @@ internal class CocktailApiImpl(
         }.body<IngredientResponse>()
         
         return response.ingredients ?: emptyList()
-    }
-    
-    override suspend fun getAlcoholicFilters(): List<AlcoholicFilterDto> {
-        val response = client.get("$baseUrl/list.php") {
-            parameter("a", "list")
-        }.body<AlcoholicFilterResponse>()
-        
-        return response.filters ?: emptyList()
     }
     
     // Implemented the ping method

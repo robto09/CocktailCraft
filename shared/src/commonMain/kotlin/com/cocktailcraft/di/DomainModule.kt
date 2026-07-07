@@ -2,7 +2,6 @@ package com.cocktailcraft.di
 
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.domain.config.AppConfig
-import com.cocktailcraft.domain.usecase.FilterCocktailsUseCase
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
 import com.cocktailcraft.domain.usecase.LoadCocktailsByCategoryUseCase
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
@@ -28,7 +27,6 @@ val domainModule = module {
     factory { SearchCocktailsUseCase(searchRepository = get()) }
     factory { LoadCocktailsByCategoryUseCase(searchRepository = get(), catalogRepository = get()) }
     factory { SortCocktailsUseCase() }
-    factory { FilterCocktailsUseCase(catalogRepository = get()) }
     factory { GetCocktailDetailUseCase(detailRepository = get(), favoritesRepository = get(), searchRepository = get()) }
     factory { ManageFavoritesUseCase(favoritesRepository = get(), detailRepository = get()) }
     factory { ManageCartUseCase(cartRepository = get(), detailRepository = get()) }
@@ -57,10 +55,10 @@ val domainModule = module {
             searchCocktailsUseCase = get(),
             loadCocktailsByCategoryUseCase = get(),
             sortCocktailsUseCase = get(),
-            filterCocktailsUseCase = get(),
             manageFavoritesUseCase = get(),
             manageOfflineModeUseCase = get(),
             getCocktailDetailUseCase = get(),
+            catalogRepository = get(),
             networkMonitor = get()
         )
     }

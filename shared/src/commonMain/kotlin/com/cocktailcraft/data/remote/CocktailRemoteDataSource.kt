@@ -22,9 +22,6 @@ internal class CocktailRemoteDataSource(
     suspend fun searchByName(name: String): List<Cocktail> =
         api.searchCocktailsByName(name).map(::mapToDomain)
 
-    suspend fun searchByFirstLetter(letter: Char): List<Cocktail> =
-        api.searchCocktailsByFirstLetter(letter).map(::mapToDomain)
-
     suspend fun getById(id: String): Cocktail? = api.getCocktailById(id)?.let(::mapToDomain)
 
     suspend fun getRandom(): Cocktail? = api.getRandomCocktail()?.let(::mapToDomain)
@@ -44,7 +41,6 @@ internal class CocktailRemoteDataSource(
     suspend fun getCategories(): List<String> = api.getCategories().map { it.name }
     suspend fun getGlasses(): List<String> = api.getGlasses().map { it.name }
     suspend fun getIngredients(): List<String> = api.getIngredients().map { it.name }
-    suspend fun getAlcoholicFilters(): List<String> = api.getAlcoholicFilters().map { it.name }
 
     // --- Rate limiting / connectivity ---
 

@@ -221,15 +221,3 @@ internal data class IngredientDto(
     @SerialName("strIngredient1")
     val name: String
 )
-
-@Serializable
-internal data class AlcoholicFilterResponse(
-    @SerialName("drinks")
-    val filters: List<AlcoholicFilterDto>? = null
-)
-
-@Serializable
-internal data class AlcoholicFilterDto(
-    @SerialName("strAlcoholic")
-    val name: String
-) 

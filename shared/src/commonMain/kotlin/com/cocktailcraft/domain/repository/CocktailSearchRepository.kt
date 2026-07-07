@@ -10,7 +10,6 @@ import com.cocktailcraft.domain.util.Result
  */
 interface CocktailSearchRepository {
     suspend fun searchCocktailsByName(name: String): Result<List<Cocktail>>
-    suspend fun searchCocktailsByFirstLetter(letter: Char): Result<List<Cocktail>>
     suspend fun advancedSearch(filters: SearchFilters): Result<List<Cocktail>>
     suspend fun filterByIngredient(ingredient: String): Result<List<Cocktail>>
     suspend fun filterByAlcoholic(alcoholic: Boolean): Result<List<Cocktail>>

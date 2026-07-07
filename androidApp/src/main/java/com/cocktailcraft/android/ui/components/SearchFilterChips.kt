@@ -118,22 +118,6 @@ fun SearchFilterChips(
                         )
                     }
 
-                    // Multiple ingredients
-                    if (filters.ingredients.isNotEmpty()) {
-                        ActiveFilterChip(
-                            label = "Ingredients: ${filters.ingredients.size}",
-                            onClear = { onClearFilter("ingredients") }
-                        )
-                    }
-
-                    // Excluded ingredients
-                    if (filters.excludeIngredients.isNotEmpty()) {
-                        ActiveFilterChip(
-                            label = "Excluded: ${filters.excludeIngredients.size}",
-                            onClear = { onClearFilter("excludeIngredients") }
-                        )
-                    }
-
                     // Alcoholic filter
                     if (filters.alcoholic != null) {
                         val alcoholicLabel = when (filters.alcoholic) {
@@ -152,40 +136,6 @@ fun SearchFilterChips(
                         ActiveFilterChip(
                             label = "Glass: ${filters.glass}",
                             onClear = { onClearFilter("glass") }
-                        )
-                    }
-
-                    // Price range filter
-                    if (filters.priceRange != null) {
-                        val priceRange = filters.priceRange!! // Safe to use !! here as we've checked for null
-                        val priceLabel = "Price: $${priceRange.start.toInt()}-$${priceRange.endInclusive.toInt()}"
-                        ActiveFilterChip(
-                            label = priceLabel,
-                            onClear = { onClearFilter("priceRange") }
-                        )
-                    }
-
-                    // Taste profile filter
-                    if (filters.tasteProfile != null) {
-                        ActiveFilterChip(
-                            label = "Taste: ${filters.tasteProfile}",
-                            onClear = { onClearFilter("tasteProfile") }
-                        )
-                    }
-
-                    // Complexity filter
-                    if (filters.complexity != null) {
-                        ActiveFilterChip(
-                            label = "Complexity: ${filters.complexity}",
-                            onClear = { onClearFilter("complexity") }
-                        )
-                    }
-
-                    // Preparation time filter
-                    if (filters.preparationTime != null) {
-                        ActiveFilterChip(
-                            label = "Prep Time: ${filters.preparationTime}",
-                            onClear = { onClearFilter("preparationTime") }
                         )
                     }
                 }

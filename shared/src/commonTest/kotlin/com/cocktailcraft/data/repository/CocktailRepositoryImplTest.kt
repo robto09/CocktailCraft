@@ -5,6 +5,7 @@ import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.remote.CocktailDto
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
+import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.testutil.FakeCocktailApi
 import com.cocktailcraft.testutil.FakeNetworkMonitor
@@ -128,6 +129,102 @@ class CocktailRepositoryImplTest {
         val favorites = (repo.getFavoriteCocktails() as Result.Success).data
 
         assertEquals(listOf("Margarita"), favorites.map { it.name })
+    }
+
+    // --- advancedSearch: ID-set intersection over the 5 supported filters ---
+
+    private fun drinkDto(
+        id: String,
+        name: String,
+        category: String,
+        alcoholic: String,
+        glass: String,
+        ingredient: String
+    ) = CocktailDto(
+        id = id,
+        name = name,
+        category = category,
+        alcoholic = alcoholic,
+        glass = glass,
+        instructions = "Mix well.",
+        imageUrl = "https://example.com/$id.jpg",
+        ingredient1 = ingredient,
+        measure1 = "1 oz"
+    )
+
+    private fun sampleDrinks() = listOf(
+        drinkDto("1", "Margarita", "Ordinary Drink", "Alcoholic", "Cocktail glass", "Tequila"),
+        drinkDto("2", "Mojito", "Cocktail", "Alcoholic", "Highball glass", "Rum"),
+        drinkDto("3", "Virgin Mojito", "Cocktail", "Non alcoholic", "Highball glass", "Mint"),
+        drinkDto("5", "Mojito Especial", "Ordinary Drink", "Alcoholic", "Highball glass", "Rum")
+    )
+
+    @Test
+    fun advancedSearchSingleCategoryFilterReturnsThatSet() = runTest {
+        val repo = repository(api = FakeCocktailApi(drinks = sampleDrinks()))
+
+        val result = repo.advancedSearch(SearchFilters(category = "Cocktail"))
+
+        val ids = (result as Result.Success).data.map { it.id }.toSet()
+        assertEquals(setOf("2", "3"), ids)
+    }
+
+    @Test
+    fun advancedSearchIntersectsQueryAndCategoryById() = runTest {
+        val repo = repository(api = FakeCocktailApi(drinks = sampleDrinks()))
+
+        // "mojito" matches ids 2,3,5; "Ordinary Drink" narrows to 1,5 → intersection {5}
+        val result = repo.advancedSearch(SearchFilters(query = "mojito", category = "Ordinary Drink"))
+
+        assertEquals(listOf("5"), (result as Result.Success).data.map { it.id })
+    }
+
+    @Test
+    fun advancedSearchIntersectsCategoryAndAlcoholicById() = runTest {
+        val repo = repository(api = FakeCocktailApi(drinks = sampleDrinks()))
+
+        // Cocktail = {2,3}; Alcoholic = {1,2,5} → intersection {2}
+        val result = repo.advancedSearch(SearchFilters(category = "Cocktail", alcoholic = true))
+
+        assertEquals(listOf("2"), (result as Result.Success).data.map { it.id })
+    }
+
+    @Test
+    fun advancedSearchReturnsErrorWhenAnActiveFilterCallFails() = runTest {
+        val api = FakeCocktailApi(drinks = sampleDrinks())
+        api.endpointError = RuntimeException("boom")
+        val repo = repository(api = api)
+
+        // category succeeds, the alcoholic call throws → the filter is never silently dropped
+        val result = repo.advancedSearch(SearchFilters(category = "Cocktail", alcoholic = true))
+
+        assertTrue(result is Result.Error)
+    }
+
+    @Test
+    fun advancedSearchWithNoFiltersReturnsDefaultCocktailList() = runTest {
+        val repo = repository(api = FakeCocktailApi(drinks = sampleDrinks()))
+
+        // Nothing active → default browse (filter.php?c=Cocktail)
+        val result = repo.advancedSearch(SearchFilters())
+
+        val ids = (result as Result.Success).data.map { it.id }.toSet()
+        assertEquals(setOf("2", "3"), ids)
+    }
+
+    @Test
+    fun advancedSearchOfflineMatchesCachedNonAlcoholicDisplayString() = runTest {
+        val settings = MapSettings()
+        val repo = repository(api = FakeCocktailApi(drinks = sampleDrinks()), settings = settings)
+
+        // Online pass caches full records; id 3 stores "Non alcoholic" — the
+        // API's display string, not the Non_Alcoholic URL token.
+        repo.advancedSearch(SearchFilters(query = "mojito"))
+        repo.setOfflineMode(true)
+
+        val result = repo.advancedSearch(SearchFilters(alcoholic = false))
+
+        assertEquals(listOf("3"), (result as Result.Success).data.map { it.id })
     }
 
     @Test

@@ -8,10 +8,8 @@ import shared
 struct HomeViewSKIE: View {
     @State private var viewModel = HomeViewModelSKIE()
     @State private var searchText = ""
-    @State private var showingFilters = false
     @State private var showingAdvancedSearch = false
     @State private var selectedCategory: String? = nil
-    @State private var activeFilters: [String] = []
     @State private var showingToast = false
     @State private var toastMessage = ""
     @Environment(\.isDarkMode) private var isDarkMode
@@ -72,20 +70,14 @@ struct HomeViewSKIE: View {
                     .buttonStyle(.plain)
                 }
                 
-                // Active Filters Row (simplified)
-                if !activeFilters.isEmpty {
+                // Active Filters Row (driven by the shared searchFilters state)
+                if viewModel.state.searchFilters.hasActiveFilters() {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            ForEach(activeFilters, id: \.self) { filter in
+                            ForEach(activeFilterLabels, id: \.self) { label in
                                 HStack(spacing: 4) {
-                                    Text(filter)
+                                    Text(label)
                                         .font(.caption)
-                                    
-                                    Button(action: { removeActiveFilter(filter) }) {
-                                        Image(systemName: "xmark")
-                                            .font(.system(size: 10))
-                                    }
-                                    .buttonStyle(.plain)
                                 }
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
@@ -93,6 +85,25 @@ struct HomeViewSKIE: View {
                                 .foregroundColor(primaryColor)
                                 .cornerRadius(8)
                             }
+
+                            Button(action: {
+                                searchText = ""
+                                selectedCategory = nil
+                                viewModel.clearSearchFilters()
+                            }) {
+                                HStack(spacing: 4) {
+                                    Text("Clear All")
+                                        .font(.caption)
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 10))
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(primaryColor.opacity(0.1))
+                            .foregroundColor(primaryColor)
+                            .cornerRadius(8)
                         }
                         .padding(.horizontal, 16)
                     }
@@ -105,7 +116,6 @@ struct HomeViewSKIE: View {
                             // "All" chip
                             Button("All") {
                                 selectedCategory = nil
-                                removeActiveFilter("Category")
                                 Task {
                                     await viewModel.loadCocktails()
                                 }
@@ -121,8 +131,6 @@ struct HomeViewSKIE: View {
                             ForEach(availableCategories, id: \.self) { category in
                                 Button(category) {
                                     selectedCategory = category
-                                    removeActiveFilter("Category")  // Remove previous category filter
-                                    addActiveFilter("Category: \(category)")
                                     Task {
                                         await viewModel.loadCocktailsByCategory(category)
                                     }
@@ -214,7 +222,9 @@ struct HomeViewSKIE: View {
                             subtitle: "Try adjusting your search or filters",
                             actionTitle: "Clear Filters",
                             action: {
-                                clearAllFilters()
+                                searchText = ""
+                                selectedCategory = nil
+                                viewModel.clearSearchFilters()
                             }
                         )
                         Spacer()
@@ -297,24 +307,9 @@ struct HomeViewSKIE: View {
         .navigationDestination(for: String.self) { cocktailId in
             CocktailDetailView(cocktailId: cocktailId)
         }
-        .sheet(isPresented: $showingFilters) {
-            FilterViewSKIE(viewModel: viewModel)
-                .presentationDetents([.medium, .large])
-        }
         .sheet(isPresented: $showingAdvancedSearch) {
-            // Simple advanced search placeholder
-            NavigationStack {
-                Text("Advanced Search Coming Soon")
-                    .navigationTitle("Advanced Search")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("Done") {
-                                showingAdvancedSearch = false
-                            }
-                        }
-                    }
-            }
+            AdvancedSearchSheet(viewModel: viewModel)
+                .presentationDetents([.medium, .large])
         }
         .alert("Error", isPresented: .constant(viewModel.error != nil)) {
             Button("OK") {
@@ -346,35 +341,146 @@ struct HomeViewSKIE: View {
     }
     
     // MARK: - Helper Functions
-    
-    private func addActiveFilter(_ filter: String) {
-        if !activeFilters.contains(filter) {
-            activeFilters.append(filter)
+
+    /// Human-readable labels for the active advanced-search filters, derived
+    /// from the shared `searchFilters` state (single source of truth).
+    private var activeFilterLabels: [String] {
+        let filters = viewModel.state.searchFilters
+        var labels: [String] = []
+        if let category = filters.category {
+            labels.append("Category: \(category)")
         }
-    }
-    
-    private func removeActiveFilter(_ filter: String) {
-        activeFilters.removeAll { $0.contains(filter) }
-    }
-    
-    private func clearAllFilters() {
-        searchText = ""
-        selectedCategory = nil
-        activeFilters.removeAll()
-        viewModel.clearSearch()
-        Task {
-            await viewModel.loadCocktails()
+        if let ingredient = filters.ingredient {
+            labels.append("Ingredient: \(ingredient)")
         }
-    }
-    
-    private func applyAdvancedFilters() {
-        // Placeholder for advanced filters functionality
-        print("Advanced filters applied")
+        if let alcoholic = filters.alcoholic?.boolValue {
+            labels.append(alcoholic ? "Alcoholic" : "Non-Alcoholic")
+        }
+        if let glass = filters.glass {
+            labels.append("Glass: \(glass)")
+        }
+        return labels
     }
 
     // Canonical curated categories come from shared — single source of truth
     private var availableCategories: [String] {
         viewModel.curatedCategories
+    }
+}
+
+// MARK: - Advanced Search Sheet
+
+/// Tri-state selection for the alcoholic segmented control, bridging to the
+/// shared `SearchFilters.alcoholic` (`KotlinBoolean?`, where nil means "any").
+private enum AlcoholicFilter: Hashable {
+    case any
+    case alcoholic
+    case nonAlcoholic
+
+    var kotlinValue: KotlinBoolean? {
+        switch self {
+        case .any: return nil
+        case .alcoholic: return KotlinBoolean(bool: true)
+        case .nonAlcoholic: return KotlinBoolean(bool: false)
+        }
+    }
+
+    static func from(_ value: KotlinBoolean?) -> AlcoholicFilter {
+        guard let value = value?.boolValue else { return .any }
+        return value ? .alcoholic : .nonAlcoholic
+    }
+}
+
+/// Advanced-search filter form driven by the shared HomeViewModel. Categories,
+/// ingredients and glasses come from the shared API-backed option lists; Apply
+/// forwards a `SearchFilters` to the shared `applyFilters`, Clear resets them.
+private struct AdvancedSearchSheet: View {
+    let viewModel: HomeViewModelSKIE
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var selectedCategory: String?
+    @State private var selectedIngredient: String?
+    @State private var selectedGlass: String?
+    @State private var alcoholic: AlcoholicFilter
+
+    init(viewModel: HomeViewModelSKIE) {
+        self.viewModel = viewModel
+        let filters = viewModel.state.searchFilters
+        _selectedCategory = State(initialValue: filters.category)
+        _selectedIngredient = State(initialValue: filters.ingredient)
+        _selectedGlass = State(initialValue: filters.glass)
+        _alcoholic = State(initialValue: AlcoholicFilter.from(filters.alcoholic))
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Category") {
+                    Picker("Category", selection: $selectedCategory) {
+                        Text("Any").tag(String?.none)
+                        ForEach(viewModel.state.filterCategories, id: \.self) { category in
+                            Text(category).tag(String?.some(category))
+                        }
+                    }
+                }
+
+                Section("Ingredient") {
+                    Picker("Ingredient", selection: $selectedIngredient) {
+                        Text("Any").tag(String?.none)
+                        ForEach(viewModel.state.filterIngredients, id: \.self) { ingredient in
+                            Text(ingredient).tag(String?.some(ingredient))
+                        }
+                    }
+                }
+
+                Section("Alcoholic") {
+                    Picker("Alcoholic", selection: $alcoholic) {
+                        Text("Any").tag(AlcoholicFilter.any)
+                        Text("Alcoholic").tag(AlcoholicFilter.alcoholic)
+                        Text("Non-Alcoholic").tag(AlcoholicFilter.nonAlcoholic)
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                Section("Glass") {
+                    Picker("Glass", selection: $selectedGlass) {
+                        Text("Any").tag(String?.none)
+                        ForEach(viewModel.state.filterGlasses, id: \.self) { glass in
+                            Text(glass).tag(String?.some(glass))
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Advanced Search")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Clear") {
+                        viewModel.clearSearchFilters()
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Apply") {
+                        let filters = SearchFilters(
+                            query: viewModel.state.searchFilters.query,
+                            category: selectedCategory,
+                            ingredient: selectedIngredient,
+                            alcoholic: alcoholic.kotlinValue,
+                            glass: selectedGlass
+                        )
+                        Task {
+                            await viewModel.applyFilters(filters)
+                            dismiss()
+                        }
+                    }
+                }
+            }
+            .task {
+                // Populate the option lists from the shared API-backed state.
+                await viewModel.loadFilterOptions()
+            }
+        }
     }
 }
 

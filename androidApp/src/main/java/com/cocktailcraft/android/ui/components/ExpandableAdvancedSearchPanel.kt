@@ -36,10 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.domain.model.Complexity
-import com.cocktailcraft.domain.model.PreparationTime
 import com.cocktailcraft.domain.model.SearchFilters
-import com.cocktailcraft.domain.model.TasteProfile
 import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
@@ -120,17 +117,13 @@ fun ExpandableAdvancedSearchPanel(
                     )
                 }
 
-                // Ingredient filter
-                FilterSection(title = "Ingredients") {
+                // Ingredient filter (single ingredient)
+                FilterSection(title = "Ingredient") {
                     IngredientSelector(
                         ingredients = ingredients,
-                        selectedIngredients = filters.ingredients,
-                        excludedIngredients = filters.excludeIngredients,
-                        onIngredientsChanged = { included: List<String>, excluded: List<String> ->
-                            filters = filters.copy(
-                                ingredients = included,
-                                excludeIngredients = excluded
-                            )
+                        selectedIngredient = filters.ingredient,
+                        onIngredientSelected = { ingredient: String? ->
+                            filters = filters.copy(ingredient = ingredient)
                         }
                     )
                 }
@@ -152,46 +145,6 @@ fun ExpandableAdvancedSearchPanel(
                         selectedGlass = filters.glass,
                         onGlassSelected = { glass: String? ->
                             filters = filters.copy(glass = glass)
-                        }
-                    )
-                }
-
-                // Price range filter
-                FilterSection(title = "Price Range") {
-                    PriceRangeFilterContent(
-                        priceRange = filters.priceRange,
-                        onPriceRangeChanged = { newPriceRange ->
-                            filters = filters.copy(priceRange = newPriceRange)
-                        }
-                    )
-                }
-
-                // Taste profile filter
-                FilterSection(title = "Taste Profile") {
-                    TasteProfileSelector(
-                        selectedProfile = filters.tasteProfile,
-                        onProfileSelected = { profile: TasteProfile? ->
-                            filters = filters.copy(tasteProfile = profile)
-                        }
-                    )
-                }
-
-                // Complexity filter
-                FilterSection(title = "Complexity") {
-                    ComplexitySelector(
-                        selectedComplexity = filters.complexity,
-                        onComplexitySelected = { complexity: Complexity? ->
-                            filters = filters.copy(complexity = complexity)
-                        }
-                    )
-                }
-
-                // Preparation time filter
-                FilterSection(title = "Preparation Time") {
-                    PrepTimeSelector(
-                        selectedPrepTime = filters.preparationTime,
-                        onPrepTimeSelected = { prepTime: PreparationTime? ->
-                            filters = filters.copy(preparationTime = prepTime)
                         }
                     )
                 }
