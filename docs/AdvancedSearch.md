@@ -4,7 +4,7 @@ This document describes the Advanced Search and Filtering functionality in Cockt
 
 ## Overview
 
-Advanced search lets users narrow the cocktail list by combining several criteria at once. The filter set is deliberately limited to the **five dimensions TheCocktailDB free tier (`v1/1`) actually supports**:
+Advanced search lets users narrow the cocktail list by combining several criteria at once. The filter set is deliberately limited to **four dimensions TheCocktailDB free tier (`v1/1`) actually supports**:
 
 | Filter | Endpoint | Notes |
 |---|---|---|
@@ -12,7 +12,8 @@ Advanced search lets users narrow the cocktail list by combining several criteri
 | Category | `filter.php?c=` | Returns slim records (id, name, thumb) |
 | Ingredient (single) | `filter.php?i=` | Slim; multi-ingredient is a paid v2 feature |
 | Alcoholic | `filter.php?a=` | Tri-state: any / alcoholic / non-alcoholic |
-| Glass | `filter.php?g=` | Slim |
+
+(The API also supports filtering by glass via `filter.php?g=`, but the glass filter was dropped from the product as low-value.)
 
 Everything the API cannot supply — price, rating, popularity, taste profile, complexity, preparation time, multi/exclude ingredients — has been removed. Those were fabricated or keyword-guessed client-side and never reached any filtering logic.
 
@@ -20,9 +21,9 @@ Everything the API cannot supply — price, rating, popularity, taste profile, c
 
 TheCocktailDB's `filter.php` accepts only **one parameter per request** and cannot combine dimensions server-side. However, each call returns the *complete* ID set for its dimension, so combined filtering is done by **intersecting those ID sets on the client**:
 
-1. **Offline** — filter the in-memory cocktail cache directly on the five real fields.
+1. **Offline** — filter the in-memory cocktail cache directly on the four real fields.
 2. **Nothing active** — return the default listing (`filterByCategory("Cocktail")`).
-3. Otherwise, make **one API call per active filter**, in priority order (query → category → ingredient → glass → alcoholic), each routed through the existing rate limiter.
+3. Otherwise, make **one API call per active filter**, in priority order (query → category → ingredient → alcoholic), each routed through the existing rate limiter.
 4. The **base list** is the first active result (query wins, so full records are preferred over slim ones).
 5. The **result** keeps only the cocktails whose id appears in *every* other active set.
 6. If any active filter call fails, the whole search returns `Result.Error` — a filter is never silently dropped.
@@ -38,9 +39,9 @@ The implementation lives in `CocktailRepositoryImpl.advancedSearch(filters)` (`s
 - **`applyFilters(filters: SearchFilters)`** — stores `filters` in `uiState.searchFilters` (so the active-filter chips reflect them) and loads the intersected results.
 - **`clearSearchFilters()`** — resets to an empty `SearchFilters()` and reloads the default list.
 - **`searchCocktails(query)`** — composes the query with any active filters (`searchFilters.copy(query = query)`), so the search bar and the advanced filters work together rather than overriding each other.
-- **`loadFilterOptions()`** — populates the API-backed option lists `uiState.filterCategories` / `filterIngredients` / `filterGlasses` via `list.php` (`?c/i/g=list`) through `CocktailCatalogRepository`. Both platforms consume the same lists.
+- **`loadFilterOptions()`** — populates the API-backed option lists `uiState.filterCategories` / `filterIngredients` via `list.php` (`?c/i=list`) through `CocktailCatalogRepository`. Both platforms consume the same lists.
 
-`SearchFilters` (`shared/src/commonMain/kotlin/com/cocktailcraft/domain/model/SearchFilters.kt`) is a five-field data class with a single `hasActiveFilters()` helper:
+`SearchFilters` (`shared/src/commonMain/kotlin/com/cocktailcraft/domain/model/SearchFilters.kt`) is a four-field data class with a single `hasActiveFilters()` helper:
 
 ```kotlin
 data class SearchFilters(
@@ -48,7 +49,6 @@ data class SearchFilters(
     val category: String? = null,
     val ingredient: String? = null,   // single ingredient
     val alcoholic: Boolean? = null,   // null = any
-    val glass: String? = null,
 )
 ```
 
@@ -58,13 +58,13 @@ Both platforms drive the same shared ViewModel; the filter options and active-fi
 
 ### Android — expandable panel
 
-- `ExpandableAdvancedSearchPanel` (`androidApp/.../ui/components/ExpandableAdvancedSearchPanel.kt`) is an inline, collapsible panel with four sections: **Category** (dropdown), **Ingredient** (single-select searchable dialog), **Alcoholic** (Any / Alcoholic / Non-Alcoholic), **Glass** (dropdown). Apply forwards the whole `SearchFilters` to `viewModel.applyFilters(...)`; Clear calls `viewModel.clearSearchFilters()`.
+- `ExpandableAdvancedSearchPanel` (`androidApp/.../ui/components/ExpandableAdvancedSearchPanel.kt`) is an inline, collapsible panel with three sections: **Category** (dropdown), **Ingredient** (single-select searchable dialog), **Alcoholic** (Any / Alcoholic / Non-Alcoholic). Apply forwards the whole `SearchFilters` to `viewModel.applyFilters(...)`; Clear calls `viewModel.clearSearchFilters()`.
 - `SearchFilterChips` (`androidApp/.../ui/components/SearchFilterChips.kt`) renders the active filters from `state.searchFilters`; dismissing a chip re-applies the reduced set.
-- `HomeScreen` reads the option lists from `state.filterCategories/filterIngredients/filterGlasses` and calls `loadFilterOptions()` when advanced search opens.
+- `HomeScreen` reads the option lists from `state.filterCategories/filterIngredients` and calls `loadFilterOptions()` when advanced search opens.
 
 ### iOS — filter sheet
 
-- `AdvancedSearchSheet` (in `iosApp/CocktailCraft/Views/HomeViewSKIE.swift`) is a SwiftUI `Form` sheet with the same four controls: Category picker, Ingredient picker, Alcoholic segmented control, Glass picker. It calls `loadFilterOptions()` on appear, Apply calls `applyFilters(...)`, Clear calls `clearSearchFilters()`.
+- `AdvancedSearchSheet` (in `iosApp/CocktailCraft/Views/HomeViewSKIE.swift`) is a SwiftUI `Form` sheet with the same three controls: Category picker, Ingredient picker, Alcoholic segmented control. It calls `loadFilterOptions()` on appear, Apply calls `applyFilters(...)`, Clear calls `clearSearchFilters()`.
 - The active-filter chip row in `HomeViewSKIE` is derived from `state.searchFilters` (no local filter state).
 - `HomeViewModelSKIE` (`iosApp/CocktailCraft/ViewModels/HomeViewModelSKIE.swift`) exposes `applyFilters`, `loadFilterOptions` (async, via SKIE) and `clearSearchFilters` (sync). The Kotlin `Boolean?` alcoholic value bridges to Swift as `KotlinBoolean?` (nil = any).
 

@@ -34,14 +34,12 @@ Main repository for cocktail data management and search functionality.
 | `filterByIngredient` | `Flow<List<Cocktail>>` | `ingredient: String` | Filter cocktails containing specific ingredient |
 | `filterByAlcoholic` | `Flow<List<Cocktail>>` | `alcoholic: Boolean` | Filter alcoholic/non-alcoholic cocktails |
 | `filterByCategory` | `Flow<List<Cocktail>>` | `category: String` | Filter by cocktail category (e.g., "Ordinary Drink") |
-| `filterByGlass` | `Flow<List<Cocktail>>` | `glass: String` | Filter by glass type (e.g., "Highball glass") |
 
 #### Metadata Methods
 
 | Method | Return Type | Parameters | Purpose |
 |--------|-------------|------------|---------|
 | `getCategories` | `Flow<List<String>>` | None | Get all available cocktail categories |
-| `getGlasses` | `Flow<List<String>>` | None | Get all glass types |
 | `getIngredients` | `Flow<List<String>>` | None | Get all available ingredients |
 | `getAlcoholicFilters` | `Flow<List<String>>` | None | Get alcoholic filter options |
 

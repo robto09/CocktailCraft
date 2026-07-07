@@ -356,9 +356,6 @@ struct HomeViewSKIE: View {
         if let alcoholic = filters.alcoholic?.boolValue {
             labels.append(alcoholic ? "Alcoholic" : "Non-Alcoholic")
         }
-        if let glass = filters.glass {
-            labels.append("Glass: \(glass)")
-        }
         return labels
     }
 
@@ -400,7 +397,6 @@ private struct AdvancedSearchSheet: View {
 
     @State private var selectedCategory: String?
     @State private var selectedIngredient: String?
-    @State private var selectedGlass: String?
     @State private var alcoholic: AlcoholicFilter
 
     init(viewModel: HomeViewModelSKIE) {
@@ -408,7 +404,6 @@ private struct AdvancedSearchSheet: View {
         let filters = viewModel.state.searchFilters
         _selectedCategory = State(initialValue: filters.category)
         _selectedIngredient = State(initialValue: filters.ingredient)
-        _selectedGlass = State(initialValue: filters.glass)
         _alcoholic = State(initialValue: AlcoholicFilter.from(filters.alcoholic))
     }
 
@@ -441,15 +436,6 @@ private struct AdvancedSearchSheet: View {
                     }
                     .pickerStyle(.segmented)
                 }
-
-                Section("Glass") {
-                    Picker("Glass", selection: $selectedGlass) {
-                        Text("Any").tag(String?.none)
-                        ForEach(viewModel.state.filterGlasses, id: \.self) { glass in
-                            Text(glass).tag(String?.some(glass))
-                        }
-                    }
-                }
             }
             .navigationTitle("Advanced Search")
             .navigationBarTitleDisplayMode(.inline)
@@ -466,8 +452,7 @@ private struct AdvancedSearchSheet: View {
                             query: viewModel.state.searchFilters.query,
                             category: selectedCategory,
                             ingredient: selectedIngredient,
-                            alcoholic: alcoholic.kotlinValue,
-                            glass: selectedGlass
+                            alcoholic: alcoholic.kotlinValue
                         )
                         Task {
                             await viewModel.applyFilters(filters)

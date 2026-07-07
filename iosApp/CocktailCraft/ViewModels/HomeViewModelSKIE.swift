@@ -62,7 +62,7 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
         }
     }
 
-    /// Load the API-backed option lists (categories / ingredients / glasses)
+    /// Load the API-backed option lists (categories / ingredients)
     /// that back the advanced-search filter sheet.
     func loadFilterOptions() async {
         do {
