@@ -55,6 +55,8 @@ struct ContentView: View {
                 }
                 .tag(AppRouter.Tab.profile)
             }
+            // Selected tab in the brand color, matching the Android bottom nav
+            .tint(AppColors.primary(isDarkMode: themeViewModel.state.isDarkMode))
 
             // Offline Banner
             VStack {
