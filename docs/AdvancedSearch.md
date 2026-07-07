@@ -56,9 +56,9 @@ data class SearchFilters(
 
 Both platforms drive the same shared ViewModel; the filter options and active-filter chips come from shared state.
 
-### Android — expandable panel
+### Android — bottom sheet
 
-- `ExpandableAdvancedSearchPanel` (`androidApp/.../ui/components/ExpandableAdvancedSearchPanel.kt`) is an inline, collapsible panel with three sections: **Category** (dropdown), **Ingredient** (single-select searchable dialog), **Alcoholic** (Any / Alcoholic / Non-Alcoholic). Apply forwards the whole `SearchFilters` to `viewModel.applyFilters(...)`; Clear calls `viewModel.clearSearchFilters()`.
+- `AdvancedSearchBottomSheet` (`androidApp/.../ui/components/AdvancedSearchBottomSheet.kt`) is a modal bottom sheet mirroring the iOS sheet, with three sections: **Category** (dropdown), **Ingredient** (single-select searchable dialog), **Alcoholic** (Any / Alcoholic / Non-Alcoholic). Apply forwards the whole `SearchFilters` to `viewModel.applyFilters(...)` and closes the sheet; Clear calls `viewModel.clearSearchFilters()` and closes the sheet.
 - `SearchFilterChips` (`androidApp/.../ui/components/SearchFilterChips.kt`) renders the active filters from `state.searchFilters`; dismissing a chip re-applies the reduced set.
 - `HomeScreen` reads the option lists from `state.filterCategories/filterIngredients` and calls `loadFilterOptions()` when advanced search opens.
 

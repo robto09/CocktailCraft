@@ -89,7 +89,7 @@ import com.cocktailcraft.android.ui.components.CocktailSearchBar
 import com.cocktailcraft.android.ui.components.EmptySearchResultsMessage
 import com.cocktailcraft.android.ui.components.ErrorBanner
 import com.cocktailcraft.android.ui.components.ErrorDialog
-import com.cocktailcraft.android.ui.components.ExpandableAdvancedSearchPanel
+import com.cocktailcraft.android.ui.components.AdvancedSearchBottomSheet
 import com.cocktailcraft.android.ui.components.FilterChip
 import com.cocktailcraft.android.ui.components.NetworkErrorStateDisplay
 import com.cocktailcraft.android.ui.components.SearchFilterChips
@@ -216,26 +216,31 @@ fun HomeScreen(
         // Advanced search panel
 
         // Load the shared filter-option lists (categories / ingredients)
-        // into the ViewModel state once; the panel and category row read them below.
+        // into the ViewModel state once; the sheet and category row read them below.
         LaunchedEffect(Unit) {
             viewModel.loadFilterOptions()
         }
         val categories = state.filterCategories
         val ingredients = state.filterIngredients
 
-        // Single advanced-search UI: the inline expandable panel
-        ExpandableAdvancedSearchPanel(
-            isExpanded = isAdvancedSearchActive,
-            currentFilters = searchFilters,
-            categories = categories,
-            ingredients = ingredients,
-            onApplyFilters = { filters ->
-                scope.launch { viewModel.applyFilters(filters) }
-            },
-            onClearFilters = {
-                viewModel.clearSearchFilters()
-            }
-        )
+        // Advanced search as a modal bottom sheet, matching iOS. Apply and
+        // Clear both close the sheet; filtering runs in the shared ViewModel.
+        if (isAdvancedSearchActive) {
+            AdvancedSearchBottomSheet(
+                currentFilters = searchFilters,
+                categories = categories,
+                ingredients = ingredients,
+                onApplyFilters = { filters ->
+                    scope.launch { viewModel.applyFilters(filters) }
+                },
+                onClearFilters = {
+                    viewModel.clearSearchFilters()
+                },
+                onDismiss = {
+                    viewModel.toggleAdvancedSearchMode(false)
+                }
+            )
+        }
 
         // Add Category Filter Chips - only shown when not searching.
         // Uses the shared curated list so the row matches iOS ("All" + curated
