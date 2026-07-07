@@ -41,7 +41,8 @@ val dataModule = module {
     single { CocktailCache(
         settings = get(),
         json = get(),
-        appConfig = get()
+        appConfig = get(),
+        networkMonitor = get()
     ) }
 
     // In-memory cache manager (thread-safe singleton)
