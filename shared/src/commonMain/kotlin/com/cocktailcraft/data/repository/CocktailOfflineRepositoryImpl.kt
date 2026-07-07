@@ -8,7 +8,11 @@ import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.NetworkMonitor
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 /**
  * Offline-mode preference and connectivity checks, extracted from the former
@@ -19,7 +23,8 @@ internal class CocktailOfflineRepositoryImpl(
     private val appConfig: AppConfig,
     private val networkMonitor: NetworkMonitor,
     private val cocktailCache: CocktailCache,
-    private val remote: CocktailRemoteDataSource
+    private val remote: CocktailRemoteDataSource,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : CocktailOfflineRepository {
 
     override fun setOfflineMode(enabled: Boolean) {
@@ -30,11 +35,12 @@ internal class CocktailOfflineRepositoryImpl(
         settings.getBoolean(appConfig.offlineModeEnabledKey, false)
 
     /** True when the user forced offline mode or the network is down. */
-    override suspend fun isOffline(): Boolean = isOfflineModeEnabled() || !networkMonitor.isOnline.first()
+    override suspend fun isOffline(): Boolean =
+        withContext(ioDispatcher) { isOfflineModeEnabled() } || !networkMonitor.isOnline.first()
 
     override suspend fun checkApiConnectivity(): Result<Boolean> {
         return try {
-            Result.Success(if (isOfflineModeEnabled()) false else remote.ping())
+            Result.Success(if (withContext(ioDispatcher) { isOfflineModeEnabled() }) false else remote.ping())
         } catch (e: Exception) {
             Result.Error(e.message ?: "Failed to check API connectivity")
         }

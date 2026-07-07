@@ -9,8 +9,12 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.builtins.ListSerializer
 import co.touchlab.kermit.Logger
 import kotlin.time.Clock
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * Simple LRU cache implementation
@@ -70,7 +74,8 @@ internal class SimpleLruCache<K, V>(private val maxSize: Int) {
 internal class CocktailCache(
     private val settings: Settings,
     private val json: Json,
-    private val appConfig: AppConfig
+    private val appConfig: AppConfig,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     companion object {
         private const val CACHE_PREFIX = "cocktail_cache_"
@@ -102,7 +107,7 @@ internal class CocktailCache(
         }
     }
 
-    private suspend fun loadPersistedCocktails() {
+    private suspend fun loadPersistedCocktails() = withContext(ioDispatcher) {
         Logger.d { "Loading persisted cocktails..." }
         try {
             // Load all cached cocktails from persistent storage
@@ -134,7 +139,7 @@ internal class CocktailCache(
         }
     }
     
-    private suspend fun persistCocktails() {
+    private suspend fun persistCocktails() = withContext(ioDispatcher) {
         try {
             // Persist all cached cocktails
             val allCocktails = cocktailCache.snapshot().values.toList()
@@ -149,7 +154,7 @@ internal class CocktailCache(
         }
     }
     
-    private suspend fun persistRecentlyViewed() {
+    private suspend fun persistRecentlyViewed() = withContext(ioDispatcher) {
         try {
             // Persist recently viewed cocktails
             val recentCocktails = recentlyViewedCache.snapshot().values.toList()
@@ -221,8 +226,10 @@ internal class CocktailCache(
         cocktailCache.clear()
         recentlyViewedCache.clear()
         // Clear from persistent storage
-        settings.remove(ALL_COCKTAILS_KEY)
-        settings.remove(RECENTLY_VIEWED_KEY)
+        withContext(ioDispatcher) {
+            settings.remove(ALL_COCKTAILS_KEY)
+            settings.remove(RECENTLY_VIEWED_KEY)
+        }
     }
     
     /**

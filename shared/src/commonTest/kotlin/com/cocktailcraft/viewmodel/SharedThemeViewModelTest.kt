@@ -6,7 +6,9 @@ import com.cocktailcraft.domain.usecase.ManageProfileUseCase
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.russhwolf.settings.MapSettings
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -23,16 +25,16 @@ class SharedThemeViewModelTest : MainDispatcherTest() {
      * recreating the ViewModel simulates an app restart against the same
      * persisted data.
      */
-    private class Harness {
+    private class Harness(ioDispatcher: CoroutineDispatcher) {
         val settings = MapSettings()
-        val repository = AuthRepositoryImpl(settings, Json { ignoreUnknownKeys = true })
+        val repository = AuthRepositoryImpl(settings, Json { ignoreUnknownKeys = true }, ioDispatcher)
 
         fun viewModel() = SharedThemeViewModel(ManageProfileUseCase(repository))
     }
 
     @Test
     fun themeSettingsSurviveViewModelRecreationForGuest() = runTest {
-        val harness = Harness()
+        val harness = Harness(StandardTestDispatcher(testScheduler))
         val vm = harness.viewModel()
         advanceUntilIdle()
 
@@ -56,7 +58,7 @@ class SharedThemeViewModelTest : MainDispatcherTest() {
 
     @Test
     fun themeSettingsSurviveViewModelRecreationForSignedInUser() = runTest {
-        val harness = Harness()
+        val harness = Harness(StandardTestDispatcher(testScheduler))
         assertTrue(harness.repository.signUp("a@b.com", "secret123").getOrThrow())
 
         val vm = harness.viewModel()
@@ -79,7 +81,7 @@ class SharedThemeViewModelTest : MainDispatcherTest() {
 
     @Test
     fun legacyPreferencesJsonWithoutThemeFieldsDecodesWithDefaults() = runTest {
-        val harness = Harness()
+        val harness = Harness(StandardTestDispatcher(testScheduler))
         // JSON persisted before accentColor/fontSize/contrast/motion existed.
         harness.settings.putString(
             "guest_preferences",
