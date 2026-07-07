@@ -143,7 +143,7 @@ class FakeOrderRepository : OrderRepository {
 
     override fun observeOrders(): Flow<List<Order>> = orders
     override suspend fun getOrders(): Result<List<Order>> = Result.Success(orders.value)
-    override suspend fun addOrder(order: Order): Result<Unit> {
+    override suspend fun placeOrder(order: Order): Result<Unit> {
         orders.update { it + order }
         return Result.Success(Unit)
     }
@@ -154,11 +154,6 @@ class FakeOrderRepository : OrderRepository {
         orders.update { list -> list.filterNot { it.id == id } }
         return Result.Success(Unit)
     }
-    override suspend fun placeOrder(order: Order): Result<Boolean> {
-        orders.update { it + order }
-        return Result.Success(true)
-    }
-    override suspend fun getOrderHistory(): Result<List<Order>> = Result.Success(orders.value)
     override suspend fun cancelOrder(orderId: String): Result<Boolean> = Result.Success(true)
 }
 

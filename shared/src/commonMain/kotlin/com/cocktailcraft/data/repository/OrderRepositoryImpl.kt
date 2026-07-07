@@ -46,16 +46,20 @@ internal class OrderRepositoryImpl(
 
     override suspend fun getOrders(): Result<List<Order>> = Result.Success(_orders.value)
 
-    override suspend fun addOrder(order: Order): Result<Unit> {
+    override suspend fun placeOrder(order: Order): Result<Unit> {
         return try {
-            val updatedOrders = _orders.value.toMutableList().apply {
-                add(order)
+            val orders = _orders.value.toMutableList()
+            val orderWithId = if (order.id.isBlank()) {
+                order.copy(id = UUID.randomUUID())
+            } else {
+                order
             }
-            _orders.value = updatedOrders
+            orders.add(orderWithId)
+            _orders.value = orders
             saveOrdersToStorage()
             Result.Success(Unit)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to add order")
+            Result.Error(e.message ?: "Failed to place order")
         }
     }
 
@@ -89,27 +93,6 @@ internal class OrderRepositoryImpl(
         } catch (e: Exception) {
             Result.Error(e.message ?: "Failed to delete order")
         }
-    }
-
-    override suspend fun placeOrder(order: Order): Result<Boolean> {
-        return try {
-            val orders = _orders.value.toMutableList()
-            val orderWithId = if (order.id.isBlank()) {
-                order.copy(id = UUID.randomUUID())
-            } else {
-                order
-            }
-            orders.add(orderWithId)
-            _orders.value = orders
-            saveOrdersToStorage()
-            Result.Success(true)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to place order")
-        }
-    }
-
-    override suspend fun getOrderHistory(): Result<List<Order>> {
-        return Result.Success(_orders.value)
     }
 
     override suspend fun cancelOrder(orderId: String): Result<Boolean> {
