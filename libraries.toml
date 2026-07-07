@@ -7,7 +7,6 @@ androidxActivityCompose = "1.13.0"
 androidxAppCompat = "1.6.1"
 androidxArchCoreTesting = "2.2.0"
 androidxComposeBom = "2026.06.01"
-androidxDataStore = "1.0.0"
 androidxEspresso = "3.7.0"
 androidxGlance = "1.1.1"
 androidxLifecycle = "2.10.0"
@@ -60,15 +59,12 @@ koin-test-junit4 = { module = "io.insert-koin:koin-test-junit4", version.ref = "
 
 # Multiplatform Settings
 multiplatform-settings-core = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatformSettings" }
-multiplatform-settings-datastore = { module = "com.russhwolf:multiplatform-settings-datastore", version.ref = "multiplatformSettings" }
-multiplatform-settings-coroutines = { module = "com.russhwolf:multiplatform-settings-coroutines", version.ref = "multiplatformSettings" }
 multiplatform-settings-test = { module = "com.russhwolf:multiplatform-settings-test", version.ref = "multiplatformSettings" }
 
 # Logging
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 
 # AndroidX
-androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "androidxDataStore" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidxActivityCompose" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidxAppCompat" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "androidxNavigation" }
