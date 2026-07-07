@@ -6,8 +6,11 @@ package com.cocktailcraft.domain.model
  * duplicate this list in platform code.
  */
 object CocktailCategories {
+    /** The API's default category, used as the browse/pagination fallback. */
+    const val DEFAULT = "Cocktail"
+
     val CURATED: List<String> = listOf(
-        "Cocktail",
+        DEFAULT,
         "Shot",
         "Ordinary Drink",
         "Coffee / Tea",

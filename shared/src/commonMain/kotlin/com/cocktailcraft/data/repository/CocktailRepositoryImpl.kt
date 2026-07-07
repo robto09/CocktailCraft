@@ -6,6 +6,7 @@ import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailCategories
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
@@ -238,7 +239,7 @@ internal class CocktailRepositoryImpl(
 
     override suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>> {
         return try {
-            Result.Success(fetchCocktailsByCategory("Cocktail"))
+            Result.Success(fetchCocktailsByCategory(CocktailCategories.DEFAULT))
         } catch (e: Exception) {
             Result.Error(e.message ?: "Failed to get cocktails sorted by newest")
         }
@@ -274,7 +275,7 @@ internal class CocktailRepositoryImpl(
 
             // Nothing active → same default list as category browsing.
             if (filters.query.isBlank() && !filters.hasActiveFilters()) {
-                return filterByCategory("Cocktail")
+                return filterByCategory(CocktailCategories.DEFAULT)
             }
 
             // One call per active filter, in priority order. getOrThrow bubbles a
