@@ -106,10 +106,7 @@ kotlin {
                 // Provides the Android Dispatchers.Main implementation for viewModelScope
                 implementation(libs.kotlinx.coroutines.android)
                 implementation(libs.ktor.client.android)
-                implementation(libs.androidx.datastore.preferences)
                 implementation(libs.multiplatform.settings.core)
-                implementation(libs.multiplatform.settings.datastore)
-                implementation(libs.multiplatform.settings.coroutines)
             }
         }
 

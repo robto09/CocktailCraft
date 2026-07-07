@@ -14,11 +14,6 @@ interface NetworkMonitor {
 }
 
 /**
- * Platform-specific factory function for creating NetworkMonitor instances.
- */
-expect fun createNetworkMonitor(): NetworkMonitor
-
-/**
  * Base implementation with common functionality.
  */
 abstract class BaseNetworkMonitor {
