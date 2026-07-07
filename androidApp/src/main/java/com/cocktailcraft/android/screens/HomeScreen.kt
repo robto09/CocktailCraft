@@ -204,7 +204,6 @@ fun HomeScreen(
                     "category" -> searchFilters.copy(category = null)
                     "ingredient" -> searchFilters.copy(ingredient = null)
                     "alcoholic" -> searchFilters.copy(alcoholic = null)
-                    "glass" -> searchFilters.copy(glass = null)
                     else -> searchFilters
                 }
                 scope.launch { viewModel.applyFilters(updatedFilters) }
@@ -216,14 +215,13 @@ fun HomeScreen(
 
         // Advanced search panel
 
-        // Load the shared filter-option lists (categories / ingredients / glasses)
+        // Load the shared filter-option lists (categories / ingredients)
         // into the ViewModel state once; the panel and category row read them below.
         LaunchedEffect(Unit) {
             viewModel.loadFilterOptions()
         }
         val categories = state.filterCategories
         val ingredients = state.filterIngredients
-        val glasses = state.filterGlasses
 
         // Single advanced-search UI: the inline expandable panel
         ExpandableAdvancedSearchPanel(
@@ -231,7 +229,6 @@ fun HomeScreen(
             currentFilters = searchFilters,
             categories = categories,
             ingredients = ingredients,
-            glasses = glasses,
             onApplyFilters = { filters ->
                 scope.launch { viewModel.applyFilters(filters) }
             },

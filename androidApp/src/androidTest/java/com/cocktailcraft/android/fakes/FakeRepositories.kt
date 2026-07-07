@@ -48,7 +48,7 @@ class FakeCocktailRepository(
     override suspend fun searchCocktailsByName(name: String): Result<List<Cocktail>> =
         Result.Success(cocktails.filter { it.name.contains(name, ignoreCase = true) })
 
-    /** Mirrors the real intersection logic: AND the 5 supported fields over [cocktails]. */
+    /** Mirrors the real intersection logic: AND the 4 supported fields over [cocktails]. */
     override suspend fun advancedSearch(filters: SearchFilters): Result<List<Cocktail>> {
         var result = cocktails
         if (filters.query.isNotBlank()) {
@@ -65,7 +65,6 @@ class FakeCocktailRepository(
                 else value.equals("Non alcoholic", ignoreCase = true)
             }
         }
-        filters.glass?.let { g -> result = result.filter { it.glass == g } }
         return Result.Success(result)
     }
 
@@ -73,12 +72,10 @@ class FakeCocktailRepository(
     override suspend fun filterByAlcoholic(alcoholic: Boolean): Result<List<Cocktail>> = Result.Success(cocktails)
     override suspend fun filterByCategory(category: String): Result<List<Cocktail>> =
         Result.Success(cocktails.filter { it.category == category })
-    override suspend fun filterByGlass(glass: String): Result<List<Cocktail>> = Result.Success(cocktails)
 
     // Catalog
     override suspend fun getCategories(): Result<List<String>> =
         Result.Success(cocktails.mapNotNull { it.category }.distinct())
-    override suspend fun getGlasses(): Result<List<String>> = Result.Success(emptyList())
     override suspend fun getIngredients(): Result<List<String>> = Result.Success(emptyList())
     override suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>> = Result.Success(cocktails)
 

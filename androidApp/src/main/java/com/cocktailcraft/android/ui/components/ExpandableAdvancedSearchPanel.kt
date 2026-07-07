@@ -48,7 +48,6 @@ import com.cocktailcraft.android.ui.theme.AppColors
  * @param currentFilters The current search filters
  * @param categories List of available categories
  * @param ingredients List of available ingredients
- * @param glasses List of available glasses
  * @param onApplyFilters Callback when filters are applied
  * @param onClearFilters Callback when filters are cleared
  * @param modifier The modifier for the component
@@ -59,7 +58,6 @@ fun ExpandableAdvancedSearchPanel(
     currentFilters: SearchFilters,
     categories: List<String>,
     ingredients: List<String>,
-    glasses: List<String>,
     onApplyFilters: (SearchFilters) -> Unit,
     onClearFilters: () -> Unit,
     modifier: Modifier = Modifier
@@ -134,17 +132,6 @@ fun ExpandableAdvancedSearchPanel(
                         alcoholic = filters.alcoholic,
                         onAlcoholicChanged = { alcoholicValue ->
                             filters = filters.copy(alcoholic = alcoholicValue)
-                        }
-                    )
-                }
-
-                // Glass filter
-                FilterSection(title = "Glass Type") {
-                    GlassSelector(
-                        glasses = glasses,
-                        selectedGlass = filters.glass,
-                        onGlassSelected = { glass: String? ->
-                            filters = filters.copy(glass = glass)
                         }
                     )
                 }

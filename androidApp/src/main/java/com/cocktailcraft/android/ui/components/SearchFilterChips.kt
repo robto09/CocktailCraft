@@ -130,14 +130,6 @@ fun SearchFilterChips(
                             onClear = { onClearFilter("alcoholic") }
                         )
                     }
-
-                    // Glass filter
-                    if (filters.glass != null) {
-                        ActiveFilterChip(
-                            label = "Glass: ${filters.glass}",
-                            onClear = { onClearFilter("glass") }
-                        )
-                    }
                 }
             }
         }
