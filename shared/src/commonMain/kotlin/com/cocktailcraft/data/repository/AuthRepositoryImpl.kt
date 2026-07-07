@@ -142,7 +142,11 @@ internal class AuthRepositoryImpl(
                 "darkMode" to preferences.darkMode.toString(),
                 "followSystemTheme" to preferences.followSystemTheme.toString(),
                 "notificationsEnabled" to preferences.notificationsEnabled.toString(),
-                "language" to preferences.language
+                "language" to preferences.language,
+                "accentColor" to preferences.accentColor,
+                "fontSize" to preferences.fontSize,
+                "isHighContrast" to preferences.isHighContrast.toString(),
+                "isReducedMotion" to preferences.isReducedMotion.toString()
             )
             val updatedUser = currentUser.copy(preferences = preferencesMap)
             updateUser(updatedUser)
@@ -157,15 +161,16 @@ internal class AuthRepositoryImpl(
             val currentUser = getCurrentUserSync()
             if (currentUser != null) {
                 val prefs = currentUser.preferences
-                val darkMode = prefs["darkMode"]?.toBoolean() ?: false
-                val followSystemTheme = prefs["followSystemTheme"]?.toBoolean() ?: true
-                val notificationsEnabled = prefs["notificationsEnabled"]?.toBoolean() ?: true
-                val language = prefs["language"] ?: "en"
+                val defaults = UserPreferences()
                 Result.Success(UserPreferences(
-                    darkMode = darkMode,
-                    followSystemTheme = followSystemTheme,
-                    notificationsEnabled = notificationsEnabled,
-                    language = language
+                    darkMode = prefs["darkMode"]?.toBoolean() ?: defaults.darkMode,
+                    followSystemTheme = prefs["followSystemTheme"]?.toBoolean() ?: defaults.followSystemTheme,
+                    notificationsEnabled = prefs["notificationsEnabled"]?.toBoolean() ?: defaults.notificationsEnabled,
+                    language = prefs["language"] ?: defaults.language,
+                    accentColor = prefs["accentColor"] ?: defaults.accentColor,
+                    fontSize = prefs["fontSize"] ?: defaults.fontSize,
+                    isHighContrast = prefs["isHighContrast"]?.toBoolean() ?: defaults.isHighContrast,
+                    isReducedMotion = prefs["isReducedMotion"]?.toBoolean() ?: defaults.isReducedMotion
                 ))
             } else {
                 val stored = settings.getStringOrNull(GUEST_PREFERENCES_KEY)

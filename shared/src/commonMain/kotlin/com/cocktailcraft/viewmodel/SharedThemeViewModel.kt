@@ -289,7 +289,11 @@ class SharedThemeViewModel internal constructor(
                     preferences.followSystemTheme -> ThemeMode.SYSTEM
                     preferences.darkMode -> ThemeMode.DARK
                     else -> ThemeMode.LIGHT
-                }
+                },
+                accentColor = preferences.accentColor,
+                fontSize = preferences.fontSize,
+                isHighContrast = preferences.isHighContrast,
+                isReducedMotion = preferences.isReducedMotion
             ) }
         } catch (e: Exception) {
             // Silent fail for preferences loading
@@ -307,7 +311,11 @@ class SharedThemeViewModel internal constructor(
                     ThemeMode.LIGHT -> false
                     ThemeMode.SYSTEM -> state.userPreferences.darkMode
                 },
-                followSystemTheme = state.isSystemTheme
+                followSystemTheme = state.isSystemTheme,
+                accentColor = state.accentColor,
+                fontSize = state.fontSize,
+                isHighContrast = state.isHighContrast,
+                isReducedMotion = state.isReducedMotion
             )
 
             val success = manageProfileUseCase.updateUserPreferences(updatedPreferences).getOrThrow()
