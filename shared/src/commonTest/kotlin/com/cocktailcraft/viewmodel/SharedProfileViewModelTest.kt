@@ -159,6 +159,7 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
         assertTrue(vm.signUp("Ada Lovelace", "ada@example.com", "secret123"))
 
         assertEquals("Sign Up Successful", vm.uiState.value.authStatus)
+        assertTrue(vm.uiState.value.isLoggedIn, "a successful sign-up must refresh auth status")
         assertEquals("Ada Lovelace", vm.uiState.value.user?.name)
         assertTrue(vm.hasCompleteProfile())
         assertFalse(vm.uiState.value.isAuthenticating)
