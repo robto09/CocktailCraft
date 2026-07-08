@@ -19,13 +19,13 @@
 
 ## P0 — Broken behavior
 
-### 1.1 Pagination loads the wrong category ("load more" bug) — ✅ Done (branch `shared/1.1-pagination-category`, commit `0aaff7d`)
+### 1.1 Pagination loads the wrong category ("load more" bug) — ✅ Done (branch `shared/1.1-pagination-category`, commit `9d8983d`)
 - [x] **Severity:** High · **Effort:** S–M
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/viewmodel/SharedHomeViewModel.kt:154-180`, `shared/src/commonMain/kotlin/com/cocktailcraft/domain/usecase/LoadCocktailsByCategoryUseCase.kt:22-26`, `shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/CocktailRepositoryImpl.kt:239-245`
 - **Issue:** `SharedHomeViewModel.loadMoreCocktails()` calls `LoadCocktailsByCategoryUseCase.loadMore(emptyList(), page, PAGE_SIZE)`. The use case ignores its `allCocktails` parameter and unconditionally calls `catalogRepository.getCocktailsSortedByNewest()`, which is hardcoded to fetch the `"Cocktail"` category. Paging past page 1 while browsing **any other category** returns items from the wrong category (or repeats).
 - **Fix:** Thread the active category (or the already-fetched full result list) through `loadMore(category, page, pageSize)`. Have the use case page over `filterByCategory(category)` results instead of the hardcoded default. Add a unit test in `commonTest` that pages page 2 of a non-default category and asserts category membership.
 
-### 1.2 Theme settings silently fail to persist — ✅ Done (branch `shared/1.2-theme-persistence`, commit `4b70a47`)
+### 1.2 Theme settings silently fail to persist — ✅ Done (branch `shared/1.2-theme-persistence`, commit `fa4dc6b`)
 - [x] **Severity:** High (user-visible data loss) · **Effort:** S–M
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/viewmodel/SharedThemeViewModel.kt:90-124, 299-326`, `shared/src/commonMain/kotlin/com/cocktailcraft/domain/model/User.kt:37-41`, `shared/src/commonMain/kotlin/com/cocktailcraft/viewmodel/state/ThemeUiState.kt:11-19`
 - **Issue:** `setAccentColor`, `setFontSize`, `toggleHighContrast`, `toggleReducedMotion` all call `savePreferences()`, but the persisted `UserPreferences` model only contains `darkMode`/`followSystemTheme`. The four other settings silently reset to defaults on every app restart, despite code that looks like it saves them.
@@ -33,7 +33,7 @@
 
 ## P1 — Data integrity / repo hygiene
 
-### 1.3 Prebuilt `shared.xcframework` (~138 MB) committed to git — ✅ Done (branch `shared/1.3-untrack-xcframework`, commit `0fe54af`)
+### 1.3 Prebuilt `shared.xcframework` (~138 MB) committed to git — ✅ Done (branch `shared/1.3-untrack-xcframework`, commit `55396f8`)
 - [x] **Severity:** High (repo health) · **Effort:** S
 - **Files:** `shared/shared.xcframework/**` (9 tracked files incl. 57 MB + 81 MB Mach-O binaries), `.gitignore`
 - **Issue:** The compiled iOS framework is tracked in git with no ignore rule. Every regeneration re-commits ~138 MB of binary diff, permanently bloating clone size and history.
@@ -41,49 +41,49 @@
 
 ## P2 — Architecture & performance
 
-### 1.4 No dispatcher confinement — disk I/O and JSON work on the Main thread — ✅ Done (branch `shared/1.4-io-dispatcher`, commit `deea60c`)
+### 1.4 No dispatcher confinement — disk I/O and JSON work on the Main thread — ✅ Done (branch `shared/1.4-io-dispatcher`, commit `5576335`)
 - [x] **Severity:** Medium-High · **Effort:** M
 - **Files:** all `shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/*.kt`, `data/cache/*.kt` (zero `withContext`/`Dispatchers.IO|Default` matches module-wide)
 - **Issue:** Repository suspend functions do synchronous `Settings` (SharedPreferences/NSUserDefaults) reads/writes and `Json.encode/decode` of full lists on whatever dispatcher the caller supplies. ViewModels call them from `viewModelScope` (Main), so disk I/O and serialization of potentially 100-item lists run on the Main thread.
 - **Fix:** Confine at the repository boundary: inject a `CoroutineDispatcher` (IO on Android, `Dispatchers.Default`/IO equivalent on iOS) via Koin and wrap Settings/JSON work in `withContext(ioDispatcher)`. Injecting the dispatcher keeps repositories testable with a test dispatcher.
 
-### 1.5 Cache persists the entire cache on every single write (O(n²)) — ✅ Done (branch `shared/1.5-cache-batch-persist`, commit `2e62592`)
+### 1.5 Cache persists the entire cache on every single write (O(n²)) — ✅ Done (branch `shared/1.5-cache-batch-persist`, commit `e0d50ba`)
 - [x] **Severity:** Medium-High · **Effort:** S–M
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/data/cache/CocktailCache.kt:137-172`, `shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/CocktailRepositoryImpl.kt:195-196`
 - **Issue:** `cacheCocktail()` re-serializes **all** cached cocktails (up to 100) to JSON and writes to `Settings` on every call. `fetchCocktailsByCategory()` calls it once per item in a `forEach`, so a 20-item category load triggers ~20 full-cache serialize+write cycles.
 - **Fix:** Add a `cacheAll(cocktails: List<Cocktail>)` batch API that mutates memory then persists once. Optionally debounce persistence (e.g., persist on a small delay or at natural sync points). Combine with 1.4 so the single write happens off-Main.
 
-### 1.6 Two near-duplicate favorites stacks — ✅ Done (branch `shared/1.6-dedupe-favorites`, commit `a393278`)
+### 1.6 Two near-duplicate favorites stacks — ✅ Done (branch `shared/1.6-dedupe-favorites`, commit `1994657`)
 - [x] **Severity:** Medium · **Effort:** S
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/domain/repository/FavoritesRepository.kt`, `shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/FavoritesRepositoryImpl.kt:14-54`, consumer: `androidApp/src/main/java/com/cocktailcraft/android/widget/WidgetDataProvider.kt:21`
 - **Issue:** `FavoritesRepository`/`FavoritesRepositoryImpl` duplicates `CocktailFavoritesRepository`/`Impl` with renamed methods. The impl delegates 4 of 5 methods but **reimplements `toggleFavorite()` with its own direct `Settings` access** — duplicated business logic that can drift. Its only consumer is the Android widget.
 - **Fix:** Delete `FavoritesRepository`/`FavoritesRepositoryImpl`, point `WidgetDataProvider` at `CocktailFavoritesRepository`, and remove the DI binding.
 
-### 1.7 Finish the repository interface segregation — ✅ Done (branch `shared/1.7-split-cocktail-repository`, commit `1f9297e`)
+### 1.7 Finish the repository interface segregation — ✅ Done (branch `shared/1.7-split-cocktail-repository`, commit `c129e69`)
 - [x] **Severity:** Medium · **Effort:** M
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/CocktailRepositoryImpl.kt:33-342`
 - **Issue:** Consumers correctly inject the 5 narrow interfaces (Search/Detail/Catalog/Favorites/Offline), but `CocktailRepositoryImpl` still implements Search + Detail + Catalog in one 342-line class — only Favorites/Offline were extracted. The segregation is real for consumers but cosmetic for the implementation.
 - **Fix:** Split into `CocktailSearchRepositoryImpl`, `CocktailDetailRepositoryImpl`, `CocktailCatalogRepositoryImpl`, sharing the remote data source / cache manager via constructor injection. Update `DataModule` bindings; the composite `CocktailRepository` interface can then be deleted if nothing injects it.
 
-### 1.8 DIP violation: dependencies on concrete `CocktailOfflineRepositoryImpl` — ✅ Done (branch `shared/1.8-offline-repo-interface`, commit `c49f983`)
+### 1.8 DIP violation: dependencies on concrete `CocktailOfflineRepositoryImpl` — ✅ Done (branch `shared/1.8-offline-repo-interface`, commit `f0c4f32`)
 - [x] **Severity:** Medium · **Effort:** S
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/CocktailRepositoryImpl.kt:38`, `shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/CocktailFavoritesRepositoryImpl.kt:21`, `shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/CocktailOfflineRepositoryImpl.kt:33`
 - **Issue:** Both classes take the **concrete** `CocktailOfflineRepositoryImpl` (not the interface) because they need its internal `isOffline()` helper — coupling two repositories to an implementation detail and making them harder to fake in tests.
 - **Fix:** Add `suspend fun isOffline(): Boolean` to the `CocktailOfflineRepository` interface (or extract a small `OfflineModePolicy` collaborator) and depend on the abstraction.
 
-### 1.9 Dead/disconnected cache configuration — no time-based expiry — ✅ Done (branch `shared/1.9-cache-ttl`, commit `96bf7a3`)
+### 1.9 Dead/disconnected cache configuration — no time-based expiry — ✅ Done (branch `shared/1.9-cache-ttl`, commit `dacf244`)
 - [x] **Severity:** Medium · **Effort:** S–M
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/domain/config/AppConfig.kt:70,80`, `shared/src/commonMain/kotlin/com/cocktailcraft/data/config/AppConfigImpl.kt:39-40`, `shared/src/commonMain/kotlin/com/cocktailcraft/data/cache/CocktailCacheManager.kt:36`, `shared/src/commonMain/kotlin/com/cocktailcraft/data/cache/CocktailCache.kt:80-81`
 - **Issue:** `AppConfig.cacheExpirationMs` (24 h) and `maxOfflineCocktails` (50) are never referenced anywhere. The enforced values are hardcoded elsewhere (`CACHE_VALIDITY_MS = 5 min` in-memory; `MAX_CACHED_COCKTAILS = 100`). The persistent `CocktailCache` has **no age-based expiration at all** — only LRU size eviction — contradicting the "24 hour cache expiration" comment.
 - **Fix:** Wire `cacheExpirationMs` into `CocktailCache` (store a cached-at timestamp per entry, evict stale entries on read/startup) and use `maxOfflineCocktails` for the size cap — or delete both from `AppConfig` and keep the constants where they're enforced. Either way, one source of truth.
 
-### 1.10 `ErrorHandler` has two parallel error-construction APIs — ✅ Done (branch `shared/1.10-errorhandler-consolidation`, commit `40e3356`)
+### 1.10 `ErrorHandler` has two parallel error-construction APIs — ✅ Done (branch `shared/1.10-errorhandler-consolidation`, commit `44cfebe`)
 - [x] **Severity:** Low-Medium · **Effort:** S–M
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/util/ErrorHandler.kt` (392 lines: classification path at 55-224 vs `create*` family at 273-392), `androidApp/src/main/java/com/cocktailcraft/android/util/ErrorUtils.kt`
 - **Issue:** The `getErrorFromException`/`errorFromCode` path (used by `SharedViewModel`) and the `createUserFriendlyError`/`createErrorFromException`/`createErrorFromErrorCode` family (only reached via Android's `ErrorUtils` pass-through) duplicate title/message/category logic. Two paths producing the same `UserFriendlyError` will drift.
 - **Fix:** Consolidate on the classification path; make `ErrorUtils` (or the Android call sites) call into it; delete the `create*` duplicates.
 
-### 1.11 Test coverage gaps in shared logic — ✅ Done (branch `shared/1.11-test-coverage`, commit `6bd60bc`)
+### 1.11 Test coverage gaps in shared logic — ✅ Done (branch `shared/1.11-test-coverage`, commit `df31f98`)
 - [x] **Severity:** Medium · **Effort:** L (incremental)
 - **Files:** `shared/src/commonTest/**` (14 files / ~1.4k lines vs commonMain 85 files / ~6.6k lines)
 - **Issue:** Untested: `SharedProfileViewModel` (385 lines), `SharedThemeViewModel` (327 — would have caught 1.2), `SharedOrderViewModel`, `SharedOfflineModeViewModel`, `SharedCocktailDetailViewModel`; `CartRepositoryImpl`, `OrderRepositoryImpl`; `CocktailCache`, `CocktailCacheManager`, `CocktailRemoteDataSource`; `ErrorHandler`; most use cases including `LoadCocktailsByCategoryUseCase` (whose bug 1.1 is untested). No Koin `checkModules()` DI-graph verification.
@@ -91,25 +91,25 @@
 
 ## P3 — Cleanups
 
-### 1.12 Dead `ToggleFavoriteUseCase` — ✅ Done (branch `shared/1.12-remove-dead-usecase`, commit `a65130a`)
+### 1.12 Dead `ToggleFavoriteUseCase` — ✅ Done (branch `shared/1.12-remove-dead-usecase`, commit `fa90145`)
 - [x] **Severity:** Low · **Effort:** S
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/domain/usecase/ToggleFavoriteUseCase.kt`, `shared/src/commonTest/kotlin/com/cocktailcraft/domain/usecase/ToggleFavoriteUseCaseTest.kt`
 - **Issue:** Duplicates `ManageFavoritesUseCase.toggle()`; never registered in DI; no production call sites — only its own test exercises it.
 - **Fix:** Delete the use case and its test (or consolidate the two into one, keeping a single toggle implementation).
 
-### 1.13 `OrderRepository` redundant near-duplicate methods — ✅ Done (branch `shared/1.13-order-repository-api`, commit `6b6966e`)
+### 1.13 `OrderRepository` redundant near-duplicate methods — ✅ Done (branch `shared/1.13-order-repository-api`, commit `641334b`)
 - [x] **Severity:** Low · **Effort:** S
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/domain/repository/OrderRepository.kt:8-16`, `shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/OrderRepositoryImpl.kt:47,94-113`
 - **Issue:** `getOrders()` and `getOrderHistory()` have identical implementations; `addOrder()` and `placeOrder()` largely overlap (the latter also generates an id). The interface comment "Methods needed by the implementation" signals unresolved API indecision.
 - **Fix:** Collapse to one get-all method and one create method (`placeOrder`), update call sites, delete the rest.
 
-### 1.14 Magic `"Cocktail"` default-category literal repeated 7+ times — ✅ Done (branch `shared/1.14-default-category-constant`, commit `b89d76e`)
+### 1.14 Magic `"Cocktail"` default-category literal repeated 7+ times — ✅ Done (branch `shared/1.14-default-category-constant`, commit `18ac23a`)
 - [x] **Severity:** Low · **Effort:** S
 - **Files:** `SharedHomeViewModel.kt:78,89,97,390`, `CocktailRepositoryImpl.kt:241,277`, `GetCocktailDetailUseCase.kt:30`, canonical list at `domain/model/CocktailCategories.kt:10`
 - **Issue:** The default/fallback category string is independently retyped across ViewModel, repository, and use case layers — a typo or rename breaks behavior silently.
 - **Fix:** Add `CocktailCategories.DEFAULT = "Cocktail"` and reference it everywhere.
 
-### 1.15 Dead Android DI bindings & inconsistent `createNetworkMonitor` expect/actual — ✅ Done (branch `shared/1.15-dead-di-bindings`, commit `941532c`)
+### 1.15 Dead Android DI bindings & inconsistent `createNetworkMonitor` expect/actual — ✅ Done (branch `shared/1.15-dead-di-bindings`, commit `b1a4313`)
 - [x] **Severity:** Low · **Effort:** S
 - **Files:** `shared/src/androidMain/kotlin/com/cocktailcraft/di/PlatformModule.kt:20-27`, `shared/src/commonMain/kotlin/com/cocktailcraft/util/NetworkMonitor.kt:16`, `shared/src/androidMain/kotlin/com/cocktailcraft/util/NetworkMonitor.kt`
 - **Issue:** androidMain registers a `DataStore<Preferences>` + `FlowSettings` nobody injects (the real `Settings` is `SharedPreferencesSettings`). The `createNetworkMonitor()` expect/actual works on iOS but **throws `IllegalStateException` on Android** ("use DI instead") — an inconsistent contract.
@@ -120,12 +120,12 @@
 ## Section 1 integration status
 
 All 15 task branches are merged into **`integration/shared-phase-1`** (verified: 136 shared tests green, Android debug + androidTest compile, iOS Kotlin compile). Follow-up fixes landed on the same branch:
-- `93e1df8` — signUp now refreshes auth status (`isLoggedIn` was stale after sign-up)
-- `fb2e0fd` — composite `CocktailRepository` interface/impl/binding and unused `KoinIOS.getCocktailRepository()` deleted
-- `5a701ee` — cache tests use the shared `ALL_COCKTAILS_KEY` constant instead of a retyped literal
-- `4f1270e` — androidTest fake implements the new `isOffline()` interface member
+- `293fdbe` — signUp now refreshes auth status (`isLoggedIn` was stale after sign-up)
+- `1d1e409` — composite `CocktailRepository` interface/impl/binding and unused `KoinIOS.getCocktailRepository()` deleted
+- `8d51448` — cache tests use the shared `ALL_COCKTAILS_KEY` constant instead of a retyped literal
+- `f128b73` — androidTest fake implements the new `isOffline()` interface member
 
-Remaining 1.4 caveats CLOSED (`faf1d74` on the integration branch): Cart/Order/Review repositories now lazy-load behind a mutex-guarded `ensureLoaded()` on the IO dispatcher instead of doing disk I/O in `init {}`, and `setOfflineMode`/`isOfflineModeEnabled` are suspend + IO-confined (ViewModel signatures unchanged). Full Xcode simulator build of the iOS app against the integration branch: **succeeded** (SKIE surface changes verified end-to-end). Section 1 is fully verified and merged into `dev`; the integration branch has been deleted.
+Remaining 1.4 caveats CLOSED (`2c69c5b` on the integration branch): Cart/Order/Review repositories now lazy-load behind a mutex-guarded `ensureLoaded()` on the IO dispatcher instead of doing disk I/O in `init {}`, and `setOfflineMode`/`isOfflineModeEnabled` are suspend + IO-confined (ViewModel signatures unchanged). Full Xcode simulator build of the iOS app against the integration branch: **succeeded** (SKIE surface changes verified end-to-end). Section 1 is fully verified and merged into `dev`; the integration branch has been deleted.
 
 ---
 
