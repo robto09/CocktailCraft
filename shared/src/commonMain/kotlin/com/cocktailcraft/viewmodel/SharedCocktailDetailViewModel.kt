@@ -179,4 +179,26 @@ class SharedCocktailDetailViewModel internal constructor(
             }
         }
     }
+
+    /**
+     * Force-refresh the current cocktail from the network, bypassing the
+     * repository cache, and update the UI state with the fresh copy.
+     * SKIE will convert this to a Swift async function.
+     */
+    suspend fun refreshCocktail() {
+        val cocktailId = _uiState.value.cocktail?.id ?: return
+        _uiState.update { it.copy(isLoading = true) }
+
+        try {
+            val refreshed = getCocktailDetailUseCase.refresh(cocktailId).getOrThrow()
+            if (refreshed != null) {
+                _uiState.update { it.copy(cocktail = refreshed) }
+                processIngredients(refreshed)
+            }
+            _uiState.update { it.copy(isLoading = false) }
+        } catch (e: Exception) {
+            handleException(e, "Failed to refresh cocktail details")
+            _uiState.update { it.copy(isLoading = false) }
+        }
+    }
 }

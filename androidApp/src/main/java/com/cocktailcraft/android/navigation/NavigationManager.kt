@@ -35,40 +35,28 @@ class NavigationManager(private val navController: NavController) {
      * Navigate to the home screen
      */
     fun navigateToHome() {
-        navController.navigate(HomeRoute) {
-            popUpTo(navController.graph.findStartDestination().id)
-            launchSingleTop = true
-        }
+        navigateToTopLevelDestination(HomeRoute)
     }
 
     /**
      * Navigate to the favorites screen
      */
     fun navigateToFavorites() {
-        navController.navigate(FavoritesRoute) {
-            popUpTo(navController.graph.findStartDestination().id)
-            launchSingleTop = true
-        }
+        navigateToTopLevelDestination(FavoritesRoute)
     }
 
     /**
      * Navigate to the profile screen
      */
     fun navigateToProfile() {
-        navController.navigate(ProfileRoute) {
-            popUpTo(navController.graph.findStartDestination().id)
-            launchSingleTop = true
-        }
+        navigateToTopLevelDestination(ProfileRoute)
     }
 
     /**
      * Navigate to the order list screen
      */
     fun navigateToOrderList() {
-        navController.navigate(OrderListRoute) {
-            popUpTo(navController.graph.findStartDestination().id)
-            launchSingleTop = true
-        }
+        navigateToTopLevelDestination(OrderListRoute)
     }
 
     /**
@@ -89,9 +77,22 @@ class NavigationManager(private val navController: NavController) {
      * Navigate to a bottom navigation destination
      */
     fun navigateToBottomNavDestination(screen: Screen) {
-        navController.navigate(screen.route) {
-            popUpTo(navController.graph.findStartDestination().id)
+        navigateToTopLevelDestination(screen.route)
+    }
+
+    /**
+     * Switch to a top-level (bottom-nav) destination, saving the state of the
+     * tab being left and restoring any previously saved state of the target —
+     * otherwise every tab switch loses scroll position and rememberSaveable
+     * state and re-triggers each screen's LaunchedEffect(Unit) loads.
+     */
+    private fun navigateToTopLevelDestination(route: Any) {
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
             launchSingleTop = true
+            restoreState = true
         }
     }
 }

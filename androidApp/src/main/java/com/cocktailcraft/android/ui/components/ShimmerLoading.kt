@@ -5,7 +5,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,29 +18,27 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
- * Creates a shimmer effect modifier that can be applied to any composable
+ * One infinite transition driving every shimmer placeholder beneath a loading
+ * container. Hoist this at the container level and hand the value to each
+ * [shimmerEffect] so N placeholders share one always-ticking animation
+ * instead of running N of them.
  */
-fun Modifier.shimmerEffect() = composed {
-    val shimmerColors = listOf(
-        AppColors.Surface.copy(alpha = 0.6f),
-        AppColors.Surface.copy(alpha = 0.2f),
-        AppColors.Surface.copy(alpha = 0.6f)
-    )
-    
+@Composable
+fun rememberShimmerTranslate(): State<Float> {
     val transition = rememberInfiniteTransition(label = "shimmer")
-    val translateAnim by transition.animateFloat(
+    return transition.animateFloat(
         initialValue = 0f,
         targetValue = 1000f,
         animationSpec = infiniteRepeatable(
@@ -53,14 +50,29 @@ fun Modifier.shimmerEffect() = composed {
         ),
         label = "shimmer_translate"
     )
-    
-    val brush = Brush.linearGradient(
-        colors = shimmerColors,
-        start = Offset(10f, 10f),
-        end = Offset(translateAnim, translateAnim)
+}
+
+/**
+ * Shimmer effect driven by a hoisted [rememberShimmerTranslate] value. The
+ * animated value is read only at draw time, so each tick invalidates drawing
+ * rather than recomposing the placeholder tree.
+ */
+fun Modifier.shimmerEffect(translate: State<Float>) = composed {
+    val shimmerColors = listOf(
+        AppColors.Surface.copy(alpha = 0.6f),
+        AppColors.Surface.copy(alpha = 0.2f),
+        AppColors.Surface.copy(alpha = 0.6f)
     )
-    
-    background(brush)
+
+    drawBehind {
+        drawRect(
+            Brush.linearGradient(
+                colors = shimmerColors,
+                start = Offset(10f, 10f),
+                end = Offset(translate.value, translate.value)
+            )
+        )
+    }
 }
 
 /**
@@ -68,6 +80,7 @@ fun Modifier.shimmerEffect() = composed {
  */
 @Composable
 fun CocktailItemShimmer(
+    translate: State<Float>,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -81,7 +94,7 @@ fun CocktailItemShimmer(
             modifier = Modifier
                 .size(100.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .shimmerEffect()
+                .shimmerEffect(translate)
         )
         
         Spacer(modifier = Modifier.width(12.dp))
@@ -96,7 +109,7 @@ fun CocktailItemShimmer(
                     .fillMaxWidth(0.7f)
                     .height(16.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .shimmerEffect()
+                    .shimmerEffect(translate)
             )
             
             Spacer(modifier = Modifier.height(8.dp))
@@ -107,7 +120,7 @@ fun CocktailItemShimmer(
                     .fillMaxWidth(0.5f)
                     .height(14.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .shimmerEffect()
+                    .shimmerEffect(translate)
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -123,7 +136,7 @@ fun CocktailItemShimmer(
                         .width(60.dp)
                         .height(16.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .shimmerEffect()
+                        .shimmerEffect(translate)
                 )
                 
                 Spacer(modifier = Modifier.weight(1f))
@@ -133,7 +146,7 @@ fun CocktailItemShimmer(
                     modifier = Modifier
                         .size(24.dp)
                         .clip(CircleShape)
-                        .shimmerEffect()
+                        .shimmerEffect(translate)
                 )
                 
                 Spacer(modifier = Modifier.width(16.dp))
@@ -142,7 +155,7 @@ fun CocktailItemShimmer(
                     modifier = Modifier
                         .size(24.dp)
                         .clip(CircleShape)
-                        .shimmerEffect()
+                        .shimmerEffect(translate)
                 )
             }
         }
@@ -156,6 +169,9 @@ fun CocktailItemShimmer(
 fun CocktailDetailShimmer(
     modifier: Modifier = Modifier
 ) {
+    // Screen-level loading container: one transition for all placeholders
+    val translate = rememberShimmerTranslate()
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -167,7 +183,7 @@ fun CocktailDetailShimmer(
                 .fillMaxWidth()
                 .height(250.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .shimmerEffect()
+                .shimmerEffect(translate)
         )
         
         Spacer(modifier = Modifier.height(16.dp))
@@ -178,7 +194,7 @@ fun CocktailDetailShimmer(
                 .fillMaxWidth(0.8f)
                 .height(24.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .shimmerEffect()
+                .shimmerEffect(translate)
         )
         
         Spacer(modifier = Modifier.height(8.dp))
@@ -192,7 +208,7 @@ fun CocktailDetailShimmer(
                     .width(120.dp)
                     .height(20.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .shimmerEffect()
+                    .shimmerEffect(translate)
             )
             
             Spacer(modifier = Modifier.width(8.dp))
@@ -202,7 +218,7 @@ fun CocktailDetailShimmer(
                     .width(40.dp)
                     .height(20.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .shimmerEffect()
+                    .shimmerEffect(translate)
             )
         }
         
@@ -215,7 +231,7 @@ fun CocktailDetailShimmer(
                     .width(100.dp)
                     .height(32.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .shimmerEffect()
+                    .shimmerEffect(translate)
             )
             
             Spacer(modifier = Modifier.width(8.dp))
@@ -225,7 +241,7 @@ fun CocktailDetailShimmer(
                     .width(100.dp)
                     .height(32.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .shimmerEffect()
+                    .shimmerEffect(translate)
             )
         }
         
@@ -238,7 +254,7 @@ fun CocktailDetailShimmer(
                     .fillMaxWidth()
                     .height(16.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .shimmerEffect()
+                    .shimmerEffect(translate)
             )
             
             Spacer(modifier = Modifier.height(8.dp))
@@ -252,7 +268,7 @@ fun CocktailDetailShimmer(
                 .width(120.dp)
                 .height(20.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .shimmerEffect()
+                .shimmerEffect(translate)
         )
         
         Spacer(modifier = Modifier.height(8.dp))
@@ -264,7 +280,7 @@ fun CocktailDetailShimmer(
                     .fillMaxWidth(0.7f)
                     .height(16.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .shimmerEffect()
+                    .shimmerEffect(translate)
             )
             
             Spacer(modifier = Modifier.height(8.dp))

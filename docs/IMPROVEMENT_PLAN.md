@@ -209,8 +209,8 @@ Remaining 1.4 caveats CLOSED (`2c69c5b` on the integration branch): Cart/Order/R
 
 ## P0 — Broken behavior
 
-### 3.1 Bottom navigation destroys per-tab state on every switch
-- [ ] **Severity:** High · **Effort:** S
+### 3.1 Bottom navigation destroys per-tab state on every switch — ✅ Done (branch `android/3.1-bottomnav-state`, commit `e3226e2`)
+- [x] **Severity:** High · **Effort:** S
 - **Files:** `androidApp/src/main/java/com/cocktailcraft/android/navigation/NavigationManager.kt:78-84` (and the other `navigateTo*` helpers at 34-71)
 - **Issue:** `navigateToBottomNavDestination` lacks `saveState = true` on `popUpTo` and `restoreState = true` on `navigate`. Every tab switch destroys the destination's back-stack entry: scroll position and `rememberSaveable` state are lost, and `LaunchedEffect(Unit)` loads re-trigger on each revisit (e.g. `OrderListScreen.kt:42`).
 - **Fix:** ```kotlin
@@ -222,94 +222,107 @@ Remaining 1.4 caveats CLOSED (`2c69c5b` on the integration branch): Cart/Order/R
   ```
   Apply the same to the other helpers.
 
-### 3.2 Stale-closure bug in infinite-scroll helpers
-- [ ] **Severity:** High · **Effort:** S
+### 3.2 Stale-closure bug in infinite-scroll helpers — ✅ Done (branch `android/3.2-infinite-scroll-stale-closure`, commit `e88e45a`)
+- [x] **Severity:** High · **Effort:** S
 - **Files:** `androidApp/src/main/java/com/cocktailcraft/android/util/ListOptimizations.kt:48-104` (`OnBottomReached`, `OnScrollPastThreshold`), consumer `androidApp/src/main/java/com/cocktailcraft/android/ui/components/AnimatedCocktailList.kt:80-85`
 - **Issue:** `LaunchedEffect(shouldLoadMore)` keys on a `remember`ed `State` object whose identity never changes, so the effect launches once and never restarts. The captured `onLoadMore` lambda closes over `isLoadingMore`/`isSearchActive` values from the first composition; later lambda updates are silently dropped. Result: redundant `loadMoreCocktails()` while already loading, or continued load-more after entering search mode.
 - **Fix:** Inside the helpers, wrap the callback: `val currentOnLoadMore by rememberUpdatedState(onLoadMore)` and invoke `currentOnLoadMore()` from the collector. Guards then always read current values.
 
-### 3.3 Detail screen fetches the same cocktail twice from two ViewModels
-- [ ] **Severity:** Medium-High · **Effort:** S–M
+### 3.3 Detail screen fetches the same cocktail twice from two ViewModels — ✅ Done (branch `android/3.3-detail-single-source`, commit `d319d63`)
+- [x] **Severity:** Medium-High · **Effort:** S–M
 - **Files:** `androidApp/src/main/java/com/cocktailcraft/android/screens/CocktailDetailScreen.kt:129-170,544-545`
 - **Issue:** The screen calls `detailViewModel.loadCocktail(cocktailId)` **and** independently `produceState { homeViewModel.getCocktailById(cocktailId) }` — two overlapping fetches for one screen, with two independently-derived loading states that can disagree during a slow load.
 - **Fix:** Source the primary `cocktail` and `isLoading` exclusively from `SharedCocktailDetailViewModel.uiState` (already loaded via `loadCocktail`); delete the parallel `produceState` path and the `homeViewModel` dependency.
 
 ## P1 — Ship-readiness
 
-### 3.4 Legacy purple XML theme diverges from the real coral/gold palette
-- [ ] **Severity:** High (user-visible) · **Effort:** S–M
+### 3.4 Legacy purple XML theme diverges from the real coral/gold palette — ✅ Done (branch `android/3.4-xml-theme-palette`, commit `5c8ddf9`)
+- [x] **Severity:** High (user-visible) · **Effort:** S–M
 - **Files:** `androidApp/src/main/res/values/colors.xml:1-23`, `androidApp/src/main/res/values/themes.xml:1-32`, `AndroidManifest.xml:14,18`, live consumers: `res/drawable/widget_background.xml`, `widget_item_background.xml`, `widget_refresh_button.xml`, `res/layout/*_widget_preview.xml`; runtime palette: `ui/theme/Theme.kt:19-56`, `ui/theme/AnimatedTheme.kt:24-49`
 - **Issue:** Compose renders coral/gold (`#EB6A43`/`#FFC84D`), but the Activity theme and widget assets use an unrelated purple palette (`#5E2CA5`). Users see a purple cold-start flash, purple status bar pre-Compose, and purple widget previews/backgrounds that never match the app.
 - **Fix:** Regenerate `colors.xml` from `AppColors` values (single source of truth), restyle `themes.xml` (window background, status bar) to match, and retint the widget drawables/preview layouts. Add a comment in both files pointing at the counterpart to prevent future drift.
 
 ## P2 — Quality & consistency
 
-### 3.5 Systemic hardcoded user-facing strings (~314 literals vs 61 `stringResource` calls)
-- [ ] **Severity:** High (localization blocker) · **Effort:** L (mechanical)
+### 3.5 Systemic hardcoded user-facing strings (~314 literals vs 61 `stringResource` calls) — ✅ Done (branch `android/3.5-string-resources`, commit `4ffa228`)
+- [x] **Severity:** High (localization blocker) · **Effort:** L (mechanical)
 - **Files:** most screens — e.g. `CocktailDetailScreen.kt:200,210,386,415,435,567,738,825,842`, `ProfileScreen.kt:418,426` (stale `"© 2023"`, hardcoded `"Version 1.0.0"`), `CartScreen.kt:83,92,156,169-170`, `OfflineModeScreen.kt:170,242,274,376`
 - **Issue:** The app cannot be localized; copy changes require code edits; `"Version 1.0.0"` will drift from the real versionName.
 - **Fix:** Sweep every `Text("...")`/dialog literal into `strings.xml`; read the version from `BuildConfig.VERSION_NAME`/`PackageInfo`; enable Android Lint `HardcodedText` as error in CI to prevent regressions.
 
-### 3.6 God composables on the four largest screens
-- [ ] **Severity:** Medium-High · **Effort:** L (incremental)
+### 3.6 God composables on the four largest screens — ✅ Done (branch `android/3.6-screen-decomposition`, commit `2e184d6`)
+- [x] **Severity:** Medium-High · **Effort:** L (incremental)
 - **Files:** `CocktailDetailScreen.kt:113-768` (~650-line composable), `ProfileScreen.kt:79-464`, `OfflineModeScreen.kt:76-412`, `HomeScreen.kt:107-326`
 - **Issue:** Each mixes data-loading effects, many unrelated visual sections, and dialogs in one function. Any `uiState` change forces Compose to walk the entire tree — no narrowly-scoped children to skip; hurts readability, testability, previews.
 - **Fix:** Extract each visual section (header/pricing card, ingredients, detail chips, recommendations carousel, reviews list; profile header/settings/about cards; etc.) into its own `@Composable` taking only the primitives/lists it needs. Do it opportunistically as these files are touched by other fixes.
 
-### 3.7 Design tokens bypass Material3; no dynamic color
-- [ ] **Severity:** Medium-High · **Effort:** M–L
+### 3.7 Design tokens bypass Material3; no dynamic color — ✅ Done (branch `android/3.7-material3-tokens`, commit `3b5aeed`; `dynamicColor` ships default-off until AppColors call sites migrate — see KDoc)
+- [x] **Severity:** Medium-High · **Effort:** M–L
 - **Files:** `ui/theme/Theme.kt` (`AppColors` used 303× across 47 files vs `MaterialTheme.colorScheme` 4×), `ui/theme/AnimatedTheme.kt:24-49`, ~471 raw `dp` / ~110 raw `sp` literals, 48 raw `Color(0x...)` hits (e.g. `CocktailDetailScreen.kt:336,346`, `OfflineModeScreen.kt:145`)
 - **Issue:** The global `AppColors` object sidesteps `MaterialTheme`, so components don't respond to Material You wallpaper color (no `dynamicColorScheme` anywhere), contrast overrides, or theme-level typography changes; ad-hoc hex colors and raw sp/dp drift independently.
 - **Fix:** Map `AppColors` into the `ColorScheme` passed to `MaterialTheme` and migrate call sites to `MaterialTheme.colorScheme.*` / `MaterialTheme.typography.*` incrementally (start with new/touched code). Add `dynamicColor: Boolean = true` to `AnimatedCocktailBarTheme` using `dynamicLight/DarkColorScheme` on API 31+ with the coral/gold scheme as fallback. Introduce a spacing scale object to replace repeated raw dp.
 
-### 3.8 Touch targets below 48 dp on high-frequency controls
-- [ ] **Severity:** Medium (accessibility) · **Effort:** S
+### 3.8 Touch targets below 48 dp on high-frequency controls — ✅ Done (branch `android/3.8-touch-targets`, commit `90a225b`)
+- [x] **Severity:** Medium (accessibility) · **Effort:** S
 - **Files:** `ui/components/CartItemCard.kt:125,173,194,231` (32–36 dp), `screens/CocktailDetailScreen.kt:298` (36 dp), `ui/components/WriteReviewDialog.kt:111` (36 dp star targets)
 - **Issue:** Explicit `.size(32.dp/36.dp)` on `IconButton`s overrides the 48 dp minimum interactive size — exactly on the cart's increment/decrement/remove controls. Fails Material/WCAG 2.5.5 guidance.
 - **Fix:** Size only the inner `Icon`, not the `IconButton`; let the button keep its default ≥48 dp touch target (visuals unchanged).
 
-### 3.9 Password-visibility toggle invisible to screen readers
-- [ ] **Severity:** Medium (accessibility, auth flow) · **Effort:** S
+### 3.9 Password-visibility toggle invisible to screen readers — ✅ Done (branch `android/3.9-password-toggle-a11y`, commit `a1e4b96`)
+- [x] **Severity:** Medium (accessibility, auth flow) · **Effort:** S
 - **Files:** `ui/components/AuthDialogs.kt:169-174`
 - **Issue:** The icon-only visibility toggle has `contentDescription = null` — TalkBack users get zero indication of purpose or state during sign-in/sign-up.
 - **Fix:** State-dependent description (`stringResource(R.string.show_password)` / `hide_password`); optionally `semantics { stateDescription }` for the toggled state. Audit other icon-only buttons while there.
 
-### 3.10 Entrance-animation system is dead code with a stuck stagger counter
-- [ ] **Severity:** Medium · **Effort:** S–M
+### 3.10 Entrance-animation system is dead code with a stuck stagger counter — ✅ Done (branch `android/3.10-entrance-animations`, commit `759efc6`)
+- [x] **Severity:** Medium · **Effort:** S–M
 - **Files:** `ui/components/AnimatedCocktailList.kt:88-116,159-176`
 - **Issue:** (a) `visibleItemsCount` is `remember`ed without keying on the list, so after a category swap the reveal logic is instantly satisfied and staggering never runs again. (b) `animateFloatAsState(targetValue = 1f)` on first composition initializes **at** the target — no fade/slide is ever visible; the per-item state objects are pure overhead.
 - **Fix:** Delete the manual batching and use `Modifier.animateItem()` / `AnimatedVisibility` — or key the counter with `remember(cocktails)` and animate from a real initial value (`Animatable(0f)` + `LaunchedEffect { animateTo(1f) }`).
 
-### 3.11 Duplicate shimmer implementations, one infinite transition per placeholder
-- [ ] **Severity:** Medium · **Effort:** S
+### 3.11 Duplicate shimmer implementations, one infinite transition per placeholder — ✅ Done (branch `android/3.11-shimmer-dedupe`, commit `883e858`)
+- [x] **Severity:** Medium · **Effort:** S
 - **Files:** `ui/components/ShimmerLoading.kt:36-64` (shared) vs local duplicate in `screens/CocktailDetailScreen.kt:773-797` (shadows the import at line 110; used at line 595)
 - **Issue:** The local `shimmerEffect()` copy shadows the imported shared one. Both spin `rememberInfiniteTransition` per invocation, so N placeholders run N always-ticking animations concurrently.
 - **Fix:** Delete the local copy; hoist a single `rememberInfiniteTransition` at the loading-container level and pass its animated value down to all placeholders.
 
-### 3.12 Widgets can't deep-link to content
-- [ ] **Severity:** Medium · **Effort:** M
+### 3.12 Widgets can't deep-link to content — ✅ Done (branch `android/3.12-widget-deeplinks`, commit `dc63825`)
+- [x] **Severity:** Medium · **Effort:** M
 - **Files:** `widget/FavoritesWidget.kt:220`, `widget/RandomCocktailWidget.kt:83`, `ui/main/MainScreen.kt:209-284` (no `navDeepLink`), `AndroidManifest.xml:19-22` (no `VIEW` intent filter)
 - **Issue:** Tapping a specific favorite or the random cocktail in a home-screen widget calls a bare `actionStartActivity<MainActivity>()` — cold-launches to the Home tab instead of that cocktail's detail, defeating the widgets' purpose.
 - **Fix:** Add a deep-link scheme (`app://cocktailcraft/cocktail/{id}`) via `navDeepLink` on `CocktailDetailRoute`, an exported `VIEW` intent filter, and pass the cocktail id from the widgets via an explicit Intent.
 
 ## P3 — Polish
 
-### 3.13 `NetworkStatusCard` exists but is reimplemented inline
-- [ ] **Severity:** Low-Medium · **Effort:** S
+### 3.13 `NetworkStatusCard` exists but is reimplemented inline — ✅ Done (branch `android/3.13-network-status-card`, commit `df33e5a`)
+- [x] **Severity:** Low-Medium · **Effort:** S
 - **Files:** `ui/components/NetworkStatusCard.kt` (zero call sites), duplicate inline at `screens/OfflineModeScreen.kt:139-176`
 - **Fix:** Replace the inline block with the component, or delete the unused component — remove the duplication either way.
 
-### 3.14 Default image component is the costlier Coil API
-- [ ] **Severity:** Low-Medium · **Effort:** S
+### 3.14 Default image component is the costlier Coil API — ✅ Done (branch `android/3.14-asyncimage-default`, commit `5165350`)
+- [x] **Severity:** Low-Medium · **Effort:** S
 - **Files:** `ui/components/OptimizedImage.kt:60-98` (`SubcomposeAsyncImage` default, used in scrolling lists e.g. `CocktailDetailScreen.kt:649-657`)
 - **Issue:** Subcomposition-based image loading in lazy lists is more expensive than `AsyncImage` per Coil's own guidance.
 - **Fix:** Default list/grid thumbnails to `AsyncImage` (with `onState` for load/error UI); keep `SubcomposeAsyncImage` only for single hero images (`DetailHeaderImage`).
 
-### 3.15 Near-zero `@Preview` coverage, and previews use the wrong theme
-- [ ] **Severity:** Low-Medium · **Effort:** M (incremental)
+### 3.15 Near-zero `@Preview` coverage, and previews use the wrong theme — ✅ Done (branch `android/3.15-preview-coverage`, commit `80ef0a5`)
+- [x] **Severity:** Low-Medium · **Effort:** M (incremental)
 - **Files:** `ui/preview/ComponentPreviews.kt` (only file with previews — 5 total, wrapped in the runtime-unused `CocktailBarTheme`)
 - **Issue:** No screen-level previews; existing ones don't represent production visuals (real theme is `AnimatedCocktailBarTheme`).
 - **Fix:** Add light/dark + large-font previews per screen using representative fake state; standardize on the production theme wrapper.
+
+---
+
+## Section 3 integration status
+
+All 15 task branches are merged into **`integration/android-phase-3`** (based on `dev` after the Section 2 squash-merge, which is merged into the branch). A multi-agent adversarial review of the full phase diff (5 lenses, 3 skeptics per finding) confirmed 3 issues, all fixed on the integration branch:
+- `208cfd1` — detail content no longer gated on the related-cocktails fetch (restores instant content + reachable recommendations shimmer; in-place Refresh Details)
+- `e48d54c` — widget deep links strip the framework-forced `FLAG_ACTIVITY_NEW_TASK` so `handleDeepLink` navigates in place instead of finishing/relaunching the activity
+- `2fece78` — cocktail list items keyed by identity (not index) so `animateItem()` placement animations actually fire; `distinctBy` guards key uniqueness
+
+History note: `keystore.properties` was accidentally captured by one commit (the branch's original base predated the ignore entry); it was scrubbed via history rewrite and all Section 3 commit references above were remapped.
+
+Verified after the fixes: `:androidApp:testDebugUnitTest`, `assembleDebug`, `assembleRelease`, `lintDebug` (with the new `HardcodedText` error gate), `compileDebugAndroidTestKotlin`, and `:shared:allTests` (JVM + iOS simulator targets) — **all green**. Not pushed anywhere yet.
 
 ---
 

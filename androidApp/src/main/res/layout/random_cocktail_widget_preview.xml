@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
@@ -18,7 +19,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="🍹 Random Cocktail"
+            android:text="@string/widget_random_cocktail_header"
             android:textColor="@color/cocktail_primary"
             android:textSize="14sp"
             android:textStyle="bold" />
@@ -39,13 +40,14 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="🍹"
+        tools:ignore="HardcodedText"
         android:textSize="48sp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Margarita"
+        android:text="@string/widget_preview_cocktail_name"
         android:textColor="@color/text_primary_light"
         android:textSize="16sp"
         android:textStyle="bold" />
@@ -54,8 +56,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="Ordinary Drink"
-        android:textColor="@color/cocktail_accent"
+        android:text="@string/widget_preview_cocktail_category"
+        android:textColor="@color/text_secondary_light"
         android:textSize="12sp" />
 
     <TextView

@@ -25,8 +25,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.domain.model.SearchFilters
 import kotlinx.coroutines.launch
@@ -85,13 +87,13 @@ fun AdvancedSearchBottomSheet(
                         animateClose()
                     }
                 ) {
-                    Text("Clear")
+                    Text(stringResource(R.string.filter_clear))
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
                 Text(
-                    text = "Advanced Search",
+                    text = stringResource(R.string.search_advanced_search),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary
@@ -106,13 +108,13 @@ fun AdvancedSearchBottomSheet(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
                 ) {
-                    Text("Apply")
+                    Text(stringResource(R.string.filter_apply))
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            FilterSection(title = "Category") {
+            FilterSection(title = stringResource(R.string.filter_category)) {
                 CategorySelector(
                     categories = categories,
                     selectedCategory = filters.category,
@@ -122,7 +124,7 @@ fun AdvancedSearchBottomSheet(
                 )
             }
 
-            FilterSection(title = "Ingredient") {
+            FilterSection(title = stringResource(R.string.filter_ingredient)) {
                 IngredientSelector(
                     ingredients = ingredients,
                     selectedIngredient = filters.ingredient,
@@ -132,7 +134,7 @@ fun AdvancedSearchBottomSheet(
                 )
             }
 
-            FilterSection(title = "Alcoholic") {
+            FilterSection(title = stringResource(R.string.alcoholic)) {
                 AlcoholicFilterContent(
                     alcoholic = filters.alcoholic,
                     onAlcoholicChanged = { alcoholicValue ->

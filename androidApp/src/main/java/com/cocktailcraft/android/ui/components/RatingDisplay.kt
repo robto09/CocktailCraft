@@ -8,9 +8,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
@@ -47,7 +49,7 @@ fun RatingDisplay(
     ) {
         // Display the rating value
         Text(
-            text = String.format("%.1f", rating),
+            text = stringResource(R.string.review_rating_value, rating),
             fontSize = ratingTextSize.sp,
             fontWeight = FontWeight.Bold,
             color = textColor
@@ -68,7 +70,10 @@ fun RatingDisplay(
             Spacer(modifier = Modifier.width(4.dp))
             
             Text(
-                text = "($reviewCount ${if (reviewCount == 1) "review" else "reviews"})",
+                text = stringResource(
+                    if (reviewCount == 1) R.string.review_count_singular else R.string.review_count_plural,
+                    reviewCount
+                ),
                 fontSize = reviewCountTextSize.sp,
                 color = textColor
             )

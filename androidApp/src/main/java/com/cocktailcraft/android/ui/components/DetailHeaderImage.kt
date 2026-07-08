@@ -41,7 +41,7 @@ fun DetailHeaderImage(
             .fillMaxWidth()
             .height(height.dp)
     ) {
-        OptimizedImage(
+        HeroOptimizedImage(
             url = imageUrl,
             contentDescription = contentDescription,
             modifier = Modifier.fillMaxSize(),

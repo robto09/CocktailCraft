@@ -45,9 +45,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
@@ -77,7 +79,7 @@ fun FilterSection(
 
             Icon(
                 imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = if (expanded) "Collapse" else "Expand",
+                contentDescription = if (expanded) stringResource(R.string.filter_collapse) else stringResource(R.string.filter_expand),
                 tint = AppColors.TextSecondary
             )
         }
@@ -127,14 +129,14 @@ fun CategorySelector(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = selectedCategory ?: "Select a category",
+                text = selectedCategory ?: stringResource(R.string.filter_select_category),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (selectedCategory != null) AppColors.TextPrimary else AppColors.TextSecondary
             )
 
             Icon(
                 imageVector = Icons.Default.ExpandMore,
-                contentDescription = "Expand",
+                contentDescription = stringResource(R.string.filter_expand),
                 tint = AppColors.TextSecondary
             )
         }
@@ -146,7 +148,7 @@ fun CategorySelector(
         ) {
             // Add "All" option to clear the category filter
             DropdownMenuItem(
-                text = { Text("All Categories") },
+                text = { Text(stringResource(R.string.filter_all_categories)) },
                 onClick = {
                     onCategorySelected(null)
                     expanded = false
@@ -184,17 +186,17 @@ fun AlcoholicFilterContent(
         FilterChip(
             selected = alcoholic == null,
             onClick = { onAlcoholicChanged(null) },
-            label = "Any"
+            label = stringResource(R.string.filter_any)
         )
         FilterChip(
             selected = alcoholic == true,
             onClick = { onAlcoholicChanged(true) },
-            label = "Alcoholic"
+            label = stringResource(R.string.alcoholic)
         )
         FilterChip(
             selected = alcoholic == false,
             onClick = { onAlcoholicChanged(false) },
-            label = "Non-Alcoholic"
+            label = stringResource(R.string.non_alcoholic)
         )
     }
 }
@@ -225,7 +227,7 @@ fun IngredientSelectionDialog(
             ) {
                 // Dialog title
                 Text(
-                    text = "Select Ingredient",
+                    text = stringResource(R.string.filter_select_ingredient_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -237,11 +239,11 @@ fun IngredientSelectionDialog(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Search ingredients") },
+                    placeholder = { Text(stringResource(R.string.search_ingredients_placeholder)) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Search,
-                            contentDescription = "Search",
+                            contentDescription = stringResource(R.string.search),
                             tint = AppColors.Gray
                         )
                     },
@@ -282,7 +284,7 @@ fun IngredientSelectionDialog(
                         )
 
                         Text(
-                            text = "Any ingredient",
+                            text = stringResource(R.string.filter_any_ingredient),
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(start = 8.dp)
                         )
@@ -318,7 +320,7 @@ fun IngredientSelectionDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.cancel))
                     }
                 }
             }
@@ -354,14 +356,14 @@ fun IngredientSelector(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = selectedIngredient ?: "Select an ingredient",
+                text = selectedIngredient ?: stringResource(R.string.filter_select_an_ingredient),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (selectedIngredient != null) AppColors.TextPrimary else AppColors.TextSecondary
             )
 
             Icon(
                 imageVector = Icons.Default.ExpandMore,
-                contentDescription = "Expand",
+                contentDescription = stringResource(R.string.filter_expand),
                 tint = AppColors.TextSecondary
             )
         }

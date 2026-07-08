@@ -14,9 +14,11 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 import java.text.NumberFormat
 import java.util.Locale
@@ -56,7 +58,7 @@ fun OrderSummaryCard(
                 .padding(16.dp)
         ) {
             Text(
-                text = "Order Summary",
+                text = stringResource(R.string.order_summary_title),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = AppColors.TextPrimary
@@ -66,7 +68,7 @@ fun OrderSummaryCard(
 
             // Subtotal row
             SummaryRow(
-                label = "Subtotal",
+                label = stringResource(R.string.order_subtotal),
                 value = currencyFormatter.format(subtotal)
             )
             
@@ -74,7 +76,7 @@ fun OrderSummaryCard(
             if (showDeliveryFee) {
                 Spacer(modifier = Modifier.height(8.dp))
                 SummaryRow(
-                    label = "Delivery Fee",
+                    label = stringResource(R.string.order_delivery_fee),
                     value = currencyFormatter.format(deliveryFee)
                 )
             }
@@ -100,7 +102,7 @@ fun OrderSummaryCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Total",
+                    text = stringResource(R.string.total),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary

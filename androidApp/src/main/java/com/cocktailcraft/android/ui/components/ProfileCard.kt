@@ -19,10 +19,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
@@ -56,9 +58,9 @@ fun ProfileCard(
     avatarTextColor: androidx.compose.ui.graphics.Color = AppColors.Primary,
     nameTextSize: Int = 20,
     emailTextSize: Int = 14,
-    signInButtonText: String = "Sign In",
-    signUpButtonText: String = "Create Account",
-    notSignedInMessage: String = "Sign in to access your profile"
+    signInButtonText: String = stringResource(R.string.sign_in),
+    signUpButtonText: String = stringResource(R.string.create_account),
+    notSignedInMessage: String = stringResource(R.string.profile_sign_in_prompt)
 ) {
     Card(
         modifier = modifier

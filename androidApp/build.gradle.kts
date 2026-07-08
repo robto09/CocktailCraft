@@ -102,6 +102,13 @@ android {
             excludes += "/META-INF/LICENSE-notice.md"
         }
     }
+
+    lint {
+        // Localization guard: user-facing text belongs in strings.xml.
+        // (Covers XML layouts — the widget previews; Compose literals are
+        // not lint-visible, so reviews must hold that line.)
+        error += "HardcodedText"
+    }
 }
 
 dependencies {

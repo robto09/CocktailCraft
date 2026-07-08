@@ -40,10 +40,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
@@ -105,17 +107,17 @@ fun EmptySearchResultsMessage(
                 Text(
                     text = when {
                         hasActiveFilters && searchQuery.isNotBlank() ->
-                            "No cocktails match \"$searchQuery\" with your active filters"
+                            stringResource(R.string.search_no_results_query_filters, searchQuery)
                         hasActiveFilters ->
-                            "No cocktails match your active filters"
+                            stringResource(R.string.search_no_results_filters)
                         selectedCategory != null && searchQuery.isNotBlank() ->
-                            "No cocktails found matching \"$searchQuery\" in \"$selectedCategory\""
+                            stringResource(R.string.search_no_results_query_category, searchQuery, selectedCategory)
                         selectedCategory != null ->
-                            "No cocktails found in category \"$selectedCategory\""
+                            stringResource(R.string.search_no_results_category, selectedCategory)
                         searchQuery.isNotBlank() ->
-                            "No cocktails found matching \"$searchQuery\""
+                            stringResource(R.string.search_no_results_query, searchQuery)
                         else ->
-                            "No cocktails found"
+                            stringResource(R.string.search_no_results)
                     },
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
@@ -129,15 +131,15 @@ fun EmptySearchResultsMessage(
                 Text(
                     text = when {
                         hasActiveFilters ->
-                            "Try adjusting or clearing your filters"
+                            stringResource(R.string.search_suggestion_adjust_filters)
                         selectedCategory != null && searchQuery.isNotBlank() ->
-                            "Try a different search term or category"
+                            stringResource(R.string.search_suggestion_different_term_or_category)
                         selectedCategory != null ->
-                            "This category doesn't have any cocktails yet"
+                            stringResource(R.string.search_suggestion_empty_category)
                         searchQuery.isNotBlank() ->
-                            "Try a different search term or check your spelling"
+                            stringResource(R.string.search_suggestion_check_spelling)
                         else ->
-                            "We couldn't find any cocktails"
+                            stringResource(R.string.search_suggestion_none_found)
                     },
                     fontSize = 16.sp,
                     color = AppColors.TextSecondary,
@@ -156,7 +158,7 @@ fun EmptySearchResultsMessage(
                                 containerColor = AppColors.Primary
                             )
                         ) {
-                            Text("Clear Search")
+                            Text(stringResource(R.string.search_clear_search_button))
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -167,7 +169,7 @@ fun EmptySearchResultsMessage(
                                 contentColor = AppColors.Primary
                             )
                         ) {
-                            Text("Clear Category Filter")
+                            Text(stringResource(R.string.filter_clear_category))
                         }
                     }
                     selectedCategory != null -> {
@@ -178,7 +180,7 @@ fun EmptySearchResultsMessage(
                                 containerColor = AppColors.Primary
                             )
                         ) {
-                            Text("Browse All Cocktails")
+                            Text(stringResource(R.string.search_browse_all_cocktails))
                         }
                     }
                     searchQuery.isNotBlank() -> {
@@ -189,7 +191,7 @@ fun EmptySearchResultsMessage(
                                 containerColor = AppColors.Primary
                             )
                         ) {
-                            Text("Clear Search")
+                            Text(stringResource(R.string.search_clear_search_button))
                         }
                     }
                     else -> {
@@ -200,7 +202,7 @@ fun EmptySearchResultsMessage(
                                 containerColor = AppColors.Primary
                             )
                         ) {
-                            Text("Refresh")
+                            Text(stringResource(R.string.refresh))
                         }
                     }
                 }
@@ -221,7 +223,7 @@ private fun EmptyStateIcon(icon: ImageVector) {
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = "No results",
+            contentDescription = stringResource(R.string.search_no_results_icon),
             tint = AppColors.Primary.copy(alpha = 0.2f),
             modifier = Modifier.size(80.dp)
         )

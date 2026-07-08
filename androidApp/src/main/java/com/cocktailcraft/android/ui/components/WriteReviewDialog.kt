@@ -10,9 +10,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 import androidx.compose.ui.graphics.Color
 
@@ -33,7 +35,7 @@ fun WriteReviewDialog(
             onDismissRequest = onDismiss,
             title = {
                 Text(
-                    text = "Write a Review",
+                    text = stringResource(R.string.write_review),
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.Primary
@@ -48,7 +50,7 @@ fun WriteReviewDialog(
                     // Name input with validation
                     Column {
                         Text(
-                            text = "Your Name",
+                            text = stringResource(R.string.review_your_name),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
                             color = AppColors.Primary,
@@ -60,12 +62,12 @@ fun WriteReviewDialog(
                                 userName = it
                                 hasError = false
                             },
-                            placeholder = { Text("Enter your name", color = AppColors.Gray) },
+                            placeholder = { Text(stringResource(R.string.review_enter_your_name), color = AppColors.Gray) },
                             isError = hasError && userName.isBlank(),
                             supportingText = {
                                 if (hasError && userName.isBlank()) {
                                     Text(
-                                        text = "Name is required",
+                                        text = stringResource(R.string.review_name_required),
                                         color = MaterialTheme.colorScheme.error
                                     )
                                 }
@@ -85,7 +87,7 @@ fun WriteReviewDialog(
                     // Rating section with enhanced UI
                     Column {
                         Text(
-                            text = "Your Rating",
+                            text = stringResource(R.string.review_your_rating),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
                             color = AppColors.Primary,
@@ -106,7 +108,7 @@ fun WriteReviewDialog(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.Star,
-                                        contentDescription = "Rate ${index + 1}",
+                                        contentDescription = stringResource(R.string.review_rate_star, index + 1),
                                         tint = if (index < userRating) AppColors.Secondary else AppColors.LightGray,
                                         modifier = Modifier.size(36.dp)
                                     )
@@ -116,7 +118,7 @@ fun WriteReviewDialog(
 
                         if (hasError && userRating == 0f) {
                             Text(
-                                text = "Please select a rating",
+                                text = stringResource(R.string.review_select_rating_error),
                                 color = MaterialTheme.colorScheme.error,
                                 fontSize = 12.sp,
                                 modifier = Modifier.padding(top = 4.dp)
@@ -129,7 +131,7 @@ fun WriteReviewDialog(
                     // Review text with character count
                     Column {
                         Text(
-                            text = "Your Review",
+                            text = stringResource(R.string.review_your_review),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
                             color = AppColors.Primary,
@@ -142,7 +144,7 @@ fun WriteReviewDialog(
                                     userComment = it
                                 }
                             },
-                            placeholder = { Text("Share your experience (Optional)", color = AppColors.Gray) },
+                            placeholder = { Text(stringResource(R.string.review_share_experience_placeholder), color = AppColors.Gray) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(120.dp),
@@ -157,7 +159,7 @@ fun WriteReviewDialog(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                text = "${userComment.length}/500",
+                                text = stringResource(R.string.review_character_count, userComment.length),
                                 fontSize = 12.sp,
                                 color = AppColors.Gray,
                                 modifier = Modifier
@@ -189,7 +191,7 @@ fun WriteReviewDialog(
                     modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
                     Text(
-                        text = "Submit Review",
+                        text = stringResource(R.string.review_submit),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -204,7 +206,7 @@ fun WriteReviewDialog(
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             },
             containerColor = Color.White,

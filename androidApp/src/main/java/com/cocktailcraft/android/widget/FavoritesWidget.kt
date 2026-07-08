@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalContext
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
@@ -16,6 +17,7 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
@@ -40,6 +42,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.cocktailcraft.android.MainActivity
+import com.cocktailcraft.android.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -97,7 +100,7 @@ class FavoritesWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "❤️ Favorites ($favoritesCount)",
+                        text = LocalContext.current.getString(R.string.widget_favorites_header, favoritesCount),
                         style = TextStyle(
                             color = GlanceTheme.colors.primary,
                             fontSize = 14.sp,
@@ -144,7 +147,7 @@ class FavoritesWidget : GlanceAppWidget() {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Loading...",
+                text = LocalContext.current.getString(R.string.loading),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 14.sp
@@ -163,7 +166,7 @@ class FavoritesWidget : GlanceAppWidget() {
                 Text(text = "⚠️", style = TextStyle(fontSize = 24.sp))
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 Text(
-                    text = "Tap ↻ to retry",
+                    text = LocalContext.current.getString(R.string.widget_tap_refresh_to_retry),
                     style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 12.sp)
                 )
             }
@@ -182,7 +185,7 @@ class FavoritesWidget : GlanceAppWidget() {
                 Text(text = "💔", style = TextStyle(fontSize = 32.sp))
                 Spacer(modifier = GlanceModifier.height(8.dp))
                 Text(
-                    text = "No favorites yet",
+                    text = LocalContext.current.getString(R.string.no_favorites),
                     style = TextStyle(
                         color = GlanceTheme.colors.onSurface,
                         fontSize = 14.sp,
@@ -191,7 +194,7 @@ class FavoritesWidget : GlanceAppWidget() {
                 )
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 Text(
-                    text = "Tap to add some!",
+                    text = LocalContext.current.getString(R.string.tap_to_add_favorites),
                     style = TextStyle(
                         color = GlanceTheme.colors.primary,
                         fontSize = 12.sp
@@ -221,7 +224,7 @@ class FavoritesWidget : GlanceAppWidget() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "View all ${favorites.size} favorites →",
+                            text = LocalContext.current.getString(R.string.widget_view_all_favorites, favorites.size),
                             style = TextStyle(
                                 color = GlanceTheme.colors.primary,
                                 fontSize = 12.sp,
@@ -236,6 +239,9 @@ class FavoritesWidget : GlanceAppWidget() {
 
     @Composable
     private fun FavoriteItemRow(favorite: FavoriteItem) {
+        // Open the tapped favorite's detail screen instead of cold-launching
+        // to the Home tab
+        val context = LocalContext.current
         Row(
             modifier = GlanceModifier
                 .fillMaxWidth()
@@ -243,7 +249,7 @@ class FavoritesWidget : GlanceAppWidget() {
                 .cornerRadius(8.dp)
                 .background(GlanceTheme.colors.background)
                 .padding(8.dp)
-                .clickable(actionStartActivity<MainActivity>()),
+                .clickable(actionStartActivity(cocktailDetailIntent(context, favorite.id))),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Cocktail emoji

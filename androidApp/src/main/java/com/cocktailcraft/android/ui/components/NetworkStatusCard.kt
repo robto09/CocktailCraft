@@ -19,9 +19,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocktailcraft.android.R
 
 /**
  * A reusable network status card component that displays the current network status.
@@ -72,7 +74,7 @@ fun NetworkStatusCard(
                     Icons.Default.Wifi
                 else
                     Icons.Default.WifiOff,
-                contentDescription = if (isNetworkAvailable) "Online" else "Offline",
+                contentDescription = if (isNetworkAvailable) stringResource(R.string.common_online) else stringResource(R.string.common_offline),
                 tint = textColor,
                 modifier = Modifier.size(iconSize.dp)
             )
@@ -80,7 +82,7 @@ fun NetworkStatusCard(
             Spacer(modifier = Modifier.width(12.dp))
 
             Text(
-                text = if (isNetworkAvailable) "Network Available" else "Network Unavailable",
+                text = if (isNetworkAvailable) stringResource(R.string.common_network_available) else stringResource(R.string.common_network_unavailable),
                 color = textColor,
                 fontWeight = FontWeight.Bold,
                 fontSize = fontSize.sp

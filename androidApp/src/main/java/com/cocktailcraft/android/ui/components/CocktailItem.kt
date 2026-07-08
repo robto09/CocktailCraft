@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -26,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.components.OptimizedImage
 import com.cocktailcraft.android.util.rememberHapticHandler
@@ -81,7 +83,7 @@ fun CocktailItem(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Out of Stock",
+                            text = stringResource(R.string.list_out_of_stock),
                             color = Color.White,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
@@ -112,7 +114,7 @@ fun CocktailItem(
                 // Display alcoholic info with category info
                 Text(
                     text = buildString {
-                        append(cocktail.alcoholic ?: "Unknown")
+                        append(cocktail.alcoholic ?: stringResource(R.string.list_alcoholic_unknown))
                         cocktail.category?.let {
                             append(" • ")
                             append(it)
@@ -139,7 +141,7 @@ fun CocktailItem(
                                 .let { if (cocktail.ingredients.size > 2) "$it..." else it }
                         }
                     } else {
-                        "Tap to view ingredients"
+                        stringResource(R.string.list_tap_to_view_ingredients)
                     },
                     fontSize = 12.sp,
                     color = AppColors.TextSecondary,
@@ -156,7 +158,7 @@ fun CocktailItem(
                 ) {
                     // Price
                     Text(
-                        text = "$${String.format("%.2f", cocktail.price)}",
+                        text = stringResource(R.string.list_price_format, cocktail.price),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = AppColors.Primary
@@ -164,17 +166,17 @@ fun CocktailItem(
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // Favorite button with haptic feedback
+                    // Favorite button with haptic feedback — default IconButton
+                    // size keeps the 48 dp minimum touch target
                     IconButton(
                         onClick = {
                             hapticHandler.performToggleFavorite(isFavorite)
                             onToggleFavorite(cocktail)
-                        },
-                        modifier = Modifier.size(32.dp)
+                        }
                     ) {
                         Icon(
                             imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                            contentDescription = if (isFavorite) stringResource(R.string.list_remove_from_favorites) else stringResource(R.string.list_add_to_favorites),
                             tint = if (isFavorite) AppColors.Secondary else AppColors.Gray,
                             modifier = Modifier.size(20.dp)
                         )
@@ -183,12 +185,11 @@ fun CocktailItem(
                     // Add to cart button
                     IconButton(
                         onClick = { onAddToCart(cocktail) },
-                        modifier = Modifier.size(32.dp),
                         enabled = cocktail.stockCount > 0
                     ) {
                         Icon(
                             imageVector = Icons.Default.ShoppingCart,
-                            contentDescription = "Add to Cart",
+                            contentDescription = stringResource(R.string.add_to_cart),
                             tint = if (cocktail.stockCount > 0) AppColors.Primary else AppColors.Gray,
                             modifier = Modifier.size(20.dp)
                         )

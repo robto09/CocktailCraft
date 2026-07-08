@@ -21,10 +21,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
@@ -78,26 +80,26 @@ fun NetworkErrorStateDisplay(
                 icon = Icons.Default.WifiOff
                 iconTint = AppColors.Primary
                 title = when {
-                    isOfflineMode -> "Offline Mode Active"
-                    else -> "Network Unavailable"
+                    isOfflineMode -> stringResource(R.string.error_offline_mode_active)
+                    else -> stringResource(R.string.common_network_unavailable)
                 }
                 message = when {
                     isOfflineMode && !hasContent ->
-                        "No cached cocktails available. Connect to the internet to download cocktails."
+                        stringResource(R.string.error_no_cached_cocktails)
                     !isNetworkAvailable ->
-                        "You're currently offline. Enable Offline Mode to browse cached cocktails."
+                        stringResource(R.string.error_offline_enable_offline_mode)
                     else -> errorMessage
                 }
             } else {
                 icon = Icons.Default.Error
                 iconTint = Color.Red
-                title = "Unable to load cocktails"
+                title = stringResource(R.string.error_unable_to_load_cocktails)
                 message = errorMessage
             }
 
             Icon(
                 imageVector = icon,
-                contentDescription = "Error",
+                contentDescription = stringResource(R.string.error),
                 tint = iconTint,
                 modifier = Modifier.size(iconSize.dp)
             )
@@ -133,7 +135,7 @@ fun NetworkErrorStateDisplay(
                         containerColor = primaryButtonColor
                     )
                 ) {
-                    Text("Retry")
+                    Text(stringResource(R.string.common_retry))
                 }
 
                 // Conditional secondary action button
@@ -146,7 +148,7 @@ fun NetworkErrorStateDisplay(
                                 containerColor = secondaryButtonColor
                             )
                         ) {
-                            Text("Enable Offline Mode")
+                            Text(stringResource(R.string.common_enable_offline_mode))
                         }
                     }
                     // If offline mode is enabled but we want to go back online
@@ -157,7 +159,7 @@ fun NetworkErrorStateDisplay(
                                 containerColor = secondaryButtonColor
                             )
                         ) {
-                            Text("Go Online")
+                            Text(stringResource(R.string.common_go_online))
                         }
                     }
                 }

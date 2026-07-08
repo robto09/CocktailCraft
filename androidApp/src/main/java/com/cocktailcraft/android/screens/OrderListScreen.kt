@@ -61,7 +61,7 @@ fun OrderListScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = error?.message ?: "Unknown error",
+                    text = error?.message ?: stringResource(R.string.order_unknown_error),
                     color = AppColors.Error,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(16.dp)
@@ -87,7 +87,7 @@ fun OrderListScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "No orders yet",
+                        text = stringResource(R.string.order_list_empty_title),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary
@@ -96,7 +96,7 @@ fun OrderListScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Your order history will appear here",
+                        text = stringResource(R.string.order_list_empty_message),
                         fontSize = 14.sp,
                         color = AppColors.TextSecondary,
                         textAlign = TextAlign.Center
@@ -126,7 +126,7 @@ fun OrderListScreen(
             ) {
                 item {
                     Text(
-                        text = "Your Orders",
+                        text = stringResource(R.string.order_list_title),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = AppColors.TextPrimary,
@@ -163,7 +163,7 @@ fun OrderItem(order: Order) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Order #${order.id.takeLast(5)}",
+                    text = stringResource(R.string.order_number, order.id.takeLast(5)),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary
@@ -188,13 +188,13 @@ fun OrderItem(order: Order) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "${item.quantity}x ${item.name}",
+                            text = stringResource(R.string.order_item_quantity_name, item.quantity, item.name),
                             fontSize = 14.sp,
                             color = AppColors.TextPrimary
                         )
 
                         Text(
-                            text = "$${String.format("%.2f", item.price * item.quantity)}",
+                            text = stringResource(R.string.order_price_format, item.price * item.quantity),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
                             color = AppColors.TextPrimary
@@ -215,14 +215,14 @@ fun OrderItem(order: Order) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Total",
+                    text = stringResource(R.string.total),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.TextPrimary
                 )
 
                 Text(
-                    text = "$${String.format("%.2f", order.total)}",
+                    text = stringResource(R.string.order_price_format, order.total),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = AppColors.Primary

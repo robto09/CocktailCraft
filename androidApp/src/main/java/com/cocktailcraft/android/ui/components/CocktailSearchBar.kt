@@ -22,7 +22,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
@@ -53,7 +55,7 @@ fun CocktailSearchBar(
     onClearSearch: () -> Unit,
     onToggleAdvancedSearch: () -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "Search cocktails...",
+    placeholder: String = stringResource(R.string.search_cocktails_placeholder),
     searchIconTint: Color = AppColors.Gray,
     clearIconTint: Color = AppColors.Gray,
     activeFilterButtonColor: Color = AppColors.Primary,
@@ -75,7 +77,7 @@ fun CocktailSearchBar(
             leadingIcon = {
                 Icon(
                     Icons.Filled.Search,
-                    contentDescription = "Search",
+                    contentDescription = stringResource(R.string.search),
                     tint = searchIconTint
                 )
             },
@@ -84,7 +86,7 @@ fun CocktailSearchBar(
                     IconButton(onClick = onClearSearch) {
                         Icon(
                             Icons.Filled.Close,
-                            contentDescription = "Clear search",
+                            contentDescription = stringResource(R.string.search_clear_search),
                             tint = clearIconTint
                         )
                     }
@@ -119,7 +121,7 @@ fun CocktailSearchBar(
         ) {
             Icon(
                 imageVector = Icons.Default.FilterAlt,
-                contentDescription = "Advanced Search",
+                contentDescription = stringResource(R.string.search_advanced_search),
                 tint = if (isAdvancedSearchActive || hasActiveFilters)
                     activeFilterIconTint
                 else

@@ -30,14 +30,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
+import android.content.Intent
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
+import androidx.compose.runtime.DisposableEffect
+import androidx.core.util.Consumer
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
 import com.cocktailcraft.android.R
+import com.cocktailcraft.android.navigation.COCKTAIL_DEEP_LINK_BASE_PATH
 import com.cocktailcraft.android.navigation.CartRoute
 import com.cocktailcraft.android.navigation.CocktailDetailRoute
 import com.cocktailcraft.android.navigation.FavoritesRoute
@@ -72,6 +79,22 @@ fun MainScreen() {
     val navController = rememberNavController()
     // Create the navigation manager
     val navigationManager = remember { NavigationManager(navController) }
+
+    // MainActivity is singleTop, so a widget deep link while the app is
+    // already running arrives via onNewIntent instead of a fresh launch —
+    // forward it to the NavController (the launch intent is handled by
+    // NavHost itself). Widget PendingIntents are delivered with a
+    // framework-forced FLAG_ACTIVITY_NEW_TASK, which makes handleDeepLink
+    // finish and relaunch the activity instead of navigating in place —
+    // strip launch flags first, we are already in the right task.
+    val activity = LocalActivity.current as? ComponentActivity
+    DisposableEffect(activity, navController) {
+        val listener = Consumer<Intent> { intent ->
+            navController.handleDeepLink(Intent(intent).setFlags(0))
+        }
+        activity?.addOnNewIntentListener(listener)
+        onDispose { activity?.removeOnNewIntentListener(listener) }
+    }
 
     val items = listOf(
         Screen.Home,
@@ -128,8 +151,8 @@ fun MainScreen() {
                                     currentDestination?.hasRoute<FavoritesRoute>() == true -> stringResource(R.string.favorites)
                                     currentDestination?.hasRoute<OrderListRoute>() == true -> stringResource(R.string.recipes)
                                     currentDestination?.hasRoute<ProfileRoute>() == true -> stringResource(R.string.profile)
-                                    isOfflineModeScreen -> "Offline Mode"
-                                    else -> "Cocktail Bar"
+                                    isOfflineModeScreen -> stringResource(R.string.offline_mode)
+                                    else -> stringResource(R.string.app_name)
                                 },
                                 color = Color.White,
                                 fontSize = 24.sp,
@@ -142,7 +165,7 @@ fun MainScreen() {
                                 IconButton(onClick = { navigationManager.navigateBack() }) {
                                     Icon(
                                         imageVector = Icons.Filled.ArrowBack,
-                                        contentDescription = "Back",
+                                        contentDescription = stringResource(R.string.common_back),
                                         tint = Color.White
                                     )
                                 }
@@ -267,11 +290,14 @@ fun MainScreen() {
                 )
             }
 
-            composable<CocktailDetailRoute> { backStackEntry ->
+            composable<CocktailDetailRoute>(
+                deepLinks = listOf(
+                    navDeepLink<CocktailDetailRoute>(basePath = COCKTAIL_DEEP_LINK_BASE_PATH)
+                )
+            ) { backStackEntry ->
                 val route = backStackEntry.toRoute<CocktailDetailRoute>()
                 CocktailDetailScreen(
                     cocktailId = route.cocktailId,
-                    homeViewModel = sharedHomeViewModel,
                     cartViewModel = sharedCartViewModel,
                     favoritesViewModel = sharedFavoritesViewModel,
                     navigationManager = navigationManager,

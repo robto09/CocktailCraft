@@ -1,14 +1,10 @@
 package com.cocktailcraft.android.ui.components
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,25 +13,27 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.util.ListOptimizations.OnBottomReached
-import kotlinx.coroutines.delay
 
 /**
  * A reusable component for displaying a list of cocktails with animations.
+ *
+ * Item entrance/exit/placement animation is delegated to
+ * [androidx.compose.foundation.lazy.LazyItemScope.animateItem] — the previous
+ * hand-rolled batching system never produced a visible animation (its
+ * animateFloatAsState calls initialized at their target values) and its
+ * stagger counter jammed after the first list swap.
  *
  * @param cocktails The list of cocktails to display
  * @param isSearchActive Whether search is currently active
@@ -76,42 +74,15 @@ fun AnimatedCocktailList(
     // Remember scroll state for optimizations
     val listState = rememberLazyListState()
 
+    // Identity-keyed items require unique ids; guard the unique-key contract
+    // against overlapping pages from the API
+    val distinctCocktails = remember(cocktails) { cocktails.distinctBy { it.id } }
+
     // Detect when we're near the bottom to load more items
     listState.OnBottomReached(buffer = 5) {
         // Only load more if not already loading and not searching
         if (!isLoadingMore && !isSearchActive) {
             onLoadMore()
-        }
-    }
-
-    // Track which items have been loaded for batched animation
-    val visibleItemsCount = remember { mutableStateOf(0) }
-
-    // Update visible items based on scroll position
-    LaunchedEffect(listState.firstVisibleItemIndex, cocktails.size) {
-        // Calculate how many items should be visible based on current scroll position
-        // We add a buffer of 9 items (3 batches of 3) to ensure smooth scrolling
-        val targetVisible = minOf(
-            cocktails.size,
-            listState.firstVisibleItemIndex + 12 // Current visible + 3 batches ahead
-        )
-
-        // If we need to show more items, increase the count in batches of 3
-        if (targetVisible > visibleItemsCount.value) {
-            // Animate in batches of 3 items
-            val batchSize = 3
-            val currentBatch = visibleItemsCount.value / batchSize
-            val targetBatch = targetVisible / batchSize
-
-            // For each batch we need to show
-            for (batch in currentBatch until targetBatch) {
-                val newCount = minOf((batch + 1) * batchSize, cocktails.size)
-                visibleItemsCount.value = newCount
-                delay(100) // Small delay between batches for staggered effect
-            }
-
-            // Make sure we show any remaining items
-            visibleItemsCount.value = targetVisible
         }
     }
 
@@ -126,9 +97,9 @@ fun AnimatedCocktailList(
         item(key = "header") {
             Text(
                 text = when {
-                    isSearchActive -> "Search Results"
-                    selectedCategory != null -> "$selectedCategory Cocktails"
-                    else -> "All Cocktails"
+                    isSearchActive -> stringResource(R.string.list_search_results)
+                    selectedCategory != null -> stringResource(R.string.list_category_cocktails, selectedCategory)
+                    else -> stringResource(R.string.list_all_cocktails)
                 },
                 fontSize = headerFontSize.sp,
                 fontWeight = FontWeight.Bold,
@@ -137,63 +108,29 @@ fun AnimatedCocktailList(
             )
         }
 
-        // Cocktail items with animations
+        // Cocktail items — animateItem() fades new items in and animates
+        // position changes when the list shifts. Keys must carry only the
+        // cocktail's identity: embedding the index would rename every
+        // surviving key on any shift and turn moves into remove+insert
+        // (no placement animation, all item state discarded).
         itemsIndexed(
-            items = cocktails,
-            key = { index, cocktail -> "cocktail_${index}_${cocktail.id}" }
-        ) { index, cocktail ->
-            // Only show items that have been loaded in our batched approach
-            val isVisible = index < visibleItemsCount.value
-
-            // Calculate the animation index based on the batch
-            // This ensures items within a batch animate together
-            val batchSize = 3
-            val batchIndex = index % batchSize
-
-            // If the item should be visible, show it with animation
-            if (isVisible) {
-                // Calculate animation parameters based on batch
-                val delayMillis = batchIndex * 100
-                val animationDuration = 300
-
-                // Animate alpha and offset for entry
-                val animatedAlpha by animateFloatAsState(
-                    targetValue = 1f,
-                    animationSpec = tween(
-                        durationMillis = animationDuration,
-                        delayMillis = delayMillis
-                    ),
-                    label = "item_alpha_$index"
+            items = distinctCocktails,
+            key = { _, cocktail -> "cocktail_${cocktail.id}" }
+        ) { _, cocktail ->
+            Box(modifier = Modifier.animateItem()) {
+                AnimatedCocktailItem(
+                    cocktail = cocktail,
+                    onClick = {
+                        onCocktailClick(cocktail)
+                    },
+                    onAddToCart = {
+                        onAddToCart(it)
+                    },
+                    isFavorite = favorites.any { it.id == cocktail.id },
+                    onToggleFavorite = { cocktailToToggle ->
+                        onToggleFavorite(cocktailToToggle)
+                    }
                 )
-
-                val animatedOffset by animateFloatAsState(
-                    targetValue = 0f,
-                    animationSpec = tween(
-                        durationMillis = animationDuration,
-                        delayMillis = delayMillis
-                    ),
-                    label = "item_offset_$index"
-                )
-
-                Box(
-                    modifier = Modifier
-                        .alpha(animatedAlpha)
-                        .offset(y = animatedOffset.dp)
-                ) {
-                    AnimatedCocktailItem(
-                        cocktail = cocktail,
-                        onClick = {
-                            onCocktailClick(cocktail)
-                        },
-                        onAddToCart = {
-                            onAddToCart(it)
-                        },
-                        isFavorite = favorites.any { it.id == cocktail.id },
-                        onToggleFavorite = { cocktailToToggle ->
-                            onToggleFavorite(cocktailToToggle)
-                        }
-                    )
-                }
             }
         }
 
@@ -202,21 +139,13 @@ fun AnimatedCocktailList(
             item(key = "loading_more") {
                 Box(
                     modifier = Modifier
+                        .animateItem()
                         .fillMaxWidth()
                         .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Use a simple fade-in effect for the loading indicator
-                    val animatedAlpha by animateFloatAsState(
-                        targetValue = 1f,
-                        animationSpec = tween(durationMillis = 300),
-                        label = "loading_alpha"
-                    )
-
                     CircularProgressIndicator(
-                        modifier = Modifier
-                            .size(loadingIndicatorSize.dp)
-                            .alpha(animatedAlpha),
+                        modifier = Modifier.size(loadingIndicatorSize.dp),
                         color = AppColors.Primary
                     )
                 }
@@ -226,33 +155,12 @@ fun AnimatedCocktailList(
         // Show end of list message when no more data
         if (!hasMoreData && !isSearchActive && cocktails.isNotEmpty()) {
             item(key = "end_of_list") {
-                // Use a simple animation for the end of list message
-                val animatedOffset by animateFloatAsState(
-                    targetValue = 0f,
-                    animationSpec = tween(
-                        durationMillis = 500,
-                        delayMillis = 300,
-                        easing = FastOutSlowInEasing
-                    ),
-                    label = "end_of_list_offset"
-                )
-
-                val animatedAlpha by animateFloatAsState(
-                    targetValue = 1f,
-                    animationSpec = tween(
-                        durationMillis = 500,
-                        delayMillis = 300
-                    ),
-                    label = "end_of_list_alpha"
-                )
-
                 Text(
-                    text = "You've reached the end of the list",
+                    text = stringResource(R.string.list_end_of_list_message),
                     modifier = Modifier
+                        .animateItem()
                         .fillMaxWidth()
-                        .padding(16.dp)
-                        .offset(y = animatedOffset.dp)
-                        .alpha(animatedAlpha),
+                        .padding(16.dp),
                     textAlign = TextAlign.Center,
                     color = AppColors.TextSecondary,
                     fontSize = endOfListMessageFontSize.sp

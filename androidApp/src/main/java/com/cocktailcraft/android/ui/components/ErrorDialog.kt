@@ -36,12 +36,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.android.util.ErrorUtils
@@ -82,7 +84,7 @@ fun ErrorDialog(
                 // Error icon based on category
                 Icon(
                     imageVector = ErrorUtils.getErrorIcon(error.category),
-                    contentDescription = "Error",
+                    contentDescription = stringResource(R.string.error),
                     tint = ErrorUtils.getErrorColor(error.category),
                     modifier = Modifier.size(48.dp)
                 )
@@ -118,7 +120,7 @@ fun ErrorDialog(
                     TextButton(
                         onClick = onDismiss
                     ) {
-                        Text("Dismiss")
+                        Text(stringResource(R.string.dialog_dismiss))
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -148,7 +150,7 @@ fun ErrorDialog(
                                     containerColor = AppColors.Primary
                                 )
                             ) {
-                                Text("Try Again")
+                                Text(stringResource(R.string.dialog_try_again))
                                 }
                             }
                         }
@@ -194,7 +196,7 @@ fun ErrorBanner(
                 ) {
                     Icon(
                         imageVector = ErrorUtils.getErrorIcon(it.category),
-                        contentDescription = "Error",
+                        contentDescription = stringResource(R.string.error),
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
                     )

@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -49,6 +50,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.animation.AnimationUtils
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.util.rememberHapticHandler
@@ -84,7 +86,7 @@ fun AnimatedCocktailItem(
             .scale(scale)
             .clickable(
                 onClick = onClick,
-                onClickLabel = "View ${cocktail.name} details"
+                onClickLabel = stringResource(R.string.list_view_details_label, cocktail.name)
             ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
@@ -150,7 +152,7 @@ fun CocktailItemContent(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Out of Stock",
+                        text = stringResource(R.string.list_out_of_stock),
                         color = Color.White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -181,7 +183,7 @@ fun CocktailItemContent(
             // Display alcoholic info with category info
             Text(
                 text = buildString {
-                    append(cocktail.alcoholic ?: "Unknown")
+                    append(cocktail.alcoholic ?: stringResource(R.string.list_alcoholic_unknown))
                     cocktail.category?.let {
                         append(" • ")
                         append(it)
@@ -208,7 +210,7 @@ fun CocktailItemContent(
                             .let { if (cocktail.ingredients.size > 2) "$it..." else it }
                     }
                 } else {
-                    "Tap to view ingredients"
+                    stringResource(R.string.list_tap_to_view_ingredients)
                 },
                 fontSize = 12.sp,
                 color = AppColors.TextSecondary,
@@ -225,7 +227,7 @@ fun CocktailItemContent(
             ) {
                 // Price
                 Text(
-                    text = "$${String.format("%.2f", cocktail.price)}",
+                    text = stringResource(R.string.list_price_format, cocktail.price),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = AppColors.Primary
@@ -240,7 +242,7 @@ fun CocktailItemContent(
                         onToggleFavorite(cocktail)
                     },
                     icon = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                    contentDescription = if (isFavorite) stringResource(R.string.list_remove_from_favorites) else stringResource(R.string.list_add_to_favorites),
                     tint = if (isFavorite) AppColors.Secondary else AppColors.Gray
                 )
 
@@ -248,7 +250,7 @@ fun CocktailItemContent(
                 AnimatedIconButton(
                     onClick = { onAddToCart(cocktail) },
                     icon = Icons.Default.ShoppingCart,
-                    contentDescription = "Add to Cart",
+                    contentDescription = stringResource(R.string.add_to_cart),
                     tint = if (cocktail.stockCount > 0) AppColors.Primary else AppColors.Gray,
                     enabled = cocktail.stockCount > 0
                 )

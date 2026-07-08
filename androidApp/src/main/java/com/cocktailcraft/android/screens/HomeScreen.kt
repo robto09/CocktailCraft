@@ -71,6 +71,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -79,11 +80,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.cocktailcraft.android.navigation.Screen
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.android.ui.components.AnimatedCocktailItem
 import com.cocktailcraft.android.ui.components.AnimatedCocktailList
 import com.cocktailcraft.android.ui.components.CategoryFilterRow
 import com.cocktailcraft.android.ui.components.CocktailItem
-import com.cocktailcraft.android.ui.components.CocktailItemShimmer
 import com.cocktailcraft.android.ui.components.CocktailLoadingShimmer
 import com.cocktailcraft.android.ui.components.CocktailSearchBar
 import com.cocktailcraft.android.ui.components.EmptySearchResultsMessage
@@ -93,8 +94,10 @@ import com.cocktailcraft.android.ui.components.AdvancedSearchBottomSheet
 import com.cocktailcraft.android.ui.components.FilterChip
 import com.cocktailcraft.android.ui.components.NetworkErrorStateDisplay
 import com.cocktailcraft.android.ui.components.SearchFilterChips
-import com.cocktailcraft.android.ui.components.shimmerEffect
+import com.cocktailcraft.android.ui.preview.PreviewData
+import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.ListOptimizations.OnBottomReached
 import com.cocktailcraft.android.util.ListOptimizations.OnScrollPastThreshold
 import com.cocktailcraft.android.util.ListOptimizations.itemKey
@@ -139,12 +142,6 @@ fun HomeScreen(
     val onCategorySelected: (String?) -> Unit = { category ->
         selectedCategory = category
     }
-
-    // Add pull-to-refresh state
-    val pullRefreshState = rememberPullRefreshState(
-        refreshing = isLoading,
-        onRefresh = { viewModel.retry() }
-    )
 
     // Track if this is the first composition
     var isFirstComposition by rememberSaveable { mutableStateOf(true) }
@@ -194,7 +191,7 @@ fun HomeScreen(
         // We'll implement it in the future when we fully migrate to the new error system
 
         // Search Bar with Advanced Search Button
-        CocktailSearchBar(
+        HomeSearchBarSection(
             searchQuery = searchQuery,
             isAdvancedSearchActive = isAdvancedSearchActive,
             hasActiveFilters = searchFilters.hasActiveFilters(),
@@ -204,16 +201,9 @@ fun HomeScreen(
         )
 
         // Active filters display
-        SearchFilterChips(
-            filters = searchFilters,
-            onClearFilter = { filterType ->
-                // Create a copy of current filters with the specified filter cleared
-                val updatedFilters = when (filterType) {
-                    "category" -> searchFilters.copy(category = null)
-                    "ingredient" -> searchFilters.copy(ingredient = null)
-                    "alcoholic" -> searchFilters.copy(alcoholic = null)
-                    else -> searchFilters
-                }
+        HomeActiveFiltersSection(
+            searchFilters = searchFilters,
+            onApplyFilters = { updatedFilters ->
                 scope.launch { viewModel.applyFilters(updatedFilters) }
             },
             onClearAllFilters = {
@@ -233,102 +223,420 @@ fun HomeScreen(
 
         // Advanced search as a modal bottom sheet, matching iOS. Apply and
         // Clear both close the sheet; filtering runs in the shared ViewModel.
-        if (isAdvancedSearchActive) {
-            AdvancedSearchBottomSheet(
-                currentFilters = searchFilters,
-                categories = categories,
-                ingredients = ingredients,
-                onApplyFilters = { filters ->
-                    scope.launch { viewModel.applyFilters(filters) }
-                },
-                onClearFilters = {
-                    viewModel.clearSearchFilters()
-                },
-                onDismiss = {
-                    viewModel.toggleAdvancedSearchMode(false)
-                }
-            )
-        }
+        HomeAdvancedSearchSheet(
+            isVisible = isAdvancedSearchActive,
+            currentFilters = searchFilters,
+            categories = categories,
+            ingredients = ingredients,
+            onApplyFilters = { filters ->
+                scope.launch { viewModel.applyFilters(filters) }
+            },
+            onClearFilters = {
+                viewModel.clearSearchFilters()
+            },
+            onDismiss = {
+                viewModel.toggleAdvancedSearchMode(false)
+            }
+        )
 
         // Add Category Filter Chips - only shown when not searching.
         // Uses the shared curated list so the row matches iOS ("All" + curated
         // categories); the full API list above is only for the advanced panel.
-        if (!isSearchActive) {
-            CategoryFilterRow(
-                categories = viewModel.curatedCategories,
-                selectedCategory = selectedCategory,
-                onCategorySelected = onCategorySelected
-            )
-        }
+        HomeCategoryChipsRow(
+            isSearchActive = isSearchActive,
+            categories = viewModel.curatedCategories,
+            selectedCategory = selectedCategory,
+            onCategorySelected = onCategorySelected
+        )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(Spacing.sm))
 
         // Main content wrapped in pull-to-refresh
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pullRefresh(pullRefreshState)
-        ) {
-            if (isLoading && cocktails.isEmpty()) {
-                // Show shimmer loading effect instead of spinner
-                CocktailLoadingShimmer()
-            } else if (errorMessage.isNotBlank()) {
-                NetworkErrorStateDisplay(
-                    errorMessage = errorMessage,
-                    isOfflineMode = isOfflineMode,
-                    isNetworkAvailable = isNetworkAvailable,
-                    hasContent = cocktails.isNotEmpty(),
-                    onRetry = { viewModel.retry() },
-                    onEnableOfflineMode = {
-                        viewModel.setOfflineMode(true)
-                        viewModel.retry()
-                    },
-                    onGoOnline = {
-                        viewModel.setOfflineMode(false)
-                        viewModel.retry()
-                    }
-                )
-            } else if (cocktails.isEmpty()) {
-                // Enhanced empty state message with animations
-                EmptySearchResultsMessage(
-                    searchQuery = searchQuery,
-                    selectedCategory = selectedCategory,
-                    hasActiveFilters = searchFilters.hasActiveFilters(),
-                    onClearSearch = {
-                        viewModel.toggleSearchMode(false)
-                    },
-                    onClearCategory = {
-                        onCategorySelected(null)
-                    }
-                )
-            } else {
-                // Use the reusable animated cocktail list component
-                AnimatedCocktailList(
-                    cocktails = cocktails,
-                    isSearchActive = isSearchActive,
-                    selectedCategory = selectedCategory,
-                    isLoadingMore = isLoadingMore,
-                    hasMoreData = hasMoreData,
-                    favorites = favorites,
-                    onCocktailClick = onCocktailClick,
-                    onAddToCart = onAddToCart,
-                    onToggleFavorite = { cocktailToToggle ->
-                        scope.launch { favoritesViewModel.toggleFavorite(cocktailToToggle) }
-                    },
-                    onLoadMore = {
-                        scope.launch { viewModel.loadMoreCocktails() }
-                    }
-                )
+        HomeContentSection(
+            isLoading = isLoading,
+            errorMessage = errorMessage,
+            cocktails = cocktails,
+            searchQuery = searchQuery,
+            selectedCategory = selectedCategory,
+            hasActiveFilters = searchFilters.hasActiveFilters(),
+            isSearchActive = isSearchActive,
+            isLoadingMore = isLoadingMore,
+            hasMoreData = hasMoreData,
+            favorites = favorites,
+            isOfflineMode = isOfflineMode,
+            isNetworkAvailable = isNetworkAvailable,
+            onRetry = { viewModel.retry() },
+            onEnableOfflineMode = {
+                viewModel.setOfflineMode(true)
+                viewModel.retry()
+            },
+            onGoOnline = {
+                viewModel.setOfflineMode(false)
+                viewModel.retry()
+            },
+            onClearSearch = {
+                viewModel.toggleSearchMode(false)
+            },
+            onClearCategory = {
+                onCategorySelected(null)
+            },
+            onCocktailClick = onCocktailClick,
+            onAddToCart = onAddToCart,
+            onToggleFavorite = { cocktailToToggle ->
+                scope.launch { favoritesViewModel.toggleFavorite(cocktailToToggle) }
+            },
+            onLoadMore = {
+                scope.launch { viewModel.loadMoreCocktails() }
             }
+        )
+    }
+}
 
-            // Pull refresh indicator
-            PullRefreshIndicator(
-                refreshing = isLoading,
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-                backgroundColor = Color.White,
-                contentColor = AppColors.Primary
+// Search Bar with Advanced Search Button
+@Composable
+private fun HomeSearchBarSection(
+    searchQuery: String,
+    isAdvancedSearchActive: Boolean,
+    hasActiveFilters: Boolean,
+    onSearchQueryChange: (String) -> Unit,
+    onClearSearch: () -> Unit,
+    onToggleAdvancedSearch: () -> Unit
+) {
+    CocktailSearchBar(
+        searchQuery = searchQuery,
+        isAdvancedSearchActive = isAdvancedSearchActive,
+        hasActiveFilters = hasActiveFilters,
+        onSearchQueryChange = onSearchQueryChange,
+        onClearSearch = onClearSearch,
+        onToggleAdvancedSearch = onToggleAdvancedSearch
+    )
+}
+
+// Active filters display
+@Composable
+private fun HomeActiveFiltersSection(
+    searchFilters: SearchFilters,
+    onApplyFilters: (SearchFilters) -> Unit,
+    onClearAllFilters: () -> Unit
+) {
+    SearchFilterChips(
+        filters = searchFilters,
+        onClearFilter = { filterType ->
+            // Create a copy of current filters with the specified filter cleared
+            val updatedFilters = when (filterType) {
+                "category" -> searchFilters.copy(category = null)
+                "ingredient" -> searchFilters.copy(ingredient = null)
+                "alcoholic" -> searchFilters.copy(alcoholic = null)
+                else -> searchFilters
+            }
+            onApplyFilters(updatedFilters)
+        },
+        onClearAllFilters = onClearAllFilters
+    )
+}
+
+// Advanced search panel shown as a modal bottom sheet while active
+@Composable
+private fun HomeAdvancedSearchSheet(
+    isVisible: Boolean,
+    currentFilters: SearchFilters,
+    categories: List<String>,
+    ingredients: List<String>,
+    onApplyFilters: (SearchFilters) -> Unit,
+    onClearFilters: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    if (isVisible) {
+        AdvancedSearchBottomSheet(
+            currentFilters = currentFilters,
+            categories = categories,
+            ingredients = ingredients,
+            onApplyFilters = onApplyFilters,
+            onClearFilters = onClearFilters,
+            onDismiss = onDismiss
+        )
+    }
+}
+
+// Category Filter Chips row - only shown when not searching
+@Composable
+private fun HomeCategoryChipsRow(
+    isSearchActive: Boolean,
+    categories: List<String>,
+    selectedCategory: String?,
+    onCategorySelected: (String?) -> Unit
+) {
+    if (!isSearchActive) {
+        CategoryFilterRow(
+            categories = categories,
+            selectedCategory = selectedCategory,
+            onCategorySelected = onCategorySelected
+        )
+    }
+}
+
+// Main content (loading / error / empty / list branches) wrapped in pull-to-refresh
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun HomeContentSection(
+    isLoading: Boolean,
+    errorMessage: String,
+    cocktails: List<Cocktail>,
+    searchQuery: String,
+    selectedCategory: String?,
+    hasActiveFilters: Boolean,
+    isSearchActive: Boolean,
+    isLoadingMore: Boolean,
+    hasMoreData: Boolean,
+    favorites: List<Cocktail>,
+    isOfflineMode: Boolean,
+    isNetworkAvailable: Boolean,
+    onRetry: () -> Unit,
+    onEnableOfflineMode: () -> Unit,
+    onGoOnline: () -> Unit,
+    onClearSearch: () -> Unit,
+    onClearCategory: () -> Unit,
+    onCocktailClick: (Cocktail) -> Unit,
+    onAddToCart: (Cocktail) -> Unit,
+    onToggleFavorite: (Cocktail) -> Unit,
+    onLoadMore: () -> Unit
+) {
+    // Add pull-to-refresh state
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isLoading,
+        onRefresh = onRetry
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
+    ) {
+        if (isLoading && cocktails.isEmpty()) {
+            // Show shimmer loading effect instead of spinner
+            CocktailLoadingShimmer()
+        } else if (errorMessage.isNotBlank()) {
+            NetworkErrorStateDisplay(
+                errorMessage = errorMessage,
+                isOfflineMode = isOfflineMode,
+                isNetworkAvailable = isNetworkAvailable,
+                hasContent = cocktails.isNotEmpty(),
+                onRetry = onRetry,
+                onEnableOfflineMode = onEnableOfflineMode,
+                onGoOnline = onGoOnline
+            )
+        } else if (cocktails.isEmpty()) {
+            // Enhanced empty state message with animations
+            EmptySearchResultsMessage(
+                searchQuery = searchQuery,
+                selectedCategory = selectedCategory,
+                hasActiveFilters = hasActiveFilters,
+                onClearSearch = onClearSearch,
+                onClearCategory = onClearCategory
+            )
+        } else {
+            // Use the reusable animated cocktail list component
+            AnimatedCocktailList(
+                cocktails = cocktails,
+                isSearchActive = isSearchActive,
+                selectedCategory = selectedCategory,
+                isLoadingMore = isLoadingMore,
+                hasMoreData = hasMoreData,
+                favorites = favorites,
+                onCocktailClick = onCocktailClick,
+                onAddToCart = onAddToCart,
+                onToggleFavorite = onToggleFavorite,
+                onLoadMore = onLoadMore
             )
         }
+
+        // Pull refresh indicator
+        PullRefreshIndicator(
+            refreshing = isLoading,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            backgroundColor = Color.White,
+            contentColor = AppColors.Primary
+        )
+    }
+}
+
+// ---- Design-time previews ----
+
+@Preview(name = "Home search bar — query + filters active", showBackground = true)
+@Composable
+private fun HomeSearchBarSectionPreview() {
+    AnimatedCocktailBarTheme(darkTheme = false) {
+        HomeSearchBarSection(
+            searchQuery = "Margarita",
+            isAdvancedSearchActive = false,
+            hasActiveFilters = true,
+            onSearchQueryChange = {},
+            onClearSearch = {},
+            onToggleAdvancedSearch = {}
+        )
+    }
+}
+
+@Preview(name = "Home search bar (dark)", showBackground = true)
+@Composable
+private fun HomeSearchBarSectionDarkPreview() {
+    AnimatedCocktailBarTheme(darkTheme = true) {
+        HomeSearchBarSection(
+            searchQuery = "",
+            isAdvancedSearchActive = false,
+            hasActiveFilters = false,
+            onSearchQueryChange = {},
+            onClearSearch = {},
+            onToggleAdvancedSearch = {}
+        )
+    }
+}
+
+@Preview(name = "Home active filters", showBackground = true)
+@Composable
+private fun HomeActiveFiltersSectionPreview() {
+    AnimatedCocktailBarTheme(darkTheme = false) {
+        HomeActiveFiltersSection(
+            searchFilters = SearchFilters(
+                category = "Cocktail",
+                ingredient = "Tequila",
+                alcoholic = true
+            ),
+            onApplyFilters = {},
+            onClearAllFilters = {}
+        )
+    }
+}
+
+@Preview(name = "Home active filters (dark)", showBackground = true)
+@Composable
+private fun HomeActiveFiltersSectionDarkPreview() {
+    AnimatedCocktailBarTheme(darkTheme = true) {
+        HomeActiveFiltersSection(
+            searchFilters = SearchFilters(
+                category = "Cocktail",
+                ingredient = "Tequila",
+                alcoholic = true
+            ),
+            onApplyFilters = {},
+            onClearAllFilters = {}
+        )
+    }
+}
+
+@Preview(name = "Home category chips", showBackground = true)
+@Composable
+private fun HomeCategoryChipsRowPreview() {
+    AnimatedCocktailBarTheme(darkTheme = false) {
+        HomeCategoryChipsRow(
+            isSearchActive = false,
+            categories = listOf("Cocktail", "Ordinary Drink", "Shot"),
+            selectedCategory = "Cocktail",
+            onCategorySelected = {}
+        )
+    }
+}
+
+@Preview(name = "Home category chips (dark)", showBackground = true)
+@Composable
+private fun HomeCategoryChipsRowDarkPreview() {
+    AnimatedCocktailBarTheme(darkTheme = true) {
+        HomeCategoryChipsRow(
+            isSearchActive = false,
+            categories = listOf("Cocktail", "Ordinary Drink", "Shot"),
+            selectedCategory = "Cocktail",
+            onCategorySelected = {}
+        )
+    }
+}
+
+@Preview(name = "Home content — loaded", showBackground = true)
+@Composable
+private fun HomeContentSectionPreview() {
+    AnimatedCocktailBarTheme(darkTheme = false) {
+        HomeContentSection(
+            isLoading = false,
+            errorMessage = "",
+            cocktails = PreviewData.cocktails,
+            searchQuery = "",
+            selectedCategory = null,
+            hasActiveFilters = false,
+            isSearchActive = false,
+            isLoadingMore = false,
+            hasMoreData = false,
+            favorites = emptyList(),
+            isOfflineMode = false,
+            isNetworkAvailable = true,
+            onRetry = {},
+            onEnableOfflineMode = {},
+            onGoOnline = {},
+            onClearSearch = {},
+            onClearCategory = {},
+            onCocktailClick = {},
+            onAddToCart = {},
+            onToggleFavorite = {},
+            onLoadMore = {}
+        )
+    }
+}
+
+@Preview(name = "Home content — loaded (dark)", showBackground = true)
+@Composable
+private fun HomeContentSectionDarkPreview() {
+    AnimatedCocktailBarTheme(darkTheme = true) {
+        HomeContentSection(
+            isLoading = false,
+            errorMessage = "",
+            cocktails = PreviewData.cocktails,
+            searchQuery = "",
+            selectedCategory = null,
+            hasActiveFilters = false,
+            isSearchActive = false,
+            isLoadingMore = false,
+            hasMoreData = false,
+            favorites = emptyList(),
+            isOfflineMode = false,
+            isNetworkAvailable = true,
+            onRetry = {},
+            onEnableOfflineMode = {},
+            onGoOnline = {},
+            onClearSearch = {},
+            onClearCategory = {},
+            onCocktailClick = {},
+            onAddToCart = {},
+            onToggleFavorite = {},
+            onLoadMore = {}
+        )
+    }
+}
+
+@Preview(name = "Home content — loaded, large font", showBackground = true, fontScale = 1.5f)
+@Composable
+private fun HomeContentSectionLargeFontPreview() {
+    AnimatedCocktailBarTheme(darkTheme = false) {
+        HomeContentSection(
+            isLoading = false,
+            errorMessage = "",
+            cocktails = PreviewData.cocktails,
+            searchQuery = "",
+            selectedCategory = null,
+            hasActiveFilters = false,
+            isSearchActive = false,
+            isLoadingMore = false,
+            hasMoreData = false,
+            favorites = emptyList(),
+            isOfflineMode = false,
+            isNetworkAvailable = true,
+            onRetry = {},
+            onEnableOfflineMode = {},
+            onGoOnline = {},
+            onClearSearch = {},
+            onClearCategory = {},
+            onCocktailClick = {},
+            onAddToCart = {},
+            onToggleFavorite = {},
+            onLoadMore = {}
+        )
     }
 }

@@ -10,9 +10,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
@@ -35,8 +37,8 @@ fun ConfirmationDialog(
     showDialog: Boolean,
     title: String,
     message: String,
-    confirmButtonText: String = "Confirm",
-    dismissButtonText: String = "Cancel",
+    confirmButtonText: String = stringResource(R.string.dialog_confirm),
+    dismissButtonText: String = stringResource(R.string.cancel),
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     titleFontSize: Int = 18,

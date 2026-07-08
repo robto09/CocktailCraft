@@ -15,7 +15,9 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// Cocktail Bar color palette
+// Cocktail Bar color palette — the single source of truth. res/values/colors.xml
+// (pre-Compose window + widget assets) mirrors these values by hand; keep it in
+// sync when changing anything here.
 object AppColors {
     // Light Theme Colors
     val PrimaryLight = Color(0xFFEB6A43) // Coral/Orange for main elements
@@ -58,26 +60,36 @@ object AppColors {
 private val LightColorScheme = lightColorScheme(
     primary = AppColors.PrimaryLight,
     secondary = AppColors.SecondaryLight,
+    tertiary = AppColors.ChipBackground,
     background = AppColors.BackgroundLight,
     surface = AppColors.SurfaceLight,
+    surfaceVariant = AppColors.LightGray,
     error = AppColors.Error,
     onPrimary = Color.White,
     onSecondary = Color.Black,
+    onTertiary = Color.White,
     onBackground = AppColors.TextPrimaryLight,
     onSurface = AppColors.TextPrimaryLight,
+    onSurfaceVariant = AppColors.TextSecondaryLight,
+    outline = AppColors.Gray,
     onError = Color.White
 )
 
 private val DarkColorScheme = darkColorScheme(
     primary = AppColors.PrimaryDark,
     secondary = AppColors.SecondaryDark,
+    tertiary = AppColors.ChipBackground,
     background = AppColors.BackgroundDark,
     surface = AppColors.SurfaceDark,
+    surfaceVariant = AppColors.DarkGray,
     error = AppColors.Error,
     onPrimary = Color.Black,
     onSecondary = Color.Black,
+    onTertiary = Color.White,
     onBackground = AppColors.TextPrimaryDark,
     onSurface = AppColors.TextPrimaryDark,
+    onSurfaceVariant = AppColors.TextSecondaryDark,
+    outline = AppColors.Gray,
     onError = Color.White
 )
 

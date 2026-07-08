@@ -41,7 +41,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
@@ -125,7 +127,7 @@ fun AnimatedThemeSwitch(
         ) {
             Icon(
                 imageVector = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
-                contentDescription = if (isDarkMode) "Dark Mode" else "Light Mode",
+                contentDescription = if (isDarkMode) stringResource(R.string.dark_mode) else stringResource(R.string.profile_light_mode),
                 tint = Color.White,
                 modifier = Modifier
                     .size(16.dp)

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
@@ -17,7 +18,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="❤️ Favorites (3)"
+            android:text="@string/widget_preview_favorites_header"
             android:textColor="@color/cocktail_primary"
             android:textSize="14sp"
             android:textStyle="bold" />
@@ -52,6 +53,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="🍸"
+        tools:ignore="HardcodedText"
                 android:textSize="24sp" />
 
             <LinearLayout
@@ -64,7 +66,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Mojito"
+                    android:text="@string/widget_preview_favorite_name_1"
                     android:textColor="@color/text_primary_light"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -72,7 +74,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Cocktail"
+                    android:text="@string/widget_preview_favorite_category"
                     android:textColor="@color/text_secondary_light"
                     android:textSize="11sp" />
 
@@ -82,6 +84,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="❤️"
+        tools:ignore="HardcodedText"
                 android:textSize="16sp" />
 
         </LinearLayout>
@@ -100,6 +103,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="🍸"
+        tools:ignore="HardcodedText"
                 android:textSize="24sp" />
 
             <LinearLayout
@@ -112,7 +116,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Old Fashioned"
+                    android:text="@string/widget_preview_favorite_name_2"
                     android:textColor="@color/text_primary_light"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -120,7 +124,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Cocktail"
+                    android:text="@string/widget_preview_favorite_category"
                     android:textColor="@color/text_secondary_light"
                     android:textSize="11sp" />
 
@@ -130,6 +134,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="❤️"
+        tools:ignore="HardcodedText"
                 android:textSize="16sp" />
 
         </LinearLayout>

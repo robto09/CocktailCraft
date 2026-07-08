@@ -79,8 +79,8 @@ fun CartScreen(
         if (!isLoading && error != null) {
             EmptyStateComponent(
                 title = stringResource(R.string.error),
-                message = error?.toString() ?: "An unknown error occurred",
-                actionButtonText = "Try Again",
+                message = error?.toString() ?: stringResource(R.string.cart_unknown_error),
+                actionButtonText = stringResource(R.string.cart_try_again),
                 onActionButtonClick = { /* Add retry logic here */ }
             )
         }
@@ -89,7 +89,7 @@ fun CartScreen(
             EmptyStateComponent(
                 title = stringResource(R.string.cart_empty_title),
                 message = stringResource(R.string.cart_empty_message),
-                actionButtonText = "Start Shopping",
+                actionButtonText = stringResource(R.string.cart_start_shopping),
                 onActionButtonClick = onStartShopping,
                 icon = Icons.Filled.ShoppingCart
             )
@@ -153,7 +153,7 @@ fun CartScreen(
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = "Place Order",
+                    text = stringResource(R.string.cart_place_order),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
@@ -166,8 +166,8 @@ fun CartScreen(
         showDialog = showPlaceOrderDialog,
         title = stringResource(R.string.confirm_order_title),
         message = stringResource(R.string.confirm_order_message, currencyFormatter.format(totalPrice + 5.99)),
-        confirmButtonText = "Confirm",
-        dismissButtonText = "Cancel",
+        confirmButtonText = stringResource(R.string.cart_confirm),
+        dismissButtonText = stringResource(R.string.cancel),
         onConfirm = {
             showPlaceOrderDialog = false
             // Navigate only after the order is persisted and the cart cleared —

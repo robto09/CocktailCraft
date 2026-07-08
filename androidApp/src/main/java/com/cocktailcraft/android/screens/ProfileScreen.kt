@@ -63,14 +63,18 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.AnimatedThemeToggleRow
+import com.cocktailcraft.android.BuildConfig
 import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.SignInDialog
 import com.cocktailcraft.android.ui.components.SignUpDialog
+import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.viewmodel.SharedProfileViewModel
 import com.cocktailcraft.viewmodel.SharedThemeViewModel
 import kotlinx.coroutines.launch
@@ -102,8 +106,8 @@ fun ProfileScreen(
     var showSignUpDialog by rememberSaveable { mutableStateOf(false) }
 
     // Sample profile data (in a real app, this would come from a ViewModel)
-    val userName = user?.name ?: "Guest User"
-    val userEmail = user?.email ?: "guest@example.com"
+    val userName = user?.name ?: stringResource(R.string.profile_guest_user)
+    val userEmail = user?.email ?: stringResource(R.string.profile_guest_email)
 
     // Sign in dialog state
     if (showSignInDialog) {
@@ -166,281 +170,44 @@ fun ProfileScreen(
             .fillMaxSize()
             .background(AppColors.Background)
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .padding(Spacing.lg)
     ) {
         // Profile header
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = AppColors.Surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Profile picture
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .background(AppColors.Primary.copy(alpha = 0.2f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = userName.take(1).uppercase(),
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AppColors.Primary
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // User name
-                Text(
-                    text = userName,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // User email
-                Text(
-                    text = userEmail,
-                    fontSize = 14.sp,
-                    color = AppColors.TextSecondary
-                )
-
-                // Show login/signup buttons if not signed in
-                if (!isLoggedIn) {
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Text(
-                        text = "Sign in to access your profile",
-                        fontSize = 16.sp,
-                        color = AppColors.TextSecondary,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-
-                    Button(
-                        onClick = { showSignInDialog = true },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AppColors.Primary
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth(0.8f)
-                            .padding(vertical = 4.dp)
-                    ) {
-                        Text(stringResource(R.string.sign_in))
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedButton(
-                        onClick = { showSignUpDialog = true },
-                        modifier = Modifier
-                            .fillMaxWidth(0.8f)
-                            .padding(vertical = 4.dp)
-                    ) {
-                        Text(stringResource(R.string.create_account))
-                    }
-                }
-            }
-        }
+        ProfileHeaderCard(
+            userName = userName,
+            userEmail = userEmail,
+            isLoggedIn = isLoggedIn,
+            onSignInClick = { showSignInDialog = true },
+            onSignUpClick = { showSignUpDialog = true }
+        )
 
         // Only show account settings and logout option if signed in
         if (isLoggedIn) {
             // Account settings
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = AppColors.Surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = "Account Settings",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AppColors.TextPrimary,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-
-                    SettingsItem(
-                        icon = Icons.Default.Person,
-                        title = stringResource(R.string.edit_profile),
-                        onClick = { /* Handle edit profile */ }
-                    )
-
-                    SettingsItem(
-                        icon = Icons.Default.Lock,
-                        title = stringResource(R.string.change_password),
-                        onClick = { /* Handle change password */ }
-                    )
-
-                    SettingsItem(
-                        icon = Icons.Default.Email,
-                        title = stringResource(R.string.email_preferences),
-                        onClick = { /* Handle email preferences */ }
-                    )
-
-                    SettingsItem(
-                        icon = Icons.Default.Notifications,
-                        title = stringResource(R.string.notification_settings),
-                        onClick = { /* Handle notification settings */ }
-                    )
-                }
-            }
+            AccountSettingsCard()
         }
 
         // App settings
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = AppColors.Surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "App Settings",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                SettingsItem(
-                    icon = Icons.Default.DateRange,
-                    title = stringResource(R.string.order_history),
-                    onClick = { navigationManager.navigateToOrderList() }
-                )
-
-                SettingsItem(
-                    icon = Icons.Default.Help,
-                    title = stringResource(R.string.help_support),
-                    onClick = { /* Handle help & support */ }
-                )
-
-                SettingsItem(
-                    icon = Icons.Default.CloudOff,
-                    title = stringResource(R.string.offline_mode),
-                    onClick = { navigationManager.navigateToOfflineMode() }
-                )
-
-                // Follow System Theme Toggle with animated switch
-                AnimatedThemeToggleRow(
-                    title = stringResource(R.string.follow_system_theme),
-                    subtitle = if (isSystemTheme) "On" else "Off",
-                    icon = Icons.Default.DateRange,
-                    isChecked = isSystemTheme,
-                    onToggle = { scope.launch { themeViewModel.setFollowSystemTheme(!isSystemTheme) } },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Dark Mode Toggle with animated switch (only enabled if not following system theme)
-                AnimatedThemeToggleRow(
-                    title = stringResource(R.string.dark_mode),
-                    subtitle = if (isSystemTheme)
-                        "Controlled by system"
-                    else
-                        if (isDarkMode) "On" else "Off",
-                    icon = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
-                    isChecked = isDarkMode,
-                    onToggle = {
-                        if (!isSystemTheme) scope.launch { themeViewModel.setDarkMode(!isDarkMode) }
-                    },
-                    enabled = !isSystemTheme,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Only show logout if signed in
-                if (isLoggedIn) {
-                    SettingsItem(
-                        icon = Icons.Default.ExitToApp,
-                        title = stringResource(R.string.logout),
-                        onClick = { showLogoutDialog = true },
-                        textColor = AppColors.Error
-                    )
-                }
-            }
-        }
+        AppSettingsCard(
+            isLoggedIn = isLoggedIn,
+            isDarkMode = isDarkMode,
+            isSystemTheme = isSystemTheme,
+            onOrderHistoryClick = { navigationManager.navigateToOrderList() },
+            onOfflineModeClick = { navigationManager.navigateToOfflineMode() },
+            onToggleFollowSystemTheme = { scope.launch { themeViewModel.setFollowSystemTheme(!isSystemTheme) } },
+            onToggleDarkMode = {
+                if (!isSystemTheme) scope.launch { themeViewModel.setDarkMode(!isDarkMode) }
+            },
+            onLogoutClick = { showLogoutDialog = true }
+        )
 
         // App information
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = AppColors.Surface
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "About",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                Text(
-                    text = "Cocktail Bar App",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = AppColors.TextPrimary
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "Version 1.0.0",
-                    fontSize = 14.sp,
-                    color = AppColors.TextSecondary
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "© 2023 Cocktail Bar. All rights reserved.",
-                    fontSize = 12.sp,
-                    color = AppColors.TextSecondary
-                )
-            }
-        }
+        AboutCard()
     }
 
     // Show loading indicator if needed
     if (isLoading) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(color = AppColors.Primary)
-        }
+        LoadingOverlay()
     }
 
     // Show error message if needed
@@ -474,7 +241,7 @@ fun SettingsItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+            .padding(vertical = Spacing.md),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -484,7 +251,7 @@ fun SettingsItem(
             modifier = Modifier.size(24.dp)
         )
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(Spacing.lg))
 
         Text(
             text = title,
@@ -499,5 +266,419 @@ fun SettingsItem(
             tint = AppColors.Gray,
             modifier = Modifier.size(20.dp)
         )
+    }
+}
+
+@Composable
+private fun ProfileHeaderCard(
+    userName: String,
+    userEmail: String,
+    isLoggedIn: Boolean,
+    onSignInClick: () -> Unit,
+    onSignUpClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = Spacing.lg),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = AppColors.Surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(Spacing.lg)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Profile picture
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(AppColors.Primary.copy(alpha = 0.2f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = userName.take(1).uppercase(),
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AppColors.Primary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.lg))
+
+            // User name
+            Text(
+                text = userName,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.TextPrimary
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.xs))
+
+            // User email
+            Text(
+                text = userEmail,
+                fontSize = 14.sp,
+                color = AppColors.TextSecondary
+            )
+
+            // Show login/signup buttons if not signed in
+            if (!isLoggedIn) {
+                SignInPromptSection(
+                    onSignInClick = onSignInClick,
+                    onSignUpClick = onSignUpClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SignInPromptSection(
+    onSignInClick: () -> Unit,
+    onSignUpClick: () -> Unit
+) {
+    Spacer(modifier = Modifier.height(Spacing.xxl))
+
+    Text(
+        text = stringResource(R.string.profile_sign_in_prompt),
+        fontSize = 16.sp,
+        color = AppColors.TextSecondary,
+        modifier = Modifier.padding(bottom = Spacing.lg)
+    )
+
+    Button(
+        onClick = onSignInClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = AppColors.Primary
+        ),
+        modifier = Modifier
+            .fillMaxWidth(0.8f)
+            .padding(vertical = Spacing.xs)
+    ) {
+        Text(stringResource(R.string.sign_in))
+    }
+
+    Spacer(modifier = Modifier.height(Spacing.sm))
+
+    OutlinedButton(
+        onClick = onSignUpClick,
+        modifier = Modifier
+            .fillMaxWidth(0.8f)
+            .padding(vertical = Spacing.xs)
+    ) {
+        Text(stringResource(R.string.create_account))
+    }
+}
+
+@Composable
+private fun AccountSettingsCard() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = Spacing.lg),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = AppColors.Surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(Spacing.lg)
+        ) {
+            Text(
+                text = stringResource(R.string.profile_account_settings),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.TextPrimary,
+                modifier = Modifier.padding(bottom = Spacing.lg)
+            )
+
+            SettingsItem(
+                icon = Icons.Default.Person,
+                title = stringResource(R.string.edit_profile),
+                onClick = { /* Handle edit profile */ }
+            )
+
+            SettingsItem(
+                icon = Icons.Default.Lock,
+                title = stringResource(R.string.change_password),
+                onClick = { /* Handle change password */ }
+            )
+
+            SettingsItem(
+                icon = Icons.Default.Email,
+                title = stringResource(R.string.email_preferences),
+                onClick = { /* Handle email preferences */ }
+            )
+
+            SettingsItem(
+                icon = Icons.Default.Notifications,
+                title = stringResource(R.string.notification_settings),
+                onClick = { /* Handle notification settings */ }
+            )
+        }
+    }
+}
+
+@Composable
+private fun AppSettingsCard(
+    isLoggedIn: Boolean,
+    isDarkMode: Boolean,
+    isSystemTheme: Boolean,
+    onOrderHistoryClick: () -> Unit,
+    onOfflineModeClick: () -> Unit,
+    onToggleFollowSystemTheme: () -> Unit,
+    onToggleDarkMode: () -> Unit,
+    onLogoutClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = Spacing.lg),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = AppColors.Surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(Spacing.lg)
+        ) {
+            Text(
+                text = stringResource(R.string.profile_app_settings),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.TextPrimary,
+                modifier = Modifier.padding(bottom = Spacing.lg)
+            )
+
+            SettingsItem(
+                icon = Icons.Default.DateRange,
+                title = stringResource(R.string.order_history),
+                onClick = onOrderHistoryClick
+            )
+
+            SettingsItem(
+                icon = Icons.Default.Help,
+                title = stringResource(R.string.help_support),
+                onClick = { /* Handle help & support */ }
+            )
+
+            SettingsItem(
+                icon = Icons.Default.CloudOff,
+                title = stringResource(R.string.offline_mode),
+                onClick = onOfflineModeClick
+            )
+
+            // Follow System Theme Toggle with animated switch
+            AnimatedThemeToggleRow(
+                title = stringResource(R.string.follow_system_theme),
+                subtitle = if (isSystemTheme) stringResource(R.string.profile_toggle_on) else stringResource(R.string.profile_toggle_off),
+                icon = Icons.Default.DateRange,
+                isChecked = isSystemTheme,
+                onToggle = onToggleFollowSystemTheme,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Dark Mode Toggle with animated switch (only enabled if not following system theme)
+            AnimatedThemeToggleRow(
+                title = stringResource(R.string.dark_mode),
+                subtitle = if (isSystemTheme)
+                    stringResource(R.string.profile_controlled_by_system)
+                else
+                    if (isDarkMode) stringResource(R.string.profile_toggle_on) else stringResource(R.string.profile_toggle_off),
+                icon = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+                isChecked = isDarkMode,
+                onToggle = onToggleDarkMode,
+                enabled = !isSystemTheme,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Only show logout if signed in
+            if (isLoggedIn) {
+                SettingsItem(
+                    icon = Icons.Default.ExitToApp,
+                    title = stringResource(R.string.logout),
+                    onClick = onLogoutClick,
+                    textColor = AppColors.Error
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AboutCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = AppColors.Surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(Spacing.lg)
+        ) {
+            Text(
+                text = stringResource(R.string.profile_about),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.TextPrimary,
+                modifier = Modifier.padding(bottom = Spacing.lg)
+            )
+
+            Text(
+                text = stringResource(R.string.profile_about_app_name),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = AppColors.TextPrimary
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.xs))
+
+            Text(
+                text = stringResource(R.string.profile_version_format, BuildConfig.VERSION_NAME),
+                fontSize = 14.sp,
+                color = AppColors.TextSecondary
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.lg))
+
+            Text(
+                text = stringResource(R.string.profile_copyright),
+                fontSize = 12.sp,
+                color = AppColors.TextSecondary
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingOverlay() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f)),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(color = AppColors.Primary)
+    }
+}
+
+// ---- Design-time previews ----
+
+@Preview(name = "Profile header — logged out", showBackground = true)
+@Composable
+private fun ProfileHeaderCardLoggedOutPreview() {
+    AnimatedCocktailBarTheme(darkTheme = false) {
+        ProfileHeaderCard(
+            userName = "Guest User",
+            userEmail = "guest@example.com",
+            isLoggedIn = false,
+            onSignInClick = {},
+            onSignUpClick = {}
+        )
+    }
+}
+
+@Preview(name = "Profile header — logged out (dark)", showBackground = true)
+@Composable
+private fun ProfileHeaderCardLoggedOutDarkPreview() {
+    AnimatedCocktailBarTheme(darkTheme = true) {
+        ProfileHeaderCard(
+            userName = "Guest User",
+            userEmail = "guest@example.com",
+            isLoggedIn = false,
+            onSignInClick = {},
+            onSignUpClick = {}
+        )
+    }
+}
+
+@Preview(name = "Profile header — logged in", showBackground = true)
+@Composable
+private fun ProfileHeaderCardLoggedInPreview() {
+    AnimatedCocktailBarTheme(darkTheme = false) {
+        ProfileHeaderCard(
+            userName = "Alex",
+            userEmail = "alex@example.com",
+            isLoggedIn = true,
+            onSignInClick = {},
+            onSignUpClick = {}
+        )
+    }
+}
+
+@Preview(name = "Account settings", showBackground = true)
+@Composable
+private fun AccountSettingsCardPreview() {
+    AnimatedCocktailBarTheme(darkTheme = false) {
+        AccountSettingsCard()
+    }
+}
+
+@Preview(name = "App settings", showBackground = true)
+@Composable
+private fun AppSettingsCardPreview() {
+    AnimatedCocktailBarTheme(darkTheme = false) {
+        AppSettingsCard(
+            isLoggedIn = true,
+            isDarkMode = false,
+            isSystemTheme = false,
+            onOrderHistoryClick = {},
+            onOfflineModeClick = {},
+            onToggleFollowSystemTheme = {},
+            onToggleDarkMode = {},
+            onLogoutClick = {}
+        )
+    }
+}
+
+@Preview(name = "App settings (dark)", showBackground = true)
+@Composable
+private fun AppSettingsCardDarkPreview() {
+    AnimatedCocktailBarTheme(darkTheme = true) {
+        AppSettingsCard(
+            isLoggedIn = true,
+            isDarkMode = true,
+            isSystemTheme = false,
+            onOrderHistoryClick = {},
+            onOfflineModeClick = {},
+            onToggleFollowSystemTheme = {},
+            onToggleDarkMode = {},
+            onLogoutClick = {}
+        )
+    }
+}
+
+@Preview(name = "App settings — large font", showBackground = true, fontScale = 1.5f)
+@Composable
+private fun AppSettingsCardLargeFontPreview() {
+    AnimatedCocktailBarTheme(darkTheme = false) {
+        AppSettingsCard(
+            isLoggedIn = true,
+            isDarkMode = false,
+            isSystemTheme = true,
+            onOrderHistoryClick = {},
+            onOfflineModeClick = {},
+            onToggleFollowSystemTheme = {},
+            onToggleDarkMode = {},
+            onLogoutClick = {}
+        )
+    }
+}
+
+@Preview(name = "About", showBackground = true)
+@Composable
+private fun AboutCardPreview() {
+    AnimatedCocktailBarTheme(darkTheme = false) {
+        AboutCard()
     }
 }

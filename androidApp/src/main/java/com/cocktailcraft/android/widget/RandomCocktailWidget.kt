@@ -12,6 +12,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalContext
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
@@ -20,6 +21,7 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.state.updateAppWidgetState
@@ -45,6 +47,7 @@ import androidx.glance.text.TextStyle
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.cocktailcraft.android.MainActivity
+import com.cocktailcraft.android.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import android.graphics.BitmapFactory
@@ -75,12 +78,21 @@ class RandomCocktailWidget : GlanceAppWidget() {
         val isLoading = prefs[RandomCocktailKeys.IS_LOADING] == "true"
         val errorMessage = prefs[RandomCocktailKeys.ERROR]
         
+        // Deep-link to the shown cocktail's detail screen; fall back to a
+        // plain app launch until a cocktail has been loaded
+        val context = LocalContext.current
+        val tapAction = if (cocktailId.isNotEmpty()) {
+            actionStartActivity(cocktailDetailIntent(context, cocktailId))
+        } else {
+            actionStartActivity<MainActivity>()
+        }
+
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
                 .background(GlanceTheme.colors.surface)
                 .cornerRadius(16.dp)
-                .clickable(actionStartActivity<MainActivity>()),
+                .clickable(tapAction),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -95,7 +107,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "🍹 Random Cocktail",
+                        text = context.getString(R.string.widget_random_cocktail_header),
                         style = TextStyle(
                             color = GlanceTheme.colors.primary,
                             fontSize = 14.sp,
@@ -154,7 +166,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Loading...",
+                text = LocalContext.current.getString(R.string.loading),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 14.sp
@@ -176,7 +188,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
             )
             Spacer(modifier = GlanceModifier.height(4.dp))
             Text(
-                text = "Tap ↻ to retry",
+                text = LocalContext.current.getString(R.string.widget_tap_refresh_to_retry),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 12.sp
@@ -198,7 +210,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
             )
             Spacer(modifier = GlanceModifier.height(4.dp))
             Text(
-                text = "Tap ↻ to discover",
+                text = LocalContext.current.getString(R.string.widget_tap_refresh_to_discover),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 12.sp
@@ -250,7 +262,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
 
             // Tap hint
             Text(
-                text = "Tap to view details",
+                text = LocalContext.current.getString(R.string.tap_to_view_details),
                 style = TextStyle(
                     color = WidgetColorProviders.textSecondary,
                     fontSize = 10.sp

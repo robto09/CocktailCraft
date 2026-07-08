@@ -22,8 +22,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
@@ -61,13 +63,13 @@ fun OfflineModeIndicator(
             ) {
                 Icon(
                     imageVector = if (isOfflineModeEnabled) Icons.Default.AirplanemodeActive else Icons.Default.WifiOff,
-                    contentDescription = "Offline",
+                    contentDescription = stringResource(R.string.offline_indicator_description),
                     tint = Color.White,
                     modifier = Modifier.padding(end = 8.dp)
                 )
 
                 Text(
-                    text = if (isOfflineModeEnabled) "Offline Mode Enabled" else "You are offline",
+                    text = if (isOfflineModeEnabled) stringResource(R.string.offline_mode_enabled) else stringResource(R.string.offline_you_are_offline),
                     color = Color.White,
                     fontWeight = FontWeight.Medium
                 )

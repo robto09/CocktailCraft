@@ -34,6 +34,9 @@ fun CocktailLoadingShimmer(
     itemSpacing: Int = 16,
     contentPadding: PaddingValues = PaddingValues(16.dp)
 ) {
+    // One transition shared by the header and every item placeholder
+    val translate = rememberShimmerTranslate()
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -48,13 +51,13 @@ fun CocktailLoadingShimmer(
                     .fillMaxWidth(headerWidthFraction)
                     .height(headerHeight.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .shimmerEffect()
+                    .shimmerEffect(translate)
             )
         }
 
         // Shimmer items
         items(List(itemCount) { it }) { _ ->
-            CocktailItemShimmer()
+            CocktailItemShimmer(translate)
         }
     }
 }

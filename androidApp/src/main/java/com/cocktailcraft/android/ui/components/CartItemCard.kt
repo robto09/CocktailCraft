@@ -19,12 +19,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.components.LightweightOptimizedImage
 import java.text.NumberFormat
@@ -118,15 +120,15 @@ fun CartItemCard(
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    // Favorites button (optional)
+                    // Favorites button (optional) — default IconButton size
+                    // keeps the 48 dp minimum touch target
                     if (showFavoriteButton) {
                         IconButton(
-                            onClick = onToggleFavorite,
-                            modifier = Modifier.size(32.dp)
+                            onClick = onToggleFavorite
                         ) {
                             Icon(
                                 imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                                contentDescription = if (isFavorite) stringResource(R.string.list_remove_from_favorites) else stringResource(R.string.list_add_to_favorites),
                                 tint = if (isFavorite) AppColors.Secondary else AppColors.Gray,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -167,18 +169,22 @@ fun CartItemCard(
                         Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            IconButton(
-                                onClick = onDecreaseQuantity,
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(AppColors.LightGray, CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Remove,
-                                    contentDescription = "Decrease",
-                                    tint = AppColors.TextPrimary,
-                                    modifier = Modifier.size(16.dp)
-                                )
+                            // The visible 36 dp circle lives on an inner Box so
+                            // the IconButton keeps its full 48 dp touch target
+                            IconButton(onClick = onDecreaseQuantity) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(AppColors.LightGray, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Remove,
+                                        contentDescription = stringResource(R.string.cart_decrease_quantity),
+                                        tint = AppColors.TextPrimary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
                             }
 
                             Text(
@@ -188,24 +194,26 @@ fun CartItemCard(
                                 fontSize = 16.sp
                             )
 
-                            IconButton(
-                                onClick = onIncreaseQuantity,
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(AppColors.Primary, CircleShape)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Increase",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
-                                )
+                            IconButton(onClick = onIncreaseQuantity) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(AppColors.Primary, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = stringResource(R.string.cart_increase_quantity),
+                                        tint = Color.White,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
                             }
                         }
                     } else {
                         // If quantity controls are not shown, at least show the quantity
                         Text(
-                            text = "Quantity: ${item.quantity}",
+                            text = stringResource(R.string.cart_quantity_label, item.quantity),
                             fontSize = 14.sp,
                             color = AppColors.TextSecondary
                         )
@@ -226,13 +234,11 @@ fun CartItemCard(
                         if (showDeleteButton) {
                             IconButton(
                                 onClick = onRemove,
-                                modifier = Modifier
-                                    .padding(start = 8.dp)
-                                    .size(32.dp)
+                                modifier = Modifier.padding(start = 8.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "Remove",
+                                    contentDescription = stringResource(R.string.remove_from_cart),
                                     tint = AppColors.Error,
                                     modifier = Modifier.size(20.dp)
                                 )
