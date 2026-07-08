@@ -83,3 +83,7 @@ iosApp/build/
 Thumbs.db
 
 .claude/
+
+# Prebuilt iOS framework — build artifact, never commit
+shared/shared.xcframework/
+*.xcframework

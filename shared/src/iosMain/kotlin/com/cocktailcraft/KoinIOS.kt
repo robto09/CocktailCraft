@@ -3,7 +3,6 @@ package com.cocktailcraft
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.service.BackgroundSyncService
 import com.cocktailcraft.domain.repository.CartRepository
-import com.cocktailcraft.domain.repository.CocktailRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
@@ -24,7 +23,6 @@ fun doInitKoin(): KoinApplication = initKoin {}
 // Helper class to provide dependencies to iOS without using reified generics.
 // Explicit return types define the exported Objective-C surface.
 class KoinHelper : KoinComponent {
-    fun getCocktailRepository(): CocktailRepository = get()
 
     fun getAuthRepository(): AuthRepository = get()
 

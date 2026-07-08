@@ -51,7 +51,9 @@ class SharedHomeViewModel internal constructor(
     
     private fun initialize() {
         // Initialize offline mode
-        _uiState.update { it.copy(isOfflineMode = manageOfflineModeUseCase.isOfflineModeEnabled()) }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isOfflineMode = manageOfflineModeUseCase.isOfflineModeEnabled()) }
+        }
 
         // Monitor network connectivity
         viewModelScope.launch {
@@ -75,7 +77,7 @@ class SharedHomeViewModel internal constructor(
         viewModelScope.launch {
             delay(100) // Small delay for cache initialization
             if (_uiState.value.cocktails.isEmpty()) {
-                loadCocktailsByCategory("Cocktail") // Default category
+                loadCocktailsByCategory(CocktailCategories.DEFAULT)
             }
             loadFavorites()
         }
@@ -86,7 +88,7 @@ class SharedHomeViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun loadCocktails(category: String? = null) {
-        loadCocktailsByCategory(category ?: _uiState.value.selectedCategory ?: "Cocktail")
+        loadCocktailsByCategory(category ?: _uiState.value.selectedCategory ?: CocktailCategories.DEFAULT)
     }
     
     /**
@@ -94,7 +96,7 @@ class SharedHomeViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun loadCocktailsByCategory(category: String?) {
-        val targetCategory = category ?: "Cocktail"
+        val targetCategory = category ?: CocktailCategories.DEFAULT
 
         _uiState.update { it.copy(
             selectedCategory = category,
@@ -159,7 +161,8 @@ class SharedHomeViewModel internal constructor(
 
         try {
             val nextPage = state.currentPage + 1
-            val newItems = loadCocktailsByCategoryUseCase.loadMore(emptyList(), state.currentPage, PAGE_SIZE)
+            val category = state.selectedCategory ?: "Cocktail"
+            val newItems = loadCocktailsByCategoryUseCase.loadMore(category, state.currentPage, PAGE_SIZE)
 
             _uiState.update { cur ->
                 if (newItems.isNotEmpty()) {
@@ -327,7 +330,7 @@ class SharedHomeViewModel internal constructor(
 
     fun setOfflineMode(enabled: Boolean) {
         _uiState.update { it.copy(isOfflineMode = enabled) }
-        manageOfflineModeUseCase.setOfflineMode(enabled)
+        viewModelScope.launch { manageOfflineModeUseCase.setOfflineMode(enabled) }
 
         if (!enabled && _uiState.value.isNetworkAvailable) {
             retry()
@@ -387,7 +390,7 @@ class SharedHomeViewModel internal constructor(
     private suspend fun tryLoadCachedData(category: String, originalError: Exception) {
         try {
             val cachedCocktails = manageOfflineModeUseCase.getRecentlyViewedCocktails().getOrDefault(emptyList())
-                .filter { category == "Cocktail" || it.category == category }
+                .filter { category == CocktailCategories.DEFAULT || it.category == category }
 
             if (cachedCocktails.isNotEmpty()) {
                 _uiState.update { it.copy(cocktails = cachedCocktails, isLoading = false) }

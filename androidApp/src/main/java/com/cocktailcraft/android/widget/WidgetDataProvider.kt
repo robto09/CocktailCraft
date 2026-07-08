@@ -3,8 +3,8 @@ package com.cocktailcraft.android.widget
 import android.content.Context
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
+import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
-import com.cocktailcraft.domain.repository.FavoritesRepository
 import com.cocktailcraft.domain.util.getOrDefault
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -18,7 +18,7 @@ class WidgetDataProvider : KoinComponent {
     
     private val detailRepository: CocktailDetailRepository by inject()
     private val offlineRepository: CocktailOfflineRepository by inject()
-    private val favoritesRepository: FavoritesRepository by inject()
+    private val favoritesRepository: CocktailFavoritesRepository by inject()
     
     /**
      * Get a random cocktail from the API.
@@ -49,7 +49,7 @@ class WidgetDataProvider : KoinComponent {
      */
     suspend fun getFavoriteCocktails(): List<Cocktail> {
         return try {
-            favoritesRepository.getFavorites().getOrDefault(emptyList())
+            favoritesRepository.getFavoriteCocktails().getOrDefault(emptyList())
         } catch (e: Exception) {
             emptyList()
         }

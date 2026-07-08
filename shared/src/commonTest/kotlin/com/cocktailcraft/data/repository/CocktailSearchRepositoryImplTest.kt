@@ -9,53 +9,61 @@ import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.testutil.FakeCocktailApi
 import com.cocktailcraft.testutil.FakeNetworkMonitor
-import com.cocktailcraft.testutil.testCocktail
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class CocktailRepositoryImplTest {
+class CocktailSearchRepositoryImplTest {
 
     private val config = AppConfigImpl()
 
-    // Mirrors the DataModule wiring: remote source + focused offline/favorites
-    // repos + the slim search/detail/catalog impl delegating to them.
-    private fun repository(
+    private class Fixture(
+        val search: CocktailSearchRepositoryImpl,
+        val offline: CocktailOfflineRepositoryImpl
+    )
+
+    // Mirrors the DataModule wiring: remote source + focused offline repo +
+    // the shared category fetcher backing the search impl.
+    private fun fixture(
         api: FakeCocktailApi = FakeCocktailApi(),
         settings: Settings = MapSettings(),
         online: Boolean = true
-    ): CocktailRepositoryImpl {
-        val cache = CocktailCache(settings, Json { ignoreUnknownKeys = true }, config)
+    ): Fixture {
+        val networkMonitor = FakeNetworkMonitor(online)
+        val cache = CocktailCache(settings, Json { ignoreUnknownKeys = true }, config, networkMonitor = networkMonitor)
         val cacheManager = CocktailCacheManager()
         val remote = CocktailRemoteDataSource(api, cacheManager)
         val offline = CocktailOfflineRepositoryImpl(
             settings = settings,
             appConfig = config,
-            networkMonitor = FakeNetworkMonitor(online),
+            networkMonitor = networkMonitor,
             cocktailCache = cache,
             remote = remote
         )
-        val favorites = CocktailFavoritesRepositoryImpl(
-            settings = settings,
-            appConfig = config,
-            cocktailCache = cache,
-            remote = remote,
-            offlineRepository = offline
-        )
-        return CocktailRepositoryImpl(
+        val fetcher = CocktailCategoryFetcher(
             remote = remote,
             cocktailCache = cache,
             cacheManager = cacheManager,
-            appConfig = config,
-            offlineRepository = offline,
-            favoritesRepository = favorites
+            offlineRepository = offline
         )
+        val search = CocktailSearchRepositoryImpl(
+            remote = remote,
+            cocktailCache = cache,
+            offlineRepository = offline,
+            categoryFetcher = fetcher
+        )
+        return Fixture(search, offline)
     }
+
+    private fun repository(
+        api: FakeCocktailApi = FakeCocktailApi(),
+        settings: Settings = MapSettings(),
+        online: Boolean = true
+    ): CocktailSearchRepositoryImpl = fixture(api, settings, online).search
 
     private fun margaritaDto() = CocktailDto(
         id = "11007",
@@ -97,38 +105,6 @@ class CocktailRepositoryImplTest {
         assertTrue(first.price in 5.0..15.0)
         assertTrue(first.rating in 3.0f..5.0f)
         assertTrue(first.popularity in 1..100)
-    }
-
-    @Test
-    fun favoritesRoundTripPersistsIdsInSettings() = runTest {
-        val settings = MapSettings()
-        val repo = repository(settings = settings)
-        val cocktail = testCocktail("11007")
-
-        repo.addToFavorites(cocktail)
-        assertTrue((repo.isCocktailFavorite("11007") as Result.Success).data)
-        assertEquals("11007", settings.getStringOrNull(config.favoritesStorageKey))
-
-        // Adding twice must not duplicate the id
-        repo.addToFavorites(cocktail)
-        assertEquals("11007", settings.getStringOrNull(config.favoritesStorageKey))
-
-        repo.removeFromFavorites(cocktail)
-        assertFalse((repo.isCocktailFavorite("11007") as Result.Success).data)
-    }
-
-    @Test
-    fun getFavoriteCocktailsResolvesIdsThroughApiWhenOnline() = runTest {
-        val settings = MapSettings()
-        val repo = repository(
-            api = FakeCocktailApi(drinks = listOf(margaritaDto())),
-            settings = settings
-        )
-        repo.addToFavorites(testCocktail("11007"))
-
-        val favorites = (repo.getFavoriteCocktails() as Result.Success).data
-
-        assertEquals(listOf("Margarita"), favorites.map { it.name })
     }
 
     // --- advancedSearch: ID-set intersection over the 5 supported filters ---
@@ -215,30 +191,15 @@ class CocktailRepositoryImplTest {
     @Test
     fun advancedSearchOfflineMatchesCachedNonAlcoholicDisplayString() = runTest {
         val settings = MapSettings()
-        val repo = repository(api = FakeCocktailApi(drinks = sampleDrinks()), settings = settings)
+        val fixture = fixture(api = FakeCocktailApi(drinks = sampleDrinks()), settings = settings)
 
         // Online pass caches full records; id 3 stores "Non alcoholic" — the
         // API's display string, not the Non_Alcoholic URL token.
-        repo.advancedSearch(SearchFilters(query = "mojito"))
-        repo.setOfflineMode(true)
+        fixture.search.advancedSearch(SearchFilters(query = "mojito"))
+        fixture.offline.setOfflineMode(true)
 
-        val result = repo.advancedSearch(SearchFilters(alcoholic = false))
+        val result = fixture.search.advancedSearch(SearchFilters(alcoholic = false))
 
         assertEquals(listOf("3"), (result as Result.Success).data.map { it.id })
-    }
-
-    @Test
-    fun offlineModeFlagPersistsAcrossInstances() = runTest {
-        val settings = MapSettings()
-        val repo = repository(settings = settings)
-
-        assertFalse(repo.isOfflineModeEnabled())
-        repo.setOfflineMode(true)
-        assertTrue(repo.isOfflineModeEnabled())
-        assertTrue(settings.getBoolean(config.offlineModeEnabledKey, false))
-
-        // A fresh instance over the same settings sees the persisted flag
-        val second = repository(settings = settings)
-        assertTrue(second.isOfflineModeEnabled())
     }
 }

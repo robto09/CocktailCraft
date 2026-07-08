@@ -42,10 +42,10 @@ internal class PlaceOrderUseCase(
                 status = "Processing"
             )
 
-            Logger.d { "PlaceOrderUseCase: Created order object, calling repository.addOrder" }
-            val addResult = orderRepository.addOrder(order)
-            if (addResult.isError()) {
-                return Result.Error((addResult as Result.Error).message)
+            Logger.d { "PlaceOrderUseCase: Created order object, calling repository.placeOrder" }
+            val placeResult = orderRepository.placeOrder(order)
+            if (placeResult.isError()) {
+                return Result.Error((placeResult as Result.Error).message)
             }
 
             Logger.d { "PlaceOrderUseCase: Order added to repository, returning success result" }

@@ -8,7 +8,11 @@ import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.NetworkMonitor
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 /**
  * Offline-mode preference and connectivity checks, extracted from the former
@@ -19,18 +23,20 @@ internal class CocktailOfflineRepositoryImpl(
     private val appConfig: AppConfig,
     private val networkMonitor: NetworkMonitor,
     private val cocktailCache: CocktailCache,
-    private val remote: CocktailRemoteDataSource
+    private val remote: CocktailRemoteDataSource,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : CocktailOfflineRepository {
 
-    override fun setOfflineMode(enabled: Boolean) {
-        settings.putBoolean(appConfig.offlineModeEnabledKey, enabled)
+    override suspend fun setOfflineMode(enabled: Boolean) {
+        withContext(ioDispatcher) { settings.putBoolean(appConfig.offlineModeEnabledKey, enabled) }
     }
 
-    override fun isOfflineModeEnabled(): Boolean =
-        settings.getBoolean(appConfig.offlineModeEnabledKey, false)
+    override suspend fun isOfflineModeEnabled(): Boolean =
+        withContext(ioDispatcher) { settings.getBoolean(appConfig.offlineModeEnabledKey, false) }
 
     /** True when the user forced offline mode or the network is down. */
-    suspend fun isOffline(): Boolean = isOfflineModeEnabled() || !networkMonitor.isOnline.first()
+    override suspend fun isOffline(): Boolean =
+        isOfflineModeEnabled() || !networkMonitor.isOnline.first()
 
     override suspend fun checkApiConnectivity(): Result<Boolean> {
         return try {

@@ -52,8 +52,3 @@ class IOSNetworkMonitor : BaseNetworkMonitor(), NetworkMonitor {
         queue = null
     }
 }
-
-/**
- * Factory function for creating NetworkMonitor on iOS.
- */
-actual fun createNetworkMonitor(): NetworkMonitor = IOSNetworkMonitor()

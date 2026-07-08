@@ -1,6 +1,7 @@
 package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailCategories
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
@@ -27,7 +28,7 @@ internal class GetCocktailDetailUseCase(
 
     suspend fun getRelatedCocktails(cocktail: Cocktail, limit: Int = 3): List<Cocktail> {
         return try {
-            val cocktails = searchRepository.filterByCategory(cocktail.category ?: "Cocktail").getOrDefault(emptyList())
+            val cocktails = searchRepository.filterByCategory(cocktail.category ?: CocktailCategories.DEFAULT).getOrDefault(emptyList())
             cocktails.filter { it.id != cocktail.id }.shuffled().take(limit)
         } catch (e: Exception) {
             emptyList()

@@ -67,10 +67,3 @@ class AndroidNetworkMonitor(
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 }
-
-/**
- * Factory function for creating NetworkMonitor on Android.
- */
-actual fun createNetworkMonitor(): NetworkMonitor {
-    throw IllegalStateException("createNetworkMonitor() should not be called directly on Android. Use dependency injection instead.")
-}

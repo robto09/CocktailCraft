@@ -9,6 +9,9 @@ import com.cocktailcraft.testutil.MainDispatcherTest
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -23,9 +26,10 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    private fun repository(settings: Settings) = ReviewRepositoryImpl(settings, json, AppConfigImpl())
+    private fun TestScope.repository(settings: Settings) =
+        ReviewRepositoryImpl(settings, json, AppConfigImpl(), StandardTestDispatcher(testScheduler))
 
-    private fun viewModel(settings: Settings) =
+    private fun TestScope.viewModel(settings: Settings) =
         SharedReviewViewModel(ManageReviewsUseCase(repository(settings)))
 
     @Test

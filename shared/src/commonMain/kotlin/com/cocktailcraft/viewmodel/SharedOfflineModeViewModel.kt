@@ -34,7 +34,9 @@ class SharedOfflineModeViewModel internal constructor(
     }
     
     private fun initialize() {
-        _uiState.update { it.copy(isOfflineModeEnabled = manageOfflineModeUseCase.isOfflineModeEnabled()) }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isOfflineModeEnabled = manageOfflineModeUseCase.isOfflineModeEnabled()) }
+        }
 
         viewModelScope.launch {
             networkMonitor.startMonitoring()

@@ -2,15 +2,22 @@ package com.cocktailcraft.data.cache
 
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.util.NetworkMonitor
 import com.russhwolf.settings.Settings
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.builtins.ListSerializer
 import co.touchlab.kermit.Logger
 import kotlin.time.Clock
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * Simple LRU cache implementation
@@ -62,27 +69,50 @@ internal class SimpleLruCache<K, V>(private val maxSize: Int) {
     suspend fun size(): Int {
         return mutex.withLock { cache.size }
     }
+
+    suspend fun remove(key: K) {
+        mutex.withLock {
+            accessOrder.remove(key)
+            cache.remove(key)
+        }
+    }
 }
 
 /**
+ * Persisted cache entry: a cocktail plus the epoch-millis timestamp of when it
+ * was cached. [cachedAtMs] has a serialization default so JSON written before
+ * the field existed still deserializes.
+ */
+@Serializable
+internal data class CachedCocktailEntry(
+    val cocktail: Cocktail,
+    val cachedAtMs: Long = 0L
+)
+
+/**
  * Manages caching of cocktail data for offline access using a simple LRU cache.
+ *
+ * Entries expire after [AppConfig.cacheExpirationMs], but only while the app is
+ * effectively online — see [shouldApplyExpiry].
  */
 internal class CocktailCache(
     private val settings: Settings,
     private val json: Json,
-    private val appConfig: AppConfig
+    private val appConfig: AppConfig,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val networkMonitor: NetworkMonitor? = null
 ) {
     companion object {
         private const val CACHE_PREFIX = "cocktail_cache_"
         private const val RECENTLY_VIEWED_KEY = "recently_viewed_cocktails"
-        private const val ALL_COCKTAILS_KEY = "all_cached_cocktails"
+        // internal (not private) so tests can seed persisted fixtures under the real key
+        internal const val ALL_COCKTAILS_KEY = "all_cached_cocktails"
         private const val CACHE_METADATA_PREFIX = "cache_metadata_"
         private const val MAX_RECENTLY_VIEWED = 20
-        private const val MAX_CACHED_COCKTAILS = 100
     }
-    
+
     // In-memory cache for cocktails using LRU strategy
-    private val cocktailCache = SimpleLruCache<String, Cocktail>(MAX_CACHED_COCKTAILS)
+    private val cocktailCache = SimpleLruCache<String, CachedCocktailEntry>(appConfig.maxOfflineCocktails)
 
     // In-memory cache for recently viewed cocktails
     private val recentlyViewedCache = SimpleLruCache<String, Cocktail>(MAX_RECENTLY_VIEWED)
@@ -102,16 +132,52 @@ internal class CocktailCache(
         }
     }
 
-    private suspend fun loadPersistedCocktails() {
+    private fun nowMs(): Long = Clock.System.now().toEpochMilliseconds()
+
+    private fun isExpired(entry: CachedCocktailEntry, now: Long = nowMs()): Boolean =
+        now - entry.cachedAtMs > appConfig.cacheExpirationMs
+
+    /**
+     * Expiry only applies while the app is effectively online. This cache backs
+     * offline browsing: evicting stale entries when there is no connectivity (or
+     * the user forced offline mode) would empty the offline experience with no
+     * way to refetch, so stale entries keep being served until we are back online.
+     */
+    private suspend fun shouldApplyExpiry(): Boolean {
+        if (settings.getBoolean(appConfig.offlineModeEnabledKey, false)) return false
+        return networkMonitor?.isOnline?.first() ?: true
+    }
+
+    private suspend fun loadPersistedCocktails(): Unit = withContext(ioDispatcher) {
         Logger.d { "Loading persisted cocktails..." }
         try {
             // Load all cached cocktails from persistent storage
             val cachedJson = settings.getStringOrNull(ALL_COCKTAILS_KEY)
             if (!cachedJson.isNullOrBlank()) {
-                val cocktails = json.decodeFromString<List<Cocktail>>(cachedJson)
-                Logger.d { "Loaded ${cocktails.size} cocktails from persistent storage" }
-                cocktails.forEach { cocktail ->
-                    cocktailCache.put(cocktail.id, cocktail)
+                var migratedFromLegacy = false
+                val entries = try {
+                    json.decodeFromString<List<CachedCocktailEntry>>(cachedJson)
+                } catch (e: Exception) {
+                    // Pre-TTL format: a plain list of cocktails without timestamps.
+                    // Stamp them "now" so an app upgrade doesn't wipe the offline cache.
+                    migratedFromLegacy = true
+                    val now = nowMs()
+                    json.decodeFromString<List<Cocktail>>(cachedJson).map { CachedCocktailEntry(it, now) }
+                }
+                val (fresh, expired) = if (shouldApplyExpiry()) {
+                    val now = nowMs()
+                    entries.partition { !isExpired(it, now) }
+                } else {
+                    entries to emptyList()
+                }
+                Logger.d { "Loaded ${fresh.size} cocktails from persistent storage (${expired.size} expired)" }
+                fresh.forEach { entry ->
+                    cocktailCache.put(entry.cocktail.id, entry)
+                }
+                if (expired.isNotEmpty() || migratedFromLegacy) {
+                    // Rewrite storage so expired entries stay gone and legacy
+                    // data is upgraded to the timestamped format.
+                    if (fresh.isEmpty()) settings.remove(ALL_COCKTAILS_KEY) else persistCocktails()
                 }
             } else {
                 Logger.d { "No persisted cocktails found" }
@@ -134,13 +200,13 @@ internal class CocktailCache(
         }
     }
     
-    private suspend fun persistCocktails() {
+    private suspend fun persistCocktails() = withContext(ioDispatcher) {
         try {
             // Persist all cached cocktails
-            val allCocktails = cocktailCache.snapshot().values.toList()
-            Logger.d { "Persisting ${allCocktails.size} cocktails to storage" }
-            if (allCocktails.isNotEmpty()) {
-                val jsonString = json.encodeToString(allCocktails)
+            val allEntries = cocktailCache.snapshot().values.toList()
+            Logger.d { "Persisting ${allEntries.size} cocktails to storage" }
+            if (allEntries.isNotEmpty()) {
+                val jsonString = json.encodeToString(allEntries)
                 settings.putString(ALL_COCKTAILS_KEY, jsonString)
                 Logger.d { "Successfully persisted cocktails" }
             }
@@ -149,7 +215,7 @@ internal class CocktailCache(
         }
     }
     
-    private suspend fun persistRecentlyViewed() {
+    private suspend fun persistRecentlyViewed() = withContext(ioDispatcher) {
         try {
             // Persist recently viewed cocktails
             val recentCocktails = recentlyViewedCache.snapshot().values.toList()
@@ -167,28 +233,56 @@ internal class CocktailCache(
      */
     suspend fun cacheCocktail(cocktail: Cocktail) {
         ensureLoaded()
-        cocktailCache.put(cocktail.id, cocktail)
+        cocktailCache.put(cocktail.id, CachedCocktailEntry(cocktail, nowMs()))
         persistCocktails() // Persist to storage
     }
-    
+
     /**
-     * Get a cached cocktail by ID.
+     * Cache a batch of cocktails for offline access, persisting to storage once
+     * instead of once per item. Insertion order matches sequential
+     * [cacheCocktail] calls, so LRU eviction behaves identically.
+     */
+    suspend fun cacheCocktails(cocktails: List<Cocktail>) {
+        if (cocktails.isEmpty()) return
+        ensureLoaded()
+        val now = nowMs()
+        cocktails.forEach { cocktailCache.put(it.id, CachedCocktailEntry(it, now)) }
+        persistCocktails() // Persist once for the whole batch
+    }
+
+
+    /**
+     * Get a cached cocktail by ID. Entries older than
+     * [AppConfig.cacheExpirationMs] are evicted (online only) and not returned.
      */
     suspend fun getCachedCocktail(id: String): Cocktail? {
         ensureLoaded()
-        return cocktailCache.get(id)
+        val entry = cocktailCache.get(id) ?: return null
+        if (isExpired(entry) && shouldApplyExpiry()) {
+            cocktailCache.remove(id)
+            return null
+        }
+        return entry.cocktail
     }
-    
+
     /**
-     * Get all cached cocktails.
+     * Get all cached cocktails, dropping expired entries (online only).
      */
     suspend fun getAllCachedCocktails(): List<Cocktail> {
         ensureLoaded()
-        val cocktails = cocktailCache.snapshot().values.toList()
-        Logger.d { "CocktailCache.getAllCachedCocktails() returning ${cocktails.size} items" }
-        return cocktails
+        val entries = cocktailCache.snapshot().values.toList()
+        val live = if (shouldApplyExpiry()) {
+            val now = nowMs()
+            val (fresh, expired) = entries.partition { !isExpired(it, now) }
+            expired.forEach { cocktailCache.remove(it.cocktail.id) }
+            fresh
+        } else {
+            entries
+        }
+        Logger.d { "CocktailCache.getAllCachedCocktails() returning ${live.size} items" }
+        return live.map { it.cocktail }
     }
-    
+
     /**
      * Add a cocktail to the recently viewed list.
      */
@@ -197,7 +291,7 @@ internal class CocktailCache(
         recentlyViewedCache.put(cocktail.id, cocktail)
         // Also add to main cache if not already there
         if (cocktailCache.get(cocktail.id) == null) {
-            cocktailCache.put(cocktail.id, cocktail)
+            cocktailCache.put(cocktail.id, CachedCocktailEntry(cocktail, nowMs()))
             persistCocktails()
         }
         persistRecentlyViewed() // Persist to storage
@@ -221,16 +315,17 @@ internal class CocktailCache(
         cocktailCache.clear()
         recentlyViewedCache.clear()
         // Clear from persistent storage
-        settings.remove(ALL_COCKTAILS_KEY)
-        settings.remove(RECENTLY_VIEWED_KEY)
+        withContext(ioDispatcher) {
+            settings.remove(ALL_COCKTAILS_KEY)
+            settings.remove(RECENTLY_VIEWED_KEY)
+        }
     }
     
     /**
-     * Check if a cocktail is cached.
+     * Check if a cocktail is cached (and not expired).
      */
     suspend fun isCocktailCached(id: String): Boolean {
-        ensureLoaded()
-        return cocktailCache.get(id) != null
+        return getCachedCocktail(id) != null
     }
     
     /**

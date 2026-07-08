@@ -153,6 +153,7 @@ class SharedProfileViewModel internal constructor(
             if (success) {
                 _uiState.update { it.copy(authError = null, authStatus = "Sign Up Successful") }
                 updateProfile(name, email)
+                checkAuthStatus()
             } else {
                 _uiState.update { it.copy(authStatus = "Sign Up Failed") }
                 setError(
