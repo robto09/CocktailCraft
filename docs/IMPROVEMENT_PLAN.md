@@ -125,7 +125,7 @@ All 15 task branches are merged into **`integration/shared-phase-1`** (verified:
 - `5a701ee` — cache tests use the shared `ALL_COCKTAILS_KEY` constant instead of a retyped literal
 - `4f1270e` — androidTest fake implements the new `isOffline()` interface member
 
-Remaining 1.4 caveats CLOSED (`faf1d74` on the integration branch): Cart/Order/Review repositories now lazy-load behind a mutex-guarded `ensureLoaded()` on the IO dispatcher instead of doing disk I/O in `init {}`, and `setOfflineMode`/`isOfflineModeEnabled` are suspend + IO-confined (ViewModel signatures unchanged). Full Xcode simulator build of the iOS app against the integration branch: **succeeded** (SKIE surface changes verified end-to-end). Section 1 is fully verified; ready to merge `integration/shared-phase-1` into `dev`.
+Remaining 1.4 caveats CLOSED (`faf1d74` on the integration branch): Cart/Order/Review repositories now lazy-load behind a mutex-guarded `ensureLoaded()` on the IO dispatcher instead of doing disk I/O in `init {}`, and `setOfflineMode`/`isOfflineModeEnabled` are suspend + IO-confined (ViewModel signatures unchanged). Full Xcode simulator build of the iOS app against the integration branch: **succeeded** (SKIE surface changes verified end-to-end). Section 1 is fully verified and merged into `dev`; the integration branch has been deleted.
 
 ---
 
