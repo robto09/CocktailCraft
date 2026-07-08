@@ -10,6 +10,9 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -24,14 +27,28 @@ internal class CartRepositoryImpl(
     // Use a StateFlow to ensure proper state updates
     private val _cartItems = MutableStateFlow<List<CocktailCartItem>>(emptyList())
 
-    init {
-        // Load initial cart items
-        loadCartItems()
+    private val loadMutex = Mutex()
+    private var loaded = false
+
+    // Persisted state loads lazily on first use — a Koin `single` must not
+    // do disk I/O on whichever thread first resolves it.
+    private suspend fun ensureLoaded() {
+        if (loaded) return
+        loadMutex.withLock {
+            if (!loaded) {
+                withContext(ioDispatcher) { loadCartItems() }
+                loaded = true
+            }
+        }
     }
 
-    override fun observeCartItems(): Flow<List<CocktailCartItem>> = _cartItems.asStateFlow()
+    override fun observeCartItems(): Flow<List<CocktailCartItem>> =
+        _cartItems.asStateFlow().onStart { ensureLoaded() }
 
-    override suspend fun getCartItems(): Result<List<CocktailCartItem>> = Result.Success(_cartItems.value)
+    override suspend fun getCartItems(): Result<List<CocktailCartItem>> {
+        ensureLoaded()
+        return Result.Success(_cartItems.value)
+    }
 
     private fun loadCartItems() {
         val cartJson = settings.getStringOrNull(CART_ITEMS_KEY) ?: "[]"
@@ -44,6 +61,7 @@ internal class CartRepositoryImpl(
     }
 
     override suspend fun addToCart(cartItem: CocktailCartItem): Result<Unit> = withContext(ioDispatcher) {
+        ensureLoaded()
         try {
             val currentItems = _cartItems.value.toMutableList()
             val existingItemIndex = currentItems.indexOfFirst { it.cocktail.id == cartItem.cocktail.id }
@@ -65,6 +83,7 @@ internal class CartRepositoryImpl(
     }
 
     override suspend fun removeFromCart(cocktailId: String): Result<Unit> = withContext(ioDispatcher) {
+        ensureLoaded()
         try {
             val currentItems = _cartItems.value.toMutableList()
             currentItems.removeAll { it.cocktail.id == cocktailId }
@@ -76,6 +95,7 @@ internal class CartRepositoryImpl(
     }
 
     override suspend fun updateQuantity(cocktailId: String, quantity: Int): Result<Unit> = withContext(ioDispatcher) {
+        ensureLoaded()
         try {
             val currentItems = _cartItems.value.toMutableList()
             val itemIndex = currentItems.indexOfFirst { it.cocktail.id == cocktailId }
@@ -96,6 +116,7 @@ internal class CartRepositoryImpl(
     }
 
     override suspend fun clearCart(): Result<Unit> = withContext(ioDispatcher) {
+        ensureLoaded()
         try {
             settings.remove(CART_ITEMS_KEY)
             _cartItems.value = emptyList()
@@ -106,6 +127,7 @@ internal class CartRepositoryImpl(
     }
 
     override suspend fun getCartTotal(): Result<Double> {
+        ensureLoaded()
         return try {
             val cartItems = _cartItems.value
             Result.Success(cartItems.sumOf { it.cocktail.price * it.quantity })

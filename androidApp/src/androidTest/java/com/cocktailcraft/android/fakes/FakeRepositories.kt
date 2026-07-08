@@ -101,8 +101,8 @@ class FakeCocktailRepository(
     // Offline
     override suspend fun checkApiConnectivity(): Result<Boolean> = Result.Success(true)
     override suspend fun getRecentlyViewedCocktails(): Result<List<Cocktail>> = Result.Success(emptyList())
-    override fun setOfflineMode(enabled: Boolean) { offlineMode = enabled }
-    override fun isOfflineModeEnabled(): Boolean = offlineMode
+    override suspend fun setOfflineMode(enabled: Boolean) { offlineMode = enabled }
+    override suspend fun isOfflineModeEnabled(): Boolean = offlineMode
     override suspend fun isOffline(): Boolean = offlineMode
 }
 

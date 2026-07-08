@@ -27,20 +27,20 @@ internal class CocktailOfflineRepositoryImpl(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : CocktailOfflineRepository {
 
-    override fun setOfflineMode(enabled: Boolean) {
-        settings.putBoolean(appConfig.offlineModeEnabledKey, enabled)
+    override suspend fun setOfflineMode(enabled: Boolean) {
+        withContext(ioDispatcher) { settings.putBoolean(appConfig.offlineModeEnabledKey, enabled) }
     }
 
-    override fun isOfflineModeEnabled(): Boolean =
-        settings.getBoolean(appConfig.offlineModeEnabledKey, false)
+    override suspend fun isOfflineModeEnabled(): Boolean =
+        withContext(ioDispatcher) { settings.getBoolean(appConfig.offlineModeEnabledKey, false) }
 
     /** True when the user forced offline mode or the network is down. */
     override suspend fun isOffline(): Boolean =
-        withContext(ioDispatcher) { isOfflineModeEnabled() } || !networkMonitor.isOnline.first()
+        isOfflineModeEnabled() || !networkMonitor.isOnline.first()
 
     override suspend fun checkApiConnectivity(): Result<Boolean> {
         return try {
-            Result.Success(if (withContext(ioDispatcher) { isOfflineModeEnabled() }) false else remote.ping())
+            Result.Success(if (isOfflineModeEnabled()) false else remote.ping())
         } catch (e: Exception) {
             Result.Error(e.message ?: "Failed to check API connectivity")
         }

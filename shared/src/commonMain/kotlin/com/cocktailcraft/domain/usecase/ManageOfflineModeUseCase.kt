@@ -10,11 +10,11 @@ internal class ManageOfflineModeUseCase(
     private val offlineRepository: CocktailOfflineRepository,
     private val catalogRepository: CocktailCatalogRepository
 ) {
-    fun isOfflineModeEnabled(): Boolean {
+    suspend fun isOfflineModeEnabled(): Boolean {
         return offlineRepository.isOfflineModeEnabled()
     }
 
-    fun setOfflineMode(enabled: Boolean) {
+    suspend fun setOfflineMode(enabled: Boolean) {
         offlineRepository.setOfflineMode(enabled)
     }
 

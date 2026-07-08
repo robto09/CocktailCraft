@@ -10,8 +10,8 @@ import com.cocktailcraft.domain.util.Result
 interface CocktailOfflineRepository {
     suspend fun checkApiConnectivity(): Result<Boolean>
     suspend fun getRecentlyViewedCocktails(): Result<List<Cocktail>>
-    fun setOfflineMode(enabled: Boolean)
-    fun isOfflineModeEnabled(): Boolean
+    suspend fun setOfflineMode(enabled: Boolean)
+    suspend fun isOfflineModeEnabled(): Boolean
 
     /** True when the user forced offline mode or the network is currently down. */
     suspend fun isOffline(): Boolean

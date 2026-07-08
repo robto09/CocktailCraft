@@ -11,6 +11,9 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -26,8 +29,19 @@ internal class ReviewRepositoryImpl(
     // In-memory cache of reviews, backed by a JSON blob in Settings
     private val _reviews = MutableStateFlow<List<Review>>(emptyList())
 
-    init {
-        loadReviewsFromStorage()
+    private val loadMutex = Mutex()
+    private var loaded = false
+
+    // Persisted state loads lazily on first use — a Koin `single` must not
+    // do disk I/O on whichever thread first resolves it.
+    private suspend fun ensureLoaded() {
+        if (loaded) return
+        loadMutex.withLock {
+            if (!loaded) {
+                withContext(ioDispatcher) { loadReviewsFromStorage() }
+                loaded = true
+            }
+        }
     }
 
     private fun loadReviewsFromStorage() {
@@ -43,11 +57,16 @@ internal class ReviewRepositoryImpl(
         settings.putString(appConfig.reviewsStorageKey, json.encodeToString(_reviews.value))
     }
 
-    override fun observeReviews(): Flow<List<Review>> = _reviews.asStateFlow()
+    override fun observeReviews(): Flow<List<Review>> =
+        _reviews.asStateFlow().onStart { ensureLoaded() }
 
-    override suspend fun getReviews(): Result<List<Review>> = Result.Success(_reviews.value)
+    override suspend fun getReviews(): Result<List<Review>> {
+        ensureLoaded()
+        return Result.Success(_reviews.value)
+    }
 
     override suspend fun addReview(review: Review): Result<Unit> = withContext(ioDispatcher) {
+        ensureLoaded()
         try {
             _reviews.value = _reviews.value + review
             saveReviewsToStorage()
@@ -63,6 +82,7 @@ internal class ReviewRepositoryImpl(
         comment: String,
         date: String
     ): Result<Boolean> = withContext(ioDispatcher) {
+        ensureLoaded()
         try {
             var found = false
             _reviews.value = _reviews.value.map { review ->
@@ -81,6 +101,7 @@ internal class ReviewRepositoryImpl(
     }
 
     override suspend fun deleteReview(reviewId: String): Result<Boolean> = withContext(ioDispatcher) {
+        ensureLoaded()
         try {
             val remaining = _reviews.value.filterNot { it.id == reviewId }
             val removed = remaining.size != _reviews.value.size

@@ -51,7 +51,9 @@ class SharedHomeViewModel internal constructor(
     
     private fun initialize() {
         // Initialize offline mode
-        _uiState.update { it.copy(isOfflineMode = manageOfflineModeUseCase.isOfflineModeEnabled()) }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isOfflineMode = manageOfflineModeUseCase.isOfflineModeEnabled()) }
+        }
 
         // Monitor network connectivity
         viewModelScope.launch {
@@ -328,7 +330,7 @@ class SharedHomeViewModel internal constructor(
 
     fun setOfflineMode(enabled: Boolean) {
         _uiState.update { it.copy(isOfflineMode = enabled) }
-        manageOfflineModeUseCase.setOfflineMode(enabled)
+        viewModelScope.launch { manageOfflineModeUseCase.setOfflineMode(enabled) }
 
         if (!enabled && _uiState.value.isNetworkAvailable) {
             retry()
