@@ -101,6 +101,7 @@ import com.cocktailcraft.android.util.ListOptimizations.itemKey
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import android.util.Log
+import com.cocktailcraft.android.BuildConfig
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -150,27 +151,35 @@ fun HomeScreen(
     
     // Effect to load cocktails by category when selected category changes
     LaunchedEffect(selectedCategory) {
-        Log.d("HomeScreen", "LaunchedEffect(selectedCategory): category=$selectedCategory, isSearchActive=$isSearchActive, isFirst=$isFirstComposition")
-        
+        if (BuildConfig.DEBUG) {
+            Log.d("HomeScreen", "LaunchedEffect(selectedCategory): category=$selectedCategory, isSearchActive=$isSearchActive, isFirst=$isFirstComposition")
+        }
+
         // Skip loading on first composition if we already have data
         if (isFirstComposition && cocktails.isNotEmpty()) {
-            Log.d("HomeScreen", "Skipping load on first composition - already have ${cocktails.size} cocktails")
+            if (BuildConfig.DEBUG) {
+                Log.d("HomeScreen", "Skipping load on first composition - already have ${cocktails.size} cocktails")
+            }
             isFirstComposition = false
             return@LaunchedEffect
         }
-        
+
         isFirstComposition = false
-        
+
         // Only load if not in search mode and category has changed
         if (!isSearchActive) {
-            Log.d("HomeScreen", "Loading cocktails for category: $selectedCategory")
+            if (BuildConfig.DEBUG) {
+                Log.d("HomeScreen", "Loading cocktails for category: $selectedCategory")
+            }
             viewModel.loadCocktailsByCategory(selectedCategory)
         }
     }
-    
+
     // Effect to clear errors when screen is displayed with data
     LaunchedEffect(cocktails) {
-        Log.d("HomeScreen", "LaunchedEffect(cocktails): count=${cocktails.size}, error='$errorMessage'")
+        if (BuildConfig.DEBUG) {
+            Log.d("HomeScreen", "LaunchedEffect(cocktails): count=${cocktails.size}, error='$errorMessage'")
+        }
         if (cocktails.isNotEmpty() && errorMessage.isNotBlank()) {
             viewModel.clearError()
         }

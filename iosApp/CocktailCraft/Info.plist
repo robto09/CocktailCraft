@@ -74,19 +74,75 @@
 	<false/>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>CocktailCraft respects your privacy and does not track users across apps.</string>
-	<!-- App Transport Security -->
+	<!-- TLS certificate pinning for TheCocktailDB (defense-in-depth). The site
+	     is fronted by Cloudflare Universal SSL, which rotates issuing CAs
+	     between Google Trust Services, Let's Encrypt, and SSL.com at ~90-day
+	     renewals — so this pins the ROOTS of that whole CA pool (plus the GTS
+	     intermediate observed live), never the leaf. Captured 2026-07-08 from
+	     the live chain + the Mozilla root store. Keep in sync with the pin-set
+	     in androidApp/src/main/res/xml/network_security_config.xml. Unlike the
+	     Android config there is no expiration: if Cloudflare adds a CA to its
+	     pool, requests fail until these pins are refreshed
+	     (openssl s_client -connect www.thecocktaildb.com:443 -showcerts). -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<false/>
-		<key>NSExceptionDomains</key>
+		<key>NSPinnedDomains</key>
 		<dict>
 			<key>thecocktaildb.com</key>
 			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<key>NSIncludesSubdomains</key>
 				<true/>
-				<key>NSExceptionMinimumTLSVersion</key>
-				<string>TLSv1.2</string>
+				<key>NSPinnedCAIdentities</key>
+				<array>
+					<dict>
+						<key>SPKI-SHA256-BASE64</key>
+						<string>kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=</string>
+					</dict>
+					<dict>
+						<key>SPKI-SHA256-BASE64</key>
+						<string>mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=</string>
+					</dict>
+					<dict>
+						<key>SPKI-SHA256-BASE64</key>
+						<string>hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=</string>
+					</dict>
+					<dict>
+						<key>SPKI-SHA256-BASE64</key>
+						<string>Vfd95BwDeSQo+NUYxVEEIlvkOlWY2SalKK1lPhzOx78=</string>
+					</dict>
+					<dict>
+						<key>SPKI-SHA256-BASE64</key>
+						<string>QXnt2YHvdHR3tJYmQIr0Paosp6t/nggsEGD4QJZ3Q0g=</string>
+					</dict>
+					<dict>
+						<key>SPKI-SHA256-BASE64</key>
+						<string>CLOmM1/OXvSPjw5UOYbAf9GKOxImEp9hhku9W90fHMk=</string>
+					</dict>
+					<dict>
+						<key>SPKI-SHA256-BASE64</key>
+						<string>C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</string>
+					</dict>
+					<dict>
+						<key>SPKI-SHA256-BASE64</key>
+						<string>diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</string>
+					</dict>
+					<dict>
+						<key>SPKI-SHA256-BASE64</key>
+						<string>0cRTd+vc1hjNFlHcLgLCHXUeWqn80bNDH/bs9qMTSPo=</string>
+					</dict>
+					<dict>
+						<key>SPKI-SHA256-BASE64</key>
+						<string>oyD01TTXvpfBro3QSZc1vIlcMjrdLTiL/M9mLCPX+Zo=</string>
+					</dict>
+					<dict>
+						<key>SPKI-SHA256-BASE64</key>
+						<string>K89VOmb1cJAN3TK6bf4ezAbJGC1mLcG2Dh97dnwr3VQ=</string>
+					</dict>
+					<dict>
+						<key>SPKI-SHA256-BASE64</key>
+						<string>G/ANXI8TwJTdF+AFBM8IiIUPEv0Gf6H5LA/b9guG4yE=</string>
+					</dict>
+				</array>
 			</dict>
 		</dict>
 	</dict>

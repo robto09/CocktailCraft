@@ -122,15 +122,28 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
     }
 
     @Test
-    fun signInRejectsShortPassword() = runTest {
+    fun signInRejectsBlankPassword() = runTest {
         val vm = Harness(StandardTestDispatcher(testScheduler)).viewModel()
         advanceUntilIdle()
 
-        assertFalse(vm.signIn("ada@example.com", "12345"))
+        assertFalse(vm.signIn("ada@example.com", "   "))
 
         val error = assertNotNull(vm.error.value)
         assertEquals("Invalid Password", error.title)
         assertEquals(ErrorHandler.ErrorCategory.DATA, error.category)
+    }
+
+    @Test
+    fun signInAcceptsPasswordsPredatingCurrentPolicy() = runTest {
+        val harness = Harness(StandardTestDispatcher(testScheduler))
+        // Seeded directly at the repository, bypassing ViewModel policy —
+        // like an account created before the policy tightened.
+        harness.seedAccount(password = "old1pw")
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        assertTrue(vm.signIn("ada@example.com", "old1pw"))
+        assertTrue(vm.uiState.value.isLoggedIn)
     }
 
     @Test
@@ -184,6 +197,19 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
         val error = assertNotNull(vm.error.value)
         assertEquals("Sign Up Failed", error.title)
         assertEquals(ErrorHandler.ErrorCategory.AUTHENTICATION, error.category)
+    }
+
+    @Test
+    fun signUpRejectsPasswordBelowPolicy() = runTest {
+        val vm = Harness(StandardTestDispatcher(testScheduler)).viewModel()
+        advanceUntilIdle()
+
+        // Long enough but a single character class — fails the strength gate.
+        assertFalse(vm.signUp("Ada Lovelace", "ada@example.com", "12345678"))
+
+        val error = assertNotNull(vm.error.value)
+        assertEquals("Invalid Password", error.title)
+        assertEquals(ErrorHandler.ErrorCategory.DATA, error.category)
     }
 
     @Test

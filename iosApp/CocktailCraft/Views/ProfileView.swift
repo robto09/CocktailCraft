@@ -89,7 +89,9 @@ struct ProfileView: View {
                             showingSignUp = false
                         }
                     }
-                }
+                },
+                getPasswordStrength: viewModel.getPasswordStrength,
+                meetsPasswordPolicy: viewModel.meetsPasswordPolicy
             )
         }
         .sheet(isPresented: $showingOfflineMode) {

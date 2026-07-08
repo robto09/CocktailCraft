@@ -1,8 +1,12 @@
 package com.cocktailcraft.data.security
 
 /**
- * Salted, iterated SHA-256 hashing for the local account store.
- * Stored format: `v1:<iterations>:<saltHex>:<digestHex>`.
+ * PBKDF2-HMAC-SHA256 hashing for the local account store.
+ * Stored format: `v2:<iterations>:<saltHex>:<digestHex>`.
+ *
+ * Legacy `v1` values (salted, iterated SHA-256) still verify so existing
+ * accounts keep working; callers should re-hash them via [needsRehash] on the
+ * next successful verification.
  *
  * Credentials kept in device Settings can never be secret from the device
  * owner; hashing keeps them out of plaintext preference files and backups.
@@ -10,29 +14,39 @@ package com.cocktailcraft.data.security
  */
 internal object PasswordHasher {
 
-    private const val VERSION = "v1"
-    private const val ITERATIONS = 10_000
+    private const val VERSION_V1 = "v1"
+    private const val VERSION_V2 = "v2"
+
+    // OWASP-recommended floor for PBKDF2-HMAC-SHA256.
+    private const val PBKDF2_ITERATIONS = 600_000
     private const val SALT_BYTES = 16
+    private const val KEY_BYTES = 32
 
     fun hash(password: String): String {
         val salt = secureRandomBytes(SALT_BYTES)
-        val digest = digest(password, salt, ITERATIONS)
-        return "$VERSION:$ITERATIONS:${salt.toHex()}:${digest.toHex()}"
+        val digest = pbkdf2Sha256(password, salt, PBKDF2_ITERATIONS, KEY_BYTES)
+        return "$VERSION_V2:$PBKDF2_ITERATIONS:${salt.toHex()}:${digest.toHex()}"
     }
 
     fun verify(password: String, stored: String): Boolean {
         val parts = stored.split(':')
-        if (parts.size != 4 || parts[0] != VERSION) return false
+        if (parts.size != 4) return false
         val iterations = parts[1].toIntOrNull()?.takeIf { it > 0 } ?: return false
         val salt = parts[2].hexToBytesOrNull() ?: return false
         val expected = parts[3].hexToBytesOrNull() ?: return false
-        return constantTimeEquals(digest(password, salt, iterations), expected)
+        val computed = when (parts[0]) {
+            VERSION_V2 -> pbkdf2Sha256(password, salt, iterations, expected.size)
+            VERSION_V1 -> legacyDigest(password, salt, iterations)
+            else -> return false
+        }
+        return constantTimeEquals(computed, expected)
     }
 
-    /** True when [stored] is already hashed (vs a legacy plaintext value). */
-    fun isHashed(stored: String): Boolean = stored.startsWith("$VERSION:")
+    /** True when [stored] predates the current KDF and should be re-hashed on use. */
+    fun needsRehash(stored: String): Boolean = !stored.startsWith("$VERSION_V2:")
 
-    private fun digest(password: String, salt: ByteArray, iterations: Int): ByteArray {
+    /** The v1 KDF (salted, iterated SHA-256), kept only to verify old values. */
+    private fun legacyDigest(password: String, salt: ByteArray, iterations: Int): ByteArray {
         var d = sha256(salt + password.encodeToByteArray())
         repeat(iterations - 1) { d = sha256(salt + d) }
         return d

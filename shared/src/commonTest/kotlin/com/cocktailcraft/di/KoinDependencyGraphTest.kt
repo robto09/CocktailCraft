@@ -50,6 +50,7 @@ class KoinDependencyGraphTest : MainDispatcherTest() {
     /** Test stand-ins for the platform-supplied bindings. */
     private val testPlatformModule = module {
         single<Settings> { MapSettings() }
+        single<Settings>(secureSettingsQualifier) { MapSettings() }
         single<NetworkMonitor> { FakeNetworkMonitor() }
     }
 

@@ -107,6 +107,8 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.android)
                 implementation(libs.ktor.client.android)
                 implementation(libs.multiplatform.settings.core)
+                // Keystore-backed EncryptedSharedPreferences for the auth store
+                implementation(libs.androidx.security.crypto)
             }
         }
 

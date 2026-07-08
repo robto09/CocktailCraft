@@ -123,7 +123,7 @@ val dataModule = module {
     }
 
     single<AuthRepository> {
-        AuthRepositoryImpl(get(), get(), get(named("ioDispatcher")))
+        AuthRepositoryImpl(get(secureSettingsQualifier), get(), get(named("ioDispatcher")))
     }
 
     single<OrderRepository> {

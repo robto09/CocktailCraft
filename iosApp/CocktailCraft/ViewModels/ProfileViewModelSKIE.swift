@@ -101,6 +101,10 @@ final class ProfileViewModelSKIE: SharedViewModelWrapper<ProfileUiState> {
         return sharedViewModel.isValidPassword(password: password)
     }
 
+    func meetsPasswordPolicy(_ password: String) -> Bool {
+        return sharedViewModel.meetsPasswordPolicy(password: password)
+    }
+
     func getPasswordStrength(_ password: String) -> Int {
         return Int(sharedViewModel.getPasswordStrength(password: password))
     }
@@ -141,7 +145,7 @@ final class ProfileViewModelSKIE: SharedViewModelWrapper<ProfileUiState> {
         case 0...1: return "Weak"
         case 2: return "Fair"
         case 3: return "Good"
-        case 4: return "Strong"
+        case 4...5: return "Strong"
         default: return "Unknown"
         }
     }
@@ -152,7 +156,7 @@ final class ProfileViewModelSKIE: SharedViewModelWrapper<ProfileUiState> {
         case 0...1: return .red
         case 2: return .orange
         case 3: return .yellow
-        case 4: return .green
+        case 4...5: return .green
         default: return .gray
         }
     }

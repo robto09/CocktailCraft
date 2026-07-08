@@ -3,6 +3,7 @@ package com.cocktailcraft.android.util
 import android.content.Context
 import android.os.Build
 import coil.ImageLoader
+import com.cocktailcraft.android.BuildConfig
 import coil.annotation.ExperimentalCoilApi
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
@@ -68,8 +69,8 @@ object ImageLoaderSingleton {
             .networkCachePolicy(CachePolicy.ENABLED)
             // We'll skip custom decoders for now as they're causing issues
             // Coil has default decoders that will work fine
-            // Enable logging in debug mode
-            .logger(DebugLogger())
+            // Verbose request logging is debug-only noise
+            .logger(if (BuildConfig.DEBUG) DebugLogger() else null)
             .crossfade(true)
             .build()
     }

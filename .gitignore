@@ -38,6 +38,7 @@ Thumbs.db
 *.keystore
 *.jks
 local.properties
+keystore.properties
 captures/
 output.json
 

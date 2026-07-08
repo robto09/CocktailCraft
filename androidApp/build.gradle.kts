@@ -1,9 +1,23 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.baselineprofile)
 }
+
+// Release signing comes from an untracked keystore.properties at the repo root
+// (see keystore.properties.example) or, on CI, from ANDROID_RELEASE_* env vars.
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
+fun releaseSigningValue(property: String, envVar: String): String? =
+    keystoreProperties.getProperty(property) ?: System.getenv(envVar)
+
+val releaseStoreFile = releaseSigningValue("storeFile", "ANDROID_RELEASE_STORE_FILE")
 
 android {
     namespace = "com.cocktailcraft.android"
@@ -19,10 +33,21 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+    signingConfigs {
+        if (releaseStoreFile != null) {
+            create("release") {
+                storeFile = rootProject.file(releaseStoreFile)
+                storePassword = releaseSigningValue("storePassword", "ANDROID_RELEASE_STORE_PASSWORD")
+                keyAlias = releaseSigningValue("keyAlias", "ANDROID_RELEASE_KEY_ALIAS")
+                keyPassword = releaseSigningValue("keyPassword", "ANDROID_RELEASE_KEY_PASSWORD")
+            }
         }
     }
     buildTypes {
@@ -33,9 +58,20 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // No release keystore exists in this repo; debug-sign release
-            // builds so they stay locally installable for verification.
-            signingConfig = signingConfigs.getByName("debug")
+            // Without release credentials the artifact stays unsigned (never
+            // shippable by accident); -PdebugSignRelease restores the old
+            // locally-installable debug-signed behavior.
+            signingConfig = when {
+                releaseStoreFile != null -> signingConfigs.getByName("release")
+                providers.gradleProperty("debugSignRelease").orNull == "true" ->
+                    signingConfigs.getByName("debug")
+                else -> null.also {
+                    logger.lifecycle(
+                        "Release signing not configured (no keystore.properties or " +
+                            "ANDROID_RELEASE_* env vars): release artifacts will be unsigned."
+                    )
+                }
+            }
         }
     }
     compileOptions {

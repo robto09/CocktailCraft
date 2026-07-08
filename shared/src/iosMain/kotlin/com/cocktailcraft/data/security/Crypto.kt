@@ -5,8 +5,12 @@ import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.convert
 import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.usePinned
+import platform.CoreCrypto.CCKeyDerivationPBKDF
 import platform.CoreCrypto.CC_SHA256
 import platform.CoreCrypto.CC_SHA256_DIGEST_LENGTH
+import platform.CoreCrypto.kCCPBKDF2
+import platform.CoreCrypto.kCCPRFHmacAlgSHA256
+import platform.CoreCrypto.kCCSuccess
 import platform.Security.SecRandomCopyBytes
 import platform.Security.kSecRandomDefault
 
@@ -34,4 +38,38 @@ internal actual fun secureRandomBytes(count: Int): ByteArray {
         }
     }
     return bytes
+}
+
+@OptIn(ExperimentalForeignApi::class)
+internal actual fun pbkdf2Sha256(
+    password: String,
+    salt: ByteArray,
+    iterations: Int,
+    keyLengthBytes: Int,
+): ByteArray {
+    require(iterations > 0) { "iterations must be positive" }
+    require(keyLengthBytes > 0) { "keyLengthBytes must be positive" }
+    require(salt.isNotEmpty()) { "salt must not be empty" }
+    // The binding takes the password as a String and marshals it as UTF-8,
+    // matching encodeToByteArray() on the other platforms; the explicit
+    // byte length keeps multi-byte characters counted correctly.
+    val passwordByteCount = password.encodeToByteArray().size
+    val derived = ByteArray(keyLengthBytes)
+    val status = derived.usePinned { out ->
+        salt.usePinned { s ->
+            CCKeyDerivationPBKDF(
+                kCCPBKDF2,
+                password,
+                passwordByteCount.convert(),
+                s.addressOf(0).reinterpret(),
+                salt.size.convert(),
+                kCCPRFHmacAlgSHA256,
+                iterations.convert(),
+                out.addressOf(0).reinterpret(),
+                keyLengthBytes.convert(),
+            )
+        }
+    }
+    check(status == kCCSuccess) { "CCKeyDerivationPBKDF failed with status $status" }
+    return derived
 }

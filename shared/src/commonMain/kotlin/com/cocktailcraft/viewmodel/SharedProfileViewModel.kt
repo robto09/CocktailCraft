@@ -72,7 +72,10 @@ class SharedProfileViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun signIn(email: String, password: String): Boolean {
-        if (!isValidEmail(email)) {
+        // Sign-in stays lenient on purpose: accounts created under older,
+        // looser rules must still be able to authenticate. Strict format
+        // rules apply where the email is first stored (signUp/updateProfile).
+        if (email.isBlank() || !email.contains('@')) {
             setError(
                 "Invalid Email",
                 "Please enter a valid email address",
@@ -81,15 +84,17 @@ class SharedProfileViewModel internal constructor(
             return false
         }
         
-        if (!isValidPassword(password)) {
+        // Like the email gate above: existing accounts may hold passwords set
+        // under an older policy, so sign-in only rejects empty input.
+        if (password.isBlank()) {
             setError(
                 "Invalid Password",
-                "Password must be at least 6 characters long",
+                "Please enter your password",
                 ErrorHandler.ErrorCategory.DATA
             )
             return false
         }
-        
+
         _uiState.update { it.copy(isAuthenticating = true, isLoading = true) }
 
         return try {
@@ -137,15 +142,15 @@ class SharedProfileViewModel internal constructor(
             return false
         }
         
-        if (!isValidPassword(password)) {
+        if (!meetsPasswordPolicy(password)) {
             setError(
                 "Invalid Password",
-                "Password must be at least 6 characters long",
+                PASSWORD_POLICY_MESSAGE,
                 ErrorHandler.ErrorCategory.DATA
             )
             return false
         }
-        
+
         _uiState.update { it.copy(isAuthenticating = true, isLoading = true) }
 
         return try {
@@ -267,16 +272,27 @@ class SharedProfileViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun changePassword(oldPassword: String, newPassword: String): Boolean {
-        if (!isValidPassword(oldPassword) || !isValidPassword(newPassword)) {
+        // The old password may predate the current policy — only the new one
+        // has to meet it.
+        if (oldPassword.isBlank()) {
             setError(
                 "Invalid Password",
-                "Passwords must be at least 6 characters long",
+                "Please enter your current password",
                 ErrorHandler.ErrorCategory.DATA
             )
             return false
         }
-        
-        
+
+        if (!meetsPasswordPolicy(newPassword)) {
+            setError(
+                "Invalid Password",
+                PASSWORD_POLICY_MESSAGE,
+                ErrorHandler.ErrorCategory.DATA
+            )
+            return false
+        }
+
+
         return try {
             val success = manageProfileUseCase.changePassword(oldPassword, newPassword).getOrThrow()
             if (success) {
@@ -310,6 +326,11 @@ class SharedProfileViewModel internal constructor(
      * Validate password strength.
      */
     fun isValidPassword(password: String): Boolean = AuthInputValidator.isValidPassword(password)
+
+    /**
+     * Full policy check for a newly set password (length + strength).
+     */
+    fun meetsPasswordPolicy(password: String): Boolean = AuthInputValidator.meetsPasswordPolicy(password)
 
     /**
      * Get password strength score.
@@ -383,5 +404,11 @@ class SharedProfileViewModel internal constructor(
         } catch (e: Exception) {
             // Silent fail for preferences loading
         }
+    }
+
+    private companion object {
+        val PASSWORD_POLICY_MESSAGE =
+            "Password must be at least ${AuthInputValidator.MIN_PASSWORD_LENGTH} characters " +
+                "and mix at least two of: uppercase letters, lowercase letters, numbers, symbols"
     }
 }

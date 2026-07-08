@@ -50,8 +50,7 @@ struct CocktailCraftApp: App {
     private func configureNetworkMonitoring() {
         // Monitor only TheCocktailDB API calls for focused debugging
         DebugSwift.Network.shared.onlyURLs = [
-            "https://www.thecocktaildb.com",
-            "http://www.thecocktaildb.com"
+            "https://www.thecocktaildb.com"
         ]
 
         // Ignore analytics or other non-essential URLs if any

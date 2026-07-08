@@ -11,6 +11,11 @@
 # predate full mode — verified startup crash without this.
 -keep class * extends androidx.room.RoomDatabase { <init>(); }
 
+# --- Tink (via androidx.security:security-crypto) ---
+# Tink references ErrorProne's compile-only annotations; they never exist at
+# runtime, so R8 just needs to stop warning about them.
+-dontwarn com.google.errorprone.annotations.**
+
 # --- kotlinx-serialization (official rules) ---
 # Generated serializers for @Serializable classes (the shared KMP models) are
 # looked up reflectively through their Companion/INSTANCE members; R8 cannot

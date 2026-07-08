@@ -133,72 +133,72 @@ Remaining 1.4 caveats CLOSED (`2c69c5b` on the integration branch): Cart/Order/R
 
 ## P1 — Fix before any real distribution
 
-### 2.1 Credentials & PII stored in unencrypted platform storage
-- [ ] **Severity:** High · **Effort:** M
+### 2.1 Credentials & PII stored in unencrypted platform storage — ✅ Done (branch `security/2.1-encrypted-storage`, commit `7fa7536`)
+- [x] **Severity:** High · **Effort:** M
 - **Files:** `shared/src/androidMain/kotlin/com/cocktailcraft/di/PlatformModule.kt:29-33` (plain `SharedPreferencesSettings`), `shared/src/iosMain/kotlin/com/cocktailcraft/di/PlatformModule.kt:10-11` (`NSUserDefaultsSettings`), `shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/AuthRepositoryImpl.kt:216-229`
 - **Issue:** Password hashes (`password_<email>`) and the full `users` record (email, name, phone, physical address as plaintext JSON) live in plain SharedPreferences XML (Android) and an unencrypted NSUserDefaults plist (iOS). Readable via rooted/jailbroken device, backup extraction, or device-migration tooling. Neither Keystore nor Keychain is used anywhere.
 - **Fix:** Android: back the auth `Settings` with `androidx.security.crypto.EncryptedSharedPreferences` (Keystore-backed) — multiplatform-settings accepts any `SharedPreferences` instance. iOS: move auth keys to Keychain (`KeychainSettings` from multiplatform-settings, or `kSecClassGenericPassword` with `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`). Migrate existing values on first launch, then delete them from the old store. Coordinate with 2.2.
 
-### 2.2 `android:allowBackup="true"` with no exclusion rules
-- [ ] **Severity:** Medium (compounds 2.1) · **Effort:** S
+### 2.2 `android:allowBackup="true"` with no exclusion rules — ✅ Done (branch `security/2.2-backup-rules`, commit `72049fe`)
+- [x] **Severity:** Medium (compounds 2.1) · **Effort:** S
 - **Files:** `androidApp/src/main/AndroidManifest.xml:9`
 - **Issue:** With backup enabled and no rules, `adb backup` / device-to-device transfer / cloud backup can extract `cocktailcraft_prefs.xml` — including credentials and PII — widening the attack surface beyond "attacker has root."
 - **Fix:** Either set `allowBackup="false"`, or add `android:dataExtractionRules` (Android 12+) + `android:fullBackupContent` excluding the auth prefs file (`<exclude domain="sharedpref" path="cocktailcraft_prefs.xml"/>`). If 2.1 moves secrets to Keystore-encrypted storage, still exclude the encrypted file (its master key isn't backed up, making restored data unreadable — exclude to avoid restore-time corruption).
 
-### 2.3 Hand-rolled iterated SHA-256 KDF instead of a vetted password-hashing algorithm
-- [ ] **Severity:** Medium · **Effort:** M
+### 2.3 Hand-rolled iterated SHA-256 KDF instead of a vetted password-hashing algorithm — ✅ Done (branch `security/2.3-pbkdf2-kdf`, commit `a0234d0`)
+- [x] **Severity:** Medium · **Effort:** M
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/data/security/PasswordHasher.kt:11-46`
 - **Issue:** Custom `sha256(salt + password)` iterated 10,000× is fast and GPU-parallelizable — far weaker per unit of compute than PBKDF2-HMAC-SHA256 at OWASP-recommended ≥600k iterations, and much weaker than memory-hard Argon2id/scrypt. Practical risk: offline cracking of an extracted store (see 2.1/2.2).
 - **Fix:** Swap the digest for a real KDF via expect/actual: Android `javax.crypto` `PBKDF2WithHmacSHA256`; iOS CommonCrypto `CCKeyDerivationPBKDF` (or a KMP Argon2 library). The existing versioned `v1:` format was designed for this — introduce `v2:` and re-hash transparently on next successful sign-in (same upgrade-on-use pattern already used for legacy plaintext).
 
-### 2.4 Release builds signed with the debug keystore
-- [ ] **Severity:** Medium (shipping blocker) · **Effort:** S
+### 2.4 Release builds signed with the debug keystore — ✅ Done (branch `security/2.4-release-signing`, commit `2db6ce3`)
+- [x] **Severity:** Medium (shipping blocker) · **Effort:** S
 - **Files:** `androidApp/build.gradle.kts:36-38`
 - **Issue:** The `release` build type uses the world-readable debug keystore (default password `android`). Any such artifact offers no authenticity guarantee, could be re-signed/tampered by anyone, and will be rejected by Play. Comments acknowledge this is a local-dev convenience.
 - **Fix:** Before any distribution: generate a dedicated release keystore, keep it out of VCS (`.gitignore` already covers `*.keystore`/`*.jks`), and wire the signing config from Gradle properties / CI secrets. Keep debug-signing behind an explicit local flag if local-installability of release builds is still wanted.
 
-### 2.5 Unnecessary iOS ATS exception permitting insecure HTTP
-- [ ] **Severity:** Low-Medium · **Effort:** S
+### 2.5 Unnecessary iOS ATS exception permitting insecure HTTP — ✅ Done (branch `security/2.5-remove-ats-exception`, commit `10eafaa`)
+- [x] **Severity:** Low-Medium · **Effort:** S
 - **Files:** `iosApp/CocktailCraft/Info.plist:77-92`, `shared/src/commonMain/kotlin/com/cocktailcraft/data/config/AppConfigImpl.kt:10,15`
 - **Issue:** `NSExceptionAllowsInsecureHTTPLoads = true` for `thecocktaildb.com` even though the app is HTTPS-only. It's also likely a no-op as written (no `NSIncludesSubdomains`, and the real host is `www.thecocktaildb.com`) — but it's a latent downgrade vector and will draw App Review scrutiny.
 - **Fix:** Delete the entire `NSExceptionDomains` block. All real traffic is HTTPS; ATS defaults are then correct.
 
 ## P2 — Hardening
 
-### 2.6 Weak password policy — 6-char minimum, strength score never enforced
-- [ ] **Severity:** Low-Medium · **Effort:** S
+### 2.6 Weak password policy — 6-char minimum, strength score never enforced — ✅ Done (branch `security/2.6-password-policy`, commit `f6a2776`)
+- [x] **Severity:** Low-Medium · **Effort:** S
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/domain/util/AuthInputValidator.kt:10,19,22-30`, enforced at `SharedProfileViewModel.kt:84,140,269`, mirrored at `iosApp/CocktailCraft/Views/SignUpView.swift:142-154`
 - **Issue:** Only a length ≥ 6 check; `passwordStrength()` (0–5) is computed and displayed but never gates sign-up. `"123456"` is an acceptable password, which materially helps offline cracking given 2.1–2.3.
 - **Fix:** Raise `MIN_PASSWORD_LENGTH` to 8 (NIST SP 800-63B) and require `passwordStrength() >= 3` at sign-up/change-password in the shared validator so both platforms inherit it. Update the iOS client-side mirror.
 
-### 2.7 No sign-in attempt throttling
-- [ ] **Severity:** Low · **Effort:** S
+### 2.7 No sign-in attempt throttling — ✅ Done (branch `security/2.7-signin-throttling`, commit `c35d836`)
+- [x] **Severity:** Low · **Effort:** S
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/AuthRepositoryImpl.kt:43-53`
 - **Issue:** `signIn` has no attempt counter, delay, or lockout — automated UI-level guessing against a known email is unlimited. Impact bounded (local-only auth), but the app presents itself as a real account system.
 - **Fix:** Add a per-email attempt counter with exponential backoff persisted in Settings; reset on success.
 
-### 2.8 Loose email validation
-- [ ] **Severity:** Low · **Effort:** S
+### 2.8 Loose email validation — ✅ Done (branch `security/2.8-email-validation`, commit `808393c`)
+- [x] **Severity:** Low · **Effort:** S
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/domain/util/AuthInputValidator.kt:12-17`
 - **Issue:** Only checks non-blank + contains `@` + contains `.` + length ≥ 5 — accepts `"a@.b"` etc. Email doubles as the account's unique key, so junk values pollute storage keys.
 - **Fix:** Use an RFC-5322-lite regex (local-part `@` domain with at least one dot-separated label, no whitespace) in the shared validator.
 
 ## P3 — Optional / cleanup
 
-### 2.9 Ungated logging in release builds
-- [ ] **Severity:** Low · **Effort:** S
+### 2.9 Ungated logging in release builds — ✅ Done (branch `security/2.9-release-logging`, commit `d0631a4`)
+- [x] **Severity:** Low · **Effort:** S
 - **Files:** `androidApp/src/main/java/com/cocktailcraft/android/screens/HomeScreen.kt:154,158,167,174` (`Log.d`), `androidApp/src/main/java/com/cocktailcraft/android/CocktailCraftApplication.kt:17` (Koin `androidLogger()` always on), `androidApp/src/main/java/com/cocktailcraft/android/util/ImageLoaderSingleton.kt:71-73` (Coil `DebugLogger` always attached)
 - **Issue:** Debug log calls and framework loggers run in release builds. Content is low-sensitivity (categories/counts, DI wiring, image URLs) but it's noise and minor internal-state disclosure.
 - **Fix:** Gate all three behind `BuildConfig.DEBUG` (Koin: `androidLogger()` only in debug, `Level.ERROR` otherwise).
 
-### 2.10 Remove the legacy plaintext-password acceptance shim (eventually)
-- [ ] **Severity:** Low · **Effort:** S
+### 2.10 Remove the legacy plaintext-password acceptance shim (eventually) — ✅ Done (branch `security/2.10-remove-plaintext-shim`, commit `5c21e7a`)
+- [x] **Severity:** Low · **Effort:** S
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/AuthRepositoryImpl.kt:220-227`
 - **Issue:** `verifyCredentials` still accepts a stored plaintext value and upgrades it on first successful sign-in. Well-designed and test-covered, but it's trust surface that should not live forever.
 - **Fix:** Once confident no installs predate hashing, delete the shim (and its test), leaving hash-only verification.
 
-### 2.11 (Optional) TLS certificate pinning
-- [ ] **Severity:** Low (informational) · **Effort:** M
+### 2.11 (Optional) TLS certificate pinning — ✅ Done (branch `security/2.11-tls-pinning`, commit `6941ea2`)
+- [x] **Severity:** Low (informational) · **Effort:** M
 - **Files:** `shared/src/commonMain/kotlin/com/cocktailcraft/di/NetworkModule.kt`
 - **Issue:** No pinning on the Ktor client. Proportionally fine — TheCocktailDB is a public, unauthenticated API and no credentials transit it.
 - **Fix:** Only if desired for defense-in-depth; not a priority relative to 2.1–2.3.

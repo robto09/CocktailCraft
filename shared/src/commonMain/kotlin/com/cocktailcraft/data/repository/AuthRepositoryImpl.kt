@@ -1,10 +1,12 @@
 package com.cocktailcraft.data.repository
 
+import com.cocktailcraft.data.security.AuthStorageKeys
 import com.cocktailcraft.data.security.PasswordHasher
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.repository.AuthRepository
+import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.CoroutineDispatcher
@@ -15,11 +17,14 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import com.cocktailcraft.util.UUID
+import kotlin.time.Clock
 
 internal class AuthRepositoryImpl(
     private val settings: Settings,
     private val json: Json,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    // Injectable for tests: coroutine virtual time does not move Clock.System.
+    private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() }
 ) : AuthRepository {
 
     // Authentication methods
@@ -47,9 +52,23 @@ internal class AuthRepositoryImpl(
 
     override suspend fun signIn(email: String, password: String): Result<Boolean> = withContext(ioDispatcher) {
         try {
-            if (!verifyCredentials(email, password)) return@withContext Result.Success(false)
+            val lockoutMs = lockoutRemainingMs(email)
+            if (lockoutMs > 0) {
+                // Must be an Error (not Success(false)) so the lockout message
+                // reaches the UI instead of the generic invalid-credentials one.
+                return@withContext Result.Error(
+                    "Too many failed attempts. Try again in ${formatDuration(lockoutMs)}.",
+                    ErrorCode.FORBIDDEN
+                )
+            }
+
+            if (!verifyCredentials(email, password)) {
+                recordFailedSignIn(email)
+                return@withContext Result.Success(false)
+            }
 
             val user = getUserByEmail(email) ?: return@withContext Result.Success(false)
+            clearFailedSignIns(email)
             settings.putString(CURRENT_USER_ID_KEY, user.id)
             Result.Success(true)
         } catch (e: Exception) {
@@ -229,18 +248,59 @@ internal class AuthRepositoryImpl(
 
     private fun verifyCredentials(email: String, password: String): Boolean {
         val stored = settings.getStringOrNull(passwordKey(email)) ?: return false
-        if (PasswordHasher.isHashed(stored)) return PasswordHasher.verify(password, stored)
-        // Legacy installs stored the raw password; verify once, then upgrade in place.
-        if (stored != password) return false
-        saveCredentials(email, password)
+        if (!PasswordHasher.verify(password, stored)) return false
+        // Hashes from older formats upgrade to the current KDF on use.
+        if (PasswordHasher.needsRehash(stored)) saveCredentials(email, password)
         return true
     }
 
-    private fun passwordKey(email: String) = "password_$email"
+    private fun passwordKey(email: String) = "${AuthStorageKeys.PASSWORD_PREFIX}$email"
+
+    // Sign-in throttling: after FREE_SIGN_IN_ATTEMPTS consecutive failures the
+    // email locks for BASE_LOCKOUT_MS, doubling per further failure up to
+    // BASE_LOCKOUT_MS << MAX_LOCKOUT_DOUBLINGS. State clears on success.
+    // Deadlines use the wall clock — the only persistent cross-platform time
+    // source available here — so advancing the device clock skips one wait;
+    // the attempt counter survives that, and the next failure re-locks with a
+    // doubled duration, so backoff degrades rather than disappears.
+
+    private fun lockoutRemainingMs(email: String): Long {
+        val until = settings.getLongOrNull(lockoutUntilKey(email)) ?: return 0
+        return until - nowMs()
+    }
+
+    private fun recordFailedSignIn(email: String) {
+        val failures = settings.getInt(attemptsKey(email), 0) + 1
+        settings.putInt(attemptsKey(email), failures)
+        if (failures >= FREE_SIGN_IN_ATTEMPTS) {
+            val doublings = minOf(failures - FREE_SIGN_IN_ATTEMPTS, MAX_LOCKOUT_DOUBLINGS)
+            settings.putLong(lockoutUntilKey(email), nowMs() + (BASE_LOCKOUT_MS shl doublings))
+        }
+    }
+
+    private fun clearFailedSignIns(email: String) {
+        settings.remove(attemptsKey(email))
+        settings.remove(lockoutUntilKey(email))
+    }
+
+    private fun formatDuration(ms: Long): String {
+        val seconds = (ms + 999) / 1000
+        return if (seconds < 60) "$seconds seconds" else "${(seconds + 59) / 60} minutes"
+    }
+
+    private fun attemptsKey(email: String) = "${AuthStorageKeys.SIGN_IN_ATTEMPTS_PREFIX}$email"
+
+    private fun lockoutUntilKey(email: String) = "${AuthStorageKeys.SIGN_IN_LOCKOUT_PREFIX}$email"
 
     companion object {
-        private const val USERS_KEY = "users"
-        private const val CURRENT_USER_ID_KEY = "current_user_id"
-        private const val GUEST_PREFERENCES_KEY = "guest_preferences"
+        // Key names live in AuthStorageKeys so the platform storage migration
+        // and this repository can never disagree about what is auth data.
+        private const val USERS_KEY = AuthStorageKeys.USERS
+        private const val CURRENT_USER_ID_KEY = AuthStorageKeys.CURRENT_USER_ID
+        private const val GUEST_PREFERENCES_KEY = AuthStorageKeys.GUEST_PREFERENCES
+
+        private const val FREE_SIGN_IN_ATTEMPTS = 5
+        private const val BASE_LOCKOUT_MS = 30_000L
+        private const val MAX_LOCKOUT_DOUBLINGS = 6 // caps at 32 minutes
     }
 }

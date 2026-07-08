@@ -9,6 +9,10 @@ struct SignUpView: View {
     
     let onDismiss: () -> Void
     let onSignUp: (String, String, String) -> Void
+    // Shared-validator bridges (ProfileViewModelSKIE) so the form gate and
+    // strength meter can never drift from the policy signUp actually enforces.
+    let getPasswordStrength: (String) -> Int
+    let meetsPasswordPolicy: (String) -> Bool
     
     var body: some View {
         NavigationStack {
@@ -79,10 +83,11 @@ struct SignUpView: View {
                         }
                         .textFieldStyle(CustomTextFieldStyle())
                         
-                        // Password strength indicator
+                        // Password strength indicator (one segment per point
+                        // of the shared 0-5 strength scale)
                         if !password.isEmpty {
                             HStack {
-                                ForEach(0..<4, id: \.self) { index in
+                                ForEach(0..<5, id: \.self) { index in
                                     Rectangle()
                                         .frame(height: 4)
                                         .foregroundColor(index < passwordStrength ? passwordStrengthColor : Color.gray.opacity(0.3))
@@ -140,35 +145,31 @@ struct SignUpView: View {
     }
     
     private var isFormValid: Bool {
-        !name.isEmpty && !email.isEmpty && !password.isEmpty && 
-        email.contains("@") && password.count >= 6
+        !name.isEmpty && !email.isEmpty && !password.isEmpty &&
+        email.contains("@") && meetsPasswordPolicy(password)
     }
-    
+
+    // The shared AuthInputValidator's 0-5 score, via ProfileViewModelSKIE.
     private var passwordStrength: Int {
-        var strength = 0
-        if password.count >= 6 { strength += 1 }
-        if password.rangeOfCharacter(from: .uppercaseLetters) != nil { strength += 1 }
-        if password.rangeOfCharacter(from: .decimalDigits) != nil { strength += 1 }
-        if password.rangeOfCharacter(from: CharacterSet(charactersIn: "!@#$%^&*()")) != nil { strength += 1 }
-        return strength
+        getPasswordStrength(password)
     }
-    
+
     private var passwordStrengthColor: Color {
         switch passwordStrength {
         case 0...1: return .red
         case 2: return .orange
         case 3: return .yellow
-        case 4: return .green
+        case 4...5: return .green
         default: return .gray
         }
     }
-    
+
     private var passwordStrengthText: String {
         switch passwordStrength {
         case 0...1: return "Weak password"
         case 2: return "Fair password"
         case 3: return "Good password"
-        case 4: return "Strong password"
+        case 4...5: return "Strong password"
         default: return ""
         }
     }
