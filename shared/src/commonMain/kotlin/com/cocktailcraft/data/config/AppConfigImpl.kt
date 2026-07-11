@@ -6,11 +6,8 @@ import com.cocktailcraft.domain.config.AppConfig
  * Implementation of AppConfig that provides configuration values for the application.
  * This is an adapter in the hexagonal architecture that implements the port defined in the domain layer.
  */
-internal class AppConfigImpl : AppConfig {
+class AppConfigImpl : AppConfig {
     override val apiBaseUrl: String = "https://www.thecocktaildb.com/api/json/v1/1"
-
-    // Flip locally when debugging network traffic; keeps prod logs quiet
-    override val verboseNetworkLogging: Boolean = false
 
     override val imageBaseUrl: String = "https://www.thecocktaildb.com/images"
 
@@ -31,11 +28,10 @@ internal class AppConfigImpl : AppConfig {
     // Storage keys
     override val favoritesStorageKey: String = "favorite_cocktails"
     override val ordersStorageKey: String = "orders_data"
-    override val reviewsStorageKey: String = "user_reviews"
     override val recentlyViewedStorageKey: String = "recently_viewed_cocktails"
     override val offlineModeEnabledKey: String = "offline_mode_enabled"
 
-    // Cache configuration (enforced by CocktailCache)
+    // Cache configuration
     override val cacheExpirationMs: Long = 86400000 // 24 hours cache expiration
-    override val maxOfflineCocktails: Int = 100 // Maximum number of cocktails to cache
+    override val maxOfflineCocktails: Int = 50 // Maximum number of cocktails to cache
 }

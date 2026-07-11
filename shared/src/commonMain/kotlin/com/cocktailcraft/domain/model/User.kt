@@ -1,6 +1,5 @@
 package com.cocktailcraft.domain.model
 
-import kotlin.native.HiddenFromObjC
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -14,12 +13,8 @@ data class User(
     val joinDate: String? = null,
     val address: Address? = null,
     val preferences: Map<String, String> = emptyMap()
-) {
-    // Hidden so the generated serializer does not drag the
-    // kotlinx-serialization type tree into the Obj-C header.
-    @HiddenFromObjC
-    companion object
-}
+)
+
 @Serializable
 data class Address(
     val street: String = "",
@@ -27,26 +22,12 @@ data class Address(
     val state: String = "",
     val zipCode: String = "",
     val country: String = ""
-) {
-    // Hidden so the generated serializer does not drag the
-    // kotlinx-serialization type tree into the Obj-C header.
-    @HiddenFromObjC
-    companion object
-}
+)
+
 @Serializable
 data class UserPreferences(
     val darkMode: Boolean = false,
     val followSystemTheme: Boolean = true,
     val notificationsEnabled: Boolean = true,
-    val language: String = "en",
-    // Defaults let JSON persisted before these fields existed still decode.
-    val accentColor: String = "blue",
-    val fontSize: String = "medium",
-    val isHighContrast: Boolean = false,
-    val isReducedMotion: Boolean = false
-) {
-    // Hidden so the generated serializer does not drag the
-    // kotlinx-serialization type tree into the Obj-C header.
-    @HiddenFromObjC
-    companion object
-}
+    val language: String = "en"
+)

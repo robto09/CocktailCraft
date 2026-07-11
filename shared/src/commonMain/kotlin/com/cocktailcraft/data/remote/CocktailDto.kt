@@ -5,13 +5,13 @@ import kotlinx.serialization.Serializable
 import com.cocktailcraft.domain.model.CocktailIngredient
 
 @Serializable
-internal data class CocktailResponse(
+data class CocktailResponse(
     @SerialName("drinks")
     val drinks: List<CocktailDto>? = null
 )
 
 @Serializable
-internal data class CocktailDto(
+data class CocktailDto(
     @SerialName("idDrink")
     val id: String,
     
@@ -187,25 +187,49 @@ internal data class CocktailDto(
 }
 
 @Serializable
-internal data class CategoryResponse(
+data class CategoryResponse(
     @SerialName("drinks")
     val categories: List<CategoryDto>? = null
 )
 
 @Serializable
-internal data class CategoryDto(
+data class CategoryDto(
     @SerialName("strCategory")
     val name: String
 )
 
 @Serializable
-internal data class IngredientResponse(
+data class GlassResponse(
+    @SerialName("drinks")
+    val glasses: List<GlassDto>? = null
+)
+
+@Serializable
+data class GlassDto(
+    @SerialName("strGlass")
+    val name: String
+)
+
+@Serializable
+data class IngredientResponse(
     @SerialName("drinks")
     val ingredients: List<IngredientDto>? = null
 )
 
 @Serializable
-internal data class IngredientDto(
+data class IngredientDto(
     @SerialName("strIngredient1")
     val name: String
 )
+
+@Serializable
+data class AlcoholicFilterResponse(
+    @SerialName("drinks")
+    val filters: List<AlcoholicFilterDto>? = null
+)
+
+@Serializable
+data class AlcoholicFilterDto(
+    @SerialName("strAlcoholic")
+    val name: String
+) 

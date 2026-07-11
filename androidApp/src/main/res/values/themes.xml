@@ -1,30 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Pre-Compose window styling only: the runtime look is
-    AnimatedCocktailBarTheme (ui/theme/AnimatedTheme.kt), which runs
-    edge-to-edge with a transparent status bar over the app background.
-    Keep window background / status bar in step with AppColors so the
-    cold-start frame matches the composed UI. Dark values live in
-    values-night/themes.xml.
--->
 <resources>
     <!-- Base application theme -->
-    <style name="Theme.CocktailBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <style name="Theme.CocktailBar" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary brand colors -->
         <item name="colorPrimary">@color/cocktail_primary</item>
-        <item name="colorPrimaryDark">@color/cocktail_primary</item>
-        <item name="colorAccent">@color/cocktail_secondary</item>
+        <item name="colorPrimaryVariant">@color/cocktail_primary_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        <!-- Secondary brand colors -->
+        <item name="colorSecondary">@color/cocktail_accent</item>
+        <item name="colorSecondaryVariant">@color/cocktail_accent_light</item>
+        <item name="colorOnSecondary">@color/black</item>
+
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">@color/cocktail_primary_dark</item>
 
         <!-- Background colors -->
-        <item name="android:windowBackground">@color/background_light</item>
         <item name="android:colorBackground">@color/background_light</item>
-
-        <!-- Status bar: app background under the (edge-to-edge) bar, dark icons -->
-        <item name="android:statusBarColor">@color/background_light</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="colorSurface">@color/background_light</item>
+        <item name="colorOnBackground">@color/text_primary_light</item>
+        <item name="colorOnSurface">@color/text_primary_light</item>
 
         <!-- Text colors -->
         <item name="android:textColorPrimary">@color/text_primary_light</item>
         <item name="android:textColorSecondary">@color/text_secondary_light</item>
+
+        <!-- Custom attributes -->
+        <item name="elevationOverlayEnabled">true</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
-</resources>
+
+    <!-- Dark theme -->
+    <style name="Theme.CocktailBar.Dark" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary brand colors -->
+        <item name="colorPrimary">@color/cocktail_primary_light</item>
+        <item name="colorPrimaryVariant">@color/cocktail_primary</item>
+        <item name="colorOnPrimary">@color/black</item>
+
+        <!-- Secondary brand colors -->
+        <item name="colorSecondary">@color/cocktail_accent_light</item>
+        <item name="colorSecondaryVariant">@color/cocktail_accent</item>
+        <item name="colorOnSecondary">@color/black</item>
+
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">@color/background_dark</item>
+
+        <!-- Background colors -->
+        <item name="android:colorBackground">@color/background_dark</item>
+        <item name="colorSurface">@color/background_dark</item>
+        <item name="colorOnBackground">@color/text_primary_dark</item>
+        <item name="colorOnSurface">@color/text_primary_dark</item>
+
+        <!-- Text colors -->
+        <item name="android:textColorPrimary">@color/text_primary_dark</item>
+        <item name="android:textColorSecondary">@color/text_secondary_dark</item>
+
+        <!-- Custom attributes -->
+        <item name="elevationOverlayEnabled">true</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources> 

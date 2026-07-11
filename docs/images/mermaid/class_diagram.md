@@ -94,7 +94,9 @@ classDiagram
         +filterByIngredient(String ingredient): Flow~List~Cocktail~~
         +filterByAlcoholic(Boolean alcoholic): Flow~List~Cocktail~~
         +filterByCategory(String category): Flow~List~Cocktail~~
+        +filterByGlass(String glass): Flow~List~Cocktail~~
         +getCategories(): Flow~List~String~~
+        +getGlasses(): Flow~List~String~~
         +getIngredients(): Flow~List~String~~
         +getAlcoholicFilters(): Flow~List~String~~
         +getFavoriteCocktails(): Flow~List~Cocktail~~

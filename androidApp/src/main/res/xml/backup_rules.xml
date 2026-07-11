@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Backup rules for API 24-30. Keep in sync with data_extraction_rules.xml (API 31+). -->
-<full-backup-content>
-    <exclude domain="sharedpref" path="cocktailcraft_prefs.xml" />
-    <exclude domain="sharedpref" path="cocktailcraft_secure_prefs.xml" />
-</full-backup-content>

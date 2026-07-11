@@ -1,11 +1,7 @@
 # CocktailCraft App
 
 ## Overview
-CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail ordering and discovery application, designed to run on both Android and iOS platforms. The app allows users to browse, search, and order various cocktails, manage their shopping cart, track orders, and maintain a profile. It leverages modern mobile app development practices including MVVM architecture, reactive programming, and dependency injection.
-
-### Platform Status
-- **Android**: ✅ Fully functional and production-ready
-- **iOS**: ✅ **iOS 18.5 Ready** - Complete SKIE integration (100%) with native Swift async/await patterns
+CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail ordering and discovery application, designed to run in Android platform. The app allows users to browse, search, and order various cocktails, manage their shopping cart, track orders, and maintain a profile. It leverages modern mobile app development practices including MVVM architecture, reactive programming, and dependency injection.
 
 ![CocktailCraft Home Screen](docs/images/Screenshot_20250419_014459.png)
 
@@ -20,11 +16,9 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Personalized Recommendations**: "You might also like" suggestions based on viewing history and preferences
 - **Dark Mode Support**: Adaptive UI that supports both light and dark themes with smooth transitions
 - **Offline Mode**: Browse recently viewed cocktails and favorites without internet connection
-- **Background Sync**: Automatic data synchronization when app is backgrounded for fresh content on launch
 - **Robust Error Handling**: User-friendly error messages with recovery options
 - **Polished Animations**: Enhanced user experience with smooth animations and micro-interactions
-- **Cross-Platform**: Same codebase for both Android and iOS platforms with platform-specific UI components
-- **iOS 18.5 Ready**: Complete SKIE integration (100%) with native Swift async/await and modern SwiftUI reusable components
+- **Cross-Platform**: Same codebase for both Android and iOS platforms
 
 ## Architecture
 The application follows the **Clean Architecture** pattern with **MVVM** (Model-View-ViewModel) for presentation, reactive state management, and a modular **Dependency Injection** system:
@@ -95,11 +89,9 @@ The application follows the **Clean Architecture** pattern with **MVVM** (Model-
 
 ### Architecture Layers:
 - **Presentation Layer**:
-  - **Screens**: Platform-specific UI components that display data and handle user interactions
-    - **Android**: Jetpack Compose UI components (see [Android UI Components Documentation](docs/UI_Components.md))
-    - **iOS**: SwiftUI views and components (see [iOS UI Components Documentation](docs/iOS_UI_Components.md))
+  - **Screens**: Compose UI components that display data and handle user interactions
   - **ViewModels**: Manage UI state, process user actions, and communicate with the domain layer
-  - **UI Elements**: Reusable components for consistent UI across platforms
+  - **UI Elements**: Reusable Compose components for consistent UI across the app (see [UI Components Documentation](docs/UI_Components.md))
   - **KoinViewModel**: Base class for all ViewModels that provides standardized Koin integration
   - **Navigation**: Compose Navigation for handling screen transitions and deep linking
   - **State Handling**: Kotlin StateFlow and SharedFlow for reactive UI updates
@@ -184,32 +176,14 @@ For detailed information about the dependency injection implementation, see:
 - **Shimmer Effects**: Loading state animations with shimmer effects
 
 ### Testing
-- **JUnit Jupiter**: Modern unit testing framework (5.10.1)
-- **kotlin-test**: Multiplatform testing support (2.0.21)
-- **Jetpack Compose UI Testing**: UI testing for Compose (2025.02.00)
-- **Mockk**: Kotlin-friendly mocking library (1.13.8)
-- **Turbine**: For testing Flow emissions (1.0.0)
-- **XCUITest**: iOS UI testing framework
-- **Koin Test**: Dependency injection testing utilities
-- **Robolectric**: Android unit testing framework
-
-**Testing Setup:**
-- [Testing Implementation Summary](docs/TESTING_IMPLEMENTATION_SUMMARY.md) - Complete testing framework overview and setup
-
-**Run Tests:**
-```bash
-./gradlew test  # Run all tests
-```
+- **JUnit**: For unit testing
+- **Mockito & Mockk**: For mocking in tests
+- **Turbine**: For testing Flow emissions
+- **Espresso**: For UI testing
 
 For a detailed list of all libraries with versions and purposes, see the [Libraries Documentation](docs/Libraries.md).
 
-For information about the reusable UI components in the app, see:
-- [Android UI Components Documentation](docs/UI_Components.md) - Jetpack Compose components and design system
-- [iOS UI Components Documentation](docs/iOS_UI_Components.md) - SwiftUI components and design system
-
-For details about the iOS 18.5 migration and complete SKIE integration (100%), see the [SKIE Integration Status](docs/SKIE_Integration_Complete.md).
-
-For technical details about the SKIE implementation and native Swift async/await integration, see the [SKIE Full Migration Guide](docs/SKIE_FULL_MIGRATION_GUIDE.md).
+For information about the reusable UI components in the app, see the [UI Components Documentation](docs/UI_Components.md).
 
 ## Package Structure
 
@@ -297,14 +271,6 @@ The application includes comprehensive test coverage:
    - Choose an emulator or device
    - Click Run
 
-5. **Run on iOS** (macOS only):
-   - Build the shared framework: `./gradlew :shared:podPublishXCFramework`
-   - Navigate to `iosApp` directory: `cd iosApp`
-   - Install CocoaPods dependencies: `pod install`
-   - Open `CocktailCraft.xcworkspace` in Xcode
-   - Select a simulator and run the app
-   - See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) for detailed setup
-
 ## Development Setup
 - **Android Studio**: Latest version recommended (Flamingo or newer)
 - **JDK**: Version 17 or higher
@@ -315,29 +281,8 @@ The application includes comprehensive test coverage:
 ## Troubleshooting
 - **Build Issues**: Try cleaning and rebuilding the project
 - **KMP Plugin Issues**: Make sure the Kotlin Multiplatform plugin is up to date
-- **iOS Builds**: ✅ **Working with SKIE integration!** See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) and [SKIE Status](docs/SKIE_Integration_Complete.md) for details
-- **iOS Build Warnings**: Non-blocking warnings exist (see iOS documentation for details)
+- **iOS Builds**: Make sure the Kotlin/Native target is properly configured
 - **Dependency Resolution**: Check Gradle settings and versions.toml file
-
-## Documentation
-
-### 📚 **Core Documentation**
-- [iOS Background Sync Implementation](docs/ios-background-sync.md) - Comprehensive guide to the background sync feature
-- [Background Sync Quick Reference](docs/background-sync-quick-reference.md) - Developer quick start guide
-- [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) - Complete iOS development setup
-- [SKIE Integration Status](docs/SKIE_Integration_Complete.md) - iOS 18.5 compatibility details
-- [Test Cases Documentation](TEST_CASES.md) - Comprehensive testing approach
-
-### 🐛 **QA & Debugging Tools**
-- [DebugSwift Complete Installation Guide](docs/DebugSwift_Complete_Installation_Guide.md) - Full integration process with all issues and solutions
-- [DebugSwift Quick Reference](docs/DebugSwift_Quick_Reference.md) - Daily usage guide for QA testing
-- [DebugSwift Integration Details](iosApp/DebugSwift_Integration.md) - Technical implementation details
-
-### 🔧 **Technical Guides**
-- **Background Sync**: Automatic data synchronization for iOS with BGTaskScheduler integration
-- **SKIE Integration**: 100% native Swift async/await patterns for seamless iOS development
-- **Architecture**: Clean Architecture with MVVM pattern and dependency injection
-- **Cross-Platform**: Shared business logic with platform-specific UI implementations
 
 ## Contributing
 Contributions are welcome! Please follow the standard GitHub flow:

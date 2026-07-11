@@ -1,77 +1,144 @@
 # Advanced Search and Filtering
 
-This document describes the Advanced Search and Filtering functionality in CocktailCraft.
+This document describes the implementation of the Advanced Search and Filtering functionality in the CocktailCraft application.
 
 ## Overview
 
-Advanced search lets users narrow the cocktail list by combining several criteria at once. The filter set is deliberately limited to **four dimensions TheCocktailDB free tier (`v1/1`) actually supports**:
+The Advanced Search and Filtering system allows users to search for cocktails using multiple criteria simultaneously, providing a powerful way to discover cocktails that match specific preferences. The system supports filtering by various attributes including:
 
-| Filter | Endpoint | Notes |
-|---|---|---|
-| Query (name) | `search.php?s=` | Returns full drink records |
-| Category | `filter.php?c=` | Returns slim records (id, name, thumb) |
-| Ingredient (single) | `filter.php?i=` | Slim; multi-ingredient is a paid v2 feature |
-| Alcoholic | `filter.php?a=` | Tri-state: any / alcoholic / non-alcoholic |
+- Category
+- Ingredients (both inclusion and exclusion)
+- Alcoholic/Non-alcoholic
+- Glass type
+- Price range
+- Taste profile
+- Complexity level
+- Preparation time
 
-(The API also supports filtering by glass via `filter.php?g=`, but the glass filter was dropped from the product as low-value.)
+## Implementation Details
 
-Everything the API cannot supply — price, rating, popularity, taste profile, complexity, preparation time, multi/exclude ingredients — has been removed. Those were fabricated or keyword-guessed client-side and never reached any filtering logic.
+### Key Components
 
-## Architecture: one call per filter, ID-set intersection
+1. **SearchFilters Model**
+   - Located in `shared/src/commonMain/kotlin/com/cocktailcraft/domain/model/SearchFilters.kt`
+   - Represents all possible filter criteria as a data class
+   - Includes helper methods for checking active filters and generating descriptions
 
-TheCocktailDB's `filter.php` accepts only **one parameter per request** and cannot combine dimensions server-side. However, each call returns the *complete* ID set for its dimension, so combined filtering is done by **intersecting those ID sets on the client**:
+2. **AdvancedSearchPanel**
+   - Located in `androidApp/src/main/java/com/cocktailcraft/ui/components/AdvancedSearchPanel.kt`
+   - Provides a comprehensive UI for setting and applying multiple filters
+   - Implemented as a modal dialog with collapsible sections for each filter type
 
-1. **Offline** — filter the in-memory cocktail cache directly on the four real fields.
-2. **Nothing active** — return the default listing (`filterByCategory("Cocktail")`).
-3. Otherwise, make **one API call per active filter**, in priority order (query → category → ingredient → alcoholic), each routed through the existing rate limiter.
-4. The **base list** is the first active result (query wins, so full records are preferred over slim ones).
-5. The **result** keeps only the cocktails whose id appears in *every* other active set.
-6. If any active filter call fails, the whole search returns `Result.Error` — a filter is never silently dropped.
+3. **Filter Components**
+   - `FilterSection`: Collapsible section for organizing filter controls
+   - `CategorySelector`: Dropdown for selecting cocktail categories
+   - `IngredientSelector`: Multi-select interface for including/excluding ingredients
+   - `AlcoholicFilterContent`: Toggle switches for alcoholic/non-alcoholic options
+   - `GlassSelector`: Dropdown for selecting glass types
+   - `PriceRangeFilterContent`: Range slider for setting price boundaries
+   - `TasteProfileSelector`: Chip-based selector for taste profiles
+   - `ComplexitySelector`: Chip-based selector for complexity levels
+   - `PrepTimeSelector`: Chip-based selector for preparation times
 
-This is accurate (every id comes from the server), needs no per-drink hydration, and invents no data. Cost is one sequential call per active filter; typical usage is one or two filters. Slim results render with the same "tap to view" placeholder cards used elsewhere for category browsing, and the detail view hydrates on tap.
+4. **SearchFilterChips**
+   - Located in `androidApp/src/main/java/com/cocktailcraft/ui/components/SearchFilterChips.kt`
+   - Displays active filters as chips for quick visibility and removal
+   - Provides a "Clear All" option to reset all filters
 
-The implementation lives in `CocktailRepositoryImpl.advancedSearch(filters)` (`shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/CocktailRepositoryImpl.kt`), reached through `SearchCocktailsUseCase.search(filters)`.
+### Filter Types
 
-## Shared state and ViewModel
+1. **Category Filter**
+   - Allows filtering by cocktail category (e.g., "Cocktail", "Shot", "Ordinary Drink")
+   - Implemented as a dropdown selector with "All Categories" option
 
-`SharedHomeViewModel` (`shared/src/commonMain/kotlin/com/cocktailcraft/viewmodel/SharedHomeViewModel.kt`) is the single entry point for both platforms:
+2. **Ingredient Filter**
+   - Supports both inclusion and exclusion of ingredients
+   - Allows multiple ingredients to be selected for each
+   - Provides a searchable dialog for finding specific ingredients
 
-- **`applyFilters(filters: SearchFilters)`** — stores `filters` in `uiState.searchFilters` (so the active-filter chips reflect them) and loads the intersected results.
-- **`clearSearchFilters()`** — resets to an empty `SearchFilters()` and reloads the default list.
-- **`searchCocktails(query)`** — composes the query with any active filters (`searchFilters.copy(query = query)`), so the search bar and the advanced filters work together rather than overriding each other.
-- **`loadFilterOptions()`** — populates the API-backed option lists `uiState.filterCategories` / `filterIngredients` via `list.php` (`?c/i=list`) through `CocktailCatalogRepository`. Both platforms consume the same lists.
+3. **Alcoholic Filter**
+   - Toggle switches for showing only alcoholic or non-alcoholic drinks
+   - Mutually exclusive options with ability to clear both
 
-`SearchFilters` (`shared/src/commonMain/kotlin/com/cocktailcraft/domain/model/SearchFilters.kt`) is a four-field data class with a single `hasActiveFilters()` helper:
+4. **Glass Type Filter**
+   - Dropdown selector for filtering by glass type
+   - Includes "All Glass Types" option to clear the filter
+
+5. **Price Range Filter**
+   - Range slider for setting minimum and maximum price
+   - Toggle to enable/disable price filtering
+
+6. **Taste Profile Filter**
+   - Chip-based selector for taste profiles (Sweet, Sour, Bitter, etc.)
+   - Based on the `TasteProfile` enum
+
+7. **Complexity Filter**
+   - Chip-based selector for complexity levels (Easy, Medium, Complex)
+   - Based on the `Complexity` enum
+
+8. **Preparation Time Filter**
+   - Chip-based selector for preparation times (Quick, Medium, Long)
+   - Based on the `PreparationTime` enum
+
+### Data Flow
+
+1. User opens the Advanced Search panel from the main search interface
+2. User selects desired filters across multiple categories
+3. On "Apply Filters", the selected criteria are combined into a `SearchFilters` object
+4. The `SearchFilters` object is passed to the repository layer via the ViewModel
+5. The repository applies the filters to retrieve matching cocktails
+6. Results are displayed to the user with active filters shown as chips
+
+### Repository Implementation
+
+The `CocktailRepositoryImpl` class handles the application of filters:
+
+1. Starts with a base list of cocktails (from search, category, or all cocktails)
+2. Applies each filter sequentially to narrow down results
+3. For complex filters like taste profile, uses heuristics based on ingredients and descriptions
+4. Returns a filtered list of cocktails that match all criteria
+
+## Usage Example
 
 ```kotlin
-data class SearchFilters(
-    val query: String = "",
-    val category: String? = null,
-    val ingredient: String? = null,   // single ingredient
-    val alcoholic: Boolean? = null,   // null = any
+// Create a SearchFilters object with multiple criteria
+val filters = SearchFilters(
+    query = "Margarita",
+    category = "Cocktail",
+    ingredients = listOf("Tequila", "Lime Juice"),
+    excludeIngredients = listOf("Salt"),
+    alcoholic = true,
+    tasteProfile = TasteProfile.SOUR,
+    complexity = Complexity.MEDIUM
 )
+
+// Apply filters through the ViewModel
+viewModel.applyFilters(filters)
+
+// The UI will update to show matching cocktails
 ```
 
-## Platform UI
+## UI Components
 
-Both platforms drive the same shared ViewModel; the filter options and active-filter chips come from shared state.
+The Advanced Search UI is designed for usability and clarity:
 
-### Android — bottom sheet
+- **Collapsible Sections**: Each filter type has its own collapsible section
+- **Visual Indicators**: Active filters are highlighted and summarized
+- **Chip-Based Selection**: Where appropriate, filters use chips for easy selection
+- **Searchable Dialogs**: For large lists like ingredients, searchable dialogs are provided
+- **Clear Options**: Each filter can be individually cleared, and a "Clear All" option is available
 
-- `AdvancedSearchBottomSheet` (`androidApp/.../ui/components/AdvancedSearchBottomSheet.kt`) is a modal bottom sheet mirroring the iOS sheet, with three sections: **Category** (dropdown), **Ingredient** (single-select searchable dialog), **Alcoholic** (Any / Alcoholic / Non-Alcoholic). Apply forwards the whole `SearchFilters` to `viewModel.applyFilters(...)` and closes the sheet; Clear calls `viewModel.clearSearchFilters()` and closes the sheet.
-- `SearchFilterChips` (`androidApp/.../ui/components/SearchFilterChips.kt`) renders the active filters from `state.searchFilters`; dismissing a chip re-applies the reduced set.
-- `HomeScreen` reads the option lists from `state.filterCategories/filterIngredients` and calls `loadFilterOptions()` when advanced search opens.
+## Future Enhancements
 
-### iOS — filter sheet
+1. **Saved Filters**: Allow users to save and name their favorite filter combinations
+2. **Filter Suggestions**: Suggest popular filter combinations based on user preferences
+3. **Visual Filter Builder**: Provide a more visual interface for building complex filter combinations
+4. **Filter Analytics**: Track which filters are most commonly used to improve the interface
+5. **Voice Search Integration**: Allow setting filters via voice commands
 
-- `AdvancedSearchSheet` (in `iosApp/CocktailCraft/Views/HomeViewSKIE.swift`) is a SwiftUI `Form` sheet with the same three controls: Category picker, Ingredient picker, Alcoholic segmented control. It calls `loadFilterOptions()` on appear, Apply calls `applyFilters(...)`, Clear calls `clearSearchFilters()`.
-- The active-filter chip row in `HomeViewSKIE` is derived from `state.searchFilters` (no local filter state).
-- `HomeViewModelSKIE` (`iosApp/CocktailCraft/ViewModels/HomeViewModelSKIE.swift`) exposes `applyFilters`, `loadFilterOptions` (async, via SKIE) and `clearSearchFilters` (sync). The Kotlin `Boolean?` alcoholic value bridges to Swift as `KotlinBoolean?` (nil = any).
+## Technical Considerations
 
-## Data flow
-
-1. User opens advanced search (Android panel / iOS sheet); the option lists load via `loadFilterOptions()`.
-2. User selects filters and taps Apply; a `SearchFilters` is built and passed to `applyFilters(filters)`.
-3. The ViewModel stores the filters in state and calls `SearchCocktailsUseCase.search(filters)`.
-4. `advancedSearch` performs one call per active filter and intersects the ID sets.
-5. Results replace `state.cocktails`; the active filters appear as chips, each dismissable.
+1. **Performance**: Filters are applied efficiently to minimize processing time
+2. **Caching**: Frequently used filter results are cached to improve performance
+3. **Offline Support**: Basic filtering works offline with cached cocktail data
+4. **Extensibility**: The filter system is designed to be easily extended with new filter types

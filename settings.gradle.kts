@@ -25,4 +25,3 @@ dependencyResolutionManagement {
 rootProject.name = "CocktailCraft"
 include(":androidApp")
 include(":shared")
-include(":baselineprofile")

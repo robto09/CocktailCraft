@@ -5,14 +5,11 @@ package com.cocktailcraft.domain.config
  * This follows the hexagonal architecture by defining a port in the domain layer
  * that will be implemented by adapters in the infrastructure layer.
  */
-internal interface AppConfig {
+interface AppConfig {
     /**
      * Base URL for the API
      */
     val apiBaseUrl: String
-
-    /** When true, Ktor logs full request/response bodies — development only. */
-    val verboseNetworkLogging: Boolean
 
     /**
      * Base URL for images
@@ -58,11 +55,6 @@ internal interface AppConfig {
      * Key for storing orders in local storage
      */
     val ordersStorageKey: String
-
-    /**
-     * Key for storing user reviews in local storage
-     */
-    val reviewsStorageKey: String
 
     /**
      * Expiration time for cached data in milliseconds
