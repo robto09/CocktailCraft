@@ -30,7 +30,7 @@ This document provides an overview of the reusable UI components in the Cocktail
    - [OptimizedImage](#optimizedimage)
    - [ErrorDialog and ErrorBanner](#errordialog-and-errorbanner)
    - [AnimatedButtons](#animatedbuttons)
-   - [ExpandableAdvancedSearchPanel](#expandableadvancedsearchpanel)
+   - [AdvancedSearchBottomSheet](#advancedsearchbottomsheet)
    - [CocktailSearchBar](#cocktailsearchbar)
    - [NetworkErrorStateDisplay](#networkerrordisplay)
    - [AnimatedCocktailList](#animatedcocktaillist)
@@ -503,28 +503,31 @@ AnimatedTextButton(
 
 **When to use**: When you want to add animations to buttons for a more engaging user experience.
 
-### ExpandableAdvancedSearchPanel
+### AdvancedSearchBottomSheet
 
-**Purpose**: Provides an expandable panel for advanced search filters that can be integrated directly into a screen.
+**Purpose**: Modal bottom sheet for the advanced search filters, mirroring the iOS sheet. Apply and Clear both close the sheet.
 
 **Usage**:
 ```kotlin
-ExpandableAdvancedSearchPanel(
-    isExpanded = isAdvancedSearchActive,
-    currentFilters = searchFilters,
-    categories = categories,
-    ingredients = ingredients,
-    glasses = glasses,
-    onApplyFilters = { filters ->
-        viewModel.updateSearchFilters(filters)
-    },
-    onClearFilters = {
-        viewModel.clearSearchFilters()
-    }
-)
+if (isAdvancedSearchActive) {
+    AdvancedSearchBottomSheet(
+        currentFilters = searchFilters,
+        categories = categories,
+        ingredients = ingredients,
+        onApplyFilters = { filters ->
+            scope.launch { viewModel.applyFilters(filters) }
+        },
+        onClearFilters = {
+            viewModel.clearSearchFilters()
+        },
+        onDismiss = {
+            viewModel.toggleAdvancedSearchMode(false)
+        }
+    )
+}
 ```
 
-**When to use**: When you need to provide advanced search functionality that can be expanded and collapsed within a screen, rather than showing a separate dialog.
+**When to use**: When the user opens advanced search from the search bar; the sheet dismisses on Apply, Clear, or swipe-down.
 
 ### CocktailSearchBar
 

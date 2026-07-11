@@ -13,7 +13,6 @@ local.properties
 captures/
 output.json
 *.log
-*.lock
 *.bin
 
 # OS-specific files
@@ -39,6 +38,7 @@ Thumbs.db
 *.keystore
 *.jks
 local.properties
+keystore.properties
 captures/
 output.json
 
@@ -50,6 +50,7 @@ output.json
 *.log
 
 # Kotlin specific caches
+.kotlin
 **/build/kotlin/
 **/build/tmp/
 **/build/intermediates/
@@ -57,6 +58,33 @@ output.json
 **/build/generated/
 **/build/kotlin/compile*/
 
+# iOS specific
+# We commit Podfile and Podfile.lock, but never the Pods directory
+iosApp/Pods/
+iosApp/DerivedData/
+iosApp/*.xcworkspace/xcuserdata/
+iosApp/*.xcodeproj/xcuserdata/
+iosApp/*.xcodeproj/project.xcworkspace/xcuserdata/
+iosApp/build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Xcode
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
 # Other system-specific files
 .DS_Store
 Thumbs.db
+
+.claude/
+
+# Prebuilt iOS framework — build artifact, never commit
+shared/shared.xcframework/
+*.xcframework

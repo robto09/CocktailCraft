@@ -1,29 +1,70 @@
 plugins {
-    kotlin("multiplatform")
-    kotlin("plugin.serialization")
-    id("com.android.library")
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.android.kotlinMultiplatformLibrary)
+    kotlin("native.cocoapods")
+    alias(libs.plugins.skie)
 }
 
-android {
-    namespace = "com.cocktailcraft"
-    compileSdk = 34
-    defaultConfig {
-        minSdk = 24
-    }
-    
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+// Configure SKIE for enhanced Swift interop
+skie {
+    features {
+        group {
+            // Core interop features
+            co.touchlab.skie.configuration.FlowInterop.Enabled(true)
+            co.touchlab.skie.configuration.SuspendInterop.Enabled(true)
+
+            // Enhanced enum support for better Swift integration
+            co.touchlab.skie.configuration.EnumInterop.Enabled(true)
+
+            // Sealed class support for Swift enum-like behavior
+            co.touchlab.skie.configuration.SealedInterop.Enabled(true)
+
+            // Default arguments support for cleaner Swift APIs
+            co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(true)
+        }
     }
 }
 
 kotlin {
     jvmToolchain(17)
+
+    sourceSets.all {
+        // For @HiddenFromObjC on serializer companions
+        languageSettings.optIn("kotlin.experimental.ExperimentalObjCRefinement")
+        // kotlin.time.Clock/Instant (kotlinx-datetime 0.7+) — stable in Kotlin 2.3
+        languageSettings.optIn("kotlin.time.ExperimentalTime")
+    }
+
+    android {
+        namespace = "com.cocktailcraft"
+        compileSdk = 36
+        minSdk = 24
+
+        // Host-side (JVM) unit tests, equivalent of the old androidUnitTest
+        withHostTestBuilder {}
+
+        lint {
+            disable.add("MissingPermission")
+        }
+    }
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
     
-    androidTarget()
-    // iosX64()
-    // iosArm64()
-    // iosSimulatorArm64()
+    cocoapods {
+        version = "1.0.0"
+        summary = "CocktailCraft Shared Module"
+        homepage = "https://github.com/cocktailcraft/shared"
+        ios.deploymentTarget = "17.0"
+        podfile = project.file("../iosApp/Podfile")
+        framework {
+            baseName = "shared"
+            isStatic = true
+        }
+    }
+
+
 
     sourceSets {
         val commonMain by getting {
@@ -44,47 +85,63 @@ kotlin {
                 implementation(libs.kotlinx.datetime)
 
                 // Settings
-                implementation(libs.multiplatform.settings)
+                implementation(libs.multiplatform.settings.core)
 
                 // DI
-                implementation("io.insert-koin:koin-core:3.4.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                implementation(libs.koin.core)
+            implementation(libs.koin.core.viewmodel)
+            // VMs extend the multiplatform androidx ViewModel — api so Android
+            // consumers see the supertype for koinViewModel scoping
+            api(libs.androidx.lifecycle.viewmodel)
+
+                // Multiplatform logging
+                implementation(libs.kermit)
+
+                // No external caching library needed - using custom implementation
             }
         }
 
         val androidMain by getting {
             dependencies {
+                // Provides the Android Dispatchers.Main implementation for viewModelScope
+                implementation(libs.kotlinx.coroutines.android)
                 implementation(libs.ktor.client.android)
-                implementation("androidx.datastore:datastore-preferences:1.0.0")
-                implementation("com.russhwolf:multiplatform-settings:1.1.1")
-                implementation("com.russhwolf:multiplatform-settings-datastore:1.1.1")
-                implementation("com.russhwolf:multiplatform-settings-coroutines:1.1.1")
+                implementation(libs.multiplatform.settings.core)
+                // Keystore-backed EncryptedSharedPreferences for the auth store
+                implementation(libs.androidx.security.crypto)
             }
         }
 
-        // val iosX64Main by getting
-        // val iosArm64Main by getting
-        // val iosSimulatorArm64Main by getting
-        // val iosMain by creating {
-        //     dependsOn(commonMain)
-        //     iosX64Main.dependsOn(this)
-        //     iosArm64Main.dependsOn(this)
-        //     iosSimulatorArm64Main.dependsOn(this)
-
-        //     dependencies {
-        //         implementation(libs.ktor.client.darwin)
-        //     }
-        // }
+        // iosMain comes from the default Kotlin hierarchy template
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
+        }
 
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation(libs.mockk)
                 implementation(libs.kotlinx.coroutines.test)
-                implementation(libs.koin.test)
+                implementation(libs.koin.test.core)
                 implementation(libs.turbine)
+                implementation(libs.multiplatform.settings.test)
             }
         }
+
+        val androidHostTest by getting {
+            dependencies {
+                implementation(libs.mockk.core)
+                implementation(libs.robolectric)
+                implementation(libs.androidx.test.core)
+                implementation(libs.androidx.test.ext.junit)
+
+                // JUnit Jupiter for modern testing (Android only)
+                implementation(libs.junit.jupiter.api)
+                implementation(libs.junit.jupiter.engine)
+                implementation(libs.junit.jupiter.params)
+            }
+        }
+
+
     }
 }
 

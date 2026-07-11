@@ -1,6 +1,8 @@
 package com.cocktailcraft.domain.model
 
+import kotlin.native.HiddenFromObjC
 import kotlinx.serialization.Serializable
+import kotlin.time.Clock
 
 @Serializable
 data class Cocktail(
@@ -24,5 +26,22 @@ data class Cocktail(
     val stockCount: Int = 50,
     val rating: Float = 4.5f,
     val popularity: Int = 0,
-    val dateAdded: Long = System.currentTimeMillis()
-)
+    val dateAdded: Long = Clock.System.now().toEpochMilliseconds()
+) {
+    /**
+     * False when this instance came from a list endpoint, which fabricates
+     * placeholder ingredients/instructions. Persisting such instances is
+     * what put "Tap to view ingredients" into carts and favorites.
+     */
+    val hasFullDetails: Boolean
+        get() = ingredients.isNotEmpty() &&
+            ingredients.first().name != PLACEHOLDER_INGREDIENT_NAME
+
+    // Hidden so the generated serializer does not drag the
+    // kotlinx-serialization type tree into the Obj-C header.
+    @HiddenFromObjC
+    companion object {
+        const val PLACEHOLDER_INGREDIENT_NAME = "Tap to view ingredients"
+        const val PLACEHOLDER_INSTRUCTIONS = "Tap to view recipe"
+    }
+}

@@ -10,6 +10,10 @@
     <string name="confirm_password">Confirm Password</string>
     <string name="forgot_password">Forgot Password?</string>
     <string name="reset_password">Reset Password</string>
+    <string name="show_password">Show password</string>
+    <string name="hide_password">Hide password</string>
+    <string name="password_shown">Password shown</string>
+    <string name="password_hidden">Password hidden</string>
     <string name="logout">Logout</string>
 
     <!-- Navigation -->
@@ -52,4 +56,235 @@
     <string name="error_generic">Something went wrong. Please try again.</string>
     <string name="error_invalid_credentials">Invalid email or password</string>
     <string name="error_passwords_dont_match">Passwords don\'t match</string>
-</resources> 
+
+    <!-- Widget -->
+    <string name="random_cocktail_widget_name">Random Cocktail</string>
+    <string name="random_cocktail_widget_description">Discover a random cocktail and tap to view details in the app.</string>
+    <string name="favorites_widget_name">Favorite Cocktails</string>
+    <string name="favorites_widget_description">Quick access to your favorite cocktails.</string>
+    <string name="loading">Loading…</string>
+    <string name="refresh">Refresh</string>
+    <string name="tap_to_view_details">Tap to view details</string>
+    <string name="tap_to_load">Tap to load</string>
+    <string name="no_favorites">No favorites yet</string>
+    <string name="tap_to_add_favorites">Tap to add some!</string>
+
+    <!-- Common -->
+    <string name="error">Error</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="name">Name</string>
+
+    <!-- Navigation titles -->
+    <string name="my_bar">My Bar</string>
+    <string name="recipes">Recipes</string>
+
+    <!-- Home / search -->
+    <string name="browse_cocktails">Browse Cocktails</string>
+
+    <!-- Favorites -->
+    <string name="favorites_empty_message">Add cocktails to your favorites to see them here</string>
+    <string name="favorites_section_title">Your Favorite Cocktails</string>
+
+    <!-- Cart -->
+    <string name="cart_empty_title">Your cart is empty</string>
+    <string name="cart_empty_message">Add some cocktails to your cart and they will appear here</string>
+    <string name="cart_section_title">Your Cart</string>
+    <string name="confirm_order_title">Confirm Order</string>
+    <string name="confirm_order_message">Are you sure you want to place this order for %1$s?</string>
+
+    <!-- Offline mode -->
+    <string name="clear_cache">Clear Cache</string>
+    <string name="clear_offline_cache_title">Clear Offline Cache</string>
+    <string name="clear_offline_cache_message">Are you sure you want to clear all cached cocktails? You won\'t be able to view them offline.</string>
+    <string name="go_to_home">Go to Home</string>
+
+    <!-- Cocktail detail -->
+    <string name="how_to_prepare">How to Prepare</string>
+    <string name="ingredients">Ingredients</string>
+    <string name="details">Details</string>
+    <string name="category_label">Category: %1$s</string>
+    <string name="glass_label">Glass: %1$s</string>
+    <string name="reviews_title">Reviews (%1$d)</string>
+    <string name="write_review">Write a Review</string>
+    <string name="added_to_cart">%1$s added to cart</string>
+    <string name="alcoholic">Alcoholic</string>
+    <string name="non_alcoholic">Non-Alcoholic</string>
+
+    <!-- Profile -->
+    <string name="create_account">Create Account</string>
+    <string name="edit_profile">Edit Profile</string>
+    <string name="change_password">Change Password</string>
+    <string name="email_preferences">Email Preferences</string>
+    <string name="notification_settings">Notification Settings</string>
+    <string name="order_history">Order History</string>
+    <string name="help_support">Help &amp; Support</string>
+    <string name="offline_mode">Offline Mode</string>
+    <string name="follow_system_theme">Follow System Theme</string>
+    <string name="logout_confirm">Are you sure you want to logout?</string>
+
+    <!-- Cart & lists -->
+    <string name="cart_unknown_error">An unknown error occurred</string>
+    <string name="cart_try_again">Try Again</string>
+    <string name="cart_start_shopping">Start Shopping</string>
+    <string name="cart_place_order">Place Order</string>
+    <string name="cart_confirm">Confirm</string>
+    <string name="cart_increase_quantity">Increase</string>
+    <string name="cart_decrease_quantity">Decrease</string>
+    <string name="cart_quantity_label">Quantity: %1$d</string>
+    <string name="list_add_to_favorites">Add to favorites</string>
+    <string name="list_remove_from_favorites">Remove from favorites</string>
+    <string name="list_out_of_stock">Out of Stock</string>
+    <string name="list_alcoholic_unknown">Unknown</string>
+    <string name="list_tap_to_view_ingredients">Tap to view ingredients</string>
+    <string name="list_price_format">$%1$.2f</string>
+    <string name="list_view_details_label">View %1$s details</string>
+    <string name="list_search_results">Search Results</string>
+    <string name="list_category_cocktails">%1$s Cocktails</string>
+    <string name="list_all_cocktails">All Cocktails</string>
+    <string name="list_end_of_list_message">You\'ve reached the end of the list</string>
+
+    <!-- Cocktail detail -->
+    <string name="detail_title_fallback">Cocktail Detail</string>
+    <string name="detail_back">Back</string>
+    <string name="detail_price_format">$%1$.2f</string>
+    <string name="detail_remove_from_favorites">Remove from favorites</string>
+    <string name="detail_add_to_favorites">Add to favorites</string>
+    <string name="detail_alcoholic_unknown">Unknown</string>
+    <string name="detail_in_stock">In Stock (%1$d available)</string>
+    <string name="detail_out_of_stock">Out of Stock</string>
+    <string name="detail_update_cart">Update Cart</string>
+    <string name="detail_no_instructions">No instructions available for this cocktail.</string>
+    <string name="detail_refresh_details">Refresh Details</string>
+    <string name="detail_more_category_cocktails">More %1$s Cocktails</string>
+    <string name="detail_you_might_also_like">You might also like</string>
+    <string name="detail_loading_recommendations">Loading recommendations...</string>
+    <string name="detail_be_first_review">Be the first to review this cocktail</string>
+    <string name="detail_review_anonymous_initial">A</string>
+    <string name="detail_review_anonymous">Anonymous</string>
+    <string name="detail_unknown_date">Unknown date</string>
+
+    <!-- Common / errors -->
+    <string name="common_retry">Retry</string>
+    <string name="common_enable_offline_mode">Enable Offline Mode</string>
+    <string name="common_go_online">Go Online</string>
+    <string name="common_back">Back</string>
+    <string name="common_online">Online</string>
+    <string name="common_offline">Offline</string>
+    <string name="common_network_available">Network Available</string>
+    <string name="common_network_unavailable">Network Unavailable</string>
+    <string name="common_image_not_available">Image not available</string>
+    <string name="error_offline_mode_active">Offline Mode Active</string>
+    <string name="error_no_cached_cocktails">No cached cocktails available. Connect to the internet to download cocktails.</string>
+    <string name="error_offline_enable_offline_mode">You\'re currently offline. Enable Offline Mode to browse cached cocktails.</string>
+    <string name="error_unable_to_load_cocktails">Unable to load cocktails</string>
+
+    <!-- Offline mode -->
+    <string name="offline_mode_toggle_description">When enabled, the app will only use cached data and won\'t make network requests.</string>
+    <string name="offline_cache_info">Cache Info</string>
+    <string name="offline_cached_cocktails">Cached Cocktails</string>
+    <string name="offline_cocktails_available_label">Cocktails available offline:</string>
+    <string name="offline_recently_viewed">Recently Viewed</string>
+    <string name="offline_no_cocktails">No cocktails</string>
+    <string name="offline_no_cached_cocktails">No cached cocktails</string>
+    <string name="offline_empty_cache_hint">Browse cocktails in the Home screen to cache them for offline viewing</string>
+    <string name="offline_indicator_description">Offline</string>
+    <string name="offline_mode_enabled">Offline Mode Enabled</string>
+    <string name="offline_you_are_offline">You are offline</string>
+
+    <!-- Orders -->
+    <string name="order_unknown_error">Unknown error</string>
+    <string name="order_list_empty_title">No orders yet</string>
+    <string name="order_list_empty_message">Your order history will appear here</string>
+    <string name="order_list_title">Your Orders</string>
+    <string name="order_number">Order #%1$s</string>
+    <string name="order_item_quantity_name">%1$dx %2$s</string>
+    <string name="order_price_format">$%1$.2f</string>
+    <string name="order_summary_title">Order Summary</string>
+    <string name="order_subtotal">Subtotal</string>
+    <string name="order_delivery_fee">Delivery Fee</string>
+
+    <!-- Profile (extended) -->
+    <string name="profile_guest_user">Guest User</string>
+    <string name="profile_guest_email">guest@example.com</string>
+    <string name="profile_sign_in_prompt">Sign in to access your profile</string>
+    <string name="profile_account_settings">Account Settings</string>
+    <string name="profile_app_settings">App Settings</string>
+    <string name="profile_toggle_on">On</string>
+    <string name="profile_toggle_off">Off</string>
+    <string name="profile_controlled_by_system">Controlled by system</string>
+    <string name="profile_light_mode">Light Mode</string>
+    <string name="profile_about">About</string>
+    <string name="profile_about_app_name">Cocktail Bar App</string>
+    <string name="profile_version_format">Version %1$s</string>
+    <string name="profile_copyright">© 2026 Cocktail Bar. All rights reserved.</string>
+
+    <!-- Reviews & dialogs -->
+    <string name="review_your_name">Your Name</string>
+    <string name="review_enter_your_name">Enter your name</string>
+    <string name="review_name_required">Name is required</string>
+    <string name="review_your_rating">Your Rating</string>
+    <string name="review_rate_star">Rate %1$d</string>
+    <string name="review_select_rating_error">Please select a rating</string>
+    <string name="review_your_review">Your Review</string>
+    <string name="review_share_experience_placeholder">Share your experience (Optional)</string>
+    <string name="review_character_count">%1$d/500</string>
+    <string name="review_submit">Submit Review</string>
+    <string name="review_rating_value">%1$.1f</string>
+    <string name="review_count_singular">(%1$d review)</string>
+    <string name="review_count_plural">(%1$d reviews)</string>
+    <string name="dialog_confirm">Confirm</string>
+    <string name="dialog_dismiss">Dismiss</string>
+    <string name="dialog_try_again">Try Again</string>
+
+    <!-- Search & filters -->
+    <string name="filter_collapse">Collapse</string>
+    <string name="filter_expand">Expand</string>
+    <string name="filter_select_category">Select a category</string>
+    <string name="filter_all_categories">All Categories</string>
+    <string name="filter_any">Any</string>
+    <string name="filter_select_ingredient_title">Select Ingredient</string>
+    <string name="filter_any_ingredient">Any ingredient</string>
+    <string name="filter_select_an_ingredient">Select an ingredient</string>
+    <string name="filter_filters">Filters</string>
+    <string name="filter_active_filters">Active Filters</string>
+    <string name="filter_clear_all">Clear All</string>
+    <string name="filter_ingredient_label">Ingredient: %1$s</string>
+    <string name="filter_alcoholic_filter">Alcoholic Filter</string>
+    <string name="filter_clear">Clear</string>
+    <string name="filter_apply">Apply</string>
+    <string name="filter_category">Category</string>
+    <string name="filter_ingredient">Ingredient</string>
+    <string name="filter_clear_category">Clear Category Filter</string>
+    <string name="search_ingredients_placeholder">Search ingredients</string>
+    <string name="search_cocktails_placeholder">Search cocktails...</string>
+    <string name="search_clear_search">Clear search</string>
+    <string name="search_advanced_search">Advanced Search</string>
+    <string name="search_no_results_query_filters">No cocktails match \"%1$s\" with your active filters</string>
+    <string name="search_no_results_filters">No cocktails match your active filters</string>
+    <string name="search_no_results_query_category">No cocktails found matching \"%1$s\" in \"%2$s\"</string>
+    <string name="search_no_results_category">No cocktails found in category \"%1$s\"</string>
+    <string name="search_no_results_query">No cocktails found matching \"%1$s\"</string>
+    <string name="search_no_results">No cocktails found</string>
+    <string name="search_suggestion_adjust_filters">Try adjusting or clearing your filters</string>
+    <string name="search_suggestion_different_term_or_category">Try a different search term or category</string>
+    <string name="search_suggestion_empty_category">This category doesn\'t have any cocktails yet</string>
+    <string name="search_suggestion_check_spelling">Try a different search term or check your spelling</string>
+    <string name="search_suggestion_none_found">We couldn\'t find any cocktails</string>
+    <string name="search_clear_search_button">Clear Search</string>
+    <string name="search_browse_all_cocktails">Browse All Cocktails</string>
+    <string name="search_no_results_icon">No results</string>
+
+    <!-- Widgets -->
+    <string name="widget_random_cocktail_header">🍹 Random Cocktail</string>
+    <string name="widget_favorites_header">❤️ Favorites (%1$d)</string>
+    <string name="widget_tap_refresh_to_retry">Tap ↻ to retry</string>
+    <string name="widget_tap_refresh_to_discover">Tap ↻ to discover</string>
+    <string name="widget_view_all_favorites">View all %1$d favorites →</string>
+    <string name="widget_preview_cocktail_name">Margarita</string>
+    <string name="widget_preview_cocktail_category">Ordinary Drink</string>
+    <string name="widget_preview_favorites_header">❤️ Favorites (3)</string>
+    <string name="widget_preview_favorite_name_1">Mojito</string>
+    <string name="widget_preview_favorite_name_2">Old Fashioned</string>
+    <string name="widget_preview_favorite_category">Cocktail</string>
+</resources>

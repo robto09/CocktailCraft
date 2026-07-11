@@ -1,5 +1,6 @@
 package com.cocktailcraft.di
 
+import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.remote.CocktailApi
 import com.cocktailcraft.data.remote.CocktailApiImpl
 import com.cocktailcraft.domain.config.AppConfig
@@ -9,9 +10,7 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpResponseValidator
-import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.request.header
-import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.*
@@ -21,7 +20,7 @@ import org.koin.dsl.module
 /**
  * Koin module for network-related dependencies.
  */
-val networkModule = module {
+internal val networkModule = module {
     // HTTP Client
     single {
         HttpClient {
@@ -29,7 +28,8 @@ val networkModule = module {
                 json(get<Json>())
             }
             install(Logging) {
-                level = LogLevel.ALL
+                // Verbose wire logging is opt-in via AppConfig, not always-on
+                level = if (get<AppConfig>().verboseNetworkLogging) LogLevel.ALL else LogLevel.NONE
             }
 
             install(io.ktor.client.plugins.HttpTimeout) {
@@ -51,28 +51,18 @@ val networkModule = module {
                 exponentialDelay()
                 modifyRequest { request ->
                     // Log retry attempts - access retryCount from the context
-                    println("Retrying request to ${request.url} (attempt #${retryCount})")
+                    Logger.d { "Retrying request to ${request.url} (attempt #${retryCount})" }
                 }
             }
 
-            // Add error handling
-            HttpResponseValidator {
-                validateResponse { response ->
-                    val statusCode = response.status.value
-                    if (statusCode >= 400) {
-                        when (statusCode) {
-                            in 400..499 -> throw ConnectTimeoutException(
-                                "Client error: ${response.status.description}", Throwable("Client error")
-                            )
-                            in 500..599 -> throw ServerResponseException(
-                                response, "Server error: ${response.status.description}"
-                            )
-                        }
-                    }
-                }
+            // Non-2xx responses throw Ktor's typed exceptions
+            // (ClientRequestException for 4xx, ServerResponseException for 5xx),
+            // which ErrorHandler classifies into user-friendly errors.
+            expectSuccess = true
 
+            HttpResponseValidator {
                 handleResponseExceptionWithRequest { exception, _ ->
-                    println("Network error: ${exception.message}")
+                    Logger.w { "Network error: ${exception.message}" }
                 }
             }
 
@@ -83,8 +73,5 @@ val networkModule = module {
     }
 
     // API
-    single<CocktailApi> { CocktailApiImpl(get()) }
-
-    // Network monitoring
-    single { NetworkMonitor(get()) }
+    single<CocktailApi> { CocktailApiImpl(client = get(), appConfig = get()) }
 }

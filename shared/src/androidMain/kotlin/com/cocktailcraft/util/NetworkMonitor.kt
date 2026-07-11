@@ -11,11 +11,11 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * Android implementation of NetworkMonitor.
  */
-actual class NetworkMonitor actual constructor(
+class AndroidNetworkMonitor(
     private val context: Context
-) : BaseNetworkMonitor() {
+) : BaseNetworkMonitor(), NetworkMonitor {
 
-    actual override val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+    override val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
     private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -42,7 +42,7 @@ actual class NetworkMonitor actual constructor(
         }
     }
 
-    actual override fun startMonitoring() {
+    override fun startMonitoring() {
         val networkRequest = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
@@ -53,7 +53,7 @@ actual class NetworkMonitor actual constructor(
         _isOnline.value = isNetworkAvailable()
     }
 
-    actual override fun stopMonitoring() {
+    override fun stopMonitoring() {
         try {
             connectivityManager.unregisterNetworkCallback(networkCallback)
         } catch (e: Exception) {

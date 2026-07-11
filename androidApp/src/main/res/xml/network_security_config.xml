@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TLS certificate pinning for TheCocktailDB (defense-in-depth; the API is
+     public and unauthenticated). Enforced by the platform trust manager, so
+     it covers both Ktor API calls and Coil image traffic.
+
+     The site is fronted by Cloudflare Universal SSL, which picks the issuing
+     CA itself and rotates between Google Trust Services, Let's Encrypt, and
+     SSL.com at ~90-day renewals — so this set pins the ROOTS of that whole
+     CA pool (plus the GTS intermediate observed live), never the leaf.
+     Captured 2026-07-08 from the live chain + the Mozilla root store.
+     Keep in sync with NSPinnedDomains in iosApp/CocktailCraft/Info.plist.
+     If Cloudflare adds a CA to its pool, refresh with:
+       openssl s_client -connect www.thecocktaildb.com:443 -showcerts
+
+     The expiration attribute makes pinning fail-open after that date, so a
+     stale pin set degrades to normal CA validation instead of bricking the
+     app (per Android NSC guidance). -->
+<network-security-config>
+    <domain-config>
+        <domain includeSubdomains="true">thecocktaildb.com</domain>
+        <pin-set expiration="2027-07-08">
+            <!-- WE1 (Google Trust Services) — issuing intermediate seen live -->
+            <pin digest="SHA-256">kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=</pin>
+            <!-- GTS Roots R4, R1, R2, R3 -->
+            <pin digest="SHA-256">mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=</pin>
+            <pin digest="SHA-256">hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=</pin>
+            <pin digest="SHA-256">Vfd95BwDeSQo+NUYxVEEIlvkOlWY2SalKK1lPhzOx78=</pin>
+            <pin digest="SHA-256">QXnt2YHvdHR3tJYmQIr0Paosp6t/nggsEGD4QJZ3Q0g=</pin>
+            <!-- GlobalSign ECC Root CA R4 — GTS R4 cross-sign -->
+            <pin digest="SHA-256">CLOmM1/OXvSPjw5UOYbAf9GKOxImEp9hhku9W90fHMk=</pin>
+            <!-- ISRG Root X1 + X2 (Let's Encrypt) -->
+            <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=</pin>
+            <pin digest="SHA-256">diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=</pin>
+            <!-- SSL.com Root CA RSA / ECC + TLS Roots 2022 -->
+            <pin digest="SHA-256">0cRTd+vc1hjNFlHcLgLCHXUeWqn80bNDH/bs9qMTSPo=</pin>
+            <pin digest="SHA-256">oyD01TTXvpfBro3QSZc1vIlcMjrdLTiL/M9mLCPX+Zo=</pin>
+            <pin digest="SHA-256">K89VOmb1cJAN3TK6bf4ezAbJGC1mLcG2Dh97dnwr3VQ=</pin>
+            <pin digest="SHA-256">G/ANXI8TwJTdF+AFBM8IiIUPEv0Gf6H5LA/b9guG4yE=</pin>
+        </pin-set>
+    </domain-config>
+</network-security-config>
