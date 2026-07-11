@@ -8,7 +8,9 @@ struct SignUpView: View {
     @State private var isLoading = false
     
     let onDismiss: () -> Void
-    let onSignUp: (String, String, String) -> Void
+    // Async so the button can hold isLoading across the real network call;
+    // a fire-and-forget closure made the spinner and double-tap guard fake.
+    let onSignUp: (String, String, String) async -> Void
     // Shared-validator bridges (ProfileViewModelSKIE) so the form gate and
     // strength meter can never drift from the policy signUp actually enforces.
     let getPasswordStrength: (String) -> Int
@@ -46,6 +48,8 @@ struct SignUpView: View {
                         TextField("Enter your full name", text: $name)
                             .textFieldStyle(CustomTextFieldStyle())
                             .autocapitalization(.words)
+                            .accessibilityLabel("Full name")
+                            .accessibilityIdentifier("signup.nameField")
                     }
                     
                     // Email Field
@@ -59,6 +63,8 @@ struct SignUpView: View {
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
+                            .accessibilityLabel("Email")
+                            .accessibilityIdentifier("signup.emailField")
                     }
                     
                     // Password Field
@@ -70,35 +76,29 @@ struct SignUpView: View {
                         HStack {
                             if isPasswordVisible {
                                 TextField("Enter your password", text: $password)
+                                    .accessibilityLabel("Password")
+                                    .accessibilityIdentifier("signup.passwordField")
                             } else {
                                 SecureField("Enter your password", text: $password)
+                                    .accessibilityLabel("Password")
+                                    .accessibilityIdentifier("signup.passwordField")
                             }
-                            
+
                             Button(action: {
                                 isPasswordVisible.toggle()
                             }) {
                                 Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
                                     .foregroundColor(.gray)
+                                    .minimumHitTarget()
                             }
+                            .accessibilityLabel(isPasswordVisible ? "Hide password" : "Show password")
+                            .accessibilityIdentifier("signup.togglePasswordVisibility")
                         }
                         .textFieldStyle(CustomTextFieldStyle())
                         
-                        // Password strength indicator (one segment per point
-                        // of the shared 0-5 strength scale)
                         if !password.isEmpty {
-                            HStack {
-                                ForEach(0..<5, id: \.self) { index in
-                                    Rectangle()
-                                        .frame(height: 4)
-                                        .foregroundColor(index < passwordStrength ? passwordStrengthColor : Color.gray.opacity(0.3))
-                                        .cornerRadius(2)
-                                }
-                            }
-                            .padding(.top, 4)
-                            
-                            Text(passwordStrengthText)
-                                .font(.caption)
-                                .foregroundColor(passwordStrengthColor)
+                            PasswordStrengthMeter(strength: getPasswordStrength(password))
+                                .padding(.top, 4)
                         }
                     }
                 }
@@ -106,9 +106,12 @@ struct SignUpView: View {
                 
                 // Create Account Button
                 Button(action: {
+                    guard !isLoading else { return }
                     isLoading = true
-                    onSignUp(name, email, password)
-                    isLoading = false
+                    Task {
+                        await onSignUp(name, email, password)
+                        isLoading = false
+                    }
                 }) {
                     HStack {
                         if isLoading {
@@ -129,6 +132,8 @@ struct SignUpView: View {
                 }
                 .disabled(!isFormValid || isLoading)
                 .padding(.horizontal)
+                .accessibilityLabel("Create Account")
+                .accessibilityIdentifier("signup.submitButton")
                 
                 Spacer()
             }
@@ -139,6 +144,8 @@ struct SignUpView: View {
                     Button("Cancel") {
                         onDismiss()
                     }
+                    .accessibilityLabel("Cancel")
+                    .accessibilityIdentifier("signup.cancelButton")
                 }
             }
         }
@@ -147,30 +154,5 @@ struct SignUpView: View {
     private var isFormValid: Bool {
         !name.isEmpty && !email.isEmpty && !password.isEmpty &&
         email.contains("@") && meetsPasswordPolicy(password)
-    }
-
-    // The shared AuthInputValidator's 0-5 score, via ProfileViewModelSKIE.
-    private var passwordStrength: Int {
-        getPasswordStrength(password)
-    }
-
-    private var passwordStrengthColor: Color {
-        switch passwordStrength {
-        case 0...1: return .red
-        case 2: return .orange
-        case 3: return .yellow
-        case 4...5: return .green
-        default: return .gray
-        }
-    }
-
-    private var passwordStrengthText: String {
-        switch passwordStrength {
-        case 0...1: return "Weak password"
-        case 2: return "Fair password"
-        case 3: return "Good password"
-        case 4...5: return "Strong password"
-        default: return ""
-        }
     }
 }

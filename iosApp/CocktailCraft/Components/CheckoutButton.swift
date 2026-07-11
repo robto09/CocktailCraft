@@ -43,6 +43,7 @@ struct CheckoutButton: View {
             .cornerRadius(AppTheme.CornerRadius.md)
         }
         .disabled(!isEnabled || isLoading)
+        .accessibilityIdentifier("cart.placeOrderButton")
         .padding(.horizontal, AppTheme.Spacing.lg)
         .animation(AppTheme.Animation.quick, value: isLoading)
     }

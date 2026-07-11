@@ -27,11 +27,12 @@ struct AppTheme {
         static let caption = Font.caption
         static let caption2 = Font.caption2
         
-        // Custom sizes matching Android
-        static let cardTitle = Font.system(size: 16, weight: .bold)
-        static let cardSubtitle = Font.system(size: 14, weight: .regular)
-        static let cardCaption = Font.system(size: 12, weight: .regular)
-        static let price = Font.system(size: 16, weight: .bold)
+        // Custom sizes matching Android, each anchored to a text
+        // style so they scale with the user's Dynamic Type setting
+        static let cardTitle = Font.callout.weight(.bold)
+        static let cardSubtitle = Font.subheadline
+        static let cardCaption = Font.caption
+        static let price = Font.callout.weight(.bold)
     }
     
     // MARK: - Spacing
@@ -121,9 +122,16 @@ extension View {
     func cardStyle() -> some View {
         modifier(CardStyle())
     }
-    
+
     func chipStyle(isSelected: Bool = false) -> some View {
         modifier(ChipStyle(isSelected: isSelected))
+    }
+
+    /// Expands an icon-only control's tappable area to Apple's 44 pt HIG
+    /// minimum without growing the icon's visual size.
+    func minimumHitTarget() -> some View {
+        frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
     }
 }
 

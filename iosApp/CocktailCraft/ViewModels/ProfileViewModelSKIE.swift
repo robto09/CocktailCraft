@@ -44,51 +44,27 @@ final class ProfileViewModelSKIE: SharedViewModelWrapper<ProfileUiState> {
     // MARK: - Public Methods (using SKIE async/await)
 
     func signIn(email: String, password: String) async -> Bool {
-        do {
-            return try await sharedViewModel.signIn(email: email, password: password).boolValue
-        } catch {
-            return false
-        }
+        return await run(fallback: false) { try await sharedViewModel.signIn(email: email, password: password).boolValue }
     }
 
     func signUp(name: String, email: String, password: String) async -> Bool {
-        do {
-            return try await sharedViewModel.signUp(name: name, email: email, password: password).boolValue
-        } catch {
-            return false
-        }
+        return await run(fallback: false) { try await sharedViewModel.signUp(name: name, email: email, password: password).boolValue }
     }
 
     func signOut() async -> Bool {
-        do {
-            return try await sharedViewModel.signOut().boolValue
-        } catch {
-            return false
-        }
+        return await run(fallback: false) { try await sharedViewModel.signOut().boolValue }
     }
 
     func updateProfile(name: String, email: String) async -> Bool {
-        do {
-            return try await sharedViewModel.updateProfile(name: name, email: email).boolValue
-        } catch {
-            return false
-        }
+        return await run(fallback: false) { try await sharedViewModel.updateProfile(name: name, email: email).boolValue }
     }
 
     func changePassword(oldPassword: String, newPassword: String) async -> Bool {
-        do {
-            return try await sharedViewModel.changePassword(oldPassword: oldPassword, newPassword: newPassword).boolValue
-        } catch {
-            return false
-        }
+        return await run(fallback: false) { try await sharedViewModel.changePassword(oldPassword: oldPassword, newPassword: newPassword).boolValue }
     }
 
     func updateAddress(address: Address) async -> Bool {
-        do {
-            return try await sharedViewModel.updateAddress(address: address).boolValue
-        } catch {
-            return false
-        }
+        return await run(fallback: false) { try await sharedViewModel.updateAddress(address: address).boolValue }
     }
 
     // MARK: - Synchronous Methods
@@ -110,11 +86,7 @@ final class ProfileViewModelSKIE: SharedViewModelWrapper<ProfileUiState> {
     }
 
     func checkAuthStatus() async {
-        do {
-            try await sharedViewModel.checkAuthStatus()
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.checkAuthStatus() }
     }
 
     func clearError() {

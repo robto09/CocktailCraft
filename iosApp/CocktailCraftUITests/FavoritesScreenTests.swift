@@ -11,9 +11,8 @@ class FavoritesScreenTests: UITestSetup {
         XCTAssertTrue(navigateToTab("Favorites"), "Should navigate to Favorites tab")
         XCTAssertTrue(waitForElement(app.navigationBars["Favorites"]), "Favorites screen should be displayed")
 
-        let emptyMessage = app.staticTexts["No favorites yet"]
         let grid = app.scrollViews.firstMatch
-        XCTAssertTrue(emptyMessage.exists || grid.exists,
+        XCTAssertTrue(emptyStateTitle.exists || grid.exists,
                       "Favorites must show its empty state or the favorites grid — it showed neither")
     }
 
@@ -21,14 +20,14 @@ class FavoritesScreenTests: UITestSetup {
         XCTAssertTrue(waitForHomeScreen(), "Home screen should be loaded")
         XCTAssertTrue(navigateToTab("Favorites"), "Should navigate to Favorites tab")
         XCTAssertTrue(waitForElement(app.navigationBars["Favorites"]), "Favorites screen should be displayed")
-        let wasEmpty = app.staticTexts["No favorites yet"].exists
+        let wasEmpty = emptyStateTitle.exists
 
         XCTAssertTrue(navigateToTab("Home"), "Should navigate to Home")
         XCTAssertTrue(waitForHomeScreen(timeout: 5.0), "Home should be restored")
         XCTAssertTrue(navigateToTab("Favorites"), "Should navigate back to Favorites")
         XCTAssertTrue(waitForElement(app.navigationBars["Favorites"]), "Favorites screen should be displayed again")
 
-        XCTAssertEqual(app.staticTexts["No favorites yet"].exists, wasEmpty,
+        XCTAssertEqual(emptyStateTitle.exists, wasEmpty,
                        "Favorites should be unchanged by tab navigation")
     }
 }

@@ -56,7 +56,7 @@ kotlin {
         version = "1.0.0"
         summary = "CocktailCraft Shared Module"
         homepage = "https://github.com/cocktailcraft/shared"
-        ios.deploymentTarget = "18.5"
+        ios.deploymentTarget = "17.0"
         podfile = project.file("../iosApp/Podfile")
         framework {
             baseName = "shared"

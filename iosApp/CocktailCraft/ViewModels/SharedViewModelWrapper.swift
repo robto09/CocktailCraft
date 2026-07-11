@@ -51,4 +51,35 @@ class SharedViewModelWrapper<UiState: AnyObject> {
     deinit {
         observationTasks.forEach { $0.cancel() }
     }
+
+    // MARK: - Forwarded-call error policy
+
+    /// Runs a forwarded shared-ViewModel call under the single error policy:
+    /// failures are debug-logged here and nowhere else — user-facing
+    /// surfacing already happens through the mirrored `error` StateFlow, so
+    /// subclasses never hand-roll do/try/catch around forwarders.
+    func run(_ operation: () async throws -> Void) async {
+        do {
+            try await operation()
+        } catch {
+            logForwardedFailure(error)
+        }
+    }
+
+    /// Variant for forwarders that produce a value: returns `fallback` when
+    /// the shared call throws.
+    func run<T>(fallback: T, _ operation: () async throws -> T) async -> T {
+        do {
+            return try await operation()
+        } catch {
+            logForwardedFailure(error)
+            return fallback
+        }
+    }
+
+    private func logForwardedFailure(_ error: Error) {
+        #if DEBUG
+        print("\(type(of: self)): forwarded shared call failed: \(error)")
+        #endif
+    }
 }

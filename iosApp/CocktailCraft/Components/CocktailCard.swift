@@ -14,10 +14,10 @@ struct CocktailCard: View {
     var onCardTap: (() -> Void)? = nil
     var layout: CocktailCardLayout = .horizontal
     
-    // Check if cocktail is out of stock (using stockCount if available)
+    // Inverse of CocktailDetailViewModelSKIE.canAddToCart() — the card and
+    // the detail screen must agree on when Add to Cart is available.
     private var isOutOfStock: Bool {
-        // Assuming Cocktail model has stockCount property, otherwise default to false
-        return false // cocktail.stockCount <= 0
+        !cocktail.inStock || cocktail.stockCount <= 0
     }
     
     @Environment(\.isDarkMode) var isDarkMode
@@ -34,24 +34,16 @@ struct CocktailCard: View {
     @ViewBuilder
     private var horizontalLayout: some View {
         HStack(spacing: 16) {
-            // Cocktail Image - Larger size
+            // Cocktail Image - Larger size (Kingfisher-backed: disk+memory
+            // cache and retry, instead of AsyncImage refetching on recycle)
             ZStack(alignment: .center) {
-                AsyncImage(url: URL(string: cocktail.imageUrl ?? "")) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(AppColors.lightGray)
-                        .overlay(
-                            ProgressView()
-                                .scaleEffect(1.2)
-                        )
-                }
-                .frame(width: 120, height: 120)
-                .clipped()
-                .cornerRadius(12)
-                
+                CocktailImageView(
+                    imageUrl: cocktail.imageUrl,
+                    height: 120,
+                    cornerRadius: 12,
+                    width: 120
+                )
+
                 // Stock overlay for out of stock items
                 if isOutOfStock {
                     Rectangle()
@@ -70,7 +62,7 @@ struct CocktailCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 // Cocktail Name - Larger font
                 Text(cocktail.name)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.headline.weight(.bold))
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
@@ -78,14 +70,14 @@ struct CocktailCard: View {
                 // Category Info (Alcoholic • Category)
                 if let category = cocktail.category {
                     Text("Alcoholic • \(category)")
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.subheadline.weight(.medium))
                         .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         .lineLimit(1)
                 }
                 
                 // Ingredients (first 2 or placeholder)
                 Text(getIngredientsText())
-                    .font(.system(size: 13, weight: .regular))
+                    .font(.footnote.weight(.regular))
                     .italic()
                     .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                     .lineLimit(2)
@@ -97,7 +89,7 @@ struct CocktailCard: View {
                 HStack(alignment: .center) {
                     // Price - Larger and more prominent
                     Text((cocktail.price ?? 12.99).asPrice)
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.title3.weight(.bold))
                         .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
                     
                     Spacer()
@@ -108,23 +100,27 @@ struct CocktailCard: View {
                         if let onToggle = onFavoriteToggle {
                             Button(action: onToggle) {
                                 Image(systemName: isFavorite ? "heart.fill" : "heart")
-                                    .font(.system(size: 24))
+                                    .font(.title2)
                                     .foregroundColor(isFavorite ? AppColors.secondary(isDarkMode: isDarkMode) : AppColors.gray)
+                                    .minimumHitTarget()
                             }
-                            .frame(width: 40, height: 40)
                             .buttonStyle(.borderless)
+                            .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
+                            .accessibilityIdentifier("card.favoriteButton")
                         }
-                        
+
                         // Add to Cart Button
                         if let onAddToCart = onAddToCart {
                             Button(action: onAddToCart) {
                                 Image(systemName: "cart.badge.plus")
-                                    .font(.system(size: 24))
+                                    .font(.title2)
                                     .foregroundColor(isOutOfStock ? AppColors.gray : AppColors.primary(isDarkMode: isDarkMode))
+                                    .minimumHitTarget()
                             }
-                            .frame(width: 40, height: 40)
                             .disabled(isOutOfStock)
                             .buttonStyle(.borderless)
+                            .accessibilityLabel("Add to cart")
+                            .accessibilityIdentifier("card.addToCartButton")
                         }
                     }
                 }
@@ -145,24 +141,14 @@ struct CocktailCard: View {
     @ViewBuilder
     private var verticalLayout: some View {
         VStack(spacing: 12) {
-            // Cocktail Image - Full width
+            // Cocktail Image - Full width (Kingfisher-backed, see above)
             ZStack(alignment: .center) {
-                AsyncImage(url: URL(string: cocktail.imageUrl ?? "")) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(AppColors.lightGray)
-                        .overlay(
-                            ProgressView()
-                                .scaleEffect(1.2)
-                        )
-                }
-                .frame(height: 140)
-                .clipped()
-                .cornerRadius(12)
-                
+                CocktailImageView(
+                    imageUrl: cocktail.imageUrl,
+                    height: 140,
+                    cornerRadius: 12
+                )
+
                 // Stock overlay for out of stock items
                 if isOutOfStock {
                     Rectangle()
@@ -181,7 +167,7 @@ struct CocktailCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 // Cocktail Name - Allow more lines
                 Text(cocktail.name)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(AppTheme.Typography.cardTitle)
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     .lineLimit(3)
                     .multilineTextAlignment(.leading)
@@ -190,7 +176,7 @@ struct CocktailCard: View {
                 // Category Info (Alcoholic • Category)
                 if let category = cocktail.category {
                     Text("Alcoholic • \(category)")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.footnote.weight(.medium))
                         .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         .lineLimit(2)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -198,7 +184,7 @@ struct CocktailCard: View {
                 
                 // Ingredients (first 2 or placeholder)
                 Text(getIngredientsText())
-                    .font(.system(size: 12, weight: .regular))
+                    .font(AppTheme.Typography.cardCaption)
                     .italic()
                     .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                     .lineLimit(3)
@@ -209,7 +195,7 @@ struct CocktailCard: View {
                 HStack(alignment: .center) {
                     // Price - Prominent
                     Text((cocktail.price ?? 12.99).asPrice)
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.headline.weight(.bold))
                         .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
                     
                     Spacer()
@@ -220,23 +206,27 @@ struct CocktailCard: View {
                         if let onToggle = onFavoriteToggle {
                             Button(action: onToggle) {
                                 Image(systemName: isFavorite ? "heart.fill" : "heart")
-                                    .font(.system(size: 20))
+                                    .font(.title3)
                                     .foregroundColor(isFavorite ? AppColors.secondary(isDarkMode: isDarkMode) : AppColors.gray)
+                                    .minimumHitTarget()
                             }
-                            .frame(width: 32, height: 32)
                             .buttonStyle(.borderless)
+                            .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
+                            .accessibilityIdentifier("card.favoriteButton")
                         }
-                        
+
                         // Add to Cart Button
                         if let onAddToCart = onAddToCart {
                             Button(action: onAddToCart) {
                                 Image(systemName: "cart.badge.plus")
-                                    .font(.system(size: 20))
+                                    .font(.title3)
                                     .foregroundColor(isOutOfStock ? AppColors.gray : AppColors.primary(isDarkMode: isDarkMode))
+                                    .minimumHitTarget()
                             }
-                            .frame(width: 32, height: 32)
                             .disabled(isOutOfStock)
                             .buttonStyle(.borderless)
+                            .accessibilityLabel("Add to cart")
+                            .accessibilityIdentifier("card.addToCartButton")
                         }
                     }
                 }

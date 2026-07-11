@@ -7,7 +7,9 @@ struct SignInView: View {
     @State private var isLoading = false
     
     let onDismiss: () -> Void
-    let onSignIn: (String, String) -> Void
+    // Async so the button can hold isLoading across the real network call;
+    // a fire-and-forget closure made the spinner and double-tap guard fake.
+    let onSignIn: (String, String) async -> Void
     
     var body: some View {
         NavigationStack {
@@ -43,6 +45,8 @@ struct SignInView: View {
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
+                            .accessibilityLabel("Email")
+                            .accessibilityIdentifier("signin.emailField")
                     }
                     
                     // Password Field
@@ -54,16 +58,23 @@ struct SignInView: View {
                         HStack {
                             if isPasswordVisible {
                                 TextField("Enter your password", text: $password)
+                                    .accessibilityLabel("Password")
+                                    .accessibilityIdentifier("signin.passwordField")
                             } else {
                                 SecureField("Enter your password", text: $password)
+                                    .accessibilityLabel("Password")
+                                    .accessibilityIdentifier("signin.passwordField")
                             }
-                            
+
                             Button(action: {
                                 isPasswordVisible.toggle()
                             }) {
                                 Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
                                     .foregroundColor(.gray)
+                                    .minimumHitTarget()
                             }
+                            .accessibilityLabel(isPasswordVisible ? "Hide password" : "Show password")
+                            .accessibilityIdentifier("signin.togglePasswordVisibility")
                         }
                         .textFieldStyle(CustomTextFieldStyle())
                     }
@@ -72,9 +83,12 @@ struct SignInView: View {
                 
                 // Sign In Button
                 Button(action: {
+                    guard !isLoading else { return }
                     isLoading = true
-                    onSignIn(email, password)
-                    isLoading = false
+                    Task {
+                        await onSignIn(email, password)
+                        isLoading = false
+                    }
                 }) {
                     HStack {
                         if isLoading {
@@ -95,6 +109,8 @@ struct SignInView: View {
                 }
                 .disabled(!isFormValid || isLoading)
                 .padding(.horizontal)
+                .accessibilityLabel("Sign In")
+                .accessibilityIdentifier("signin.submitButton")
                 
                 Spacer()
             }
@@ -105,6 +121,8 @@ struct SignInView: View {
                     Button("Cancel") {
                         onDismiss()
                     }
+                    .accessibilityLabel("Cancel")
+                    .accessibilityIdentifier("signin.cancelButton")
                 }
             }
         }

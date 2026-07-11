@@ -39,6 +39,8 @@ struct SettingsRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityLabel(title)
+        .accessibilityIdentifier("profile.row." + title)
     }
 }
 
@@ -113,16 +115,22 @@ struct AnimatedThemeSwitch: View {
                 .frame(width: 24, height: 24)
                 .overlay(
                     Image(systemName: isChecked ? "moon.fill" : "sun.max.fill")
-                        .font(.system(size: 12))
+                        .font(.caption)
                         .foregroundColor(.white)
+                        .accessibilityHidden(true)
                 )
                 .offset(x: isChecked ? 44 : 4)
         }
-        .contentShape(Capsule())
+        // 72x40 visual; the tappable band extends to the 44 pt HIG minimum
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
         .onTapGesture {
             if enabled { onToggle() }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.65), value: isChecked)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityValue(isChecked ? "On" : "Off")
+        .accessibilityIdentifier("profile.themeSwitch")
     }
 }
 

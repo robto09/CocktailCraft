@@ -41,8 +41,11 @@ struct CartItemCard: View {
                             Image(systemName: "heart")
                                 .font(.title3)
                                 .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                                .minimumHitTarget()
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .accessibilityLabel("Add to favorites")
+                        .accessibilityIdentifier("cart.favoriteButton")
                     }
                 }
 
@@ -74,10 +77,13 @@ struct CartItemCard: View {
 
                         Button(action: onRemoveFromCart) {
                             Image(systemName: "trash")
-                                .font(.system(size: 16))
+                                .font(.callout)
                                 .foregroundColor(AppColors.error)
+                                .minimumHitTarget()
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .accessibilityLabel("Remove from cart")
+                        .accessibilityIdentifier("cart.removeButton")
                     }
                 }
             }
@@ -98,29 +104,37 @@ struct QuantityControlView: View {
         HStack(spacing: AppTheme.Spacing.md) {
             Button(action: onDecrement) {
                 Image(systemName: "minus")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.callout.weight(.bold))
                     .foregroundColor(.white)
                     .frame(width: 32, height: 32)
                     .background(AppColors.textSecondary(isDarkMode: isDarkMode))
                     .clipShape(Circle())
+                    .minimumHitTarget()
             }
             .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel("Decrease quantity")
+            .accessibilityIdentifier("cart.decrementButton")
 
             Text("\(quantity)")
                 .font(AppTheme.Typography.headline)
                 .fontWeight(.bold)
                 .frame(minWidth: 30)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                .accessibilityLabel("Quantity: \(quantity)")
+                .accessibilityIdentifier("cart.quantityValue")
 
             Button(action: onIncrement) {
                 Image(systemName: "plus")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.callout.weight(.bold))
                     .foregroundColor(.white)
                     .frame(width: 32, height: 32)
                     .background(AppColors.primary(isDarkMode: isDarkMode))
                     .clipShape(Circle())
+                    .minimumHitTarget()
             }
             .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel("Increase quantity")
+            .accessibilityIdentifier("cart.incrementButton")
         }
     }
 }

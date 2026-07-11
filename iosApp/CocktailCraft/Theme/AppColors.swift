@@ -54,42 +54,12 @@ struct AppColors {
         isDarkMode ? textSecondaryDark : textSecondaryLight
     }
 
-    // MARK: - Legacy Dynamic Colors (for backward compatibility with system theme)
-    static var primary: Color {
-        Color(UIColor { traitCollection in
-            traitCollection.userInterfaceStyle == .dark ? UIColor(primaryDark) : UIColor(primaryLight)
-        })
-    }
-
-    static var secondary: Color {
-        Color(UIColor { traitCollection in
-            traitCollection.userInterfaceStyle == .dark ? UIColor(secondaryDark) : UIColor(secondaryLight)
-        })
-    }
-
-    static var background: Color {
-        Color(UIColor { traitCollection in
-            traitCollection.userInterfaceStyle == .dark ? UIColor(backgroundDark) : UIColor(backgroundLight)
-        })
-    }
-
-    static var surface: Color {
-        Color(UIColor { traitCollection in
-            traitCollection.userInterfaceStyle == .dark ? UIColor(surfaceDark) : UIColor(surfaceLight)
-        })
-    }
-
-    static var textPrimary: Color {
-        Color(UIColor { traitCollection in
-            traitCollection.userInterfaceStyle == .dark ? UIColor(textPrimaryDark) : UIColor(textPrimaryLight)
-        })
-    }
-
-    static var textSecondary: Color {
-        Color(UIColor { traitCollection in
-            traitCollection.userInterfaceStyle == .dark ? UIColor(textSecondaryDark) : UIColor(textSecondaryLight)
-        })
-    }
+    // The old trait-collection-driven static vars (primary, background, ...)
+    // are gone on purpose: they followed the SYSTEM appearance while the
+    // rest of the app follows the app-controlled theme
+    // (ThemeViewModelSKIE), so any call site could visually desync from
+    // the chosen theme. Always use the isDarkMode:-parameterized functions
+    // above with @Environment(\.isDarkMode).
 }
 
 // MARK: - Color Extension for Hex Support

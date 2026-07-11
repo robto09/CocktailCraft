@@ -48,53 +48,29 @@ final class CartViewModelSKIE: SharedViewModelWrapper<CartUiState> {
     // MARK: - Public Methods (using SKIE async/await)
 
     func addToCart(_ cocktail: Cocktail, quantity: Int = 1) async {
-        do {
-            try await sharedViewModel.addToCart(cocktail: cocktail, quantity: Int32(quantity))
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.addToCart(cocktail: cocktail, quantity: Int32(quantity)) }
     }
 
     func decrementQuantity(_ cocktailId: String) async {
         // Optimistic apply/revert lives in the shared ViewModel
-        do {
-            try await sharedViewModel.decrementQuantity(cocktailId: cocktailId)
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.decrementQuantity(cocktailId: cocktailId) }
     }
 
     func incrementQuantity(_ cocktailId: String) async {
         // Optimistic apply/revert lives in the shared ViewModel
-        do {
-            try await sharedViewModel.incrementQuantity(cocktailId: cocktailId)
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.incrementQuantity(cocktailId: cocktailId) }
     }
 
     func removeFromCart(_ cocktailId: String) async {
-        do {
-            try await sharedViewModel.removeFromCart(cocktailId: cocktailId)
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.removeFromCart(cocktailId: cocktailId) }
     }
 
     func updateQuantity(_ cocktailId: String, quantity: Int) async {
-        do {
-            try await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: Int32(quantity))
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: Int32(quantity)) }
     }
 
     func clearCart() async {
-        do {
-            try await sharedViewModel.clearCart()
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.clearCart() }
     }
 
     // MARK: - Synchronous Methods

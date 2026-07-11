@@ -330,107 +330,121 @@ Verified after the fixes: `:androidApp:testDebugUnitTest`, `assembleDebug`, `ass
 
 ## P0 — Broken behavior
 
-### 4.1 Background sync is likely fully broken (missing permitted identifiers + deferred registration)
-- [ ] **Severity:** High · **Effort:** S
+### 4.1 Background sync is likely fully broken (missing permitted identifiers + deferred registration) — ✅ Done (branch `ios/4.1-background-sync-registration`, commit `da9f3f1`)
+- [x] **Severity:** High · **Effort:** S
 - **Files:** `iosApp/CocktailCraft/Info.plist` (has `UIBackgroundModes` but **no `BGTaskSchedulerPermittedIdentifiers`**), `iosApp/CocktailCraft/CocktailCraftApp.swift:18-21`, `iosApp/CocktailCraft/Utils/BackgroundSyncManager.swift:49-67,162-198`
 - **Issue:** (a) Every `BGTaskScheduler` identifier must be listed in `BGTaskSchedulerPermittedIdentifiers`; without it, `register` fails at runtime — background refresh/fetch never fire. (b) Registration is wrapped in `Task { @MainActor in ... }`, deferring it past app-launch completion, which Apple forbids. (c) `task.expirationHandler` is assigned *after* the sync work starts.
 - **Fix:** Add `BGTaskSchedulerPermittedIdentifiers` with `com.cocktailcraft.background-refresh` and `com.cocktailcraft.background-fetch` to Info.plist (and `project.yml` so XcodeGen preserves it). Call `registerBackgroundTasks()` synchronously in `init()`. Set `expirationHandler` before starting the sync `Task`.
 
-### 4.2 Sign-in/sign-up loading state and double-submit protection are fake
-- [ ] **Severity:** High · **Effort:** S
+### 4.2 Sign-in/sign-up loading state and double-submit protection are fake — ✅ Done (branch `ios/4.2-auth-loading-state`, commit `10cce62`)
+- [x] **Severity:** High · **Effort:** S
 - **Files:** `Views/SignInView.swift:74-78,96`, `Views/SignUpView.swift:103-107,125`, caller: `Views/ProfileView.swift:70-93`
 - **Issue:** The button does `isLoading = true; onSignIn(...); isLoading = false` around a non-async closure that internally fires `Task { await viewModel.signIn(...) }`. `isLoading` resets before the work starts: the spinner never shows and `.disabled(... || isLoading)` never prevents double-taps.
 - **Fix:** Make `onSignIn`/`onSignUp` `async` closures (`(String, String) async -> Void`); the button wraps the call in its own `Task` and toggles `isLoading` around the genuine `await`.
 
-### 4.3 Out-of-stock check hardcoded off in list/grid cards
-- [ ] **Severity:** High · **Effort:** S
+### 4.3 Out-of-stock check hardcoded off in list/grid cards — ✅ Done (branch `ios/4.3-out-of-stock-check`, commit `38a162e`)
+- [x] **Severity:** High · **Effort:** S
 - **Files:** `Components/CocktailCard.swift:17-21` vs correct rule in `ViewModels/CocktailDetailViewModelSKIE.swift:121-148`
 - **Issue:** `private var isOutOfStock: Bool { return false // cocktail.stockCount <= 0 }` — the real check is commented out, so every Add to Cart button on Home/Favorites is always enabled, contradicting the Detail ViewModel's `canAddToCart()`/`getStockStatus()` logic. Looks like half-finished work, not intent.
 - **Fix:** Restore `cocktail.stockCount <= 0` (or `!cocktail.inStock`), matching the Detail ViewModel's rule; show the disabled/out-of-stock style the card already supports.
 
-### 4.4 `SettingsView` fully implemented but permanently unreachable; dead-end taps elsewhere
-- [ ] **Severity:** High (dead UI) · **Effort:** S–M
+### 4.4 `SettingsView` fully implemented but permanently unreachable; dead-end taps elsewhere — ✅ Done (branch `ios/4.4-settings-reachability`, commit `6d488a8`)
+- [x] **Severity:** High (dead UI) · **Effort:** S–M
 - **Files:** `Views/ProfileView.swift:7,64-66,176,184,192,200,231`, `Views/SettingsView.swift` (120 lines), `Views/OfflineModeView.swift:209-211,216-218`
 - **Issue:** `showingSettings` is never set `true` anywhere — the entire Settings sheet (dark mode, accent color, font size, high contrast, reduced motion, reset) has no entry point. Profile rows "Edit Profile", "Change Password", "Email Preferences", "Notification Settings", "Help & Support" are `{ /* Handle X */ }` no-ops. OfflineModeView's recently-viewed thumbnails and "View All" do nothing on tap.
 - **Fix:** Add a Settings row in ProfileView that sets `showingSettings = true`. Wire "Change Password"/"Edit Profile" to the `ProfileViewModelSKIE.updateProfile`/`changePassword` methods that already exist; remove (or mark "coming soon") the rows with no backing feature. Make OfflineModeView thumbnails navigate to `CocktailDetailView` like every other card.
 
 ## P1 — Platform parity
 
-### 4.5 `CocktailDetailView` is a stub vs its own ViewModel and Android
-- [ ] **Severity:** High · **Effort:** L
+### 4.5 `CocktailDetailView` is a stub vs its own ViewModel and Android — ✅ Done (branch `ios/4.5-detail-screen-buildout`, commit `0c14451`)
+- [x] **Severity:** High · **Effort:** L
 - **Files:** `Views/CocktailDetailView.swift` (72 lines) vs `ViewModels/CocktailDetailViewModelSKIE.swift` (153 lines, fully implemented) vs Android's `CocktailDetailScreen.kt` (859 lines)
 - **Issue:** The view renders only image/name/category/ingredients. It never uses `toggleFavorite()`, `addToCart()`, `updateCartQuantity()`, `shareContent()`, `formatPrice()`, `getStockStatus()`, `relatedCocktails`, `nutritionFacts`, or `ingredientsByType` — all implemented and waiting in the ViewModel. Biggest functional gap in the app.
 - **Fix:** Build out the screen against the existing ViewModel surface: price + add-to-cart/quantity controls, favorite toggle in the toolbar, stock badge, share button, related-cocktails carousel, ingredients grouped by type. Mirror Android's section order for design parity; reuse `CocktailImageView`, `SharedErrorAlert`, and existing components.
 
 ## P2 — Quality & consistency
 
-### 4.6 High-traffic surfaces bypass the Kingfisher-backed image component
-- [ ] **Severity:** Medium (performance) · **Effort:** S
+### 4.6 High-traffic surfaces bypass the Kingfisher-backed image component — ✅ Done (branch `ios/4.6-kingfisher-images`, commit `87e91cd`)
+- [x] **Severity:** Medium (performance) · **Effort:** S
 - **Files:** `Components/CocktailCard.swift:39,150`, `Views/OfflineModeView.swift:308` (bare `AsyncImage`) vs `Components/CocktailImageView.swift` (Kingfisher: disk+memory cache, retry, failure image)
 - **Issue:** Home rows, Favorites grid, and Offline grid use `AsyncImage`, which has no cross-render cache and refetches/re-decodes on list recycling — avoidable network/CPU churn and flicker. Detail/Cart already use the good component.
 - **Fix:** Replace the three `AsyncImage` call sites with `CocktailImageView`.
 
-### 4.7 51 copies of `do/try/catch` boilerplate with inconsistent error policy
-- [ ] **Severity:** Medium · **Effort:** S–M
+### 4.7 51 copies of `do/try/catch` boilerplate with inconsistent error policy — ✅ Done (branch `ios/4.7-error-boilerplate`, commit `e40dd54`)
+- [x] **Severity:** Medium · **Effort:** S–M
 - **Files:** all 9 `ViewModels/*SKIE.swift` (Home 12, Profile 7, Theme 8, Cart 6, Detail 5, OfflineMode 5, Order 5, Favorites 3)
 - **Issue:** Every async forwarding method hand-copies `do { try await sharedViewModel.x(...) } catch { print(...) }`; some print, some silently swallow. None add value beyond the mirrored `error` StateFlow that `SharedViewModelWrapper` already surfaces.
 - **Fix:** Add to `SharedViewModelWrapper`: `func run(_ op: () async throws -> Void) async { do { try await op() } catch { /* single logging policy */ } }` and collapse all 51 sites to `await run { try await sharedViewModel.x(...) }`.
 
-### 4.8 Zero accessibility labels/identifiers in the entire app target
-- [ ] **Severity:** Medium-High (accessibility) · **Effort:** M
+### 4.8 Zero accessibility labels/identifiers in the entire app target — ✅ Done (branch `ios/4.8-accessibility`, commit `3a9a42c`; UI-test migration lands with 4.16)
+- [x] **Severity:** Medium-High (accessibility) · **Effort:** M
 - **Files:** whole `CocktailCraft/` tree (0 grep matches for `accessibilityLabel|accessibilityIdentifier|accessibilityHint`); worst offenders: `Components/CocktailCard.swift:110,121`, `Components/CartItemCard.swift:76,100,115`, `Views/SignInView.swift:64`
 - **Issue:** Every icon-only control announces as just "button" to VoiceOver. UI tests match display copy instead of identifiers, so they break on copy changes.
 - **Fix:** Add `.accessibilityLabel(...)` to all icon-only buttons (favorite, add-to-cart, quantity ±, remove, password show/hide) and `.accessibilityIdentifier(...)` on key controls; migrate `UITestSetup.swift` helpers to identifiers.
 
-### 4.9 Icon-only controls below the 44×44 pt HIG minimum
-- [ ] **Severity:** Medium (accessibility) · **Effort:** S
+### 4.9 Icon-only controls below the 44×44 pt HIG minimum — ✅ Done (branch `ios/4.9-hit-targets`, commit `21bf14f`)
+- [x] **Severity:** Medium (accessibility) · **Effort:** S
 - **Files:** `Components/CocktailCard.swift:226,237` (32×32), `Components/CartItemCard.swift:103,119` (32×32), `Components/ProfileSupportViews.swift:23,68,113`
 - **Issue:** Favorite/add-to-cart in the grid card and cart quantity steppers have 32 pt frames — under Apple's 44 pt guidance, and (with 4.8) the hardest controls to hit and identify.
 - **Fix:** Keep the icon visual size but expand the hit area to ≥44 pt via a larger frame + `.contentShape(Rectangle())`.
 
-### 4.10 Dual `AppColors` APIs can visually desync the theme
-- [ ] **Severity:** Medium · **Effort:** S
+### 4.10 Dual `AppColors` APIs can visually desync the theme — ✅ Done (branch `ios/4.10-appcolors-single-api`, commit `202460f`)
+- [x] **Severity:** Medium · **Effort:** S
 - **Files:** `Theme/AppColors.swift:57-92` (legacy trait-driven statics) vs the `isDarkMode:`-parameterized functions; last legacy call site `Views/ProfileView.swift:117`
 - **Issue:** The legacy static vars follow the *system* trait; the rest of the app follows the app-controlled theme (`ThemeViewModelSKIE`). With "Follow System Theme" off and an opposite theme chosen, the Profile avatar background and its text color derive from two different sources and mismatch.
 - **Fix:** Fix `ProfileView.swift:117` to use `AppColors.primary(isDarkMode:)`, then delete the entire legacy static-var API so it can't be reintroduced.
 
-### 4.11 Fixed-size typography defeats Dynamic Type
-- [ ] **Severity:** Medium (accessibility) · **Effort:** S–M
+### 4.11 Fixed-size typography defeats Dynamic Type — ✅ Done (branch `ios/4.11-dynamic-type`, commit `a116a2d`; note: `Font.system(size:relativeTo:)` doesn't exist, so semantic styles + weights were used instead; the five 60 pt decorative hero glyphs stay fixed on purpose)
+- [x] **Severity:** Medium (accessibility) · **Effort:** S–M
 - **Files:** `Theme/AppTheme.swift:31-34` (`Typography.cardTitle/cardSubtitle/cardCaption/price`), plus `.font(.system(size:))` in 8 files (`CocktailCard`, `CartItemCard`, `ProfileSupportViews`, `HomeEmptyStateView`, `SignInView`, `SignUpView`, `HomeViewSKIE`, `ProfileView`)
 - **Issue:** Fixed pixel sizes don't scale with the user's Dynamic Type setting, unlike the semantic tokens in the same file.
 - **Fix:** Change the custom tokens to `.system(size: N, relativeTo: .headline/.subheadline/...)` and replace ad-hoc `.system(size:)` call sites with the theme tokens.
 
-### 4.12 `HomeViewSKIE` is a 508-line god-view duplicating shared patterns
-- [ ] **Severity:** Medium · **Effort:** M
+### 4.12 `HomeViewSKIE` is a 508-line god-view duplicating shared patterns — ✅ Done (branch `ios/4.12-home-view-decomposition`, commit `eaa18f8`; 508 → 248 lines)
+- [x] **Severity:** Medium · **Effort:** M
 - **Files:** `Views/HomeViewSKIE.swift` (508 lines — search bar, filter chips, 3 loading/empty/content branches, a ~100-line inline `AdvancedSearchSheet`, and a reimplemented error alert at 314-325 despite `Components/SharedErrorAlert.swift` being used by all 5 other screens)
 - **Issue:** The one outlier in an otherwise well-decomposed codebase (avg 137 lines/file); the inline alert duplicates an established shared pattern.
 - **Fix:** Extract `SearchBar`, `CategoryChipRow`, skeleton list, and `AdvancedSearchSheet` into `Components/`; replace the inline alert with `.sharedErrorAlert(...)`.
 
 ## P3 — Housekeeping & backlog
 
-### 4.13 Stale `iOS_Warnings_TODO.md` misrepresents the codebase
-- [ ] **Severity:** Low · **Effort:** S
+### 4.13 Stale `iOS_Warnings_TODO.md` misrepresents the codebase — ✅ Done (branch `ios/4.13-stale-warnings-doc`, commit `627f3f1`; deleted — every item was done or obsolete)
+- [x] **Severity:** Low · **Effort:** S
 - **Files:** `iosApp/iOS_Warnings_TODO.md`
 - **Issue:** References pre-SKIE filenames (`CartViewModel.swift`) and flags issues already fixed (`onChange(of:)` form, TLS 1.2 already set). Actively misleads the next reader (or tooling).
 - **Fix:** Regenerate from a current build-warnings capture, or delete it.
 
-### 4.14 Confirm the iOS 18.5 deployment target is intentional
-- [ ] **Severity:** Low · **Effort:** S (decision)
+### 4.14 Confirm the iOS 18.5 deployment target is intentional — ✅ Done (branch `ios/4.14-deployment-target`, commit `58f005d`; lowered to 17.0 in gradle/podspec/project.yml/Podfile together)
+- [x] **Severity:** Low · **Effort:** S (decision)
 - **Files:** `iosApp/project.yml`, `iosApp/Podfile`
 - **Issue:** An 18.5 floor excludes every device that hasn't taken a mid-cycle 18.x point release — an unusually aggressive cutoff for a consumer app.
 - **Fix:** Decide deliberately; iOS 17.0 would keep the `@Observable`/NavigationStack architecture intact while widening reach. Lower in both files together.
 
-### 4.15 No WidgetKit counterpart to Android's two widgets
-- [ ] **Severity:** Low (parity backlog) · **Effort:** L
+### 4.15 No WidgetKit counterpart to Android's two widgets — ✅ Done (branch `ios/4.15-widgetkit`, commit `76bcca4`; includes the `cocktailcraft://cocktail/{id}` deep-link pipeline, iOS counterpart of 3.12)
+- [x] **Severity:** Low (parity backlog) · **Effort:** L
 - **Files:** Android `widget/FavoritesWidget.kt`, `widget/RandomCocktailWidget.kt`; no widget extension target in `project.yml`
 - **Issue:** Android ships Favorites + Random Cocktail home-screen widgets; iOS has none.
 - **Fix:** Backlog item: add a WidgetKit extension target (XcodeGen) reading shared data via an App Group; pair with 3.12's deep links so both platforms' widgets open the tapped cocktail.
 
-### 4.16 UI tests keyed to display strings
-- [ ] **Severity:** Low · **Effort:** S (falls out of 4.8)
+### 4.16 UI tests keyed to display strings — ✅ Done (branch `ios/4.16-ui-test-identifiers`, commit `1022bb6`; tab/nav-bar chrome stays label-matched by design)
+- [x] **Severity:** Low · **Effort:** S (falls out of 4.8)
 - **Files:** `CocktailCraftUITests/UITestSetup.swift:35` and the three test files
 - **Issue:** Tests locate elements by visible copy/placeholder text — brittle to copy changes and localization.
 - **Fix:** Switch to `accessibilityIdentifier`-based queries once 4.8 lands.
+
+## Section 4 integration status
+
+All 16 tasks are merged into `integration/ios-phase-4` (one `--no-ff` merge per task branch). An adversarial review pass (5 lenses, each finding cross-examined by 3 skeptics) confirmed 8 distinct defects plus one bug reproduced on-simulator; all fixed directly on the integration branch:
+
+- `51e687a` — shared `handleException` no longer surfaces `CancellationException` as a user-facing error (deep link during a presented sheet put a "StandaloneCoroutine was cancelled" alert over the opened detail; protects both platforms)
+- `982dd8f` — detail screen: content no longer waits on the related-cocktails pipeline (cocktail-first branch), load failures get only the full-screen ErrorView while action errors get only the alert (no duplicate surface / "not found" dead end), pop-back no longer refetches, and cart-stepper mutations are serialized so rapid taps can't read stale mirrored state
+- `0b719e4` — widget bridge: a failed favorites fetch keeps the last-known-good snapshot instead of blanking the widget (`getFavoriteCocktailsSnapshot` now throws), and snapshot writes reload only the Favorites widget instead of resetting the Random Cocktail widget on every launch/backgrounding
+- `38c1fb9` — background sync no longer defaults to off on fresh installs (`bool(forKey:)` on an absent key)
+- `4867952` — widget extension mirrors the app's thecocktaildb.com certificate-pin set (ATS is per-bundle) and both targets set `CURRENT_PROJECT_VERSION`/`MARKETING_VERSION` so app/appex bundle versions match
+
+Rejected by the skeptic panel (not fixed, on purpose): a claimed BGTask double-completion race, a claimed alert-under-sheet dead end for the Change Password/Edit Profile forms, and a duplicate variant of the detail error-surface finding.
+
+Verified after the fixes: full simulator test suite (`CocktailCraftTests` + `CocktailCraftUITests`, 14/14, iPhone 17 Pro), `xcodegen generate` + `pod install` clean, app + widget extension build with the embedded `.appex` carrying the correct extension point/ATS pins/17.0 floor, `:shared:allTests` (JVM + iOS simulator), and `:androidApp:assembleDebug` — **all green**. Not pushed anywhere yet.
 
 ---
 

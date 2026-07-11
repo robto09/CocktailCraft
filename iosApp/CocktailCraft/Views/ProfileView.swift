@@ -5,6 +5,8 @@ struct ProfileView: View {
     @State private var viewModel = ProfileViewModelSKIE()
     private let themeViewModel = ThemeViewModelSKIE.shared
     @State private var showingSettings = false
+    @State private var showingEditProfile = false
+    @State private var showingChangePassword = false
     @State private var showingSignIn = false
     @State private var showingSignUp = false
     @State private var showingLogoutAlert = false
@@ -23,7 +25,7 @@ struct ProfileView: View {
             // Brand-color header matching the Android TopAppBar
             HStack {
                 Text("Profile")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.title2.weight(.bold))
                     .foregroundColor(.white)
                 Spacer()
             }
@@ -64,16 +66,42 @@ struct ProfileView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }
+        .sheet(isPresented: $showingEditProfile) {
+            EditProfileView(
+                currentName: viewModel.userName,
+                currentEmail: viewModel.userEmail,
+                onDismiss: { showingEditProfile = false },
+                onSave: { name, email in
+                    let success = await viewModel.updateProfile(name: name, email: email)
+                    if success {
+                        viewModel.refresh()
+                        showingEditProfile = false
+                    }
+                },
+                isValidEmail: viewModel.isValidEmail
+            )
+        }
+        .sheet(isPresented: $showingChangePassword) {
+            ChangePasswordView(
+                onDismiss: { showingChangePassword = false },
+                onChangePassword: { current, new in
+                    let success = await viewModel.changePassword(oldPassword: current, newPassword: new)
+                    if success {
+                        showingChangePassword = false
+                    }
+                },
+                getPasswordStrength: viewModel.getPasswordStrength,
+                meetsPasswordPolicy: viewModel.meetsPasswordPolicy
+            )
+        }
         .sheet(isPresented: $showingSignIn) {
             SignInView(
                 onDismiss: { showingSignIn = false },
                 onSignIn: { email, password in
-                    Task {
-                        let success = await viewModel.signIn(email: email, password: password)
-                        if success {
-                            viewModel.refresh()
-                            showingSignIn = false
-                        }
+                    let success = await viewModel.signIn(email: email, password: password)
+                    if success {
+                        viewModel.refresh()
+                        showingSignIn = false
                     }
                 }
             )
@@ -82,12 +110,10 @@ struct ProfileView: View {
             SignUpView(
                 onDismiss: { showingSignUp = false },
                 onSignUp: { name, email, password in
-                    Task {
-                        let success = await viewModel.signUp(name: name, email: email, password: password)
-                        if success {
-                            viewModel.refresh()
-                            showingSignUp = false
-                        }
+                    let success = await viewModel.signUp(name: name, email: email, password: password)
+                    if success {
+                        viewModel.refresh()
+                        showingSignUp = false
                     }
                 },
                 getPasswordStrength: viewModel.getPasswordStrength,
@@ -116,7 +142,7 @@ struct ProfileView: View {
             // Profile Picture
             ZStack {
                 Circle()
-                    .fill(AppColors.primary.opacity(0.2))
+                    .fill(AppColors.primary(isDarkMode: isDarkMode).opacity(0.2))
                     .frame(width: 80, height: 80)
 
                 Text(viewModel.userName.prefix(1).uppercased())
@@ -171,11 +197,14 @@ struct ProfileView: View {
                 .fontWeight(.bold)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
+            // Email Preferences / Notification Settings / Help & Support rows
+            // were removed: they had no backing feature and tapped into
+            // nothing. Add rows back only alongside a real implementation.
             VStack(spacing: 0) {
                 SettingsRow(
                     icon: "person",
                     title: "Edit Profile",
-                    action: { /* Handle edit profile */ }
+                    action: { showingEditProfile = true }
                 )
 
                 Divider()
@@ -183,23 +212,7 @@ struct ProfileView: View {
                 SettingsRow(
                     icon: "lock",
                     title: "Change Password",
-                    action: { /* Handle change password */ }
-                )
-
-                Divider()
-
-                SettingsRow(
-                    icon: "envelope",
-                    title: "Email Preferences",
-                    action: { /* Handle email preferences */ }
-                )
-
-                Divider()
-
-                SettingsRow(
-                    icon: "bell",
-                    title: "Notification Settings",
-                    action: { /* Handle notification settings */ }
+                    action: { showingChangePassword = true }
                 )
             }
         }
@@ -217,20 +230,20 @@ struct ProfileView: View {
 
             VStack(spacing: 0) {
                 SettingsRow(
+                    icon: "gearshape",
+                    title: "Settings",
+                    action: { showingSettings = true }
+                )
+
+                Divider()
+
+                SettingsRow(
                     icon: "calendar",
                     title: "Order History",
                     action: {
                         // Navigate to Orders tab
                         router.selectedTab = .orders
                     }
-                )
-
-                Divider()
-
-                SettingsRow(
-                    icon: "questionmark.circle.fill",
-                    title: "Help & Support",
-                    action: { /* Handle help & support */ }
                 )
 
                 Divider()

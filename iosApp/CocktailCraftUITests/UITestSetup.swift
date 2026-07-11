@@ -2,8 +2,11 @@ import XCTest
 
 /**
  * Base class for CocktailCraft UI tests: launches the app and provides
- * helpers grounded in the real UI (tab labels from ContentView, the home
- * search field's placeholder, screen navigation titles).
+ * helpers keyed to stable accessibility identifiers (home.searchField,
+ * emptyState.title, cart.placeOrderButton, ...) rather than display copy,
+ * so copy changes and localization can't break element lookup. Tab-bar
+ * buttons and navigation-bar titles remain label-matched: SwiftUI offers
+ * no per-tabItem identifier hook, and chrome titles are structural.
  *
  * These are smoke tests against live data — they assert structure that is
  * state-independent (tabs, screen chrome, empty-state-or-content) rather
@@ -30,9 +33,18 @@ class UITestSetup: XCTestCase {
     }
 
     /// The home screen has no navigation bar; its stable marker is the
-    /// search field (matched by placeholder).
+    /// search field (matched by accessibility identifier).
     var homeSearchField: XCUIElement {
-        app.textFields["Search cocktails..."].firstMatch
+        app.textFields["home.searchField"].firstMatch
+    }
+
+    /// Title of whichever EmptyStateView is on screen (cart/favorites/...).
+    var emptyStateTitle: XCUIElement {
+        app.staticTexts["emptyState.title"].firstMatch
+    }
+
+    var placeOrderButton: XCUIElement {
+        app.buttons["cart.placeOrderButton"].firstMatch
     }
 
     /// Cold launches include the shared framework + Koin start; be generous.

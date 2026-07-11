@@ -28,105 +28,56 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
     // MARK: - Public Methods (using SKIE async/await)
 
     func loadCocktails() async {
-        do {
-            try await sharedViewModel.loadCocktails()
-        } catch {
-            print("HomeViewModelSKIE - Error loading cocktails: \(error)")
-        }
+        await run { try await sharedViewModel.loadCocktails() }
     }
 
     func loadCocktailsByCategory(_ category: String?) async {
-        do {
-            try await sharedViewModel.loadCocktailsByCategory(category: category)
-        } catch {
-            print("HomeViewModelSKIE - Error loading cocktails by category: \(error)")
-        }
+        await run { try await sharedViewModel.loadCocktailsByCategory(category: category) }
     }
 
     func searchCocktails(query: String) async {
-        do {
-            try await sharedViewModel.searchCocktails(query: query)
-        } catch {
-            print("HomeViewModelSKIE - Error searching cocktails: \(error)")
-        }
+        await run { try await sharedViewModel.searchCocktails(query: query) }
     }
 
     /// Apply the advanced-search filters. The shared ViewModel stores them in
     /// `state.searchFilters` (driving the active-filter chips) and loads the
     /// intersected results.
     func applyFilters(_ filters: SearchFilters) async {
-        do {
-            try await sharedViewModel.applyFilters(filters: filters)
-        } catch {
-            print("HomeViewModelSKIE - Error applying filters: \(error)")
-        }
+        await run { try await sharedViewModel.applyFilters(filters: filters) }
     }
 
     /// Load the API-backed option lists (categories / ingredients)
     /// that back the advanced-search filter sheet.
     func loadFilterOptions() async {
-        do {
-            try await sharedViewModel.loadFilterOptions()
-        } catch {
-            print("HomeViewModelSKIE - Error loading filter options: \(error)")
-        }
+        await run { try await sharedViewModel.loadFilterOptions() }
     }
 
     func loadMoreCocktails() async {
-        do {
-            try await sharedViewModel.loadMoreCocktails()
-        } catch {
-            print("HomeViewModelSKIE - Error loading more cocktails: \(error)")
-        }
+        await run { try await sharedViewModel.loadMoreCocktails() }
     }
 
     func toggleFavorite(_ cocktail: Cocktail) async {
-        do {
-            try await sharedViewModel.toggleFavorite(cocktail: cocktail)
-        } catch {
-            print("HomeViewModelSKIE - Error toggling favorite: \(error)")
-        }
+        await run { try await sharedViewModel.toggleFavorite(cocktail: cocktail) }
     }
 
     func addToCart(_ cocktail: Cocktail) async {
-        do {
-            try await cartViewModel.addToCart(cocktail: cocktail, quantity: 1)
-        } catch {
-            print("HomeViewModelSKIE - Error adding to cart: \(error)")
-        }
+        await run { try await cartViewModel.addToCart(cocktail: cocktail, quantity: 1) }
     }
 
     func sortByPrice(ascending: Bool) async {
-        do {
-            try await sharedViewModel.sortByPrice(ascending: ascending)
-        } catch {
-            print("HomeViewModelSKIE - Error sorting by price: \(error)")
-        }
+        await run { try await sharedViewModel.sortByPrice(ascending: ascending) }
     }
 
     func sortByRating() async {
-        do {
-            try await sharedViewModel.sortByRating()
-        } catch {
-            print("HomeViewModelSKIE - Error sorting by rating: \(error)")
-        }
+        await run { try await sharedViewModel.sortByRating() }
     }
 
     func sortByPopularity() async {
-        do {
-            try await sharedViewModel.sortByPopularity()
-        } catch {
-            print("HomeViewModelSKIE - Error sorting by popularity: \(error)")
-        }
+        await run { try await sharedViewModel.sortByPopularity() }
     }
 
     func getCocktailById(_ id: String) async -> Cocktail? {
-        do {
-            return try await sharedViewModel.getCocktailById(id: id)
-        } catch {
-            print("HomeViewModelSKIE - Error getting cocktail by ID: \(error)")
-            return nil
-        }
+        return await run(fallback: nil as Cocktail?) { try await sharedViewModel.getCocktailById(id: id) }
     }
 
     // MARK: - Synchronous Methods

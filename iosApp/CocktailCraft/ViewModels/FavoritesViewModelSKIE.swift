@@ -32,27 +32,15 @@ final class FavoritesViewModelSKIE: SharedViewModelWrapper<FavoritesUiState> {
     // MARK: - Public Methods (using SKIE async/await)
 
     func loadFavorites() async {
-        do {
-            try await sharedViewModel.loadFavorites()
-        } catch {
-            print("FavoritesViewModelSKIE - Error loading favorites: \(error)")
-        }
+        await run { try await sharedViewModel.loadFavorites() }
     }
 
     func toggleFavorite(_ cocktail: Cocktail) async {
-        do {
-            try await sharedViewModel.toggleFavorite(cocktail: cocktail)
-        } catch {
-            print("FavoritesViewModelSKIE - Error toggling favorite: \(error)")
-        }
+        await run { try await sharedViewModel.toggleFavorite(cocktail: cocktail) }
     }
 
     func clearAllFavorites() async {
-        do {
-            try await sharedViewModel.clearAllFavorites()
-        } catch {
-            print("FavoritesViewModelSKIE - Error clearing favorites: \(error)")
-        }
+        await run { try await sharedViewModel.clearAllFavorites() }
     }
 
     // MARK: - Synchronous Methods

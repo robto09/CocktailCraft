@@ -16,6 +16,8 @@ struct EmptyStateView: View {
             Text(title)
                 .font(.title2)
                 .fontWeight(.semibold)
+                // Stable hook for UI tests, so they don't key on display copy
+                .accessibilityIdentifier("emptyState.title")
             
             Text(message)
                 .font(.body)

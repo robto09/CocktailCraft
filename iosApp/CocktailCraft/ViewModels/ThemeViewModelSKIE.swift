@@ -42,67 +42,35 @@ final class ThemeViewModelSKIE: SharedViewModelWrapper<ThemeUiState> {
     // MARK: - Public Methods (using SKIE async/await)
 
     func setThemeMode(_ mode: String) async {
-        do {
-            try await sharedViewModel.setThemeMode(mode: mode)
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.setThemeMode(mode: mode) }
     }
 
     func setDarkMode(_ enabled: Bool) async {
-        do {
-            try await sharedViewModel.setDarkMode(enabled: enabled)
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.setDarkMode(enabled: enabled) }
     }
 
     func setAccentColor(_ color: String) async {
-        do {
-            try await sharedViewModel.setAccentColor(color: color)
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.setAccentColor(color: color) }
     }
 
     func setFontSize(_ size: String) async {
-        do {
-            try await sharedViewModel.setFontSize(size: size)
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.setFontSize(size: size) }
     }
 
     func toggleHighContrast() async {
-        do {
-            try await sharedViewModel.toggleHighContrast()
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.toggleHighContrast() }
     }
 
     func toggleReducedMotion() async {
-        do {
-            try await sharedViewModel.toggleReducedMotion()
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.toggleReducedMotion() }
     }
 
     func resetToDefaults() async {
-        do {
-            try await sharedViewModel.resetToDefaults()
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.resetToDefaults() }
     }
 
     func setFollowSystemTheme(_ enabled: Bool) async {
-        do {
-            try await sharedViewModel.setFollowSystemTheme(enabled: enabled)
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.setFollowSystemTheme(enabled: enabled) }
     }
 
     // MARK: - Synchronous Methods

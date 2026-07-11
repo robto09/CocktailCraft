@@ -40,43 +40,23 @@ final class OrderViewModelSKIE: SharedViewModelWrapper<OrderUiState> {
     // MARK: - Public Methods (using SKIE async/await)
 
     func loadOrders() async {
-        do {
-            try await sharedViewModel.loadOrders()
-        } catch {
-            // Handle error silently
-        }
+        await run { try await sharedViewModel.loadOrders() }
     }
 
     func placeOrder(cartItems: [CocktailCartItem], totalPrice: Double) async -> Bool {
-        do {
-            return try await sharedViewModel.placeOrder(cartItems: cartItems, totalPrice: totalPrice).boolValue
-        } catch {
-            return false
-        }
+        return await run(fallback: false) { try await sharedViewModel.placeOrder(cartItems: cartItems, totalPrice: totalPrice).boolValue }
     }
 
     func getOrderById(_ orderId: String) async -> Order? {
-        do {
-            return try await sharedViewModel.getOrderById(orderId: orderId)
-        } catch {
-            return nil
-        }
+        return await run(fallback: nil as Order?) { try await sharedViewModel.getOrderById(orderId: orderId) }
     }
 
     func updateOrderStatus(_ orderId: String, status: String) async -> Bool {
-        do {
-            return try await sharedViewModel.updateOrderStatus(orderId: orderId, status: status).boolValue
-        } catch {
-            return false
-        }
+        return await run(fallback: false) { try await sharedViewModel.updateOrderStatus(orderId: orderId, status: status).boolValue }
     }
 
     func cancelOrder(_ orderId: String) async -> Bool {
-        do {
-            return try await sharedViewModel.cancelOrder(orderId: orderId).boolValue
-        } catch {
-            return false
-        }
+        return await run(fallback: false) { try await sharedViewModel.cancelOrder(orderId: orderId).boolValue }
     }
 
     // MARK: - Synchronous Methods

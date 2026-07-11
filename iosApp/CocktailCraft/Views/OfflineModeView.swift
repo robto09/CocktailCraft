@@ -3,6 +3,7 @@ import shared
 
 struct OfflineModeView: View {
     @State private var viewModel = OfflineModeViewModelSKIE()
+    @State private var showingAllRecentlyViewed = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -34,6 +35,9 @@ struct OfflineModeView: View {
             .background(Color(.systemBackground))
             .navigationTitle("Offline Mode")
             .navigationBarTitleDisplayMode(.large)
+            .navigationDestination(for: String.self) { cocktailId in
+                CocktailDetailView(cocktailId: cocktailId)
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
@@ -201,20 +205,30 @@ struct OfflineModeView: View {
                     .foregroundColor(.secondary)
                     .padding(.vertical, 20)
             } else {
+                let allRecentlyViewed = viewModel.state.recentlyViewedCocktails
+                let visibleCocktails = showingAllRecentlyViewed
+                    ? allRecentlyViewed
+                    : Array(allRecentlyViewed.prefix(6))
+
                 LazyVGrid(columns: [
                     GridItem(.flexible()),
                     GridItem(.flexible())
                 ], spacing: 12) {
-                    ForEach(Array(viewModel.state.recentlyViewedCocktails.prefix(6)), id: \.id) { cocktail in
-                        CocktailGridItem(cocktail: cocktail) {
-                            // Handle cocktail tap
+                    ForEach(visibleCocktails, id: \.id) { cocktail in
+                        // Pushes CocktailDetailView via the navigationDestination
+                        // on this sheet's NavigationStack, like every other card.
+                        NavigationLink(value: cocktail.id) {
+                            CocktailGridItem(cocktail: cocktail)
                         }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
 
-                if viewModel.state.recentlyViewedCocktails.count > 6 {
-                    Button("View All (\(viewModel.state.recentlyViewedCocktails.count))") {
-                        // Handle view all
+                if allRecentlyViewed.count > 6 {
+                    Button(showingAllRecentlyViewed
+                        ? "Show Less"
+                        : "View All (\(allRecentlyViewed.count))") {
+                        showingAllRecentlyViewed.toggle()
                     }
                     .font(.caption)
                     .foregroundColor(.blue)
@@ -298,37 +312,26 @@ struct OfflineModeView: View {
 }
 
 // MARK: - Cocktail Grid Item
+// Label only — the tap behavior belongs to the enclosing NavigationLink.
 private struct CocktailGridItem: View {
     let cocktail: Cocktail
-    let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
-            VStack(spacing: 8) {
-                AsyncImage(url: URL(string: cocktail.imageUrl ?? "")) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .overlay(
-                            Image(systemName: "wineglass")
-                                .foregroundColor(.gray)
-                        )
-                }
-                .frame(height: 80)
-                .clipped()
-                .cornerRadius(8)
+        VStack(spacing: 8) {
+            // Kingfisher-backed component: cached thumbnails matter most
+            // here, since this grid is the offline surface
+            CocktailImageView(
+                imageUrl: cocktail.imageUrl,
+                height: 80,
+                cornerRadius: 8
+            )
 
-                Text(cocktail.name)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-            }
+            Text(cocktail.name)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(.primary)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
         }
-        .buttonStyle(PlainButtonStyle())
     }
 }

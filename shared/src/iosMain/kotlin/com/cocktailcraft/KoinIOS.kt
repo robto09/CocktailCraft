@@ -1,9 +1,12 @@
 package com.cocktailcraft
 
+import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.AuthRepository
+import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.service.BackgroundSyncService
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.OrderRepository
+import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import com.cocktailcraft.viewmodel.SharedCartViewModel
@@ -33,6 +36,16 @@ class KoinHelper : KoinComponent {
     fun getNetworkMonitor(): NetworkMonitor = get()
 
     fun getBackgroundSyncService(): BackgroundSyncService = get()
+
+    /**
+     * One-shot favorites snapshot for the iOS home-screen widget bridge.
+     * Throws on a failed fetch (via getOrThrow) instead of returning an
+     * empty list: the bridge must be able to tell "no favorites" apart
+     * from "fetch failed" so a transient failure never wipes the widget's
+     * last-known-good snapshot.
+     */
+    suspend fun getFavoriteCocktailsSnapshot(): List<Cocktail> =
+        get<CocktailFavoritesRepository>().getFavoriteCocktails().getOrThrow()
 
     // Shared ViewModels
 

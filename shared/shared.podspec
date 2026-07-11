@@ -8,7 +8,7 @@ Pod::Spec.new do |spec|
     spec.summary                  = 'CocktailCraft Shared Module'
     spec.vendored_frameworks      = 'build/cocoapods/framework/shared.framework'
     spec.libraries                = 'c++'
-    spec.ios.deployment_target    = '18.5'
+    spec.ios.deployment_target    = '17.0'
     if !Dir.exist?('build/cocoapods/framework/shared.framework') || Dir.empty?('build/cocoapods/framework/shared.framework')
         raise "
         Kotlin framework 'shared' doesn't exist yet, so a proper Xcode project can't be generated.

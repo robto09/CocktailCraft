@@ -9,8 +9,9 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             TabView(selection: $router.selectedTab) {
-                // Home Tab
-                NavigationStack {
+                // Home Tab (explicit path so widget deep links can push
+                // a detail screen onto it)
+                NavigationStack(path: $router.homePath) {
                     HomeViewSKIE()
                 }
                 .tabItem {
@@ -65,6 +66,12 @@ struct ContentView: View {
             }
         }
         .background(AppColors.background(isDarkMode: themeViewModel.state.isDarkMode))
+        .onOpenURL { url in
+            // Widget taps: cocktailcraft://cocktail/{id}
+            if let cocktailId = WidgetDeepLink.cocktailId(from: url) {
+                router.openCocktailDetail(id: cocktailId)
+            }
+        }
         .environment(cartViewModel)
         .environment(router)
         .environment(\.isDarkMode, themeViewModel.state.isDarkMode)

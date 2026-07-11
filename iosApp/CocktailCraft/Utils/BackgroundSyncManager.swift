@@ -134,7 +134,12 @@ class BackgroundSyncManager {
     // MARK: - Private Implementation
     
     private func loadSettings() {
-        backgroundSyncEnabled = UserDefaults.standard.bool(forKey: syncEnabledKey)
+        // bool(forKey:) returns false for an absent key, which silently
+        // disabled background sync on every fresh install — only apply the
+        // stored value once the user has actually toggled the setting.
+        if UserDefaults.standard.object(forKey: syncEnabledKey) != nil {
+            backgroundSyncEnabled = UserDefaults.standard.bool(forKey: syncEnabledKey)
+        }
         if let lastSync = UserDefaults.standard.object(forKey: lastSyncKey) as? Date {
             lastBackgroundSync = lastSync
         }
@@ -161,39 +166,37 @@ class BackgroundSyncManager {
     
     private func handleBackgroundRefresh(task: BGAppRefreshTask) {
         print("BackgroundSyncManager: Handling background refresh")
-        
-        // Schedule next refresh
-        scheduleBackgroundSync()
-        
-        // Perform quick sync
-        Task {
-            await performSync(isBackground: true, maxDuration: 25)
-            task.setTaskCompleted(success: true)
-        }
-        
-        // Set expiration handler
-        task.expirationHandler = {
-            print("BackgroundSyncManager: Background refresh expired")
-            task.setTaskCompleted(success: false)
-        }
+        runBudgetedSync(for: task)
     }
-    
+
     private func handleBackgroundFetch(task: BGProcessingTask) {
         print("BackgroundSyncManager: Handling background fetch")
-        
-        // Schedule next fetch
+        runBudgetedSync(for: task)
+    }
+
+    private func runBudgetedSync(for task: BGTask) {
+        // Schedule the next sync window first — if this run is expired or
+        // killed, the follow-up request already exists.
         scheduleBackgroundSync()
-        
-        // Perform comprehensive sync
-        Task {
-            await performSync(isBackground: true, maxDuration: 25)
-            task.setTaskCompleted(success: true)
-        }
-        
-        // Set expiration handler
+
+        // The expiration handler must be attached before any sync work
+        // starts; the closure captures `syncWork` by reference so it sees
+        // the Task assigned below. Expiration cancels the sync (SKIE
+        // propagates the cancellation into the shared coroutine) and the
+        // `isCancelled` guard keeps the normal path from completing the
+        // task a second time.
+        var syncWork: Task<Void, Never>?
         task.expirationHandler = {
-            print("BackgroundSyncManager: Background fetch expired")
+            print("BackgroundSyncManager: Background task expired")
+            syncWork?.cancel()
             task.setTaskCompleted(success: false)
+        }
+
+        syncWork = Task {
+            await performSync(isBackground: true, maxDuration: maxBackgroundTime)
+            if !Task.isCancelled {
+                task.setTaskCompleted(success: true)
+            }
         }
     }
     

@@ -11,4 +11,15 @@ final class AppRouter {
     }
 
     var selectedTab: Tab = .home
+
+    /// Home tab's navigation path — explicit so deep links (widget taps)
+    /// can push programmatically. String values resolve through the
+    /// navigationDestination(for: String.self) registered in HomeViewSKIE.
+    var homePath = NavigationPath()
+
+    /// Entry point for cocktailcraft://cocktail/{id} deep links.
+    func openCocktailDetail(id: String) {
+        selectedTab = .home
+        homePath.append(id)
+    }
 }

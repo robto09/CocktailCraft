@@ -40,43 +40,23 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
     // MARK: - Public Methods (using SKIE async/await)
 
     func loadCocktail(_ cocktailId: String) async {
-        do {
-            try await sharedViewModel.loadCocktail(cocktailId: cocktailId)
-        } catch {
-            print("CocktailDetailViewModelSKIE - Error loading cocktail: \(error)")
-        }
+        await run { try await sharedViewModel.loadCocktail(cocktailId: cocktailId) }
     }
 
     func toggleFavorite() async {
-        do {
-            try await sharedViewModel.toggleFavorite()
-        } catch {
-            print("CocktailDetailViewModelSKIE - Error toggling favorite: \(error)")
-        }
+        await run { try await sharedViewModel.toggleFavorite() }
     }
 
     func addToCart(quantity: Int = 1) async {
-        do {
-            try await sharedViewModel.addToCart(quantity: Int32(quantity))
-        } catch {
-            print("CocktailDetailViewModelSKIE - Error adding to cart: \(error)")
-        }
+        await run { try await sharedViewModel.addToCart(quantity: Int32(quantity)) }
     }
 
     func updateCartQuantity(_ quantity: Int) async {
-        do {
-            try await sharedViewModel.updateCartQuantity(quantity: Int32(quantity))
-        } catch {
-            print("CocktailDetailViewModelSKIE - Error updating cart quantity: \(error)")
-        }
+        await run { try await sharedViewModel.updateCartQuantity(quantity: Int32(quantity)) }
     }
 
     func removeFromCart() async {
-        do {
-            try await sharedViewModel.removeFromCart()
-        } catch {
-            print("CocktailDetailViewModelSKIE - Error removing from cart: \(error)")
-        }
+        await run { try await sharedViewModel.removeFromCart() }
     }
 
     // MARK: - Synchronous Methods

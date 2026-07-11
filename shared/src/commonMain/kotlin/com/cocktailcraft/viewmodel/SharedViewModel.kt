@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.ErrorHandler
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +31,15 @@ abstract class SharedViewModel : ViewModel() {
         defaultMessage: String = "Something went wrong. Please try again.",
         recoveryAction: ErrorHandler.RecoveryAction? = null
     ) {
+        // Cancellation is normal teardown (screen dismissed / scope cleared
+        // mid-flight), never a user-facing failure. Without this guard a
+        // deep link that dismisses a sheet mid-load puts a
+        // "StandaloneCoroutine was cancelled" alert over the new screen.
+        if (exception is CancellationException) {
+            Logger.d { "Cancelled in ${this::class.simpleName}" }
+            return
+        }
+
         _error.value = ErrorHandler.getErrorFromException(
             exception = exception,
             defaultMessage = defaultMessage,
