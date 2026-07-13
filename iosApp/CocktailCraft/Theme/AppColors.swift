@@ -4,9 +4,16 @@ import SwiftUI
 struct AppColors {
 
     // MARK: - Primary Colors
-    static let primaryLight = Color(hex: "EB6A43")  // Coral/Orange for main elements
+    // Light-mode brand colors come from BrandColorComponents
+    // (WidgetBridge.swift), the single definition also compiled into the
+    // widget extension.
+    static let primaryLight = Color(red: BrandColorComponents.primary.red,
+                                    green: BrandColorComponents.primary.green,
+                                    blue: BrandColorComponents.primary.blue)  // Coral/Orange for main elements
     static let primaryDark = Color(hex: "FF8A65")   // Lighter coral for dark theme
-    static let secondaryLight = Color(hex: "FFC84D") // Yellow/Gold for accents
+    static let secondaryLight = Color(red: BrandColorComponents.secondary.red,
+                                      green: BrandColorComponents.secondary.green,
+                                      blue: BrandColorComponents.secondary.blue) // Yellow/Gold for accents
     static let secondaryDark = Color(hex: "FFD180")  // Lighter gold for dark theme
 
     // MARK: - Background Colors

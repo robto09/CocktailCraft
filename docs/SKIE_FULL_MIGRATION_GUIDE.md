@@ -125,25 +125,47 @@ val state by homeViewModel.uiState.collectAsStateWithLifecycle()
 
 ## Configuration
 
-### 🔧 **SKIE Setup (shared/build.gradle.kts)**
+### 🔧 **SKIE Setup**
+
+The SKIE version lives in the version catalog and the plugin is applied via its catalog alias:
+
+```toml
+# libraries.toml
+[versions]
+skie = "0.10.13"
+
+[plugins]
+skie = { id = "co.touchlab.skie", version.ref = "skie" }
+```
 
 ```kotlin
+// shared/build.gradle.kts
 plugins {
-    id("co.touchlab.skie") version "0.6.1"
+    alias(libs.plugins.skie)
 }
 
 skie {
     features {
         group {
-            FlowInterop.Enabled(true)
-            SuspendInterop.Enabled(true)
-            EnumInterop.Enabled(true)
-            SealedInterop.Enabled(true)
-            DefaultArgumentInterop.Enabled(true)
+            co.touchlab.skie.configuration.FlowInterop.Enabled(true)
+            co.touchlab.skie.configuration.SuspendInterop.Enabled(true)
+            co.touchlab.skie.configuration.EnumInterop.Enabled(true)
+            co.touchlab.skie.configuration.SealedInterop.Enabled(true)
+            co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(true)
         }
     }
 }
 ```
+
+The five enabled flags and what they buy:
+
+- **FlowInterop** — Kotlin `Flow`/`StateFlow` surface in Swift as `AsyncSequence` (the basis of the wrapper pattern below)
+- **SuspendInterop** — `suspend` functions become Swift `async` functions with cancellation propagation
+- **EnumInterop** — Kotlin enums map to exhaustive Swift enums
+- **SealedInterop** — sealed classes/interfaces get `onEnum(of:)` for exhaustive Swift `switch`
+- **DefaultArgumentInterop** — Kotlin default parameter values generate Swift overloads
+
+For the full feature reference and configuration options beyond these flags, see the vendor documentation at [skie.touchlab.co](https://skie.touchlab.co).
 
 ### 📦 **Dependency Injection (Koin)**
 
@@ -158,7 +180,7 @@ val domainModule = module {
     single { SharedHomeViewModel(/* use cases + catalogRepository + networkMonitor */) }
     single { SharedCartViewModel(manageCartUseCase = get()) }
     single { SharedFavoritesViewModel(manageFavoritesUseCase = get()) }
-    single { SharedOrderViewModel(manageOrdersUseCase = get(), placeOrderUseCase = get()) }
+    single { SharedOrderViewModel(orderRepository = get(), placeOrderUseCase = get()) }
     single { SharedProfileViewModel(manageProfileUseCase = get()) }
     single { SharedOfflineModeViewModel(manageOfflineModeUseCase = get(), networkMonitor = get()) }
     single { SharedThemeViewModel(manageProfileUseCase = get()) }
@@ -179,6 +201,8 @@ val domainModule = module {
 8. **SharedThemeViewModel** - Theme and accessibility settings
 9. **SharedReviewViewModel** - Review system with ratings
 10. **SharedViewModel** - Base class with common functionality
+
+On iOS, eight of these are consumed through `*ViewModelSKIE` wrappers in `iosApp/CocktailCraft/ViewModels/` (plus the `SharedViewModelWrapper` base class). `SharedReviewViewModel` has no iOS wrapper: the review UI currently exists only on Android (`CocktailDetailScreen.kt`).
 
 ### 🔄 **Key SKIE Patterns**
 
@@ -265,13 +289,13 @@ viewModelScope.launch {
 
 ### 📊 **Code Sharing Statistics**
 - **Business Logic**: 95% shared between platforms
-- **ViewModels**: 11 shared ViewModels with platform wrappers
+- **ViewModels**: 9 shared ViewModels; 8 wrapped on iOS (reviews are Android-only)
 - **Data Layer**: 100% shared (repositories, use cases, models)
 - **UI Layer**: Platform-native with shared state management
 
 ## Resources
 
-- [SKIE Documentation](https://skie.touchlab.co/)
+- [SKIE Documentation](https://skie.touchlab.co/) - full vendor reference for all features and configuration flags
 - [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html)
 - [Swift Async/Await](https://docs.swift.org/swift-book/LanguageGuide/Concurrency.html)
 - [Koin Dependency Injection](https://insert-koin.io/)
@@ -279,5 +303,4 @@ viewModelScope.launch {
 ---
 
 **Status**: ✅ **100% SKIE Integration Complete**
-**Last Updated**: 2025-08-03
-**Version**: 2.1 - Full SKIE Implementation with Reusable Components
+**Last Updated**: 2026-07-13

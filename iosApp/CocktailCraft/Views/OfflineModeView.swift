@@ -46,10 +46,8 @@ struct OfflineModeView: View {
                 }
             }
         }
-        .onAppear {
-            Task {
-                await viewModel.loadRecentlyViewedCocktails()
-            }
+        .task {
+            await viewModel.loadRecentlyViewedCocktails()
         }
         .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
     }

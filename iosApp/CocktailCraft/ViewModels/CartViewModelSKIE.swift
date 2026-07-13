@@ -109,10 +109,7 @@ final class CartViewModelSKIE: SharedViewModelWrapper<CartUiState> {
         }
     }
 
-    func getSavingsAmount() -> Double? {
-        if state.totalPrice >= 30.0 && state.totalPrice < 50.0 {
-            return 50.0 - state.totalPrice // Amount needed for free delivery
-        }
-        return nil
-    }
+    // Free-delivery thresholds live in the shared DeliveryPolicy — any future
+    // "spend X more for free delivery" nudge must delegate there, not
+    // hardcode amounts on the Swift side.
 }

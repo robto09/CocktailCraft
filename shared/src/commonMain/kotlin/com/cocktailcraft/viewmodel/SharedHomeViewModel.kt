@@ -201,8 +201,10 @@ class SharedHomeViewModel internal constructor(
 
         try {
             val nextPage = state.currentPage + 1
-            val category = state.selectedCategory ?: "Cocktail"
-            val newItems = loadCocktailsByCategoryUseCase.loadMore(category, state.currentPage, PAGE_SIZE)
+            val category = state.selectedCategory ?: CocktailCategories.DEFAULT
+            val newItems = loadCocktailsByCategoryUseCase
+                .loadMore(category, state.currentPage, PAGE_SIZE)
+                .getOrThrow()
 
             _uiState.update { cur ->
                 if (newItems.isNotEmpty()) {
@@ -216,8 +218,17 @@ class SharedHomeViewModel internal constructor(
                     cur.copy(hasMoreData = false, isLoadingMore = false)
                 }
             }
+            clearError()
         } catch (e: Exception) {
-            handleException(e, "Failed to load more cocktails")
+            // hasMoreData stays true: a failed page fetch must surface as a
+            // retryable error, never masquerade as the end of the list.
+            handleException(
+                e,
+                "Failed to load more cocktails",
+                recoveryAction = ErrorHandler.RecoveryAction("Retry") {
+                    viewModelScope.launch { loadMoreCocktails() }
+                }
+            )
             _uiState.update { it.copy(isLoadingMore = false) }
         }
     }
@@ -282,7 +293,6 @@ class SharedHomeViewModel internal constructor(
             _uiState.update { it.copy(cocktails = sortCocktailsUseCase(it.cocktails, sortType)) }
         } catch (e: Exception) {
             handleException(e, "Failed to sort cocktails")
-        } finally {
         }
     }
 
@@ -294,7 +304,6 @@ class SharedHomeViewModel internal constructor(
             _uiState.update { it.copy(cocktails = sortCocktailsUseCase(it.cocktails, SortCocktailsUseCase.SortType.RATING)) }
         } catch (e: Exception) {
             handleException(e, "Failed to sort cocktails")
-        } finally {
         }
     }
 
@@ -306,7 +315,6 @@ class SharedHomeViewModel internal constructor(
             _uiState.update { it.copy(cocktails = sortCocktailsUseCase(it.cocktails, SortCocktailsUseCase.SortType.POPULARITY)) }
         } catch (e: Exception) {
             handleException(e, "Failed to sort cocktails")
-        } finally {
         }
     }
 
@@ -331,7 +339,6 @@ class SharedHomeViewModel internal constructor(
             getCocktailDetailUseCase.refresh(id)
         } catch (e: Exception) {
             handleException(e, "Failed to refresh cocktail details")
-        } finally {
         }
     }
     

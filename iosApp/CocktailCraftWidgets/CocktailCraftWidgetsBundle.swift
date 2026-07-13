@@ -12,9 +12,13 @@ struct CocktailCraftWidgetsBundle: WidgetBundle {
     }
 }
 
-// Brand colors, duplicated from AppColors because the extension compiles
-// neither the app target nor the shared framework.
+// Brand colors built from the cross-target tokens in WidgetBridge.swift
+// (compiled into this extension), so they cannot drift from AppColors.
 enum WidgetColors {
-    static let primary = Color(red: 0xEB / 255.0, green: 0x6A / 255.0, blue: 0x43 / 255.0)
-    static let secondary = Color(red: 0xFF / 255.0, green: 0xC8 / 255.0, blue: 0x4D / 255.0)
+    static let primary = Color(red: BrandColorComponents.primary.red,
+                               green: BrandColorComponents.primary.green,
+                               blue: BrandColorComponents.primary.blue)
+    static let secondary = Color(red: BrandColorComponents.secondary.red,
+                                 green: BrandColorComponents.secondary.green,
+                                 blue: BrandColorComponents.secondary.blue)
 }

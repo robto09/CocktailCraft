@@ -17,10 +17,8 @@ struct FavoritesView: View {
         .navigationDestination(for: String.self) { cocktailId in
             CocktailDetailView(cocktailId: cocktailId)
         }
-        .onAppear {
-            Task {
-                await viewModel.loadFavorites()
-            }
+        .task {
+            await viewModel.loadFavorites()
         }
         .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
     }

@@ -1,337 +1,221 @@
 # iOS UI Components Documentation
 
-This document provides comprehensive documentation for all reusable UI components in the CocktailCraft iOS app. These components follow the app's design system and provide consistent styling and behavior across all screens.
+This document describes the reusable UI components in the CocktailCraft iOS app. Components live in `iosApp/CocktailCraft/Components/`, the design system in `iosApp/CocktailCraft/Theme/`. It is the iOS counterpart to [UI_Components.md](UI_Components.md) (Android).
+
+Scope note: the iOS app extracts fewer components than Android. Several screens keep their sections as private computed views inside the screen file (e.g. `ProfileView`'s `profileHeaderCard`, `accountSettingsCard`, `appSettingsCard`, `aboutCard`) rather than as shared components — those inline views are not documented individually here.
 
 ## Table of Contents
 
-1. [Design System Components](#design-system-components)
-2. [Cocktail-Specific Components](#cocktail-specific-components)
+1. [Design System (Theme)](#design-system-theme)
+2. [Cocktail & Home Components](#cocktail--home-components)
 3. [Cart Components](#cart-components)
-4. [Profile Components](#profile-components)
-5. [Order Components](#order-components)
-6. [Offline Mode Components](#offline-mode-components)
-7. [Common UI Components](#common-ui-components)
-8. [Usage Guidelines](#usage-guidelines)
+4. [Profile & Auth Components](#profile--auth-components)
+5. [Offline & Sync Components](#offline--sync-components)
+6. [Feedback & State Components](#feedback--state-components)
+7. [Usage Guidelines](#usage-guidelines)
 
-## Design System Components
+## Design System (Theme)
 
 ### AppColors
-Provides consistent color theming across the app with support for both light and dark modes.
+**File**: `Theme/AppColors.swift`
+
+Color palette matching the Android design. Theme-dependent colors are exposed as `isDarkMode:`-parameterized functions; static utility colors (`success`, `error`, `warning`, `gray`, `lightGray`, `chipBackground`) are theme-independent.
 
 ```swift
-// Usage examples
 AppColors.primary(isDarkMode: isDarkMode)
+AppColors.surface(isDarkMode: isDarkMode)
 AppColors.textPrimary(isDarkMode: isDarkMode)
-AppColors.background(isDarkMode: isDarkMode)
 ```
+
+Always pair these functions with `@Environment(\.isDarkMode)`. The old trait-collection-driven static vars were removed on purpose: they followed the *system* appearance while the app follows its own theme preference (`ThemeViewModelSKIE`), so call sites could visually desync. Also provides a `Color(hex:)` initializer.
+
+### BrandColorComponents
+**File**: `Utils/WidgetBridge.swift`
+
+Cross-target brand color tokens: `primary` (#EB6A43 coral) and `secondary` (#FFC84D gold) as raw RGB components. `WidgetBridge.swift` is compiled into both the app and the widget extension (which does not link the shared framework), so both targets render the brand colors from one definition. `AppColors.primaryLight`/`secondaryLight` are built from these tokens.
 
 ### AppTheme
-Contains typography, spacing, corner radius, shadows, and animation constants.
+**File**: `Theme/AppTheme.swift`
+
+Design constants matching Android: `Typography` (Dynamic Type-anchored fonts), `Spacing` (xs...xxxl plus card-specific values), `CornerRadius`, `Shadow`, and `Animation` (standard/quick/slow). Also defines:
+
+- The `isDarkMode` SwiftUI environment value (`ThemeEnvironmentKey`)
+- `.cardStyle()` — surface background, card corner radius, and shadow
+- `.chipStyle(isSelected:)` — filter-chip styling
+- `.minimumHitTarget()` — expands icon-only controls to Apple's 44 pt HIG minimum
 
 ```swift
-// Typography
-AppTheme.Typography.headline
-AppTheme.Typography.body
-
-// Spacing
-AppTheme.Spacing.lg
-AppTheme.Spacing.md
-
-// Corner Radius
-AppTheme.CornerRadius.card
-AppTheme.CornerRadius.button
+Text("Title").font(AppTheme.Typography.headline)
+VStack { ... }.cardStyle()
 ```
 
-## Cocktail-Specific Components
+## Cocktail & Home Components
+
+### CocktailCard
+**Purpose**: The main cocktail card, with `.horizontal` (Home list) and `.vertical` (Favorites grid) layouts. Its out-of-stock rule intentionally mirrors `CocktailDetailViewModelSKIE.canAddToCart()`.
+
+```swift
+CocktailCard(
+    cocktail: cocktail,
+    isFavorite: isFavorite,
+    onFavoriteToggle: { ... },
+    onAddToCart: { ... },
+    onCardTap: { ... },
+    layout: .horizontal
+)
+```
+
+**Used in**: `HomeViewSKIE`, `FavoritesView`, `CocktailDetailView` (recommendations).
 
 ### CocktailImageView
-Displays cocktail images with loading states and customizable dimensions.
+**Purpose**: Kingfisher-backed cocktail image with disk+memory caching, retry (3 attempts), a spinner placeholder while loading, and a static fallback when there is no URL.
 
-```swift
-CocktailImageView(
-    imageUrl: cocktail.imageUrl,
-    height: 300,
-    cornerRadius: 12
-)
-```
+**Parameters**: `imageUrl: String?`, `height: CGFloat = 300`, `cornerRadius: CGFloat = 0`, `width: CGFloat? = nil` (nil keeps flexible-width hero behavior).
 
-**Properties:**
-- `imageUrl: String?` - URL of the cocktail image
-- `height: CGFloat` - Height of the image (default: 300)
-- `cornerRadius: CGFloat` - Corner radius (default: 0)
+**Used in**: `CocktailCard`, `CartItemCard`, `CocktailDetailView`, `OfflineModeView`.
 
-### CocktailInfoCard
-Displays cocktail information including name, category, price, and instructions.
+### HomeSearchBar
+**Purpose**: Home search field with clear button and the advanced-search toggle button.
 
-```swift
-CocktailInfoCard(cocktail: cocktail)
-```
+**Parameters**: `searchText: Binding<String>`, `onSubmit`, `onClear`, `onAdvancedSearch`.
 
-**Properties:**
-- `cocktail: Cocktail` - The cocktail object containing all information
+**Used in**: `HomeViewSKIE`.
 
-### IngredientsListView
-Shows a formatted list of cocktail ingredients with measurements.
+### AdvancedSearchSheet
+**Purpose**: Advanced-search filter form (category, ingredient, alcoholic tri-state) driven by the shared HomeViewModel. Option lists come from the shared API-backed data; Apply forwards a `SearchFilters` to the shared `applyFilters`, Clear resets them.
 
-```swift
-IngredientsListView(ingredients: cocktail.ingredients)
-```
+**Parameters**: `viewModel: HomeViewModelSKIE`.
 
-**Properties:**
-- `ingredients: [CocktailIngredient]` - Array of cocktail ingredients
+**Used in**: `HomeViewSKIE` (presented as a sheet).
 
-### ActionButtonsRow
-Provides favorite and add-to-cart action buttons for cocktails.
+### CategoryChipRow
+**Purpose**: Horizontal category filter chips ("All" plus the curated categories).
 
-```swift
-ActionButtonsRow(
-    isFavorite: isFavorite,
-    onFavoriteToggle: { toggleFavorite() },
-    onAddToCart: { addToCart() }
-)
-```
+**Parameters**: `categories: [String]`, `selectedCategory: String?`, `onSelectAll`, `onSelect: (String) -> Void`.
 
-**Properties:**
-- `isFavorite: Bool` - Whether the cocktail is favorited
-- `onFavoriteToggle: () -> Void` - Callback for favorite toggle
-- `onAddToCart: () -> Void` - Callback for add to cart action
+**Used in**: `HomeViewSKIE`.
+
+### CocktailListSkeleton
+**Purpose**: Redacted placeholder list matching the cocktail card layout, shown while the first page loads (the deliberate exception to `LoadingStateView`).
+
+**Parameters**: `rowCount: Int = 6`.
+
+**Used in**: `HomeViewSKIE`.
+
+### HomeEmptyStateView
+**Purpose**: Home-specific empty state with an optional action button (e.g. clear search).
+
+**Parameters**: `icon`, `title`, `subtitle`, `actionTitle: String? = nil`, `action: (() -> Void)? = nil`.
+
+**Used in**: `HomeViewSKIE`.
 
 ## Cart Components
 
 ### CartItemCard
-Displays a cart item with image, details, quantity controls, and remove option.
+**Purpose**: Cart row with image, name/category, quantity stepper, remove, and an optional favorite toggle.
 
-```swift
-CartItemCard(
-    item: cartItem,
-    onIncrementQuantity: { /* increment logic */ },
-    onDecrementQuantity: { /* decrement logic */ },
-    onRemoveFromCart: { /* remove logic */ },
-    onToggleFavorite: { /* favorite logic */ }
-)
-```
+**Parameters**: `item: CocktailCartItem`, `onIncrementQuantity`, `onDecrementQuantity`, `onRemoveFromCart`, `onToggleFavorite: (() -> Void)?`.
 
-**Properties:**
-- `item: CartItem` - The cart item to display
-- `onIncrementQuantity: () -> Void` - Callback to increment quantity
-- `onDecrementQuantity: () -> Void` - Callback to decrement quantity
-- `onRemoveFromCart: () -> Void` - Callback to remove item
-- `onToggleFavorite: (() -> Void)?` - Optional favorite toggle callback
+**Used in**: `CartView`.
 
 ### CartSummaryCard
-Shows order summary with subtotal, delivery fee, and total.
+**Purpose**: Order summary showing subtotal, delivery fee, and total (file-local `SummaryRow` renders each line).
 
-```swift
-CartSummaryCard(
-    subtotal: 25.98,
-    deliveryFee: 3.99,
-    total: 29.97
-)
-```
+**Parameters**: `subtotal: Double`, `deliveryFee: Double`, `total: Double`.
 
-**Properties:**
-- `subtotal: Double` - Subtotal amount
-- `deliveryFee: Double` - Delivery fee amount
-- `total: Double` - Total amount
+**Used in**: `CartView`.
 
 ### CheckoutButton
-Primary action button for checkout with loading states.
+**Purpose**: Primary checkout action button with loading and disabled states.
+
+**Parameters**: `title: String = "Place Order"`, `isEnabled: Bool = true`, `isLoading: Bool = false`, `action`.
+
+**Used in**: `CartView`.
+
+## Profile & Auth Components
+
+### ProfileSupportViews.swift
+A small collection of profile-screen building blocks:
+
+- **SettingsRow** — tappable menu row (`icon`, `title`, `action`, `textColor = .primary`) with chevron, full-width hit testing, and the accessibility identifier `profile.row.<title>`
+- **ThemeToggleRow** — toggle row (`title`, `subtitle`, `icon`, `isChecked`, `onToggle: (Bool) -> Void`, `enabled = true`); the callback receives the toggle's target value so duplicate firings are idempotent
+- **AnimatedThemeSwitch** — animated sun/moon switch (currently unused by any screen)
+- **PrimaryButtonStyle** / **SecondaryButtonStyle** — `ButtonStyle`s for the sign-in/sign-up buttons
+
+**Used in**: `ProfileView`.
+
+### PasswordStrengthMeter
+**Purpose**: Five-segment meter for the shared `AuthInputValidator`'s 0-5 password strength scale, with matching color and label. Shared by both password forms so the visualization cannot drift between them.
+
+**Parameters**: `strength: Int`.
+
+**Used in**: `SignUpView`, `ChangePasswordView`.
+
+## Offline & Sync Components
+
+### OfflineBanner
+**Purpose**: Orange "You're offline" banner that animates in/out, driven by `NetworkMonitor.shared`. Takes no parameters.
+
+**Used in**: `ContentView` (overlaid on the tab navigation, app-wide).
+
+### BackgroundSyncCard
+**Purpose**: Background-sync status and controls: enable/disable toggle, last-sync and next-sync display, and a manual "Sync Now" button. Reads `BackgroundSyncManager.shared` directly; takes no parameters (file-local `SyncInfoRow` renders the status lines).
+
+**Used in**: `OfflineModeView`.
+
+## Feedback & State Components
+
+### SharedErrorAlert
+**Purpose**: Standard error surfacing for screens backed by a shared KMP ViewModel. Presents the ViewModel's mirrored error channel as an alert, offers the error's recovery action when present, and clears the error on the shared side on dismissal so stale state cannot re-present. Applied via the `View` extension:
 
 ```swift
-CheckoutButton(
-    title: "Place Order",
-    isEnabled: true,
-    isLoading: false,
-    action: { /* checkout logic */ }
-)
+.sharedErrorAlert(viewModel.error) { viewModel.clearError() }
 ```
 
-**Properties:**
-- `title: String` - Button text (default: "Place Order")
-- `isEnabled: Bool` - Whether button is enabled (default: true)
-- `isLoading: Bool` - Whether to show loading state (default: false)
-- `action: () -> Void` - Callback for button tap
+**Used in**: nearly every screen (`HomeViewSKIE`, `FavoritesView`, `CartView`, `OrderListView`, `ProfileView`, `CocktailDetailView`, ...).
 
-## Profile Components
+### ErrorView
+**Purpose**: Full-frame error state for a shared `ErrorHandler.UserFriendlyError`, with a category-specific icon/color and a recovery-action or retry button.
 
-### ProfileHeaderCard
-Displays user profile information with avatar and authentication buttons.
+**Parameters**: `error: ErrorHandler.UserFriendlyError`, `onRetry: (() -> Void)?`.
 
-```swift
-ProfileHeaderCard(
-    userName: "John Doe",
-    userEmail: "john@example.com",
-    isLoggedIn: true,
-    onSignIn: { /* sign in logic */ },
-    onSignUp: { /* sign up logic */ }
-)
-```
-
-**Properties:**
-- `userName: String` - User's display name
-- `userEmail: String` - User's email address
-- `isLoggedIn: Bool` - Whether user is authenticated
-- `onSignIn: () -> Void` - Callback for sign in action
-- `onSignUp: () -> Void` - Callback for sign up action
-
-### SettingsCard
-Displays a group of settings options with consistent styling.
-
-```swift
-SettingsCard(
-    title: "Account Settings",
-    items: [
-        .action(ActionSettingsItem(icon: "person", title: "Edit Profile", action: {})),
-        .toggle(ToggleSettingsItem(title: "Dark Mode", subtitle: "On", icon: "moon.fill", isChecked: true, onToggle: {}))
-    ]
-)
-```
-
-**Properties:**
-- `title: String` - Card title
-- `items: [SettingsItem]` - Array of settings items (actions or toggles)
-
-### MenuItemRow
-Individual menu item with icon, title, and optional chevron.
-
-```swift
-MenuItemRow(
-    icon: "person",
-    title: "Edit Profile",
-    action: { /* action logic */ },
-    textColor: .primary,
-    showChevron: true
-)
-```
-
-**Properties:**
-- `icon: String` - SF Symbol icon name
-- `title: String` - Menu item title
-- `action: () -> Void` - Callback for item tap
-- `textColor: Color` - Text color (default: .primary)
-- `showChevron: Bool` - Whether to show chevron (default: true)
-
-## Order Components
-
-### OrderCard
-Displays order information including items, status, and total.
-
-```swift
-OrderCard(order: order)
-```
-
-**Properties:**
-- `order: Order` - The order object to display
-
-### OrderStatusBadge
-Shows order status with appropriate color coding.
-
-```swift
-OrderStatusBadge(status: "Processing")
-```
-
-**Properties:**
-- `status: String` - Order status text
-
-## Offline Mode Components
-
-### NetworkStatusCard
-Displays current network connectivity status.
-
-```swift
-NetworkStatusCard(isNetworkAvailable: true)
-```
-
-**Properties:**
-- `isNetworkAvailable: Bool` - Whether network is available
-
-### CacheInfoCard
-Shows cache information and statistics.
-
-```swift
-CacheInfoCard(
-    cacheSize: "25 cocktails",
-    lastSyncTime: "2 hours ago",
-    networkStatus: "Connected",
-    offlineModeStatus: "Enabled",
-    networkStatusColor: .green,
-    offlineModeColor: .blue
-)
-```
-
-### ToggleCard
-Card with toggle functionality and optional recommendations.
-
-```swift
-ToggleCard(
-    title: "Offline Mode Settings",
-    toggleTitle: "Enable Offline Mode",
-    toggleSubtitle: "Access cached cocktails when offline",
-    isToggled: true,
-    onToggle: { /* toggle logic */ },
-    showRecommendation: true,
-    recommendationText: "Recommended when network is unavailable"
-)
-```
-
-## Common UI Components
-
-### LoadingStateView
-Consistent loading indicator with customizable message.
-
-```swift
-LoadingStateView(message: "Loading cocktail details...")
-```
+**Used in**: `CocktailDetailView`.
 
 ### EmptyStateView
-Standard empty state with icon, title, and message.
+**Purpose**: Generic empty state (SF Symbol icon, title, message). The title carries the accessibility identifier `emptyState.title` as a stable hook for UI tests.
+
+**Parameters**: `icon: String`, `title: String`, `message: String`.
+
+**Used in**: `CartView`, `FavoritesView`.
+
+### LoadingStateView
+**Purpose**: Standard full-frame loading indicator with an optional message. Use this instead of ad-hoc `ProgressView` arrangements so loading looks the same on every screen (Home's skeleton list is the deliberate exception).
+
+**Parameters**: `message: String? = nil`.
+
+**Used in**: `OrderListView`, `CocktailDetailView`.
+
+### Toast
+**Purpose**: Transient confirmation banner with `.success`/`.error`/`.info` styles, applied via the modifier:
 
 ```swift
-EmptyStateView(
-    icon: "heart",
-    title: "No favorites yet",
-    message: "Start adding cocktails to your favorites"
-)
+.toast(isShowing: $showingToast, message: toastMessage, type: .success, duration: 2)
 ```
+
+**Used in**: `HomeViewSKIE` (add-to-cart confirmation).
+
+### LoadingOverlay
+**Purpose**: Modal dark overlay with spinner and message, plus a `.loadingOverlay(isShowing:message:)` modifier. Currently not used by any screen.
+
+### ShimmerEffect / CocktailCardPlaceholder
+**Purpose**: Animated shimmer gradient and a shimmering card placeholder built on it. Currently not used by any screen (`CocktailListSkeleton` covers the Home loading state).
 
 ## Usage Guidelines
 
-### 1. Consistent Theming
-Always use `@Environment(\.isDarkMode)` to access the current theme state and apply appropriate colors using `AppColors` functions.
-
-### 2. Spacing and Layout
-Use `AppTheme.Spacing` constants for consistent spacing throughout the app.
-
-### 3. Typography
-Apply `AppTheme.Typography` styles for consistent text appearance.
-
-### 4. Card Styling
-Use the `.cardStyle()` modifier for consistent card appearance across components.
-
-### 5. Animation
-Use `AppTheme.Animation` constants for consistent animation timing.
-
-### 6. Accessibility
-All components include proper accessibility labels and support for dynamic type sizing.
-
-### 7. Preview Support
-Each component includes SwiftUI previews for easy development and testing.
-
-## Best Practices
-
-1. **Reusability**: Always prefer using existing components over creating new ones
-2. **Consistency**: Follow the established design patterns and color schemes
-3. **Performance**: Use lazy loading where appropriate (LazyVStack, LazyHStack)
-4. **Accessibility**: Ensure all interactive elements have proper accessibility support
-5. **Testing**: Include preview configurations for different states and themes
-6. **Documentation**: Keep component documentation up to date with any changes
-
-## Component Dependencies
-
-Most components depend on:
-- `shared` module for data models
-- `AppColors` for theming
-- `AppTheme` for styling constants
-- SwiftUI environment values for theme state
-
-Make sure these dependencies are properly imported when using the components.
+1. **Theming**: Read the theme with `@Environment(\.isDarkMode)` and resolve colors through the `AppColors` functions — never through system appearance.
+2. **Spacing, typography, radii**: Use the `AppTheme` constants rather than literals.
+3. **Cards and chips**: Use `.cardStyle()` and `.chipStyle(isSelected:)` for consistent container styling.
+4. **Touch targets**: Apply `.minimumHitTarget()` to icon-only buttons.
+5. **Errors**: Screens backed by a shared ViewModel surface errors with `.sharedErrorAlert`; use `ErrorView` for full-frame error states.
+6. **Loading and empty states**: Prefer `LoadingStateView` and `EmptyStateView` over ad-hoc arrangements.
+7. **Reuse first**: Check this list before writing a new component, and document new components here.

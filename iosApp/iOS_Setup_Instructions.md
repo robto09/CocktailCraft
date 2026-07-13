@@ -1,7 +1,7 @@
 # iOS App Setup Instructions
 
 ## Prerequisites
-- Xcode 14.0 or later
+- Xcode 16 or later (the project builds with the Swift 5.10 toolchain — `SWIFT_VERSION: "5.10"` in `project.yml`)
 - CocoaPods installed (`sudo gem install cocoapods`)
 - macOS 12.0 or later
 
@@ -62,15 +62,8 @@ pod install
 4. Search for "Other Linker Flags"
 5. Add `-lsqlite3` if not present
 
-### 7. Update Info.plist
-Add the following keys for network access:
-```xml
-<key>NSAppTransportSecurity</key>
-<dict>
-    <key>NSAllowsArbitraryLoads</key>
-    <true/>
-</dict>
-```
+### 7. App Transport Security (already configured)
+No ATS changes are needed — and do **not** add `NSAllowsArbitraryLoads`. The app enforces TLS certificate pinning for TheCocktailDB via `NSAppTransportSecurity` → `NSPinnedDomains` in `CocktailCraft/Info.plist` (pinning the Cloudflare CA pool for `thecocktaildb.com`), mirrored for the widget extension in `project.yml`. If pinned requests start failing after a Cloudflare CA rotation, refresh the pin set per the comment in `Info.plist`.
 
 ### 8. Run the App
 1. Select a simulator or device
@@ -84,58 +77,25 @@ iosApp/
 │   ├── CocktailCraftApp.swift      # App entry point
 │   ├── ContentView.swift           # Main tab navigation
 │   ├── Views/                      # All SwiftUI views
-│   │   ├── HomeView.swift
+│   │   ├── HomeViewSKIE.swift
 │   │   ├── CartView.swift
 │   │   ├── FavoritesView.swift
 │   │   ├── ProfileView.swift
 │   │   └── ...
-│   ├── ViewModels/                 # iOS ViewModels
-│   │   ├── HomeViewModel.swift
-│   │   ├── CartViewModel.swift
+│   ├── ViewModels/                 # SKIE wrappers around the shared ViewModels
+│   │   ├── SharedViewModelWrapper.swift
+│   │   ├── HomeViewModelSKIE.swift
+│   │   ├── CartViewModelSKIE.swift
 │   │   └── ...
-│   └── Components/                 # Reusable UI components
-│       ├── CocktailCard.swift
-│       ├── ErrorView.swift
-│       └── ...
+│   ├── Components/                 # Reusable UI components
+│   │   ├── CocktailCard.swift
+│   │   ├── ErrorView.swift
+│   │   └── ...
+│   ├── Theme/                      # AppColors, AppTheme
+│   └── Utils/                      # BackgroundSyncManager, NetworkMonitor, widget bridges
+├── project.yml                     # XcodeGen project definition (source of truth)
 └── Podfile                         # CocoaPods configuration
 ```
-
-## Build Status
-
-### ✅ **CURRENT STATUS: BUILD SUCCESSFUL**
-The iOS app now builds and compiles successfully! 🎉
-
-### Phase 3 Completed ✅
-- iOS project structure created
-- CocoaPods configured for shared module integration
-- Basic SwiftUI app with tab navigation
-- Koin dependency injection initialized and working
-- All main screens created (Home, Cart, Favorites, Profile)
-- Reusable components (CocktailCard, ErrorView, EmptyStateView, LoadingOverlay, OfflineBanner, ShimmerEffect, Toast)
-- ViewModels that bridge SwiftUI with shared module
-- Error handling using shared ErrorHandler
-- **Swift concurrency issues resolved**
-- **Actor isolation conflicts fixed**
-- **Shared module integration working**
-
-### ⚠️ Remaining Warnings (Non-blocking)
-These warnings don't prevent the build but should be addressed in future iterations:
-
-1. **Unreachable catch blocks** - Some do-catch blocks have unreachable catch statements
-2. **Deprecated onChange usage** - `onChange(of:perform:)` deprecated in iOS 17.0
-3. **TLS version warning** - API calls using deprecated TLSv1.0, should upgrade to TLSv1.2+
-4. **Unused variable warnings** - Some variables defined but not used
-5. **Async function suggestions** - Consider using async alternatives for some Flow.collect calls
-
-### Next Steps (Phase 4)
-1. ✅ ~~Fix build issues~~ **COMPLETED**
-2. Implement actual data loading from shared repositories
-3. Add offline support
-4. Implement proper state management
-5. Add animations and transitions
-6. Polish UI/UX to match Android app
-7. Add unit and UI tests
-8. Address remaining warnings listed above
 
 ## Troubleshooting
 

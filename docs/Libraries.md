@@ -1,66 +1,71 @@
 # CocktailCraft Libraries
 
-This document provides detailed information about the libraries used in the CocktailCraft application.
+This document lists the libraries used in the CocktailCraft application, with their versions and purposes.
 
-## Detailed Libraries Table
+All versions are managed in a single version catalog: **`libraries.toml`** at the repository root, wired up as the `libs` catalog in `settings.gradle.kts` (`versionCatalogs { create("libs") { from(files("libraries.toml")) } }`). The build files (`shared/build.gradle.kts`, `androidApp/build.gradle.kts`, `baselineprofile/build.gradle.kts`) reference dependencies only through the catalog — update versions there, not in the build files.
+
+## Shared Module (Kotlin Multiplatform)
 
 | Library | Version | Purpose |
 |---------|---------|---------|
-| **Core & Architecture** |  |  |
-| Kotlin | 1.9.22 | Programming language for cross-platform development |
-| Kotlin Coroutines | 1.7.3 | Asynchronous programming framework |
-| Koin | 3.4.0 | Modular dependency injection framework |
-| Ktor | 2.0.0 | HTTP client for API communication |
-| Kotlinx Serialization | 1.6.0 | JSON/data serialization |
-| Multiplatform Settings | 1.1.1 | Cross-platform settings/preferences storage |
-| Kotlinx DateTime | 0.5.0 | Date and time handling |
-| **UI & Navigation** |  |  |
-| Jetpack Compose | 1.0.5 | Modern declarative UI toolkit |
-| Compose Material3 | 1.0.0-alpha01 | Material Design 3 implementation for Compose |
-| Compose BOM | 2023.01.00 | Bill of Materials for Compose dependencies |
-| Activity Compose | 1.8.2 | Integration between Compose and Activities |
-| Navigation Compose | 2.7.7 | Navigation framework for Compose |
-| Accompanist | 0.30.0 | Utilities for Jetpack Compose (System UI Controller, Navigation Animation) |
-| Coil | 2.4.0 | Image loading library for Android |
-| Kamel | 0.3.0 | Multiplatform image loading library |
-| **State Management** |  |  |
-| Lifecycle ViewModel | 2.7.0 | Component to store and manage UI-related data |
-| DataStore | 1.0.0 | Data storage solution (replaces SharedPreferences) |
-| **Security** |  |  |
-| Security Crypto | 1.1.0-alpha03 | Encryption and security utilities |
-| **Testing** |  |  |
-| JUnit | 4.13.2 | Unit testing framework |
-| Mockito | 5.3.1 | Mocking framework for unit tests |
-| Mockito Kotlin | 5.1.0 | Kotlin extensions for Mockito |
-| Mockk | 1.13.8 | Kotlin-friendly mocking library |
-| Turbine | 0.12.1 | Testing library for Kotlin Flow |
-| Espresso | 3.5.0 | UI testing framework for Android |
-| Navigation Testing | 2.7.7 | Testing utilities for Navigation component |
-| **Dependency Injection** |  |  |
-| Koin | 3.4.0 | Modular dependency injection framework with improved testability |
-| Koin Test | 3.4.0 | Testing utilities for Koin dependency injection |
+| Kotlin | 2.3.21 | Language and multiplatform toolchain |
+| Kotlinx Coroutines | 1.11.0 | Asynchronous programming (core in commonMain; `-android` provides `Dispatchers.Main` on Android) |
+| Ktor | 3.5.1 | HTTP client (core, content negotiation, logging, kotlinx-json serialization; Android/Darwin engines per platform) |
+| Kotlinx Serialization | 1.11.0 | JSON (de)serialization |
+| Kotlinx DateTime | 0.8.0 | Date and time handling |
+| Koin | 4.2.2 | Dependency injection (`koin-core`, `koin-core-viewmodel`; `koin-android`/`koin-androidx-compose` on Android) |
+| Multiplatform Settings | 1.3.0 | Cross-platform key-value storage |
+| Kermit | 2.1.0 | Multiplatform logging |
+| SKIE | 0.10.13 | Swift interop: Flow → AsyncSequence, suspend → async/await, enum/sealed-class bridging |
+| AndroidX Lifecycle ViewModel | 2.10.0 | Multiplatform `ViewModel` base for the shared ViewModels (exposed as `api` so consumers see the supertype) |
+| AndroidX Security Crypto | 1.1.0-alpha06 | Keystore-backed `EncryptedSharedPreferences` for the Android auth store |
 
-## Important Notes
+## Android App
 
-### Compose Compiler Compatibility
-The project uses Compose Compiler Extension version 1.5.8, which is compatible with Kotlin 1.9.22. When updating Kotlin versions, ensure the Compose Compiler version is also updated according to the [official compatibility table](https://developer.android.com/jetpack/androidx/releases/compose-kotlin).
+Compose library versions come from the **Compose BOM 2026.06.01** — the individual Compose artifacts (`ui`, `foundation`, `material3`, `material-icons-extended`, tooling) are declared without versions.
 
-## Library Categories
+| Library | Version | Purpose |
+|---------|---------|---------|
+| Compose BOM | 2026.06.01 | Bill of materials pinning all Compose artifact versions |
+| Activity Compose | 1.13.0 | Compose integration for Activities |
+| Navigation Compose | 2.9.8 | Type-safe navigation between screens |
+| Lifecycle (ViewModel/Runtime) | 2.10.0 | Lifecycle-aware ViewModel and runtime Compose integration |
+| Coil | 2.7.0 | Image loading and caching for Compose |
+| AppCompat | 1.6.1 | Base compatibility support |
+| Glance (appwidget, material3) | 1.1.1 | Home-screen widgets |
+| WorkManager | 2.9.0 | Background work (widget updates) |
+| Koin (android, androidx-compose) | 4.2.2 | DI integration with Android and `koinViewModel()` |
 
-### Core & Architecture
-These libraries form the foundation of the application architecture, providing essential functionality for cross-platform development, asynchronous programming, and data handling.
+## Testing
 
-### UI & Navigation
-These libraries are responsible for the user interface, including the modern declarative UI toolkit Jetpack Compose, navigation between screens, and image loading.
+| Library | Version | Purpose |
+|---------|---------|---------|
+| kotlin-test | 2.3.21 | Multiplatform test assertions (commonTest) |
+| JUnit 4 | 4.13.2 | Android unit test runner base |
+| JUnit Jupiter (JUnit 5) | 5.10.1 | Modern unit testing (API, engine, params; platform launcher 1.10.1) |
+| Mockk | 1.13.8 | Kotlin-friendly mocking (`mockk-android` for instrumented tests) |
+| Turbine | 1.2.1 | Flow emission testing |
+| Kotlinx Coroutines Test | 1.11.0 | Coroutine test dispatchers and scopes |
+| Ktor Client Mock | 3.5.1 | `MockEngine` for exercising the real Ktor pipeline in API tests |
+| Multiplatform Settings Test | 1.3.0 | In-memory `Settings` for shared tests |
+| Koin Test | 4.2.2 | DI graph verification (`koin-test`, `koin-test-junit4`) |
+| Robolectric | 4.11.1 | JVM-hosted Android unit tests |
+| Espresso | 3.7.0 | Instrumented UI testing |
+| Navigation Testing | 2.9.8 | Navigation component test utilities |
+| AndroidX Test (core/rules/runner) | 1.7.0 | Instrumentation test infrastructure (`ext-junit` 1.3.0) |
+| Arch Core Testing | 2.2.0 | `InstantTaskExecutorRule` for architecture components |
+| Compose UI Test (junit4, manifest) | BOM | Compose UI testing (versions from the Compose BOM) |
+| Benchmark (macro-junit4) | 1.5.0-alpha07 | Macrobenchmarks and baseline profile generation |
+| UIAutomator | 2.3.0 | Device-level UI automation for benchmarks |
+| Profile Installer | 1.4.1 | Installs the generated baseline profile for AOT compilation |
 
-### State Management
-These libraries help manage application state, including UI-related data and persistent storage.
+## Build Plugins
 
-### Security
-Security libraries provide encryption and other security utilities to protect sensitive data.
-
-### Testing
-These libraries support various testing approaches, including unit testing, mocking, and UI testing.
-
-### Dependency Injection
-Koin provides a lightweight and pragmatic dependency injection framework that helps maintain clean architecture and testability.
+| Plugin | Version | Purpose |
+|--------|---------|---------|
+| Kotlin Multiplatform / JVM / Serialization | 2.3.21 | Kotlin compilation and serialization codegen |
+| Kotlin Compose (`org.jetbrains.kotlin.plugin.compose`) | 2.3.21 | Compose compiler — ships with Kotlin, no separately pinned compiler-extension version |
+| Android Gradle Plugin (application, library, kotlin-multiplatform-library) | 9.2.1 | Android builds; `compileSdk` (36) and `jvmTarget` (17) also live in the catalog |
+| Baseline Profile (`androidx.baselineprofile`) | 1.5.0-alpha07 | Baseline profile generation and consumption |
+| SKIE (`co.touchlab.skie`) | 0.10.13 | Swift interop for the iOS framework |
+| Kotlin CocoaPods | 2.3.21 | Publishes the shared module as a CocoaPods framework |

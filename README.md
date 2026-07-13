@@ -11,7 +11,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 
 ## Features
 - **Cocktail Discovery**: Browse and search for cocktails with detailed information
-- **Advanced Search & Filtering**: Multi-criteria search with filters for ingredients, taste profiles, complexity, and more
+- **Advanced Search & Filtering**: Combine a name query with category, ingredient, and alcoholic/non-alcoholic filters
 - **Shopping Cart**: Add cocktails to cart, update quantities, and checkout
 - **User Authentication**: Register, login, and manage user profiles
 - **Order Management**: Place orders and track order history
@@ -132,26 +132,16 @@ The application follows the **Clean Architecture** pattern with **MVVM** (Model-
 - **Dependency Injection**: Modular Koin setup for better testability and separation of concerns
 - **Dark Mode**: System-integrated and user-configurable theme preferences
 
-For more detailed architecture diagrams, please see the [Architecture Documentation](docs/README.md) which includes high-level architecture, component diagrams, use case diagrams, and more.
+For more detailed architecture diagrams, please see the [Documentation Index](docs/README.md), which links to the mermaid diagrams (high-level architecture, component, use case, class, sequence, data flow, and package diagrams).
 
 ### Animations and Transitions
-The app features a comprehensive set of animations and transitions to enhance the user experience:
-- **Micro-interactions**: Button animations, hover effects, and feedback animations
-- **List Animations**: Staggered entry animations and smooth item transitions
-- **Loading States**: Shimmer loading effects for a polished loading experience
-- **Screen Transitions**: Coordinated animations for navigation between screens
-- **Theme Transitions**: Smooth animations when switching between light and dark modes
-- **Optimized Scrolling**: Batched loading mechanism that loads and animates items in small groups
-- **Performance Optimizations**: Techniques to maintain smooth animations during fast scrolling
+The app features a focused set of animations to enhance the user experience:
+- **Micro-interactions**: Press-scale animations on buttons, icon buttons, and FABs, with optional haptic feedback
+- **List Animations**: Item entrance and placement animation via Compose's built-in `animateItem()` on identity-keyed list items
+- **Loading States**: Shimmer loading placeholders driven by a single shared transition per loading container
+- **Theme Transitions**: Animated color transitions when switching between light and dark modes, plus a custom animated theme switch
 
-The animation system is designed for both visual appeal and performance:
-- **Batched Loading**: Items load in groups of 3 with staggered animations for better performance
-- **Predictive Loading**: Preloads items that will soon be visible (3 batches ahead of current view)
-- **Direct Animation Properties**: Uses optimized animation properties for smooth scrolling
-- **Coordinated Animations**: Items within the same batch animate together for a cohesive effect
-
-For detailed information about the animations implementation, see:
-- [Animations Documentation](docs/animations.md) - Overview, implementation details, and best practices
+For detailed information about the animations implementation, see the [Animations section of the UI Components documentation](docs/UI_Components.md#animations).
 
 ### Dependency Injection
 The app uses Koin for dependency injection with a modular approach:
@@ -175,18 +165,17 @@ For detailed information about the dependency injection implementation, see:
 ### UI & Navigation
 - **Jetpack Compose**: Modern declarative UI toolkit for Android
 - **Material3**: For consistent Material Design implementation
-- **Accompanist**: Compose UI utilities
 - **Navigation Compose**: For handling navigation between screens
-- **Coil & Kamel**: For image loading and caching
+- **Coil**: For image loading and caching
 - **Animation Utilities**: Custom animation components and utilities for enhanced UX
 - **Shimmer Effects**: Loading state animations with shimmer effects
 
 ### Testing
-- **JUnit Jupiter**: Modern unit testing framework (5.10.1)
-- **kotlin-test**: Multiplatform testing support (2.0.21)
-- **Jetpack Compose UI Testing**: UI testing for Compose (2025.02.00)
-- **Mockk**: Kotlin-friendly mocking library (1.13.8)
-- **Turbine**: For testing Flow emissions (1.0.0)
+- **JUnit Jupiter**: Modern unit testing framework
+- **kotlin-test**: Multiplatform testing support
+- **Jetpack Compose UI Testing**: UI testing for Compose
+- **Mockk**: Kotlin-friendly mocking library
+- **Turbine**: For testing Flow emissions
 - **XCUITest**: iOS UI testing framework
 - **Koin Test**: Dependency injection testing utilities
 - **Robolectric**: Android unit testing framework
@@ -310,20 +299,18 @@ The application includes comprehensive test coverage:
 - **KMP Plugin Issues**: Make sure the Kotlin Multiplatform plugin is up to date
 - **iOS Builds**: ✅ **Working with SKIE integration!** See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) and the [SKIE Full Migration Guide](docs/SKIE_FULL_MIGRATION_GUIDE.md) for details
 - **iOS Build Warnings**: Non-blocking warnings exist (see iOS documentation for details)
-- **Dependency Resolution**: Check Gradle settings and versions.toml file
+- **Dependency Resolution**: Check Gradle settings and the `libraries.toml` version catalog
 
 ## Documentation
 
 ### 📚 **Core Documentation**
+- [Documentation Index](docs/README.md) - Index of all project documentation
 - [iOS Background Sync Implementation](docs/ios-background-sync.md) - Comprehensive guide to the background sync feature
-- [Background Sync Quick Reference](docs/background-sync-quick-reference.md) - Developer quick start guide
 - [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) - Complete iOS development setup
 - [SKIE Full Migration Guide](docs/SKIE_FULL_MIGRATION_GUIDE.md) - iOS compatibility and SKIE integration details
 
 ### 🐛 **QA & Debugging Tools**
-- [DebugSwift Complete Installation Guide](docs/DebugSwift_Complete_Installation_Guide.md) - Full integration process with all issues and solutions
-- [DebugSwift Quick Reference](docs/DebugSwift_Quick_Reference.md) - Daily usage guide for QA testing
-- [DebugSwift Integration Details](iosApp/DebugSwift_Integration.md) - Technical implementation details
+- [DebugSwift Guide](docs/DebugSwift.md) - iOS debugging tool integration and usage for QA testing
 
 ### 🔧 **Technical Guides**
 - **Background Sync**: Automatic data synchronization for iOS with BGTaskScheduler integration

@@ -237,6 +237,36 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     }
 
     @Test
+    fun loadMoreFailureSurfacesRetryableErrorInsteadOfEndOfList() = runTest {
+        // A transient failure while fetching page 2 must surface an error with
+        // a Retry action — not silently flip hasMoreData off, which is
+        // indistinguishable from genuinely reaching the end of the list.
+        val harness = Harness()
+        harness.search.all = (1..12).map { testCocktail("c$it", category = "Cocktail") }
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+        assertEquals(10, vm.uiState.value.cocktails.size)
+        assertTrue(vm.uiState.value.hasMoreData)
+
+        harness.search.errorMessage = "api down"
+        vm.loadMoreCocktails()
+
+        assertNotNull(vm.error.value, "a failed page fetch must surface an error")
+        assertNotNull(vm.error.value?.recoveryAction, "the error must offer a retry")
+        assertTrue(vm.uiState.value.hasMoreData, "a failure must not masquerade as end of list")
+        assertFalse(vm.uiState.value.isLoadingMore)
+        assertEquals(10, vm.uiState.value.cocktails.size, "the loaded list must be untouched")
+
+        // Backend recovers: the retry path completes the pagination.
+        harness.search.errorMessage = null
+        vm.loadMoreCocktails()
+
+        assertEquals(12, vm.uiState.value.cocktails.size)
+        assertFalse(vm.uiState.value.hasMoreData)
+        assertNull(vm.error.value, "a successful retry must clear the error")
+    }
+
+    @Test
     fun searchFiltersByNameAndUpdatesQueryState() = runTest {
         val harness = Harness()
         harness.search.all = listOf(

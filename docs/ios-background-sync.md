@@ -23,26 +23,44 @@ The iOS Background Sync feature provides automatic data synchronization when the
 
 ### 🏗️ **Architecture Overview**
 
-The Background Sync system consists of three main components:
+The Background Sync system consists of four main components:
 
-1. **BackgroundSyncManager** - Core sync logic and scheduling
-2. **BackgroundSyncCard** - User interface for sync management
-3. **iOS Background Tasks Integration** - System-level background processing
+1. **BackgroundSyncManager** (Swift) - Scheduling, lifecycle, and BGTaskScheduler integration
+2. **BackgroundSyncService** (shared Kotlin) - The sync itself; single definition shared with Android
+3. **BackgroundSyncCard** - User interface for sync management
+4. **iOS Background Tasks Integration** - System-level background processing
+
+### 📂 **File Locations**
+
+| Component | File Path |
+|-----------|-----------|
+| **BackgroundSyncManager** | `iosApp/CocktailCraft/Utils/BackgroundSyncManager.swift` |
+| **BackgroundSyncService** | `shared/src/commonMain/kotlin/com/cocktailcraft/domain/service/BackgroundSyncService.kt` |
+| **BackgroundSyncCard** | `iosApp/CocktailCraft/Components/BackgroundSyncCard.swift` |
+| **App Integration** | `iosApp/CocktailCraft/CocktailCraftApp.swift` |
+| **UI Integration** | `iosApp/CocktailCraft/Views/OfflineModeView.swift` |
+| **Background Modes** | `iosApp/CocktailCraft/Info.plist` |
 
 ### 📱 **iOS Background Modes**
 
-The app is configured with two background modes in `Info.plist`:
+The app is configured with two background modes plus the permitted task identifiers in `Info.plist`:
 
 ```xml
 <key>UIBackgroundModes</key>
 <array>
-    <string>background-app-refresh</string>
-    <string>background-fetch</string>
+    <string>fetch</string>
+    <string>processing</string>
+</array>
+<key>BGTaskSchedulerPermittedIdentifiers</key>
+<array>
+    <string>com.cocktailcraft.background-refresh</string>
+    <string>com.cocktailcraft.background-fetch</string>
 </array>
 ```
 
-- **background-app-refresh**: Quick updates when app becomes active
-- **background-fetch**: Comprehensive sync during background execution
+- **fetch**: Backs `BGAppRefreshTask` (quick refresh)
+- **processing**: Backs `BGProcessingTask` (comprehensive sync)
+- **BGTaskSchedulerPermittedIdentifiers**: Every identifier passed to `BGTaskScheduler.register` must appear here, or registration fails at runtime and background sync never runs
 
 ## Core Components
 
@@ -51,9 +69,9 @@ The app is configured with two background modes in `Info.plist`:
 **Location**: `iosApp/CocktailCraft/Utils/BackgroundSyncManager.swift`
 
 **Key Features**:
-- Singleton pattern for app-wide access
+- `@MainActor @Observable` singleton for app-wide access
 - BGTaskScheduler integration for iOS background tasks
-- Network-aware syncing with automatic retry logic
+- Decides *when* to sync; *what* a sync means lives in the shared `BackgroundSyncService`
 - Time-limited execution (25 seconds max for iOS compliance)
 - User-controlled sync settings with persistent storage
 
@@ -76,7 +94,22 @@ func toggleBackgroundSync()
 - `com.cocktailcraft.background-refresh` - Quick refresh tasks
 - `com.cocktailcraft.background-fetch` - Comprehensive sync tasks
 
-### 2. BackgroundSyncCard
+### 2. BackgroundSyncService (shared)
+
+**Location**: `shared/src/commonMain/kotlin/com/cocktailcraft/domain/service/BackgroundSyncService.kt`
+
+There is exactly one definition of what "a sync" means, shared by both platforms — the platform schedulers (BGTaskScheduler on iOS, WorkManager on Android) only decide when to call it:
+
+```kotlin
+suspend fun performSync(maxDurationMs: Long = 25_000): Boolean
+```
+
+- Skips the sync (returns `false`) when the device is offline
+- Enforces the time budget with `withTimeout(maxDurationMs)`
+- Refreshes the offline cocktail catalog cache via `CocktailCatalogRepository`
+- Registered as a Koin single and exposed to Swift through `KoinHelper.getBackgroundSyncService()`
+
+### 3. BackgroundSyncCard
 
 **Location**: `iosApp/CocktailCraft/Components/BackgroundSyncCard.swift`
 
@@ -94,18 +127,19 @@ func toggleBackgroundSync()
 - **Syncing**: Shows progress indicator and status
 - **Offline**: Indicates waiting for network connection
 
-### 3. Integration Points
+### 4. Integration Points
 
-**App Initialization** (`CocktailCraftApp.swift`):
+**App Initialization** (`CocktailCraftApp.swift`) — registration is synchronous, because BGTaskScheduler requires all launch handlers to be registered before the app finishes launching:
 ```swift
 init() {
     // Initialize Koin
     KoinInitializer.instance.initialize()
-    
-    // Initialize background sync
-    Task { @MainActor in
-        BackgroundSyncManager.shared.registerBackgroundTasks()
-    }
+
+    // Register background tasks synchronously
+    BackgroundSyncManager.shared.registerBackgroundTasks()
+
+    // Keep the home-screen widgets' favorites snapshot current
+    WidgetDataBridge.shared.start()
 }
 ```
 
@@ -119,13 +153,12 @@ init() {
 
 1. **App Backgrounded**: `scheduleBackgroundSync()` called
 2. **iOS Scheduling**: BGTaskScheduler schedules tasks based on user patterns
-3. **Background Execution**: iOS launches app in background
-4. **Sync Execution**: 
-   - Check network connectivity
-   - Sync cocktails data (high priority)
-   - Sync cached data (medium priority)
-   - Respect 25-second time limit
-5. **Completion**: Update last sync time and schedule next sync
+3. **Background Execution**: iOS launches app in background and invokes the registered handler, which calls `runBudgetedSync(for:)`
+4. **Budgeted Sync** (`runBudgetedSync`):
+   - Schedules the *next* sync window first, so a killed/expired run already has a follow-up request
+   - Attaches the expiration handler before any work starts; expiration cancels the sync `Task` (SKIE propagates the cancellation into the shared coroutine)
+   - Delegates to the shared `BackgroundSyncService` with a millisecond budget (platform allowance minus a 5s completion margin)
+5. **Completion**: Update last sync time and mark the task completed
 
 ### ⚡ **Manual Sync Workflow**
 
@@ -145,32 +178,19 @@ init() {
 
 ### 📊 **What Gets Synced**
 
-1. **Cocktail Data** (High Priority):
-   - Latest cocktail information
-   - New cocktail additions
-   - Updated cocktail details
-
-2. **Cached Data** (Medium Priority):
-   - Recently viewed cocktails
-   - Favorite cocktails
-   - Order history
-   - User preferences
+The shared service refreshes the offline cocktail catalog cache (`CocktailCatalogRepository.getCocktailsSortedByNewest()`), so cached browsing data is fresh on next launch. Sync does not drive ViewModels — UI state updates reactively from the repositories when screens observe them.
 
 ### 🔧 **Sync Implementation**
 
-The sync process uses existing ViewModels through SKIE integration:
+`BackgroundSyncManager.performSync` delegates to the shared service through the Koin helper (SKIE exposes the suspend function as Swift async):
 
 ```swift
-// Get shared ViewModels for sync operations
-let koinHelper = getSharedKoinHelper()
-let homeViewModel = koinHelper.getSharedHomeViewModel()
-let offlineViewModel = koinHelper.getSharedOfflineModeViewModel()
-
-// Sync cocktails data (priority: high)
-try? await homeViewModel.loadCocktails()
-
-// Sync cached data (priority: medium)
-try? await offlineViewModel.syncCachedData()
+// What "a sync" means lives in shared code (BackgroundSyncService,
+// including the offline check and time budget); this class only
+// decides when to run it and mirrors sync state for the UI.
+let syncService = getSharedKoinHelper().getBackgroundSyncService()
+let budgetMs = Self.syncBudgetMs(maxDuration: maxDuration) // (maxDuration - 5s) in ms, floored at 0
+let success = (try? await syncService.performSync(maxDurationMs: budgetMs))?.boolValue ?? false
 ```
 
 ## Configuration & Settings
@@ -199,29 +219,35 @@ private let maxBackgroundTime: TimeInterval = 25 // 25 seconds
 
 ### 🛡️ **Robust Error Management**
 
-- **Network Failures**: Graceful handling with retry logic
-- **Time Limits**: Respect iOS background execution limits
-- **SKIE Integration**: Use `try?` for error-safe async calls
+- **Network Failures**: Sync is skipped when offline; failures return `false` rather than crash
+- **Time Limits**: Respect iOS background execution limits (`withTimeout` budget plus BGTask expiration handler)
+- **SKIE Integration**: Use `try?` for error-safe async calls; task expiration cancels the sync `Task` and SKIE propagates the cancellation into the shared coroutine
+- **Misconfiguration Safety**: Task handlers guard-cast the BGTask type and fail the task instead of force-casting and crashing
 - **Fallback Behavior**: Continue with cached data if sync fails
 
 ### 📝 **Logging & Debugging**
 
-Comprehensive logging for troubleshooting:
+Logging uses `os.Logger` — level-gated, so it never spams the release console (IO-9). View output in Xcode's console or Console.app (subsystem `com.cocktailcraft`, category `BackgroundSync`):
+
 ```swift
-print("BackgroundSyncManager: Starting background sync")
-print("BackgroundSyncManager: Sync completed successfully in \(duration)s")
-print("BackgroundSyncManager: Time limit approaching, stopping sync")
+private let logger = Logger(subsystem: "com.cocktailcraft", category: "BackgroundSync")
+
+logger.info("Background tasks registered")
+logger.info("Starting background sync")
+logger.error("Failed to schedule background tasks: \(error)")
+logger.notice("Background task expired")
 ```
+
+The shared `BackgroundSyncService` logs through Kermit with the tag `BackgroundSyncService`.
 
 ## Performance Considerations
 
 ### ⚡ **Optimization Strategies**
 
-1. **Priority-Based Sync**: High-priority data synced first
-2. **Time Management**: Monitor execution time to stay within limits
-3. **Network Efficiency**: Only sync when connected
-4. **Resource Management**: Minimal memory and CPU usage
-5. **Battery Optimization**: Efficient background processing
+1. **Time Management**: Hard time budget enforced with `withTimeout` in the shared service
+2. **Network Efficiency**: Only sync when connected (offline check in the shared service)
+3. **Resource Management**: Minimal memory and CPU usage
+4. **Battery Optimization**: Efficient background processing
 
 ### 📊 **Performance Metrics**
 
@@ -247,6 +273,17 @@ print("BackgroundSyncManager: Time limit approaching, stopping sync")
 - Network connectivity properly detected
 - Background tasks scheduled successfully
 - Data freshness improved after sync
+
+### 🚀 **Production Checklist**
+
+- [ ] Background modes (`fetch`, `processing`) and `BGTaskSchedulerPermittedIdentifiers` configured in Info.plist
+- [ ] BGTaskScheduler registration happens synchronously in app launch (before launch finishes)
+- [ ] Network connectivity handling
+- [ ] Time limit compliance (< 30 seconds)
+- [ ] Error handling for all sync operations
+- [ ] User preference persistence
+- [ ] UI feedback for all states
+- [ ] Testing on device (not just simulator)
 
 ## Future Enhancements
 

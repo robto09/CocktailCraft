@@ -94,13 +94,10 @@ Note the `secureSettingsQualifier` for `AuthRepositoryImpl`: auth data uses the 
 
 ### 4. Domain Module (`DomainModule.kt`)
 
-Use cases (all `factory`), app configuration, the shared ViewModels, and the background sync service:
+Use cases (all `factory`), the shared ViewModels, and the background sync service. The `AppConfig` binding lives in each `platformModule()` (AR-4) — the platform knows whether this is a debug build; commonMain doesn't. A use case must earn its indirection (AR-8): pure 1:1 pass-throughs with a single consumer are collapsed onto the repository interface instead (`ManageOrdersUseCase` was removed this way).
 
 ```kotlin
 val domainModule = module {
-    // Config
-    single<AppConfig> { AppConfigImpl() }
-
     // Use Cases — constructor-injected with the focused repository interfaces
     factory { SearchCocktailsUseCase(searchRepository = get()) }
     factory { LoadCocktailsByCategoryUseCase(searchRepository = get()) }
@@ -111,7 +108,6 @@ val domainModule = module {
     factory { ManageOfflineModeUseCase(offlineRepository = get(), catalogRepository = get()) }
     factory { ManageProfileUseCase(authRepository = get()) }
     factory { ManageReviewsUseCase(repository = get()) }
-    factory { ManageOrdersUseCase(orderRepository = get()) }
     factory { AnalyzeCocktailUseCase() }
     factory { PlaceOrderUseCase(orderRepository = get()) }
 
@@ -127,7 +123,7 @@ val domainModule = module {
     single { SharedHomeViewModel(/* use cases + catalogRepository + networkMonitor */) }
     single { SharedCartViewModel(manageCartUseCase = get()) }
     single { SharedFavoritesViewModel(manageFavoritesUseCase = get()) }
-    single { SharedOrderViewModel(manageOrdersUseCase = get(), placeOrderUseCase = get()) }
+    single { SharedOrderViewModel(orderRepository = get(), placeOrderUseCase = get()) }
     single { SharedProfileViewModel(manageProfileUseCase = get()) }
     single { SharedOfflineModeViewModel(manageOfflineModeUseCase = get(), networkMonitor = get()) }
     single { SharedThemeViewModel(manageProfileUseCase = get()) }

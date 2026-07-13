@@ -127,20 +127,11 @@ class KoinInitializer {
     private init() {}
 
     func initialize() {
-        // Start Koin with all modules using SKIE generated function
-        let koinApplication = shared.doInitKoin()
-        _koin = koinApplication.koin
+        // Start Koin with all modules using SKIE generated function.
+        // Swift never touches the Koin container directly — everything is
+        // resolved through the shared KoinHelper below.
+        _ = shared.doInitKoin()
     }
-
-    private var _koin: Koin_coreKoin?
-    var koin: Koin_coreKoin {
-        return _koin!
-    }
-}
-
-// Global accessor for Koin - use lazy initialization
-var koin: Koin_coreKoin {
-    return KoinInitializer.instance.koin
 }
 
 #if DEBUG

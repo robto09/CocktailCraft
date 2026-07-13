@@ -57,6 +57,31 @@ final class OrderStatusMappingTests: TestSetup {
     }
 }
 
+/// AppColors must build its light-mode brand colors from the cross-target
+/// BrandColorComponents tokens (WidgetBridge.swift) that the widget
+/// extension also compiles — this pins the app half of that contract so a
+/// reverted hex literal can't silently diverge from the widgets.
+final class BrandColorParityTests: XCTestCase {
+
+    private func assertColor(_ color: Color,
+                             matches components: (red: Double, green: Double, blue: Double),
+                             _ name: String) {
+        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+        XCTAssertTrue(UIColor(color).getRed(&red, green: &green, blue: &blue, alpha: &alpha))
+        XCTAssertEqual(Double(red), components.red, accuracy: 0.001, "\(name) red")
+        XCTAssertEqual(Double(green), components.green, accuracy: 0.001, "\(name) green")
+        XCTAssertEqual(Double(blue), components.blue, accuracy: 0.001, "\(name) blue")
+    }
+
+    func testAppPrimaryMatchesSharedBrandTokens() {
+        assertColor(AppColors.primaryLight, matches: BrandColorComponents.primary, "primary")
+    }
+
+    func testAppSecondaryMatchesSharedBrandTokens() {
+        assertColor(AppColors.secondaryLight, matches: BrandColorComponents.secondary, "secondary")
+    }
+}
+
 /// Pure budget math extracted from BackgroundSyncManager.performSync (IO-7):
 /// the shared sync service gets the platform allowance minus a 5s teardown
 /// margin, and never a negative budget.

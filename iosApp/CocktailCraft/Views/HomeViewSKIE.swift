@@ -154,13 +154,14 @@ struct HomeViewSKIE: View {
                                 }
                             },
                             onAddToCart: {
-                                Task {
+                                // Main-actor Task: the whole flow (VM call +
+                                // toast state) runs on main, without the old
+                                // mid-task MainActor.run hop.
+                                Task { @MainActor in
                                     await viewModel.addToCart(cocktail)
-                                    await MainActor.run {
-                                        toastMessage = String(localized: "Added \(cocktail.name) to cart")
-                                        withAnimation {
-                                            showingToast = true
-                                        }
+                                    toastMessage = String(localized: "Added \(cocktail.name) to cart")
+                                    withAnimation {
+                                        showingToast = true
                                     }
                                 }
                             },

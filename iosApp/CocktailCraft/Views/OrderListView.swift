@@ -3,27 +3,27 @@ import shared
 
 struct OrderListView: View {
     @State private var viewModel = OrderViewModelSKIE()
-    @State private var hasAppeared = false
+    @State private var hasLoaded = false
 
     var body: some View {
         // No nav container here: ContentView already wraps this tab in a
         // NavigationStack (the old inner NavigationView double-nested it).
         contentView
             .navigationTitle("My Orders")
-            .onAppear {
-                if !hasAppeared {
-                    hasAppeared = true
-                    Task {
-                        await viewModel.loadOrders()
-                    }
-                }
+            // Seed load once; afterwards the observed orders flow keeps the
+            // list fresh. A load cancelled mid-flight (user leaves the tab)
+            // leaves hasLoaded false, so the next visit retries.
+            .task {
+                guard !hasLoaded else { return }
+                await viewModel.loadOrders()
+                if !Task.isCancelled { hasLoaded = true }
             }
             .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
     }
 
     @ViewBuilder
     private var contentView: some View {
-        if !hasAppeared || viewModel.state.isLoading {
+        if !hasLoaded || viewModel.state.isLoading {
             loadingView
         } else if viewModel.state.orders.isEmpty {
             emptyView

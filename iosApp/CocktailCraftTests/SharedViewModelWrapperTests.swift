@@ -63,6 +63,26 @@ final class SharedViewModelWrapperTests: TestSetup {
                       "wrapper.state should mirror the shared mutation within 2s")
     }
 
+    func testRunSwallowsThrownErrors() async {
+        // run's contract: forwarded-call failures never propagate to the
+        // caller — user-facing surfacing happens via the mirrored error flow.
+        struct Boom: Error {}
+        let wrapper = makeWrapper()
+
+        await wrapper.run { throw Boom() } // must return normally, not rethrow
+    }
+
+    func testRunFallbackReturnsValueOnSuccessAndFallbackOnThrow() async {
+        struct Boom: Error {}
+        let wrapper = makeWrapper()
+
+        let value = await wrapper.run(fallback: -1) { 42 }
+        XCTAssertEqual(value, 42)
+
+        let fallen = await wrapper.run(fallback: -1) { throw Boom() }
+        XCTAssertEqual(fallen, -1, "a throwing forwarder must yield the fallback")
+    }
+
     func testWrapperDeinitsWhenReleased() async {
         var wrapper: SharedViewModelWrapper<ThemeUiState>? = makeWrapper()
         weak var weakWrapper = wrapper
