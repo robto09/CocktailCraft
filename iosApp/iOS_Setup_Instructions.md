@@ -5,6 +5,14 @@
 - CocoaPods installed (`sudo gem install cocoapods`)
 - macOS 12.0 or later
 
+> **Source of truth (IO-8):** `project.yml` (XcodeGen) defines the Xcode
+> project — targets, entitlements, per-target ATS pinning, and the test
+> targets. The committed `CocktailCraft.xcodeproj` is **generated output**:
+> never hand-edit it, and regenerate it (`xcodegen generate && pod install`)
+> whenever `project.yml` changes or files are added/removed, then commit the
+> regenerated project alongside your change. Install XcodeGen with
+> `brew install xcodegen`.
+
 ## Setup Steps
 
 ### 1. Build the Shared Framework
@@ -13,7 +21,15 @@ cd ..
 ./gradlew :shared:podPublishXCFramework
 ```
 
-### 2. Create Xcode Project
+### 2. Generate the Xcode Project
+```bash
+cd iosApp
+xcodegen generate
+```
+(The manual project-creation steps below are legacy documentation of what the
+generated project contains — you never need to perform them by hand.)
+
+### 2b. (Legacy reference) Create Xcode Project
 1. Open Xcode
 2. Create new iOS App:
    - Product Name: `CocktailCraft`

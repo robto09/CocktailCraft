@@ -31,14 +31,22 @@ class SharedFavoritesViewModel internal constructor(
         get() = _uiState.value.favorites.isNotEmpty()
 
     init {
-        viewModelScope.launch { loadFavorites() }
+        // Reactive favorites (SH-4): the repository publishes after every
+        // mutation from any screen, so this collector is the single way
+        // favorites reach the UI state — no manual re-pulls.
+        viewModelScope.launch {
+            manageFavoritesUseCase.observeFavorites().collect { favs ->
+                _uiState.update { it.copy(favorites = favs, favoriteCount = favs.size, isLoading = false) }
+            }
+        }
     }
 
+    /** Manual refresh (pull-to-refresh); routine updates arrive via the observed flow. */
     suspend fun loadFavorites() {
         _uiState.update { it.copy(isLoading = true) }
         try {
-            val favs = manageFavoritesUseCase.loadFavorites().getOrThrow()
-            _uiState.update { it.copy(favorites = favs, favoriteCount = favs.size, isLoading = false) }
+            manageFavoritesUseCase.loadFavorites().getOrThrow()
+            _uiState.update { it.copy(isLoading = false) }
         } catch (e: Exception) {
             handleException(e, "Failed to load favorites")
             _uiState.update { it.copy(isLoading = false) }
@@ -46,20 +54,20 @@ class SharedFavoritesViewModel internal constructor(
     }
 
     /**
-     * Toggle favorite status for a cocktail.
+     * Toggle favorite status for a cocktail. State updates arrive via the
+     * observed favorites flow (SH-4).
      * SKIE will convert this to Swift async function.
      */
     suspend fun toggleFavorite(cocktail: Cocktail) {
         try {
             manageFavoritesUseCase.toggle(cocktail)
-            loadFavorites()
         } catch (e: Exception) {
             handleException(e, "Failed to update favorites")
         }
     }
 
     /**
-     * Clear all favorites.
+     * Clear all favorites. State updates arrive via the observed flow (SH-4).
      * SKIE will convert this to Swift async function.
      */
     suspend fun clearAllFavorites() {
@@ -69,7 +77,6 @@ class SharedFavoritesViewModel internal constructor(
             for (cocktail in currentFavorites) {
                 manageFavoritesUseCase.removeFromFavorites(cocktail)
             }
-            _uiState.update { it.copy(favorites = emptyList(), favoriteCount = 0) }
         } catch (e: Exception) {
             handleException(e, "Failed to clear favorites")
         }

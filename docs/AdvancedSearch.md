@@ -30,7 +30,7 @@ TheCocktailDB's `filter.php` accepts only **one parameter per request** and cann
 
 This is accurate (every id comes from the server), needs no per-drink hydration, and invents no data. Cost is one sequential call per active filter; typical usage is one or two filters. Slim results render with the same "tap to view" placeholder cards used elsewhere for category browsing, and the detail view hydrates on tap.
 
-The implementation lives in `CocktailRepositoryImpl.advancedSearch(filters)` (`shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/CocktailRepositoryImpl.kt`), reached through `SearchCocktailsUseCase.search(filters)`.
+The implementation lives in `CocktailSearchRepositoryImpl.advancedSearch(filters)` (`shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/CocktailSearchRepositoryImpl.kt`), reached through `SearchCocktailsUseCase.search(filters)`.
 
 ## Shared state and ViewModel
 

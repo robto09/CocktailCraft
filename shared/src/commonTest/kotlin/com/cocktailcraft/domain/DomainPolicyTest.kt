@@ -1,8 +1,6 @@
 package com.cocktailcraft.domain
 
 import com.cocktailcraft.domain.config.DeliveryPolicy
-import com.cocktailcraft.domain.usecase.AnalyzeCocktailUseCase
-import com.cocktailcraft.testutil.testCocktail
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -36,29 +34,6 @@ class DeliveryPolicyTest {
     }
 }
 
-class AnalyzeCocktailUseCaseTest {
-
-    private val useCase = AnalyzeCocktailUseCase()
-
-    @Test
-    fun categorizesIngredientsByKeyword() {
-        assertEquals("Spirits", useCase.categorizeIngredient("White Rum"))
-        assertEquals("Citrus & Juices", useCase.categorizeIngredient("Lime juice"))
-        assertEquals("Sweeteners", useCase.categorizeIngredient("Simple Syrup"))
-        assertEquals("Seasonings", useCase.categorizeIngredient("Angostura Bitters"))
-        assertEquals("Other", useCase.categorizeIngredient("Mint"))
-    }
-
-    @Test
-    fun groupsIngredientsByType() {
-        val grouped = useCase.ingredientsByType(testCocktail("1"))
-        assertEquals(listOf("Gin"), grouped["Spirits"])
-    }
-
-    @Test
-    fun estimatesNutritionFromIngredients() {
-        val facts = useCase.nutritionFacts(testCocktail("1")) // one spirit ingredient
-        assertEquals(65, facts.calories)
-        assertEquals(14, facts.alcoholGrams)
-    }
-}
+// AnalyzeCocktailUseCase coverage moved to
+// domain/usecase/AnalyzeCocktailUseCaseTest.kt alongside the other use-case
+// tests (AR-5), which supersedes the class that used to live here.

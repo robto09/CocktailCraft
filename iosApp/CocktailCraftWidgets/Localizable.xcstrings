@@ -1,0 +1,36 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Check back soon" : {
+
+    },
+    "Discover a new cocktail every few hours." : {
+
+    },
+    "Favorite Cocktails" : {
+
+    },
+    "Favorites" : {
+
+    },
+    "No cocktail right now" : {
+
+    },
+    "No favorites yet" : {
+
+    },
+    "Open CocktailCraft to add some" : {
+
+    },
+    "Random Cocktail" : {
+
+    },
+    "Try something new" : {
+
+    },
+    "Your favorite cocktails at a glance." : {
+
+    }
+  },
+  "version" : "1.0"
+}

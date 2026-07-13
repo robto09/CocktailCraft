@@ -11,6 +11,8 @@ import androidx.compose.material3.Surface
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import com.cocktailcraft.android.ui.main.MainScreen
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.viewmodel.SharedThemeViewModel
@@ -40,7 +42,12 @@ class MainActivity : ComponentActivity() {
             // Use the effective dark mode value for theming
             AnimatedCocktailBarTheme(darkTheme = effectiveDarkMode) {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        // Expose Compose testTags as resource-ids so UiAutomator
+                        // (baseline profile generator, macrobenchmarks) can match
+                        // nodes with By.res instead of locale-dependent text.
+                        .semantics { testTagsAsResourceId = true },
                     color = MaterialTheme.colorScheme.background
                 ) {
                     MainScreen()

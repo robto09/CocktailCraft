@@ -1,23 +1,20 @@
 package com.cocktailcraft.android.ui.theme
 
-import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
 
 // Cocktail Bar color palette — the single source of truth. res/values/colors.xml
 // (pre-Compose window + widget assets) mirrors these values by hand; keep it in
 // sync when changing anything here.
+//
+// AN-5 status: the dead CocktailBarTheme (and its deprecated
+// window.statusBarColor handling) was deleted — AnimatedCocktailBarTheme in
+// AnimatedTheme.kt is the app's one theme. The remaining follow-up is the
+// incremental migration of AppColors.* reads (~320 call sites) onto
+// MaterialTheme.colorScheme, after which the mutable isDarkTheme global goes
+// away and dynamic color can be considered.
 object AppColors {
     // Light Theme Colors
     val PrimaryLight = Color(0xFFEB6A43) // Coral/Orange for main elements
@@ -55,73 +52,4 @@ object AppColors {
     val Surface get() = if (isDarkTheme) SurfaceDark else SurfaceLight
     val TextPrimary get() = if (isDarkTheme) TextPrimaryDark else TextPrimaryLight
     val TextSecondary get() = if (isDarkTheme) TextSecondaryDark else TextSecondaryLight
-}
-
-private val LightColorScheme = lightColorScheme(
-    primary = AppColors.PrimaryLight,
-    secondary = AppColors.SecondaryLight,
-    tertiary = AppColors.ChipBackground,
-    background = AppColors.BackgroundLight,
-    surface = AppColors.SurfaceLight,
-    surfaceVariant = AppColors.LightGray,
-    error = AppColors.Error,
-    onPrimary = Color.White,
-    onSecondary = Color.Black,
-    onTertiary = Color.White,
-    onBackground = AppColors.TextPrimaryLight,
-    onSurface = AppColors.TextPrimaryLight,
-    onSurfaceVariant = AppColors.TextSecondaryLight,
-    outline = AppColors.Gray,
-    onError = Color.White
-)
-
-private val DarkColorScheme = darkColorScheme(
-    primary = AppColors.PrimaryDark,
-    secondary = AppColors.SecondaryDark,
-    tertiary = AppColors.ChipBackground,
-    background = AppColors.BackgroundDark,
-    surface = AppColors.SurfaceDark,
-    surfaceVariant = AppColors.DarkGray,
-    error = AppColors.Error,
-    onPrimary = Color.Black,
-    onSecondary = Color.Black,
-    onTertiary = Color.White,
-    onBackground = AppColors.TextPrimaryDark,
-    onSurface = AppColors.TextPrimaryDark,
-    onSurfaceVariant = AppColors.TextSecondaryDark,
-    outline = AppColors.Gray,
-    onError = Color.White
-)
-
-@Composable
-fun CocktailBarTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
-) {
-    // Update the AppColors isDarkTheme value to match current theme
-    AppColors.isDarkTheme = darkTheme
-
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-
-    val view = LocalView.current
-    if (!view.isInEditMode) {
-        SideEffect {
-            val window = (view.context as Activity).window
-
-            // Set status bar color based on theme
-            window.statusBarColor = if (darkTheme) {
-                AppColors.BackgroundDark.toArgb() // Dark background for status bar in dark mode
-            } else {
-                AppColors.PrimaryLight.toArgb() // Primary color for status bar in light mode
-            }
-
-            // Set status bar icons to be light or dark based on theme
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkTheme
-        }
-    }
-
-    MaterialTheme(
-        colorScheme = colorScheme,
-        content = content
-    )
 }

@@ -1,6 +1,8 @@
 package com.cocktailcraft.di
 
+import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.security.migrateAuthStorage
+import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.util.IOSNetworkMonitor
 import com.cocktailcraft.util.NetworkMonitor
 import com.russhwolf.settings.ExperimentalSettingsImplementation
@@ -9,8 +11,12 @@ import com.russhwolf.settings.Settings
 import com.russhwolf.settings.NSUserDefaultsSettings
 import org.koin.dsl.module
 
-@OptIn(ExperimentalSettingsImplementation::class)
+@OptIn(ExperimentalSettingsImplementation::class, kotlin.experimental.ExperimentalNativeApi::class)
 actual fun platformModule() = module {
+    // Debug-aware config (AR-4): the K/N binary genuinely differs Debug vs
+    // Release per Xcode configuration (the podspec forwards $CONFIGURATION).
+    single<AppConfig> { AppConfigImpl(verboseNetworkLogging = Platform.isDebugBinary) }
+
     single<Settings> {
         NSUserDefaultsSettings(platform.Foundation.NSUserDefaults.standardUserDefaults)
     }

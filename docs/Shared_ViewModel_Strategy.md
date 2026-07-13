@@ -2,12 +2,12 @@
 
 ## Executive Summary
 
-This document outlines the **completed implementation** of shared ViewModels using Kotlin Multiplatform (KMP) with SKIE integration. All 11 shared ViewModels have been successfully implemented, providing significant benefits in code reuse, maintainability, and development velocity while maintaining native performance and user experience.
+This document outlines the **completed implementation** of shared ViewModels using Kotlin Multiplatform (KMP) with SKIE integration. All 9 shared ViewModels (plus the `SharedViewModel` base class) have been successfully implemented, providing significant benefits in code reuse, maintainability, and development velocity while maintaining native performance and user experience.
 
 ## ✅ Implementation Status: COMPLETE
 
-### Successfully Implemented (11 ViewModels)
-- ✅ **SharedHomeViewModel**: Home screen with cocktail browsing
+### Successfully Implemented (9 ViewModels + base class)
+- ✅ **SharedHomeViewModel**: Home screen with cocktail browsing and search
 - ✅ **SharedCartViewModel**: Shopping cart management  
 - ✅ **SharedCocktailDetailViewModel**: Individual cocktail details
 - ✅ **SharedFavoritesViewModel**: Favorites management
@@ -16,7 +16,6 @@ This document outlines the **completed implementation** of shared ViewModels usi
 - ✅ **SharedOfflineModeViewModel**: Offline functionality
 - ✅ **SharedThemeViewModel**: Theme and accessibility settings
 - ✅ **SharedReviewViewModel**: Review system with ratings
-- ✅ **SharedCocktailListViewModel**: Cocktail listing and search
 - ✅ **SharedViewModel**: Base class with common functionality
 
 ### Performance Metrics Achieved
@@ -29,157 +28,84 @@ This document outlines the **completed implementation** of shared ViewModels usi
 
 ### Shared Layer (Kotlin) - IMPLEMENTED ✅
 ```kotlin
-// Base class for all shared ViewModels
-abstract class SharedViewModel : ViewModel(), KoinComponent {
-    protected val errorHandler: ErrorHandler by inject()
-    
-    // Common state management
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    
+// Base class for all shared ViewModels — on the multiplatform androidx
+// ViewModel. Dependencies are constructor-injected so subclasses can be
+// built without a Koin container. There is deliberately no shared
+// isLoading flow: loading state lives in each screen's UiState.
+abstract class SharedViewModel : ViewModel() {
+
+    // The single error channel, observed by both platforms for error UI
     private val _error = MutableStateFlow<ErrorHandler.UserFriendlyError?>(null)
     val error: StateFlow<ErrorHandler.UserFriendlyError?> = _error.asStateFlow()
-    
-    // Common error handling
-    protected suspend fun handleException(
+
+    protected open fun handleException(
         exception: Throwable,
-        message: String,
+        defaultMessage: String = "Something went wrong. Please try again.",
         recoveryAction: ErrorHandler.RecoveryAction? = null
-    ) {
-        errorHandler.handleException(exception, message, recoveryAction)
-    }
+    ) { /* CancellationException guard + ErrorHandler classification */ }
 }
 
-// Example: SharedHomeViewModel (IMPLEMENTED)
-class SharedHomeViewModel : SharedViewModel() {
-    private val repository: CocktailRepository by inject()
-    
-    private val _cocktails = MutableStateFlow<List<Cocktail>>(emptyList())
-    val cocktails: StateFlow<List<Cocktail>> = _cocktails.asStateFlow()
-    
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-    
-    suspend fun loadCocktails() {
-        _isLoading.value = true
-        try {
-            repository.getCocktailsSortedByNewest().collect { cocktailList ->
-                _cocktails.value = cocktailList
-            }
-        } catch (e: Exception) {
-            handleException(e, "Failed to load cocktails")
-        } finally {
-            _isLoading.value = false
-        }
-    }
-    
-    fun searchCocktails(query: String) {
-        _searchQuery.value = query
-        // Search implementation
-    }
+// Example: SharedHomeViewModel (constructor-injected use cases, wired in
+// DomainModule.kt; state is a single consolidated HomeUiState flow)
+class SharedHomeViewModel internal constructor(
+    private val searchCocktailsUseCase: SearchCocktailsUseCase,
+    private val loadCocktailsByCategoryUseCase: LoadCocktailsByCategoryUseCase,
+    private val sortCocktailsUseCase: SortCocktailsUseCase,
+    private val manageFavoritesUseCase: ManageFavoritesUseCase,
+    private val manageOfflineModeUseCase: ManageOfflineModeUseCase,
+    private val getCocktailDetailUseCase: GetCocktailDetailUseCase,
+    private val catalogRepository: CocktailCatalogRepository,
+    private val networkMonitor: NetworkMonitor
+) : SharedViewModel() {
+
+    private val _uiState = MutableStateFlow(HomeUiState())
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    suspend fun loadCocktails() { /* ... */ }
+    fun updateSearchQuery(query: String) { /* debounced search pipeline */ }
 }
 ```
 
 ### iOS Integration (Swift) - IMPLEMENTED ✅
+
+iOS wraps each shared ViewModel in a thin `*SKIE` adapter built on `SharedViewModelWrapper`, which owns the state/error mirroring and observation-task lifecycle. Views read `viewModel.state.<field>` from the single mirrored `UiState`:
+
 ```swift
-@MainActor
-class HomeViewModelSKIE: ObservableObject {
-    @Published var cocktails: [Cocktail] = []
-    @Published var isLoading: Bool = false
-    @Published var searchQuery: String = ""
-    @Published var error: ErrorHandler.UserFriendlyError? = nil
-    
+// iosApp/CocktailCraft/ViewModels/HomeViewModelSKIE.swift
+final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
+
     private let sharedViewModel: SharedHomeViewModel
-    private var observationTasks: [Task<Void, Never>] = []
-    
+
     init() {
-        self.sharedViewModel = KoinInitializer.shared.getSharedHomeViewModel()
-        startObserving()
+        let viewModel = getSharedKoinHelper().getSharedHomeViewModel()
+        self.sharedViewModel = viewModel
+        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
     }
-    
-    deinit {
-        observationTasks.forEach { $0.cancel() }
-    }
-    
-    private func startObserving() {
-        // SKIE automatically converts StateFlow to AsyncSequence
-        observationTasks.append(Task {
-            for await cocktailList in sharedViewModel.cocktails {
-                await MainActor.run {
-                    self.cocktails = cocktailList
-                }
-            }
-        })
-        
-        observationTasks.append(Task {
-            for await loading in sharedViewModel.isLoading {
-                await MainActor.run {
-                    self.isLoading = loading
-                }
-            }
-        })
-        
-        observationTasks.append(Task {
-            for await query in sharedViewModel.searchQuery {
-                await MainActor.run {
-                    self.searchQuery = query
-                }
-            }
-        })
-    }
-    
+
+    // SKIE bridges Kotlin suspend functions to Swift async/await
     func loadCocktails() async {
-        do {
-            try await sharedViewModel.loadCocktails()
-        } catch {
-            print("Error loading cocktails: \(error)")
-        }
+        await run { try await sharedViewModel.loadCocktails() }
     }
-    
-    func searchCocktails(query: String) {
-        sharedViewModel.searchCocktails(query: query)
+
+    func updateSearchQuery(_ query: String) {
+        sharedViewModel.updateSearchQuery(query: query)
     }
 }
 ```
 
 ### Android Integration (Kotlin) - IMPLEMENTED ✅
+
+Android has **no wrapper layer**: the shared ViewModels extend the multiplatform androidx `ViewModel`, so Compose screens consume them directly.
+
 ```kotlin
-class HomeViewModelSKIE : ViewModel(), KoinComponent {
-    private val sharedViewModel: SharedHomeViewModel by inject()
-    
-    // Convert to hot StateFlow for Android lifecycle
-    val cocktails: StateFlow<List<Cocktail>> = sharedViewModel.cocktails
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-    
-    val isLoading: StateFlow<Boolean> = sharedViewModel.isLoading
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = false
-        )
-    
-    val searchQuery: StateFlow<String> = sharedViewModel.searchQuery
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = ""
-        )
-    
-    // Delegate to shared ViewModel
-    fun loadCocktails() {
-        viewModelScope.launch {
-            sharedViewModel.loadCocktails()
-        }
-    }
-    
-    fun searchCocktails(query: String) {
-        sharedViewModel.searchCocktails(query)
-    }
-}
+// Screen-scoped ViewModels (registered with `viewModel { ... }` in
+// DomainModule.kt) resolve via koinViewModel(), scoped to the nav
+// back-stack entry:
+val detailViewModel = koinViewModel<SharedCocktailDetailViewModel>()
+
+// Global-state ViewModels (registered as Koin `single`) are shared across
+// screens and persist across navigation; screens collect their uiState:
+val state by homeViewModel.uiState.collectAsStateWithLifecycle()
 ```
 
 ## SKIE Enhanced Features - IMPLEMENTED ✅
@@ -204,18 +130,18 @@ class HomeViewModelSKIE : ViewModel(), KoinComponent {
 ### ✅ Phase 1: Foundation (COMPLETE)
 - [x] Enhanced SKIE configuration
 - [x] SharedViewModel base class
-- [x] All 11 shared ViewModels implemented
+- [x] All 9 shared ViewModels implemented
 - [x] iOS 18.5 compatibility validated
 - [x] Android compatibility validated
 
 ### ✅ Phase 2: Core ViewModels (COMPLETE)
 - [x] **Simple ViewModels**: ReviewViewModel, ThemeViewModel, ProfileViewModel
 - [x] **Medium Complexity**: CartViewModel, FavoritesViewModel, OrderViewModel, OfflineModeViewModel
-- [x] **Complex ViewModels**: HomeViewModel, CocktailDetailViewModel, CocktailListViewModel
+- [x] **Complex ViewModels**: HomeViewModel, CocktailDetailViewModel
 
 ### ✅ Phase 3: Platform Integration (COMPLETE)
 - [x] iOS SKIE wrapper classes for all ViewModels
-- [x] Android SKIE wrapper classes for all ViewModels
+- [x] Android: direct consumption via koinViewModel()/Koin singles (no wrapper layer)
 - [x] Platform-specific optimizations implemented
 - [x] Comprehensive testing and validation complete
 
@@ -286,24 +212,23 @@ class HomeViewModelSKIE : ViewModel(), KoinComponent {
 │  ✅ SharedOfflineModeViewModel                          │
 │  ✅ SharedThemeViewModel                                │
 │  ✅ SharedReviewViewModel                               │
-│  ✅ SharedCocktailListViewModel                         │
 └─────────────────────────────────────────────────────────┘
                      │                    │
                      ▼                    ▼
       ┌──────────────────────┐  ┌──────────────────────┐
       │    ✅ iOS App         │  │  ✅ Android App       │
       ├──────────────────────┤  ├──────────────────────┤
-      │ SKIE Wrapper Classes  │  │ SKIE Wrapper Classes │
-      │ - Native Swift async  │  │ - AndroidX ViewModel │
-      │ - StateFlow→AsyncSeq  │  │ - Lifecycle-aware    │
-      │ - MainActor patterns  │  │ - Compose integration│
-      │ - 11 ViewModels ✅    │  │ - 11 ViewModels ✅   │
+      │ SKIE Wrapper Classes  │  │ Direct consumption   │
+      │ - Native Swift async  │  │ - koinViewModel() /  │
+      │ - StateFlow→AsyncSeq  │  │   Koin singles       │
+      │ - MainActor patterns  │  │ - Lifecycle-aware    │
+      │ - 9 ViewModels ✅     │  │ - Compose integration│
       └──────────────────────┘  └──────────────────────┘
 ```
 
 ## Conclusion ✅
 
-The shared ViewModel strategy with SKIE integration has been **successfully completed**. All 11 shared ViewModels are implemented and working across both Android and iOS platforms with:
+The shared ViewModel strategy with SKIE integration has been **successfully completed**. All 9 shared ViewModels are implemented and working across both Android and iOS platforms with:
 
 - ✅ **Complete Implementation**: All ViewModels migrated to shared architecture
 - ✅ **Build Success**: Both platforms compile and run successfully  
@@ -316,5 +241,5 @@ The shared ViewModel strategy with SKIE integration has been **successfully comp
 ---
 
 *Document Status: ✅ Complete - Implementation Finished*  
-*Last Updated: 2025-07-25*  
-*Implementation: ✅ All 11 ViewModels Successfully Deployed*
+*Last Updated: 2026-07-10 (reconciled with post-refactor code)*  
+*Implementation: ✅ All 9 ViewModels Successfully Deployed*

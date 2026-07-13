@@ -7,7 +7,7 @@ CocktailCraft is a Kotlin Multiplatform Mobile (KMM) application that allows use
 **Current State**: ✅ **100% SKIE Integration Complete**
 - ✅ **Android & iOS**: Both platforms building and running successfully
 - ✅ **SKIE Integration**: 100% complete with native Swift/Kotlin interoperability
-- ✅ **11 Shared ViewModels**: Complete business logic sharing across platforms
+- ✅ **9 Shared ViewModels**: Complete business logic sharing across platforms
 - ✅ **Reusable Components**: 20+ iOS SwiftUI components and Android Compose components
 - ✅ **Modern Architecture**: Clean Architecture + MVVM + Reactive Programming
 
@@ -16,7 +16,7 @@ CocktailCraft is a Kotlin Multiplatform Mobile (KMM) application that allows use
 CocktailCraft follows Clean Architecture principles with MVVM pattern and reactive programming:
 
 ### 🏗️ **Shared Business Logic (Kotlin Multiplatform)**
-- **11 Shared ViewModels**: All business logic shared between platforms
+- **9 Shared ViewModels**: All business logic shared between platforms
 - **Repository Pattern**: Data access abstraction
 - **Use Cases**: Encapsulated business operations
 - **Domain Models**: Consistent data structures
@@ -42,18 +42,16 @@ CocktailCraft follows Clean Architecture principles with MVVM pattern and reacti
 │  ├── SharedOrderViewModel                               │
 │  ├── SharedOfflineModeViewModel                         │
 │  ├── SharedThemeViewModel                               │
-│  ├── SharedReviewViewModel                              │
-│  ├── SharedCocktailListViewModel                        │
-│  └── SharedViewModel (Base)                             │
+│  └── SharedReviewViewModel                              │
 └─────────────────────────────────────────────────────────┘
                      │                    │
                      ▼                    ▼
       ┌──────────────────────┐  ┌──────────────────────┐
       │        iOS App        │  │     Android App      │
       ├──────────────────────┤  ├──────────────────────┤
-      │ SKIE Wrapper Classes  │  │ SKIE Wrapper Classes │
-      │ - Native Swift async  │  │ - AndroidX ViewModel │
-      │ - StateFlow→AsyncSeq  │  │ - Lifecycle-aware    │
+      │ SKIE Wrapper Classes  │  │ Direct consumption   │
+      │ - Native Swift async  │  │ - koinViewModel() /  │
+      │ - StateFlow→AsyncSeq  │  │   Koin singles       │
       │ - MainActor patterns  │  │ - Compose integration│
       └──────────────────────┘  └──────────────────────┘
 ```

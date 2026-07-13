@@ -1,8 +1,9 @@
 import Foundation
 
 // Compiled into BOTH the app target and the widget extension (see
-// project.yml) so the deep-link format, App Group id, and snapshot schema
-// have exactly one definition. Keep this file Foundation-only.
+// project.yml) so the deep-link format, App Group id, snapshot schema, and
+// price formatting have exactly one definition. Keep this file
+// Foundation-only.
 
 /// WidgetKit kind strings, shared so the app can reload a specific widget's
 /// timelines without stringly-typed drift.
@@ -75,4 +76,22 @@ enum WidgetSnapshotStore {
               let data = try? Data(contentsOf: url) else { return nil }
         return try? JSONDecoder().decode(WidgetFavoritesSnapshot.self, from: data)
     }
+}
+
+extension Double {
+    /// Canonical price string, shared by the app and the widget extension.
+    /// Prices are demo USD values, so the currency is fixed to USD while the
+    /// *rendering* follows the device locale — en_US shows "$12.50", fr_FR
+    /// shows "12,50 $US" — instead of hard-pinning an en_US string.
+    var asPrice: String {
+        Double.priceFormatter.string(from: NSNumber(value: self)) ?? "$" + String(format: "%.2f", self)
+    }
+
+    private static let priceFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "USD"
+        formatter.locale = Locale.current
+        return formatter
+    }()
 }

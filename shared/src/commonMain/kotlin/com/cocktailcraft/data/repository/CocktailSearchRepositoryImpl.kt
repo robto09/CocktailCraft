@@ -9,6 +9,7 @@ import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.util.runCatchingResult
 
 /**
  * Search and filter operations over TheCocktailDB, extracted from the former
@@ -25,34 +26,26 @@ internal class CocktailSearchRepositoryImpl(
     private suspend fun isOffline(): Boolean = offlineRepository.isOffline()
 
     override suspend fun searchCocktailsByName(name: String): Result<List<Cocktail>> {
-        return try {
+        return runCatchingResult("Failed to search cocktails by name") {
             Result.Success(remote.searchByName(name))
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to search cocktails by name")
         }
     }
 
     override suspend fun filterByIngredient(ingredient: String): Result<List<Cocktail>> {
-        return try {
+        return runCatchingResult("Failed to filter by ingredient") {
             Result.Success(remote.filterByIngredient(ingredient))
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to filter by ingredient")
         }
     }
 
     override suspend fun filterByAlcoholic(alcoholic: Boolean): Result<List<Cocktail>> {
-        return try {
+        return runCatchingResult("Failed to filter by alcoholic") {
             Result.Success(remote.filterByAlcoholic(alcoholic))
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to filter by alcoholic")
         }
     }
 
     override suspend fun filterByCategory(category: String): Result<List<Cocktail>> {
-        return try {
+        return runCatchingResult("Failed to filter by category") {
             Result.Success(categoryFetcher.fetchCocktailsByCategory(category))
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to filter by category")
         }
     }
 
@@ -68,7 +61,7 @@ internal class CocktailSearchRepositoryImpl(
      * dropped.
      */
     override suspend fun advancedSearch(filters: SearchFilters): Result<List<Cocktail>> {
-        return try {
+        return runCatchingResult("Failed to perform advanced search") {
             if (isOffline()) {
                 return Result.Success(applyFiltersInMemory(cocktailCache.getAllCachedCocktails(), filters))
             }
@@ -105,8 +98,6 @@ internal class CocktailSearchRepositoryImpl(
             cocktailCache.cacheCocktails(result)
 
             Result.Success(result)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to perform advanced search")
         }
     }
 

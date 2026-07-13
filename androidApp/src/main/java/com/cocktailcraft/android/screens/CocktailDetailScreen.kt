@@ -25,7 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
@@ -42,7 +42,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -75,6 +75,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,6 +83,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocktailcraft.android.util.toFavoriteIdSet
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.model.Review
@@ -148,7 +150,9 @@ fun CocktailDetailScreen(
     val reviews = reviewState.currentCocktailReviews
     val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
     val favorites = favoritesState.favorites
-    val isFavorite = cocktail?.let { c -> favorites.any { fav -> fav.id == c.id } } ?: false
+    // O(1) membership instead of a scan on every screen recomposition (AN-3)
+    val favoriteIds = remember(favorites) { favorites.toFavoriteIdSet() }
+    val isFavorite = cocktail?.let { it.id in favoriteIds } ?: false
 
     // Haptic feedback handler
     val hapticHandler = rememberHapticHandler()
@@ -185,6 +189,7 @@ fun CocktailDetailScreen(
     )
 
     Scaffold(
+        modifier = Modifier.testTag("cocktail_detail_screen"),
         topBar = {
             CocktailDetailTopBar(
                 cocktailName = cocktail?.name,
@@ -324,7 +329,7 @@ private fun CocktailDetailTopBar(
             navigationIcon = {
                 IconButton(onClick = onBackClick) {
                     Icon(
-                        imageVector = Icons.Filled.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.detail_back),
                         tint = Color.White,
                         modifier = Modifier.size(28.dp)
@@ -339,7 +344,7 @@ private fun CocktailDetailTopBar(
         )
 
         // Add a divider to create separation between top bar and content
-        Divider(
+        HorizontalDivider(
             color = Color.White.copy(alpha = 0.2f),
             thickness = 1.dp
         )
@@ -846,7 +851,7 @@ private fun DetailReviewsSection(
                     CocktailReviewItem(review = review)
 
                     if (index < reviews.take(3).size - 1) {
-                        Divider(
+                        HorizontalDivider(
                             modifier = Modifier.padding(vertical = Spacing.md),
                             color = AppColors.LightGray.copy(alpha = 0.5f)
                         )

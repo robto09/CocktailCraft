@@ -1,7 +1,6 @@
 package com.cocktailcraft.android.di
 
 import com.cocktailcraft.android.widget.WidgetDataProvider
-import com.cocktailcraft.android.widget.WidgetUpdateWorker
 import org.koin.dsl.module
 
 /**

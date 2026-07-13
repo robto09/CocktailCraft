@@ -2,6 +2,7 @@ package com.cocktailcraft.data.repository
 
 import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.CocktailCacheManager
+import com.cocktailcraft.data.cache.OfflineModePolicy
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.remote.CocktailDto
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
@@ -29,14 +30,14 @@ class CocktailFavoritesRepositoryImplTest {
         settings: Settings = MapSettings(),
         online: Boolean = true
     ): CocktailFavoritesRepositoryImpl {
-        val cache = CocktailCache(settings, Json { ignoreUnknownKeys = true }, config)
+        val policy = OfflineModePolicy(settings, config, FakeNetworkMonitor(online))
+        val cache = CocktailCache(settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
         val cacheManager = CocktailCacheManager()
         val remote = CocktailRemoteDataSource(api, cacheManager)
         val offline = CocktailOfflineRepositoryImpl(
-            settings = settings,
-            appConfig = config,
-            networkMonitor = FakeNetworkMonitor(online),
+            offlineModePolicy = policy,
             cocktailCache = cache,
+            cacheManager = cacheManager,
             remote = remote
         )
         return CocktailFavoritesRepositoryImpl(
@@ -79,16 +80,30 @@ class CocktailFavoritesRepositoryImplTest {
     }
 
     @Test
-    fun getFavoriteCocktailsResolvesIdsThroughApiWhenOnline() = runTest {
+    fun getFavoriteCocktailsResolvesUncachedIdsThroughApiWhenOnline() = runTest {
+        // Ids persisted before SH-4's add-time caching (or from another
+        // install) still resolve through the API.
         val settings = MapSettings()
+        settings.putString(config.favoritesStorageKey, "11007")
         val repo = repository(
             api = FakeCocktailApi(drinks = listOf(margaritaDto())),
             settings = settings
         )
-        repo.addToFavorites(testCocktail("11007"))
 
         val favorites = (repo.getFavoriteCocktails() as Result.Success).data
 
         assertEquals(listOf("Margarita"), favorites.map { it.name })
+    }
+
+    @Test
+    fun addToFavoritesCachesTheObjectSoOfflineResolutionSurvives() = runTest {
+        // SH-4: the full object is cached at add-time, so a favorited item no
+        // longer silently vanishes when the device is offline.
+        val repo = repository(api = FakeCocktailApi(), online = false)
+
+        repo.addToFavorites(testCocktail("42", name = "Negroni"))
+        val favorites = (repo.getFavoriteCocktails() as Result.Success).data
+
+        assertEquals(listOf("Negroni"), favorites.map { it.name })
     }
 }

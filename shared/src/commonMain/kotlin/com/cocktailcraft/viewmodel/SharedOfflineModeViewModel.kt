@@ -38,8 +38,9 @@ class SharedOfflineModeViewModel internal constructor(
             _uiState.update { it.copy(isOfflineModeEnabled = manageOfflineModeUseCase.isOfflineModeEnabled()) }
         }
 
+        // Observe network connectivity. Monitoring itself is started once at
+        // app init (initKoin / Application.onCreate), not per-ViewModel (SH-2).
         viewModelScope.launch {
-            networkMonitor.startMonitoring()
             networkMonitor.isOnline.collectLatest { isOnline ->
                 _uiState.update { it.copy(isNetworkAvailable = isOnline) }
                 if (!isOnline && !_uiState.value.isOfflineModeEnabled) {
@@ -103,14 +104,14 @@ class SharedOfflineModeViewModel internal constructor(
     }
     
     /**
-     * Clear cached data.
+     * Clear cached data — purges the persistent and in-memory cache layers,
+     * then resets the UI state (SH-3).
      * SKIE will convert this to Swift async function.
      */
     suspend fun clearCache() {
         try {
-            
+            manageOfflineModeUseCase.clearCache().getOrThrow()
             _uiState.update { it.copy(recentlyViewedCocktails = emptyList(), cacheSize = 0, lastSyncTime = null) }
-            
         } catch (e: Exception) {
             handleException(e, "Failed to clear cache")
         }
@@ -182,9 +183,7 @@ class SharedOfflineModeViewModel internal constructor(
             // Silent fail for cache size update
         }
     }
-    
-    override fun onCleared() {
-        super.onCleared()
-        networkMonitor.stopMonitoring()
-    }
+
+    // No onCleared teardown: the NetworkMonitor is a process-wide Koin single —
+    // stopping it here would kill connectivity updates for every consumer (SH-2).
 }

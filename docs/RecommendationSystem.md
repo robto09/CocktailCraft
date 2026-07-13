@@ -39,84 +39,37 @@ We evaluated several approaches for implementing a recommendation system within 
 - **Cons**: Limited to user's own history, cold start problem
 - **Feasibility**: High
 
-## Implemented Approach: Hybrid Client-side Recommendation Engine
+## Implemented Approach: Client-side Category-Based Related Cocktails
 
-We implemented a hybrid client-side approach that combines multiple recommendation strategies while working within the constraints of the free API tier.
+We implemented option 3 in its simplest useful form: a single category-based "related cocktails" strategy computed client-side from data the app already fetches. (An earlier multi-strategy `CocktailRecommendationEngine` was removed during the repository refactor; the sections above are kept as design history.)
 
 ### Key Components
 
-1. **CocktailRecommendationEngine**: Core engine that implements multiple recommendation strategies
-2. **Repository Extensions**: New methods added to CocktailRepository to support recommendations
-3. **UI Components**: "You might also like" section in the cocktail detail screen
+1. **`GetCocktailDetailUseCase.getRelatedCocktails(cocktail, limit)`** (`shared/src/commonMain/kotlin/com/cocktailcraft/domain/usecase/GetCocktailDetailUseCase.kt`): fetches the current cocktail's category via `CocktailSearchRepository.filterByCategory(...)`, excludes the cocktail itself, and returns a small random sample (default 3). Any failure degrades to an empty list.
+2. **`SharedCocktailDetailViewModel`**: exposes the result as `relatedCocktails` in the shared `DetailUiState`, consumed identically by both platforms.
+3. **UI Components**: the "You might also like" section — `DetailRecommendationsSection` in the Android `CocktailDetailScreen`, `relatedCocktailsSection` in the iOS `CocktailDetailView`.
 
-### Recommendation Strategies
+The Home screen additionally offers `SharedHomeViewModel.getCocktailsByCategory(category, limit)`, a purely local pick over the already-loaded list using a stable per-id sort key, so repeated calls return the same items (SH-10 determinism).
 
-The engine uses a multi-strategy approach to generate recommendations:
+### Recommendation Strategy
 
-1. **Category-Based Matching**: Recommends cocktails from the same category
-   ```kotlin
-   // Example implementation
-   private suspend fun getCocktailsByCategory(category: String): List<Cocktail> {
-       return cocktailRepository.getCocktailsByCategory(category)
-           .filter { it.id !in excludeIds }
-           .shuffled()
-           .take(limit)
-   }
-   ```
-
-2. **Ingredient-Based Matching**: Recommends cocktails with similar ingredients
-   ```kotlin
-   // Example implementation
-   private suspend fun getCocktailsByIngredient(ingredient: String): List<Cocktail> {
-       return cocktailRepository.getCocktailsByIngredient(ingredient)
-           .filter { it.id !in excludeIds }
-           .shuffled()
-           .take(limit)
-   }
-   ```
-
-3. **User Preference Inference**: Analyzes user favorites to identify preferred categories
-   ```kotlin
-   // Example implementation
-   val favorites = favoritesRepository.getFavorites().first()
-   val favoriteCategories = favorites
-       .mapNotNull { it.category }
-       .groupBy { it }
-       .maxByOrNull { it.value.size }
-       ?.key
-   ```
-
-4. **Alcoholic/Non-alcoholic Matching**: Recommends cocktails with similar alcohol content
-   ```kotlin
-   // Example implementation
-   private suspend fun getCocktailsByAlcoholicFilter(alcoholicFilter: String): List<Cocktail> {
-       return cocktailRepository.getCocktailsByAlcoholicFilter(alcoholicFilter)
-           .filter { it.id !in excludeIds }
-           .shuffled()
-           .take(limit)
-   }
-   ```
+```kotlin
+suspend fun getRelatedCocktails(cocktail: Cocktail, limit: Int = 3): List<Cocktail> {
+    return try {
+        val cocktails = searchRepository.filterByCategory(cocktail.category ?: CocktailCategories.DEFAULT).getOrDefault(emptyList())
+        cocktails.filter { it.id != cocktail.id }.shuffled().take(limit)
+    } catch (e: Exception) {
+        emptyList()
+    }
+}
+```
 
 ### Optimization Techniques
 
-To work efficiently within API constraints, we implemented several optimizations:
-
-1. **Caching**: Extensive use of local caching to minimize API calls
-   ```kotlin
-   // Example implementation
-   if (isOffline()) {
-       // Use cached cocktails when offline
-       cocktailCache.getAllCachedCocktails()
-           .filter { it.category == category }
-           .take(5)
-   } else {
-       filterByCategory(category).first()
-   }
-   ```
-
-2. **Batched Loading**: Recommendations are loaded in a single batch
-3. **Fallback Mechanisms**: Graceful degradation when API calls fail
-4. **Offline Support**: Recommendations work even without internet connection
+1. **Caching**: `filterByCategory` goes through the shared cocktail cache, so recommendations usually cost no extra API call beyond what the category listing already spent
+2. **Batched Loading**: The related list is loaded once per detail view, alongside the detail fetch
+3. **Fallback Mechanisms**: Errors degrade to an empty list — the section hides rather than breaking the screen
+4. **Offline Support**: When offline, the category filter is served from cached data, so recommendations still work without a connection
 
 ### UI Implementation
 
@@ -125,7 +78,7 @@ The recommendation UI is designed to be:
 1. **Non-intrusive**: Displayed as a horizontal carousel below the main content
 2. **Visually appealing**: Animated entry, consistent with app design language
 3. **Performance-optimized**: Lazy loading, efficient image handling
-4. **Gracefully degrading**: Hides completely if no recommendations are available
+4. **Gracefully degrading**: Shimmer while loading; an unobtrusive placeholder (Android) or a hidden section (iOS) when nothing is available
 
 ## Pros and Cons of the Implemented Approach
 

@@ -2,13 +2,44 @@ package com.cocktailcraft.data.remote
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonTransformingSerializer
 import com.cocktailcraft.domain.model.CocktailIngredient
 
 @Serializable
 internal data class CocktailResponse(
     @SerialName("drinks")
+    @Serializable(with = CocktailDtoListSerializer::class)
     val drinks: List<CocktailDto>? = null
 )
+
+/**
+ * TheCocktailDB quirk shield (SH-6): some empty-result endpoints return the
+ * literal string "no data found" for `drinks` instead of null/[], and payloads
+ * occasionally contain a malformed record missing idDrink/strDrink. Coerce the
+ * former to an empty array and drop the latter at the JSON-tree level before
+ * structural decoding, so one bad record/response shape doesn't fail the whole
+ * payload. A literal JSON null still short-circuits to Kotlin null before this
+ * transform runs (nullable-property semantics), keeping the
+ * `response.drinks ?: emptyList()` call sites intact.
+ */
+internal object CocktailDtoListSerializer : JsonTransformingSerializer<List<CocktailDto>>(
+    ListSerializer(CocktailDto.serializer())
+) {
+    override fun transformDeserialize(element: JsonElement): JsonElement {
+        val array = element as? JsonArray ?: return JsonArray(emptyList())
+        return JsonArray(array.filter { item ->
+            val obj = item as? JsonObject
+            val id = obj?.get("idDrink")
+            val name = obj?.get("strDrink")
+            id != null && id !is JsonNull && name != null && name !is JsonNull
+        })
+    }
+}
 
 @Serializable
 internal data class CocktailDto(

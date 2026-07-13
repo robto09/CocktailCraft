@@ -42,6 +42,7 @@ class SharedFavoritesViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         vm.toggleFavorite(testCocktail("42"))
+        advanceUntilIdle() // state arrives via the observed favorites flow (SH-4)
 
         assertTrue(vm.isFavorite("42"))
         assertEquals(1, vm.uiState.value.favoriteCount)
@@ -57,6 +58,7 @@ class SharedFavoritesViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         vm.toggleFavorite(cocktail)
+        advanceUntilIdle() // state arrives via the observed favorites flow (SH-4)
 
         assertFalse(vm.isFavorite("42"))
         assertTrue(vm.isEmpty)
@@ -72,6 +74,7 @@ class SharedFavoritesViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         vm.clearAllFavorites()
+        advanceUntilIdle() // state arrives via the observed favorites flow (SH-4)
 
         assertTrue(vm.isEmpty)
         assertEquals(0, vm.uiState.value.favoriteCount)

@@ -86,6 +86,7 @@ class FakeCocktailRepository(
     override fun getCocktailImageUrl(cocktail: Cocktail): String = cocktail.imageUrl ?: ""
 
     // Favorites
+    override fun observeFavorites(): Flow<List<Cocktail>> = favorites
     override suspend fun getFavoriteCocktails(): Result<List<Cocktail>> = Result.Success(favorites.value)
     override suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> {
         favorites.update { it + cocktail }
@@ -104,6 +105,7 @@ class FakeCocktailRepository(
     override suspend fun setOfflineMode(enabled: Boolean) { offlineMode = enabled }
     override suspend fun isOfflineModeEnabled(): Boolean = offlineMode
     override suspend fun isOffline(): Boolean = offlineMode
+    override suspend fun clearCache(): Result<Unit> = Result.Success(Unit)
 }
 
 class FakeCartRepository : CartRepository {

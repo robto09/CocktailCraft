@@ -29,5 +29,9 @@ internal class ManageOfflineModeUseCase(
     suspend fun checkConnectivity(): Result<Boolean> {
         return offlineRepository.checkApiConnectivity()
     }
+
+    suspend fun clearCache(): Result<Unit> {
+        return offlineRepository.clearCache()
+    }
 }
 

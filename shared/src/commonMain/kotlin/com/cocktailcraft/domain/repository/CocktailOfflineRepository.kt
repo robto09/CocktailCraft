@@ -15,5 +15,8 @@ interface CocktailOfflineRepository {
 
     /** True when the user forced offline mode or the network is currently down. */
     suspend fun isOffline(): Boolean
+
+    /** Purge all cached cocktail data — persistent storage and in-memory layers. */
+    suspend fun clearCache(): Result<Unit>
 }
 

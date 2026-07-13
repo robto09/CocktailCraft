@@ -3,6 +3,7 @@ package com.cocktailcraft.data.repository
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.util.runCatchingResult
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -62,7 +63,7 @@ internal class CartRepositoryImpl(
 
     override suspend fun addToCart(cartItem: CocktailCartItem): Result<Unit> = withContext(ioDispatcher) {
         ensureLoaded()
-        try {
+        runCatchingResult("Failed to add to cart") {
             val currentItems = _cartItems.value.toMutableList()
             val existingItemIndex = currentItems.indexOfFirst { it.cocktail.id == cartItem.cocktail.id }
 
@@ -77,26 +78,22 @@ internal class CartRepositoryImpl(
 
             saveCartItems(currentItems)
             Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to add to cart")
         }
     }
 
     override suspend fun removeFromCart(cocktailId: String): Result<Unit> = withContext(ioDispatcher) {
         ensureLoaded()
-        try {
+        runCatchingResult("Failed to remove from cart") {
             val currentItems = _cartItems.value.toMutableList()
             currentItems.removeAll { it.cocktail.id == cocktailId }
             saveCartItems(currentItems)
             Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to remove from cart")
         }
     }
 
     override suspend fun updateQuantity(cocktailId: String, quantity: Int): Result<Unit> = withContext(ioDispatcher) {
         ensureLoaded()
-        try {
+        runCatchingResult("Failed to update quantity") {
             val currentItems = _cartItems.value.toMutableList()
             val itemIndex = currentItems.indexOfFirst { it.cocktail.id == cocktailId }
 
@@ -110,29 +107,23 @@ internal class CartRepositoryImpl(
                 saveCartItems(currentItems)
             }
             Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to update quantity")
         }
     }
 
     override suspend fun clearCart(): Result<Unit> = withContext(ioDispatcher) {
         ensureLoaded()
-        try {
+        runCatchingResult("Failed to clear cart") {
             settings.remove(CART_ITEMS_KEY)
             _cartItems.value = emptyList()
             Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to clear cart")
         }
     }
 
     override suspend fun getCartTotal(): Result<Double> {
         ensureLoaded()
-        return try {
+        return runCatchingResult("Failed to get cart total") {
             val cartItems = _cartItems.value
             Result.Success(cartItems.sumOf { it.cocktail.price * it.quantity })
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to get cart total")
         }
     }
 

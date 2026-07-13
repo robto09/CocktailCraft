@@ -84,8 +84,8 @@ final class FavoritesViewModelSKIE: SharedViewModelWrapper<FavoritesUiState> {
     // MARK: - Helper Methods for SwiftUI
 
     func refreshFavorites() async {
-        // Simulate refresh with delay
-        try? await Task.sleep(nanoseconds: 500_000_000)
+        // No artificial delay: the spinner should last exactly as long as the
+        // reload does (IO-2).
         await loadFavorites()
     }
 

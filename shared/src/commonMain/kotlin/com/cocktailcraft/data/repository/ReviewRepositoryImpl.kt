@@ -4,6 +4,7 @@ import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.util.runCatchingResult
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -67,12 +68,10 @@ internal class ReviewRepositoryImpl(
 
     override suspend fun addReview(review: Review): Result<Unit> = withContext(ioDispatcher) {
         ensureLoaded()
-        try {
+        runCatchingResult("Failed to add review") {
             _reviews.value = _reviews.value + review
             saveReviewsToStorage()
             Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to add review")
         }
     }
 
@@ -83,7 +82,7 @@ internal class ReviewRepositoryImpl(
         date: String
     ): Result<Boolean> = withContext(ioDispatcher) {
         ensureLoaded()
-        try {
+        runCatchingResult("Failed to update review") {
             var found = false
             _reviews.value = _reviews.value.map { review ->
                 if (review.id == reviewId) {
@@ -95,14 +94,12 @@ internal class ReviewRepositoryImpl(
             }
             if (found) saveReviewsToStorage()
             Result.Success(found)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to update review")
         }
     }
 
     override suspend fun deleteReview(reviewId: String): Result<Boolean> = withContext(ioDispatcher) {
         ensureLoaded()
-        try {
+        runCatchingResult("Failed to delete review") {
             val remaining = _reviews.value.filterNot { it.id == reviewId }
             val removed = remaining.size != _reviews.value.size
             if (removed) {
@@ -110,8 +107,6 @@ internal class ReviewRepositoryImpl(
                 saveReviewsToStorage()
             }
             Result.Success(removed)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to delete review")
         }
     }
 }

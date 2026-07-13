@@ -280,6 +280,12 @@
     <string name="widget_favorites_header">❤️ Favorites (%1$d)</string>
     <string name="widget_tap_refresh_to_retry">Tap ↻ to retry</string>
     <string name="widget_tap_refresh_to_discover">Tap ↻ to discover</string>
+    <string name="widget_refresh_icon">↻</string>
+    <string name="widget_error_icon">⚠️</string>
+    <string name="widget_cocktail_glass_icon">🍸</string>
+    <string name="widget_tropical_drink_icon">🍹</string>
+    <string name="widget_no_favorites_icon">💔</string>
+    <string name="widget_favorite_heart_icon">❤️</string>
     <string name="widget_view_all_favorites">View all %1$d favorites →</string>
     <string name="widget_preview_cocktail_name">Margarita</string>
     <string name="widget_preview_cocktail_category">Ordinary Drink</string>

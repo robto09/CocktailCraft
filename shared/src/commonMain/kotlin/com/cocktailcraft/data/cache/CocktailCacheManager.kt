@@ -12,24 +12,26 @@ import kotlinx.coroutines.sync.withLock
  * - Thread-safe access to mutable state via Mutex
  * - Persistence across repository instances (singleton scope)
  *
- * Note: This is separate from [CocktailCache] which handles persistent (Settings-based) caching.
- * This class manages volatile in-memory caches and rate-limit tracking only.
+ * Eviction matrix (SH-11): this class holds the VOLATILE side — per-category
+ * lists with a 5-minute freshness window plus rate-limit bookkeeping — while
+ * [CocktailCache] holds the PERSISTENT side (Settings-backed LRU, 24h TTL,
+ * offline-aware). The two hold overlapping cocktail data with independent
+ * expiry, so the single eviction entry point,
+ * CocktailOfflineRepositoryImpl.clearCache(), always purges BOTH via
+ * [clearDataCaches] + [CocktailCache.clearCache]. Never add an eviction path
+ * that clears only one of the two.
  */
 internal class CocktailCacheManager {
 
     private val mutex = Mutex()
 
-    // Global cache to persist across repository instances
-    private var _globalCocktailsCache: List<Cocktail> = emptyList()
-    private var _globalLastFetchTime: Long = 0
-
     // Category-specific cache
     private val _categoryCacheMap = mutableMapOf<String, List<Cocktail>>()
     private val _categoryLastFetchMap = mutableMapOf<String, Long>()
 
-    // Rate limit tracking
+    // Rate limit tracking: only the proactive min-interval throttle lives
+    // here; retry/backoff is owned solely by Ktor's HttpRequestRetry (SH-7).
     private var _lastApiCallTime: Long = 0
-    private var _rateLimitBackoffMs: Long = 0
 
     // Constants
     companion object {
@@ -38,25 +40,6 @@ internal class CocktailCacheManager {
         // (AppConfig.cacheExpirationMs, 24 h) — the two are deliberately separate.
         const val CACHE_VALIDITY_MS = 5 * 60 * 1000 // 5 minutes
         const val MIN_API_CALL_INTERVAL_MS = 1000L // 1 second between calls
-        const val MAX_BACKOFF_MS = 30000L // Max 30 seconds backoff
-    }
-
-    // --- Global cocktails cache ---
-
-    suspend fun getGlobalCocktailsCache(): List<Cocktail> = mutex.withLock {
-        _globalCocktailsCache
-    }
-
-    suspend fun setGlobalCocktailsCache(value: List<Cocktail>) = mutex.withLock {
-        _globalCocktailsCache = value
-    }
-
-    suspend fun getGlobalLastFetchTime(): Long = mutex.withLock {
-        _globalLastFetchTime
-    }
-
-    suspend fun setGlobalLastFetchTime(value: Long) = mutex.withLock {
-        _globalLastFetchTime = value
     }
 
     // --- Category cache ---
@@ -84,31 +67,15 @@ internal class CocktailCacheManager {
         _lastApiCallTime = value
     }
 
-    suspend fun getRateLimitBackoffMs(): Long = mutex.withLock {
-        _rateLimitBackoffMs
-    }
-
-    suspend fun setRateLimitBackoffMs(value: Long) = mutex.withLock {
-        _rateLimitBackoffMs = value
-    }
-
-    suspend fun resetBackoff() = mutex.withLock {
-        _rateLimitBackoffMs = 0
-    }
-
-    suspend fun applyExponentialBackoff() = mutex.withLock {
-        _rateLimitBackoffMs = minOf(
-            if (_rateLimitBackoffMs == 0L) 2000L else _rateLimitBackoffMs * 2,
-            MAX_BACKOFF_MS
-        )
-    }
-
     /**
-     * Update the global cocktails cache by transforming each entry.
-     * Useful for updating individual cocktails in the cache.
+     * Purge the volatile per-category data caches. Part of the user-facing
+     * "Clear Cache" path (SH-3), which must empty BOTH cache layers — this one
+     * and the persistent [CocktailCache] (SH-11). Rate-limit bookkeeping is
+     * deliberately preserved: clearing data must not grant a fresh API budget.
      */
-    suspend fun updateGlobalCocktailsCache(transform: (Cocktail) -> Cocktail) = mutex.withLock {
-        _globalCocktailsCache = _globalCocktailsCache.map(transform)
+    suspend fun clearDataCaches() = mutex.withLock {
+        _categoryCacheMap.clear()
+        _categoryLastFetchMap.clear()
     }
 }
 

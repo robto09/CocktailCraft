@@ -36,11 +36,14 @@ class WidgetUpdateWorker(
 
     private suspend fun updateRandomCocktailWidgets() {
         try {
-            val dataProvider = WidgetDataProvider.getInstance()
-            val cocktail = dataProvider.getRandomCocktail()
-
+            // Check for widget instances BEFORE fetching — an hourly run with
+            // no widgets placed must not burn a network call (AN-2).
             val manager = GlanceAppWidgetManager(context)
             val glanceIds = manager.getGlanceIds(RandomCocktailWidget::class.java)
+            if (glanceIds.isEmpty()) return
+
+            val dataProvider = WidgetDataProvider.getInstance()
+            val cocktail = dataProvider.getRandomCocktail()
 
             glanceIds.forEach { glanceId ->
                 updateAppWidgetState(context, glanceId) { prefs ->
@@ -49,7 +52,6 @@ class WidgetUpdateWorker(
                         prefs[RandomCocktailKeys.ID] = cocktail.id
                         prefs[RandomCocktailKeys.NAME] = cocktail.name
                         prefs[RandomCocktailKeys.CATEGORY] = cocktail.category ?: ""
-                        prefs[RandomCocktailKeys.IMAGE_URL] = cocktail.imageUrl ?: ""
                         prefs.remove(RandomCocktailKeys.ERROR)
                     }
                 }
@@ -63,6 +65,11 @@ class WidgetUpdateWorker(
 
     private suspend fun updateFavoritesWidgets() {
         try {
+            // Same no-widgets short-circuit as the random widget path (AN-2).
+            val manager = GlanceAppWidgetManager(context)
+            val glanceIds = manager.getGlanceIds(FavoritesWidget::class.java)
+            if (glanceIds.isEmpty()) return
+
             val dataProvider = WidgetDataProvider.getInstance()
             val favorites = dataProvider.getFavoriteCocktails()
 
@@ -76,9 +83,6 @@ class WidgetUpdateWorker(
             }
 
             val favoritesJson = FavoriteItem.toJsonArray(favoriteItems)
-
-            val manager = GlanceAppWidgetManager(context)
-            val glanceIds = manager.getGlanceIds(FavoritesWidget::class.java)
 
             glanceIds.forEach { glanceId ->
                 updateAppWidgetState(context, glanceId) { prefs ->
@@ -120,6 +124,18 @@ class WidgetUpdateWorker(
          */
         fun cancel(context: Context) {
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+        }
+
+        /**
+         * Cancel only when no widget instances of EITHER type remain — both
+         * widgets share this one worker, so a receiver's onDisabled must not
+         * tear down refresh for the other widget (AN-2).
+         */
+        suspend fun cancelIfNoWidgetsRemain(context: Context) {
+            val manager = GlanceAppWidgetManager(context)
+            val anyLeft = manager.getGlanceIds(RandomCocktailWidget::class.java).isNotEmpty() ||
+                manager.getGlanceIds(FavoritesWidget::class.java).isNotEmpty()
+            if (!anyLeft) cancel(context)
         }
 
         /**

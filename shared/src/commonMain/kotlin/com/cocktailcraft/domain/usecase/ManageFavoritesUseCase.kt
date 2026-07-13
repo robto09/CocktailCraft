@@ -5,11 +5,15 @@ import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
+import kotlinx.coroutines.flow.Flow
 
 internal class ManageFavoritesUseCase(
     private val favoritesRepository: CocktailFavoritesRepository,
     private val detailRepository: CocktailDetailRepository
 ) {
+    /** Hot stream of favorites; mutations from any screen publish here (SH-4). */
+    fun observeFavorites(): Flow<List<Cocktail>> = favoritesRepository.observeFavorites()
+
     suspend fun toggle(cocktail: Cocktail): Result<Boolean> {
         return try {
             val isFav = favoritesRepository.isCocktailFavorite(cocktail.id).getOrNull() ?: false

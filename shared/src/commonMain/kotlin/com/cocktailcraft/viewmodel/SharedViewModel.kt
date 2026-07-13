@@ -99,6 +99,9 @@ abstract class SharedViewModel : ViewModel() {
     /**
      * Public so manually-owned instances (iOS factory-scoped wrappers) can
      * clear themselves; store-owned instances are cleared by the platform.
+     * Koin `single`-scoped ViewModels are NEITHER — nothing ever calls
+     * onCleared() on them, so never put teardown logic here expecting it to
+     * run for a singleton (see DomainModule's ViewModel scoping notes, SH-9).
      */
     public override fun onCleared() {
         super.onCleared()

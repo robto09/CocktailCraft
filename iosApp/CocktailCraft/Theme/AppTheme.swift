@@ -135,19 +135,5 @@ extension View {
     }
 }
 
-extension Double {
-    /// Canonical price string. Prices are demo USD, so formatting is pinned
-    /// to en_US instead of the device locale (SwiftUI's `specifier:`
-    /// interpolation is locale-aware and rendered "$12,78" on comma-decimal
-    /// locales).
-    var asPrice: String {
-        Double.priceFormatter.string(from: NSNumber(value: self)) ?? "$" + String(format: "%.2f", self)
-    }
-
-    private static let priceFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.locale = Locale(identifier: "en_US")
-        return formatter
-    }()
-}
+// Double.asPrice moved to Utils/WidgetBridge.swift so the widget extension
+// (which also compiles that file) shares the exact same price formatting.

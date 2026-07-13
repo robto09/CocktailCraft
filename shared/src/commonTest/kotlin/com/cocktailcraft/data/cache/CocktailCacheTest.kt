@@ -38,7 +38,7 @@ class CocktailCacheTest {
     }
 
     private fun cache(settings: Settings, online: Boolean = true, appConfig: AppConfig = config) =
-        CocktailCache(settings, json, appConfig, networkMonitor = FakeNetworkMonitor(online))
+        CocktailCache(settings, json, appConfig, offlineModePolicy = OfflineModePolicy(settings, appConfig, FakeNetworkMonitor(online)))
 
     private fun nowMs() = Clock.System.now().toEpochMilliseconds()
 

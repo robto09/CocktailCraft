@@ -1,111 +1,71 @@
 # Testing Framework Setup
 
 ## Overview
-This document summarizes the comprehensive testing implementation for the CocktailCraft Kotlin Multiplatform project. The framework includes complete test coverage for Android UI, ViewModels, and components using Jetpack Compose UI testing, kotlin-test, and JUnit Jupiter.
+This document summarizes the testing setup for the CocktailCraft Kotlin Multiplatform project. Most coverage lives in the **shared module's `commonTest`** suite (repositories, use cases, ViewModels, cache, DI graph), with platform suites on top.
 
-## ✅ What's Implemented
+> The test trees themselves are the up-to-date catalog — this page deliberately describes areas, not individual test files, so it doesn't drift when tests are added or renamed.
 
-### Testing Framework Setup
-- **Dependencies**: All testing libraries properly configured and compatible
-- **Build Configuration**: JUnit 5, Compose testing, and multiplatform setup working
-- **Directory Structure**: Complete test directory structure created
-- **Comprehensive Tests**: Full test suite covering UI, ViewModels, and components
+## Test Structure
 
-### Test Structure
 ```
-├── shared/src/commonTest/              # Basic multiplatform tests
-├── androidApp/src/test/                # Android unit tests (ViewModels)
-├── androidApp/src/androidTest/         # Android UI tests (Screens & Components)
-└── iosApp/CocktailCraftTests/          # iOS test structure ready
+├── shared/src/commonTest/              # Main suite: data, domain, viewmodel, di, util
+├── androidApp/src/test/                # Android JVM unit tests (Robolectric-capable)
+├── androidApp/src/androidTest/         # Android instrumented/Compose UI tests
+├── iosApp/CocktailCraftTests/          # iOS unit tests (XCTest)
+└── iosApp/CocktailCraftUITests/        # iOS UI tests (XCUITest)
 ```
 
-### Implemented Test Files
+## What's Covered
 
-#### Android UI Tests (androidTest)
-- **Screen Tests**:
-  - `HomeScreenTest.kt` - Complete HomeScreen UI testing
-  - `FavoritesScreenTest.kt` - FavoritesScreen UI testing
-  - `CartScreenTest.kt` - CartScreen UI testing
-- **Component Tests**:
-  - `CocktailItemTest.kt` - CocktailItem component testing
-  - `CocktailSearchBarTest.kt` - Search functionality testing
-  - `EmptyStateComponentTest.kt` - Empty state component testing
-- **Basic Setup**: `BasicUITest.kt` - Framework verification
+### Shared (`shared/src/commonTest/kotlin/com/cocktailcraft/`)
+- **`data/`**: repository implementations (auth, cart, orders, reviews, favorites, offline, search), `CocktailCache`, API response parsing and `CocktailApiImpl`, auth-storage migration and password hashing
+- **`domain/`**: use case tests (e.g. `PlaceOrderUseCaseTest`, `ManageFavoritesUseCaseTest`), input validation, domain policies
+- **`viewmodel/`**: tests for all nine `Shared*ViewModel`s
+- **`di/`**: `KoinDependencyGraphTest` (the real module graph must resolve) and the network retry policy
+- **`util/`**: `ErrorHandler` classification, `Result` helpers
+- **`testutil/`**: hand-written fakes (`Fakes.kt`), test data, and the main-dispatcher test base — tests construct ViewModels/use cases directly via constructor injection; there is no mock-based Koin test module
 
-#### Android Unit Tests (test)
-- **ViewModel Tests**:
-  - `HomeViewModelSKIETest.kt` - HomeViewModel unit tests with MockK
-  - `FavoritesViewModelSKIETest.kt` - FavoritesViewModel unit tests
-  - `CartViewModelSKIETest.kt` - CartViewModel unit tests
-- **Basic Setup**: `BasicAndroidTest.kt` - Framework verification
+### Android
+- **`androidApp/src/test`**: JVM unit tests (framework verification and Android-specific units)
+- **`androidApp/src/androidTest`**: instrumented Compose tests driving the app against fake repositories (e.g. `MainScreenSharedVmTest` with `fakes/FakeRepositories.kt`)
 
-#### Shared Tests (commonTest)
-- **Basic structural tests** (multiplatform compatible)
-- **ViewModel structure verification**
+### iOS
+- **`iosApp/CocktailCraftTests`**: core unit tests, `SharedViewModelWrapper` behavior, widget bridge
+- **`iosApp/CocktailCraftUITests`**: XCUITest flows (home, cart, favorites, deep links)
 
-## 🎯 Testing Technologies
+## Testing Technologies
 
-**Android**: JUnit Jupiter 5.10.1, kotlin-test 2.0.21, Jetpack Compose UI Testing, MockK 1.13.8
-**iOS**: XCUITest, XCTest
-**Shared**: kotlin-test 2.0.21, kotlinx-coroutines-test 1.10.1
+**Shared**: kotlin-test, kotlinx-coroutines-test
+**Android**: JUnit (4 + Jupiter), Compose UI Testing, Robolectric, Koin test
+**iOS**: XCTest, XCUITest
 
-## 🧪 Test Coverage
-
-### Screen Tests
-- **HomeScreen**: Search functionality, cocktail list display, loading states, error states, user interactions (add to cart, favorites), pull-to-refresh
-- **FavoritesScreen**: Empty state, favorites list display, remove from favorites, add to cart functionality, scrolling
-- **CartScreen**: Empty cart state, cart items display, quantity updates, remove items, checkout flow, favorites integration
-
-### ViewModel Tests
-- **HomeViewModelSKIE**: All StateFlow exposures, search operations, filtering, sorting, pagination, offline mode, error handling
-- **FavoritesViewModelSKIE**: Favorites management, loading states, error handling, sorting and filtering operations
-- **CartViewModelSKIE**: Cart operations, quantity management, price calculations, delivery information, state management
-
-### Component Tests
-- **CocktailItem**: Display information, favorite state, user interactions, edge cases (long names, special prices)
-- **CocktailSearchBar**: Search input, advanced search toggle, filter indicators, clear functionality
-- **EmptyStateComponent**: Various empty states, action buttons, icon display, layout consistency
-
-## 🚀 How to Run Tests
+## How to Run Tests
 
 ```bash
-# Run basic unit tests (always working)
-./gradlew :androidApp:testDebugUnitTest --tests "*BasicAndroidTest*"
+# Shared module (the bulk of the coverage)
+./gradlew :shared:testAndroidHostTest
 
-# Run individual ViewModel tests (working when run separately)
-./gradlew :androidApp:testDebugUnitTest --tests "*HomeViewModelSKIETest*"
-./gradlew :androidApp:testDebugUnitTest --tests "*FavoritesViewModelSKIETest*"
-./gradlew :androidApp:testDebugUnitTest --tests "*CartViewModelSKIETest*"
+# Android unit tests
+./gradlew :androidApp:testDebugUnitTest
 
-# Run UI tests (100% working - requires emulator/device)
-./gradlew :androidApp:connectedDebugAndroidTest --tests "*HomeScreenTest*"
-./gradlew :androidApp:connectedDebugAndroidTest --tests "*FavoritesScreenTest*"
-./gradlew :androidApp:connectedDebugAndroidTest --tests "*CartScreenTest*"
-./gradlew :androidApp:connectedDebugAndroidTest --tests "*CocktailItemTest*"
-./gradlew :androidApp:connectedDebugAndroidTest --tests "*CocktailSearchBarTest*"
-./gradlew :androidApp:connectedDebugAndroidTest --tests "*EmptyStateComponentTest*"
-
-# Run all UI tests (recommended approach)
+# Android instrumented/UI tests (requires emulator or device)
 ./gradlew :androidApp:connectedDebugAndroidTest
 
-# Note: Run ViewModel tests individually for best results due to Koin isolation issues
+# iOS (from iosApp/, after pod install / xcodegen generate)
+xcodebuild test -workspace CocktailCraft.xcworkspace -scheme CocktailCraft \
+  -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
-## 📈 What This Gives You
+## What This Gives You
 
-- **Comprehensive Coverage**: Full test suite covering UI, ViewModels, and components
-- **Quality Assurance**: Automated testing for user interactions and business logic
-- **Regression Prevention**: Catch issues before they reach production
-- **Documentation**: Tests serve as living documentation of expected behavior
-- **Confidence**: Safe refactoring and feature development
+- **Regression Prevention**: the shared suite exercises the business logic both platforms run
+- **DI Safety**: Koin wiring breaks fail in CI via the dependency-graph test
+- **Documentation**: tests serve as living documentation of expected behavior
+- **Confidence**: safe refactoring and feature development
 
-## 🔄 Future Enhancements
+## Future Enhancements
 
-Potential areas for expansion:
-1. **Integration Tests**: End-to-end user flows across multiple screens
+1. **Integration Tests**: end-to-end user flows across multiple screens
 2. **Performance Tests**: UI rendering performance and memory usage
-3. **Accessibility Tests**: Screen reader and accessibility compliance
-4. **iOS Tests**: Implement comprehensive iOS UI tests using XCUITest
-5. **API Tests**: Mock API response testing and error scenarios
-
-The testing foundation is solid and ready for expansion! 🎉
+3. **Accessibility Tests**: screen reader and accessibility compliance
+4. **API Tests**: broader mock API response and error-scenario coverage

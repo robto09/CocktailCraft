@@ -12,8 +12,8 @@ struct RandomCocktailWidget: Widget {
                 .containerBackground(.background, for: .widget)
                 .widgetURL(entry.cocktail.flatMap { WidgetDeepLink.cocktailURL(id: $0.id) })
         }
-        .configurationDisplayName("Random Cocktail")
-        .description("Discover a new cocktail every few hours.")
+        .configurationDisplayName(String(localized: "Random Cocktail"))
+        .description(String(localized: "Discover a new cocktail every few hours."))
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
@@ -128,10 +128,10 @@ struct RandomCocktailWidgetView: View {
                 Image(systemName: "wineglass")
                     .font(.title3)
                     .foregroundStyle(.secondary)
-                Text("No cocktail right now")
+                Text(String(localized: "No cocktail right now"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text("Check back soon")
+                Text(String(localized: "Check back soon"))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -159,7 +159,7 @@ struct RandomCocktailWidgetView: View {
 
     private func info(_ cocktail: RandomWidgetCocktail) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("Try something new")
+            Text(String(localized: "Try something new"))
                 .font(.caption2)
                 .foregroundStyle(WidgetColors.primary)
             Text(cocktail.name)

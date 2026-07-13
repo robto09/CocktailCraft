@@ -23,15 +23,27 @@ import org.koin.core.component.get
 
 fun doInitKoin(): KoinApplication = initKoin {}
 
-// Helper class to provide dependencies to iOS without using reified generics.
-// Explicit return types define the exported Objective-C surface.
+/**
+ * Helper class to provide dependencies to iOS without using reified generics.
+ * Explicit return types define the exported Objective-C surface.
+ *
+ * OBLIGATION (AR-6): every new shared single/factory that iOS needs must get
+ * an explicit getter here — a missing getter silently hides the binding from
+ * Swift. Add it under the matching section below AND add a resolution
+ * assertion to KoinHelperTest (shared/src/iosTest) so a missing or renamed
+ * binding fails a test instead of crashing Swift at first use.
+ */
 class KoinHelper : KoinComponent {
+
+    // Repositories
 
     fun getAuthRepository(): AuthRepository = get()
 
     fun getCartRepository(): CartRepository = get()
 
     fun getOrderRepository(): OrderRepository = get()
+
+    // Services / platform bridges
 
     fun getNetworkMonitor(): NetworkMonitor = get()
 
@@ -47,15 +59,21 @@ class KoinHelper : KoinComponent {
     suspend fun getFavoriteCocktailsSnapshot(): List<Cocktail> =
         get<CocktailFavoritesRepository>().getFavoriteCocktails().getOrThrow()
 
-    // Shared ViewModels
+    // Shared ViewModels — screen-scoped (viewModel {} DSL): fresh instance per
+    // resolution; iOS wrappers own the lifecycle and call onCleared() in deinit
+
+    fun getSharedCocktailDetailViewModel(): SharedCocktailDetailViewModel = get()
+
+    fun getSharedReviewViewModel(): SharedReviewViewModel = get()
+
+    // Shared ViewModels — global-state (single): process-wide instances shared
+    // with Android's screens; wrappers must NOT call onCleared() on these
 
     fun getSharedFavoritesViewModel(): SharedFavoritesViewModel = get()
 
     fun getSharedHomeViewModel(): SharedHomeViewModel = get()
 
     fun getSharedCartViewModel(): SharedCartViewModel = get()
-
-    fun getSharedCocktailDetailViewModel(): SharedCocktailDetailViewModel = get()
 
     fun getSharedOfflineModeViewModel(): SharedOfflineModeViewModel = get()
 
@@ -64,6 +82,4 @@ class KoinHelper : KoinComponent {
     fun getSharedProfileViewModel(): SharedProfileViewModel = get()
 
     fun getSharedThemeViewModel(): SharedThemeViewModel = get()
-
-    fun getSharedReviewViewModel(): SharedReviewViewModel = get()
 }

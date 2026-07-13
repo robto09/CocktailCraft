@@ -16,9 +16,10 @@ import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.viewmodel.state.HomeUiState
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlin.math.absoluteValue
 
 /**
  * Shared ViewModel for Home screen functionality.
@@ -28,6 +29,7 @@ import kotlinx.coroutines.launch
  * iOS SKIE wrappers observe the single [uiState] flow.
  * Individual StateFlow properties are derived for backward compatibility with Android.
  */
+@OptIn(FlowPreview::class)
 class SharedHomeViewModel internal constructor(
     private val searchCocktailsUseCase: SearchCocktailsUseCase,
     private val loadCocktailsByCategoryUseCase: LoadCocktailsByCategoryUseCase,
@@ -44,7 +46,15 @@ class SharedHomeViewModel internal constructor(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private val PAGE_SIZE = 10
-    
+    private val SEARCH_DEBOUNCE_MS = 300L
+
+    // Debounced search pipeline (SH-13): platforms push raw query text via
+    // [updateSearchQuery]; a null value cancels any pending search (used by
+    // the clear paths). StateFlow's value-equality conflation provides
+    // distinctUntilChanged for free, and collectLatest cancels a superseded
+    // in-flight search so stale results can never win the race.
+    private val searchQueryFlow = MutableStateFlow<String?>(null)
+
     init {
         initialize()
     }
@@ -55,9 +65,9 @@ class SharedHomeViewModel internal constructor(
             _uiState.update { it.copy(isOfflineMode = manageOfflineModeUseCase.isOfflineModeEnabled()) }
         }
 
-        // Monitor network connectivity
+        // Observe network connectivity. Monitoring itself is started once at
+        // app init (initKoin / Application.onCreate), not per-ViewModel (SH-2).
         viewModelScope.launch {
-            networkMonitor.startMonitoring()
             networkMonitor.isOnline.collectLatest { isOnline ->
                 _uiState.update { it.copy(isNetworkAvailable = isOnline) }
 
@@ -73,14 +83,44 @@ class SharedHomeViewModel internal constructor(
             }
         }
 
-        // Initial load
+        // Debounced search (SH-13): one request per typing pause, not per keystroke.
         viewModelScope.launch {
-            delay(100) // Small delay for cache initialization
+            searchQueryFlow
+                .debounce(SEARCH_DEBOUNCE_MS)
+                .collectLatest { query ->
+                    if (query != null) searchCocktails(query)
+                }
+        }
+
+        // Reactive favorites (SH-4): mutations from any screen publish
+        // through the repository flow; no manual re-pulls after toggles.
+        viewModelScope.launch {
+            manageFavoritesUseCase.observeFavorites().collect { favs ->
+                _uiState.update { it.copy(favorites = favs) }
+            }
+        }
+
+        // Initial load. No arbitrary delay: the cache suspends inside its own
+        // ensureLoaded() when first touched (SH-7).
+        viewModelScope.launch {
             if (_uiState.value.cocktails.isEmpty()) {
                 loadCocktailsByCategory(CocktailCategories.DEFAULT)
             }
-            loadFavorites()
         }
+    }
+
+    /**
+     * Push a search-query text change from the platform search field. The
+     * search itself runs through the debounced pipeline, so fast typing fires
+     * one request per pause instead of one per keystroke, and superseded
+     * searches are cancelled. An empty query falls back to the category
+     * listing (clearing stale results).
+     * Platforms call this per keystroke; [searchCocktails] stays available
+     * for explicit submit/retry, which must not be debounced.
+     */
+    fun updateSearchQuery(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+        searchQueryFlow.value = query
     }
     
     /**
@@ -220,13 +260,13 @@ class SharedHomeViewModel internal constructor(
     }
     
     /**
-     * Toggle favorite status for a cocktail.
+     * Toggle favorite status for a cocktail. State updates arrive via the
+     * observed favorites flow (SH-4).
      * SKIE will convert this to Swift async function.
      */
     suspend fun toggleFavorite(cocktail: Cocktail) {
         try {
             manageFavoritesUseCase.toggle(cocktail)
-            loadFavorites()
         } catch (e: Exception) {
             handleException(e, "Failed to update favorites")
         }
@@ -296,14 +336,18 @@ class SharedHomeViewModel internal constructor(
     }
     
     /**
-     * Get cocktails by category with limit.
-     * SKIE will handle the List return type perfectly.
+     * Get cocktails by category with limit. The selection is deterministic —
+     * ordered by a stable per-id key instead of shuffled() — so repeated calls
+     * over the same data return the same list: no gratuitous recomposition
+     * diffing on Android, no unstable results on iOS (SH-10). The id-hash key
+     * still gives a varied (non-alphabetical) pick, mirroring the
+     * deterministic demo-value derivation in CocktailRemoteDataSource.
      */
     fun getCocktailsByCategory(category: String, limit: Int = 3): List<Cocktail> {
         val currentCocktails = _uiState.value.cocktails
         val fromCurrentList = currentCocktails
             .filter { it.category == category && !it.imageUrl.isNullOrBlank() }
-            .shuffled()
+            .sortedBy { stableSelectionKey(it.id) }
             .take(limit)
 
         return if (fromCurrentList.size >= limit) {
@@ -311,10 +355,12 @@ class SharedHomeViewModel internal constructor(
         } else {
             currentCocktails
                 .filter { it.category != null && !it.imageUrl.isNullOrBlank() }
-                .shuffled()
+                .sortedBy { stableSelectionKey(it.id) }
                 .take(limit)
         }
     }
+
+    private fun stableSelectionKey(id: String): Int = id.hashCode().absoluteValue
 
     /** Canonical curated category list — single source of truth for category chips on both platforms. */
     val curatedCategories: List<String>
@@ -339,6 +385,7 @@ class SharedHomeViewModel internal constructor(
 
     /** Clear only the query text; any active advanced-search filters are kept. */
     fun clearSearch() {
+        searchQueryFlow.value = null // cancel any pending debounced search
         _uiState.update { it.copy(isSearchActive = false) }
         viewModelScope.launch { searchCocktails("") }
     }
@@ -346,6 +393,7 @@ class SharedHomeViewModel internal constructor(
     fun toggleSearchMode(active: Boolean) {
         _uiState.update { it.copy(isSearchActive = active) }
         if (!active) {
+            searchQueryFlow.value = null // cancel any pending debounced search
             _uiState.update { it.copy(searchQuery = "", searchFilters = SearchFilters()) }
             viewModelScope.launch { loadCocktails() }
         }
@@ -357,6 +405,7 @@ class SharedHomeViewModel internal constructor(
 
     /** Reset all advanced-search filters (and the query) and reload the default list. */
     fun clearSearchFilters() {
+        searchQueryFlow.value = null // cancel any pending debounced search
         _uiState.update { it.copy(searchQuery = "", searchFilters = SearchFilters()) }
         viewModelScope.launch { loadCocktails() }
     }
@@ -377,15 +426,6 @@ class SharedHomeViewModel internal constructor(
     }
     
     // Private helper functions
-
-    private suspend fun loadFavorites() {
-        try {
-            val favs = manageFavoritesUseCase.loadFavorites().getOrDefault(emptyList())
-            _uiState.update { it.copy(favorites = favs) }
-        } catch (e: Exception) {
-            // Don't show error for favorites
-        }
-    }
 
     private suspend fun tryLoadCachedData(category: String, originalError: Exception) {
         try {

@@ -6,12 +6,17 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.exclude
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
@@ -26,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
@@ -128,7 +134,15 @@ fun MainScreen() {
         topBar = {
             // Only show the main top bar if we're NOT on the detail screen
             if (!isDetailScreen) {
-                Column {
+                // Edge-to-edge inset ownership (AN-6): this Column owns the
+                // status-bar inset exactly once — background first so the
+                // app-bar color still paints behind the transparent status
+                // bar, then padding so the indicator/title start below it.
+                Column(
+                    modifier = Modifier
+                        .background(AppColors.Primary)
+                        .statusBarsPadding()
+                ) {
                     // Show offline mode indicator if offline and not already on the offline mode screen
                     if (!isOfflineModeScreen) {
                         OfflineModeIndicator(
@@ -164,7 +178,7 @@ fun MainScreen() {
                             if (isOfflineModeScreen) {
                                 IconButton(onClick = { navigationManager.navigateBack() }) {
                                     Icon(
-                                        imageVector = Icons.Filled.ArrowBack,
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                         contentDescription = stringResource(R.string.common_back),
                                         tint = Color.White
                                     )
@@ -179,11 +193,15 @@ fun MainScreen() {
                             titleContentColor = Color.White,
                             navigationIconContentColor = Color.White,
                             actionIconContentColor = Color.White
-                        )
+                        ),
+                        // The wrapping Column already consumed the status-bar
+                        // inset; keep only the horizontal/cutout parts here so
+                        // the top inset isn't applied twice (AN-6).
+                        windowInsets = TopAppBarDefaults.windowInsets.exclude(WindowInsets.statusBars)
                     )
 
                     // Add a divider to create separation between top bar and content
-                    Divider(
+                    HorizontalDivider(
                         color = Color.White.copy(alpha = 0.2f),
                         thickness = 1.dp
                     )
@@ -200,6 +218,7 @@ fun MainScreen() {
                 ) {
                     items.forEach { screen ->
                         NavigationBarItem(
+                            modifier = Modifier.testTag(screen.tag),
                             icon = {
                                 Icon(screen.icon, contentDescription = stringResource(screen.titleRes))
                             },

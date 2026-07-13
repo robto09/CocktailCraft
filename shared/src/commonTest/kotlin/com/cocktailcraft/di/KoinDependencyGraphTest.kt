@@ -1,5 +1,7 @@
 package com.cocktailcraft.di
 
+import com.cocktailcraft.data.config.AppConfigImpl
+import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
@@ -49,6 +51,7 @@ class KoinDependencyGraphTest : MainDispatcherTest() {
 
     /** Test stand-ins for the platform-supplied bindings. */
     private val testPlatformModule = module {
+        single<AppConfig> { AppConfigImpl() }
         single<Settings> { MapSettings() }
         single<Settings>(secureSettingsQualifier) { MapSettings() }
         single<NetworkMonitor> { FakeNetworkMonitor() }

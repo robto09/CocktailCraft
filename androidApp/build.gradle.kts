@@ -21,13 +21,15 @@ val releaseStoreFile = releaseSigningValue("storeFile", "ANDROID_RELEASE_STORE_F
 
 android {
     namespace = "com.cocktailcraft.android"
-    compileSdk = 36
+    compileSdk = libs.versions.compileSdk.get().toInt()
     defaultConfig {
         applicationId = "com.cocktailcraft.android"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        // Single source of truth in root gradle.properties (AR-9/AN-12);
+        // bump via scripts/bump-version.sh, which also syncs iosApp/project.yml.
+        versionCode = providers.gradleProperty("appVersionCode").get().toInt()
+        versionName = providers.gradleProperty("appVersionName").get()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -75,12 +77,12 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.toVersion(libs.versions.jvmTarget.get())
+        targetCompatibility = JavaVersion.toVersion(libs.versions.jvmTarget.get())
     }
     kotlin {
         compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(libs.versions.jvmTarget.get()))
         }
     }
     testOptions {
@@ -111,6 +113,15 @@ android {
     }
 }
 
+composeCompiler {
+    // Shared KMP domain models can't carry @Immutable (no Compose dependency
+    // in shared), so they're declared stable here — makes the list-item
+    // composables skippable (AN-1).
+    stabilityConfigurationFiles.add(
+        project.layout.projectDirectory.file("compose-stability-config.conf")
+    )
+}
+
 dependencies {
     implementation(project(":shared"))
     // Installs the generated baseline profile for AOT compilation
@@ -127,7 +138,6 @@ dependencies {
     implementation(libs.compose.ui.tooling)
     implementation(libs.compose.ui.toolingPreview)
     implementation(libs.compose.foundation)
-    implementation(libs.compose.material)
     implementation(libs.compose.material3)
     implementation(libs.compose.materialIconsExtended)
     implementation(libs.androidx.activity.compose)

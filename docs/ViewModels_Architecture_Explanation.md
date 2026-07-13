@@ -5,10 +5,9 @@
 ### 📱 **Shared ViewModels (Kotlin Multiplatform) - KEEP ALL**
 **Location**: `shared/src/commonMain/kotlin/com/cocktailcraft/viewmodel/`
 
-**11 ViewModels** - These contain the **business logic** and are shared between platforms:
+**9 ViewModels + base class** - These contain the **business logic** and are shared between platforms:
 - SharedCartViewModel.kt
 - SharedCocktailDetailViewModel.kt  
-- SharedCocktailListViewModel.kt
 - SharedFavoritesViewModel.kt
 - SharedHomeViewModel.kt
 - SharedOfflineModeViewModel.kt
@@ -40,25 +39,12 @@
 - SwiftUI lifecycle management
 - Native Swift async/await patterns
 
-### 🤖 **Android SKIE Wrapper ViewModels - KEEP ALL**
-**Location**: `androidApp/src/main/java/com/cocktailcraft/viewmodel/`
+### 🤖 **Android — No Wrapper Layer**
 
-**9 ViewModels** - These are **platform adapters** for Android:
-- CartViewModelSKIE.kt
-- CocktailDetailViewModelSKIE.kt
-- FavoritesViewModelSKIE.kt
-- HomeViewModelSKIE.kt
-- OfflineModeViewModelSKIE.kt
-- OrderViewModelSKIE.kt
-- ProfileViewModelSKIE.kt
-- ReviewViewModelSKIE.kt
-- ThemeViewModelSKIE.kt
-
-**Why we need these**: They wrap the shared ViewModels to work with Android's lifecycle and Compose. They handle:
-- AndroidX ViewModel lifecycle
-- StateFlow scoping with `viewModelScope`
-- Compose state management
-- Android-specific lifecycle events
+Android has **no wrapper ViewModels**. The shared ViewModels extend the multiplatform androidx `ViewModel`, so Compose screens consume them directly:
+- Screen-scoped ones (`viewModel { ... }` in `DomainModule.kt`) resolve via `koinViewModel<SharedCocktailDetailViewModel>()`, scoped to the nav back-stack entry
+- Global-state ones (Koin `single`) are shared across screens and persist across navigation
+- Screens collect `uiState` with `collectAsStateWithLifecycle()`
 
 ## Architecture Pattern: **Shared Business Logic + Platform Adapters**
 
@@ -68,19 +54,19 @@
 │                    Kotlin Multiplatform                 │
 ├─────────────────────────────────────────────────────────┤
 │  SharedHomeViewModel                                     │
-│  ├── StateFlow<List<Cocktail>> cocktails               │
+│  ├── StateFlow<HomeUiState> uiState                    │
 │  ├── suspend fun loadCocktails()                       │
-│  └── fun searchCocktails(query: String)                │
+│  └── fun updateSearchQuery(query: String)              │
 └─────────────────────────────────────────────────────────┘
                      │                    │
                      ▼                    ▼
       ┌──────────────────────┐  ┌──────────────────────┐
-      │   iOS SKIE Wrapper    │  │ Android SKIE Wrapper │
+      │   iOS SKIE Wrapper    │  │  Android (direct)    │
       ├──────────────────────┤  ├──────────────────────┤
-      │ HomeViewModelSKIE     │  │ HomeViewModelSKIE    │
-      │ @ObservableObject     │  │ : ViewModel()        │
-      │ @Published cocktails  │  │ val cocktails: SF    │
-      │ async loadCocktails() │  │ fun loadCocktails()  │
+      │ HomeViewModelSKIE     │  │ koinViewModel() /    │
+      │ SharedViewModelWrapper│  │   Koin single        │
+      │ state mirrored to UI  │  │ uiState.collectAs-   │
+      │ async loadCocktails() │  │   StateWithLifecycle │
       └──────────────────────┘  └──────────────────────┘
 ```
 
@@ -107,18 +93,18 @@
 - MainActor threading for UI updates
 - iOS-specific lifecycle management
 
-**Android SKIE Wrappers (Kotlin)**:
-- AndroidX ViewModel lifecycle
-- Compose state management
-- `viewModelScope` for coroutines
-- Android-specific lifecycle events
+**Android (direct consumption)**:
+- The shared ViewModels ARE AndroidX ViewModels (multiplatform artifact)
+- Compose state management via `uiState.collectAsStateWithLifecycle()`
+- `koinViewModel()` scoping for screen-scoped instances
+- No adapter code to maintain
 
-## Answer: **YES, we need all of them!**
+## Answer: **shared ViewModels + iOS wrappers only**
 
 Each layer serves a specific purpose:
 - **Shared**: Contains the business logic (write once, use everywhere)
 - **iOS Wrappers**: Make shared ViewModels work with SwiftUI
-- **Android Wrappers**: Make shared ViewModels work with Compose
+- **Android**: Consumes the shared ViewModels directly — no wrapper layer needed
 
 This gives us **95% code sharing** for business logic while maintaining **100% native** platform experiences.
 
@@ -141,24 +127,20 @@ The alternative would be duplicating all business logic in each platform, which 
 **iOS Wrapper (Simplified by SKIE)**:
 ```swift
 // SKIE makes this possible - only ~20 lines instead of 80+
-@MainActor
-class HomeViewModelSKIE: ObservableObject {
-    @Published var cocktails: [Cocktail] = []
+// (SharedViewModelWrapper owns the uiState/error mirroring)
+final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
     private let sharedViewModel: SharedHomeViewModel
-    
+
     init() {
-        self.sharedViewModel = KoinInitializer.shared.getSharedHomeViewModel()
-        // SKIE magic: StateFlow automatically becomes AsyncSequence
-        Task {
-            for await cocktailList in sharedViewModel.cocktails {
-                self.cocktails = cocktailList
-            }
-        }
+        let viewModel = getSharedKoinHelper().getSharedHomeViewModel()
+        self.sharedViewModel = viewModel
+        // SKIE magic: the uiState StateFlow automatically becomes an AsyncSequence
+        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
     }
-    
+
     // SKIE magic: suspend function becomes async function
     func loadCocktails() async {
-        await sharedViewModel.loadCocktails()
+        await run { try await sharedViewModel.loadCocktails() }
     }
 }
 ```

@@ -8,9 +8,10 @@ import shared
  * calls doInitKoin() — starting Koin again would throw Kotlin-side and kill
  * the test process, so this base only asserts the graph is reachable.
  *
- * NOTE: the test targets are defined in project.yml — run
- * `xcodegen generate && pod install` once to (re)wire them into the
- * Xcode project, then run with Product > Test.
+ * NOTE: the test targets are defined in project.yml (the project source of
+ * truth — see iOS_Setup_Instructions.md). Run `xcodegen generate && pod
+ * install` EACH TIME a target's file list changes (e.g. adding a test file),
+ * then run with Product > Test.
  */
 class TestSetup: XCTestCase {
 

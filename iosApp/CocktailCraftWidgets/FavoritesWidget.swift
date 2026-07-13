@@ -10,8 +10,8 @@ struct FavoritesWidget: Widget {
             FavoritesWidgetView(entry: entry)
                 .containerBackground(.background, for: .widget)
         }
-        .configurationDisplayName("Favorite Cocktails")
-        .description("Your favorite cocktails at a glance.")
+        .configurationDisplayName(String(localized: "Favorite Cocktails"))
+        .description(String(localized: "Your favorite cocktails at a glance."))
         .supportedFamilies([.systemMedium, .systemLarge])
     }
 }
@@ -66,7 +66,7 @@ struct FavoritesWidgetView: View {
                 Image(systemName: "heart.fill")
                     .font(.caption)
                     .foregroundStyle(WidgetColors.primary)
-                Text("Favorites")
+                Text(String(localized: "Favorites"))
                     .font(.headline)
                 Spacer()
             }
@@ -77,10 +77,10 @@ struct FavoritesWidgetView: View {
                     Image(systemName: "heart")
                         .font(.title3)
                         .foregroundStyle(.secondary)
-                    Text("No favorites yet")
+                    Text(String(localized: "No favorites yet"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                    Text("Open CocktailCraft to add some")
+                    Text(String(localized: "Open CocktailCraft to add some"))
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                 }
@@ -122,7 +122,7 @@ private struct FavoriteRow: View {
 
             Spacer()
 
-            Text(String(format: "$%.2f", cocktail.price))
+            Text(cocktail.price.asPrice)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

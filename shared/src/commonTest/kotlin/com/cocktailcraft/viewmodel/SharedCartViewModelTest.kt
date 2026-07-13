@@ -71,6 +71,26 @@ class SharedCartViewModelTest : MainDispatcherTest() {
     }
 
     @Test
+    fun removeFromCartFailureEmitsOptimisticRemovalThenRevert() = runTest {
+        // SH-12 (Turbine): assert the emission SEQUENCE — optimistic removal
+        // first, then the revert when the repository rejects the mutation.
+        val repository = FakeCartRepository()
+        repository.addToCart(CocktailCartItem(testCocktail("1"), quantity = 1))
+        val vm = viewModel(repository)
+        advanceUntilIdle()
+
+        vm.uiState.test {
+            assertEquals(1, awaitItem().itemCount)
+            repository.failNextMutation = true
+            vm.removeFromCart("1")
+            assertEquals(0, awaitItem().itemCount, "optimistic removal must emit immediately")
+            assertEquals(1, awaitItem().itemCount, "failure must emit the reverted state")
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertNotNull(vm.error.value)
+    }
+
+    @Test
     fun removeFromCartFailureRevertsOptimisticUpdateAndSetsError() = runTest {
         val repository = FakeCartRepository()
         repository.addToCart(CocktailCartItem(testCocktail("1"), quantity = 1))

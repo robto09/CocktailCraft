@@ -4,6 +4,7 @@ import UIKit
 import shared
 import Combine
 import Observation
+import os
 
 /**
  * Manages background sync operations for keeping cached data fresh.
@@ -13,6 +14,11 @@ import Observation
 @Observable
 class BackgroundSyncManager {
     static let shared = BackgroundSyncManager()
+
+    // os.Logger instead of print(): level-gated, never spams the release
+    // console (IO-9).
+    @ObservationIgnored
+    private let logger = Logger(subsystem: "com.cocktailcraft", category: "BackgroundSync")
     
     // Background task identifiers
     private static let backgroundRefreshTaskId = "com.cocktailcraft.background-refresh"
@@ -52,7 +58,13 @@ class BackgroundSyncManager {
             forTaskWithIdentifier: Self.backgroundRefreshTaskId,
             using: nil
         ) { [weak self] task in
-            self?.handleBackgroundRefresh(task: task as! BGAppRefreshTask)
+            // Guard, don't force-cast: an identifier/type misconfiguration
+            // must fail the task, not crash the app (IO-10).
+            guard let refreshTask = task as? BGAppRefreshTask else {
+                task.setTaskCompleted(success: false)
+                return
+            }
+            self?.handleBackgroundRefresh(task: refreshTask)
         }
         
         // Register background fetch task
@@ -60,10 +72,14 @@ class BackgroundSyncManager {
             forTaskWithIdentifier: Self.backgroundFetchTaskId,
             using: nil
         ) { [weak self] task in
-            self?.handleBackgroundFetch(task: task as! BGProcessingTask)
+            guard let fetchTask = task as? BGProcessingTask else {
+                task.setTaskCompleted(success: false)
+                return
+            }
+            self?.handleBackgroundFetch(task: fetchTask)
         }
         
-        print("BackgroundSyncManager: Background tasks registered")
+        logger.info("Background tasks registered")
     }
     
     /**
@@ -72,7 +88,7 @@ class BackgroundSyncManager {
      */
     func scheduleBackgroundSync() {
         guard backgroundSyncEnabled else {
-            print("BackgroundSyncManager: Background sync disabled")
+            logger.debug("Background sync disabled")
             return
         }
         
@@ -92,9 +108,9 @@ class BackgroundSyncManager {
         do {
             try BGTaskScheduler.shared.submit(refreshRequest)
             try BGTaskScheduler.shared.submit(fetchRequest)
-            print("BackgroundSyncManager: Background tasks scheduled")
+            logger.info("Background tasks scheduled")
         } catch {
-            print("BackgroundSyncManager: Failed to schedule background tasks: \(error)")
+            logger.error("Failed to schedule background tasks: \(error)")
         }
     }
     
@@ -103,12 +119,12 @@ class BackgroundSyncManager {
      */
     func performImmediateSync() async {
         guard !syncInProgress else {
-            print("BackgroundSyncManager: Sync already in progress")
+            logger.debug("Sync already in progress")
             return
         }
         
         guard networkMonitor.isConnected else {
-            print("BackgroundSyncManager: No network connection for sync")
+            logger.debug("No network connection for sync")
             return
         }
         
@@ -128,7 +144,7 @@ class BackgroundSyncManager {
             BGTaskScheduler.shared.cancelAllTaskRequests()
         }
         
-        print("BackgroundSyncManager: Background sync \(backgroundSyncEnabled ? "enabled" : "disabled")")
+        logger.info("Background sync \(self.backgroundSyncEnabled ? "enabled" : "disabled", privacy: .public)")
     }
     
     // MARK: - Private Implementation
@@ -165,12 +181,12 @@ class BackgroundSyncManager {
     }
     
     private func handleBackgroundRefresh(task: BGAppRefreshTask) {
-        print("BackgroundSyncManager: Handling background refresh")
+        logger.info("Handling background refresh")
         runBudgetedSync(for: task)
     }
 
     private func handleBackgroundFetch(task: BGProcessingTask) {
-        print("BackgroundSyncManager: Handling background fetch")
+        logger.info("Handling background fetch")
         runBudgetedSync(for: task)
     }
 
@@ -186,8 +202,8 @@ class BackgroundSyncManager {
         // `isCancelled` guard keeps the normal path from completing the
         // task a second time.
         var syncWork: Task<Void, Never>?
-        task.expirationHandler = {
-            print("BackgroundSyncManager: Background task expired")
+        task.expirationHandler = { [logger] in
+            logger.notice("Background task expired")
             syncWork?.cancel()
             task.setTaskCompleted(success: false)
         }
@@ -200,6 +216,15 @@ class BackgroundSyncManager {
         }
     }
     
+    /// Millisecond time budget handed to the shared BackgroundSyncService:
+    /// the platform allowance minus a 5s margin so completion/teardown lands
+    /// before iOS's deadline, floored at zero so a sub-margin allowance can
+    /// never go negative. Pure and nonisolated so unit tests can call it
+    /// directly (IO-7).
+    nonisolated static func syncBudgetMs(maxDuration: TimeInterval) -> Int64 {
+        max(0, Int64((maxDuration - 5) * 1000))
+    }
+
     private func performSync(isBackground: Bool, maxDuration: TimeInterval = 30) async {
         let startTime = Date()
         syncInProgress = true
@@ -210,16 +235,16 @@ class BackgroundSyncManager {
             UserDefaults.standard.set(lastBackgroundSync, forKey: lastSyncKey)
         }
         
-        print("BackgroundSyncManager: Starting \(isBackground ? "background" : "foreground") sync")
+        logger.info("Starting \(isBackground ? "background" : "foreground", privacy: .public) sync")
 
         // What "a sync" means lives in shared code (BackgroundSyncService,
         // including the offline check and time budget); this class only
         // decides when to run it and mirrors sync state for the UI.
         let syncService = getSharedKoinHelper().getBackgroundSyncService()
-        let budgetMs = Int64((maxDuration - 5) * 1000)
+        let budgetMs = Self.syncBudgetMs(maxDuration: maxDuration)
         let success = (try? await syncService.performSync(maxDurationMs: budgetMs))?.boolValue ?? false
 
-        print("BackgroundSyncManager: Sync \(success ? "completed" : "skipped/failed") in \(Date().timeIntervalSince(startTime))s")
+        logger.info("Sync \(success ? "completed" : "skipped/failed", privacy: .public) in \(Date().timeIntervalSince(startTime))s")
     }
     
     private func checkForForegroundSync() async {

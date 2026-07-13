@@ -2,7 +2,6 @@ package com.cocktailcraft.data.cache
 
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.util.NetworkMonitor
 import com.russhwolf.settings.Settings
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -14,7 +13,6 @@ import kotlin.time.Clock
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -94,13 +92,20 @@ internal data class CachedCocktailEntry(
  *
  * Entries expire after [AppConfig.cacheExpirationMs], but only while the app is
  * effectively online — see [shouldApplyExpiry].
+ *
+ * Eviction matrix (SH-11): this is the PERSISTENT layer. See
+ * [CocktailCacheManager] for the separate short-lived (5 min) in-memory
+ * category cache and rate-limit state. [clearCache] here and
+ * [CocktailCacheManager.clearDataCaches] are always invoked together, from
+ * CocktailOfflineRepositoryImpl.clearCache() — never add an eviction path
+ * that purges only one of the two.
  */
 internal class CocktailCache(
     private val settings: Settings,
     private val json: Json,
     private val appConfig: AppConfig,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val networkMonitor: NetworkMonitor? = null
+    private val offlineModePolicy: OfflineModePolicy? = null
 ) {
     companion object {
         private const val CACHE_PREFIX = "cocktail_cache_"
@@ -142,11 +147,12 @@ internal class CocktailCache(
      * offline browsing: evicting stale entries when there is no connectivity (or
      * the user forced offline mode) would empty the offline experience with no
      * way to refetch, so stale entries keep being served until we are back online.
+     * The offline decision itself is owned by [OfflineModePolicy] (AR-7) — the
+     * cache only stores data; it no longer re-derives policy from raw
+     * Settings/NetworkMonitor reads.
      */
-    private suspend fun shouldApplyExpiry(): Boolean {
-        if (settings.getBoolean(appConfig.offlineModeEnabledKey, false)) return false
-        return networkMonitor?.isOnline?.first() ?: true
-    }
+    private suspend fun shouldApplyExpiry(): Boolean =
+        offlineModePolicy?.let { !it.isOffline() } ?: true
 
     private suspend fun loadPersistedCocktails(): Unit = withContext(ioDispatcher) {
         Logger.d { "Loading persisted cocktails..." }

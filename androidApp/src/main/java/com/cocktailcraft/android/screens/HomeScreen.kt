@@ -14,7 +14,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -32,7 +31,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AirplanemodeActive
 import androidx.compose.material.icons.filled.Close
@@ -42,9 +40,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WifiOff
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -52,6 +47,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -106,7 +104,6 @@ import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import android.util.Log
 import com.cocktailcraft.android.BuildConfig
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun HomeScreen(
     viewModel: SharedHomeViewModel,
@@ -145,6 +142,18 @@ fun HomeScreen(
 
     // Track if this is the first composition
     var isFirstComposition by rememberSaveable { mutableStateOf(true) }
+
+    // Process-death recovery (AN-4): the shared VM is a process-wide singleton
+    // with no SavedStateHandle, so an in-progress search dies with the
+    // process. Shadow the query in the Activity's saved-state bundle and
+    // replay it once into the fresh VM after a restore.
+    var savedSearchQuery by rememberSaveable { mutableStateOf("") }
+    LaunchedEffect(Unit) {
+        if (savedSearchQuery.isNotBlank() && searchQuery.isBlank()) {
+            viewModel.updateSearchQuery(savedSearchQuery)
+        }
+    }
+    LaunchedEffect(searchQuery) { savedSearchQuery = searchQuery }
     
     // Effect to load cocktails by category when selected category changes
     LaunchedEffect(selectedCategory) {
@@ -172,10 +181,11 @@ fun HomeScreen(
         }
     }
 
-    // Effect to clear errors when screen is displayed with data
-    LaunchedEffect(cocktails) {
+    // Clear stale errors once data is on screen — keyed on the error rather
+    // than the list, so it doesn't re-run on every list mutation (AN-9).
+    LaunchedEffect(errorMessage) {
         if (BuildConfig.DEBUG) {
-            Log.d("HomeScreen", "LaunchedEffect(cocktails): count=${cocktails.size}, error='$errorMessage'")
+            Log.d("HomeScreen", "LaunchedEffect(errorMessage): count=${cocktails.size}, error='$errorMessage'")
         }
         if (cocktails.isNotEmpty() && errorMessage.isNotBlank()) {
             viewModel.clearError()
@@ -195,7 +205,8 @@ fun HomeScreen(
             searchQuery = searchQuery,
             isAdvancedSearchActive = isAdvancedSearchActive,
             hasActiveFilters = searchFilters.hasActiveFilters(),
-            onSearchQueryChange = { scope.launch { viewModel.searchCocktails(it) } },
+            // Shared debounced pipeline (SH-13): no per-keystroke coroutines.
+            onSearchQueryChange = { viewModel.updateSearchQuery(it) },
             onClearSearch = { viewModel.toggleSearchMode(false) },
             onToggleAdvancedSearch = { viewModel.toggleAdvancedSearchMode(!isAdvancedSearchActive) }
         )
@@ -376,7 +387,6 @@ private fun HomeCategoryChipsRow(
 }
 
 // Main content (loading / error / empty / list branches) wrapped in pull-to-refresh
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun HomeContentSection(
     isLoading: Boolean,
@@ -401,16 +411,25 @@ private fun HomeContentSection(
     onToggleFavorite: (Cocktail) -> Unit,
     onLoadMore: () -> Unit
 ) {
-    // Add pull-to-refresh state
-    val pullRefreshState = rememberPullRefreshState(
-        refreshing = isLoading,
-        onRefresh = onRetry
-    )
+    // Material3 pull-to-refresh state
+    val pullToRefreshState = rememberPullToRefreshState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .pullRefresh(pullRefreshState)
+    PullToRefreshBox(
+        isRefreshing = isLoading,
+        onRefresh = onRetry,
+        modifier = Modifier.fillMaxSize(),
+        state = pullToRefreshState,
+        indicator = {
+            // Preserve the previous Material2 indicator colors
+            // (white container, primary spinner).
+            PullToRefreshDefaults.Indicator(
+                state = pullToRefreshState,
+                isRefreshing = isLoading,
+                modifier = Modifier.align(Alignment.TopCenter),
+                containerColor = Color.White,
+                color = AppColors.Primary
+            )
+        }
     ) {
         if (isLoading && cocktails.isEmpty()) {
             // Show shimmer loading effect instead of spinner
@@ -449,15 +468,6 @@ private fun HomeContentSection(
                 onLoadMore = onLoadMore
             )
         }
-
-        // Pull refresh indicator
-        PullRefreshIndicator(
-            refreshing = isLoading,
-            state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
-            backgroundColor = Color.White,
-            contentColor = AppColors.Primary
-        )
     }
 }
 

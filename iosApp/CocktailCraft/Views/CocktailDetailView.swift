@@ -1,4 +1,10 @@
 import SwiftUI
+// @preconcurrency suppresses Sendable/actor-isolation diagnostics for the
+// whole KMP framework import. Under the project's current Swift 5.10 /
+// minimal-concurrency build it is close to a no-op; it becomes load-bearing
+// (and must be re-audited per-type) the moment SWIFT_STRICT_CONCURRENCY is
+// set to targeted/complete or the target moves to Swift 6 language mode.
+// Tracked as tech debt (IO-12) — don't copy this pattern to new files.
 @preconcurrency import shared
 
 /// Full detail screen driven by CocktailDetailViewModelSKIE. Section order
@@ -90,6 +96,11 @@ struct CocktailDetailView: View {
                 }
             }
         }
+        // Stable UI-test hook for the deep-link launch test: marks the
+        // detail screen's root in every branch (loading/loaded/error), so
+        // asserting navigation doesn't depend on live network data.
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("detail.screen")
         .navigationBarTitleDisplayMode(.inline)
         .task {
             // .task re-fires whenever the view re-appears — including on
@@ -159,7 +170,7 @@ struct CocktailDetailView: View {
 
             if let instructions = cocktail.instructions, !instructions.isEmpty {
                 VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-                    Text("Preparation")
+                    Text(String(localized: "Preparation"))
                         .font(.headline)
                         .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
@@ -265,7 +276,7 @@ struct CocktailDetailView: View {
 
     private func ingredientsSection(_ cocktail: Cocktail) -> some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-            Text("Ingredients")
+            Text(String(localized: "Ingredients"))
                 .font(.headline)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
@@ -309,7 +320,7 @@ struct CocktailDetailView: View {
 
     private func nutritionSection(_ nutrition: NutritionFacts) -> some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-            Text("Estimated Nutrition")
+            Text(String(localized: "Estimated Nutrition"))
                 .font(.headline)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
@@ -379,7 +390,7 @@ struct CocktailDetailView: View {
 
     private var relatedCocktailsSection: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-            Text("You Might Also Like")
+            Text(String(localized: "You Might Also Like"))
                 .font(.headline)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .padding(.horizontal)

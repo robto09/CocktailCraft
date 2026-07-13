@@ -72,6 +72,19 @@ struct ContentView: View {
                 router.openCocktailDetail(id: cocktailId)
             }
         }
+        #if DEBUG
+        // UI-test hook (IO-7): XCUITest cannot deliver a custom-scheme URL
+        // to a cold-launching app reliably, so DeepLinkTests injects the
+        // widget deep link's cocktail id through the launch environment and
+        // this drives the same openCocktailDetail path onOpenURL uses.
+        // Compiled out of Release builds.
+        .onAppear {
+            if let cocktailId = ProcessInfo.processInfo.environment["DEEPLINK_COCKTAIL_ID"],
+               !cocktailId.isEmpty {
+                router.openCocktailDetail(id: cocktailId)
+            }
+        }
+        #endif
         .environment(cartViewModel)
         .environment(router)
         .environment(\.isDarkMode, themeViewModel.state.isDarkMode)

@@ -18,7 +18,7 @@ SKIE (Swift/Kotlin Interface Enhancer) by Touchlab provides seamless interoperab
 
 ### ✅ **Achieved Results**
 - **70% Code Reduction**: Eliminated custom Flow collection boilerplate
-- **11 Shared ViewModels**: Complete business logic sharing
+- **9 Shared ViewModels**: Complete business logic sharing
 - **100% SKIE Integration**: No FlowCollector bridge patterns needed
 - **Native Swift Experience**: Kotlin APIs feel native in Swift
 - **Type Safety**: Compile-time checking for all cross-platform calls
@@ -44,8 +44,8 @@ if let cocktailArray = collector.value as? [Cocktail] {
 **After SKIE (Native Swift):**
 ```swift
 // 2 lines with native async/await
-for await cocktails in sharedViewModel.cocktails {
-    self.cocktails = cocktails
+for await state in sharedViewModel.uiState {
+    self.state = state
 }
 ```
 
@@ -54,135 +54,73 @@ for await cocktails in sharedViewModel.cocktails {
 ### 🏗️ **Shared ViewModels (Kotlin)**
 
 ```kotlin
-// Base class for all shared ViewModels
+// Base class for all shared ViewModels — constructor injection, no
+// KoinComponent; the shared error channel is the one common flow
+// (loading state lives in each screen's UiState)
 abstract class SharedViewModel : ViewModel() {
-    protected val errorHandler: ErrorHandler by inject()
-    
-    // StateFlows automatically convert to Swift AsyncSequence
-    protected fun <T> MutableStateFlow<T>.asStateFlow(): StateFlow<T> = this.asStateFlow()
-    
-    // Suspend functions become Swift async functions
-    protected suspend fun handleException(exception: Throwable, message: String) {
-        errorHandler.handleException(exception, message)
+    private val _error = MutableStateFlow<ErrorHandler.UserFriendlyError?>(null)
+    val error: StateFlow<ErrorHandler.UserFriendlyError?> = _error.asStateFlow()
+
+    protected open fun handleException(exception: Throwable, defaultMessage: String) {
+        /* CancellationException guard + ErrorHandler classification */
     }
 }
 
-// Example: SharedHomeViewModel
-class SharedHomeViewModel : SharedViewModel() {
-    private val repository: CocktailRepository by inject()
-    
-    private val _cocktails = MutableStateFlow<List<Cocktail>>(emptyList())
-    val cocktails: StateFlow<List<Cocktail>> = _cocktails.asStateFlow()
-    
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    
-    suspend fun loadCocktails() {
-        _isLoading.value = true
-        try {
-            repository.getCocktailsSortedByNewest().collect { cocktailList ->
-                _cocktails.value = cocktailList
-            }
-        } catch (e: Exception) {
-            handleException(e, "Failed to load cocktails")
-        } finally {
-            _isLoading.value = false
-        }
-    }
-    
-    fun isFavorite(cocktailId: String): Boolean {
-        return favorites.value.any { it.id == cocktailId }
-    }
+// Example: SharedHomeViewModel — use cases arrive via the constructor
+// (wired in DomainModule.kt); state is one consolidated HomeUiState flow
+// that SKIE exposes to Swift as an AsyncSequence
+class SharedHomeViewModel internal constructor(
+    private val searchCocktailsUseCase: SearchCocktailsUseCase,
+    private val loadCocktailsByCategoryUseCase: LoadCocktailsByCategoryUseCase,
+    /* ... other use cases, CocktailCatalogRepository, NetworkMonitor ... */
+) : SharedViewModel() {
+
+    private val _uiState = MutableStateFlow(HomeUiState())
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    // Suspend functions become Swift async functions
+    suspend fun loadCocktails() { /* ... */ }
+    fun updateSearchQuery(query: String) { /* debounced search pipeline */ }
 }
 ```
 
 ### 📱 **iOS SKIE Wrapper Classes**
 
+Wrappers extend `SharedViewModelWrapper`, which owns the `uiState`/`error` mirroring and observation-task lifecycle; views read `viewModel.state.<field>`:
+
 ```swift
-@MainActor
-class HomeViewModelSKIE: ObservableObject {
-    @Published var cocktails: [Cocktail] = []
-    @Published var isLoading: Bool = false
-    
+// iosApp/CocktailCraft/ViewModels/HomeViewModelSKIE.swift
+final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
+
     private let sharedViewModel: SharedHomeViewModel
-    private var observationTasks: [Task<Void, Never>] = []
-    
+
     init() {
-        self.sharedViewModel = KoinInitializer.shared.getSharedHomeViewModel()
-        startObserving()
+        let viewModel = getSharedKoinHelper().getSharedHomeViewModel()
+        self.sharedViewModel = viewModel
+        // SKIE converts the uiState StateFlow to an AsyncSequence; the base
+        // class observes it and republishes on the MainActor
+        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
     }
-    
-    deinit {
-        observationTasks.forEach { $0.cancel() }
-    }
-    
-    private func startObserving() {
-        // SKIE converts StateFlow to AsyncSequence automatically
-        observationTasks.append(Task {
-            for await cocktailList in sharedViewModel.cocktails {
-                await MainActor.run {
-                    self.cocktails = cocktailList
-                }
-            }
-        })
-        
-        observationTasks.append(Task {
-            for await loading in sharedViewModel.isLoading {
-                await MainActor.run {
-                    self.isLoading = loading
-                }
-            }
-        })
-    }
-    
+
     // Call suspend functions with native async/await
     func loadCocktails() async {
-        do {
-            try await sharedViewModel.loadCocktails()
-        } catch {
-            print("Error loading cocktails: \(error)")
-        }
+        await run { try await sharedViewModel.loadCocktails() }
     }
-    
+
     // Regular functions work normally
-    func isFavorite(cocktailId: String) -> Bool {
-        return sharedViewModel.isFavorite(cocktailId: cocktailId)
+    func updateSearchQuery(_ query: String) {
+        sharedViewModel.updateSearchQuery(query: query)
     }
 }
 ```
 
-### 🤖 **Android SKIE Wrapper Classes**
+### 🤖 **Android Consumption (no wrapper layer)**
+
+The shared ViewModels extend the multiplatform androidx `ViewModel`, so Compose consumes them directly — screen-scoped ones via `koinViewModel()`, global ones as Koin singles:
 
 ```kotlin
-class HomeViewModelSKIE : ViewModel(), KoinComponent {
-    private val sharedViewModel: SharedHomeViewModel by inject()
-    
-    // Convert to hot StateFlow for Android lifecycle
-    val cocktails: StateFlow<List<Cocktail>> = sharedViewModel.cocktails
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-    
-    val isLoading: StateFlow<Boolean> = sharedViewModel.isLoading
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = false
-        )
-    
-    // Delegate to shared ViewModel
-    fun loadCocktails() {
-        viewModelScope.launch {
-            sharedViewModel.loadCocktails()
-        }
-    }
-    
-    fun isFavorite(cocktailId: String): Boolean {
-        return sharedViewModel.isFavorite(cocktailId)
-    }
-}
+val detailViewModel = koinViewModel<SharedCocktailDetailViewModel>()
+val state by homeViewModel.uiState.collectAsStateWithLifecycle()
 ```
 
 ## Configuration
@@ -210,27 +148,28 @@ skie {
 ### 📦 **Dependency Injection (Koin)**
 
 ```kotlin
-// shared/src/commonMain/kotlin/di/DomainModule.kt
+// shared/src/commonMain/kotlin/com/cocktailcraft/di/DomainModule.kt (excerpt)
 val domainModule = module {
-    // Shared ViewModels
-    single { SharedHomeViewModel() }
-    single { SharedCartViewModel() }
-    single { SharedCocktailDetailViewModel() }
-    single { SharedFavoritesViewModel() }
-    single { SharedProfileViewModel() }
-    single { SharedOrderViewModel() }
-    single { SharedOfflineModeViewModel() }
-    single { SharedThemeViewModel() }
-    single { SharedReviewViewModel() }
-    single { SharedCocktailListViewModel() }
+    // Screen-scoped ViewModels — new instance per screen
+    viewModel { SharedCocktailDetailViewModel(/* use cases */) }
+    viewModel { SharedReviewViewModel(manageReviewsUseCase = get()) }
+
+    // Global-state ViewModels — singles shared across screens and platforms
+    single { SharedHomeViewModel(/* use cases + catalogRepository + networkMonitor */) }
+    single { SharedCartViewModel(manageCartUseCase = get()) }
+    single { SharedFavoritesViewModel(manageFavoritesUseCase = get()) }
+    single { SharedOrderViewModel(manageOrdersUseCase = get(), placeOrderUseCase = get()) }
+    single { SharedProfileViewModel(manageProfileUseCase = get()) }
+    single { SharedOfflineModeViewModel(manageOfflineModeUseCase = get(), networkMonitor = get()) }
+    single { SharedThemeViewModel(manageProfileUseCase = get()) }
 }
 ```
 
 ## Complete Implementation
 
-### ✅ **11 Shared ViewModels Implemented**
+### ✅ **9 Shared ViewModels Implemented (+ base class)**
 
-1. **SharedHomeViewModel** - Home screen with cocktail browsing
+1. **SharedHomeViewModel** - Home screen with cocktail browsing and search
 2. **SharedCartViewModel** - Shopping cart management
 3. **SharedCocktailDetailViewModel** - Individual cocktail details
 4. **SharedFavoritesViewModel** - Favorites management
@@ -239,17 +178,16 @@ val domainModule = module {
 7. **SharedOfflineModeViewModel** - Offline functionality
 8. **SharedThemeViewModel** - Theme and accessibility settings
 9. **SharedReviewViewModel** - Review system with ratings
-10. **SharedCocktailListViewModel** - Cocktail listing and search
-11. **SharedViewModel** - Base class with common functionality
+10. **SharedViewModel** - Base class with common functionality
 
 ### 🔄 **Key SKIE Patterns**
 
 #### StateFlow Observation
 ```swift
-// iOS - Native AsyncSequence
-for await cocktails in sharedViewModel.cocktails {
+// iOS - Native AsyncSequence over the consolidated UiState flow
+for await state in sharedViewModel.uiState {
     await MainActor.run {
-        self.cocktails = cocktails
+        self.state = state
     }
 }
 ```

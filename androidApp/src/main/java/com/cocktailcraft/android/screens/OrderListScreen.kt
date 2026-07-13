@@ -27,7 +27,7 @@ import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.navigation.Screen
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 
 @Composable
 fun OrderListScreen(
@@ -203,7 +203,7 @@ fun OrderItem(order: Order) {
                 }
             }
 
-            Divider(
+            HorizontalDivider(
                 modifier = Modifier.padding(vertical = 12.dp),
                 color = AppColors.LightGray
             )

@@ -35,7 +35,7 @@ The application follows the **Clean Architecture** pattern with **MVVM** (Model-
 │                                                                                  │
 │  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐          │
 │  │   Screens   │◄─────►│    ViewModels   │◄─────►│    UI Elements    │          │
-│  │  (Compose)  │       │ (KoinViewModel) │       │ (Compose/Material)│          │
+│  │  (Compose)  │       │(SharedViewModel)│       │ (Compose/Material)│          │
 │  └─────────────┘       └─────────────────┘       └───────────────────┘          │
 │         ▲                       ▲                         ▲                      │
 │         │                       │                         │                      │
@@ -100,7 +100,7 @@ The application follows the **Clean Architecture** pattern with **MVVM** (Model-
     - **iOS**: SwiftUI views and components (see [iOS UI Components Documentation](docs/iOS_UI_Components.md))
   - **ViewModels**: Manage UI state, process user actions, and communicate with the domain layer
   - **UI Elements**: Reusable components for consistent UI across platforms
-  - **KoinViewModel**: Base class for all ViewModels that provides standardized Koin integration
+  - **SharedViewModel**: Multiplatform base class (on androidx `ViewModel`) with the shared error channel; ViewModels are constructor-injected and registered in Koin
   - **Navigation**: Compose Navigation for handling screen transitions and deep linking
   - **State Handling**: Kotlin StateFlow and SharedFlow for reactive UI updates
   - **Theme Manager**: Manages light/dark mode and theme preferences with smooth transitions
@@ -122,12 +122,11 @@ The application follows the **Clean Architecture** pattern with **MVVM** (Model-
 - **Dependency Injection Layer**:
   - **Network Module**: Provides HTTP client, API interfaces, and network monitoring
   - **Data Module**: Provides repositories and caching mechanisms
-  - **Domain Module**: Provides use cases and application configuration
+  - **Domain Module**: Provides use cases, shared ViewModels, and application configuration
   - **Platform Module**: Provides platform-specific dependencies
-  - **Test Module**: Provides mock implementations for testing
 
 ### Cross-Cutting Concerns:
-- **Error Handling**: Standardized error handling through BaseViewModel with user-friendly messages
+- **Error Handling**: Standardized error handling through SharedViewModel with user-friendly messages
 - **Offline Mode**: Network state monitoring and data caching for offline access
 - **Reactive Programming**: Kotlin Flow for asynchronous data streams and UI updates
 - **Dependency Injection**: Modular Koin setup for better testability and separation of concerns
@@ -162,7 +161,6 @@ The app uses Koin for dependency injection with a modular approach:
 
 For detailed information about the dependency injection implementation, see:
 - [Dependency Injection Documentation](docs/DependencyInjection.md) - Overview, module structure, and best practices
-- [Dependency Injection Migration Guide](docs/DependencyInjectionMigration.md) - Guide for migrating existing code to the new DI approach
 
 ## Libraries Used
 
@@ -196,10 +194,7 @@ For detailed information about the dependency injection implementation, see:
 **Testing Setup:**
 - [Testing Implementation Summary](docs/TESTING_IMPLEMENTATION_SUMMARY.md) - Complete testing framework overview and setup
 
-**Run Tests:**
-```bash
-./gradlew test  # Run all tests
-```
+See the [Testing](#testing) section below for where the test suites live and how to run them.
 
 For a detailed list of all libraries with versions and purposes, see the [Libraries Documentation](docs/Libraries.md).
 
@@ -207,9 +202,7 @@ For information about the reusable UI components in the app, see:
 - [Android UI Components Documentation](docs/UI_Components.md) - Jetpack Compose components and design system
 - [iOS UI Components Documentation](docs/iOS_UI_Components.md) - SwiftUI components and design system
 
-For details about the iOS 18.5 migration and complete SKIE integration (100%), see the [SKIE Integration Status](docs/SKIE_Integration_Complete.md).
-
-For technical details about the SKIE implementation and native Swift async/await integration, see the [SKIE Full Migration Guide](docs/SKIE_FULL_MIGRATION_GUIDE.md).
+For details about the iOS migration, SKIE implementation, and native Swift async/await integration, see the [SKIE Full Migration Guide](docs/SKIE_FULL_MIGRATION_GUIDE.md).
 
 ## Package Structure
 
@@ -231,28 +224,27 @@ For technical details about the SKIE implementation and native Swift async/await
 ## Key Features Implementation
 
 ### Cart Functionality
-- **CartViewModel**: Manages cart state and operations like adding/removing items and checkout
+- **SharedCartViewModel**: Manages cart state and operations like adding/removing items and checkout
 - **CartRepository**: Handles cart data persistence and retrieval
 - **CartScreen**: UI for displaying and managing cart items
 
 ### User Authentication
 - **AuthRepository**: Handles user registration, login, and session management
-- **ProfileViewModel**: Manages user profile data and settings
+- **SharedProfileViewModel**: Manages user profile data and settings
 - **ProfileScreen**: UI for user authentication and profile management
 
 ### Cocktail Discovery
-- **HomeViewModel**: Manages cocktail listings, categories, and search
-- **CocktailRepository**: Provides cocktail data from remote and local sources
+- **SharedHomeViewModel**: Manages cocktail listings, categories, and search
+- **CocktailSearchRepository / CocktailCatalogRepository / CocktailDetailRepository**: Focused repositories providing cocktail data from remote and cached sources
 - **HomeScreen & CocktailDetailScreen**: UI for browsing and viewing cocktail details
 
 ### Recommendation System
-- **CocktailRecommendationEngine**: Client-side engine that generates personalized recommendations
-- **RecommendationsSection**: UI component that displays "You might also like" suggestions
-- **Multiple Strategies**: Category-based, ingredient-based, and user preference-based recommendations
+- **GetCocktailDetailUseCase.getRelatedCocktails**: Client-side, category-based related-cocktail suggestions
+- **Detail screen sections**: "You might also like" carousels on both platforms, fed by `relatedCocktails` in the shared detail state
 - **Offline Support**: Works with cached data when no internet connection is available
 
 ### Dark Mode Support
-- **ThemeViewModel**: Manages theme state and preferences
+- **SharedThemeViewModel**: Manages theme state and preferences
 - **AppTheme**: Provides theme-specific colors and typography
 - **ThemeAwareComponents**: UI components that adapt to the current theme
 - **Smooth Transitions**: Animated transitions between light and dark modes
@@ -260,13 +252,13 @@ For technical details about the SKIE implementation and native Swift async/await
 
 ### Offline Mode
 - **NetworkMonitor**: Detects and monitors network connectivity
-- **OfflineRepository**: Caches data for offline access
-- **CocktailRepository**: Provides fallback to cached data when offline
+- **CocktailOfflineRepository**: Owns offline mode, connectivity checks, recently viewed, and cache clearing
+- **OfflineModePolicy + CocktailCache**: Single source of truth for "is the app offline" and the cached-data fallback used by the other cocktail repositories
 - **UI Indicators**: Clear indicators of offline status and available actions
 
 ### Error Handling
 - **ErrorUtils**: Centralized error handling and categorization
-- **BaseViewModel**: Common error handling for all ViewModels
+- **SharedViewModel**: Common error handling for all ViewModels
 - **ErrorDialog & ErrorBanner**: User-friendly error display components
 - **Recovery Actions**: Actionable error messages with recovery options
 
@@ -300,6 +292,7 @@ The application includes comprehensive test coverage:
 5. **Run on iOS** (macOS only):
    - Build the shared framework: `./gradlew :shared:podPublishXCFramework`
    - Navigate to `iosApp` directory: `cd iosApp`
+   - Generate the Xcode project from the spec: `xcodegen generate` (`brew install xcodegen`)
    - Install CocoaPods dependencies: `pod install`
    - Open `CocktailCraft.xcworkspace` in Xcode
    - Select a simulator and run the app
@@ -315,7 +308,7 @@ The application includes comprehensive test coverage:
 ## Troubleshooting
 - **Build Issues**: Try cleaning and rebuilding the project
 - **KMP Plugin Issues**: Make sure the Kotlin Multiplatform plugin is up to date
-- **iOS Builds**: ✅ **Working with SKIE integration!** See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) and [SKIE Status](docs/SKIE_Integration_Complete.md) for details
+- **iOS Builds**: ✅ **Working with SKIE integration!** See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) and the [SKIE Full Migration Guide](docs/SKIE_FULL_MIGRATION_GUIDE.md) for details
 - **iOS Build Warnings**: Non-blocking warnings exist (see iOS documentation for details)
 - **Dependency Resolution**: Check Gradle settings and versions.toml file
 
@@ -325,8 +318,7 @@ The application includes comprehensive test coverage:
 - [iOS Background Sync Implementation](docs/ios-background-sync.md) - Comprehensive guide to the background sync feature
 - [Background Sync Quick Reference](docs/background-sync-quick-reference.md) - Developer quick start guide
 - [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) - Complete iOS development setup
-- [SKIE Integration Status](docs/SKIE_Integration_Complete.md) - iOS 18.5 compatibility details
-- [Test Cases Documentation](TEST_CASES.md) - Comprehensive testing approach
+- [SKIE Full Migration Guide](docs/SKIE_FULL_MIGRATION_GUIDE.md) - iOS compatibility and SKIE integration details
 
 ### 🐛 **QA & Debugging Tools**
 - [DebugSwift Complete Installation Guide](docs/DebugSwift_Complete_Installation_Guide.md) - Full integration process with all issues and solutions
@@ -347,7 +339,21 @@ Contributions are welcome! Please follow the standard GitHub flow:
 4. Submit a pull request
 
 
-## Detailed Test Cases
+## Testing
 
-For comprehensive information about the test cases and testing approach, see the [Test Cases Documentation](TEST_CASES.md).
+The test suites live alongside the code they cover — the tests themselves are the up-to-date catalog:
+
+- **Shared (KMP)**: `shared/src/commonTest` — ViewModels, use cases, repositories, cache, DI graph
+- **Android**: `androidApp/src/test` (unit) and `androidApp/src/androidTest` (instrumented/UI)
+- **iOS**: `iosApp/CocktailCraftTests` (unit) and `iosApp/CocktailCraftUITests` (XCUITest)
+
+Run them with:
+
+```bash
+./gradlew :shared:testAndroidHostTest       # Shared module tests
+./gradlew :androidApp:testDebugUnitTest     # Android unit tests
+# iOS (from iosApp/, after pod install / xcodegen generate):
+xcodebuild test -workspace CocktailCraft.xcworkspace -scheme CocktailCraft \
+  -destination 'platform=iOS Simulator,name=iPhone 16'
+```
 

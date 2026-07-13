@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
@@ -14,6 +15,8 @@ import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
@@ -70,7 +73,7 @@ class FavoritesWidget : GlanceAppWidget() {
         val favoritesJson = prefs[FavoritesWidgetKeys.FAVORITES_LIST]
         val favoritesCount = prefs[FavoritesWidgetKeys.FAVORITES_COUNT]?.toIntOrNull() ?: 0
         val isLoading = prefs[FavoritesWidgetKeys.IS_LOADING] == "true"
-        val errorMessage = prefs[FavoritesWidgetKeys.ERROR]
+        val hasError = prefs[FavoritesWidgetKeys.ERROR] == true
         
         val favorites = try {
             if (favoritesJson != null) {
@@ -119,7 +122,7 @@ class FavoritesWidget : GlanceAppWidget() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "↻",
+                            text = LocalContext.current.getString(R.string.widget_refresh_icon),
                             style = TextStyle(
                                 color = GlanceTheme.colors.onPrimary,
                                 fontSize = 16.sp
@@ -132,7 +135,7 @@ class FavoritesWidget : GlanceAppWidget() {
                 
                 when {
                     isLoading -> LoadingContent()
-                    errorMessage != null -> ErrorContent()
+                    hasError -> ErrorContent()
                     favorites.isEmpty() -> EmptyFavoritesContent()
                     else -> FavoritesListContent(favorites)
                 }
@@ -163,7 +166,10 @@ class FavoritesWidget : GlanceAppWidget() {
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "⚠️", style = TextStyle(fontSize = 24.sp))
+                Text(
+                    text = LocalContext.current.getString(R.string.widget_error_icon),
+                    style = TextStyle(fontSize = 24.sp)
+                )
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 Text(
                     text = LocalContext.current.getString(R.string.widget_tap_refresh_to_retry),
@@ -182,7 +188,10 @@ class FavoritesWidget : GlanceAppWidget() {
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "💔", style = TextStyle(fontSize = 32.sp))
+                Text(
+                    text = LocalContext.current.getString(R.string.widget_no_favorites_icon),
+                    style = TextStyle(fontSize = 32.sp)
+                )
                 Spacer(modifier = GlanceModifier.height(8.dp))
                 Text(
                     text = LocalContext.current.getString(R.string.no_favorites),
@@ -253,7 +262,10 @@ class FavoritesWidget : GlanceAppWidget() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Cocktail emoji
-            Text(text = "🍸", style = TextStyle(fontSize = 24.sp))
+            Text(
+                text = context.getString(R.string.widget_cocktail_glass_icon),
+                style = TextStyle(fontSize = 24.sp)
+            )
 
             Spacer(modifier = GlanceModifier.width(8.dp))
 
@@ -281,7 +293,10 @@ class FavoritesWidget : GlanceAppWidget() {
             }
 
             // Heart icon
-            Text(text = "❤️", style = TextStyle(fontSize = 16.sp))
+            Text(
+                text = context.getString(R.string.widget_favorite_heart_icon),
+                style = TextStyle(fontSize = 16.sp)
+            )
         }
     }
 }
@@ -343,7 +358,10 @@ object FavoritesWidgetKeys {
     val FAVORITES_LIST = stringPreferencesKey("favorites_list_json")
     val FAVORITES_COUNT = stringPreferencesKey("favorites_count")
     val IS_LOADING = stringPreferencesKey("favorites_is_loading")
-    val ERROR = stringPreferencesKey("favorites_error")
+
+    // Boolean flag; renamed from the retired string key "favorites_error"
+    // so DataStore never sees the same key name with two types across upgrades.
+    val ERROR = booleanPreferencesKey("favorites_has_error")
 }
 
 /**
@@ -388,7 +406,7 @@ class RefreshFavoritesAction : ActionCallback {
             } catch (e: Exception) {
                 updateAppWidgetState(context, glanceId) { prefs ->
                     prefs[FavoritesWidgetKeys.IS_LOADING] = "false"
-                    prefs[FavoritesWidgetKeys.ERROR] = "Failed to load"
+                    prefs[FavoritesWidgetKeys.ERROR] = true
                 }
             }
         }
@@ -402,5 +420,25 @@ class RefreshFavoritesAction : ActionCallback {
  */
 class FavoritesWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = FavoritesWidget()
+
+    // Widget refresh lifecycle (AN-2): start the shared hourly worker when the
+    // first widget is placed; tear it down only when no widget of either type
+    // remains (both widgets share one worker).
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        WidgetUpdateWorker.schedule(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        val pending = goAsync()
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                WidgetUpdateWorker.cancelIfNoWidgetsRemain(context)
+            } finally {
+                pending.finish()
+            }
+        }
+    }
 }
 

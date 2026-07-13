@@ -185,41 +185,18 @@ object ErrorHandler {
                 errorCode = ErrorCode.INVALID_DATA
             )
 
-            // Default for unknown errors
-            else -> {
-                val message = when {
-                    exception.message?.contains("timeout", ignoreCase = true) == true ->
-                        "The request timed out. Please try again."
-                    exception.message?.contains("connect", ignoreCase = true) == true ->
-                        "Unable to connect to the server. Please check your internet connection."
-                    exception.message?.contains("server", ignoreCase = true) == true ->
-                        "The server encountered an error. Please try again later."
-                    exception.message?.contains("404", ignoreCase = true) == true ->
-                        "The requested resource was not found."
-                    exception.message?.contains("401", ignoreCase = true) == true ||
-                    exception.message?.contains("403", ignoreCase = true) == true ->
-                        "You don't have permission to access this resource."
-                    exception.message?.contains("500", ignoreCase = true) == true ->
-                        "The server encountered an internal error. Please try again later."
-                    else -> defaultMessage
-                }
-
-                val category = when {
-                    message.contains("internet", ignoreCase = true) ||
-                    message.contains("connect", ignoreCase = true) -> ErrorCategory.NETWORK
-                    message.contains("server", ignoreCase = true) -> ErrorCategory.SERVER
-                    message.contains("permission", ignoreCase = true) -> ErrorCategory.AUTHENTICATION
-                    else -> ErrorCategory.UNKNOWN
-                }
-
-                UserFriendlyError(
-                    title = getCategoryTitle(category),
-                    message = message,
-                    category = category,
-                    recoveryAction = recoveryAction,
-                    originalException = exception
-                )
-            }
+            // Default for unknown errors — repositories attach a typed
+            // ErrorCode at the boundary (AR-2), so anything reaching here has
+            // no better classification available: no message-substring
+            // guessing (locale/format-fragile, SH-12), just a generic error.
+            else -> UserFriendlyError(
+                title = getCategoryTitle(ErrorCategory.UNKNOWN),
+                message = defaultMessage,
+                category = ErrorCategory.UNKNOWN,
+                recoveryAction = recoveryAction,
+                originalException = exception,
+                errorCode = ErrorCode.UNKNOWN
+            )
         }
     }
 

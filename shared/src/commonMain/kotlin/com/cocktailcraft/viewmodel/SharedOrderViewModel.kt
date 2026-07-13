@@ -10,7 +10,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
-import com.cocktailcraft.domain.usecase.ManageOrdersUseCase
+import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.domain.util.getOrThrow
@@ -24,7 +24,9 @@ import kotlinx.coroutines.launch
  * Uses consolidated [OrderUiState] for atomic state updates.
  */
 class SharedOrderViewModel internal constructor(
-    private val manageOrdersUseCase: ManageOrdersUseCase,
+    // Direct repository dependency (AR-8): ManageOrdersUseCase was a pure
+    // 1:1 pass-through with this VM as its only consumer.
+    private val orderRepository: OrderRepository,
     private val placeOrderUseCase: PlaceOrderUseCase
 ) : SharedViewModel() {
 
@@ -41,7 +43,7 @@ class SharedOrderViewModel internal constructor(
         // The repository exposes a hot StateFlow seeded from persistence —
         // collecting it is the single way orders enter this ViewModel.
         viewModelScope.launch {
-            manageOrdersUseCase.observeOrders().collect { orderList ->
+            orderRepository.observeOrders().collect { orderList ->
                 _uiState.update { it.copy(
                     orders = orderList.sortedByDescending { o -> o.date },
                     orderCount = orderList.size,
@@ -53,13 +55,13 @@ class SharedOrderViewModel internal constructor(
     }
     
     /**
-     * Load orders from manageOrdersUseCase.
+     * Load orders from the repository.
      * SKIE will convert this to Swift async function.
      */
     suspend fun loadOrders() {
         _uiState.update { it.copy(isLoading = true) }
         try {
-            val orderList = manageOrdersUseCase.getOrders().getOrThrow()
+            val orderList = orderRepository.getOrders().getOrThrow()
             _uiState.update { it.copy(
                 orders = orderList.sortedByDescending { o -> o.date },
                 orderCount = orderList.size,
@@ -122,7 +124,7 @@ class SharedOrderViewModel internal constructor(
      */
     suspend fun getOrderById(orderId: String): Order? {
         return try {
-            manageOrdersUseCase.getOrderById(orderId).getOrNull()
+            orderRepository.getOrderById(orderId).getOrNull()
         } catch (e: Exception) {
             handleException(e, "Failed to load order details")
             null
@@ -135,7 +137,7 @@ class SharedOrderViewModel internal constructor(
      */
     suspend fun updateOrderStatus(orderId: String, status: String): Boolean {
         return try {
-            val result = manageOrdersUseCase.updateOrderStatus(orderId, status)
+            val result = orderRepository.updateOrderStatus(orderId, status)
             if (result.isSuccess()) {
                 loadOrders() // Refresh orders list
                 true
@@ -155,7 +157,7 @@ class SharedOrderViewModel internal constructor(
      */
     suspend fun cancelOrder(orderId: String): Boolean {
         return try {
-            val success = manageOrdersUseCase.cancelOrder(orderId).getOrDefault(false)
+            val success = orderRepository.cancelOrder(orderId).getOrDefault(false)
             if (success) {
                 loadOrders()
             } else {

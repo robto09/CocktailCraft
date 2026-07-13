@@ -39,6 +39,14 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
         await run { try await sharedViewModel.searchCocktails(query: query) }
     }
 
+    /// Per-keystroke entry point: pushes the query into the shared debounced
+    /// search pipeline (SH-13/IO-1). One request per typing pause, superseded
+    /// searches cancelled in shared code; an empty query clears stale results
+    /// by falling back to the category listing.
+    func updateSearchQuery(_ query: String) {
+        sharedViewModel.updateSearchQuery(query: query)
+    }
+
     /// Apply the advanced-search filters. The shared ViewModel stores them in
     /// `state.searchFilters` (driving the active-filter chips) and loads the
     /// intersected results.
@@ -123,8 +131,8 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
     // MARK: - Helper Methods for SwiftUI
 
     func refreshCocktails() async {
-        // Simulate refresh with delay
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        // No artificial delay: the spinner should last exactly as long as the
+        // reload does (IO-2).
         await loadCocktails()
     }
 }

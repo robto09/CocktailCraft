@@ -63,7 +63,8 @@ private val AnimatedDarkColorScheme = darkColorScheme(
 )
 
 /**
- * Animated version of CocktailBarTheme that smoothly transitions between light and dark themes.
+ * The app's single theme: smoothly transitions between light and dark palettes.
+ * (The static CocktailBarTheme it once wrapped was dead code, deleted in AN-5.)
  *
  * @param dynamicColor Material You wallpaper color on API 31+ (coral/gold
  * scheme is the fallback). Defaults to false — deliberately, not the usual

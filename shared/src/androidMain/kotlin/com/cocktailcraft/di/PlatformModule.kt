@@ -1,6 +1,9 @@
 package com.cocktailcraft.di
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
+import com.cocktailcraft.data.config.AppConfigImpl
+import com.cocktailcraft.domain.config.AppConfig
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -14,6 +17,13 @@ import java.io.IOException
 import java.security.GeneralSecurityException
 
 actual fun platformModule() = module {
+    // Debug-aware config (AR-4): androidApp's BuildConfig is invisible to this
+    // module, but the debuggable flag carries the same signal.
+    single<AppConfig> {
+        val debuggable = (get<Context>().applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        AppConfigImpl(verboseNetworkLogging = debuggable)
+    }
+
     single<Settings> {
         val context = get<Context>()
         val sharedPrefs = context.getSharedPreferences("cocktailcraft_prefs", Context.MODE_PRIVATE)

@@ -109,6 +109,34 @@ class SharedOfflineModeViewModelTest : MainDispatcherTest() {
     }
 
     @Test
+    fun clearCachePurgesCacheLayersAndResetsState() = runTest {
+        val harness = Harness()
+        harness.offline.recentlyViewed = listOf(testCocktail("1"))
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+        assertTrue(vm.hasRecentlyViewed)
+
+        vm.clearCache()
+
+        assertEquals(1, harness.offline.clearCacheCalls, "Clear Cache must reach the cache layer (SH-3)")
+        assertFalse(vm.hasRecentlyViewed)
+        assertEquals(0, vm.getCachedCocktailCount())
+    }
+
+    @Test
+    fun viewModelNeverStartsOrStopsTheSharedNetworkMonitor() = runTest {
+        // SH-2: monitoring lifecycle belongs to app init. A ViewModel starting
+        // it double-registers the Android NetworkCallback (IllegalArgumentException);
+        // stopping it in onCleared kills connectivity updates for every consumer.
+        val harness = Harness()
+        harness.viewModel()
+        advanceUntilIdle()
+
+        assertEquals(0, harness.network.startCalls)
+        assertEquals(0, harness.network.stopCalls)
+    }
+
+    @Test
     fun disablingOfflineModeWhileOnlineReloadsRecentlyViewed() = runTest {
         val harness = Harness()
         harness.offline.offlineModeEnabled = true

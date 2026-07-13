@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocktailcraft.android.util.toFavoriteIdSet
 import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.CartItemCard
 import com.cocktailcraft.android.ui.components.ConfirmationDialog
@@ -60,6 +61,8 @@ fun CartScreen(
     val error by viewModel.error.collectAsStateWithLifecycle()
     val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
     val favorites = favoritesState.favorites
+    // O(1) membership per row instead of favorites.any {} per visible item (AN-3)
+    val favoriteIds = remember(favorites) { favorites.toFavoriteIdSet() }
     val scope = rememberCoroutineScope()
 
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
@@ -123,7 +126,7 @@ fun CartScreen(
                             }
                         },
                         onRemove = { scope.launch { viewModel.removeFromCart(item.cocktail.id) } },
-                        isFavorite = favorites.any { it.id == item.cocktail.id },
+                        isFavorite = item.cocktail.id in favoriteIds,
                         onToggleFavorite = { scope.launch { favoritesViewModel.toggleFavorite(item.cocktail) } }
                     )
                 }

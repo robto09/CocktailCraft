@@ -38,11 +38,24 @@ val dataModule = module {
         Json {
             ignoreUnknownKeys = true
             isLenient = true
+            // A JSON null for a non-nullable field with a default coerces to
+            // the default instead of failing the whole decode (SH-6).
+            coerceInputValues = true
         }
     }
 
     // Background dispatcher for Settings I/O and JSON (de)serialization
     single<CoroutineDispatcher>(named("ioDispatcher")) { Dispatchers.IO }
+
+    // Offline decision — single source of truth for "is the app offline" (AR-7)
+    single {
+        com.cocktailcraft.data.cache.OfflineModePolicy(
+            settings = get(),
+            appConfig = get(),
+            networkMonitor = get(),
+            ioDispatcher = get(named("ioDispatcher"))
+        )
+    }
 
     // Cache
     single { CocktailCache(
@@ -50,7 +63,7 @@ val dataModule = module {
         json = get(),
         appConfig = get(),
         ioDispatcher = get(named("ioDispatcher")),
-        networkMonitor = get()
+        offlineModePolicy = get()
     ) }
 
     // In-memory cache manager (thread-safe singleton)
@@ -62,12 +75,10 @@ val dataModule = module {
     // Focused repositories, each owning one concern
     single<CocktailOfflineRepository> {
         CocktailOfflineRepositoryImpl(
-            settings = get(),
-            appConfig = get(),
-            networkMonitor = get(),
+            offlineModePolicy = get(),
             cocktailCache = get(),
-            remote = get(),
-            ioDispatcher = get(named("ioDispatcher"))
+            cacheManager = get(),
+            remote = get()
         )
     }
 
@@ -105,7 +116,6 @@ val dataModule = module {
         CocktailDetailRepositoryImpl(
             remote = get(),
             cocktailCache = get(),
-            cacheManager = get(),
             appConfig = get(),
             offlineRepository = get()
         )

@@ -28,6 +28,16 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
         let viewModel = getSharedKoinHelper().getSharedCocktailDetailViewModel()
         self.sharedViewModel = viewModel
         super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
+        #if DEBUG
+        // IO-13 instrumentation: @State evaluates its initializer on every
+        // parent re-render and discards the extra instances — each one spins
+        // up (and deinit immediately tears down) a fresh Koin factory VM with
+        // its own coroutine scope. Watch these logs on the detail flow; if
+        // create/teardown pairs are frequent, move to lazy resolution in
+        // .task or a lighter factory.
+        Self.liveInstances += 1
+        print("CocktailDetailViewModelSKIE: created (live: \(Self.liveInstances))")
+        #endif
     }
 
     deinit {
@@ -35,7 +45,17 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
         // scope is cancelled here; the base deinit cancels observation tasks.
         // (Singleton-backed wrappers must NOT call onCleared().)
         sharedViewModel.onCleared()
+        #if DEBUG
+        Self.liveInstances -= 1
+        print("CocktailDetailViewModelSKIE: torn down (live: \(Self.liveInstances))")
+        #endif
     }
+
+    #if DEBUG
+    // Rough churn gauge. nonisolated(unsafe): deinit is nonisolated and must
+    // decrement it; main-thread-confined in practice and debug-only.
+    nonisolated(unsafe) private static var liveInstances = 0
+    #endif
 
     // MARK: - Public Methods (using SKIE async/await)
 

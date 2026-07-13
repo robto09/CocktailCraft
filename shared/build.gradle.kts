@@ -27,7 +27,7 @@ skie {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(libs.versions.jvmTarget.get().toInt())
 
     sourceSets.all {
         // For @HiddenFromObjC on serializer companions
@@ -38,7 +38,7 @@ kotlin {
 
     android {
         namespace = "com.cocktailcraft"
-        compileSdk = 36
+        compileSdk = libs.versions.compileSdk.get().toInt()
         minSdk = 24
 
         // Host-side (JVM) unit tests, equivalent of the old androidUnitTest
@@ -92,6 +92,11 @@ kotlin {
             implementation(libs.koin.core.viewmodel)
             // VMs extend the multiplatform androidx ViewModel — api so Android
             // consumers see the supertype for koinViewModel scoping
+            // Deliberately api(), not implementation() (AR-12): the shared
+            // ViewModels extend androidx ViewModel, so the type must be on the
+            // consumers' compile classpath; demoting it breaks androidApp.
+            // Export-surface trimming happens via @HiddenFromObjC on
+            // Kotlin-side helpers instead (see Result.kt, BaseNetworkMonitor).
             api(libs.androidx.lifecycle.viewmodel)
 
                 // Multiplatform logging
@@ -124,6 +129,9 @@ kotlin {
                 implementation(libs.koin.test.core)
                 implementation(libs.turbine)
                 implementation(libs.multiplatform.settings.test)
+                // MockEngine so CocktailApiImplTest exercises the real Ktor
+                // pipeline (AR-5)
+                implementation(libs.ktor.client.mock)
             }
         }
 
@@ -143,10 +151,4 @@ kotlin {
 
 
     }
-}
-
-repositories {
-    google()
-    mavenCentral()
-    gradlePluginPortal()
 }

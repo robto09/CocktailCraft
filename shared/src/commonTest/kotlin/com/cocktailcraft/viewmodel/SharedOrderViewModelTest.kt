@@ -1,10 +1,10 @@
 package com.cocktailcraft.viewmodel
 
+import app.cash.turbine.test
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.repository.OrderRepository
-import com.cocktailcraft.domain.usecase.ManageOrdersUseCase
 import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.testutil.MainDispatcherTest
@@ -90,9 +90,27 @@ private class FakeOrderRepository : OrderRepository {
 class SharedOrderViewModelTest : MainDispatcherTest() {
 
     private fun viewModel(repository: FakeOrderRepository) = SharedOrderViewModel(
-        manageOrdersUseCase = ManageOrdersUseCase(repository),
+        orderRepository = repository,
         placeOrderUseCase = PlaceOrderUseCase(repository)
     )
+
+    @Test
+    fun ordersObserverEmitsWhenRepositoryFlowChanges() = runTest {
+        // SH-12 (Turbine): the init-block observeOrders collector must push
+        // repository changes into uiState without a manual reload.
+        val repository = FakeOrderRepository()
+        val vm = viewModel(repository)
+        advanceUntilIdle()
+
+        vm.uiState.test {
+            assertEquals(0, awaitItem().orderCount)
+            repository.seed(testOrder("o1", date = "2026-07-01", total = 12.0))
+            var state = awaitItem()
+            while (state.orders.isEmpty()) state = awaitItem()
+            assertEquals(listOf("o1"), state.orders.map { it.id })
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 
     @Test
     fun initCollectsPersistedOrdersMostRecentFirst() = runTest {

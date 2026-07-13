@@ -46,11 +46,11 @@ struct HomeViewSKIE: View {
         }
         .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
         .onChange(of: searchText) { _, newValue in
-            if !newValue.isEmpty {
-                Task {
-                    await viewModel.searchCocktails(query: newValue)
-                }
-            }
+            // Every change — including deleting back to empty — goes through the
+            // shared debounced pipeline: no per-keystroke Tasks, no stale
+            // last-completed-wins results, and an empty query restores the
+            // category listing (IO-1).
+            viewModel.updateSearchQuery(newValue)
         }
         .task {
             // Initial load when view appears
@@ -122,9 +122,9 @@ struct HomeViewSKIE: View {
                 Spacer()
                 HomeEmptyStateView(
                     icon: "wineglass",
-                    title: "No Cocktails Found",
-                    subtitle: "Try adjusting your search or filters",
-                    actionTitle: "Clear Filters",
+                    title: String(localized: "No Cocktails Found"),
+                    subtitle: String(localized: "Try adjusting your search or filters"),
+                    actionTitle: String(localized: "Clear Filters"),
                     action: {
                         searchText = ""
                         selectedCategory = nil
@@ -157,7 +157,7 @@ struct HomeViewSKIE: View {
                                 Task {
                                     await viewModel.addToCart(cocktail)
                                     await MainActor.run {
-                                        toastMessage = "Added \(cocktail.name) to cart"
+                                        toastMessage = String(localized: "Added \(cocktail.name) to cart")
                                         withAnimation {
                                             showingToast = true
                                         }
@@ -188,7 +188,7 @@ struct HomeViewSKIE: View {
                     await viewModel.loadMoreCocktails()
                 }
             }) {
-                Text("Load More")
+                Text(String(localized: "Load More"))
                     .font(.callout)
                     .fontWeight(.medium)
                     .foregroundColor(primaryColor)
@@ -204,7 +204,7 @@ struct HomeViewSKIE: View {
             HStack {
                 ProgressView()
                     .foregroundColor(primaryColor)
-                Text("Loading more...")
+                Text(String(localized: "Loading more..."))
                     .font(.callout)
                     .foregroundColor(textSecondary)
             }

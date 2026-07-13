@@ -42,18 +42,27 @@ class AndroidNetworkMonitor(
         }
     }
 
+    // Registering the same NetworkCallback twice throws IllegalArgumentException,
+    // so start/stop are idempotent: the monitor is a Koin single shared by
+    // several consumers and must tolerate repeated lifecycle calls (SH-2).
+    private var registered = false
+
     override fun startMonitoring() {
+        if (registered) return
         val networkRequest = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
 
         connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
+        registered = true
 
         // Initialize with current status
         _isOnline.value = isNetworkAvailable()
     }
 
     override fun stopMonitoring() {
+        if (!registered) return
+        registered = false
         try {
             connectivityManager.unregisterNetworkCallback(networkCallback)
         } catch (e: Exception) {

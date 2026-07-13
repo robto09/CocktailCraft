@@ -2,14 +2,14 @@ package com.cocktailcraft.data.repository
 
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.cache.CocktailCache
-import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.util.Result
-import kotlinx.coroutines.delay
+import com.cocktailcraft.util.ErrorHandler
+import com.cocktailcraft.util.runCatchingResult
 
 /**
  * Single-cocktail detail lookups (cache-first with API fallback) plus image
@@ -22,7 +22,6 @@ import kotlinx.coroutines.delay
 internal class CocktailDetailRepositoryImpl(
     private val remote: CocktailRemoteDataSource,
     private val cocktailCache: CocktailCache,
-    private val cacheManager: CocktailCacheManager,
     private val appConfig: AppConfig,
     private val offlineRepository: CocktailOfflineRepository
 ) : CocktailDetailRepository {
@@ -30,7 +29,7 @@ internal class CocktailDetailRepositoryImpl(
     private suspend fun isOffline(): Boolean = offlineRepository.isOffline()
 
     override suspend fun getCocktailById(id: String): Result<Cocktail?> {
-        return try {
+        return runCatchingResult("Failed to get cocktail by ID") {
             // A cached cocktail with full details can be served immediately
             val cachedCocktail = cocktailCache.getCachedCocktail(id)
             if (cachedCocktail != null && cachedCocktail.hasFullDetails) {
@@ -45,12 +44,12 @@ internal class CocktailDetailRepositoryImpl(
 
             // If online, fetch full details from API
             try {
-                delay(200) // Avoid rate limiting on rapid successive calls
+                remote.awaitRateLimitWindow() // shared min-interval throttle, not an ad hoc sleep (SH-7)
+                remote.noteApiCall()
                 val cocktail = remote.getById(id)
                 if (cocktail != null) {
                     cocktailCache.cacheCocktail(cocktail)
                     cocktailCache.addToRecentlyViewed(cocktail)
-                    cacheManager.updateGlobalCocktailsCache { if (it.id == id) cocktail else it }
                     Result.Success(cocktail)
                 } else {
                     Result.Success(cachedCocktail)
@@ -59,8 +58,6 @@ internal class CocktailDetailRepositoryImpl(
                 // On API error, return cached version
                 Result.Success(cachedCocktail)
             }
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to get cocktail by ID")
         }
     }
 
@@ -69,12 +66,12 @@ internal class CocktailDetailRepositoryImpl(
             if (isOffline()) {
                 Result.Success(cocktailCache.getCachedCocktail(id))
             } else {
-                delay(200) // Avoid rate limiting
+                remote.awaitRateLimitWindow() // shared min-interval throttle, not an ad hoc sleep (SH-7)
+                remote.noteApiCall()
                 val cocktail = remote.getById(id)
                 if (cocktail != null) {
                     cocktailCache.cacheCocktail(cocktail)
                     cocktailCache.addToRecentlyViewed(cocktail)
-                    cacheManager.updateGlobalCocktailsCache { if (it.id == id) cocktail else it }
                     Result.Success(cocktail)
                 } else {
                     Result.Success(cocktailCache.getCachedCocktail(id))
@@ -82,15 +79,16 @@ internal class CocktailDetailRepositoryImpl(
             }
         } catch (e: Exception) {
             Logger.e { "Error refreshing cocktail $id: ${e.message}" }
-            Result.Error(e.message ?: "Failed to refresh cocktail")
+            Result.Error(
+                message = e.message ?: "Failed to refresh cocktail",
+                code = ErrorHandler.getErrorFromException(e, "Failed to refresh cocktail").errorCode
+            )
         }
     }
 
     override suspend fun getRandomCocktail(): Result<Cocktail?> {
-        return try {
+        return runCatchingResult("Failed to get random cocktail") {
             Result.Success(remote.getRandom())
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to get random cocktail")
         }
     }
 

@@ -1,5 +1,7 @@
 package com.cocktailcraft.domain.util
 
+import kotlin.native.HiddenFromObjC
+
 sealed class Result<out T> {
     data class Success<T>(val data: T) : Result<T>()
     data class Error(val message: String, val code: ErrorCode = ErrorCode.UNKNOWN) : Result<Nothing>()
@@ -25,6 +27,7 @@ sealed class Result<out T> {
 }
 
 // Extension: chain a Result-returning transform on success
+@HiddenFromObjC
 fun <T, R> Result<T>.flatMap(transform: (T) -> Result<R>): Result<R> = when (this) {
     is Result.Success -> transform(data)
     is Result.Error -> Result.Error(message, code)
@@ -32,18 +35,21 @@ fun <T, R> Result<T>.flatMap(transform: (T) -> Result<R>): Result<R> = when (thi
 }
 
 // Extension: perform a side-effect on success
+@HiddenFromObjC
 fun <T> Result<T>.onSuccess(action: (T) -> Unit): Result<T> {
     if (this is Result.Success) action(data)
     return this
 }
 
 // Extension: perform a side-effect on error
+@HiddenFromObjC
 fun <T> Result<T>.onError(action: (String, ErrorCode) -> Unit): Result<T> {
     if (this is Result.Error) action(message, code)
     return this
 }
 
 // Extension: get data or a default value
+@HiddenFromObjC
 fun <T> Result<T>.getOrDefault(defaultValue: @UnsafeVariance T): T = when (this) {
     is Result.Success -> data
     else -> defaultValue
@@ -56,6 +62,7 @@ fun <T> Result<T>.getOrDefault(defaultValue: @UnsafeVariance T): T = when (this)
 class DomainException(val code: ErrorCode, message: String) : Exception(message)
 
 // Extension: get data or throw an exception (useful for bridging to try/catch callers)
+@HiddenFromObjC
 fun <T> Result<T>.getOrThrow(): T = when (this) {
     is Result.Success -> data
     is Result.Error -> throw DomainException(code, message)

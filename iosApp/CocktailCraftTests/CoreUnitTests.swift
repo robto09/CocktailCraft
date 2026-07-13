@@ -56,3 +56,21 @@ final class OrderStatusMappingTests: TestSetup {
         XCTAssertEqual(vm.getOrderStatusIcon("pending"), "clock")
     }
 }
+
+/// Pure budget math extracted from BackgroundSyncManager.performSync (IO-7):
+/// the shared sync service gets the platform allowance minus a 5s teardown
+/// margin, and never a negative budget.
+final class BackgroundSyncBudgetTests: XCTestCase {
+
+    func testForegroundAllowanceLeavesTeardownMargin() {
+        XCTAssertEqual(BackgroundSyncManager.syncBudgetMs(maxDuration: 30), 25_000)
+    }
+
+    func testBackgroundAllowanceLeavesTeardownMargin() {
+        XCTAssertEqual(BackgroundSyncManager.syncBudgetMs(maxDuration: 25), 20_000)
+    }
+
+    func testSubMarginAllowanceIsFlooredAtZero() {
+        XCTAssertEqual(BackgroundSyncManager.syncBudgetMs(maxDuration: 3), 0)
+    }
+}

@@ -5,6 +5,7 @@ import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCategories
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.util.runCatchingResult
 
 /**
  * Catalog/browsing lookups (categories, ingredients, default cocktail list),
@@ -18,26 +19,20 @@ internal class CocktailCatalogRepositoryImpl(
 ) : CocktailCatalogRepository {
 
     override suspend fun getCategories(): Result<List<String>> {
-        return try {
+        return runCatchingResult("Failed to get categories") {
             Result.Success(remote.getCategories())
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to get categories")
         }
     }
 
     override suspend fun getIngredients(): Result<List<String>> {
-        return try {
+        return runCatchingResult("Failed to get ingredients") {
             Result.Success(remote.getIngredients())
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to get ingredients")
         }
     }
 
     override suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>> {
-        return try {
+        return runCatchingResult("Failed to get cocktails sorted by newest") {
             Result.Success(categoryFetcher.fetchCocktailsByCategory(CocktailCategories.DEFAULT))
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to get cocktails sorted by newest")
         }
     }
 }

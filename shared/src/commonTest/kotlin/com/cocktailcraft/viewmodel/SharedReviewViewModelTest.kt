@@ -1,5 +1,6 @@
 package com.cocktailcraft.viewmodel
 
+import app.cash.turbine.test
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.repository.ReviewRepositoryImpl
 import com.cocktailcraft.domain.model.Review
@@ -50,6 +51,30 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
         val reloaded = viewModel(settings)
         advanceUntilIdle()
         assertEquals(1, reloaded.getReviewCount("c1"))
+    }
+
+    @Test
+    fun reviewObserverEmitsWhenRepositoryChanges() = runTest {
+        // SH-12 (Turbine): the observed reviews flow must push repository
+        // changes into uiState without a manual reload.
+        val settings = MapSettings()
+        val repo = repository(settings)
+        val vm = SharedReviewViewModel(ManageReviewsUseCase(repo))
+        advanceUntilIdle()
+        vm.loadReviewsForCocktail("c1")
+        advanceUntilIdle()
+
+        vm.uiState.test {
+            assertEquals(0, awaitItem().reviewCount)
+            repo.addReview(
+                Review(id = "r9", cocktailId = "c1", userName = "A", rating = 4.0f,
+                    comment = "Really quite refreshing.", date = "2026-07-05")
+            ).getOrThrow()
+            var state = awaitItem()
+            while (state.reviewCount == 0) state = awaitItem()
+            assertEquals(1, state.reviewCount)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test

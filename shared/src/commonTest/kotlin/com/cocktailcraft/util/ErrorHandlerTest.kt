@@ -89,6 +89,20 @@ class ErrorHandlerTest {
     }
 
     @Test
+    fun unrecognizedExceptionNoLongerPatternMatchesOnMessageSubstrings() {
+        // SH-12: the old fallback would have guessed NETWORK/"The request
+        // timed out..." from these substrings; classification is by exception
+        // type (or a DomainException's typed code) only.
+        val error = ErrorHandler.getErrorFromException(
+            RuntimeException("Connection timeout while talking to server 500")
+        )
+
+        assertEquals(ErrorHandler.ErrorCategory.UNKNOWN, error.category)
+        assertEquals(ErrorCode.UNKNOWN, error.errorCode)
+        assertEquals("Something went wrong. Please try again.", error.message)
+    }
+
+    @Test
     fun unknownExceptionHonoursCallerSuppliedDefaultMessage() {
         val error = ErrorHandler.getErrorFromException(
             RuntimeException("boom"),

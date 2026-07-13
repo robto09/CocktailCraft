@@ -2,6 +2,7 @@ package com.cocktailcraft.data.repository
 
 import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.CocktailCacheManager
+import com.cocktailcraft.data.cache.OfflineModePolicy
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.remote.CocktailDto
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
@@ -34,14 +35,14 @@ class CocktailSearchRepositoryImplTest {
         online: Boolean = true
     ): Fixture {
         val networkMonitor = FakeNetworkMonitor(online)
-        val cache = CocktailCache(settings, Json { ignoreUnknownKeys = true }, config, networkMonitor = networkMonitor)
+        val policy = OfflineModePolicy(settings, config, networkMonitor)
+        val cache = CocktailCache(settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
         val cacheManager = CocktailCacheManager()
         val remote = CocktailRemoteDataSource(api, cacheManager)
         val offline = CocktailOfflineRepositoryImpl(
-            settings = settings,
-            appConfig = config,
-            networkMonitor = networkMonitor,
+            offlineModePolicy = policy,
             cocktailCache = cache,
+            cacheManager = cacheManager,
             remote = remote
         )
         val fetcher = CocktailCategoryFetcher(
@@ -186,6 +187,43 @@ class CocktailSearchRepositoryImplTest {
 
         val ids = (result as Result.Success).data.map { it.id }.toSet()
         assertEquals(setOf("2", "3"), ids)
+    }
+
+    // --- SH-1: category fetch failures surface as errors, not empty success ---
+
+    @Test
+    fun filterByCategoryReturnsErrorWhenApiFailsAndNoCacheExists() = runTest {
+        val api = FakeCocktailApi(drinks = sampleDrinks())
+        api.categoryEndpointError = RuntimeException("API down")
+        val repo = repository(api = api)
+
+        val result = repo.filterByCategory("Cocktail")
+
+        assertTrue(result is Result.Error, "a real failure with no cache must not become an empty success")
+    }
+
+    @Test
+    fun filterByCategoryFallsBackToGeneralCacheWhenApiFails() = runTest {
+        val api = FakeCocktailApi(drinks = sampleDrinks())
+        val fixture = fixture(api = api)
+
+        // A successful name search caches full records for ids 2, 3, 5.
+        fixture.search.advancedSearch(SearchFilters(query = "mojito"))
+
+        api.categoryEndpointError = RuntimeException("API down")
+        val result = fixture.search.filterByCategory("Cocktail")
+
+        val ids = (result as Result.Success).data.map { it.id }.toSet()
+        assertEquals(setOf("2", "3"), ids)
+    }
+
+    @Test
+    fun filterByCategoryReturnsEmptySuccessForGenuinelyEmptyCategory() = runTest {
+        val repo = repository(api = FakeCocktailApi(drinks = sampleDrinks()))
+
+        val result = repo.filterByCategory("Shot")
+
+        assertTrue((result as Result.Success).data.isEmpty())
     }
 
     @Test

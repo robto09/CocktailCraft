@@ -88,3 +88,7 @@ Thumbs.db
 # Prebuilt iOS framework — build artifact, never commit
 shared/shared.xcframework/
 *.xcframework
+
+# Generated codebase dumps and stray captures (AR-11) — never commit these
+repomix-output*.md
+/Screenshot_*.png

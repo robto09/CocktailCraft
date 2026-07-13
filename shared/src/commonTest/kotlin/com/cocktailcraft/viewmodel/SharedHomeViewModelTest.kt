@@ -1,5 +1,6 @@
 package com.cocktailcraft.viewmodel
 
+import app.cash.turbine.test
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
 import com.cocktailcraft.domain.usecase.LoadCocktailsByCategoryUseCase
@@ -21,6 +22,8 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -45,6 +48,147 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
             catalogRepository = catalog,
             networkMonitor = network
         )
+    }
+
+    // --- SH-13: debounced search pipeline ---
+
+    @Test
+    fun typingBurstFiresOneDebouncedSearchForTheLastQuery() = runTest {
+        val harness = Harness()
+        harness.search.all = listOf(
+            testCocktail("1", name = "Margarita"),
+            testCocktail("2", name = "Mojito")
+        )
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+        harness.search.advancedSearchCalls.clear()
+
+        vm.updateSearchQuery("m")
+        vm.updateSearchQuery("ma")
+        vm.updateSearchQuery("mar")
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf("mar"),
+            harness.search.advancedSearchCalls.map { it.query },
+            "a typing burst must fire exactly one search, for the final query"
+        )
+        assertEquals(listOf("1"), vm.uiState.value.cocktails.map { it.id })
+        assertEquals("mar", vm.uiState.value.searchQuery)
+    }
+
+    @Test
+    fun clearSearchCancelsPendingDebouncedSearch() = runTest {
+        val harness = Harness()
+        harness.search.all = listOf(testCocktail("1", name = "Margarita", category = "Cocktail"))
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+        harness.search.advancedSearchCalls.clear()
+
+        vm.updateSearchQuery("marg")
+        vm.clearSearch() // user hits clear before the debounce window elapses
+        advanceUntilIdle()
+
+        // Only the immediate clear-path search ran; the pending "marg" never fired.
+        assertTrue(harness.search.advancedSearchCalls.none { it.query == "marg" },
+            "clearing must cancel the pending debounced search")
+    }
+
+    @Test
+    fun emptyQueryAfterTypingFallsBackToCategoryListing() = runTest {
+        val harness = Harness()
+        harness.search.all = listOf(
+            testCocktail("1", name = "Margarita", category = "Cocktail"),
+            testCocktail("2", name = "Beer", category = "Beer")
+        )
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        vm.updateSearchQuery("marg")
+        advanceUntilIdle()
+        assertEquals(listOf("1"), vm.uiState.value.cocktails.map { it.id })
+
+        // Deleting back to empty must clear stale results, not leave them.
+        vm.updateSearchQuery("")
+        advanceUntilIdle()
+
+        assertEquals(listOf("1"), vm.uiState.value.cocktails.map { it.id },
+            "empty query falls back to the default category listing")
+        assertEquals("", vm.uiState.value.searchQuery)
+    }
+
+    @Test
+    fun networkRestoreRetriesFailedLoadAndRecovers() = runTest {
+        // SH-12 (Turbine): the init-block network observer must auto-retry a
+        // failed load once connectivity is restored, emitting the recovered list.
+        val harness = Harness()
+        harness.search.errorMessage = "api down"
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.cocktails.isEmpty())
+        assertNotNull(vm.error.value, "the failed initial load must surface an error")
+
+        // Backend recovers while the device is briefly offline; the restore
+        // handler must auto-retry and refill the list.
+        harness.search.errorMessage = null
+        harness.search.all = listOf(testCocktail("1", category = "Cocktail"))
+        harness.network.setOnline(false)
+        advanceUntilIdle()
+
+        vm.uiState.test {
+            harness.network.setOnline(true)
+            var state = awaitItem()
+            while (state.cocktails.isEmpty()) state = awaitItem()
+            assertEquals(listOf("1"), state.cocktails.map { it.id })
+            cancelAndIgnoreRemainingEvents()
+        }
+        assertNull(vm.error.value, "a successful retry must clear the error")
+    }
+
+    @Test
+    fun favoritesToggledElsewherePropagateThroughTheObservedFlow() = runTest {
+        // SH-4: a mutation made directly against the repository (e.g. from the
+        // Detail screen's separate ViewModel) must reach this VM's state
+        // without any manual loadFavorites() re-pull.
+        val harness = Harness()
+        val cocktail = testCocktail("7")
+        harness.search.all = listOf(cocktail)
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+        assertFalse(vm.isFavorite("7"))
+
+        harness.favorites.addToFavorites(cocktail)
+        advanceUntilIdle()
+
+        assertTrue(vm.isFavorite("7"), "repository mutations must propagate reactively")
+    }
+
+    @Test
+    fun getCocktailsByCategoryIsStableAcrossCalls() = runTest {
+        // SH-10: shuffled() returned a different list every call, causing
+        // pointless recomposition on Android and unstable results on iOS.
+        val harness = Harness()
+        harness.search.all = (1..8).map { testCocktail("id$it", category = "Cocktail") }
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        val first = vm.getCocktailsByCategory("Cocktail", 3)
+        val second = vm.getCocktailsByCategory("Cocktail", 3)
+
+        assertEquals(first.map { it.id }, second.map { it.id })
+        assertEquals(3, first.size)
+    }
+
+    @Test
+    fun viewModelNeverStartsOrStopsTheSharedNetworkMonitor() = runTest {
+        // SH-2: monitoring lifecycle belongs to app init; a second start from a
+        // ViewModel double-registers the Android NetworkCallback and throws.
+        val harness = Harness()
+        harness.viewModel()
+        advanceUntilIdle()
+
+        assertEquals(0, harness.network.startCalls)
+        assertEquals(0, harness.network.stopCalls)
     }
 
     @Test
@@ -168,9 +312,11 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         vm.toggleFavorite(cocktail)
+        advanceUntilIdle() // state arrives via the observed favorites flow (SH-4)
         assertTrue(vm.isFavorite("1"))
 
         vm.toggleFavorite(cocktail)
+        advanceUntilIdle()
         assertFalse(vm.isFavorite("1"))
     }
 

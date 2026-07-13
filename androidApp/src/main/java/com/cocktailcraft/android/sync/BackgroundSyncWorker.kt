@@ -9,21 +9,21 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.cocktailcraft.domain.service.BackgroundSyncService
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import java.util.concurrent.TimeUnit
 
 /**
  * Periodic refresh of the offline cocktail cache. What "a sync" means
  * lives in the shared BackgroundSyncService (same definition iOS's
  * BGTaskScheduler path uses); this worker only decides when to run it.
+ *
+ * Constructed by [com.cocktailcraft.android.work.CocktailCraftWorkerFactory]
+ * with its dependency injected — no global Koin lookup (AN-10).
  */
 class BackgroundSyncWorker(
     context: Context,
-    params: WorkerParameters
-) : CoroutineWorker(context, params), KoinComponent {
-
-    private val syncService: BackgroundSyncService by inject()
+    params: WorkerParameters,
+    private val syncService: BackgroundSyncService
+) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
         // A skipped/failed sync just waits for the next period — the

@@ -19,6 +19,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import com.cocktailcraft.util.UUID
+import com.cocktailcraft.util.runCatchingResult
 
 internal class OrderRepositoryImpl(
     private val settings: Settings,
@@ -70,7 +71,7 @@ internal class OrderRepositoryImpl(
 
     override suspend fun placeOrder(order: Order): Result<Unit> = withContext(ioDispatcher) {
         ensureLoaded()
-        try {
+        runCatchingResult("Failed to place order") {
             val orders = _orders.value.toMutableList()
             val orderWithId = if (order.id.isBlank()) {
                 order.copy(id = UUID.randomUUID())
@@ -81,49 +82,41 @@ internal class OrderRepositoryImpl(
             _orders.value = orders
             saveOrdersToStorage()
             Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to place order")
         }
     }
 
     override suspend fun getOrderById(id: String): Result<Order?> {
         ensureLoaded()
-        return try {
+        return runCatchingResult("Failed to get order by ID") {
             Result.Success(_orders.value.find { it.id == id })
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to get order by ID")
         }
     }
 
     override suspend fun updateOrderStatus(id: String, status: String): Result<Unit> = withContext(ioDispatcher) {
         ensureLoaded()
-        try {
+        runCatchingResult("Failed to update order status") {
             val updatedOrders = _orders.value.map { order ->
                 if (order.id == id) order.copy(status = status) else order
             }
             _orders.value = updatedOrders
             saveOrdersToStorage()
             Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to update order status")
         }
     }
 
     override suspend fun deleteOrder(id: String): Result<Unit> = withContext(ioDispatcher) {
         ensureLoaded()
-        try {
+        runCatchingResult("Failed to delete order") {
             val updatedOrders = _orders.value.filter { it.id != id }
             _orders.value = updatedOrders
             saveOrdersToStorage()
             Result.Success(Unit)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to delete order")
         }
     }
 
     override suspend fun cancelOrder(orderId: String): Result<Boolean> = withContext(ioDispatcher) {
         ensureLoaded()
-        try {
+        runCatchingResult("Failed to cancel order") {
             val orders = _orders.value.toMutableList()
             val orderIndex = orders.indexOfFirst { it.id == orderId }
 
@@ -140,8 +133,6 @@ internal class OrderRepositoryImpl(
             } else {
                 Result.Success(false)
             }
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to cancel order")
         }
     }
 }

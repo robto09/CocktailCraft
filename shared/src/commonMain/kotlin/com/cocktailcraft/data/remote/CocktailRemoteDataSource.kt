@@ -4,7 +4,6 @@ import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailIngredient
-import io.ktor.client.plugins.ClientRequestException
 import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
 import kotlin.time.Clock
@@ -39,13 +38,14 @@ internal class CocktailRemoteDataSource(
     suspend fun getIngredients(): List<String> = api.getIngredients().map { it.name }
 
     // --- Rate limiting / connectivity ---
+    // Only the proactive min-interval throttle lives here (request shaping);
+    // retry and 429 backoff are owned solely by Ktor's HttpRequestRetry (SH-7).
 
-    /** Wait out the minimum call interval or the current backoff window. */
+    /** Wait out the minimum interval between API calls. */
     suspend fun awaitRateLimitWindow() {
         val timeSinceLastCall = Clock.System.now().toEpochMilliseconds() - cacheManager.getLastApiCallTime()
-        val requiredInterval = maxOf(CocktailCacheManager.MIN_API_CALL_INTERVAL_MS, cacheManager.getRateLimitBackoffMs())
-        if (timeSinceLastCall < requiredInterval) {
-            val waitTime = requiredInterval - timeSinceLastCall
+        if (timeSinceLastCall < CocktailCacheManager.MIN_API_CALL_INTERVAL_MS) {
+            val waitTime = CocktailCacheManager.MIN_API_CALL_INTERVAL_MS - timeSinceLastCall
             Logger.d { "Rate limiting: waiting ${waitTime}ms before API call" }
             delay(waitTime)
         }
@@ -55,36 +55,12 @@ internal class CocktailRemoteDataSource(
         cacheManager.setLastApiCallTime(Clock.System.now().toEpochMilliseconds())
     }
 
-    suspend fun noteSuccess() {
-        cacheManager.resetBackoff()
-    }
-
-    /** Returns true when [e] was a rate-limit rejection (backoff applied). */
-    suspend fun noteFailure(e: Exception): Boolean {
-        return if (isRateLimitError(e)) {
-            Logger.w { "Rate limited - applying exponential backoff" }
-            cacheManager.applyExponentialBackoff()
-            true
-        } else {
-            false
-        }
-    }
-
     /**
      * Ping with rate-limit awareness. Callers are expected to have handled
      * offline mode already.
      */
     suspend fun ping(): Boolean {
         return try {
-            val currentBackoff = cacheManager.getRateLimitBackoffMs()
-            if (currentBackoff > 0) {
-                val sinceLastCall = Clock.System.now().toEpochMilliseconds() - cacheManager.getLastApiCallTime()
-                if (sinceLastCall < currentBackoff) {
-                    Logger.d { "In rate limit backoff period, skipping ping" }
-                    return false
-                }
-            }
-
             val sinceLastCall = Clock.System.now().toEpochMilliseconds() - cacheManager.getLastApiCallTime()
             if (sinceLastCall < CocktailCacheManager.MIN_API_CALL_INTERVAL_MS) {
                 Logger.d { "Skipping ping to avoid rate limit (last call ${sinceLastCall}ms ago)" }
@@ -92,25 +68,10 @@ internal class CocktailRemoteDataSource(
             }
 
             noteApiCall()
-            val isConnected = api.pingApi()
-            if (isConnected) {
-                cacheManager.resetBackoff()
-            }
-            isConnected
+            api.pingApi()
         } catch (e: Exception) {
-            if (isRateLimitError(e)) {
-                Logger.w { "API rate limited but reachable" }
-                cacheManager.applyExponentialBackoff()
-                return true
-            }
             false
         }
-    }
-
-    private fun isRateLimitError(e: Exception): Boolean {
-        if (e is ClientRequestException && e.response.status.value == 429) return true
-        // Fallback for exceptions that only carry the status in their message
-        return e.message?.contains("429") == true || e.message?.contains("Too Many Requests") == true
     }
 
     /**

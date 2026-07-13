@@ -3,7 +3,6 @@ package com.cocktailcraft.data.remote
 import com.cocktailcraft.domain.config.AppConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.call.*
-import io.ktor.client.plugins.timeout
 import io.ktor.client.request.*
 import io.ktor.http.*
 
@@ -38,26 +37,15 @@ internal class CocktailApiImpl(
     }
     
     override suspend fun getCocktailById(id: String): CocktailDto? {
-        try {
-            // Force API call to specifically use the lookup endpoint for full details
-            val response = client.get("$baseUrl/lookup.php") {
-                parameter("i", id)
-                // Add a timeout to ensure the request doesn't hang
-                timeout {
-                    requestTimeoutMillis = 10000
-                }
-            }.body<CocktailResponse>()
-            
-            val cocktail = response.drinks?.firstOrNull()
-            
-            if (cocktail == null) {
-                return null
-            }
-            
-            return cocktail
-        } catch (e: Exception) {
-            throw e
-        }
+        // The lookup endpoint returns full details. Timeout comes from the
+        // global HttpTimeout plugin (NetworkModule) like every sibling
+        // endpoint — the old per-call 10s override silently shrank just this
+        // endpoint's budget to a third of the shared one (SH-8).
+        val response = client.get("$baseUrl/lookup.php") {
+            parameter("i", id)
+        }.body<CocktailResponse>()
+
+        return response.drinks?.firstOrNull()
     }
     
     override suspend fun getRandomCocktail(): CocktailDto? {
@@ -85,20 +73,15 @@ internal class CocktailApiImpl(
     }
     
     override suspend fun filterByCategory(category: String): List<CocktailDto> {
-        try {
-            // First get the list of cocktails in this category (only ID, name, and thumbnail)
-            val response = client.get("$baseUrl/filter.php") {
-                parameter("c", category)
-            }.body<CocktailResponse>()
-            
-            val basicCocktails = response.drinks ?: emptyList()
-            
-            // If we need full details (with instructions) for these cocktails later,
-            // we'll need to fetch them individually using lookup.php
-            return basicCocktails
-        } catch (e: Exception) {
-            return emptyList()
-        }
+        // filter.php only returns partial data (id, name, thumbnail); full
+        // details need lookup.php per id. Failures propagate like every other
+        // endpoint — swallowing them here turned real API failures into empty
+        // "successful" categories upstream (SH-1).
+        val response = client.get("$baseUrl/filter.php") {
+            parameter("c", category)
+        }.body<CocktailResponse>()
+
+        return response.drinks ?: emptyList()
     }
     
     override suspend fun getCategories(): List<CategoryDto> {

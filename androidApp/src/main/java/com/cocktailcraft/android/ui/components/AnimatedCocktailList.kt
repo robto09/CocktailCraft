@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.util.toFavoriteIdSet
 import com.cocktailcraft.android.util.ListOptimizations.OnBottomReached
 
 /**
@@ -78,6 +80,9 @@ fun AnimatedCocktailList(
     // against overlapping pages from the API
     val distinctCocktails = remember(cocktails) { cocktails.distinctBy { it.id } }
 
+    // O(1) membership per row instead of favorites.any {} per visible item (AN-3)
+    val favoriteIds = remember(favorites) { favorites.toFavoriteIdSet() }
+
     // Detect when we're near the bottom to load more items
     listState.OnBottomReached(buffer = 5) {
         // Only load more if not already loading and not searching
@@ -89,7 +94,9 @@ fun AnimatedCocktailList(
     // Main content with optimized list rendering
     LazyColumn(
         state = listState,
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .testTag("home_cocktail_list"),
         verticalArrangement = Arrangement.spacedBy(itemSpacing.dp),
         contentPadding = contentPadding
     ) {
@@ -117,7 +124,13 @@ fun AnimatedCocktailList(
             items = distinctCocktails,
             key = { _, cocktail -> "cocktail_${cocktail.id}" }
         ) { _, cocktail ->
-            Box(modifier = Modifier.animateItem()) {
+            Box(
+                modifier = Modifier
+                    .animateItem()
+                    // Shared tag on every row: UiAutomator By.res matching only
+                    // needs "a" list item, not a specific one.
+                    .testTag("cocktail_list_item")
+            ) {
                 AnimatedCocktailItem(
                     cocktail = cocktail,
                     onClick = {
@@ -126,7 +139,7 @@ fun AnimatedCocktailList(
                     onAddToCart = {
                         onAddToCart(it)
                     },
-                    isFavorite = favorites.any { it.id == cocktail.id },
+                    isFavorite = cocktail.id in favoriteIds,
                     onToggleFavorite = { cocktailToToggle ->
                         onToggleFavorite(cocktailToToggle)
                     }

@@ -17,6 +17,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import com.cocktailcraft.util.UUID
+import com.cocktailcraft.util.runCatchingResult
 import kotlin.time.Clock
 
 internal class AuthRepositoryImpl(
@@ -29,7 +30,7 @@ internal class AuthRepositoryImpl(
 
     // Authentication methods
     override suspend fun signUp(email: String, password: String): Result<Boolean> = withContext(ioDispatcher) {
-        try {
+        runCatchingResult("Failed to sign up") {
             if (getUserByEmail(email) != null) return@withContext Result.Success(false)
 
             val user = User(
@@ -45,13 +46,11 @@ internal class AuthRepositoryImpl(
             saveCredentials(email, password)
             settings.putString(CURRENT_USER_ID_KEY, user.id)
             Result.Success(true)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to sign up")
         }
     }
 
     override suspend fun signIn(email: String, password: String): Result<Boolean> = withContext(ioDispatcher) {
-        try {
+        runCatchingResult("Failed to sign in") {
             val lockoutMs = lockoutRemainingMs(email)
             if (lockoutMs > 0) {
                 // Must be an Error (not Success(false)) so the lockout message
@@ -71,62 +70,50 @@ internal class AuthRepositoryImpl(
             clearFailedSignIns(email)
             settings.putString(CURRENT_USER_ID_KEY, user.id)
             Result.Success(true)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to sign in")
         }
     }
 
     override suspend fun signOut(): Result<Boolean> = withContext(ioDispatcher) {
-        try {
+        runCatchingResult("Failed to sign out") {
             settings.remove(CURRENT_USER_ID_KEY)
             Result.Success(true)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to sign out")
         }
     }
 
     override suspend fun changePassword(oldPassword: String, newPassword: String): Result<Boolean> = withContext(ioDispatcher) {
-        try {
+        runCatchingResult("Failed to change password") {
             val currentUser = getCurrentUserSync() ?: return@withContext Result.Success(false)
             if (!verifyCredentials(currentUser.email, oldPassword)) return@withContext Result.Success(false)
             saveCredentials(currentUser.email, newPassword)
             Result.Success(true)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to change password")
         }
     }
 
     override suspend fun isUserSignedIn(): Result<Boolean> = withContext(ioDispatcher) {
-        try {
+        runCatchingResult("Failed to check sign-in status") {
             val currentUserId = settings.getStringOrNull(CURRENT_USER_ID_KEY)
             Result.Success(currentUserId != null)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to check sign-in status")
         }
     }
 
     override suspend fun getCurrentUser(): Result<User?> = withContext(ioDispatcher) {
-        try {
+        runCatchingResult("Failed to get current user") {
             Result.Success(getCurrentUserSync())
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to get current user")
         }
     }
 
     // Profile management methods
     override suspend fun updateUserName(name: String): Result<Boolean> = withContext(ioDispatcher) {
-        try {
+        runCatchingResult("Failed to update user name") {
             val currentUser = getCurrentUserSync() ?: return@withContext Result.Success(false)
             val updatedUser = currentUser.copy(name = name)
             updateUser(updatedUser)
             Result.Success(true)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to update user name")
         }
     }
 
     override suspend fun updateUserEmail(email: String, password: String): Result<Boolean> = withContext(ioDispatcher) {
-        try {
+        runCatchingResult("Failed to update email") {
             val currentUser = getCurrentUserSync() ?: return@withContext Result.Success(false)
             if (getUserByEmail(email) != null && email != currentUser.email) return@withContext Result.Success(false)
             if (!verifyCredentials(currentUser.email, password)) return@withContext Result.Success(false)
@@ -136,25 +123,21 @@ internal class AuthRepositoryImpl(
             updateUser(updatedUser)
             saveCredentials(email, password)
             Result.Success(true)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to update email")
         }
     }
 
     override suspend fun updateUserAddress(address: Address): Result<Boolean> = withContext(ioDispatcher) {
-        try {
+        runCatchingResult("Failed to update address") {
             val currentUser = getCurrentUserSync() ?: return@withContext Result.Success(false)
             val updatedUser = currentUser.copy(address = address)
             updateUser(updatedUser)
             Result.Success(true)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to update address")
         }
     }
 
     // Preferences management
     override suspend fun updateUserPreferences(preferences: UserPreferences): Result<Boolean> = withContext(ioDispatcher) {
-        try {
+        runCatchingResult("Failed to update preferences") {
             val currentUser = getCurrentUserSync()
             if (currentUser == null) {
                 // Guests keep preferences in a local store so theme and
@@ -175,13 +158,11 @@ internal class AuthRepositoryImpl(
             val updatedUser = currentUser.copy(preferences = preferencesMap)
             updateUser(updatedUser)
             Result.Success(true)
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to update preferences")
         }
     }
 
     override suspend fun getUserPreferences(): Result<UserPreferences> = withContext(ioDispatcher) {
-        try {
+        runCatchingResult("Failed to get user preferences") {
             val currentUser = getCurrentUserSync()
             if (currentUser != null) {
                 val prefs = currentUser.preferences
@@ -202,8 +183,6 @@ internal class AuthRepositoryImpl(
                     stored?.let { json.decodeFromString<UserPreferences>(it) } ?: UserPreferences()
                 )
             }
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to get user preferences")
         }
     }
 

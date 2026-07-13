@@ -23,8 +23,22 @@ import kotlinx.coroutines.flow.asStateFlow
 class FakeNetworkMonitor(initiallyOnline: Boolean = true) : NetworkMonitor {
     private val _online = MutableStateFlow(initiallyOnline)
     override val isOnline: StateFlow<Boolean> = _online.asStateFlow()
-    override fun startMonitoring() {}
-    override fun stopMonitoring() {}
+
+    // SH-2 regression counters: monitoring lifecycle belongs to app init,
+    // so ViewModels must never call these.
+    var startCalls = 0
+        private set
+    var stopCalls = 0
+        private set
+
+    override fun startMonitoring() {
+        startCalls++
+    }
+
+    override fun stopMonitoring() {
+        stopCalls++
+    }
+
     fun setOnline(online: Boolean) {
         _online.value = online
     }
@@ -86,30 +100,45 @@ class FakeDetailRepository(
 }
 
 class FakeFavoritesRepository : CocktailFavoritesRepository {
-    val stored = mutableListOf<Cocktail>()
+    private val favorites = MutableStateFlow<List<Cocktail>>(emptyList())
 
-    override suspend fun getFavoriteCocktails(): Result<List<Cocktail>> = Result.Success(stored.toList())
+    /** Snapshot of currently stored favorites (kept for existing assertions). */
+    val stored: List<Cocktail> get() = favorites.value
+
+    override fun observeFavorites(): Flow<List<Cocktail>> = favorites
+
+    override suspend fun getFavoriteCocktails(): Result<List<Cocktail>> = Result.Success(favorites.value)
 
     override suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> {
-        if (stored.none { it.id == cocktail.id }) stored.add(cocktail)
+        if (favorites.value.none { it.id == cocktail.id }) favorites.value += cocktail
         return Result.Success(Unit)
     }
 
     override suspend fun removeFromFavorites(cocktail: Cocktail): Result<Unit> {
-        stored.removeAll { it.id == cocktail.id }
+        favorites.value = favorites.value.filterNot { it.id == cocktail.id }
         return Result.Success(Unit)
     }
 
     override suspend fun isCocktailFavorite(id: String): Result<Boolean> =
-        Result.Success(stored.any { it.id == id })
+        Result.Success(favorites.value.any { it.id == id })
 }
 
 class FakeSearchRepository(var all: List<Cocktail> = emptyList()) : CocktailSearchRepository {
-    override suspend fun searchCocktailsByName(name: String): Result<List<Cocktail>> =
-        Result.Success(all.filter { it.name.contains(name, ignoreCase = true) })
+    /** Every advancedSearch invocation's filters, in order — lets tests assert debouncing (SH-13). */
+    val advancedSearchCalls = mutableListOf<SearchFilters>()
+
+    /** When set, every search/filter method returns Result.Error with this message (simulates API failure). */
+    var errorMessage: String? = null
+
+    override suspend fun searchCocktailsByName(name: String): Result<List<Cocktail>> {
+        errorMessage?.let { return Result.Error(it) }
+        return Result.Success(all.filter { it.name.contains(name, ignoreCase = true) })
+    }
 
     /** Mirrors the real intersection logic: AND the 4 supported fields over [all]. */
     override suspend fun advancedSearch(filters: SearchFilters): Result<List<Cocktail>> {
+        advancedSearchCalls.add(filters)
+        errorMessage?.let { return Result.Error(it) }
         var result = all
         if (filters.query.isNotBlank()) {
             result = result.filter { it.name.contains(filters.query, ignoreCase = true) }
@@ -128,11 +157,20 @@ class FakeSearchRepository(var all: List<Cocktail> = emptyList()) : CocktailSear
         return Result.Success(result)
     }
 
-    override suspend fun filterByIngredient(ingredient: String): Result<List<Cocktail>> = Result.Success(all)
-    override suspend fun filterByAlcoholic(alcoholic: Boolean): Result<List<Cocktail>> = Result.Success(all)
+    override suspend fun filterByIngredient(ingredient: String): Result<List<Cocktail>> {
+        errorMessage?.let { return Result.Error(it) }
+        return Result.Success(all)
+    }
 
-    override suspend fun filterByCategory(category: String): Result<List<Cocktail>> =
-        Result.Success(all.filter { it.category == category })
+    override suspend fun filterByAlcoholic(alcoholic: Boolean): Result<List<Cocktail>> {
+        errorMessage?.let { return Result.Error(it) }
+        return Result.Success(all)
+    }
+
+    override suspend fun filterByCategory(category: String): Result<List<Cocktail>> {
+        errorMessage?.let { return Result.Error(it) }
+        return Result.Success(all.filter { it.category == category })
+    }
 }
 
 class FakeCatalogRepository(var all: List<Cocktail> = emptyList()) : CocktailCatalogRepository {
@@ -146,6 +184,8 @@ class FakeCatalogRepository(var all: List<Cocktail> = emptyList()) : CocktailCat
 class FakeOfflineRepository : CocktailOfflineRepository {
     var offlineModeEnabled = false
     var recentlyViewed: List<Cocktail> = emptyList()
+    var clearCacheCalls = 0
+        private set
 
     override suspend fun checkApiConnectivity(): Result<Boolean> = Result.Success(true)
     override suspend fun getRecentlyViewedCocktails(): Result<List<Cocktail>> = Result.Success(recentlyViewed)
@@ -156,6 +196,12 @@ class FakeOfflineRepository : CocktailOfflineRepository {
     override suspend fun isOfflineModeEnabled(): Boolean = offlineModeEnabled
 
     override suspend fun isOffline(): Boolean = offlineModeEnabled
+
+    override suspend fun clearCache(): Result<Unit> {
+        clearCacheCalls++
+        recentlyViewed = emptyList()
+        return Result.Success(Unit)
+    }
 }
 
 internal class FakeCocktailApi(var drinks: List<CocktailDto> = emptyList()) : CocktailApi {
@@ -183,10 +229,21 @@ internal class FakeCocktailApi(var drinks: List<CocktailDto> = emptyList()) : Co
         return drinks.filter { it.alcoholic?.replace('_', ' ').equals(target, ignoreCase = true) }
     }
 
-    override suspend fun filterByCategory(category: String): List<CocktailDto> =
-        drinks.filter { it.category == category }
+    /** When set, only filter.php?c= throws it — kept separate from [endpointError] so intersection tests can fail a later filter while category succeeds. */
+    var categoryEndpointError: Exception? = null
 
-    override suspend fun getCategories(): List<CategoryDto> = emptyList()
-    override suspend fun getIngredients(): List<IngredientDto> = emptyList()
+    override suspend fun filterByCategory(category: String): List<CocktailDto> {
+        categoryEndpointError?.let { throw it }
+        return drinks.filter { it.category == category }
+    }
+
+    /** list.php?c=list payload — seeded by catalog tests, empty by default. */
+    var categories: List<CategoryDto> = emptyList()
+
+    /** list.php?i=list payload — seeded by catalog tests, empty by default. */
+    var ingredients: List<IngredientDto> = emptyList()
+
+    override suspend fun getCategories(): List<CategoryDto> = categories
+    override suspend fun getIngredients(): List<IngredientDto> = ingredients
     override suspend fun pingApi(): Boolean = true
 }
