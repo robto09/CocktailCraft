@@ -36,6 +36,7 @@ struct HomeViewSKIE: View {
                 cocktailList
             }
         }
+        .navigationTitle("CocktailCraft")
         .navigationBarTitleDisplayMode(.large)
         .navigationDestination(for: String.self) { cocktailId in
             CocktailDetailView(cocktailId: cocktailId)

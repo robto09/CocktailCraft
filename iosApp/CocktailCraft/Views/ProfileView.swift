@@ -21,43 +21,30 @@ struct ProfileView: View {
     var body: some View {
         // No nav container here: ContentView already wraps this tab in a
         // NavigationStack (the old inner NavigationView double-nested it).
-        VStack(spacing: 0) {
-            // Brand-color header matching the Android TopAppBar
-            HStack {
-                Text("Profile")
-                    .font(.title2.weight(.bold))
-                    .foregroundColor(.white)
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(AppColors.primary(isDarkMode: isDarkMode).ignoresSafeArea(edges: .top))
+        // Native large-title bar like every other tab — the old brand-color
+        // header block was an Android TopAppBar transplant that painted the
+        // status-bar/notch area coral and hid the system bar.
+        ScrollView {
+            VStack(spacing: 16) {
+                // Profile Header Card
+                profileHeaderCard
 
-            ScrollView {
-                VStack(spacing: 16) {
-                    // Profile Header Card
-                    profileHeaderCard
-
-                    // Account Settings Card (only if logged in)
-                    if viewModel.state.isLoggedIn {
-                        accountSettingsCard
-                    }
-
-                    // App Settings Card
-                    appSettingsCard
-
-                    // About Card
-                    aboutCard
-
-                    // Bottom spacer to ensure content doesn't overlap with tab bar
-                    Color.clear.frame(height: 80)
+                // Account Settings Card (only if logged in)
+                if viewModel.state.isLoggedIn {
+                    accountSettingsCard
                 }
-                .padding(.horizontal)
-                .padding(.top, 8)
+
+                // App Settings Card
+                appSettingsCard
+
+                // About Card
+                aboutCard
             }
-            .background(AppColors.background(isDarkMode: isDarkMode))
+            .padding(.horizontal)
+            .padding(.top, 8)
         }
-        .toolbar(.hidden, for: .navigationBar)
+        .background(AppColors.background(isDarkMode: isDarkMode))
+        .navigationTitle("Profile")
         .onAppear {
             // Observation tracking keeps the UI current; the old
             // .id(UUID())-on-appear force-rebuild hack is gone.
