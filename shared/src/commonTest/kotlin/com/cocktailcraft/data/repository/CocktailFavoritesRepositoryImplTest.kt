@@ -96,6 +96,22 @@ class CocktailFavoritesRepositoryImplTest {
     }
 
     @Test
+    fun addToFavoritesUpgradesExistingEntryInPlaceWithoutDuplicating() = runTest {
+        // Persist-then-hydrate: the shallow list object is stored first, the
+        // hydrated copy re-added afterwards — that second add must replace the
+        // entry (id list and published object), never duplicate it.
+        val settings = MapSettings()
+        val repo = repository(settings = settings)
+
+        repo.addToFavorites(testCocktail("11007", name = "Shallow Margarita"))
+        repo.addToFavorites(testCocktail("11007", name = "Full Margarita"))
+
+        val favorites = (repo.getFavoriteCocktails() as Result.Success).data
+        assertEquals(listOf("Full Margarita"), favorites.map { it.name })
+        assertEquals("11007", settings.getStringOrNull(config.favoritesStorageKey))
+    }
+
+    @Test
     fun addToFavoritesCachesTheObjectSoOfflineResolutionSurvives() = runTest {
         // SH-4: the full object is cached at add-time, so a favorited item no
         // longer silently vanishes when the device is offline.

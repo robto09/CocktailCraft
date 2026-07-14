@@ -267,6 +267,33 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     }
 
     @Test
+    fun searchDisablesCategoryPaginationAndLoadMoreIsANoOp() = runTest {
+        // The default category load leaves hasMoreData = true; a search must
+        // clear it (results are complete, not paginated) and loadMoreCocktails
+        // must never splice category pages into search results.
+        val harness = Harness()
+        harness.search.all =
+            (1..12).map { testCocktail("c$it", name = "Cocktail $it", category = "Cocktail") } +
+            testCocktail("m1", name = "Margarita", category = "Ordinary Drink")
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.hasMoreData, "12-item category must page")
+
+        vm.searchCocktails("marg")
+
+        assertFalse(vm.uiState.value.hasMoreData, "search results are complete — no more pages")
+
+        vm.loadMoreCocktails()
+
+        assertEquals(listOf("m1"), vm.uiState.value.cocktails.map { it.id },
+            "load-more during search must not append category items")
+
+        // Clearing the search restores the paginated category listing.
+        vm.searchCocktails("")
+        assertTrue(vm.uiState.value.hasMoreData)
+    }
+
+    @Test
     fun searchFiltersByNameAndUpdatesQueryState() = runTest {
         val harness = Harness()
         harness.search.all = listOf(

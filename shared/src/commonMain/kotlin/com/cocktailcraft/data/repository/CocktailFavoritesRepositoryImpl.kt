@@ -65,7 +65,17 @@ internal class CocktailFavoritesRepositoryImpl(
     }
 
     override suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> = withContext(ioDispatcher) {
-        runCatchingResult("Failed to add to favorites") {
+        // Optimistic publish: observers see the new favorite immediately,
+        // instead of waiting on the old full getFavoriteCocktails() re-resolve
+        // (one cache/network lookup per stored id). A re-add of an existing id
+        // upgrades that entry in place (hydration path) without reordering.
+        val previous = _favorites.value
+        _favorites.value = if (previous.any { it.id == cocktail.id }) {
+            previous.map { if (it.id == cocktail.id) cocktail else it }
+        } else {
+            previous + cocktail
+        }
+        val result = runCatchingResult("Failed to add to favorites") {
             val ids = favoriteIds()
             if (!ids.contains(cocktail.id)) {
                 saveFavoriteIds(ids + cocktail.id)
@@ -73,17 +83,22 @@ internal class CocktailFavoritesRepositoryImpl(
             // Offline safety (SH-4): persist the object too, not just the id,
             // so the favorite is still resolvable with no connectivity.
             cocktailCache.cacheCocktail(cocktail)
-            getFavoriteCocktails() // re-publish onto the observed flow
             Result.Success(Unit)
         }
+        if (result is Result.Error) _favorites.value = previous // roll back the optimistic emit
+        result
     }
 
     override suspend fun removeFromFavorites(cocktail: Cocktail): Result<Unit> = withContext(ioDispatcher) {
-        runCatchingResult("Failed to remove from favorites") {
+        // Optimistic publish, mirroring addToFavorites.
+        val previous = _favorites.value
+        _favorites.value = previous.filterNot { it.id == cocktail.id }
+        val result = runCatchingResult("Failed to remove from favorites") {
             saveFavoriteIds(favoriteIds() - cocktail.id)
-            getFavoriteCocktails() // re-publish onto the observed flow
             Result.Success(Unit)
         }
+        if (result is Result.Error) _favorites.value = previous // roll back the optimistic emit
+        result
     }
 
     override suspend fun isCocktailFavorite(id: String): Result<Boolean> = withContext(ioDispatcher) {

@@ -110,7 +110,13 @@ class FakeFavoritesRepository : CocktailFavoritesRepository {
     override suspend fun getFavoriteCocktails(): Result<List<Cocktail>> = Result.Success(favorites.value)
 
     override suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> {
-        if (favorites.value.none { it.id == cocktail.id }) favorites.value += cocktail
+        // Mirrors the real impl: a re-add of an existing id upgrades that
+        // entry in place (persist-then-hydrate), new ids append.
+        favorites.value = if (favorites.value.any { it.id == cocktail.id }) {
+            favorites.value.map { if (it.id == cocktail.id) cocktail else it }
+        } else {
+            favorites.value + cocktail
+        }
         return Result.Success(Unit)
     }
 

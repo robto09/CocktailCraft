@@ -196,6 +196,10 @@ class SharedHomeViewModel internal constructor(
     suspend fun loadMoreCocktails() {
         val state = _uiState.value
         if (state.isLoadingMore || !state.hasMoreData) return
+        // Pagination pages the category listing. While a search or filters
+        // are active the list holds complete search results — there is no
+        // next page, and paging would splice category items into them.
+        if (state.searchQuery.isNotBlank() || state.searchFilters.hasActiveFilters()) return
 
         _uiState.update { it.copy(isLoadingMore = true) }
 
@@ -244,7 +248,15 @@ class SharedHomeViewModel internal constructor(
 
         try {
             val filtered = searchCocktailsUseCase.search(filters).getOrThrow()
-            _uiState.update { it.copy(cocktails = filtered, isLoading = false) }
+            // Search results are a complete, unpaginated set: clear the flag
+            // left over from category pagination so clients don't offer
+            // "load more" on top of search results.
+            _uiState.update { it.copy(
+                cocktails = filtered,
+                isLoading = false,
+                hasMoreData = false,
+                currentPage = 1
+            ) }
         } catch (e: Exception) {
             handleException(e, "Failed to apply filters")
             _uiState.update { it.copy(isLoading = false) }

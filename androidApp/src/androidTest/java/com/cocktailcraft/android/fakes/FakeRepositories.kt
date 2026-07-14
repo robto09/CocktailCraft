@@ -91,7 +91,15 @@ class FakeCocktailRepository(
     override fun observeFavorites(): Flow<List<Cocktail>> = favorites
     override suspend fun getFavoriteCocktails(): Result<List<Cocktail>> = Result.Success(favorites.value)
     override suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> {
-        favorites.update { it + cocktail }
+        // Mirrors the real impl: a re-add of an existing id upgrades that
+        // entry in place (persist-then-hydrate), new ids append.
+        favorites.update { list ->
+            if (list.any { it.id == cocktail.id }) {
+                list.map { if (it.id == cocktail.id) cocktail else it }
+            } else {
+                list + cocktail
+            }
+        }
         return Result.Success(Unit)
     }
     override suspend fun removeFromFavorites(cocktail: Cocktail): Result<Unit> {

@@ -98,10 +98,18 @@ struct CocktailCard: View {
                     HStack(spacing: 12) {
                         // Favorite Button
                         if let onToggle = onFavoriteToggle {
-                            Button(action: onToggle) {
+                            Button(action: {
+                                // Immediate tactile ack on tap, before any async
+                                // state round trip — parity with Android's
+                                // performToggleFavorite haptic.
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                onToggle()
+                            }) {
                                 Image(systemName: isFavorite ? "heart.fill" : "heart")
                                     .font(.title2)
                                     .foregroundColor(isFavorite ? AppColors.secondary(isDarkMode: isDarkMode) : AppColors.gray)
+                                    .contentTransition(.symbolEffect(.replace))
+                                    .animation(.easeInOut(duration: 0.2), value: isFavorite)
                                     .minimumHitTarget()
                             }
                             .buttonStyle(.borderless)
@@ -204,10 +212,16 @@ struct CocktailCard: View {
                     HStack(spacing: 8) {
                         // Favorite Button
                         if let onToggle = onFavoriteToggle {
-                            Button(action: onToggle) {
+                            Button(action: {
+                                // Immediate tactile ack on tap (see horizontal layout).
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                onToggle()
+                            }) {
                                 Image(systemName: isFavorite ? "heart.fill" : "heart")
                                     .font(.title3)
                                     .foregroundColor(isFavorite ? AppColors.secondary(isDarkMode: isDarkMode) : AppColors.gray)
+                                    .contentTransition(.symbolEffect(.replace))
+                                    .animation(.easeInOut(duration: 0.2), value: isFavorite)
                                     .minimumHitTarget()
                             }
                             .buttonStyle(.borderless)

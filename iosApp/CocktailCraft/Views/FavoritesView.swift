@@ -4,6 +4,9 @@ import shared
 
 struct FavoritesView: View {
     @State private var viewModel = FavoritesViewModelSKIE()
+    /// Ids mid-unfavorite: their heart renders deselected for a beat before
+    /// the card animates out, instead of the card vanishing on tap.
+    @State private var removingIds: Set<String> = []
 
     var body: some View {
         Group {
@@ -47,6 +50,10 @@ struct FavoritesView: View {
                 cocktailGridItem(cocktail)
             }
         }
+        // The favorites list changes via the shared flow (outside any SwiftUI
+        // animation transaction), so animate insert/remove off the id list —
+        // the counterpart of Android's .animateItem().
+        .animation(.default, value: viewModel.state.favorites.map(\.id))
     }
     
     private var gridColumns: [GridItem] {
@@ -59,15 +66,27 @@ struct FavoritesView: View {
         NavigationLink(value: cocktail.id) {
             CocktailCard(
                 cocktail: cocktail,
-                isFavorite: true,
+                isFavorite: !removingIds.contains(cocktail.id),
                 onFavoriteToggle: {
-                    Task {
-                        await viewModel.toggleFavorite(cocktail)
-                    }
+                    unfavorite(cocktail)
                 },
                 layout: .vertical
             )
         }
         .buttonStyle(PlainButtonStyle())
+    }
+
+    /// Staged removal: deselect the heart immediately, give it a beat to
+    /// register, then toggle — the card animates out when the shared flow
+    /// re-emits. If the toggle fails (state rolls back), clearing the id
+    /// restores the filled heart.
+    private func unfavorite(_ cocktail: Cocktail) {
+        guard !removingIds.contains(cocktail.id) else { return }
+        removingIds.insert(cocktail.id)
+        Task {
+            try? await Task.sleep(for: .milliseconds(350))
+            await viewModel.toggleFavorite(cocktail)
+            removingIds.remove(cocktail.id)
+        }
     }
 }

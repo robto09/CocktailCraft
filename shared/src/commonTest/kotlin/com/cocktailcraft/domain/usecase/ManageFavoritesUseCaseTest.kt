@@ -40,10 +40,12 @@ class ManageFavoritesUseCaseTest {
         assertTrue(favorites.stored.isEmpty())
     }
 
-    // --- Add-time hydration: list endpoints fabricate placeholder details ---
+    // --- Add-time hydration: list endpoints fabricate placeholder details.
+    // Persist-then-hydrate: the partial is stored first (instant optimistic
+    // publish), then the detail fetch upgrades the stored entry in place. ---
 
     @Test
-    fun toggleHydratesPartialCocktailBeforePersisting() = runTest {
+    fun toggleHydratesPartialCocktailIntoStoredFavorite() = runTest {
         detail.byId["1"] = testCocktail("1", name = "Full Margarita")
 
         useCase.toggle(partialCocktail("1"))
@@ -55,7 +57,7 @@ class ManageFavoritesUseCaseTest {
     }
 
     @Test
-    fun addToFavoritesHydratesPartialCocktailBeforePersisting() = runTest {
+    fun addToFavoritesUpgradesStoredPartialWithFullDetails() = runTest {
         detail.byId["1"] = testCocktail("1", name = "Full Margarita")
 
         useCase.addToFavorites(partialCocktail("1"))

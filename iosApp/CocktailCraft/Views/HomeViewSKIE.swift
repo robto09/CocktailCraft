@@ -138,7 +138,12 @@ struct HomeViewSKIE: View {
     }
 
     private var cocktailList: some View {
-        ScrollView {
+        // Derived from the observed state (not the synchronous isFavorite()
+        // helper, which sits outside SwiftUI's Observation graph): the hearts
+        // re-render the moment state.favorites changes — including the
+        // optimistic publish on toggle.
+        let favoriteIds = Set(viewModel.state.favorites.map(\.id))
+        return ScrollView {
             LazyVStack(spacing: 12) {
                 ForEach(viewModel.state.cocktails, id: \.id) { cocktail in
                     // Value-based link: the destination (and its
@@ -147,7 +152,7 @@ struct HomeViewSKIE: View {
                     NavigationLink(value: cocktail.id) {
                         CocktailCard(
                             cocktail: cocktail,
-                            isFavorite: viewModel.isFavorite(cocktail.id),
+                            isFavorite: favoriteIds.contains(cocktail.id),
                             onFavoriteToggle: {
                                 Task {
                                     await viewModel.toggleFavorite(cocktail)
@@ -181,9 +186,18 @@ struct HomeViewSKIE: View {
         }
     }
 
+    /// Pagination belongs to the category listing only. Search results are a
+    /// complete set (shared clears `hasMoreData` on search; this guard is
+    /// defense-in-depth mirroring Android's `!isSearchActive` scroll gate).
+    private var isSearchInProgress: Bool {
+        !searchText.isEmpty || viewModel.state.searchFilters.hasActiveFilters()
+    }
+
     @ViewBuilder
     private var loadMoreSection: some View {
-        if viewModel.state.hasMoreData && !viewModel.state.isLoadingMore {
+        if isSearchInProgress {
+            EmptyView()
+        } else if viewModel.state.hasMoreData && !viewModel.state.isLoadingMore {
             Button(action: {
                 Task {
                     await viewModel.loadMoreCocktails()

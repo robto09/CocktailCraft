@@ -58,17 +58,19 @@ class SharedCocktailDetailViewModel internal constructor(
     }
 
     /**
-     * Toggle favorite status.
+     * Toggle favorite status. The flip is optimistic — the heart must react
+     * on tap, not after the persist/hydration round trip — and is reconciled
+     * against the toggle result (reverting, with a surfaced error, on failure).
      * SKIE will convert this to Swift async function.
      */
     suspend fun toggleFavorite() {
         val currentCocktail = _uiState.value.cocktail ?: return
-        try {
-            manageFavoritesUseCase.toggle(currentCocktail)
-            _uiState.update { it.copy(isFavorite = !it.isFavorite) }
-        } catch (e: Exception) {
-            handleException(e, "Failed to update favorites")
-        }
+        val wasFavorite = _uiState.value.isFavorite
+        _uiState.update { it.copy(isFavorite = !wasFavorite) }
+
+        val reconciled = manageFavoritesUseCase.toggle(currentCocktail)
+            .getOrReport(default = wasFavorite, fallbackMessage = "Failed to update favorites")
+        _uiState.update { it.copy(isFavorite = reconciled) }
     }
 
     /**
