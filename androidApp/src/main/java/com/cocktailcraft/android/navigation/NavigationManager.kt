@@ -28,7 +28,11 @@ class NavigationManager(private val navController: NavController) {
      * Navigate to the cart screen
      */
     fun navigateToCart() {
-        navController.navigate(CartRoute)
+        // Cart is a bottom-nav tab: a plain navigate() here would stack an extra
+        // CartRoute entry above Home instead of switching tabs, and popping that
+        // entry with popUpTo(saveState = true) is what poisons Home restoration
+        // (see navigateToTopLevelDestination).
+        navigateToTopLevelDestination(CartRoute)
     }
 
     /**
@@ -92,7 +96,13 @@ class NavigationManager(private val navController: NavController) {
                 saveState = true
             }
             launchSingleTop = true
-            restoreState = true
+            // Never restoreState for Home: a non-inclusive popUpTo(start) with
+            // saveState = true also keys the popped segment to the START
+            // destination's id, so navigate(Home) { restoreState = true } would
+            // re-push the segment that was just popped (e.g. Cart) and leave
+            // Home unreachable. Home is never popped here, so it has no saved
+            // state of its own to restore; the live entry keeps its state.
+            restoreState = route != HomeRoute
         }
     }
 }

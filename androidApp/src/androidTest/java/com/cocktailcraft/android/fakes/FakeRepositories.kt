@@ -14,7 +14,9 @@ import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
+import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.repository.OrderRepository
+import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.NetworkMonitor
 import kotlinx.coroutines.flow.Flow
@@ -158,6 +160,31 @@ class FakeOrderRepository : OrderRepository {
         return Result.Success(Unit)
     }
     override suspend fun cancelOrder(orderId: String): Result<Boolean> = Result.Success(true)
+}
+
+class FakeReviewRepository : ReviewRepository {
+    private val reviews = MutableStateFlow<List<Review>>(emptyList())
+
+    override fun observeReviews(): Flow<List<Review>> = reviews
+    override suspend fun getReviews(): Result<List<Review>> = Result.Success(reviews.value)
+    override suspend fun addReview(review: Review): Result<Unit> {
+        reviews.update { it + review }
+        return Result.Success(Unit)
+    }
+    override suspend fun updateReview(reviewId: String, rating: Float, comment: String, date: String): Result<Boolean> {
+        val exists = reviews.value.any { it.id == reviewId }
+        if (exists) {
+            reviews.update { list ->
+                list.map { if (it.id == reviewId) it.copy(rating = rating, comment = comment, date = date) else it }
+            }
+        }
+        return Result.Success(exists)
+    }
+    override suspend fun deleteReview(reviewId: String): Result<Boolean> {
+        val exists = reviews.value.any { it.id == reviewId }
+        reviews.update { list -> list.filterNot { it.id == reviewId } }
+        return Result.Success(exists)
+    }
 }
 
 class FakeAuthRepository : AuthRepository {

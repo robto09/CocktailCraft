@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -13,6 +14,7 @@ import com.cocktailcraft.android.fakes.FakeCartRepository
 import com.cocktailcraft.android.fakes.FakeCocktailRepository
 import com.cocktailcraft.android.fakes.FakeNetworkMonitor
 import com.cocktailcraft.android.fakes.FakeOrderRepository
+import com.cocktailcraft.android.fakes.FakeReviewRepository
 import com.cocktailcraft.android.fakes.TestCocktails
 import com.cocktailcraft.android.ui.main.MainScreen
 import com.cocktailcraft.di.domainModule
@@ -24,6 +26,7 @@ import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.repository.OrderRepository
+import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.util.NetworkMonitor
 import org.junit.After
 import org.junit.Before
@@ -66,6 +69,7 @@ class MainScreenSharedVmTest {
                     single<CartRepository> { FakeCartRepository() }
                     single<OrderRepository> { FakeOrderRepository() }
                     single<AuthRepository> { FakeAuthRepository() }
+                    single<ReviewRepository> { FakeReviewRepository() }
                     single<NetworkMonitor> { networkMonitor }
                 }
             )
@@ -129,6 +133,73 @@ class MainScreenSharedVmTest {
 
         waitForText("Test Mojito")
         composeTestRule.onNodeWithText("Test Mojito").assertIsDisplayed()
+    }
+
+    @Test
+    fun emptyCart_startShoppingButton_returnsToHome() {
+        launchApp()
+
+        composeTestRule.onNodeWithTag("nav_cart").performClick()
+        waitForText("Your cart is empty")
+
+        composeTestRule.onNodeWithText("Start Shopping").performClick()
+
+        waitForText(TestCocktails.mojito.name)
+        composeTestRule.onNodeWithText(TestCocktails.mojito.name).assertIsDisplayed()
+    }
+
+    @Test
+    fun homeTab_whileOnCart_returnsToHome() {
+        launchApp()
+
+        composeTestRule.onNodeWithTag("nav_cart").performClick()
+        waitForText("Your cart is empty")
+
+        composeTestRule.onNodeWithTag("nav_home").performClick()
+
+        waitForText(TestCocktails.mojito.name)
+        composeTestRule.onNodeWithText(TestCocktails.mojito.name).assertIsDisplayed()
+    }
+
+    /**
+     * Regression test: a plain navigate(CartRoute) from add-to-cart, later
+     * popped by popUpTo(Home) { saveState = true }, used to key the popped
+     * Cart segment to Home's destination id — so navigate(Home) with
+     * restoreState = true re-pushed Cart instead of showing Home, leaving
+     * Home unreachable.
+     */
+    @Test
+    fun homeTab_afterAddToCart_returnsToHome() {
+        launchApp()
+
+        composeTestRule.onAllNodesWithContentDescription("Add to Cart").onFirst().performClick()
+        waitForText("Place Order")
+
+        composeTestRule.onNodeWithTag("nav_home").performClick()
+
+        waitForText(TestCocktails.mojito.name)
+        composeTestRule.onNodeWithText(TestCocktails.mojito.name).assertIsDisplayed()
+    }
+
+    /** Same regression via the reported flow: order placed, cart emptied, then Start Shopping. */
+    @Test
+    fun startShopping_afterPlacingOrder_returnsToHome() {
+        launchApp()
+
+        composeTestRule.onAllNodesWithContentDescription("Add to Cart").onFirst().performClick()
+        waitForText("Place Order")
+        composeTestRule.onNodeWithText("Place Order").performClick()
+        waitForText("Confirm")
+        composeTestRule.onNodeWithText("Confirm").performClick()
+        waitForText("Your Orders")
+
+        composeTestRule.onNodeWithTag("nav_cart").performClick()
+        waitForText("Your cart is empty")
+
+        composeTestRule.onNodeWithText("Start Shopping").performClick()
+
+        waitForText(TestCocktails.mojito.name)
+        composeTestRule.onNodeWithText(TestCocktails.mojito.name).assertIsDisplayed()
     }
 
     @Test
