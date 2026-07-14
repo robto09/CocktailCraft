@@ -11,18 +11,17 @@ flowchart TD
     ui[UI Layer\nCompose Screens]
     theme[Theme System\nLight/Dark Mode]
     error_ui[Error Handling UI]
-    viewmodels[ViewModels]
-    base_vm[Base ViewModel\nError Handling]
+    viewmodels[Shared ViewModels]
+    base_vm[SharedViewModel base\nError Handling]
     usecases[Use Cases]
-    recommendation[Recommendation Engine]
-    repositories[Repository Layer]
+    repositories[Repository Layer\n9 focused repositories]
     cache[Caching System\nOffline Mode]
     network[Network Monitor]
     error_handler[Error Handler]
 
     %% Data Stores
-    prefs[(Local Storage\nSharedPreferences)]
-    datastore[(DataStore)]
+    prefs[(Local Storage\nSharedPreferences / NSUserDefaults)]
+    secure[(Secure Storage\nKeystore / Keychain)]
     cache_store[(Cache Storage)]
 
     %% Data Flows - System Interactions
@@ -53,16 +52,14 @@ flowchart TD
     base_vm -->|Error Events| error_handler
     error_handler -->|User-Friendly Errors| base_vm
 
-    %% ViewModels to Use Cases & Recommendation
+    %% ViewModels to Use Cases (related-cocktail recommendations
+    %% flow through GetCocktailDetailUseCase like everything else)
     viewmodels -->|Business Logic\nRequests| usecases
-    usecases -->|Domain Data\nResults| viewmodels
-    viewmodels -->|Get Recommendations| recommendation
-    recommendation -->|Similar Cocktails| viewmodels
+    usecases -->|Domain Data\nResults incl. Related Cocktails| viewmodels
 
     %% Use Cases to Repositories
     usecases -->|Data Operations| repositories
-    repositories -->|Domain Models| usecases
-    recommendation -->|Fetch Data| repositories
+    repositories -->|Result~T~ Domain Models| usecases
 
     %% Network Monitoring
     network -->|Connection Status| repositories
@@ -78,8 +75,8 @@ flowchart TD
     repositories -->|Read/Write\nPreferences| prefs
     prefs -->|Stored Data| repositories
 
-    repositories -->|Read/Write\nStructured Data| datastore
-    datastore -->|Stored Data| repositories
+    repositories -->|Credentials & PII\nAuthRepository only| secure
+    secure -->|Stored Data| repositories
 
     cache -->|Store Cached Data| cache_store
     cache_store -->|Retrieve Cached Data| cache
@@ -149,8 +146,8 @@ flowchart TD
 This data flow diagram shows how data moves through the CocktailCraft application, including:
 
 1. **User Interface Layer**: Shows how user input flows through the UI components, including theme settings and error handling UI
-2. **ViewModel Layer**: Illustrates how ViewModels manage state and handle errors through the BaseViewModel
-3. **Domain Layer**: Shows how Use Cases and the Recommendation Engine interact with repositories
+2. **ViewModel Layer**: Illustrates how the shared ViewModels manage state and handle errors through the SharedViewModel base class
+3. **Domain Layer**: Shows how Use Cases (including related-cocktail recommendations in GetCocktailDetailUseCase) interact with the nine focused repositories
 4. **Data Layer**: Depicts how repositories interact with the API, caching system, and local storage
 5. **External Systems**: Includes the Cocktail API, system theme changes, and network status
 
@@ -158,4 +155,4 @@ The diagram highlights the new features:
 - **Dark Mode**: Theme system with user preferences and system theme integration
 - **Offline Mode**: Caching system and network monitoring for offline functionality
 - **Error Handling**: Comprehensive error handling flow from API to user interface
-- **Recommendation System**: Flow of data for cocktail recommendations
+- **Recommendations**: Related cocktails flow through the detail use case, not a separate engine

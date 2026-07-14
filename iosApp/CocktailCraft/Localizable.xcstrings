@@ -1,0 +1,36 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Added %@ to cart" : {
+
+    },
+    "Clear Filters" : {
+
+    },
+    "Estimated Nutrition" : {
+
+    },
+    "Ingredients" : {
+
+    },
+    "Load More" : {
+
+    },
+    "Loading more..." : {
+
+    },
+    "No Cocktails Found" : {
+
+    },
+    "Preparation" : {
+
+    },
+    "Try adjusting your search or filters" : {
+
+    },
+    "You Might Also Like" : {
+
+    }
+  },
+  "version" : "1.0"
+}

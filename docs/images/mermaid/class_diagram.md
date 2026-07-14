@@ -72,102 +72,139 @@ classDiagram
     class UserPreferences {
         +Boolean darkMode
         +Boolean followSystemTheme
-        +Boolean offlineMode
-        +Long lastCacheUpdate
+        +Boolean notificationsEnabled
+        +String language
+        +String accentColor
+        +String fontSize
+        +Boolean isHighContrast
+        +Boolean isReducedMotion
     }
 
-    class SortOption {
-        <<enumeration>>
-        NEWEST
-        PRICE_LOW_TO_HIGH
-        PRICE_HIGH_TO_LOW
-        POPULARITY
+    class SearchFilters {
+        +String query
+        +String? category
+        +String? ingredient
+        +Boolean? alcoholic
+        +hasActiveFilters() Boolean
     }
 
-    %% Repository Interfaces
-    class CocktailRepository {
+    %% Repository Interfaces — the former monolithic CocktailRepository
+    %% was split into these five plus the four store repositories below.
+    %% Methods are suspend and return Result~T~ unless noted.
+    class CocktailSearchRepository {
         <<interface>>
-        +searchCocktailsByName(String name): Flow~List~Cocktail~~
-        +searchCocktailsByFirstLetter(Char letter): Flow~List~Cocktail~~
-        +getCocktailById(String id): Flow~Cocktail?~
-        +getRandomCocktail(): Flow~Cocktail?~
-        +filterByIngredient(String ingredient): Flow~List~Cocktail~~
-        +filterByAlcoholic(Boolean alcoholic): Flow~List~Cocktail~~
-        +filterByCategory(String category): Flow~List~Cocktail~~
-        +filterByGlass(String glass): Flow~List~Cocktail~~
-        +getCategories(): Flow~List~String~~
-        +getGlasses(): Flow~List~String~~
-        +getIngredients(): Flow~List~String~~
-        +getAlcoholicFilters(): Flow~List~String~~
-        +getFavoriteCocktails(): Flow~List~Cocktail~~
-        +addToFavorites(Cocktail cocktail)
-        +removeFromFavorites(Cocktail cocktail)
-        +isCocktailFavorite(String id): Flow~Boolean~
-        +getCocktailsSortedByNewest(): Flow~List~Cocktail~~
-        +getCocktailsSortedByPriceLowToHigh(): Flow~List~Cocktail~~
-        +getCocktailsSortedByPriceHighToLow(): Flow~List~Cocktail~~
-        +getCocktailsSortedByPopularity(): Flow~List~Cocktail~~
-        +getCocktailsByPriceRange(Double minPrice, Double maxPrice): Flow~List~Cocktail~~
-        +getCocktailImageUrl(Cocktail cocktail): String
-        +checkApiConnectivity(): Flow~Boolean~
-        +isOfflineModeEnabled(): Boolean
+        +searchCocktailsByName(String name) Result~List~Cocktail~~
+        +advancedSearch(SearchFilters filters) Result~List~Cocktail~~
+        +filterByIngredient(String ingredient) Result~List~Cocktail~~
+        +filterByAlcoholic(Boolean alcoholic) Result~List~Cocktail~~
+        +filterByCategory(String category) Result~List~Cocktail~~
+    }
+
+    class CocktailDetailRepository {
+        <<interface>>
+        +getCocktailById(String id) Result~Cocktail?~
+        +refreshCocktailById(String id) Result~Cocktail?~
+        +getRandomCocktail() Result~Cocktail?~
+        +getCocktailImageUrl(Cocktail cocktail) String
+    }
+
+    class CocktailCatalogRepository {
+        <<interface>>
+        +getCategories() Result~List~String~~
+        +getIngredients() Result~List~String~~
+        +getCocktailsSortedByNewest() Result~List~Cocktail~~
+    }
+
+    class CocktailFavoritesRepository {
+        <<interface>>
+        +observeFavorites() Flow~List~Cocktail~~
+        +getFavoriteCocktails() Result~List~Cocktail~~
+        +addToFavorites(Cocktail cocktail) Result~Unit~
+        +removeFromFavorites(Cocktail cocktail) Result~Unit~
+        +isCocktailFavorite(String id) Result~Boolean~
+    }
+
+    class CocktailOfflineRepository {
+        <<interface>>
+        +checkApiConnectivity() Result~Boolean~
+        +getRecentlyViewedCocktails() Result~List~Cocktail~~
         +setOfflineMode(Boolean enabled)
-        +getCocktailsByIngredient(String ingredient): List~Cocktail~
-        +getCocktailsByCategory(String category): List~Cocktail~
-        +getRecentlyViewedCocktails(): Flow~List~Cocktail~~
-        +clearCache()
+        +isOfflineModeEnabled() Boolean
+        +isOffline() Boolean
+        +clearCache() Result~Unit~
     }
 
     class CartRepository {
         <<interface>>
-        +getCartItems(): Flow~List~CocktailCartItem~~
-        +addToCart(CocktailCartItem item)
-        +removeFromCart(String cocktailId)
-        +updateQuantity(String cocktailId, Int quantity)
-        +clearCart()
-        +getCartTotal(): Flow~Double~
+        +observeCartItems() Flow~List~CocktailCartItem~~
+        +getCartItems() Result~List~CocktailCartItem~~
+        +addToCart(CocktailCartItem item) Result~Unit~
+        +removeFromCart(String cocktailId) Result~Unit~
+        +updateQuantity(String cocktailId, Int quantity) Result~Unit~
+        +clearCart() Result~Unit~
+        +getCartTotal() Result~Double~
     }
 
     class OrderRepository {
         <<interface>>
-        +getOrders(): Flow~List~Order~~
-        +getOrderById(String id): Flow~Order?~
-        +addOrder(Order order)
-        +updateOrderStatus(String orderId, String status)
+        +observeOrders() Flow~List~Order~~
+        +getOrders() Result~List~Order~~
+        +placeOrder(Order order) Result~Unit~
+        +getOrderById(String id) Result~Order?~
+        +updateOrderStatus(String id, String status) Result~Unit~
+        +deleteOrder(String id) Result~Unit~
+        +cancelOrder(String orderId) Result~Boolean~
     }
 
     class AuthRepository {
         <<interface>>
-        +getCurrentUser(): Flow~User?~
-        +login(String email, String password): Flow~Result~User~~
-        +register(String name, String email, String password): Flow~Result~User~~
-        +logout(): Flow~Result~Unit~~
-        +isLoggedIn(): Flow~Boolean~
-        +getUserPreferences(): Flow~UserPreferences~
-        +updateUserPreferences(UserPreferences preferences)
+        +signUp(String email, String password) Result~Boolean~
+        +signIn(String email, String password) Result~Boolean~
+        +signOut() Result~Boolean~
+        +changePassword(String old, String new) Result~Boolean~
+        +isUserSignedIn() Result~Boolean~
+        +getCurrentUser() Result~User?~
+        +updateUserName(String name) Result~Boolean~
+        +updateUserEmail(String email, String password) Result~Boolean~
+        +updateUserAddress(Address address) Result~Boolean~
+        +updateUserPreferences(UserPreferences preferences) Result~Boolean~
+        +getUserPreferences() Result~UserPreferences~
     }
 
-    class FavoritesRepository {
+    class ReviewRepository {
         <<interface>>
-        +getFavorites(): Flow~List~Cocktail~~
-        +addFavorite(Cocktail cocktail)
-        +removeFavorite(String cocktailId)
-        +isFavorite(String cocktailId): Flow~Boolean~
+        +observeReviews() Flow~List~Review~~
+        +getReviews() Result~List~Review~~
+        +addReview(Review review) Result~Unit~
+        +updateReview(String reviewId, Float rating, String comment, String date) Result~Boolean~
+        +deleteReview(String reviewId) Result~Boolean~
     }
 
-    %% Use Cases
+    %% Use Cases (representative — 12 in domain/usecase/)
     class PlaceOrderUseCase {
         -OrderRepository orderRepository
-        +invoke(List~CocktailCartItem~ cartItems, Double totalPrice): Flow~Result~Order~~
+        +invoke(List~CocktailCartItem~ cartItems, Double totalPrice) Result~Order~
     }
 
-    class ToggleFavoriteUseCase {
-        -CocktailRepository cocktailRepository
-        +invoke(Cocktail cocktail, Boolean isFavorite): Flow~Result~Boolean~~
+    class ManageFavoritesUseCase {
+        -CocktailFavoritesRepository favoritesRepository
+        -CocktailDetailRepository detailRepository
+        +toggle(Cocktail cocktail)
+    }
+
+    class GetCocktailDetailUseCase {
+        -CocktailDetailRepository detailRepository
+        -CocktailFavoritesRepository favoritesRepository
+        -CocktailSearchRepository searchRepository
+        +invoke(String cocktailId) Result~Cocktail?~
+        +isFavorite(String cocktailId) Boolean
+        +getRelatedCocktails(Cocktail cocktail, Int limit) List~Cocktail~
+        +refresh(String cocktailId) Result~Cocktail?~
     }
 
     %% Utility Classes
     class NetworkMonitor {
+        <<interface>>
         +startMonitoring()
         +stopMonitoring()
         +isOnline: StateFlow~Boolean~
@@ -177,19 +214,19 @@ classDiagram
         -Settings settings
         -Json json
         -AppConfig appConfig
+        -CoroutineDispatcher ioDispatcher
+        -OfflineModePolicy offlineModePolicy
         +cacheCocktail(Cocktail cocktail)
-        +getCachedCocktail(String id): Cocktail?
-        +getAllCachedCocktails(): List~Cocktail~
+        +cacheAll(List~Cocktail~ cocktails)
+        +getCachedCocktail(String id) Cocktail?
+        +getAllCachedCocktails() List~Cocktail~
         +clearCache()
         +addToRecentlyViewed(Cocktail cocktail)
-        +getRecentlyViewed(): List~Cocktail~
+        +getRecentlyViewed() List~Cocktail~
     }
 
-    class ErrorUtils {
-        <<static>>
-        +getErrorFromException(Exception exception, String defaultMessage): UserFriendlyError
-        +createNetworkError(Function retryAction): UserFriendlyError
-        +createErrorFromErrorCode(ErrorCode errorCode): UserFriendlyError
+    class ErrorHandler {
+        +getErrorFromException(Throwable exception, String defaultMessage, RecoveryAction? recoveryAction) UserFriendlyError
     }
 
     class UserFriendlyError {
@@ -197,8 +234,6 @@ classDiagram
         +String message
         +ErrorCategory category
         +RecoveryAction? recoveryAction
-        +Throwable? originalException
-        +ErrorCode errorCode
     }
 
     class RecoveryAction {
@@ -216,59 +251,40 @@ classDiagram
         UNKNOWN
     }
 
-    %% ViewModels
-    class BaseViewModel {
-        #MutableStateFlow~Boolean~ _isLoading
-        #MutableStateFlow~UserFriendlyError?~ _error
-        #MutableSharedFlow~UserFriendlyError~ _errorEvent
-        +StateFlow~Boolean~ isLoading
+    %% Shared ViewModels (consumed by both platforms)
+    class SharedViewModel {
+        <<abstract>>
         +StateFlow~UserFriendlyError?~ error
-        +SharedFlow~UserFriendlyError~ errorEvent
-        #setLoading(Boolean loading)
         #handleException(Throwable exception, String defaultMessage)
         #setError(String title, String message, ErrorCategory category)
         +clearError()
-        #executeWithErrorHandling(Function operation, Function onSuccess)
     }
 
-    class ThemeViewModel {
-        -AuthRepository repository
-        -MutableStateFlow~Boolean~ _isDarkMode
-        -MutableStateFlow~Boolean~ _followSystemTheme
-        -MutableStateFlow~Boolean~ _isSystemInDarkMode
-        +StateFlow~Boolean~ isDarkMode
-        +StateFlow~Boolean~ followSystemTheme
-        +updateSystemDarkMode(Boolean isDark)
+    class SharedThemeViewModel {
+        -ManageProfileUseCase manageProfileUseCase
+        +StateFlow~ThemeUiState~ uiState
         +toggleDarkMode()
         +setDarkMode(Boolean enabled)
         +toggleFollowSystemTheme()
-        -loadThemePreference()
     }
 
-    class OfflineModeViewModel {
-        -CocktailRepository cocktailRepository
+    class SharedOfflineModeViewModel {
+        -ManageOfflineModeUseCase manageOfflineModeUseCase
         -NetworkMonitor networkMonitor
-        -MutableStateFlow~Boolean~ _isOfflineModeEnabled
-        -MutableStateFlow~Boolean~ _isNetworkAvailable
-        -MutableStateFlow~List~Cocktail~~ _recentlyViewedCocktails
-        +StateFlow~Boolean~ isOfflineModeEnabled
-        +StateFlow~Boolean~ isNetworkAvailable
-        +StateFlow~List~Cocktail~~ recentlyViewedCocktails
+        +StateFlow~OfflineModeUiState~ uiState
         +toggleOfflineMode()
         +setOfflineMode(Boolean enabled)
         +clearCache()
-        -loadRecentlyViewedCocktails()
     }
 
-    %% Recommendation System
-    class CocktailRecommendationEngine {
-        -CocktailRepository cocktailRepository
-        -FavoritesRepository favoritesRepository
-        +getRecommendations(Cocktail cocktail, Int limit): List~Cocktail~
-        -getCocktailsByCategory(String category, Set~String~ excludeIds): List~Cocktail~
-        -getCocktailsByIngredient(String ingredient, Set~String~ excludeIds): List~Cocktail~
-        -getCocktailsByAlcoholicFilter(String alcoholicFilter, Set~String~ excludeIds): List~Cocktail~
-        -getFallbackRecommendations(Set~String~ excludeIds): List~Cocktail~
+    class SharedCocktailDetailViewModel {
+        -GetCocktailDetailUseCase getCocktailDetailUseCase
+        -ManageFavoritesUseCase manageFavoritesUseCase
+        -ManageCartUseCase manageCartUseCase
+        +StateFlow~DetailUiState~ uiState
+        +loadCocktail(String id)
+        +toggleFavorite()
+        +addToCart()
     }
 
     %% Relationships
@@ -279,36 +295,35 @@ classDiagram
     PlaceOrderUseCase --> OrderRepository : uses
     PlaceOrderUseCase --> CocktailCartItem : uses
     PlaceOrderUseCase --> Order : creates
-    ToggleFavoriteUseCase --> CocktailRepository : uses
-    ToggleFavoriteUseCase --> Cocktail : uses
+    ManageFavoritesUseCase --> CocktailFavoritesRepository : uses
+    ManageFavoritesUseCase --> CocktailDetailRepository : uses
+    GetCocktailDetailUseCase --> CocktailDetailRepository : uses
+    GetCocktailDetailUseCase --> CocktailFavoritesRepository : uses
+    GetCocktailDetailUseCase --> CocktailSearchRepository : uses
 
-    BaseViewModel --> ErrorUtils : uses
-    ThemeViewModel --|> BaseViewModel : extends
-    OfflineModeViewModel --|> BaseViewModel : extends
+    SharedViewModel --> ErrorHandler : uses
+    SharedThemeViewModel --|> SharedViewModel : extends
+    SharedOfflineModeViewModel --|> SharedViewModel : extends
+    SharedCocktailDetailViewModel --|> SharedViewModel : extends
 
-    ThemeViewModel --> AuthRepository : uses
-    ThemeViewModel --> UserPreferences : manages
+    SharedThemeViewModel --> UserPreferences : manages
+    SharedOfflineModeViewModel --> NetworkMonitor : uses
+    SharedCocktailDetailViewModel --> GetCocktailDetailUseCase : uses
 
-    OfflineModeViewModel --> CocktailRepository : uses
-    OfflineModeViewModel --> NetworkMonitor : uses
+    CocktailSearchRepository --> SearchFilters : uses
+    CocktailSearchRepository ..> CocktailCache : impl uses
+    CocktailOfflineRepository ..> CocktailCache : impl uses
 
-    CocktailRecommendationEngine --> CocktailRepository : uses
-    CocktailRecommendationEngine --> FavoritesRepository : uses
-
-    CocktailRepository --> CocktailCache : uses
-    CocktailRepository --> NetworkMonitor : uses
-
-    ErrorUtils --> UserFriendlyError : creates
+    ErrorHandler --> UserFriendlyError : creates
     UserFriendlyError *-- RecoveryAction : contains
 ```
 
 This diagram shows the key domain models and their relationships in the CocktailCraft application, including:
 
-1. **Domain Models**: Cocktail, CocktailIngredient, CocktailCartItem, Order, OrderItem, User, Review, and the new UserPreferences model for theme and offline settings
-2. **Repository Interfaces**: Extended with new methods for offline mode, caching, and recommendations
-3. **Use Cases**: PlaceOrderUseCase and ToggleFavoriteUseCase
-4. **Utility Classes**: NetworkMonitor for connectivity tracking, CocktailCache for offline mode, and ErrorUtils for error handling
-5. **ViewModels**: BaseViewModel with error handling, ThemeViewModel for dark mode, and OfflineModeViewModel
-6. **Recommendation System**: CocktailRecommendationEngine for generating cocktail recommendations
+1. **Domain Models**: Cocktail, CocktailIngredient, CocktailCartItem, Order, OrderItem, User, Review, UserPreferences (theme + accessibility settings), and SearchFilters (advanced search)
+2. **Repository Interfaces**: the nine focused interfaces — the former monolithic `CocktailRepository` was split into Search/Detail/Catalog/Favorites/Offline, alongside Cart/Order/Auth/Review. Methods are `suspend` and return `Result<T>`; mutable stores also expose `observe*()` Flows
+3. **Use Cases**: PlaceOrderUseCase, ManageFavoritesUseCase, and GetCocktailDetailUseCase shown as representative examples (12 total in `domain/usecase/`); related-cocktail recommendations live in `GetCocktailDetailUseCase.getRelatedCocktails`
+4. **Utility Classes**: NetworkMonitor for connectivity tracking, CocktailCache for offline mode, and ErrorHandler for error classification
+5. **Shared ViewModels**: `SharedViewModel` base class (error channel) with constructor-injected use cases; each screen has a consolidated `UiState` flow
 
-The diagram shows the relationships between these classes, including inheritance, composition, and dependencies.
+The diagram shows the relationships between these classes, including inheritance, composition, and dependencies. The interface KDoc in `shared/src/commonMain/kotlin/com/cocktailcraft/domain/repository/` is the source of truth for exact signatures.

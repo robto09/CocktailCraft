@@ -5,149 +5,112 @@ sequenceDiagram
     actor User
     participant UI as CartScreen
     participant ErrorUI as ErrorDialog
-    participant VM as CartViewModel
-    participant BaseVM as BaseViewModel
-    participant Network as NetworkMonitor
+    participant CartVM as SharedCartViewModel
+    participant OrderVM as SharedOrderViewModel
     participant UC as PlaceOrderUseCase
-    participant Repo as OrderRepository
-    participant Cache as CocktailCache
-    participant Storage as LocalStorage
-    participant ErrorUtils as ErrorUtils
-
-    %% Check Network Status
-    Note over User, ErrorUtils: Check Network Status
-    VM->>Network: isOnline.collect()
-    activate Network
-    Network-->>VM: Network status (online/offline)
-    deactivate Network
+    participant CartRepo as CartRepository
+    participant OrderRepo as OrderRepository
+    participant Storage as LocalStorage (Settings)
+    participant ErrorHandler as ErrorHandler
 
     %% View Cart
-    Note over User, ErrorUtils: View Cart
+    Note over User, ErrorHandler: View Cart
     User->>UI: View cart
     activate UI
-    UI->>VM: loadCartItems()
-    activate VM
-    VM->>VM: setLoading(true)
-    VM->>Repo: getCartItems()
-    activate Repo
-    Repo->>Storage: Read cart items
+    UI->>CartVM: collect uiState
+    activate CartVM
+    CartVM->>CartRepo: observeCartItems()
+    activate CartRepo
+    CartRepo->>Storage: Read cart items
     activate Storage
-    Storage-->>Repo: Return cart items
+    Storage-->>CartRepo: Return cart items
     deactivate Storage
-    Repo-->>VM: Return cart items
-    deactivate Repo
-    VM->>Repo: getCartTotal()
-    activate Repo
-    Repo->>Storage: Calculate total
-    activate Storage
-    Storage-->>Repo: Return total
-    deactivate Storage
-    Repo-->>VM: Return total
-    deactivate Repo
-    VM->>VM: setLoading(false)
-    VM-->>UI: Update UI with cart items and total
-    deactivate VM
+    CartRepo-->>CartVM: Flow emits items (re-published after every mutation)
+    deactivate CartRepo
+    CartVM-->>UI: uiState with items and total
+    deactivate CartVM
     UI-->>User: Display cart items and total
     deactivate UI
 
     %% Place Order - Success Path
-    Note over User, ErrorUtils: Place Order - Success Path
+    Note over User, ErrorHandler: Place Order - Success Path
     User->>UI: Click "Place Order"
     activate UI
-    UI->>VM: placeOrder()
-    activate VM
-    VM->>BaseVM: executeWithErrorHandling()
-    activate BaseVM
-    BaseVM->>BaseVM: setLoading(true)
-    BaseVM->>UC: invoke(cartItems, totalPrice)
+    UI->>OrderVM: placeOrder(cartItems, totalPrice)
+    activate OrderVM
+    OrderVM->>OrderVM: uiState: isPlacingOrder = true
+    OrderVM->>UC: invoke(cartItems, totalPrice)
     activate UC
-    UC->>UC: Create Order object
-    UC->>Repo: addOrder(order)
-    activate Repo
-    Repo->>Storage: Save order
+    UC->>UC: Create Order (id, date, items, status "Processing")
+    UC->>OrderRepo: placeOrder(order)
+    activate OrderRepo
+    OrderRepo->>Storage: Save order
     activate Storage
-    Storage-->>Repo: Confirm save
+    Storage-->>OrderRepo: Confirm save
     deactivate Storage
-    Repo-->>UC: Return success
-    deactivate Repo
-    UC-->>BaseVM: Return Result.Success(order)
+    OrderRepo-->>UC: Result.Success
+    deactivate OrderRepo
+    UC-->>OrderVM: Result.Success(order)
     deactivate UC
-    BaseVM->>Repo: clearCart()
-    activate Repo
-    Repo->>Storage: Clear cart items
-    activate Storage
-    Storage-->>Repo: Confirm clear
-    deactivate Storage
-    Repo-->>BaseVM: Return success
-    deactivate Repo
-    BaseVM->>BaseVM: setLoading(false)
-    BaseVM-->>VM: Order placed successfully
-    deactivate BaseVM
-    VM-->>UI: Order placed successfully
-    deactivate VM
+    OrderVM->>OrderVM: uiState: currentOrder set, isPlacingOrder = false
+    OrderVM-->>UI: returns true
+    deactivate OrderVM
+    UI->>CartVM: clearCart()
+    activate CartVM
+    CartVM->>CartRepo: clearCart()
+    activate CartRepo
+    CartRepo->>Storage: Clear cart items
+    CartRepo-->>CartVM: Result.Success (observed flow re-emits empty)
+    deactivate CartRepo
+    deactivate CartVM
     UI-->>User: Show order confirmation
     deactivate UI
 
     %% Place Order - Error Path
-    Note over User, ErrorUtils: Place Order - Error Path
-    User->>UI: Click "Place Order" (with network error)
+    Note over User, ErrorHandler: Place Order - Error Path
+    User->>UI: Click "Place Order" (with storage/network error)
     activate UI
-    UI->>VM: placeOrder()
-    activate VM
-    VM->>BaseVM: executeWithErrorHandling()
-    activate BaseVM
-    BaseVM->>BaseVM: setLoading(true)
-    BaseVM->>UC: invoke(cartItems, totalPrice)
+    UI->>OrderVM: placeOrder(cartItems, totalPrice)
+    activate OrderVM
+    OrderVM->>UC: invoke(cartItems, totalPrice)
     activate UC
-    UC->>UC: Create Order object
-    UC->>Repo: addOrder(order)
-    activate Repo
-    Repo--xRepo: Network error occurs
-    Repo-->>UC: Throw exception
-    deactivate Repo
-    UC-->>BaseVM: Throw exception
+    UC->>OrderRepo: placeOrder(order)
+    activate OrderRepo
+    OrderRepo--xOrderRepo: Error occurs
+    OrderRepo-->>UC: Result.Error
+    deactivate OrderRepo
+    UC-->>OrderVM: Result.Error
     deactivate UC
-    BaseVM->>ErrorUtils: getErrorFromException()
-    activate ErrorUtils
-    ErrorUtils-->>BaseVM: Return UserFriendlyError
-    deactivate ErrorUtils
-    BaseVM->>BaseVM: setError(userFriendlyError)
-    BaseVM->>BaseVM: setLoading(false)
-    BaseVM-->>VM: Error event
-    deactivate BaseVM
-    VM-->>UI: Show error
-    deactivate VM
+    OrderVM->>ErrorHandler: handleException / setError (SharedViewModel base)
+    activate ErrorHandler
+    ErrorHandler-->>OrderVM: UserFriendlyError
+    deactivate ErrorHandler
+    OrderVM-->>UI: error StateFlow emits
+    deactivate OrderVM
     UI->>ErrorUI: Show error dialog
     activate ErrorUI
     ErrorUI-->>User: Display error with retry option
     User->>ErrorUI: Click "Retry"
     ErrorUI->>UI: Retry action
     deactivate ErrorUI
-    UI->>VM: placeOrder() (retry)
+    UI->>OrderVM: placeOrder(...) (retry)
     deactivate UI
 
     %% Navigate to Order History
-    Note over User, ErrorUtils: Navigate to Order History
+    Note over User, ErrorHandler: Navigate to Order History
     User->>UI: Click "View Orders"
     activate UI
     UI->>NavigationManager: navigateToOrderList()
     NavigationManager->>OrderListScreen: Navigate
-    OrderListScreen-->>User: Display order history
+    OrderListScreen-->>User: Display order history (OrderRepo.observeOrders() already emitted the new order)
     deactivate UI
 ```
 
 This sequence diagram illustrates the flow of interactions when a user places an order in the CocktailCraft application, including:
 
-1. **Network Status Check**: Monitoring network connectivity before operations
-2. **View Cart**: Loading and displaying cart items with loading state management
-3. **Place Order - Success Path**: The happy path when placing an order succeeds
-   - Using BaseViewModel's error handling wrapper
-   - Managing loading state
-   - Clearing cart after successful order
-4. **Place Order - Error Path**: The error handling path when network issues occur
-   - Error conversion to user-friendly format
-   - Displaying error dialog with retry option
-   - Retry flow
-5. **Navigation**: Moving to order history after placing an order
+1. **View Cart**: The cart UI collects `SharedCartViewModel.uiState`, fed by `CartRepository.observeCartItems()` — a hot flow re-published after every mutation
+2. **Place Order - Success Path**: `SharedOrderViewModel.placeOrder(cartItems, totalPrice)` invokes `PlaceOrderUseCase`, which builds the `Order` and persists it via `OrderRepository.placeOrder(order)` (suspend, returns `Result`); the screen then clears the cart through `SharedCartViewModel`
+3. **Place Order - Error Path**: Errors are classified by `ErrorHandler` through the `SharedViewModel` base class and surface on the shared `error` StateFlow, displayed with a retry option
+4. **Navigation**: Order history reflects the new order automatically via `OrderRepository.observeOrders()`
 
 The diagram shows how the application handles both successful operations and error scenarios with proper error handling and user feedback.

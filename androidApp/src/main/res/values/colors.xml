@@ -1,31 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Mirrors the Compose palette in ui/theme/Theme.kt (AppColors), which is the
+    single source of truth. These values only cover the pre-Compose window
+    (cold start, status bar) and the home-screen widget assets — if AppColors
+    changes, update the matching entry here.
+-->
 <resources>
-    <!-- Primary Colors -->
-    <color name="cocktail_primary">#5E2CA5</color>
-    <color name="cocktail_primary_dark">#371A64</color>
-    <color name="cocktail_primary_light">#8A4FD3</color>
+    <!-- AppColors.PrimaryLight / PrimaryDark (coral) -->
+    <color name="cocktail_primary">#EB6A43</color>
+    <color name="cocktail_primary_dark">#FF8A65</color>
 
-    <!-- Secondary Colors -->
-    <color name="cocktail_accent">#FF6B6B</color>
-    <color name="cocktail_accent_light">#FFA5A5</color>
+    <!-- AppColors.SecondaryLight / SecondaryDark (gold) -->
+    <color name="cocktail_secondary">#FFC84D</color>
+    <color name="cocktail_secondary_dark">#FFD180</color>
 
-    <!-- Background Colors -->
-    <color name="background_light">#F8F9FA</color>
+    <!-- AppColors.BackgroundLight / BackgroundDark -->
+    <color name="background_light">#FAFAFA</color>
     <color name="background_dark">#121212</color>
 
-    <!-- Text Colors -->
-    <color name="text_primary_light">#212529</color>
-    <color name="text_primary_dark">#F8F9FA</color>
-    <color name="text_secondary_light">#495057</color>
-    <color name="text_secondary_dark">#ADB5BD</color>
+    <!-- AppColors.SurfaceLight / SurfaceDark -->
+    <color name="surface_light">#FFFFFF</color>
+    <color name="surface_dark">#1E1E1E</color>
 
-    <!-- Status Colors -->
-    <color name="success">#4CAF50</color>
-    <color name="error">#F44336</color>
-    <color name="warning">#FFC107</color>
-    <color name="info">#2196F3</color>
+    <!-- AppColors.TextPrimaryLight / TextPrimaryDark -->
+    <color name="text_primary_light">#000000</color>
+    <color name="text_primary_dark">#FFFFFF</color>
+
+    <!-- AppColors.TextSecondaryLight / TextSecondaryDark -->
+    <color name="text_secondary_light">#8E8E93</color>
+    <color name="text_secondary_dark">#B0B0B0</color>
+
+    <!-- AppColors status colors -->
+    <color name="success">#34C759</color>
+    <color name="error">#FF3B30</color>
+    <color name="warning">#FF9500</color>
 
     <!-- System Colors -->
     <color name="black">#000000</color>
     <color name="white">#FFFFFF</color>
-</resources> 
+</resources>

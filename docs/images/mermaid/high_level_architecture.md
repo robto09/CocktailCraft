@@ -14,9 +14,8 @@ graph TD
         subgraph "Shared Module"
             subgraph "Domain Layer"
                 Models["Models"]
-                RepoInt["Repository Interfaces"]
+                RepoInt["Repository Interfaces<br>(9 focused repositories)"]
                 UC["Use Cases"]
-                RecEngine["Recommendation Engine"]
             end
 
             subgraph "Data Layer"
@@ -45,11 +44,9 @@ graph TD
     UI --> Theme
     UI --> ErrorUI
     VM --> UC
-    VM --> RecEngine
     VM --> Nav
     VM --> ErrorHandler
     UC --> RepoInt
-    RecEngine --> RepoInt
     RepoImpl --> RepoInt
     RepoImpl --> Remote
     RepoImpl --> Local
@@ -61,7 +58,6 @@ graph TD
     iOSImpl --> RepoImpl
     DI --> RepoImpl
     DI --> UC
-    DI --> RecEngine
     DI --> VM
     DI --> Network
     Config --> RepoImpl
@@ -69,9 +65,9 @@ graph TD
 
 This diagram shows the high-level architecture of the CocktailCraft application, including:
 
-1. **Android App Layer**: UI components, ViewModels, Navigation, Theme System for Dark Mode support, and Error Handling UI
+1. **Android App Layer**: UI components, Navigation, Theme System for Dark Mode support, and Error Handling UI (the ViewModels themselves live in the shared module; iOS mirrors this layer in SwiftUI)
 2. **Shared Module**:
-   - **Domain Layer**: Models, Repository Interfaces, Use Cases, and Recommendation Engine
+   - **Domain Layer**: Models, the nine focused Repository Interfaces, and Use Cases (related-cocktail recommendations are part of `GetCocktailDetailUseCase`)
    - **Data Layer**: Repository Implementations, Remote/Local Data Sources, Caching System for Offline Mode, Network Monitor, and Error Handler
    - **Cross-Cutting Concerns**: Dependency Injection with Koin and App Configuration
 3. **Platform-Specific Implementations**: Android and iOS implementations

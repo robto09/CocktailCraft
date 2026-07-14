@@ -5,11 +5,14 @@ package com.cocktailcraft.domain.config
  * This follows the hexagonal architecture by defining a port in the domain layer
  * that will be implemented by adapters in the infrastructure layer.
  */
-interface AppConfig {
+internal interface AppConfig {
     /**
      * Base URL for the API
      */
     val apiBaseUrl: String
+
+    /** When true, Ktor logs full request/response bodies — development only. */
+    val verboseNetworkLogging: Boolean
 
     /**
      * Base URL for images
@@ -32,16 +35,6 @@ interface AppConfig {
     val networkTimeoutMs: Long
 
     /**
-     * Initial timeout for first network request attempt
-     */
-    val initialNetworkTimeoutMs: Long
-
-    /**
-     * Maximum timeout for network requests after retries
-     */
-    val maxNetworkTimeoutMs: Long
-
-    /**
      * Maximum number of retries for network operations
      */
     val maxRetries: Int
@@ -55,6 +48,11 @@ interface AppConfig {
      * Key for storing orders in local storage
      */
     val ordersStorageKey: String
+
+    /**
+     * Key for storing user reviews in local storage
+     */
+    val reviewsStorageKey: String
 
     /**
      * Expiration time for cached data in milliseconds

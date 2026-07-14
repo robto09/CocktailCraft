@@ -1,0 +1,234 @@
+package com.cocktailcraft.android.fakes
+
+import com.cocktailcraft.domain.model.Address
+import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.SearchFilters
+import com.cocktailcraft.domain.model.User
+import com.cocktailcraft.domain.model.UserPreferences
+import com.cocktailcraft.domain.repository.AuthRepository
+import com.cocktailcraft.domain.repository.CartRepository
+import com.cocktailcraft.domain.repository.CocktailCatalogRepository
+import com.cocktailcraft.domain.repository.CocktailDetailRepository
+import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
+import com.cocktailcraft.domain.repository.CocktailOfflineRepository
+import com.cocktailcraft.domain.repository.CocktailSearchRepository
+import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.domain.repository.OrderRepository
+import com.cocktailcraft.domain.repository.ReviewRepository
+import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.util.NetworkMonitor
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+
+/** Deterministic fixtures the fake repositories serve. */
+object TestCocktails {
+    val mojito = Cocktail(id = "1", name = "Test Mojito", category = "Cocktail", alcoholic = "Alcoholic", price = 8.50)
+    val negroni = Cocktail(id = "2", name = "Test Negroni", category = "Cocktail", alcoholic = "Alcoholic", price = 11.00)
+    val cola = Cocktail(id = "3", name = "Test Cola", category = "Soft Drink", alcoholic = "Non alcoholic", price = 3.25)
+    val all = listOf(mojito, negroni, cola)
+}
+
+/**
+ * One fake bound to all cocktail-facing repository interfaces, mirroring
+ * production where a single impl backs the five focused interfaces.
+ */
+class FakeCocktailRepository(
+    private val cocktails: List<Cocktail> = TestCocktails.all
+) : CocktailSearchRepository, CocktailCatalogRepository, CocktailDetailRepository,
+    CocktailFavoritesRepository, CocktailOfflineRepository {
+
+    private val favorites = MutableStateFlow<List<Cocktail>>(emptyList())
+    private var offlineMode = false
+
+    // Search
+    override suspend fun searchCocktailsByName(name: String): Result<List<Cocktail>> =
+        Result.Success(cocktails.filter { it.name.contains(name, ignoreCase = true) })
+
+    /** Mirrors the real intersection logic: AND the 4 supported fields over [cocktails]. */
+    override suspend fun advancedSearch(filters: SearchFilters): Result<List<Cocktail>> {
+        var result = cocktails
+        if (filters.query.isNotBlank()) {
+            result = result.filter { it.name.contains(filters.query, ignoreCase = true) }
+        }
+        filters.category?.let { cat -> result = result.filter { it.category == cat } }
+        filters.ingredient?.let { ing ->
+            result = result.filter { c -> c.ingredients.any { it.name.contains(ing, ignoreCase = true) } }
+        }
+        filters.alcoholic?.let { alc ->
+            result = result.filter {
+                val value = it.alcoholic?.replace('_', ' ')
+                if (alc) value.equals("Alcoholic", ignoreCase = true)
+                else value.equals("Non alcoholic", ignoreCase = true)
+            }
+        }
+        return Result.Success(result)
+    }
+
+    override suspend fun filterByIngredient(ingredient: String): Result<List<Cocktail>> = Result.Success(cocktails)
+    override suspend fun filterByAlcoholic(alcoholic: Boolean): Result<List<Cocktail>> = Result.Success(cocktails)
+    override suspend fun filterByCategory(category: String): Result<List<Cocktail>> =
+        Result.Success(cocktails.filter { it.category == category })
+
+    // Catalog
+    override suspend fun getCategories(): Result<List<String>> =
+        Result.Success(cocktails.mapNotNull { it.category }.distinct())
+    override suspend fun getIngredients(): Result<List<String>> = Result.Success(emptyList())
+    override suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>> = Result.Success(cocktails)
+
+    // Detail
+    override suspend fun getCocktailById(id: String): Result<Cocktail?> =
+        Result.Success(cocktails.firstOrNull { it.id == id })
+    override suspend fun refreshCocktailById(id: String): Result<Cocktail?> = getCocktailById(id)
+    override suspend fun getRandomCocktail(): Result<Cocktail?> = Result.Success(cocktails.firstOrNull())
+    override fun getCocktailImageUrl(cocktail: Cocktail): String = cocktail.imageUrl ?: ""
+
+    // Favorites
+    override fun observeFavorites(): Flow<List<Cocktail>> = favorites
+    override suspend fun getFavoriteCocktails(): Result<List<Cocktail>> = Result.Success(favorites.value)
+    override suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> {
+        // Mirrors the real impl: a re-add of an existing id upgrades that
+        // entry in place (persist-then-hydrate), new ids append.
+        favorites.update { list ->
+            if (list.any { it.id == cocktail.id }) {
+                list.map { if (it.id == cocktail.id) cocktail else it }
+            } else {
+                list + cocktail
+            }
+        }
+        return Result.Success(Unit)
+    }
+    override suspend fun removeFromFavorites(cocktail: Cocktail): Result<Unit> {
+        favorites.update { list -> list.filterNot { it.id == cocktail.id } }
+        return Result.Success(Unit)
+    }
+    override suspend fun isCocktailFavorite(id: String): Result<Boolean> =
+        Result.Success(favorites.value.any { it.id == id })
+
+    // Offline
+    override suspend fun checkApiConnectivity(): Result<Boolean> = Result.Success(true)
+    override suspend fun getRecentlyViewedCocktails(): Result<List<Cocktail>> = Result.Success(emptyList())
+    override suspend fun setOfflineMode(enabled: Boolean) { offlineMode = enabled }
+    override suspend fun isOfflineModeEnabled(): Boolean = offlineMode
+    override suspend fun isOffline(): Boolean = offlineMode
+    override suspend fun clearCache(): Result<Unit> = Result.Success(Unit)
+}
+
+class FakeCartRepository : CartRepository {
+    private val items = MutableStateFlow<List<CocktailCartItem>>(emptyList())
+
+    override fun observeCartItems(): Flow<List<CocktailCartItem>> = items
+    override suspend fun getCartItems(): Result<List<CocktailCartItem>> = Result.Success(items.value)
+    override suspend fun addToCart(cartItem: CocktailCartItem): Result<Unit> {
+        items.update { list ->
+            val existing = list.firstOrNull { it.cocktail.id == cartItem.cocktail.id }
+            if (existing != null) {
+                list.map {
+                    if (it.cocktail.id == cartItem.cocktail.id)
+                        it.copy(quantity = it.quantity + cartItem.quantity) else it
+                }
+            } else list + cartItem
+        }
+        return Result.Success(Unit)
+    }
+    override suspend fun removeFromCart(cocktailId: String): Result<Unit> {
+        items.update { list -> list.filterNot { it.cocktail.id == cocktailId } }
+        return Result.Success(Unit)
+    }
+    override suspend fun updateQuantity(cocktailId: String, quantity: Int): Result<Unit> {
+        items.update { list -> list.map { if (it.cocktail.id == cocktailId) it.copy(quantity = quantity) else it } }
+        return Result.Success(Unit)
+    }
+    override suspend fun clearCart(): Result<Unit> {
+        items.value = emptyList()
+        return Result.Success(Unit)
+    }
+    override suspend fun getCartTotal(): Result<Double> =
+        Result.Success(items.value.sumOf { it.cocktail.price * it.quantity })
+}
+
+class FakeOrderRepository : OrderRepository {
+    private val orders = MutableStateFlow<List<Order>>(emptyList())
+
+    override fun observeOrders(): Flow<List<Order>> = orders
+    override suspend fun getOrders(): Result<List<Order>> = Result.Success(orders.value)
+    override suspend fun placeOrder(order: Order): Result<Unit> {
+        orders.update { it + order }
+        return Result.Success(Unit)
+    }
+    override suspend fun getOrderById(id: String): Result<Order?> =
+        Result.Success(orders.value.firstOrNull { it.id == id })
+    override suspend fun updateOrderStatus(id: String, status: String): Result<Unit> = Result.Success(Unit)
+    override suspend fun deleteOrder(id: String): Result<Unit> {
+        orders.update { list -> list.filterNot { it.id == id } }
+        return Result.Success(Unit)
+    }
+    override suspend fun cancelOrder(orderId: String): Result<Boolean> = Result.Success(true)
+}
+
+class FakeReviewRepository : ReviewRepository {
+    private val reviews = MutableStateFlow<List<Review>>(emptyList())
+
+    override fun observeReviews(): Flow<List<Review>> = reviews
+    override suspend fun getReviews(): Result<List<Review>> = Result.Success(reviews.value)
+    override suspend fun addReview(review: Review): Result<Unit> {
+        reviews.update { it + review }
+        return Result.Success(Unit)
+    }
+    override suspend fun updateReview(reviewId: String, rating: Float, comment: String, date: String): Result<Boolean> {
+        val exists = reviews.value.any { it.id == reviewId }
+        if (exists) {
+            reviews.update { list ->
+                list.map { if (it.id == reviewId) it.copy(rating = rating, comment = comment, date = date) else it }
+            }
+        }
+        return Result.Success(exists)
+    }
+    override suspend fun deleteReview(reviewId: String): Result<Boolean> {
+        val exists = reviews.value.any { it.id == reviewId }
+        reviews.update { list -> list.filterNot { it.id == reviewId } }
+        return Result.Success(exists)
+    }
+}
+
+class FakeAuthRepository : AuthRepository {
+    private var user: User? = null
+
+    override suspend fun signUp(email: String, password: String): Result<Boolean> {
+        user = User(id = "test", name = "Test User", email = email)
+        return Result.Success(true)
+    }
+    override suspend fun signIn(email: String, password: String): Result<Boolean> {
+        user = User(id = "test", name = "Test User", email = email)
+        return Result.Success(true)
+    }
+    override suspend fun signOut(): Result<Boolean> {
+        user = null
+        return Result.Success(true)
+    }
+    override suspend fun changePassword(oldPassword: String, newPassword: String): Result<Boolean> =
+        Result.Success(true)
+    override suspend fun isUserSignedIn(): Result<Boolean> = Result.Success(user != null)
+    override suspend fun getCurrentUser(): Result<User?> = Result.Success(user)
+    override suspend fun updateUserName(name: String): Result<Boolean> = Result.Success(true)
+    override suspend fun updateUserEmail(email: String, password: String): Result<Boolean> = Result.Success(true)
+    override suspend fun updateUserAddress(address: Address): Result<Boolean> = Result.Success(true)
+    override suspend fun updateUserPreferences(preferences: UserPreferences): Result<Boolean> = Result.Success(true)
+    override suspend fun getUserPreferences(): Result<UserPreferences> = Result.Success(UserPreferences())
+}
+
+class FakeNetworkMonitor(initiallyOnline: Boolean = true) : NetworkMonitor {
+    private val _isOnline = MutableStateFlow(initiallyOnline)
+    override val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+
+    override fun startMonitoring() = Unit
+    override fun stopMonitoring() = Unit
+
+    fun setOnline(online: Boolean) {
+        _isOnline.value = online
+    }
+}

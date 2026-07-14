@@ -11,11 +11,11 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * Android implementation of NetworkMonitor.
  */
-actual class NetworkMonitor actual constructor(
+class AndroidNetworkMonitor(
     private val context: Context
-) : BaseNetworkMonitor() {
+) : BaseNetworkMonitor(), NetworkMonitor {
 
-    actual override val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
+    override val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
     private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -42,18 +42,27 @@ actual class NetworkMonitor actual constructor(
         }
     }
 
-    actual override fun startMonitoring() {
+    // Registering the same NetworkCallback twice throws IllegalArgumentException,
+    // so start/stop are idempotent: the monitor is a Koin single shared by
+    // several consumers and must tolerate repeated lifecycle calls (SH-2).
+    private var registered = false
+
+    override fun startMonitoring() {
+        if (registered) return
         val networkRequest = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
 
         connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
+        registered = true
 
         // Initialize with current status
         _isOnline.value = isNetworkAvailable()
     }
 
-    actual override fun stopMonitoring() {
+    override fun stopMonitoring() {
+        if (!registered) return
+        registered = false
         try {
             connectivityManager.unregisterNetworkCallback(networkCallback)
         } catch (e: Exception) {

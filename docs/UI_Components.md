@@ -30,7 +30,7 @@ This document provides an overview of the reusable UI components in the Cocktail
    - [OptimizedImage](#optimizedimage)
    - [ErrorDialog and ErrorBanner](#errordialog-and-errorbanner)
    - [AnimatedButtons](#animatedbuttons)
-   - [ExpandableAdvancedSearchPanel](#expandableadvancedsearchpanel)
+   - [AdvancedSearchBottomSheet](#advancedsearchbottomsheet)
    - [CocktailSearchBar](#cocktailsearchbar)
    - [NetworkErrorStateDisplay](#networkerrordisplay)
    - [AnimatedCocktailList](#animatedcocktaillist)
@@ -38,12 +38,13 @@ This document provides an overview of the reusable UI components in the Cocktail
    - [CocktailLoadingShimmer](#cocktailloadingshimmer)
    - [EndOfListMessage](#endoflistmessage)
    - [LoadingMoreIndicator](#loadingmoreindicator)
-4. [Refactoring Process](#refactoring-process)
-5. [Best Practices](#best-practices)
+4. [Animations](#animations)
+5. [Refactoring Process](#refactoring-process)
+6. [Best Practices](#best-practices)
 
 ## Introduction
 
-The CocktailCraft app uses a component-based architecture for its UI, with reusable components that ensure consistency across the app. These components are located in the `androidApp/src/main/java/com/cocktailcraft/ui/components` directory.
+The CocktailCraft app uses a component-based architecture for its UI, with reusable components that ensure consistency across the app. These components are located in the `androidApp/src/main/java/com/cocktailcraft/android/ui/components` directory.
 
 Using these reusable components offers several benefits:
 - **Consistency**: Ensures a uniform look and feel across the app
@@ -382,8 +383,7 @@ AnimatedCocktailItem(
     isFavorite = true,
     onToggleFavorite = { cocktail ->
         favoritesViewModel.toggleFavorite(cocktail)
-    },
-    index = index
+    }
 )
 ```
 
@@ -503,28 +503,31 @@ AnimatedTextButton(
 
 **When to use**: When you want to add animations to buttons for a more engaging user experience.
 
-### ExpandableAdvancedSearchPanel
+### AdvancedSearchBottomSheet
 
-**Purpose**: Provides an expandable panel for advanced search filters that can be integrated directly into a screen.
+**Purpose**: Modal bottom sheet for the advanced search filters, mirroring the iOS sheet. Apply and Clear both close the sheet.
 
 **Usage**:
 ```kotlin
-ExpandableAdvancedSearchPanel(
-    isExpanded = isAdvancedSearchActive,
-    currentFilters = searchFilters,
-    categories = categories,
-    ingredients = ingredients,
-    glasses = glasses,
-    onApplyFilters = { filters ->
-        viewModel.updateSearchFilters(filters)
-    },
-    onClearFilters = {
-        viewModel.clearSearchFilters()
-    }
-)
+if (isAdvancedSearchActive) {
+    AdvancedSearchBottomSheet(
+        currentFilters = searchFilters,
+        categories = categories,
+        ingredients = ingredients,
+        onApplyFilters = { filters ->
+            scope.launch { viewModel.applyFilters(filters) }
+        },
+        onClearFilters = {
+            viewModel.clearSearchFilters()
+        },
+        onDismiss = {
+            viewModel.toggleAdvancedSearchMode(false)
+        }
+    )
+}
 ```
 
-**When to use**: When you need to provide advanced search functionality that can be expanded and collapsed within a screen, rather than showing a separate dialog.
+**When to use**: When the user opens advanced search from the search bar; the sheet dismisses on Apply, Clear, or swipe-down.
 
 ### CocktailSearchBar
 
@@ -648,6 +651,82 @@ LoadingMoreIndicator(
 ```
 
 **When to use**: When you need to indicate that more items are being loaded in a paginated list.
+
+## Animations
+
+The animation system consists of shared utilities in `androidApp/src/main/java/com/cocktailcraft/android/ui/animation/AnimationUtils.kt` and the animated components in `ui/components/` described above.
+
+### AnimationUtils
+
+`AnimationUtils` is an object providing reusable animation building blocks:
+
+- **Duration constants**: `ANIMATION_DURATION_SHORT` (150ms), `ANIMATION_DURATION_MEDIUM` (300ms), `ANIMATION_DURATION_LONG` (500ms)
+- **Spring constants**: stiffness (`SPRING_STIFFNESS_LOW/MEDIUM/HIGH`) and damping (`SPRING_DAMPENING_*`) presets
+- **Prebuilt transitions**: `fadeInMedium`/`fadeOutMedium`, `scaleInMedium`/`scaleOutMedium`, `bounceScaleIn`, slide-in/out variants, and combined transitions such as `enterWithFadeAndScale`
+
+```kotlin
+// Combined enter transition: fade + scale with medium duration
+AnimatedVisibility(
+    visible = visible,
+    enter = AnimationUtils.enterWithFadeAndScale,
+    exit = AnimationUtils.exitWithFadeAndScale
+) { /* content */ }
+```
+
+### Button Animations
+
+`AnimatedButtons.kt` provides press-scale button variants driven by `interactionSource` and spring animations:
+
+- **`AnimatedButton`**: a `Button` that scales to 0.95 while pressed. Takes a content lambda (there is no `text` parameter):
+
+```kotlin
+AnimatedButton(onClick = { /* action */ }) {
+    Text("Add to Cart")
+}
+```
+
+- **`AnimatedTextButton(text, onClick)`**: convenience wrapper around `AnimatedButton` for a plain text label
+- **`AnimatedIconButton`**: icon button with press-scale and optional haptic feedback
+- **`AnimatedFloatingActionButton`**: FAB with press-scale
+
+### Theme Transitions
+
+- **`AnimatedCocktailBarTheme(darkTheme, content)`** (`ui/theme/AnimatedTheme.kt`): the app's single theme; animates every palette color when switching between light and dark modes
+- **`AnimatedThemeSwitch(isDarkMode, onToggle)`**: custom switch with animated track/thumb colors, spring-based thumb position, and an animated light/dark icon
+
+```kotlin
+AnimatedCocktailBarTheme(darkTheme = isDarkMode) { /* app content */ }
+
+AnimatedThemeSwitch(
+    isDarkMode = isDarkMode,
+    onToggle = { themeViewModel.toggleDarkMode() }
+)
+```
+
+### Shimmer Loading
+
+`ShimmerLoading.kt` implements a shared-transition shimmer: one infinite transition drives every placeholder under a loading container, and the animated value is read only at draw time so ticks invalidate drawing rather than recomposing.
+
+```kotlin
+// Hoist one transition per loading container
+val translate = rememberShimmerTranslate()
+
+// Apply to any placeholder
+Box(modifier = Modifier.size(100.dp).shimmerEffect(translate))
+
+// Prebuilt placeholders
+CocktailItemShimmer(translate)   // single list-row placeholder
+CocktailDetailShimmer()          // full detail-screen placeholder (hoists its own transition)
+CocktailLoadingShimmer()         // full list placeholder (header + N rows)
+```
+
+### List Animations
+
+`AnimatedCocktailList` delegates item entrance/exit/placement animation to Compose's built-in `LazyItemScope.animateItem()` modifier on identity-keyed items (`key = "cocktail_${cocktail.id}"`). New items fade in and position changes animate when the list shifts. A previous hand-rolled batching/stagger system was removed — it never produced a visible animation (see the comment in `AnimatedCocktailList.kt`).
+
+`AnimatedCocktailItem` adds a spring-based hover-scale effect on the card itself; there is no per-index stagger.
+
+Screen-to-screen navigation uses the `NavHost` defaults — no custom enter/exit transitions are wired.
 
 ## Refactoring Process
 
