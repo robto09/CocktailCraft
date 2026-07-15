@@ -115,7 +115,8 @@ struct SignInView: View {
                 Spacer()
             }
             .background(Color(.systemBackground))
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Sign In")
+            .brandedNavigationBar()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
@@ -123,6 +124,7 @@ struct SignInView: View {
                     }
                     .accessibilityLabel("Cancel")
                     .accessibilityIdentifier("signin.cancelButton")
+                    .tint(.white)
                 }
             }
         }

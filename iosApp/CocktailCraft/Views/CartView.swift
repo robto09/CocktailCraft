@@ -17,6 +17,7 @@ struct CartView: View {
                     message: "Add some cocktails to get started"
                 )
                 .navigationTitle("Cart")
+                .brandedNavigationBar()
             } else {
                 ScrollView {
                     VStack(spacing: AppTheme.Spacing.xl) {
@@ -67,6 +68,7 @@ struct CartView: View {
                     }
                 }
                 .navigationTitle("Cart")
+                .brandedNavigationBar()
             }
         }
         .alert(isPresented: $showCheckoutConfirmation) {

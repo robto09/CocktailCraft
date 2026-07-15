@@ -13,29 +13,24 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
 import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
@@ -68,6 +63,7 @@ import com.cocktailcraft.android.screens.OfflineModeScreen
 import com.cocktailcraft.android.screens.OrderListScreen
 import com.cocktailcraft.android.screens.ProfileScreen
 import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
@@ -130,6 +126,9 @@ fun MainScreen() {
     val isOfflineModeEnabled = offlineState.isOfflineModeEnabled
     val isNetworkAvailable = offlineState.isNetworkAvailable
 
+    // Cart state drives the bottom-nav badge (parity with the iOS tab badge)
+    val cartUiState by sharedCartViewModel.uiState.collectAsStateWithLifecycle()
+
     Scaffold(
         topBar = {
             // Only show the main top bar if we're NOT on the detail screen
@@ -155,55 +154,24 @@ fun MainScreen() {
                         )
                     }
 
-                    TopAppBar(
-                        title = {
-                            // Normal title without search functionality
-                            Text(
-                                text = when {
-                                    currentDestination?.hasRoute<HomeRoute>() == true -> stringResource(R.string.my_bar)
-                                    currentDestination?.hasRoute<CartRoute>() == true -> stringResource(R.string.cart)
-                                    currentDestination?.hasRoute<FavoritesRoute>() == true -> stringResource(R.string.favorites)
-                                    currentDestination?.hasRoute<OrderListRoute>() == true -> stringResource(R.string.recipes)
-                                    currentDestination?.hasRoute<ProfileRoute>() == true -> stringResource(R.string.profile)
-                                    isOfflineModeScreen -> stringResource(R.string.offline_mode)
-                                    else -> stringResource(R.string.app_name)
-                                },
-                                color = Color.White,
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                    AppTopBar(
+                        title = when {
+                            // Home leads with the brand, same as iOS
+                            currentDestination?.hasRoute<HomeRoute>() == true -> stringResource(R.string.app_name)
+                            currentDestination?.hasRoute<CartRoute>() == true -> stringResource(R.string.cart)
+                            currentDestination?.hasRoute<FavoritesRoute>() == true -> stringResource(R.string.favorites)
+                            currentDestination?.hasRoute<OrderListRoute>() == true -> stringResource(R.string.orders)
+                            currentDestination?.hasRoute<ProfileRoute>() == true -> stringResource(R.string.profile)
+                            isOfflineModeScreen -> stringResource(R.string.offline_mode)
+                            else -> stringResource(R.string.app_name)
                         },
-                        navigationIcon = {
-                            // Show back button only for the OfflineMode screen
-                            if (isOfflineModeScreen) {
-                                IconButton(onClick = { navigationManager.navigateBack() }) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = stringResource(R.string.common_back),
-                                        tint = Color.White
-                                    )
-                                }
-                            }
-                        },
-                        actions = {
-                            // Removed search button/functionality
-                        },
-                        colors = TopAppBarDefaults.mediumTopAppBarColors(
-                            containerColor = AppColors.Primary,
-                            titleContentColor = Color.White,
-                            navigationIconContentColor = Color.White,
-                            actionIconContentColor = Color.White
-                        ),
+                        // Back button only for the OfflineMode screen
+                        showBackButton = isOfflineModeScreen,
+                        onBackClick = { navigationManager.navigateBack() },
                         // The wrapping Column already consumed the status-bar
                         // inset; keep only the horizontal/cutout parts here so
                         // the top inset isn't applied twice (AN-6).
                         windowInsets = TopAppBarDefaults.windowInsets.exclude(WindowInsets.statusBars)
-                    )
-
-                    // Add a divider to create separation between top bar and content
-                    HorizontalDivider(
-                        color = Color.White.copy(alpha = 0.2f),
-                        thickness = 1.dp
                     )
                 }
             }
@@ -220,10 +188,22 @@ fun MainScreen() {
                         NavigationBarItem(
                             modifier = Modifier.testTag(screen.tag),
                             icon = {
-                                Icon(screen.icon, contentDescription = stringResource(screen.titleRes))
+                                // Cart shows an item-count badge, same as iOS
+                                if (screen == Screen.Cart && cartUiState.itemCount > 0) {
+                                    BadgedBox(badge = {
+                                        Badge { Text(cartUiState.itemCount.toString()) }
+                                    }) {
+                                        Icon(screen.icon, contentDescription = stringResource(screen.titleRes))
+                                    }
+                                } else {
+                                    Icon(screen.icon, contentDescription = stringResource(screen.titleRes))
+                                }
                             },
                             label = {
-                                Text(stringResource(screen.titleRes), fontSize = 12.sp)
+                                Text(
+                                    stringResource(screen.titleRes),
+                                    style = MaterialTheme.typography.labelMedium
+                                )
                             },
                             selected = currentDestination?.hierarchy?.any { it.hasRoute(screen.route::class) } == true,
                             onClick = {

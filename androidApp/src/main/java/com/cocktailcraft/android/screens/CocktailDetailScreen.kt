@@ -92,6 +92,7 @@ import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.DetailHeaderImage
 import com.cocktailcraft.android.ui.components.DetailInfoCard
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
@@ -309,46 +310,17 @@ fun CocktailDetailScreen(
     }
 }
 
-// Top app bar with back navigation and a divider under it
-@OptIn(ExperimentalMaterial3Api::class)
+// Branded top bar with back navigation (shared AppTopBar chrome)
 @Composable
 private fun CocktailDetailTopBar(
     cocktailName: String?,
     onBackClick: () -> Unit
 ) {
-    Column {
-        TopAppBar(
-            title = {
-                Text(
-                    text = cocktailName ?: stringResource(R.string.detail_title_fallback),
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.detail_back),
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.mediumTopAppBarColors(
-                containerColor = AppColors.Primary,
-                titleContentColor = Color.White,
-                navigationIconContentColor = Color.White
-            )
-        )
-
-        // Add a divider to create separation between top bar and content
-        HorizontalDivider(
-            color = Color.White.copy(alpha = 0.2f),
-            thickness = 1.dp
-        )
-    }
+    AppTopBar(
+        title = cocktailName ?: stringResource(R.string.detail_title_fallback),
+        showBackButton = true,
+        onBackClick = onBackClick
+    )
 }
 
 // Main info card: price and favorite row, subtitle, stock status,

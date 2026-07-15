@@ -112,7 +112,8 @@ struct EditProfileView: View {
                 Spacer()
             }
             .background(Color(.systemBackground))
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Edit Profile")
+            .brandedNavigationBar()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
@@ -120,6 +121,7 @@ struct EditProfileView: View {
                     }
                     .accessibilityLabel("Cancel")
                     .accessibilityIdentifier("editProfile.cancelButton")
+                    .tint(.white)
                 }
             }
         }

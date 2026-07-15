@@ -138,7 +138,8 @@ struct ChangePasswordView: View {
                 Spacer()
             }
             .background(Color(.systemBackground))
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Change Password")
+            .brandedNavigationBar()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
@@ -146,6 +147,7 @@ struct ChangePasswordView: View {
                     }
                     .accessibilityLabel("Cancel")
                     .accessibilityIdentifier("changePassword.cancelButton")
+                    .tint(.white)
                 }
             }
         }

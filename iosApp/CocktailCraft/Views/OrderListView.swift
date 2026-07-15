@@ -9,7 +9,8 @@ struct OrderListView: View {
         // No nav container here: ContentView already wraps this tab in a
         // NavigationStack (the old inner NavigationView double-nested it).
         contentView
-            .navigationTitle("My Orders")
+            .navigationTitle("Orders")
+            .brandedNavigationBar()
             // Seed load once; afterwards the observed orders flow keeps the
             // list fresh. A load cancelled mid-flight (user leaves the tab)
             // leaves hasLoaded false, so the next visit retries.

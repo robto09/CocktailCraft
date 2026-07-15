@@ -62,12 +62,13 @@ struct CocktailDetailView: View {
                         }
                         .accessibilityLabel("Share cocktail")
                         .accessibilityIdentifier("detail.shareButton")
+                        .tint(.white)
 
                         Button(action: {
                             Task { await viewModel.toggleFavorite() }
                         }) {
                             Image(systemName: viewModel.state.isFavorite ? "heart.fill" : "heart")
-                                .foregroundColor(viewModel.state.isFavorite ? .red : .primary)
+                                .foregroundColor(.white)
                                 .minimumHitTarget()
                         }
                         .accessibilityLabel(viewModel.state.isFavorite ? "Remove from favorites" : "Add to favorites")
@@ -101,7 +102,8 @@ struct CocktailDetailView: View {
         // asserting navigation doesn't depend on live network data.
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("detail.screen")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(viewModel.state.cocktail?.name ?? "")
+        .brandedNavigationBar()
         .task {
             // .task re-fires whenever the view re-appears — including on
             // pop-back from a related cocktail. @State survives while the

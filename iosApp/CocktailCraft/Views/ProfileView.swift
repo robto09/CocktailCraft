@@ -45,6 +45,7 @@ struct ProfileView: View {
         }
         .background(AppColors.background(isDarkMode: isDarkMode))
         .navigationTitle("Profile")
+        .brandedNavigationBar()
         .onAppear {
             // Observation tracking keeps the UI current; the old
             // .id(UUID())-on-appear force-rebuild hack is gone.

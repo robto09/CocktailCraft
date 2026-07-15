@@ -34,7 +34,7 @@ struct OfflineModeView: View {
             }
             .background(Color(.systemBackground))
             .navigationTitle("Offline Mode")
-            .navigationBarTitleDisplayMode(.large)
+            .brandedNavigationBar()
             .navigationDestination(for: String.self) { cocktailId in
                 CocktailDetailView(cocktailId: cocktailId)
             }
@@ -43,6 +43,7 @@ struct OfflineModeView: View {
                     Button("Done") {
                         dismiss()
                     }
+                    .tint(.white)
                 }
             }
         }

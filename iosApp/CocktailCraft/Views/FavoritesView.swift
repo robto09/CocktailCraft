@@ -17,6 +17,7 @@ struct FavoritesView: View {
             }
         }
         .navigationTitle("Favorites")
+        .brandedNavigationBar()
         .navigationDestination(for: String.self) { cocktailId in
             CocktailDetailView(cocktailId: cocktailId)
         }

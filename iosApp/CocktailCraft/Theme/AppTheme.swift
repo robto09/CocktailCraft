@@ -122,10 +122,51 @@ struct ChipStyle: ViewModifier {
     }
 }
 
+// MARK: - Branded Navigation Chrome
+
+/// Branded navigation bar: coral background, white title and bar content,
+/// inline (fixed-height) layout — matching Android's AppTopBar so both
+/// platforms share the same chrome. Apply to the root content of every
+/// NavigationStack (tab roots, pushed screens, and sheets).
+struct BrandedNavigationBarStyle: ViewModifier {
+    @Environment(\.isDarkMode) var isDarkMode
+
+    func body(content: Content) -> some View {
+        content
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(AppColors.primary(isDarkMode: isDarkMode), for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+            // Dark scheme = white title/status bar over the coral background
+            .toolbarColorScheme(.dark, for: .navigationBar)
+    }
+}
+
+/// Branded tab bar: opaque surface-colored background matching Android's
+/// bottom navigation (the coral selected tint comes from ContentView's .tint).
+struct BrandedTabBarStyle: ViewModifier {
+    @Environment(\.isDarkMode) var isDarkMode
+
+    func body(content: Content) -> some View {
+        content
+            .toolbarBackground(AppColors.surface(isDarkMode: isDarkMode), for: .tabBar)
+            .toolbarBackground(.visible, for: .tabBar)
+    }
+}
+
 // MARK: - View Extensions
 extension View {
     func cardStyle() -> some View {
         modifier(CardStyle())
+    }
+
+    /// Coral navigation bar with white title — the app's shared chrome.
+    func brandedNavigationBar() -> some View {
+        modifier(BrandedNavigationBarStyle())
+    }
+
+    /// Opaque surface tab bar matching Android's bottom navigation.
+    func brandedTabBar() -> some View {
+        modifier(BrandedTabBarStyle())
     }
 
     func chipStyle(isSelected: Bool = false) -> some View {

@@ -146,13 +146,14 @@ fun AnimatedCocktailBarTheme(
     }
     
     // Under edge-to-edge the status bar is transparent over the app's own
-    // background; only the icon appearance needs managing (light icons on
-    // dark theme, dark icons on light theme).
+    // background. Every screen paints the branded coral top bar behind it
+    // (AppTopBar), so status icons are always white for contrast — in light
+    // AND dark theme, matching the iOS branded navigation bar.
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }
     

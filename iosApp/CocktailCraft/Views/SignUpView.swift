@@ -138,7 +138,8 @@ struct SignUpView: View {
                 Spacer()
             }
             .background(Color(.systemBackground))
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Create Account")
+            .brandedNavigationBar()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
@@ -146,6 +147,7 @@ struct SignUpView: View {
                     }
                     .accessibilityLabel("Cancel")
                     .accessibilityIdentifier("signup.cancelButton")
+                    .tint(.white)
                 }
             }
         }

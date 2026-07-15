@@ -18,6 +18,7 @@ struct ContentView: View {
                     Label("Home", systemImage: "house.fill")
                 }
                 .tag(AppRouter.Tab.home)
+                .brandedTabBar()
 
                 // Cart Tab
                 NavigationStack {
@@ -28,6 +29,7 @@ struct ContentView: View {
                 }
                 .badge(Int(cartViewModel.state.itemCount))
                 .tag(AppRouter.Tab.cart)
+                .brandedTabBar()
 
                 // Favorites Tab
                 NavigationStack {
@@ -37,6 +39,7 @@ struct ContentView: View {
                     Label("Favorites", systemImage: "heart.fill")
                 }
                 .tag(AppRouter.Tab.favorites)
+                .brandedTabBar()
 
                 // Orders Tab
                 NavigationStack {
@@ -46,6 +49,7 @@ struct ContentView: View {
                     Label("Orders", systemImage: "list.bullet")
                 }
                 .tag(AppRouter.Tab.orders)
+                .brandedTabBar()
 
                 // Profile Tab
                 NavigationStack {
@@ -55,6 +59,7 @@ struct ContentView: View {
                     Label("Profile", systemImage: "person.fill")
                 }
                 .tag(AppRouter.Tab.profile)
+                .brandedTabBar()
             }
             // Selected tab in the brand color, matching the Android bottom nav
             .tint(AppColors.primary(isDarkMode: themeViewModel.state.isDarkMode))
