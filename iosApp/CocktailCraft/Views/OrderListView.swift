@@ -7,6 +7,7 @@ struct OrderListView: View {
     // Tab switches route through the app-level router (same pattern as
     // CartView/ProfileView) so "Browse Cocktails" can land on Home.
     @Environment(AppRouter.self) private var router
+    @Environment(\.isDarkMode) private var isDarkMode
 
     var body: some View {
         // No nav container here: ContentView already wraps this tab in a
@@ -60,19 +61,39 @@ struct OrderListView: View {
                 orderRow(order: order)
             }
         }
+        // Pull-to-refresh, parity with Android Orders
+        .refreshable {
+            await viewModel.loadOrders()
+        }
     }
 
     private func orderRow(order: Order) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Order #\(order.id)")
                 .font(.headline)
-            Text("Status: \(order.status)")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+            // Colored status indicator matching Android's OrderCard
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(statusColor(order.status))
+                    .frame(width: 8, height: 8)
+                Text(order.status)
+                    .font(.subheadline)
+                    .foregroundColor(statusColor(order.status))
+            }
             Text("Total: " + order.total.asPrice)
                 .font(.body)
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
         }
         .padding(.vertical, 4)
+    }
+
+    private func statusColor(_ status: String) -> Color {
+        switch status {
+        case "Completed": return AppColors.success
+        case "In Progress": return AppColors.warning
+        default: return AppColors.gray
+        }
     }
 }
 

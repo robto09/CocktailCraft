@@ -10,11 +10,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.domain.model.Cocktail
@@ -28,6 +34,7 @@ import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoritesScreen(
     cartViewModel: SharedCartViewModel,
@@ -68,9 +75,24 @@ fun FavoritesScreen(
                 icon = Icons.Filled.Favorite
             )
         }
-        // Show favorites list
+        // Show favorites list (pull-to-refresh, parity with iOS Favorites)
         else if (!isLoading) {
-            // Favorites list
+            val pullToRefreshState = rememberPullToRefreshState()
+            PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = { favoritesViewModel.refresh() },
+                modifier = Modifier.fillMaxSize(),
+                state = pullToRefreshState,
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        state = pullToRefreshState,
+                        isRefreshing = isLoading,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        containerColor = Color.White,
+                        color = AppColors.Primary
+                    )
+                }
+            ) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -90,8 +112,10 @@ fun FavoritesScreen(
                     CocktailItem(
                         cocktail = cocktail,
                         onClick = { /* Navigate to detail */ },
+                        // onAddToCart both mutates the cart and confirms via
+                        // snackbar (MainScreen); the extra local addToCart here
+                        // was double-adding every item.
                         onAddToCart = { _ ->
-                            scope.launch { cartViewModel.addToCart(cocktail) }
                             onAddToCart(cocktail)
                         },
                         isFavorite = true,
@@ -100,6 +124,7 @@ fun FavoritesScreen(
                         }
                     )
                 }
+            }
             }
         }
     }

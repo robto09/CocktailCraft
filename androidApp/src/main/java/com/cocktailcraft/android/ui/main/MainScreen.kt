@@ -22,12 +22,16 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -65,6 +69,7 @@ import com.cocktailcraft.android.screens.ProfileScreen
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
+import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
@@ -128,6 +133,21 @@ fun MainScreen() {
 
     // Cart state drives the bottom-nav badge (parity with the iOS tab badge)
     val cartUiState by sharedCartViewModel.uiState.collectAsStateWithLifecycle()
+
+    // Add-to-cart keeps the user in place and confirms with a snackbar,
+    // matching the iOS toast behavior (previously Android yanked the user to
+    // the Cart tab on every add).
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val addToCartAndConfirm: (Cocktail) -> Unit = { cocktail ->
+        scope.launch {
+            sharedCartViewModel.addToCart(cocktail)
+            snackbarHostState.showSnackbar(
+                message = context.getString(R.string.added_to_cart, cocktail.name),
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -221,6 +241,7 @@ fun MainScreen() {
                 }
             }
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = AppColors.Background
     ) { innerPadding ->
         NavHost(
@@ -232,11 +253,7 @@ fun MainScreen() {
                 HomeScreen(
                     viewModel = sharedHomeViewModel,
                     favoritesViewModel = sharedFavoritesViewModel,
-                    onAddToCart = { cocktail ->
-                        // Add to cart and then navigate to cart
-                        scope.launch { sharedCartViewModel.addToCart(cocktail) }
-                        navigationManager.navigateToCart()
-                    },
+                    onAddToCart = addToCartAndConfirm,
                     onCocktailClick = { cocktail ->
                         // Navigate to cocktail detail screen
                         navigationManager.navigateToCocktailDetail(cocktail)
@@ -266,11 +283,7 @@ fun MainScreen() {
                     onBrowseProducts = {
                         navigationManager.navigateToHome()
                     },
-                    onAddToCart = { cocktail ->
-                        // Add to cart and then navigate to cart
-                        scope.launch { sharedCartViewModel.addToCart(cocktail) }
-                        navigationManager.navigateToCart()
-                    }
+                    onAddToCart = addToCartAndConfirm
                 )
             }
             composable<OrderListRoute> {
@@ -301,9 +314,10 @@ fun MainScreen() {
                     favoritesViewModel = sharedFavoritesViewModel,
                     navigationManager = navigationManager,
                     onBackClick = { navigationManager.navigateBack() },
+                    // The detail screen shows its own snackbar confirmation,
+                    // so only the cart mutation happens here.
                     onAddToCart = { cocktailToAdd ->
                         scope.launch { sharedCartViewModel.addToCart(cocktailToAdd) }
-                        navigationManager.navigateToCart()
                     }
                 )
             }
