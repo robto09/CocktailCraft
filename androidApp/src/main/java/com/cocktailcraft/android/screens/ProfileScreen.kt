@@ -68,6 +68,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.AnimatedThemeToggleRow
+import com.cocktailcraft.android.ui.components.PrimaryButton
+import com.cocktailcraft.android.ui.components.SettingsItem
 import com.cocktailcraft.android.BuildConfig
 import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.SignInDialog
@@ -231,45 +233,6 @@ fun ProfileScreen(
 }
 
 @Composable
-fun SettingsItem(
-    icon: ImageVector,
-    title: String,
-    onClick: () -> Unit,
-    textColor: Color = AppColors.TextPrimary
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = Spacing.md),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = textColor,
-            modifier = Modifier.size(24.dp)
-        )
-
-        Spacer(modifier = Modifier.width(Spacing.lg))
-
-        Text(
-            text = title,
-            fontSize = 16.sp,
-            color = textColor,
-            modifier = Modifier.weight(1f)
-        )
-
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = AppColors.Gray,
-            modifier = Modifier.size(20.dp)
-        )
-    }
-}
-
-@Composable
 private fun ProfileHeaderCard(
     userName: String,
     userEmail: String,
@@ -352,17 +315,13 @@ private fun SignInPromptSection(
         modifier = Modifier.padding(bottom = Spacing.lg)
     )
 
-    Button(
+    PrimaryButton(
+        text = stringResource(R.string.sign_in),
         onClick = onSignInClick,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = AppColors.Primary
-        ),
         modifier = Modifier
             .fillMaxWidth(0.8f)
             .padding(vertical = Spacing.xs)
-    ) {
-        Text(stringResource(R.string.sign_in))
-    }
+    )
 
     Spacer(modifier = Modifier.height(Spacing.sm))
 

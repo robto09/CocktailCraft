@@ -36,6 +36,7 @@ import com.cocktailcraft.android.ui.components.ConfirmationDialog
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.OrderSummaryCard
+import com.cocktailcraft.android.ui.components.PrimaryButton
 import com.cocktailcraft.android.ui.components.SectionHeader
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.SharedCartViewModel
@@ -145,22 +146,11 @@ fun CartScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Checkout Button
-            Button(
+            PrimaryButton(
+                text = stringResource(R.string.cart_place_order),
                 onClick = { showPlaceOrderDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.Primary
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.cart_place_order),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-            }
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 

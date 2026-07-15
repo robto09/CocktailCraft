@@ -79,17 +79,12 @@ import kotlinx.coroutines.launch
 import com.cocktailcraft.android.navigation.Screen
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.SearchFilters
-import com.cocktailcraft.android.ui.components.AnimatedCocktailItem
 import com.cocktailcraft.android.ui.components.AnimatedCocktailList
 import com.cocktailcraft.android.ui.components.CategoryFilterRow
-import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.components.CocktailLoadingShimmer
 import com.cocktailcraft.android.ui.components.CocktailSearchBar
 import com.cocktailcraft.android.ui.components.EmptySearchResultsMessage
-import com.cocktailcraft.android.ui.components.ErrorBanner
-import com.cocktailcraft.android.ui.components.ErrorDialog
 import com.cocktailcraft.android.ui.components.AdvancedSearchBottomSheet
-import com.cocktailcraft.android.ui.components.FilterChip
 import com.cocktailcraft.android.ui.components.NetworkErrorStateDisplay
 import com.cocktailcraft.android.ui.components.SearchFilterChips
 import com.cocktailcraft.android.ui.preview.PreviewData

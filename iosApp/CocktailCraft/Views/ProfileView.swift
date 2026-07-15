@@ -301,7 +301,7 @@ struct ProfileView: View {
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
             VStack(alignment: .leading, spacing: 12) {
-                Text("Cocktail Bar App")
+                Text("CocktailCraft")
                     .font(.body)
                     .fontWeight(.medium)
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
@@ -310,7 +310,7 @@ struct ProfileView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
 
-                Text("© 2023 Cocktail Bar. All rights reserved.")
+                Text("© 2026 CocktailCraft. All rights reserved.")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.top, 8)
