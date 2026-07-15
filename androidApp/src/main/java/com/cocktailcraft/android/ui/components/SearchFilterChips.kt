@@ -4,10 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -23,13 +21,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material3.Icon
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -138,39 +137,41 @@ fun SearchFilterChips(
     }
 }
 
+/**
+ * Active-filter chip built on Material 3's InputChip: tapping anywhere on
+ * the chip removes the filter (the trailing X is the visual affordance),
+ * with the ripple and full-size touch target the old hand-rolled chip lacked.
+ */
 @Composable
 fun ActiveFilterChip(
     label: String,
     onClear: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(AppColors.Primary.copy(alpha = 0.1f))
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    InputChip(
+        selected = false,
+        onClick = onClear,
+        label = {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodySmall,
-                color = AppColors.Primary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-
-            Spacer(modifier = Modifier.width(4.dp))
-
+        },
+        shape = RoundedCornerShape(16.dp),
+        border = null,
+        colors = InputChipDefaults.inputChipColors(
+            containerColor = AppColors.Primary.copy(alpha = 0.1f),
+            labelColor = AppColors.Primary,
+            trailingIconColor = AppColors.Primary
+        ),
+        trailingIcon = {
             Icon(
                 imageVector = Icons.Default.Clear,
                 contentDescription = stringResource(R.string.filter_clear),
-                tint = AppColors.Primary,
-                modifier = Modifier
-                    .size(16.dp)
-                    .clickable { onClear() }
+                modifier = Modifier.size(16.dp)
             )
         }
-    }
+    )
 }
 

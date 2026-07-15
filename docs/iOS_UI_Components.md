@@ -82,7 +82,7 @@ CocktailCard(
 **Used in**: `HomeViewSKIE`.
 
 ### AdvancedSearchSheet
-**Purpose**: Advanced-search filter form (category, ingredient, alcoholic tri-state) driven by the shared HomeViewModel. Option lists come from the shared API-backed data; Apply forwards a `SearchFilters` to the shared `applyFilters`, Clear resets them.
+**Purpose**: Advanced-search filter sheet driven by the shared HomeViewModel, styled identically to Android's `AdvancedSearchBottomSheet`: Clear / title / Apply header row and three collapsible sections — Category (dropdown menu), Ingredient (native searchable list sheet with checkmark selection), Alcoholic (tri-state chips). Option lists come from the shared API-backed data; Apply forwards a `SearchFilters` to the shared `applyFilters`, Clear resets them.
 
 **Parameters**: `viewModel: HomeViewModelSKIE`.
 

@@ -58,13 +58,13 @@ Both platforms drive the same shared ViewModel; the filter options and active-fi
 
 ### Android — bottom sheet
 
-- `AdvancedSearchBottomSheet` (`androidApp/.../ui/components/AdvancedSearchBottomSheet.kt`) is a modal bottom sheet mirroring the iOS sheet, with three sections: **Category** (dropdown), **Ingredient** (single-select searchable dialog), **Alcoholic** (Any / Alcoholic / Non-Alcoholic). Apply forwards the whole `SearchFilters` to `viewModel.applyFilters(...)` and closes the sheet; Clear calls `viewModel.clearSearchFilters()` and closes the sheet.
+- `AdvancedSearchBottomSheet` (`androidApp/.../ui/components/AdvancedSearchBottomSheet.kt`) is a modal bottom sheet mirroring the iOS sheet, with three sections: **Category** (exposed dropdown), **Ingredient** (single-select full-screen searchable picker — Material's pattern for long lists, the counterpart of iOS's searchable list sheet), **Alcoholic** (Any / Alcoholic / Non-Alcoholic). Apply forwards the whole `SearchFilters` to `viewModel.applyFilters(...)` and closes the sheet; Clear calls `viewModel.clearSearchFilters()` and closes the sheet.
 - `SearchFilterChips` (`androidApp/.../ui/components/SearchFilterChips.kt`) renders the active filters from `state.searchFilters`; dismissing a chip re-applies the reduced set.
 - `HomeScreen` reads the option lists from `state.filterCategories/filterIngredients` and calls `loadFilterOptions()` when advanced search opens.
 
 ### iOS — filter sheet
 
-- `AdvancedSearchSheet` (in `iosApp/CocktailCraft/Views/HomeViewSKIE.swift`) is a SwiftUI `Form` sheet with the same three controls: Category picker, Ingredient picker, Alcoholic segmented control. It calls `loadFilterOptions()` on appear, Apply calls `applyFilters(...)`, Clear calls `clearSearchFilters()`.
+- `AdvancedSearchSheet` (`iosApp/CocktailCraft/Components/AdvancedSearchSheet.swift`) is a custom bottom sheet styled identically to the Android one: a surface-colored sheet with a Clear / title / Apply header row and three collapsible sections — Category (dropdown menu), Ingredient, Alcoholic (tri-state chips). The ingredient picker follows the iOS platform convention instead of mirroring Android's dialog: a nested sheet with a searchable `List` and a checkmark on the selected row. The sheet calls `loadFilterOptions()` on appear, Apply calls `applyFilters(...)`, Clear calls `clearSearchFilters()`.
 - The active-filter chip row in `HomeViewSKIE` is derived from `state.searchFilters` (no local filter state).
 - `HomeViewModelSKIE` (`iosApp/CocktailCraft/ViewModels/HomeViewModelSKIE.swift`) exposes `applyFilters`, `loadFilterOptions` (async, via SKIE) and `clearSearchFilters` (sync). The Kotlin `Boolean?` alcoholic value bridges to Swift as `KotlinBoolean?` (nil = any).
 
