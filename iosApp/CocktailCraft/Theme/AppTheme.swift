@@ -1,4 +1,5 @@
 import SwiftUI
+import shared
 
 /// Environment key for theme state
 struct ThemeEnvironmentKey: EnvironmentKey {
@@ -36,33 +37,37 @@ struct AppTheme {
     }
     
     // MARK: - Spacing
+    // Mapped from the cross-platform SpacingTokens
+    // (shared/designsystem/DesignTokens.kt) — identical to Android's Spacing.
     struct Spacing {
-        static let xs: CGFloat = 4
-        static let sm: CGFloat = 8
-        static let md: CGFloat = 12
-        static let lg: CGFloat = 16
-        static let xl: CGFloat = 20
-        static let xxl: CGFloat = 24
-        static let xxxl: CGFloat = 32
-        
+        static let xs = CGFloat(SpacingTokens.shared.xs)
+        static let sm = CGFloat(SpacingTokens.shared.sm)
+        static let md = CGFloat(SpacingTokens.shared.md)
+        static let lg = CGFloat(SpacingTokens.shared.lg)
+        static let xl = CGFloat(SpacingTokens.shared.xl)
+        static let xxl = CGFloat(SpacingTokens.shared.xxl)
+        static let xxxl = CGFloat(SpacingTokens.shared.xxxl)
+
         // Card specific spacing
         static let cardPadding: CGFloat = 12
         static let cardSpacing: CGFloat = 16
         static let cardImageHeight: CGFloat = 150
     }
-    
+
     // MARK: - Corner Radius
+    // Mapped from the cross-platform RadiusTokens
+    // (shared/designsystem/DesignTokens.kt) — identical to Android's shapes.
     struct CornerRadius {
-        static let sm: CGFloat = 8
-        static let md: CGFloat = 12
-        static let lg: CGFloat = 16
-        static let xl: CGFloat = 20
-        
+        static let sm = CGFloat(RadiusTokens.shared.sm)
+        static let md = CGFloat(RadiusTokens.shared.md)
+        static let lg = CGFloat(RadiusTokens.shared.lg)
+        static let xl = CGFloat(RadiusTokens.shared.xl)
+
         // Component specific
-        static let card: CGFloat = 12
-        static let button: CGFloat = 8
-        static let chip: CGFloat = 16
-        static let searchBar: CGFloat = 10
+        static let card = CGFloat(RadiusTokens.shared.card)
+        static let button = CGFloat(RadiusTokens.shared.button)
+        static let chip = CGFloat(RadiusTokens.shared.chip)
+        static let searchBar = CGFloat(RadiusTokens.shared.searchBar)
     }
     
     // MARK: - Shadows

@@ -1,6 +1,8 @@
 package com.cocktailcraft.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.cocktailcraft.designsystem.AccentColorTokens
+import com.cocktailcraft.designsystem.ColorTokens
 import com.cocktailcraft.domain.model.ThemeMode
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.usecase.ManageProfileUseCase
@@ -31,7 +33,7 @@ class SharedThemeViewModel internal constructor(
     val availableThemes: List<String>
         get() = listOf("system", "light", "dark")
     val availableAccentColors: List<String>
-        get() = listOf("blue", "green", "red", "orange", "purple", "pink")
+        get() = AccentColorTokens.names
     val availableFontSizes: List<String>
         get() = listOf("small", "medium", "large", "xlarge")
 
@@ -198,24 +200,21 @@ class SharedThemeViewModel internal constructor(
      * Get theme preview colors.
      */
     fun getThemePreviewColors(mode: String): Map<String, String> {
+        // Real brand values from the shared design tokens (the previous
+        // implementation returned iOS-system-blue placeholders that matched
+        // neither platform's actual palette).
         return when (mode.lowercase()) {
-            "light" -> mapOf(
-                "background" to "#FFFFFF",
-                "surface" to "#F5F5F5",
-                "primary" to "#007AFF",
-                "text" to "#000000"
-            )
             "dark" -> mapOf(
-                "background" to "#000000",
-                "surface" to "#1C1C1E",
-                "primary" to "#0A84FF",
-                "text" to "#FFFFFF"
+                "background" to ColorTokens.hexString(ColorTokens.backgroundDark),
+                "surface" to ColorTokens.hexString(ColorTokens.surfaceDark),
+                "primary" to ColorTokens.hexString(ColorTokens.primaryDark),
+                "text" to ColorTokens.hexString(ColorTokens.textPrimaryDark)
             )
             else -> mapOf(
-                "background" to "#FFFFFF",
-                "surface" to "#F5F5F5",
-                "primary" to "#007AFF",
-                "text" to "#000000"
+                "background" to ColorTokens.hexString(ColorTokens.backgroundLight),
+                "surface" to ColorTokens.hexString(ColorTokens.surfaceLight),
+                "primary" to ColorTokens.hexString(ColorTokens.primaryLight),
+                "text" to ColorTokens.hexString(ColorTokens.textPrimaryLight)
             )
         }
     }

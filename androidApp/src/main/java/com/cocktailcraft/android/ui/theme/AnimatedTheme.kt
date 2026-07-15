@@ -158,6 +158,8 @@ fun AnimatedCocktailBarTheme(
     
     MaterialTheme(
         colorScheme = colorScheme,
+        typography = CocktailTypography,
+        shapes = CocktailShapes,
         content = content
     )
 }
