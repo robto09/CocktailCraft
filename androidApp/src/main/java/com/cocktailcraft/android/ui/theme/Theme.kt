@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import com.cocktailcraft.designsystem.AccentColorTokens
 import com.cocktailcraft.designsystem.ColorTokens
 
 // CocktailCraft color palette, mapped 1:1 from the cross-platform design
@@ -47,12 +48,27 @@ object AppColors {
     // Dynamic colors based on theme. Snapshot-backed so any composable that
     // reads AppColors.* subscribes and recomposes when the theme flips —
     // a plain var here silently served stale colors after theme changes.
+    // All three are written only by AnimatedCocktailBarTheme from the shared
+    // theme state.
     var isDarkTheme by mutableStateOf(false)
+    var accentName by mutableStateOf(AccentColorTokens.DEFAULT)
+    var isHighContrast by mutableStateOf(false)
 
-    val Primary get() = if (isDarkTheme) PrimaryDark else PrimaryLight
+    // Primary follows the user-selected accent ("coral" = brand default)
+    val Primary get() = Color(
+        if (isDarkTheme) AccentColorTokens.dark(accentName)
+        else AccentColorTokens.light(accentName)
+    )
     val Secondary get() = if (isDarkTheme) SecondaryDark else SecondaryLight
     val Background get() = if (isDarkTheme) BackgroundDark else BackgroundLight
     val Surface get() = if (isDarkTheme) SurfaceDark else SurfaceLight
     val TextPrimary get() = if (isDarkTheme) TextPrimaryDark else TextPrimaryLight
-    val TextSecondary get() = if (isDarkTheme) TextSecondaryDark else TextSecondaryLight
+
+    // High contrast pushes secondary text further from the background
+    val TextSecondary get() = when {
+        isHighContrast && isDarkTheme -> LightGray
+        isHighContrast -> DarkGray
+        isDarkTheme -> TextSecondaryDark
+        else -> TextSecondaryLight
+    }
 }

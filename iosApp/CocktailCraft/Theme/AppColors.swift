@@ -37,12 +37,23 @@ struct AppColors {
     static let error = Color(token: ColorTokens.shared.error)       // Red
     static let warning = Color(token: ColorTokens.shared.warning)   // Orange for stars
     static let gray = Color(token: ColorTokens.shared.gray)         // Secondary text
+    static let darkGray = Color(token: ColorTokens.shared.darkGray) // Stronger secondary text
     static let lightGray = Color(token: ColorTokens.shared.lightGray) // Backgrounds
     static let chipBackground = Color(token: ColorTokens.shared.chipBackground) // Brown for category chips
 
+    // MARK: - User appearance settings (accent + high contrast)
+    // Written only by ContentView from the shared theme state, mirroring
+    // Android's AppColors globals. ContentView re-identifies the view tree
+    // when either changes, so no view can render a stale value.
+    static var accentName: String = AccentColorTokens.shared.DEFAULT
+    static var isHighContrast: Bool = false
+
     // MARK: - Dynamic Colors (controlled by app theme preference)
+    // Primary follows the user-selected accent ("coral" = brand default)
     static func primary(isDarkMode: Bool) -> Color {
-        isDarkMode ? primaryDark : primaryLight
+        Color(token: isDarkMode
+            ? AccentColorTokens.shared.dark(name: accentName)
+            : AccentColorTokens.shared.light(name: accentName))
     }
 
     static func secondary(isDarkMode: Bool) -> Color {
@@ -61,8 +72,15 @@ struct AppColors {
         isDarkMode ? textPrimaryDark : textPrimaryLight
     }
 
+    // High contrast pushes secondary text further from the background,
+    // matching Android's AppColors.TextSecondary behavior.
     static func textSecondary(isDarkMode: Bool) -> Color {
-        isDarkMode ? textSecondaryDark : textSecondaryLight
+        switch (isHighContrast, isDarkMode) {
+        case (true, true): return lightGray
+        case (true, false): return darkGray
+        case (false, true): return textSecondaryDark
+        case (false, false): return textSecondaryLight
+        }
     }
 
     // The old trait-collection-driven static vars (primary, background, ...)

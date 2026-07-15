@@ -7,6 +7,11 @@ struct ContentView: View {
     private let themeViewModel = ThemeViewModelSKIE.shared
 
     var body: some View {
+        let themeState = themeViewModel.state
+        // Publish accent + high contrast into AppColors before children
+        // render (mirrors Android's AppColors globals; see applyAppearance).
+        let _ = Self.applyAppearance(themeState)
+
         ZStack {
             TabView(selection: $router.selectedTab) {
                 // Home Tab (explicit path so widget deep links can push
@@ -62,7 +67,11 @@ struct ContentView: View {
                 .brandedTabBar()
             }
             // Selected tab in the brand color, matching the Android bottom nav
-            .tint(AppColors.primary(isDarkMode: themeViewModel.state.isDarkMode))
+            .tint(AppColors.primary(isDarkMode: themeState.isDarkMode))
+            // Re-identify the tree when accent/contrast change so every view
+            // re-reads the AppColors statics. These change only from the
+            // Settings sheet, so the (rare) navigation-state reset is fine.
+            .id("appearance-\(themeState.accentColor)-\(themeState.isHighContrast)")
 
             // Offline Banner
             VStack {
@@ -92,8 +101,35 @@ struct ContentView: View {
         #endif
         .environment(cartViewModel)
         .environment(router)
-        .environment(\.isDarkMode, themeViewModel.state.isDarkMode)
-        .preferredColorScheme(themeViewModel.state.isSystemTheme ? nil : (themeViewModel.state.isDarkMode ? .dark : .light))
+        .environment(\.isDarkMode, themeState.isDarkMode)
+        .preferredColorScheme(themeState.isSystemTheme ? nil : (themeState.isDarkMode ? .dark : .light))
+        // In-app Font Size setting (Dynamic Type override; .large = default)
+        .dynamicTypeSize(Self.dynamicTypeSize(for: themeState.fontSize))
+        // Reduce Motion: strip implicit animations app-wide
+        .transaction { transaction in
+            if themeViewModel.state.isReducedMotion {
+                transaction.animation = nil
+            }
+        }
+    }
+
+    /// Mirrors the shared theme state into AppColors' appearance statics.
+    /// Runs at the top of body, before any child view resolves a color.
+    @discardableResult
+    private static func applyAppearance(_ state: ThemeUiState) -> Bool {
+        AppColors.accentName = state.accentColor
+        AppColors.isHighContrast = state.isHighContrast
+        return true
+    }
+
+    /// Maps the shared font-size setting onto a Dynamic Type size.
+    private static func dynamicTypeSize(for fontSize: String) -> DynamicTypeSize {
+        switch fontSize.lowercased() {
+        case "small": return .small
+        case "large": return .xLarge
+        case "xlarge": return .xxLarge
+        default: return .large
+        }
     }
 }
 

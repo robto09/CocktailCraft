@@ -2,6 +2,7 @@ package com.cocktailcraft.android.ui.theme
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -16,13 +17,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.Density
 import android.app.Activity
 import android.os.Build
 import androidx.core.view.WindowCompat
+import com.cocktailcraft.designsystem.AccentColorTokens
 
 // Animation specifications
 private val ColorAnimationSpec: AnimationSpec<Color> = tween(durationMillis = 600)
+
+/**
+ * True when the user enabled the Reduce Motion accessibility setting.
+ * Animation call sites (shimmer, list entrances, decorative transitions)
+ * read this to swap animated behavior for a static equivalent.
+ */
+val LocalReducedMotion = staticCompositionLocalOf { false }
 
 // Animated color scheme for light theme
 private val AnimatedLightColorScheme = lightColorScheme(
@@ -77,45 +88,58 @@ private val AnimatedDarkColorScheme = darkColorScheme(
 fun AnimatedCocktailBarTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = false,
+    accentColor: String = AccentColorTokens.DEFAULT,
+    highContrast: Boolean = false,
+    fontScale: Float = 1f,
+    reducedMotion: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    // Update the AppColors isDarkTheme value to match current theme
+    // Publish the shared theme state into AppColors so its ~300 direct
+    // readers pick up dark mode, the selected accent, and high contrast.
     AppColors.isDarkTheme = darkTheme
+    AppColors.accentName = accentColor
+    AppColors.isHighContrast = highContrast
 
-    // Animate color transitions
+    // Reduce Motion swaps the 600ms theme cross-fade for an instant switch
+    val colorSpec: AnimationSpec<Color> = if (reducedMotion) snap() else ColorAnimationSpec
+
+    // Animate color transitions (primary follows the selected accent)
     val primary by animateColorAsState(
-        targetValue = if (darkTheme) AppColors.PrimaryDark else AppColors.PrimaryLight,
-        animationSpec = ColorAnimationSpec,
+        targetValue = Color(
+            if (darkTheme) AccentColorTokens.dark(accentColor)
+            else AccentColorTokens.light(accentColor)
+        ),
+        animationSpec = colorSpec,
         label = "primary"
     )
 
     val secondary by animateColorAsState(
         targetValue = if (darkTheme) AppColors.SecondaryDark else AppColors.SecondaryLight,
-        animationSpec = ColorAnimationSpec,
+        animationSpec = colorSpec,
         label = "secondary"
     )
 
     val background by animateColorAsState(
         targetValue = if (darkTheme) AppColors.BackgroundDark else AppColors.BackgroundLight,
-        animationSpec = ColorAnimationSpec,
+        animationSpec = colorSpec,
         label = "background"
     )
 
     val surface by animateColorAsState(
         targetValue = if (darkTheme) AppColors.SurfaceDark else AppColors.SurfaceLight,
-        animationSpec = ColorAnimationSpec,
+        animationSpec = colorSpec,
         label = "surface"
     )
 
     val onBackground by animateColorAsState(
         targetValue = if (darkTheme) AppColors.TextPrimaryDark else AppColors.TextPrimaryLight,
-        animationSpec = ColorAnimationSpec,
+        animationSpec = colorSpec,
         label = "onBackground"
     )
 
     val onSurface by animateColorAsState(
         targetValue = if (darkTheme) AppColors.TextPrimaryDark else AppColors.TextPrimaryLight,
-        animationSpec = ColorAnimationSpec,
+        animationSpec = colorSpec,
         label = "onSurface"
     )
 
@@ -157,10 +181,18 @@ fun AnimatedCocktailBarTheme(
         }
     }
     
+    // App-level font scaling (user's in-app Font Size setting) multiplies the
+    // system font scale, so every sp-based text size follows it.
+    val density = LocalDensity.current
     MaterialTheme(
         colorScheme = colorScheme,
         typography = CocktailTypography,
-        shapes = CocktailShapes,
-        content = content
-    )
+        shapes = CocktailShapes
+    ) {
+        CompositionLocalProvider(
+            LocalDensity provides Density(density.density, density.fontScale * fontScale),
+            LocalReducedMotion provides reducedMotion,
+            content = content
+        )
+    }
 }

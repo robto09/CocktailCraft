@@ -39,8 +39,21 @@ class MainActivity : ComponentActivity() {
             // - Otherwise, use the user's preference from the ViewModel
             val effectiveDarkMode = if (isSystemTheme) isSystemInDarkTheme else isDarkMode
 
-            // Use the effective dark mode value for theming
-            AnimatedCocktailBarTheme(darkTheme = effectiveDarkMode) {
+            // In-app Font Size setting multiplies the system font scale
+            val fontScale = when (themeState.fontSize.lowercase()) {
+                "small" -> 0.85f
+                "large" -> 1.15f
+                "xlarge" -> 1.3f
+                else -> 1f
+            }
+
+            AnimatedCocktailBarTheme(
+                darkTheme = effectiveDarkMode,
+                accentColor = themeState.accentColor,
+                highContrast = themeState.isHighContrast,
+                fontScale = fontScale,
+                reducedMotion = themeState.isReducedMotion
+            ) {
                 Surface(
                     modifier = Modifier
                         .fillMaxSize()
