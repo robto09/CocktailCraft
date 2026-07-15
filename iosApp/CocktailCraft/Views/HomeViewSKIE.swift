@@ -80,10 +80,16 @@ struct HomeViewSKIE: View {
                 onAdvancedSearch: { showingAdvancedSearch.toggle() }
             )
 
-            // Active Filters Row (driven by the shared searchFilters state)
+            // Active Filters card (driven by the shared searchFilters state);
+            // tapping a chip re-applies the reduced filter set.
             if viewModel.state.searchFilters.hasActiveFilters() {
-                ActiveFiltersRow(
-                    labels: activeFilterLabels,
+                ActiveFiltersCard(
+                    filters: viewModel.state.searchFilters,
+                    onApply: { reduced in
+                        Task {
+                            await viewModel.applyFilters(reduced)
+                        }
+                    },
                     onClearAll: {
                         searchText = ""
                         selectedCategory = nil
@@ -118,21 +124,50 @@ struct HomeViewSKIE: View {
     }
 
     private var emptyState: some View {
-        ScrollView {
-            VStack {
-                Spacer()
-                EmptyStateView(
-                    icon: "wineglass",
-                    title: String(localized: "No Cocktails Found"),
-                    message: String(localized: "Try adjusting your search or filters"),
-                    actionTitle: String(localized: "Clear Filters"),
-                    action: {
-                        searchText = ""
-                        selectedCategory = nil
-                        viewModel.clearSearchFilters()
-                    }
-                )
-                Spacer()
+        // GeometryReader gives the scroll content a real minimum height —
+        // without it the Spacers collapse inside the ScrollView and the
+        // content pins to the top instead of centering like Android.
+        GeometryReader { geometry in
+            ScrollView {
+                VStack {
+                    Spacer()
+                    SearchEmptyStateView(
+                        searchQuery: searchText,
+                        selectedCategory: selectedCategory,
+                        hasActiveFilters: viewModel.state.searchFilters.hasActiveFilters(),
+                        onClearSearch: {
+                            searchText = ""
+                            viewModel.clearSearch()
+                        },
+                        onClearCategory: {
+                            selectedCategory = nil
+                            Task {
+                                await viewModel.loadCocktails()
+                            }
+                        },
+                        onClearFilters: {
+                            // Drop only the advanced filters; any active query
+                            // re-runs on its own (empty query + no filters =
+                            // default listing).
+                            let filters = viewModel.state.searchFilters
+                            Task {
+                                await viewModel.applyFilters(SearchFilters(
+                                    query: filters.query,
+                                    category: nil,
+                                    ingredient: nil,
+                                    alcoholic: nil
+                                ))
+                            }
+                        },
+                        onRefresh: {
+                            Task {
+                                await viewModel.loadCocktails()
+                            }
+                        }
+                    )
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, minHeight: geometry.size.height)
             }
         }
         .background(backgroundColor)
@@ -229,23 +264,6 @@ struct HomeViewSKIE: View {
     }
 
     // MARK: - Helper Functions
-
-    /// Human-readable labels for the active advanced-search filters, derived
-    /// from the shared `searchFilters` state (single source of truth).
-    private var activeFilterLabels: [String] {
-        let filters = viewModel.state.searchFilters
-        var labels: [String] = []
-        if let category = filters.category {
-            labels.append("Category: \(category)")
-        }
-        if let ingredient = filters.ingredient {
-            labels.append("Ingredient: \(ingredient)")
-        }
-        if let alcoholic = filters.alcoholic?.boolValue {
-            labels.append(alcoholic ? "Alcoholic" : "Non-Alcoholic")
-        }
-        return labels
-    }
 
     // Canonical curated categories come from shared — single source of truth
     private var availableCategories: [String] {

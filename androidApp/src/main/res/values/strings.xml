@@ -273,6 +273,7 @@
     <string name="search_suggestion_check_spelling">Try a different search term or check your spelling</string>
     <string name="search_suggestion_none_found">We couldn\'t find any cocktails</string>
     <string name="search_clear_search_button">Clear Search</string>
+    <string name="search_clear_filters_button">Clear Filters</string>
     <string name="search_browse_all_cocktails">Browse All Cocktails</string>
     <string name="search_no_results_icon">No results</string>
 

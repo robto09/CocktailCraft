@@ -57,7 +57,9 @@ fun SearchFilterChips(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                // 4dp + the neighbors' own 8dp = a 12dp gap above and below,
+                // matching the iOS header's 12pt rhythm
+                .padding(horizontal = 16.dp, vertical = 4.dp),
             color = AppColors.Surface,
             shape = RoundedCornerShape(8.dp)
         ) {

@@ -286,6 +286,15 @@ fun HomeScreen(
             onClearCategory = {
                 onCategorySelected(null)
             },
+            onClearFilters = {
+                // Drop only the advanced filters; any active query re-runs
+                // on its own (empty query + no filters = default listing).
+                scope.launch {
+                    viewModel.applyFilters(
+                        searchFilters.copy(category = null, ingredient = null, alcoholic = null)
+                    )
+                }
+            },
             onCocktailClick = onCocktailClick,
             onAddToCart = onAddToCart,
             onToggleFavorite = { cocktailToToggle ->
@@ -373,10 +382,14 @@ private fun HomeCategoryChipsRow(
     onCategorySelected: (String?) -> Unit
 ) {
     if (!isSearchActive) {
+        // No extra vertical padding: the Material chips' 48dp touch target
+        // already extends ~8dp beyond their 32dp visual, which lands the
+        // visible gaps on the same 12dp rhythm as the iOS header.
         CategoryFilterRow(
             categories = categories,
             selectedCategory = selectedCategory,
-            onCategorySelected = onCategorySelected
+            onCategorySelected = onCategorySelected,
+            verticalPadding = 0
         )
     }
 }
@@ -401,6 +414,7 @@ private fun HomeContentSection(
     onGoOnline: () -> Unit,
     onClearSearch: () -> Unit,
     onClearCategory: () -> Unit,
+    onClearFilters: () -> Unit = onClearSearch,
     onCocktailClick: (Cocktail) -> Unit,
     onAddToCart: (Cocktail) -> Unit,
     onToggleFavorite: (Cocktail) -> Unit,
@@ -446,7 +460,8 @@ private fun HomeContentSection(
                 selectedCategory = selectedCategory,
                 hasActiveFilters = hasActiveFilters,
                 onClearSearch = onClearSearch,
-                onClearCategory = onClearCategory
+                onClearCategory = onClearCategory,
+                onClearFilters = onClearFilters
             )
         } else {
             // Use the reusable animated cocktail list component
