@@ -4,10 +4,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import com.cocktailcraft.designsystem.AccentColorTokens
+import com.cocktailcraft.designsystem.ColorTokens
 
-// Cocktail Bar color palette — the single source of truth. res/values/colors.xml
-// (pre-Compose window + widget assets) mirrors these values by hand; keep it in
-// sync when changing anything here.
+// CocktailCraft color palette, mapped 1:1 from the cross-platform design
+// tokens in shared/designsystem/DesignTokens.kt — the single source of truth
+// for BOTH Android and iOS. res/values/colors.xml (pre-Compose window +
+// widget assets) still mirrors these values by hand; keep it in sync when
+// changing anything in the shared tokens.
 //
 // AN-5 status: the dead CocktailBarTheme (and its deprecated
 // window.statusBarColor handling) was deleted — AnimatedCocktailBarTheme in
@@ -17,39 +21,54 @@ import androidx.compose.ui.graphics.Color
 // away and dynamic color can be considered.
 object AppColors {
     // Light Theme Colors
-    val PrimaryLight = Color(0xFFEB6A43) // Coral/Orange for main elements
-    val SecondaryLight = Color(0xFFFFC84D) // Yellow/Gold for wave and accents
-    val BackgroundLight = Color(0xFFFAFAFA) // Light background
-    val SurfaceLight = Color.White // White surface
-    val TextPrimaryLight = Color(0xFF000000) // Black for primary text
-    val TextSecondaryLight = Color(0xFF8E8E93) // Gray for secondary text
+    val PrimaryLight = Color(ColorTokens.primaryLight) // Coral/Orange for main elements
+    val SecondaryLight = Color(ColorTokens.secondaryLight) // Yellow/Gold for wave and accents
+    val BackgroundLight = Color(ColorTokens.backgroundLight) // Light background
+    val SurfaceLight = Color(ColorTokens.surfaceLight) // White surface
+    val TextPrimaryLight = Color(ColorTokens.textPrimaryLight) // Black for primary text
+    val TextSecondaryLight = Color(ColorTokens.textSecondaryLight) // Gray for secondary text
 
     // Dark Theme Colors
-    val PrimaryDark = Color(0xFFFF8A65) // Lighter coral for dark theme
-    val SecondaryDark = Color(0xFFFFD180) // Lighter gold for dark theme
-    val BackgroundDark = Color(0xFF121212) // Dark background
-    val SurfaceDark = Color(0xFF1E1E1E) // Dark surface
-    val TextPrimaryDark = Color.White // White for primary text in dark mode
-    val TextSecondaryDark = Color(0xFFB0B0B0) // Light gray for secondary text in dark mode
+    val PrimaryDark = Color(ColorTokens.primaryDark) // Lighter coral for dark theme
+    val SecondaryDark = Color(ColorTokens.secondaryDark) // Lighter gold for dark theme
+    val BackgroundDark = Color(ColorTokens.backgroundDark) // Dark background
+    val SurfaceDark = Color(ColorTokens.surfaceDark) // Dark surface
+    val TextPrimaryDark = Color(ColorTokens.textPrimaryDark) // White for primary text in dark mode
+    val TextSecondaryDark = Color(ColorTokens.textSecondaryDark) // Light gray secondary text in dark mode
 
     // Common Colors (same in both themes)
-    val Success = Color(0xFF34C759) // Green for success states
-    val Error = Color(0xFFFF3B30) // Red for errors
-    val Warning = Color(0xFFFF9500) // Orange for warnings and stars
-    val Gray = Color(0xFF8E8E93) // Gray for secondary text
-    val DarkGray = Color(0xFF636366) // Dark gray for stronger text
-    val LightGray = Color(0xFFE5E5EA) // Light gray for backgrounds
-    val ChipBackground = Color(0xFF9C5C38) // Brown for category chips like "Vodka"
+    val Success = Color(ColorTokens.success) // Green for success states
+    val Error = Color(ColorTokens.error) // Red for errors
+    val Warning = Color(ColorTokens.warning) // Orange for warnings and stars
+    val Gray = Color(ColorTokens.gray) // Gray for secondary text
+    val DarkGray = Color(ColorTokens.darkGray) // Dark gray for stronger text
+    val LightGray = Color(ColorTokens.lightGray) // Light gray for backgrounds
+    val ChipBackground = Color(ColorTokens.chipBackground) // Brown for category chips like "Vodka"
 
     // Dynamic colors based on theme. Snapshot-backed so any composable that
     // reads AppColors.* subscribes and recomposes when the theme flips —
     // a plain var here silently served stale colors after theme changes.
+    // All three are written only by AnimatedCocktailBarTheme from the shared
+    // theme state.
     var isDarkTheme by mutableStateOf(false)
+    var accentName by mutableStateOf(AccentColorTokens.DEFAULT)
+    var isHighContrast by mutableStateOf(false)
 
-    val Primary get() = if (isDarkTheme) PrimaryDark else PrimaryLight
+    // Primary follows the user-selected accent ("coral" = brand default)
+    val Primary get() = Color(
+        if (isDarkTheme) AccentColorTokens.dark(accentName)
+        else AccentColorTokens.light(accentName)
+    )
     val Secondary get() = if (isDarkTheme) SecondaryDark else SecondaryLight
     val Background get() = if (isDarkTheme) BackgroundDark else BackgroundLight
     val Surface get() = if (isDarkTheme) SurfaceDark else SurfaceLight
     val TextPrimary get() = if (isDarkTheme) TextPrimaryDark else TextPrimaryLight
-    val TextSecondary get() = if (isDarkTheme) TextSecondaryDark else TextSecondaryLight
+
+    // High contrast pushes secondary text further from the background
+    val TextSecondary get() = when {
+        isHighContrast && isDarkTheme -> LightGray
+        isHighContrast -> DarkGray
+        isDarkTheme -> TextSecondaryDark
+        else -> TextSecondaryLight
+    }
 }

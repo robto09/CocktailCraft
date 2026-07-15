@@ -7,34 +7,36 @@ import androidx.compose.ui.graphics.Color
 import androidx.glance.GlanceTheme
 import androidx.glance.color.ColorProvider
 import androidx.glance.material3.ColorProviders
+import com.cocktailcraft.designsystem.ColorTokens
 
 /**
- * Widget color scheme matching the app's design system.
- * Supports both light and dark themes for home screen widgets.
+ * Widget color scheme, mapped from the cross-platform design tokens
+ * (shared/designsystem/DesignTokens.kt) so home screen widgets can never
+ * drift from the app palette. Supports both light and dark themes.
  */
 object WidgetColors {
     // Light Theme Colors
-    val PrimaryLight = Color(0xFFEB6A43) // Coral/Orange for main elements
-    val SecondaryLight = Color(0xFFFFC84D) // Yellow/Gold for wave and accents
-    val BackgroundLight = Color(0xFFFAFAFA) // Light background
-    val SurfaceLight = Color.White // White surface
-    val TextPrimaryLight = Color(0xFF000000) // Black for primary text
-    val TextSecondaryLight = Color(0xFF8E8E93) // Gray for secondary text
+    val PrimaryLight = Color(ColorTokens.primaryLight) // Coral/Orange for main elements
+    val SecondaryLight = Color(ColorTokens.secondaryLight) // Yellow/Gold for wave and accents
+    val BackgroundLight = Color(ColorTokens.backgroundLight) // Light background
+    val SurfaceLight = Color(ColorTokens.surfaceLight) // White surface
+    val TextPrimaryLight = Color(ColorTokens.textPrimaryLight) // Black for primary text
+    val TextSecondaryLight = Color(ColorTokens.textSecondaryLight) // Gray for secondary text
     val OnPrimaryLight = Color.White
 
     // Dark Theme Colors
-    val PrimaryDark = Color(0xFFFF8A65) // Lighter coral for dark theme
-    val SecondaryDark = Color(0xFFFFD180) // Lighter gold for dark theme
-    val BackgroundDark = Color(0xFF121212) // Dark background
-    val SurfaceDark = Color(0xFF1E1E1E) // Dark surface
-    val TextPrimaryDark = Color.White // White for primary text in dark mode
-    val TextSecondaryDark = Color(0xFFB0B0B0) // Light gray for secondary text
+    val PrimaryDark = Color(ColorTokens.primaryDark) // Lighter coral for dark theme
+    val SecondaryDark = Color(ColorTokens.secondaryDark) // Lighter gold for dark theme
+    val BackgroundDark = Color(ColorTokens.backgroundDark) // Dark background
+    val SurfaceDark = Color(ColorTokens.surfaceDark) // Dark surface
+    val TextPrimaryDark = Color(ColorTokens.textPrimaryDark) // White for primary text in dark mode
+    val TextSecondaryDark = Color(ColorTokens.textSecondaryDark) // Light gray for secondary text
     val OnPrimaryDark = Color.Black
 
     // Common Colors
-    val Error = Color(0xFFFF3B30)
-    val Success = Color(0xFF34C759)
-    val Warning = Color(0xFFFF9500)
+    val Error = Color(ColorTokens.error)
+    val Success = Color(ColorTokens.success)
+    val Warning = Color(ColorTokens.warning)
 }
 
 /**

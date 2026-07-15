@@ -1,34 +1,39 @@
 package com.cocktailcraft.android.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material3.*
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.cocktailcraft.domain.model.Order
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
-import com.cocktailcraft.android.navigation.Screen
 import com.cocktailcraft.android.navigation.NavigationManager
+import com.cocktailcraft.android.ui.components.EmptyStateComponent
+import com.cocktailcraft.android.ui.components.LoadingStateComponent
+import com.cocktailcraft.android.ui.components.OrderCard
+import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
-import androidx.compose.material3.HorizontalDivider
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderListScreen(
     orderViewModel: SharedOrderViewModel,
@@ -37,6 +42,7 @@ fun OrderListScreen(
     val state by orderViewModel.uiState.collectAsStateWithLifecycle()
     val isLoading = state.isLoading
     val error by orderViewModel.error.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
 
     // Load orders when the screen is first displayed
     LaunchedEffect(Unit) {
@@ -48,217 +54,52 @@ fun OrderListScreen(
             .fillMaxSize()
             .background(AppColors.Background)
     ) {
-        if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = AppColors.Primary)
-            }
-        } else if (error != null) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = error?.message ?: stringResource(R.string.order_unknown_error),
-                    color = AppColors.Error,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-        } else if (state.orders.isEmpty()) {
-            // Empty state
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.List,
-                        contentDescription = null,
-                        tint = AppColors.Gray,
-                        modifier = Modifier.size(64.dp)
-                    )
+        LoadingStateComponent(isLoading = isLoading)
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = stringResource(R.string.order_list_empty_title),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AppColors.TextPrimary
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = stringResource(R.string.order_list_empty_message),
-                        fontSize = 14.sp,
-                        color = AppColors.TextSecondary,
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Button(
-                        onClick = { navigationManager.navigateToHome() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AppColors.Primary
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(stringResource(R.string.browse_cocktails))
-                    }
-                }
-            }
-        } else {
-            // Order list
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    Text(
-                        text = stringResource(R.string.order_list_title),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AppColors.TextPrimary,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
-
-                itemsIndexed(state.orders) { _, order ->
-                    OrderItem(order = order)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun OrderItem(order: Order) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            // Order header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.order_number, order.id.takeLast(5)),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary
-                )
-
-                Text(
-                    text = order.date,
-                    fontSize = 14.sp,
-                    color = AppColors.TextSecondary
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Order items
-            Column {
-                order.items.forEach { item ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = stringResource(R.string.order_item_quantity_name, item.quantity, item.name),
-                            fontSize = 14.sp,
-                            color = AppColors.TextPrimary
-                        )
-
-                        Text(
-                            text = stringResource(R.string.order_price_format, item.price * item.quantity),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = AppColors.TextPrimary
-                        )
-                    }
-                }
-            }
-
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 12.dp),
-                color = AppColors.LightGray
+        if (!isLoading && error != null) {
+            EmptyStateComponent(
+                title = stringResource(R.string.error),
+                message = error?.message ?: stringResource(R.string.order_unknown_error),
+                actionButtonText = stringResource(R.string.cart_try_again),
+                onActionButtonClick = { scope.launch { orderViewModel.loadOrders() } }
             )
-
-            // Total row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        } else if (!isLoading && state.orders.isEmpty()) {
+            EmptyStateComponent(
+                title = stringResource(R.string.order_list_empty_title),
+                message = stringResource(R.string.order_list_empty_message),
+                actionButtonText = stringResource(R.string.browse_cocktails),
+                onActionButtonClick = { navigationManager.navigateToHome() },
+                icon = Icons.AutoMirrored.Filled.List
+            )
+        } else if (!isLoading) {
+            // Pull-to-refresh, parity with iOS Orders
+            val pullToRefreshState = rememberPullToRefreshState()
+            PullToRefreshBox(
+                isRefreshing = isLoading,
+                onRefresh = { scope.launch { orderViewModel.loadOrders() } },
+                modifier = Modifier.fillMaxSize(),
+                state = pullToRefreshState,
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        state = pullToRefreshState,
+                        isRefreshing = isLoading,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        containerColor = Color.White,
+                        color = AppColors.Primary
+                    )
+                }
             ) {
-                Text(
-                    text = stringResource(R.string.total),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary
-                )
-
-                Text(
-                    text = stringResource(R.string.order_price_format, order.total),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AppColors.Primary
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Order status
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
+                LazyColumn(
                     modifier = Modifier
-                        .size(10.dp)
-                        .background(
-                            when (order.status) {
-                                "Completed" -> Color(0xFF4CAF50)
-                                "In Progress" -> Color(0xFFFFA000)
-                                else -> AppColors.Gray
-                            },
-                            CircleShape
-                        )
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Text(
-                    text = order.status,
-                    fontSize = 14.sp,
-                    color = when (order.status) {
-                        "Completed" -> Color(0xFF4CAF50)
-                        "In Progress" -> Color(0xFFFFA000)
-                        else -> AppColors.Gray
+                        .fillMaxSize()
+                        .padding(horizontal = Spacing.lg),
+                    contentPadding = PaddingValues(vertical = Spacing.lg),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.lg)
+                ) {
+                    items(state.orders, key = { it.id }) { order ->
+                        OrderCard(order = order)
                     }
-                )
+                }
             }
         }
     }

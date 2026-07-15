@@ -79,17 +79,12 @@ import kotlinx.coroutines.launch
 import com.cocktailcraft.android.navigation.Screen
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.SearchFilters
-import com.cocktailcraft.android.ui.components.AnimatedCocktailItem
 import com.cocktailcraft.android.ui.components.AnimatedCocktailList
 import com.cocktailcraft.android.ui.components.CategoryFilterRow
-import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.components.CocktailLoadingShimmer
 import com.cocktailcraft.android.ui.components.CocktailSearchBar
 import com.cocktailcraft.android.ui.components.EmptySearchResultsMessage
-import com.cocktailcraft.android.ui.components.ErrorBanner
-import com.cocktailcraft.android.ui.components.ErrorDialog
 import com.cocktailcraft.android.ui.components.AdvancedSearchBottomSheet
-import com.cocktailcraft.android.ui.components.FilterChip
 import com.cocktailcraft.android.ui.components.NetworkErrorStateDisplay
 import com.cocktailcraft.android.ui.components.SearchFilterChips
 import com.cocktailcraft.android.ui.preview.PreviewData
@@ -291,6 +286,15 @@ fun HomeScreen(
             onClearCategory = {
                 onCategorySelected(null)
             },
+            onClearFilters = {
+                // Drop only the advanced filters; any active query re-runs
+                // on its own (empty query + no filters = default listing).
+                scope.launch {
+                    viewModel.applyFilters(
+                        searchFilters.copy(category = null, ingredient = null, alcoholic = null)
+                    )
+                }
+            },
             onCocktailClick = onCocktailClick,
             onAddToCart = onAddToCart,
             onToggleFavorite = { cocktailToToggle ->
@@ -378,10 +382,14 @@ private fun HomeCategoryChipsRow(
     onCategorySelected: (String?) -> Unit
 ) {
     if (!isSearchActive) {
+        // No extra vertical padding: the Material chips' 48dp touch target
+        // already extends ~8dp beyond their 32dp visual, which lands the
+        // visible gaps on the same 12dp rhythm as the iOS header.
         CategoryFilterRow(
             categories = categories,
             selectedCategory = selectedCategory,
-            onCategorySelected = onCategorySelected
+            onCategorySelected = onCategorySelected,
+            verticalPadding = 0
         )
     }
 }
@@ -406,6 +414,7 @@ private fun HomeContentSection(
     onGoOnline: () -> Unit,
     onClearSearch: () -> Unit,
     onClearCategory: () -> Unit,
+    onClearFilters: () -> Unit = onClearSearch,
     onCocktailClick: (Cocktail) -> Unit,
     onAddToCart: (Cocktail) -> Unit,
     onToggleFavorite: (Cocktail) -> Unit,
@@ -451,7 +460,8 @@ private fun HomeContentSection(
                 selectedCategory = selectedCategory,
                 hasActiveFilters = hasActiveFilters,
                 onClearSearch = onClearSearch,
-                onClearCategory = onClearCategory
+                onClearCategory = onClearCategory,
+                onClearFilters = onClearFilters
             )
         } else {
             // Use the reusable animated cocktail list component

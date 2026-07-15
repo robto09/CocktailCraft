@@ -24,7 +24,7 @@ struct OfflineBanner: View {
                 }
                 .padding(.horizontal)
                 .padding(.vertical, 12)
-                .background(Color.orange)
+                .background(AppColors.warning)
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
         }

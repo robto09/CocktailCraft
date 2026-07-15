@@ -58,6 +58,7 @@ fun EmptySearchResultsMessage(
     hasActiveFilters: Boolean = false,
     onClearSearch: () -> Unit,
     onClearCategory: (() -> Unit)? = null,
+    onClearFilters: () -> Unit = onClearSearch,
     modifier: Modifier = Modifier
 ) {
     // Animation states
@@ -150,6 +151,39 @@ fun EmptySearchResultsMessage(
 
                 // Action buttons
                 when {
+                    hasActiveFilters && searchQuery.isNotBlank() -> {
+                        // Both advanced filters and a search query are active
+                        Button(
+                            onClick = onClearSearch,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = AppColors.Primary
+                            )
+                        ) {
+                            Text(stringResource(R.string.search_clear_search_button))
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        OutlinedButton(
+                            onClick = onClearFilters,
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = AppColors.Primary
+                            )
+                        ) {
+                            Text(stringResource(R.string.search_clear_filters_button))
+                        }
+                    }
+                    hasActiveFilters -> {
+                        // Only advanced filters are active
+                        Button(
+                            onClick = onClearFilters,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = AppColors.Primary
+                            )
+                        ) {
+                            Text(stringResource(R.string.search_clear_filters_button))
+                        }
+                    }
                     selectedCategory != null && searchQuery.isNotBlank() -> {
                         // Both category and search are active
                         Button(

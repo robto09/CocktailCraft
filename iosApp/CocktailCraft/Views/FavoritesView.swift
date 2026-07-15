@@ -4,9 +4,12 @@ import shared
 
 struct FavoritesView: View {
     @State private var viewModel = FavoritesViewModelSKIE()
+    @Environment(CartViewModelSKIE.self) private var cartViewModel
     /// Ids mid-unfavorite: their heart renders deselected for a beat before
     /// the card animates out, instead of the card vanishing on tap.
     @State private var removingIds: Set<String> = []
+    @State private var showingToast = false
+    @State private var toastMessage = ""
 
     var body: some View {
         Group {
@@ -17,12 +20,14 @@ struct FavoritesView: View {
             }
         }
         .navigationTitle("Favorites")
+        .brandedNavigationBar()
         .navigationDestination(for: String.self) { cocktailId in
             CocktailDetailView(cocktailId: cocktailId)
         }
         .task {
             await viewModel.loadFavorites()
         }
+        .toast(isShowing: $showingToast, message: toastMessage, type: .success, duration: 2)
         .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
     }
     
@@ -69,6 +74,17 @@ struct FavoritesView: View {
                 isFavorite: !removingIds.contains(cocktail.id),
                 onFavoriteToggle: {
                     unfavorite(cocktail)
+                },
+                // Add-to-cart with toast confirmation, matching Home and the
+                // Android Favorites list (which had this button all along)
+                onAddToCart: {
+                    Task { @MainActor in
+                        await cartViewModel.addToCart(cocktail)
+                        toastMessage = String(localized: "Added \(cocktail.name) to cart")
+                        withAnimation {
+                            showingToast = true
+                        }
+                    }
                 },
                 layout: .vertical
             )

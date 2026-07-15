@@ -1,5 +1,6 @@
 package com.cocktailcraft.viewmodel.state
 
+import com.cocktailcraft.designsystem.AccentColorTokens
 import com.cocktailcraft.domain.model.ThemeMode
 import com.cocktailcraft.domain.model.UserPreferences
 
@@ -10,7 +11,7 @@ import com.cocktailcraft.domain.model.UserPreferences
  */
 data class ThemeUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val accentColor: String = "blue",
+    val accentColor: String = AccentColorTokens.DEFAULT,
     val fontSize: String = "medium",
     val isHighContrast: Boolean = false,
     val isReducedMotion: Boolean = false,

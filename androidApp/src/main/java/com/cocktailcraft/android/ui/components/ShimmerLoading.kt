@@ -27,7 +27,10 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.LocalReducedMotion
 
 /**
  * One infinite transition driving every shimmer placeholder beneath a loading
@@ -37,6 +40,11 @@ import com.cocktailcraft.android.ui.theme.AppColors
  */
 @Composable
 fun rememberShimmerTranslate(): State<Float> {
+    // Reduce Motion: freeze the sweep — placeholders render as a static
+    // mid-gradient block instead of an endless animation.
+    if (LocalReducedMotion.current) {
+        return remember { mutableStateOf(500f) }
+    }
     val transition = rememberInfiniteTransition(label = "shimmer")
     return transition.animateFloat(
         initialValue = 0f,

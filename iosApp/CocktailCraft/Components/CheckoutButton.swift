@@ -20,7 +20,11 @@ struct CheckoutButton: View {
     }
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            // Confirmation haptic, parity with Android's checkout
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            action()
+        }) {
             HStack {
                 if isLoading {
                     ProgressView()

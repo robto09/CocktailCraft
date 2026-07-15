@@ -113,7 +113,7 @@ struct BackgroundSyncCard: View {
                 // Disabled State Info
                 HStack {
                     Image(systemName: "info.circle")
-                        .foregroundColor(.orange)
+                        .foregroundColor(AppColors.warning)
                     
                     Text("Background sync is disabled. Enable it to keep your cache updated automatically.")
                         .font(AppTheme.Typography.caption)
@@ -145,11 +145,11 @@ struct BackgroundSyncCard: View {
         if backgroundSyncManager.syncInProgress {
             return AppColors.primary(isDarkMode: isDarkMode)
         } else if !NetworkMonitor.shared.isConnected {
-            return .orange
+            return AppColors.warning
         } else if backgroundSyncManager.lastBackgroundSync == nil {
-            return .blue
+            return AppColors.primary(isDarkMode: isDarkMode)
         } else {
-            return .green
+            return AppColors.success
         }
     }
 }

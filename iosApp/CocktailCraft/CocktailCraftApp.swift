@@ -15,6 +15,12 @@ struct CocktailCraftApp: App {
         // Initialize Koin
         KoinInitializer.instance.initialize()
 
+        // White back chevrons/bar buttons on the branded coral navigation
+        // bar (see View.brandedNavigationBar in Theme/AppTheme.swift).
+        // SwiftUI-rendered toolbar items follow .tint, but the UIKit-provided
+        // back indicator follows this appearance proxy.
+        UINavigationBar.appearance().tintColor = .white
+
         // Register background tasks synchronously: BGTaskScheduler requires
         // all launch handlers to be registered before the app finishes
         // launching, and the previous Task-wrapped call deferred past that

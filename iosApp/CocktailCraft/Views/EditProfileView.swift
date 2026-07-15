@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct EditProfileView: View {
+    @Environment(\.isDarkMode) private var isDarkMode
     @State private var name: String
     @State private var email: String
     @State private var isLoading = false
@@ -34,16 +35,11 @@ struct EditProfileView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "person.crop.circle.badge.checkmark")
                         .font(.system(size: 60))
-                        .foregroundColor(.blue)
-
-                    Text("Edit Profile")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
 
                     Text("Update your name and email address.")
                         .font(.body)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 32)
@@ -53,7 +49,7 @@ struct EditProfileView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Full Name")
                             .font(.headline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                         TextField("Enter your full name", text: $name)
                             .textFieldStyle(CustomTextFieldStyle())
@@ -65,7 +61,7 @@ struct EditProfileView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Email")
                             .font(.headline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                         TextField("Enter your email", text: $email)
                             .textFieldStyle(CustomTextFieldStyle())
@@ -79,40 +75,28 @@ struct EditProfileView: View {
                 .padding(.horizontal)
 
                 // Save Button
-                Button(action: {
-                    guard !isLoading else { return }
-                    isLoading = true
-                    Task {
-                        await onSave(name, email)
-                        isLoading = false
-                    }
-                }) {
-                    HStack {
-                        if isLoading {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .foregroundColor(.white)
+                PrimaryButton(
+                    title: String(localized: "Save Changes"),
+                    isLoading: isLoading,
+                    isDisabled: !isFormValid,
+                    action: {
+                        guard !isLoading else { return }
+                        isLoading = true
+                        Task {
+                            await onSave(name, email)
+                            isLoading = false
                         }
-
-                        Text("Save Changes")
-                            .font(.headline)
-                            .fontWeight(.medium)
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(isFormValid ? .blue : .gray)
-                    .cornerRadius(8)
-                }
-                .disabled(!isFormValid || isLoading)
+                )
                 .padding(.horizontal)
                 .accessibilityLabel("Save changes")
                 .accessibilityIdentifier("editProfile.saveButton")
 
                 Spacer()
             }
-            .background(Color(.systemBackground))
-            .navigationBarTitleDisplayMode(.inline)
+            .background(AppColors.background(isDarkMode: isDarkMode))
+            .navigationTitle("Edit Profile")
+            .brandedNavigationBar()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
@@ -120,6 +104,7 @@ struct EditProfileView: View {
                     }
                     .accessibilityLabel("Cancel")
                     .accessibilityIdentifier("editProfile.cancelButton")
+                    .tint(.white)
                 }
             }
         }

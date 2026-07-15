@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Mirrors the Compose palette in ui/theme/Theme.kt (AppColors), which is the
-    single source of truth. These values only cover the pre-Compose window
-    (cold start, status bar) and the home-screen widget assets — if AppColors
-    changes, update the matching entry here.
+    Mirrors the cross-platform design tokens in
+    shared/designsystem/DesignTokens.kt (ColorTokens), the single source of
+    truth for both platforms. These values only cover the pre-Compose window
+    (cold start, status bar) and the home-screen widget assets — if the shared
+    tokens change, update the matching entry here.
 -->
 <resources>
     <!-- AppColors.PrimaryLight / PrimaryDark (coral) -->

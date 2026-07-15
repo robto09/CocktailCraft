@@ -109,11 +109,13 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .brandedNavigationBar()
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         dismiss()
                     }
+                    .tint(.white)
                 }
             }
         }
