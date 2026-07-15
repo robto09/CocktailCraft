@@ -24,7 +24,7 @@ class CocktailSearchRepositoryImplTest {
 
     private class Fixture(
         val search: CocktailSearchRepositoryImpl,
-        val offline: CocktailOfflineRepositoryImpl
+        val network: FakeNetworkMonitor
     )
 
     // Mirrors the DataModule wiring: remote source + focused offline repo +
@@ -35,15 +35,13 @@ class CocktailSearchRepositoryImplTest {
         online: Boolean = true
     ): Fixture {
         val networkMonitor = FakeNetworkMonitor(online)
-        val policy = OfflineModePolicy(settings, config, networkMonitor)
+        val policy = OfflineModePolicy(networkMonitor)
         val cache = CocktailCache(settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
         val cacheManager = CocktailCacheManager()
         val remote = CocktailRemoteDataSource(api, cacheManager)
         val offline = CocktailOfflineRepositoryImpl(
             offlineModePolicy = policy,
-            cocktailCache = cache,
-            cacheManager = cacheManager,
-            remote = remote
+            cocktailCache = cache
         )
         val fetcher = CocktailCategoryFetcher(
             remote = remote,
@@ -57,7 +55,7 @@ class CocktailSearchRepositoryImplTest {
             offlineRepository = offline,
             categoryFetcher = fetcher
         )
-        return Fixture(search, offline)
+        return Fixture(search, networkMonitor)
     }
 
     private fun repository(
@@ -234,7 +232,7 @@ class CocktailSearchRepositoryImplTest {
         // Online pass caches full records; id 3 stores "Non alcoholic" — the
         // API's display string, not the Non_Alcoholic URL token.
         fixture.search.advancedSearch(SearchFilters(query = "mojito"))
-        fixture.offline.setOfflineMode(true)
+        fixture.network.setOnline(false)
 
         val result = fixture.search.advancedSearch(SearchFilters(alcoholic = false))
 

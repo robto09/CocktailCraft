@@ -5,7 +5,6 @@ import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
 import com.cocktailcraft.domain.usecase.LoadCocktailsByCategoryUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
-import com.cocktailcraft.domain.usecase.ManageOfflineModeUseCase
 import com.cocktailcraft.domain.usecase.SearchCocktailsUseCase
 import com.cocktailcraft.domain.usecase.SortCocktailsUseCase
 import com.cocktailcraft.testutil.FakeCatalogRepository
@@ -43,7 +42,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
             loadCocktailsByCategoryUseCase = LoadCocktailsByCategoryUseCase(search),
             sortCocktailsUseCase = SortCocktailsUseCase(),
             manageFavoritesUseCase = ManageFavoritesUseCase(favorites, detail),
-            manageOfflineModeUseCase = ManageOfflineModeUseCase(offline, catalog),
+            offlineRepository = offline,
             getCocktailDetailUseCase = GetCocktailDetailUseCase(detail, favorites, search),
             catalogRepository = catalog,
             networkMonitor = network
@@ -326,20 +325,27 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     }
 
     @Test
-    fun networkLossAutoEnablesOfflineMode() = runTest {
+    fun networkLossKeepsLoadedListAndPausesPagination() = runTest {
         val harness = Harness()
-        harness.search.all = listOf(testCocktail("1"))
+        harness.search.all = (1..12).map { testCocktail("c$it", category = "Cocktail") }
         val vm = harness.viewModel()
         advanceUntilIdle()
         assertTrue(vm.uiState.value.isNetworkAvailable)
-        assertFalse(vm.uiState.value.isOfflineMode)
+        assertEquals(10, vm.uiState.value.cocktails.size)
+        assertTrue(vm.uiState.value.hasMoreData)
 
         harness.network.setOnline(false)
         advanceUntilIdle()
-
         assertFalse(vm.uiState.value.isNetworkAvailable)
-        assertTrue(vm.uiState.value.isOfflineMode)
-        assertTrue(harness.offline.offlineModeEnabled, "offline preference must be persisted")
+
+        // Offline load-more is a silent no-op: the list ends at the loaded
+        // data, no error, and hasMoreData stays true so pagination resumes
+        // once connectivity returns.
+        vm.loadMoreCocktails()
+
+        assertEquals(10, vm.uiState.value.cocktails.size)
+        assertTrue(vm.uiState.value.hasMoreData)
+        assertNull(vm.error.value, "offline load-more must not surface an error")
     }
 
     @Test

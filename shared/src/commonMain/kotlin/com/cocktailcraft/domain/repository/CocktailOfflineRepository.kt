@@ -4,19 +4,12 @@ import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.util.Result
 
 /**
- * Repository interface for offline mode and connectivity operations.
+ * Repository interface for connectivity state and cached-data access.
  * Part of the Interface Segregation split of CocktailRepository.
  */
 interface CocktailOfflineRepository {
-    suspend fun checkApiConnectivity(): Result<Boolean>
     suspend fun getRecentlyViewedCocktails(): Result<List<Cocktail>>
-    suspend fun setOfflineMode(enabled: Boolean)
-    suspend fun isOfflineModeEnabled(): Boolean
 
-    /** True when the user forced offline mode or the network is currently down. */
+    /** True when the network is currently down. */
     suspend fun isOffline(): Boolean
-
-    /** Purge all cached cocktail data — persistent storage and in-memory layers. */
-    suspend fun clearCache(): Result<Unit>
 }
-

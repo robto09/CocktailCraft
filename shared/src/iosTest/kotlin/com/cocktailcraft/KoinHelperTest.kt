@@ -53,7 +53,6 @@ class KoinHelperTest : MainDispatcherTest() {
 
         // Services / platform bridges
         assertNotNull(helper.getNetworkMonitor())
-        assertNotNull(helper.getBackgroundSyncService())
 
         // Shared ViewModels — screen-scoped
         assertNotNull(helper.getSharedCocktailDetailViewModel())
@@ -63,7 +62,6 @@ class KoinHelperTest : MainDispatcherTest() {
         assertNotNull(helper.getSharedFavoritesViewModel())
         assertNotNull(helper.getSharedHomeViewModel())
         assertNotNull(helper.getSharedCartViewModel())
-        assertNotNull(helper.getSharedOfflineModeViewModel())
         assertNotNull(helper.getSharedOrderViewModel())
         assertNotNull(helper.getSharedProfileViewModel())
         assertNotNull(helper.getSharedThemeViewModel())

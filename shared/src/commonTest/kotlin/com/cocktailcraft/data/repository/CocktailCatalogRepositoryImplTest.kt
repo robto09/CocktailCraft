@@ -31,15 +31,13 @@ class CocktailCatalogRepositoryImplTest {
         online: Boolean = true
     ): CocktailCatalogRepositoryImpl {
         val networkMonitor = FakeNetworkMonitor(online)
-        val policy = OfflineModePolicy(settings, config, networkMonitor)
+        val policy = OfflineModePolicy(networkMonitor)
         val cache = CocktailCache(settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
         val cacheManager = CocktailCacheManager()
         val remote = CocktailRemoteDataSource(api, cacheManager)
         val offline = CocktailOfflineRepositoryImpl(
             offlineModePolicy = policy,
-            cocktailCache = cache,
-            cacheManager = cacheManager,
-            remote = remote
+            cocktailCache = cache
         )
         val fetcher = CocktailCategoryFetcher(
             remote = remote,

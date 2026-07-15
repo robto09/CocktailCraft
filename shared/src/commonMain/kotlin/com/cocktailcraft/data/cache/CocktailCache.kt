@@ -95,10 +95,9 @@ internal data class CachedCocktailEntry(
  *
  * Eviction matrix (SH-11): this is the PERSISTENT layer. See
  * [CocktailCacheManager] for the separate short-lived (5 min) in-memory
- * category cache and rate-limit state. [clearCache] here and
- * [CocktailCacheManager.clearDataCaches] are always invoked together, from
- * CocktailOfflineRepositoryImpl.clearCache() — never add an eviction path
- * that purges only one of the two.
+ * category cache and rate-limit state. Eviction is LRU (capped at
+ * [AppConfig.maxOfflineCocktails]) plus the TTL expiry above — there is no
+ * user-facing "clear cache" path.
  */
 internal class CocktailCache(
     private val settings: Settings,
@@ -143,13 +142,12 @@ internal class CocktailCache(
         now - entry.cachedAtMs > appConfig.cacheExpirationMs
 
     /**
-     * Expiry only applies while the app is effectively online. This cache backs
-     * offline browsing: evicting stale entries when there is no connectivity (or
-     * the user forced offline mode) would empty the offline experience with no
-     * way to refetch, so stale entries keep being served until we are back online.
-     * The offline decision itself is owned by [OfflineModePolicy] (AR-7) — the
-     * cache only stores data; it no longer re-derives policy from raw
-     * Settings/NetworkMonitor reads.
+     * Expiry only applies while the app is online. This cache backs offline
+     * browsing: evicting stale entries when there is no connectivity would
+     * empty the offline experience with no way to refetch, so stale entries
+     * keep being served until we are back online. The offline decision itself
+     * is owned by [OfflineModePolicy] (AR-7) — the cache only stores data; it
+     * does not re-derive policy from raw NetworkMonitor reads.
      */
     private suspend fun shouldApplyExpiry(): Boolean =
         offlineModePolicy?.let { !it.isOffline() } ?: true
@@ -311,20 +309,6 @@ internal class CocktailCache(
         val recent = recentlyViewedCache.snapshot().values.toList().reversed()
         Logger.d { "CocktailCache.getRecentlyViewedCocktails() returning ${recent.size} items" }
         return recent
-    }
-    
-    /**
-     * Clear all cached cocktails.
-     */
-    suspend fun clearCache() {
-        loadMutex.withLock { loaded = true } // nothing worth loading over a clear
-        cocktailCache.clear()
-        recentlyViewedCache.clear()
-        // Clear from persistent storage
-        withContext(ioDispatcher) {
-            settings.remove(ALL_COCKTAILS_KEY)
-            settings.remove(RECENTLY_VIEWED_KEY)
-        }
     }
     
     /**

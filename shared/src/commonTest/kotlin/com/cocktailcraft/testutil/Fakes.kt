@@ -188,26 +188,12 @@ class FakeCatalogRepository(var all: List<Cocktail> = emptyList()) : CocktailCat
 }
 
 class FakeOfflineRepository : CocktailOfflineRepository {
-    var offlineModeEnabled = false
+    var offline = false
     var recentlyViewed: List<Cocktail> = emptyList()
-    var clearCacheCalls = 0
-        private set
 
-    override suspend fun checkApiConnectivity(): Result<Boolean> = Result.Success(true)
     override suspend fun getRecentlyViewedCocktails(): Result<List<Cocktail>> = Result.Success(recentlyViewed)
-    override suspend fun setOfflineMode(enabled: Boolean) {
-        offlineModeEnabled = enabled
-    }
 
-    override suspend fun isOfflineModeEnabled(): Boolean = offlineModeEnabled
-
-    override suspend fun isOffline(): Boolean = offlineModeEnabled
-
-    override suspend fun clearCache(): Result<Unit> {
-        clearCacheCalls++
-        recentlyViewed = emptyList()
-        return Result.Success(Unit)
-    }
+    override suspend fun isOffline(): Boolean = offline
 }
 
 internal class FakeCocktailApi(var drinks: List<CocktailDto> = emptyList()) : CocktailApi {
