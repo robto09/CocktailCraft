@@ -101,32 +101,19 @@ struct ChangePasswordView: View {
                 .padding(.horizontal)
 
                 // Change Password Button
-                Button(action: {
-                    guard !isLoading else { return }
-                    isLoading = true
-                    Task {
-                        await onChangePassword(currentPassword, newPassword)
-                        isLoading = false
-                    }
-                }) {
-                    HStack {
-                        if isLoading {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .foregroundColor(.white)
+                PrimaryButton(
+                    title: String(localized: "Change Password"),
+                    isLoading: isLoading,
+                    isDisabled: !isFormValid,
+                    action: {
+                        guard !isLoading else { return }
+                        isLoading = true
+                        Task {
+                            await onChangePassword(currentPassword, newPassword)
+                            isLoading = false
                         }
-
-                        Text("Change Password")
-                            .font(.headline)
-                            .fontWeight(.medium)
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(isFormValid ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.gray)
-                    .cornerRadius(8)
-                }
-                .disabled(!isFormValid || isLoading)
+                )
                 .padding(.horizontal)
                 .accessibilityLabel("Change password")
                 .accessibilityIdentifier("changePassword.submitButton")

@@ -78,32 +78,19 @@ struct SignInView: View {
                 .padding(.horizontal)
                 
                 // Sign In Button
-                Button(action: {
-                    guard !isLoading else { return }
-                    isLoading = true
-                    Task {
-                        await onSignIn(email, password)
-                        isLoading = false
-                    }
-                }) {
-                    HStack {
-                        if isLoading {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .foregroundColor(.white)
+                PrimaryButton(
+                    title: String(localized: "Sign In"),
+                    isLoading: isLoading,
+                    isDisabled: !isFormValid,
+                    action: {
+                        guard !isLoading else { return }
+                        isLoading = true
+                        Task {
+                            await onSignIn(email, password)
+                            isLoading = false
                         }
-                        
-                        Text("Sign In")
-                            .font(.headline)
-                            .fontWeight(.medium)
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(isFormValid ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.gray)
-                    .cornerRadius(8)
-                }
-                .disabled(!isFormValid || isLoading)
+                )
                 .padding(.horizontal)
                 .accessibilityLabel("Sign In")
                 .accessibilityIdentifier("signin.submitButton")

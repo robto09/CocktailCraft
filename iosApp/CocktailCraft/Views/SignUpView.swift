@@ -101,32 +101,19 @@ struct SignUpView: View {
                 .padding(.horizontal)
                 
                 // Create Account Button
-                Button(action: {
-                    guard !isLoading else { return }
-                    isLoading = true
-                    Task {
-                        await onSignUp(name, email, password)
-                        isLoading = false
-                    }
-                }) {
-                    HStack {
-                        if isLoading {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .foregroundColor(.white)
+                PrimaryButton(
+                    title: String(localized: "Create Account"),
+                    isLoading: isLoading,
+                    isDisabled: !isFormValid,
+                    action: {
+                        guard !isLoading else { return }
+                        isLoading = true
+                        Task {
+                            await onSignUp(name, email, password)
+                            isLoading = false
                         }
-                        
-                        Text("Create Account")
-                            .font(.headline)
-                            .fontWeight(.medium)
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(isFormValid ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.gray)
-                    .cornerRadius(8)
-                }
-                .disabled(!isFormValid || isLoading)
+                )
                 .padding(.horizontal)
                 .accessibilityLabel("Create Account")
                 .accessibilityIdentifier("signup.submitButton")

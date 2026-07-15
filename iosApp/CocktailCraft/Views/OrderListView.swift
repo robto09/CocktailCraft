@@ -4,6 +4,9 @@ import shared
 struct OrderListView: View {
     @State private var viewModel = OrderViewModelSKIE()
     @State private var hasLoaded = false
+    // Tab switches route through the app-level router (same pattern as
+    // CartView/ProfileView) so "Browse Cocktails" can land on Home.
+    @Environment(AppRouter.self) private var router
 
     var body: some View {
         // No nav container here: ContentView already wraps this tab in a
@@ -37,10 +40,18 @@ struct OrderListView: View {
         LoadingStateView(message: "Loading orders...")
     }
 
+    // Mirrors Android's Orders empty state: icon/title/message plus a
+    // "Browse Cocktails" CTA that switches to the Home tab.
     private var emptyView: some View {
-        Text("No orders yet")
-            .foregroundColor(.secondary)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        EmptyStateView(
+            icon: "list.bullet",
+            title: String(localized: "No orders yet"),
+            message: String(localized: "Your order history will appear here"),
+            actionTitle: String(localized: "Browse Cocktails"),
+            action: {
+                router.selectedTab = .home
+            }
+        )
     }
 
     private var ordersList: some View {

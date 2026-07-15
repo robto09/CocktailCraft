@@ -75,32 +75,19 @@ struct EditProfileView: View {
                 .padding(.horizontal)
 
                 // Save Button
-                Button(action: {
-                    guard !isLoading else { return }
-                    isLoading = true
-                    Task {
-                        await onSave(name, email)
-                        isLoading = false
-                    }
-                }) {
-                    HStack {
-                        if isLoading {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .foregroundColor(.white)
+                PrimaryButton(
+                    title: String(localized: "Save Changes"),
+                    isLoading: isLoading,
+                    isDisabled: !isFormValid,
+                    action: {
+                        guard !isLoading else { return }
+                        isLoading = true
+                        Task {
+                            await onSave(name, email)
+                            isLoading = false
                         }
-
-                        Text("Save Changes")
-                            .font(.headline)
-                            .fontWeight(.medium)
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(isFormValid ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.gray)
-                    .cornerRadius(8)
-                }
-                .disabled(!isFormValid || isLoading)
+                )
                 .padding(.horizontal)
                 .accessibilityLabel("Save changes")
                 .accessibilityIdentifier("editProfile.saveButton")

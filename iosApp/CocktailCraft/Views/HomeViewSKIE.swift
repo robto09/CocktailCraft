@@ -121,10 +121,10 @@ struct HomeViewSKIE: View {
         ScrollView {
             VStack {
                 Spacer()
-                HomeEmptyStateView(
+                EmptyStateView(
                     icon: "wineglass",
                     title: String(localized: "No Cocktails Found"),
-                    subtitle: String(localized: "Try adjusting your search or filters"),
+                    message: String(localized: "Try adjusting your search or filters"),
                     actionTitle: String(localized: "Clear Filters"),
                     action: {
                         searchText = ""
