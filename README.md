@@ -5,9 +5,12 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 
 ### Platform Status
 - **Android**: ✅ Fully functional and production-ready
-- **iOS**: ✅ **iOS 18.5 Ready** - Complete SKIE integration (100%) with native Swift async/await patterns
+- **iOS**: ✅ Fully functional — complete SKIE integration (100%) with native Swift async/await patterns
 
-![CocktailCraft Home Screen](docs/images/Screenshot_20250419_014459.png)
+<p align="center">
+  <img src="docs/images/Screenshot_20250419_014459.png" alt="Android home screen" width="45%">
+  <img src="docs/images/ios-home-v0.3.png" alt="iOS home screen" width="45%">
+</p>
 
 ## Features
 - **Cocktail Discovery**: Browse and search for cocktails with detailed information
@@ -21,10 +24,12 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Dark Mode Support**: Adaptive UI that supports both light and dark themes with smooth transitions
 - **Offline Mode**: Browse recently viewed cocktails and favorites without internet connection
 - **Background Sync**: Automatic data synchronization when app is backgrounded for fresh content on launch
+- **Home Screen Widgets**: Android and iOS (WidgetKit) widgets with deep links into the app
+- **Localization**: Localized UI strings on both platforms (Android resources + iOS string catalogs) with locale-aware prices
 - **Robust Error Handling**: User-friendly error messages with recovery options
 - **Polished Animations**: Enhanced user experience with smooth animations and micro-interactions
 - **Cross-Platform**: Same codebase for both Android and iOS platforms with platform-specific UI components
-- **iOS 18.5 Ready**: Complete SKIE integration (100%) with native Swift async/await and modern SwiftUI reusable components
+- **Native iOS Integration**: Complete SKIE integration (100%) with Swift async/await and modern SwiftUI reusable components
 
 ## Architecture
 The application follows the **Clean Architecture** pattern with **MVVM** (Model-View-ViewModel) for presentation, reactive state management, and a modular **Dependency Injection** system:
@@ -166,7 +171,8 @@ For detailed information about the dependency injection implementation, see:
 - **Jetpack Compose**: Modern declarative UI toolkit for Android
 - **Material3**: For consistent Material Design implementation
 - **Navigation Compose**: For handling navigation between screens
-- **Coil**: For image loading and caching
+- **Coil**: For image loading and caching on Android
+- **Kingfisher**: For image loading with disk/memory caching on iOS
 - **Animation Utilities**: Custom animation components and utilities for enhanced UX
 - **Shimmer Effects**: Loading state animations with shimmer effects
 
@@ -341,6 +347,6 @@ Run them with:
 ./gradlew :androidApp:testDebugUnitTest     # Android unit tests
 # iOS (from iosApp/, after pod install / xcodegen generate):
 xcodebuild test -workspace CocktailCraft.xcworkspace -scheme CocktailCraft \
-  -destination 'platform=iOS Simulator,name=iPhone 16'
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 ```
 
