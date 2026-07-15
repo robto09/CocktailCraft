@@ -246,8 +246,13 @@ class MainScreenSharedVmTest {
 
         composeTestRule.runOnUiThread { networkMonitor.setOnline(false) }
 
-        // When connectivity drops, SharedOfflineModeViewModel auto-enables
-        // offline mode, so the indicator shows the offline-mode wording.
-        waitForText("Offline Mode Enabled")
+        // The banner is driven straight from NetworkMonitor.isOnline; the
+        // already-loaded cocktails keep rendering underneath it.
+        waitForText("You're offline — showing saved cocktails.")
+        composeTestRule.onNodeWithText(TestCocktails.mojito.name).assertIsDisplayed()
+
+        // Restoring connectivity dismisses the banner without user action.
+        composeTestRule.runOnUiThread { networkMonitor.setOnline(true) }
+        waitForTextGone("You're offline — showing saved cocktails.")
     }
 }

@@ -89,12 +89,6 @@
     <string name="confirm_order_title">Confirm Order</string>
     <string name="confirm_order_message">Are you sure you want to place this order for %1$s?</string>
 
-    <!-- Offline mode -->
-    <string name="clear_cache">Clear Cache</string>
-    <string name="clear_offline_cache_title">Clear Offline Cache</string>
-    <string name="clear_offline_cache_message">Are you sure you want to clear all cached cocktails? You won\'t be able to view them offline.</string>
-    <string name="go_to_home">Go to Home</string>
-
     <!-- Cocktail detail -->
     <string name="how_to_prepare">How to Prepare</string>
     <string name="ingredients">Ingredients</string>
@@ -115,7 +109,6 @@
     <string name="notification_settings">Notification Settings</string>
     <string name="order_history">Order History</string>
     <string name="help_support">Help &amp; Support</string>
-    <string name="offline_mode">Offline Mode</string>
     <string name="profile_appearance">Appearance</string>
     <string name="accent_color">Accent Color</string>
     <string name="font_size">Font Size</string>
@@ -167,31 +160,15 @@
 
     <!-- Common / errors -->
     <string name="common_retry">Retry</string>
-    <string name="common_enable_offline_mode">Enable Offline Mode</string>
-    <string name="common_go_online">Go Online</string>
     <string name="common_back">Back</string>
-    <string name="common_online">Online</string>
-    <string name="common_offline">Offline</string>
-    <string name="common_network_available">Network Available</string>
     <string name="common_network_unavailable">Network Unavailable</string>
     <string name="common_image_not_available">Image not available</string>
-    <string name="error_offline_mode_active">Offline Mode Active</string>
     <string name="error_no_cached_cocktails">No cached cocktails available. Connect to the internet to download cocktails.</string>
-    <string name="error_offline_enable_offline_mode">You\'re currently offline. Enable Offline Mode to browse cached cocktails.</string>
     <string name="error_unable_to_load_cocktails">Unable to load cocktails</string>
 
-    <!-- Offline mode -->
-    <string name="offline_mode_toggle_description">When enabled, the app will only use cached data and won\'t make network requests.</string>
-    <string name="offline_cache_info">Cache Info</string>
-    <string name="offline_cached_cocktails">Cached Cocktails</string>
-    <string name="offline_cocktails_available_label">Cocktails available offline:</string>
-    <string name="offline_recently_viewed">Recently Viewed</string>
-    <string name="offline_no_cocktails">No cocktails</string>
-    <string name="offline_no_cached_cocktails">No cached cocktails</string>
-    <string name="offline_empty_cache_hint">Browse cocktails in the Home screen to cache them for offline viewing</string>
+    <!-- Offline banner -->
     <string name="offline_indicator_description">Offline</string>
-    <string name="offline_mode_enabled">Offline Mode Enabled</string>
-    <string name="offline_you_are_offline">You are offline</string>
+    <string name="offline_you_are_offline">You\'re offline — showing saved cocktails.</string>
 
     <!-- Orders -->
     <string name="order_unknown_error">Unknown error</string>

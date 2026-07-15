@@ -55,7 +55,6 @@ import com.cocktailcraft.android.navigation.CocktailDetailRoute
 import com.cocktailcraft.android.navigation.FavoritesRoute
 import com.cocktailcraft.android.navigation.HomeRoute
 import com.cocktailcraft.android.navigation.NavigationManager
-import com.cocktailcraft.android.navigation.OfflineModeRoute
 import com.cocktailcraft.android.navigation.OrderListRoute
 import com.cocktailcraft.android.navigation.ProfileRoute
 import com.cocktailcraft.android.navigation.Screen
@@ -63,18 +62,18 @@ import com.cocktailcraft.android.screens.CartScreen
 import com.cocktailcraft.android.screens.CocktailDetailScreen
 import com.cocktailcraft.android.screens.FavoritesScreen
 import com.cocktailcraft.android.screens.HomeScreen
-import com.cocktailcraft.android.screens.OfflineModeScreen
 import com.cocktailcraft.android.screens.OrderListScreen
 import com.cocktailcraft.android.screens.ProfileScreen
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
-import com.cocktailcraft.viewmodel.SharedOfflineModeViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
@@ -117,19 +116,17 @@ fun MainScreen() {
     val sharedCartViewModel: SharedCartViewModel = koinInject()
     val sharedHomeViewModel: SharedHomeViewModel = koinInject()
     val sharedFavoritesViewModel: SharedFavoritesViewModel = koinInject()
-    val sharedOfflineModeViewModel: SharedOfflineModeViewModel = koinInject()
     val scope = rememberCoroutineScope()
 
     // Current destination for conditional rendering (type-safe checks)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val isDetailScreen = currentDestination?.hasRoute<CocktailDetailRoute>() == true
-    val isOfflineModeScreen = currentDestination?.hasRoute<OfflineModeRoute>() == true
 
-    // Get offline mode state
-    val offlineState by sharedOfflineModeViewModel.uiState.collectAsStateWithLifecycle()
-    val isOfflineModeEnabled = offlineState.isOfflineModeEnabled
-    val isNetworkAvailable = offlineState.isNetworkAvailable
+    // Connectivity drives the offline banner directly — "offline" is purely
+    // "the network is down"; there is no user-facing offline toggle.
+    val networkMonitor: NetworkMonitor = koinInject()
+    val isOnline by networkMonitor.isOnline.collectAsState()
 
     // Cart state drives the bottom-nav badge (parity with the iOS tab badge)
     val cartUiState by sharedCartViewModel.uiState.collectAsStateWithLifecycle()
@@ -162,17 +159,8 @@ fun MainScreen() {
                         .background(AppColors.Primary)
                         .statusBarsPadding()
                 ) {
-                    // Show offline mode indicator if offline and not already on the offline mode screen
-                    if (!isOfflineModeScreen) {
-                        OfflineModeIndicator(
-                            isOffline = !isNetworkAvailable || isOfflineModeEnabled,
-                            isOfflineModeEnabled = isOfflineModeEnabled,
-                            onClick = {
-                                // Navigate to offline mode settings
-                                navigationManager.navigateToOfflineMode()
-                            }
-                        )
-                    }
+                    // Banner shown while the device has no connection
+                    OfflineModeIndicator(isOffline = !isOnline)
 
                     AppTopBar(
                         title = when {
@@ -182,12 +170,8 @@ fun MainScreen() {
                             currentDestination?.hasRoute<FavoritesRoute>() == true -> stringResource(R.string.favorites)
                             currentDestination?.hasRoute<OrderListRoute>() == true -> stringResource(R.string.orders)
                             currentDestination?.hasRoute<ProfileRoute>() == true -> stringResource(R.string.profile)
-                            isOfflineModeScreen -> stringResource(R.string.offline_mode)
                             else -> stringResource(R.string.app_name)
                         },
-                        // Back button only for the OfflineMode screen
-                        showBackButton = isOfflineModeScreen,
-                        onBackClick = { navigationManager.navigateBack() },
                         // The wrapping Column already consumed the status-bar
                         // inset; keep only the horizontal/cutout parts here so
                         // the top inset isn't applied twice (AN-6).
@@ -197,8 +181,8 @@ fun MainScreen() {
             }
         },
         bottomBar = {
-            // Only show the bottom navigation bar if we're NOT on the detail screen or offline mode screen
-            if (!isDetailScreen && !isOfflineModeScreen) {
+            // Only show the bottom navigation bar if we're NOT on the detail screen
+            if (!isDetailScreen) {
                 NavigationBar(
                     containerColor = AppColors.Surface,
                     contentColor = AppColors.Primary,
@@ -292,16 +276,6 @@ fun MainScreen() {
                     navigationManager = navigationManager
                 )
             }
-            composable<OfflineModeRoute> {
-                OfflineModeScreen(
-                    viewModel = sharedOfflineModeViewModel,
-                    onBackClick = { navigationManager.navigateBack() },
-                    onCocktailClick = { cocktail ->
-                        navigationManager.navigateToCocktailDetail(cocktail)
-                    }
-                )
-            }
-
             composable<CocktailDetailRoute>(
                 deepLinks = listOf(
                     navDeepLink<CocktailDetailRoute>(basePath = COCKTAIL_DEEP_LINK_BASE_PATH)

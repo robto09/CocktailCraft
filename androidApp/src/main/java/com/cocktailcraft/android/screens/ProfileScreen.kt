@@ -21,7 +21,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
@@ -197,7 +196,6 @@ fun ProfileScreen(
             isDarkMode = isDarkMode,
             isSystemTheme = isSystemTheme,
             onOrderHistoryClick = { navigationManager.navigateToOrderList() },
-            onOfflineModeClick = { navigationManager.navigateToOfflineMode() },
             onToggleFollowSystemTheme = { scope.launch { themeViewModel.setFollowSystemTheme(!isSystemTheme) } },
             onToggleDarkMode = {
                 if (!isSystemTheme) scope.launch { themeViewModel.setDarkMode(!isDarkMode) }
@@ -409,7 +407,6 @@ private fun AppSettingsCard(
     isDarkMode: Boolean,
     isSystemTheme: Boolean,
     onOrderHistoryClick: () -> Unit,
-    onOfflineModeClick: () -> Unit,
     onToggleFollowSystemTheme: () -> Unit,
     onToggleDarkMode: () -> Unit,
     onLogoutClick: () -> Unit
@@ -445,12 +442,6 @@ private fun AppSettingsCard(
                 icon = Icons.Default.Help,
                 title = stringResource(R.string.help_support),
                 onClick = { /* Handle help & support */ }
-            )
-
-            SettingsItem(
-                icon = Icons.Default.CloudOff,
-                title = stringResource(R.string.offline_mode),
-                onClick = onOfflineModeClick
             )
 
             // Follow System Theme Toggle with animated switch
@@ -711,7 +702,6 @@ private fun AppSettingsCardPreview() {
             isDarkMode = false,
             isSystemTheme = false,
             onOrderHistoryClick = {},
-            onOfflineModeClick = {},
             onToggleFollowSystemTheme = {},
             onToggleDarkMode = {},
             onLogoutClick = {}
@@ -728,7 +718,6 @@ private fun AppSettingsCardDarkPreview() {
             isDarkMode = true,
             isSystemTheme = false,
             onOrderHistoryClick = {},
-            onOfflineModeClick = {},
             onToggleFollowSystemTheme = {},
             onToggleDarkMode = {},
             onLogoutClick = {}
@@ -745,7 +734,6 @@ private fun AppSettingsCardLargeFontPreview() {
             isDarkMode = false,
             isSystemTheme = true,
             onOrderHistoryClick = {},
-            onOfflineModeClick = {},
             onToggleFollowSystemTheme = {},
             onToggleDarkMode = {},
             onLogoutClick = {}

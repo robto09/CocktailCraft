@@ -43,7 +43,6 @@ class FakeCocktailRepository(
     CocktailFavoritesRepository, CocktailOfflineRepository {
 
     private val favorites = MutableStateFlow<List<Cocktail>>(emptyList())
-    private var offlineMode = false
 
     // Search
     override suspend fun searchCocktailsByName(name: String): Result<List<Cocktail>> =
@@ -110,12 +109,8 @@ class FakeCocktailRepository(
         Result.Success(favorites.value.any { it.id == id })
 
     // Offline
-    override suspend fun checkApiConnectivity(): Result<Boolean> = Result.Success(true)
     override suspend fun getRecentlyViewedCocktails(): Result<List<Cocktail>> = Result.Success(emptyList())
-    override suspend fun setOfflineMode(enabled: Boolean) { offlineMode = enabled }
-    override suspend fun isOfflineModeEnabled(): Boolean = offlineMode
-    override suspend fun isOffline(): Boolean = offlineMode
-    override suspend fun clearCache(): Result<Unit> = Result.Success(Unit)
+    override suspend fun isOffline(): Boolean = false
 }
 
 class FakeCartRepository : CartRepository {
