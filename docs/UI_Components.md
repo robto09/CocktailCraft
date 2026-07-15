@@ -17,9 +17,6 @@ This document provides an overview of the reusable UI components in the Cocktail
    - [RatingDisplay](#ratingdisplay)
    - [StatusIndicator](#statusindicator)
    - [SettingsCard](#settingscard)
-   - [InfoCard](#infocard)
-   - [ToggleSettingItem](#togglesettingitem)
-   - [NetworkStatusCard](#networkstatuscard)
    - [ProfileCard](#profilecard)
    - [AuthDialog](#authdialog)
    - [CocktailItem](#cocktailitem)
@@ -244,71 +241,6 @@ SettingsCard(
 ```
 
 **When to use**: For settings screens or any section that needs a consistent card layout with a title and content.
-
-### InfoCard
-
-**Purpose**: Displays information with an icon, title, and content in a card layout.
-
-**Usage**:
-```kotlin
-InfoCard(
-    title = "Cached Cocktails",
-    icon = Icons.Default.Storage,
-    modifier = Modifier.padding(bottom = 16.dp)
-) {
-    // Content goes here
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = "Cocktails available offline:",
-            fontSize = 14.sp,
-            color = AppColors.TextSecondary
-        )
-
-        Text(
-            text = "${recentlyViewedCocktails.size}",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = AppColors.TextPrimary
-        )
-    }
-}
-```
-
-**When to use**: When you need to display information with an icon and title in a card layout, such as in settings screens or information sections.
-
-### ToggleSettingItem
-
-**Purpose**: Displays a setting with a title, description, icon, and toggle switch.
-
-**Usage**:
-```kotlin
-ToggleSettingItem(
-    title = "Offline Mode",
-    description = "When enabled, the app will only use cached data and won't make network requests.",
-    icon = Icons.Default.AirplanemodeActive,
-    isEnabled = isOfflineModeEnabled,
-    onToggle = { viewModel.toggleOfflineMode() }
-)
-```
-
-**When to use**: For settings that can be toggled on or off, such as offline mode, dark mode, or notifications.
-
-### NetworkStatusCard
-
-**Purpose**: Displays the current network status with an appropriate icon and color.
-
-**Usage**:
-```kotlin
-NetworkStatusCard(
-    isNetworkAvailable = isNetworkAvailable,
-    modifier = Modifier.padding(bottom = 16.dp)
-)
-```
-
-**When to use**: When you need to display the current network status, especially in screens related to offline functionality.
 
 ### ProfileCard
 
@@ -550,28 +482,18 @@ CocktailSearchBar(
 
 ### NetworkErrorStateDisplay
 
-**Purpose**: Displays network and offline error states with appropriate icons, messages, and action buttons.
+**Purpose**: Full-screen error state for load failures, shown only when there is no content to render. With no connection it shows the no-internet state with a Retry action; with a connection it shows the load error itself.
 
 **Usage**:
 ```kotlin
 NetworkErrorStateDisplay(
     errorMessage = errorMessage,
-    isOfflineMode = isOfflineMode,
     isNetworkAvailable = isNetworkAvailable,
-    hasContent = cocktails.isNotEmpty(),
-    onRetry = { viewModel.retry() },
-    onEnableOfflineMode = {
-        viewModel.setOfflineMode(true)
-        viewModel.retry()
-    },
-    onGoOnline = {
-        viewModel.setOfflineMode(false)
-        viewModel.retry()
-    }
+    onRetry = { viewModel.retry() }
 )
 ```
 
-**When to use**: When you need to display network-related errors with appropriate recovery options, especially in screens that depend on network connectivity.
+**When to use**: When a screen that depends on network content has nothing to show and needs a retry affordance. When cached content exists, render it instead — the global offline banner already communicates connectivity.
 
 ### AnimatedCocktailList
 
@@ -750,15 +672,12 @@ Recent refactoring in the CocktailCraft app focused on:
 **Second Phase:**
 - Creating status indicators for order status and network status
 - Extracting settings cards for profile and settings screens
-- Creating info cards for displaying information with icons
-- Implementing toggle setting items for settings screens
-- Creating network status cards for offline functionality
 - Extracting profile cards for user information
 - Implementing authentication dialogs for sign-in and sign-up
 
 **Third Phase:**
 - Creating a reusable search bar with advanced search functionality
-- Implementing a network error state display with offline mode support
+- Implementing a network error state display
 - Extracting an animated cocktail list with pagination
 - Creating a category filter row for content filtering
 - Implementing a shimmer loading effect for cocktails

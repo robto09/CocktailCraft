@@ -2,22 +2,21 @@
 
 ## Executive Summary
 
-This document describes the **completed implementation** of shared ViewModels using Kotlin Multiplatform (KMP) with SKIE integration, and explains why the architecture is layered the way it is. All 9 shared ViewModels (plus the `SharedViewModel` base class) have been successfully implemented, providing significant benefits in code reuse, maintainability, and development velocity while maintaining native performance and user experience.
+This document describes the **completed implementation** of shared ViewModels using Kotlin Multiplatform (KMP) with SKIE integration, and explains why the architecture is layered the way it is. All 8 shared ViewModels (plus the `SharedViewModel` base class) have been successfully implemented, providing significant benefits in code reuse, maintainability, and development velocity while maintaining native performance and user experience.
 
 ## ViewModel Inventory
 
 ### Shared ViewModels (Kotlin Multiplatform)
 **Location**: `shared/src/commonMain/kotlin/com/cocktailcraft/viewmodel/`
 
-**9 ViewModels + base class** — these contain the business logic, state management, and data operations, written once and used by both platforms:
+**8 ViewModels + base class** — these contain the business logic, state management, and data operations, written once and used by both platforms:
 
-- ✅ **SharedHomeViewModel**: Home screen with cocktail browsing and search
+- ✅ **SharedHomeViewModel**: Home screen with cocktail browsing and search (including network-state handling and offline cache fallback)
 - ✅ **SharedCartViewModel**: Shopping cart management
 - ✅ **SharedCocktailDetailViewModel**: Individual cocktail details
 - ✅ **SharedFavoritesViewModel**: Favorites management
 - ✅ **SharedProfileViewModel**: User profile and authentication
 - ✅ **SharedOrderViewModel**: Order placement and history
-- ✅ **SharedOfflineModeViewModel**: Offline functionality
 - ✅ **SharedThemeViewModel**: Theme and accessibility settings
 - ✅ **SharedReviewViewModel**: Review system with ratings
 - ✅ **SharedViewModel**: Base class with common functionality
@@ -25,13 +24,12 @@ This document describes the **completed implementation** of shared ViewModels us
 ### iOS SKIE Wrapper ViewModels
 **Location**: `iosApp/CocktailCraft/ViewModels/`
 
-**8 wrappers + base class** — thin platform adapters that make the shared ViewModels work with SwiftUI's `@ObservableObject`/`@Published` patterns:
+**7 wrappers + base class** — thin platform adapters that make the shared ViewModels work with SwiftUI's `@ObservableObject`/`@Published` patterns:
 
 - CartViewModelSKIE.swift
 - CocktailDetailViewModelSKIE.swift
 - FavoritesViewModelSKIE.swift
 - HomeViewModelSKIE.swift
-- OfflineModeViewModelSKIE.swift
 - OrderViewModelSKIE.swift
 - ProfileViewModelSKIE.swift
 - ThemeViewModelSKIE.swift
@@ -60,7 +58,6 @@ Android has **no wrapper ViewModels**. The shared ViewModels extend the multipla
 │  ├── SharedFavoritesViewModel                            │
 │  ├── SharedProfileViewModel                              │
 │  ├── SharedOrderViewModel                                │
-│  ├── SharedOfflineModeViewModel                          │
 │  ├── SharedThemeViewModel                                │
 │  └── SharedReviewViewModel                               │
 └─────────────────────────────────────────────────────────┘
@@ -125,7 +122,7 @@ class SharedHomeViewModel internal constructor(
     private val loadCocktailsByCategoryUseCase: LoadCocktailsByCategoryUseCase,
     private val sortCocktailsUseCase: SortCocktailsUseCase,
     private val manageFavoritesUseCase: ManageFavoritesUseCase,
-    private val manageOfflineModeUseCase: ManageOfflineModeUseCase,
+    private val offlineRepository: CocktailOfflineRepository,
     private val getCocktailDetailUseCase: GetCocktailDetailUseCase,
     private val catalogRepository: CocktailCatalogRepository,
     private val networkMonitor: NetworkMonitor
@@ -298,7 +295,7 @@ Maintaining the same logic in two places loses the point of Kotlin Multiplatform
 
 ### ✅ Phase 2: Core ViewModels (COMPLETE)
 - [x] **Simple ViewModels**: ReviewViewModel, ThemeViewModel, ProfileViewModel
-- [x] **Medium Complexity**: CartViewModel, FavoritesViewModel, OrderViewModel, OfflineModeViewModel
+- [x] **Medium Complexity**: CartViewModel, FavoritesViewModel, OrderViewModel
 - [x] **Complex ViewModels**: HomeViewModel, CocktailDetailViewModel
 
 ### ✅ Phase 3: Platform Integration (COMPLETE)

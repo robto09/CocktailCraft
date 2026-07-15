@@ -83,11 +83,6 @@ struct CocktailCraftApp: App {
         // Initialize Koin
         KoinInitializer.instance.initialize()
 
-        // Register background tasks synchronously: BGTaskScheduler requires
-        // all launch handlers to be registered before the app finishes
-        // launching.
-        BackgroundSyncManager.shared.registerBackgroundTasks()
-
         // Keep the home-screen widgets' favorites snapshot current
         WidgetDataBridge.shared.start()
 
