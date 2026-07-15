@@ -5,6 +5,7 @@ struct OfflineModeView: View {
     @State private var viewModel = OfflineModeViewModelSKIE()
     @State private var showingAllRecentlyViewed = false
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.isDarkMode) private var isDarkMode
 
     var body: some View {
         NavigationStack {
@@ -32,7 +33,7 @@ struct OfflineModeView: View {
                 }
                 .padding()
             }
-            .background(Color(.systemBackground))
+            .background(AppColors.background(isDarkMode: isDarkMode))
             .navigationTitle("Offline Mode")
             .brandedNavigationBar()
             .navigationDestination(for: String.self) { cocktailId in
@@ -71,7 +72,7 @@ struct OfflineModeView: View {
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(viewModel.state.isNetworkAvailable ? Color.green : Color.red)
+                    .fill(viewModel.state.isNetworkAvailable ? AppColors.success : AppColors.error)
             )
         }
         .cardStyle()
@@ -83,18 +84,18 @@ struct OfflineModeView: View {
             Text("Offline Mode Settings")
                 .font(.headline)
                 .fontWeight(.bold)
-                .foregroundColor(.primary)
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
             
             VStack(spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Enable Offline Mode")
                             .font(.body)
-                            .foregroundColor(.primary)
+                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                         Text("Access cached cocktails when offline")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                     }
                     
                     Spacer()
@@ -107,17 +108,17 @@ struct OfflineModeView: View {
                             }
                         }
                     ))
-                    .toggleStyle(SwitchToggleStyle(tint: .blue))
+                    .toggleStyle(SwitchToggleStyle(tint: AppColors.primary(isDarkMode: isDarkMode)))
                 }
                 
                 if viewModel.shouldShowOfflineRecommendation() {
                     HStack {
                         Image(systemName: "info.circle")
-                            .foregroundColor(.orange)
-                        
+                            .foregroundColor(AppColors.warning)
+
                         Text("Offline mode is recommended when network is unavailable")
                             .font(.caption)
-                            .foregroundColor(.orange)
+                            .foregroundColor(AppColors.warning)
                     }
                     .padding(.top, 8)
                 }
@@ -133,38 +134,38 @@ struct OfflineModeView: View {
             Text("Cache Information")
                 .font(.headline)
                 .fontWeight(.bold)
-                .foregroundColor(.primary)
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
             VStack(spacing: 12) {
                 HStack {
                     Text("Cached Cocktails:")
                         .font(.body)
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                     Spacer()
 
                     Text(viewModel.getCacheSizeText())
                         .font(.body)
                         .fontWeight(.medium)
-                        .foregroundColor(.blue)
+                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
                 }
 
                 HStack {
                     Text("Last Sync:")
                         .font(.body)
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                     Spacer()
 
                     Text(viewModel.formatLastSyncTime())
                         .font(.body)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                 }
 
                 HStack {
                     Text("Network Status:")
                         .font(.body)
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                     Spacer()
 
@@ -176,7 +177,7 @@ struct OfflineModeView: View {
                 HStack {
                     Text("Offline Mode:")
                         .font(.body)
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     
                     Spacer()
                     
@@ -196,12 +197,12 @@ struct OfflineModeView: View {
             Text("Recently Viewed Cocktails")
                 .font(.headline)
                 .fontWeight(.bold)
-                .foregroundColor(.primary)
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
             if viewModel.state.recentlyViewedCocktails.isEmpty {
                 Text("No recently viewed cocktails")
                     .font(.body)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                     .padding(.vertical, 20)
             } else {
                 let allRecentlyViewed = viewModel.state.recentlyViewedCocktails
@@ -230,7 +231,7 @@ struct OfflineModeView: View {
                         showingAllRecentlyViewed.toggle()
                     }
                     .font(.caption)
-                    .foregroundColor(.blue)
+                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
                     .padding(.top, 8)
                 }
             }
@@ -245,7 +246,7 @@ struct OfflineModeView: View {
             Text("Cache Management")
                 .font(.headline)
                 .fontWeight(.bold)
-                .foregroundColor(.primary)
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
             VStack(spacing: 12) {
                 // Sync Cache Button
@@ -265,7 +266,7 @@ struct OfflineModeView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(.blue)
+                    .background(AppColors.primary(isDarkMode: isDarkMode))
                     .cornerRadius(8)
                 }
                 .disabled(!viewModel.state.isNetworkAvailable || viewModel.state.isLoading)
@@ -287,7 +288,7 @@ struct OfflineModeView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.red)
+                    .background(AppColors.error)
                     .cornerRadius(8)
                 }
                 .disabled(viewModel.getCachedCocktailCount() == 0 || viewModel.state.isLoading)
@@ -299,7 +300,7 @@ struct OfflineModeView: View {
 
                         Text("Processing...")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                     }
                     .padding(.top, 8)
                 }
@@ -314,6 +315,7 @@ struct OfflineModeView: View {
 // Label only — the tap behavior belongs to the enclosing NavigationLink.
 private struct CocktailGridItem: View {
     let cocktail: Cocktail
+    @Environment(\.isDarkMode) private var isDarkMode
 
     var body: some View {
         VStack(spacing: 8) {
@@ -328,7 +330,7 @@ private struct CocktailGridItem: View {
             Text(cocktail.name)
                 .font(.caption)
                 .fontWeight(.medium)
-                .foregroundColor(.primary)
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
         }

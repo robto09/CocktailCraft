@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SignUpView: View {
+    @Environment(\.isDarkMode) private var isDarkMode
     @State private var name = ""
     @State private var email = ""
     @State private var password = ""
@@ -23,16 +24,11 @@ struct SignUpView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "person.badge.plus")
                         .font(.system(size: 60))
-                        .foregroundColor(.blue)
-
-                    Text("Create Account")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
 
                     Text("Join us and discover amazing cocktails!")
                         .font(.body)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 32)
@@ -43,7 +39,7 @@ struct SignUpView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Full Name")
                             .font(.headline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                         
                         TextField("Enter your full name", text: $name)
                             .textFieldStyle(CustomTextFieldStyle())
@@ -56,7 +52,7 @@ struct SignUpView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Email")
                             .font(.headline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                         
                         TextField("Enter your email", text: $email)
                             .textFieldStyle(CustomTextFieldStyle())
@@ -71,7 +67,7 @@ struct SignUpView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Password")
                             .font(.headline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                         
                         HStack {
                             if isPasswordVisible {
@@ -88,7 +84,7 @@ struct SignUpView: View {
                                 isPasswordVisible.toggle()
                             }) {
                                 Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                                     .minimumHitTarget()
                             }
                             .accessibilityLabel(isPasswordVisible ? "Hide password" : "Show password")
@@ -127,7 +123,7 @@ struct SignUpView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(isFormValid ? .blue : .gray)
+                    .background(isFormValid ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.gray)
                     .cornerRadius(8)
                 }
                 .disabled(!isFormValid || isLoading)
@@ -137,7 +133,7 @@ struct SignUpView: View {
                 
                 Spacer()
             }
-            .background(Color(.systemBackground))
+            .background(AppColors.background(isDarkMode: isDarkMode))
             .navigationTitle("Create Account")
             .brandedNavigationBar()
             .toolbar {

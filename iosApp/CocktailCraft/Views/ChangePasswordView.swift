@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ChangePasswordView: View {
+    @Environment(\.isDarkMode) private var isDarkMode
     @State private var currentPassword = ""
     @State private var newPassword = ""
     @State private var isCurrentPasswordVisible = false
@@ -23,16 +24,11 @@ struct ChangePasswordView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "lock.rotation")
                         .font(.system(size: 60))
-                        .foregroundColor(.blue)
-
-                    Text("Change Password")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
 
                     Text("Enter your current password and choose a new one.")
                         .font(.body)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 32)
@@ -42,7 +38,7 @@ struct ChangePasswordView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Current Password")
                             .font(.headline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                         HStack {
                             if isCurrentPasswordVisible {
@@ -59,7 +55,7 @@ struct ChangePasswordView: View {
                                 isCurrentPasswordVisible.toggle()
                             }) {
                                 Image(systemName: isCurrentPasswordVisible ? "eye.slash" : "eye")
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                                     .minimumHitTarget()
                             }
                             .accessibilityLabel(isCurrentPasswordVisible ? "Hide password" : "Show password")
@@ -71,7 +67,7 @@ struct ChangePasswordView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("New Password")
                             .font(.headline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                         HStack {
                             if isNewPasswordVisible {
@@ -88,7 +84,7 @@ struct ChangePasswordView: View {
                                 isNewPasswordVisible.toggle()
                             }) {
                                 Image(systemName: isNewPasswordVisible ? "eye.slash" : "eye")
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                                     .minimumHitTarget()
                             }
                             .accessibilityLabel(isNewPasswordVisible ? "Hide password" : "Show password")
@@ -127,7 +123,7 @@ struct ChangePasswordView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(isFormValid ? .blue : .gray)
+                    .background(isFormValid ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.gray)
                     .cornerRadius(8)
                 }
                 .disabled(!isFormValid || isLoading)
@@ -137,7 +133,7 @@ struct ChangePasswordView: View {
 
                 Spacer()
             }
-            .background(Color(.systemBackground))
+            .background(AppColors.background(isDarkMode: isDarkMode))
             .navigationTitle("Change Password")
             .brandedNavigationBar()
             .toolbar {
