@@ -53,8 +53,8 @@ fun FavoritesScreen(
         if (!isLoading && error != null) {
             EmptyStateComponent(
                 title = stringResource(R.string.error),
-                message = error?.toString() ?: "An unknown error occurred",
-                actionButtonText = "Try Again",
+                message = error?.toString() ?: stringResource(R.string.cart_unknown_error),
+                actionButtonText = stringResource(R.string.cart_try_again),
                 onActionButtonClick = { /* Add retry logic here */ }
             )
         }
@@ -63,7 +63,7 @@ fun FavoritesScreen(
             EmptyStateComponent(
                 title = stringResource(R.string.no_favorites),
                 message = stringResource(R.string.favorites_empty_message),
-                actionButtonText = "Browse Cocktails",
+                actionButtonText = stringResource(R.string.browse_cocktails),
                 onActionButtonClick = onBrowseProducts,
                 icon = Icons.Filled.Favorite
             )

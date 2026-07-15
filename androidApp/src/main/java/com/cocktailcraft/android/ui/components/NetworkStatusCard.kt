@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.R
+import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * A reusable network status card component that displays the current network status.
@@ -43,8 +44,8 @@ import com.cocktailcraft.android.R
 fun NetworkStatusCard(
     isNetworkAvailable: Boolean,
     modifier: Modifier = Modifier,
-    onlineColor: Color = Color(0xFF4CAF50), // Green
-    offlineColor: Color = Color(0xFFE57373), // Red
+    onlineColor: Color = AppColors.Success,
+    offlineColor: Color = AppColors.Error,
     textColor: Color = Color.White,
     iconSize: Int = 28,
     fontSize: Int = 18,

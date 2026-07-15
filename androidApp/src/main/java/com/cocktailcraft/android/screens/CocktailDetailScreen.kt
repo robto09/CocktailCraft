@@ -399,7 +399,7 @@ private fun DetailMainInfoCard(
                     modifier = Modifier
                         .size(10.dp)
                         .background(
-                            if (inStock) Color(0xFF4CAF50) else Color(0xFFE57373),
+                            if (inStock) AppColors.Success else AppColors.Error,
                             CircleShape
                         )
                 )
@@ -409,7 +409,7 @@ private fun DetailMainInfoCard(
                 Text(
                     text = if (inStock) stringResource(R.string.detail_in_stock, cocktail.stockCount) else stringResource(R.string.detail_out_of_stock),
                     fontSize = 14.sp,
-                    color = if (inStock) Color(0xFF4CAF50) else Color(0xFFE57373),
+                    color = if (inStock) AppColors.Success else AppColors.Error,
                     fontWeight = FontWeight.Medium
                 )
             }

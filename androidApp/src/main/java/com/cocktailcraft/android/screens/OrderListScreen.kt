@@ -240,8 +240,8 @@ fun OrderItem(order: Order) {
                         .size(10.dp)
                         .background(
                             when (order.status) {
-                                "Completed" -> Color(0xFF4CAF50)
-                                "In Progress" -> Color(0xFFFFA000)
+                                "Completed" -> AppColors.Success
+                                "In Progress" -> AppColors.Warning
                                 else -> AppColors.Gray
                             },
                             CircleShape
@@ -254,8 +254,8 @@ fun OrderItem(order: Order) {
                     text = order.status,
                     fontSize = 14.sp,
                     color = when (order.status) {
-                        "Completed" -> Color(0xFF4CAF50)
-                        "In Progress" -> Color(0xFFFFA000)
+                        "Completed" -> AppColors.Success
+                        "In Progress" -> AppColors.Warning
                         else -> AppColors.Gray
                     }
                 )

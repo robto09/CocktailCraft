@@ -332,7 +332,7 @@ private fun CacheInfoCard(
                 onClick = onClearCacheClick,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE57373)
+                    containerColor = AppColors.Error
                 )
             ) {
                 Icon(
