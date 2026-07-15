@@ -111,7 +111,9 @@ struct AnimatedThemeSwitch: View {
                 .frame(width: 72, height: 40)
 
             Circle()
-                .fill(isChecked ? AppColors.primaryDark : AppColors.primaryLight)
+                // Follows the selected accent (dark/light variant by state),
+                // matching Android's AnimatedThemeSwitch thumb
+                .fill(AppColors.primary(isDarkMode: isChecked))
                 .frame(width: 24, height: 24)
                 .overlay(
                     Image(systemName: isChecked ? "moon.fill" : "sun.max.fill")

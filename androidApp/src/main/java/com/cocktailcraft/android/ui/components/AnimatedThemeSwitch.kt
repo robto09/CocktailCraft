@@ -72,7 +72,7 @@ fun AnimatedThemeSwitch(
 
     // Animate the thumb color
     val thumbColor by animateColorAsState(
-        targetValue = if (isDarkMode) AppColors.PrimaryDark else AppColors.PrimaryLight,
+        targetValue = AppColors.Primary, // follows the selected accent
         animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
         label = "thumb_color"
     )
