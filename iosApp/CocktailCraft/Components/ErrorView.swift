@@ -5,6 +5,7 @@ import shared
 struct ErrorView: View {
     let error: ErrorHandler.UserFriendlyError
     let onRetry: (() -> Void)?
+    @Environment(\.isDarkMode) private var isDarkMode
     
     var body: some View {
         VStack(spacing: 16) {
@@ -20,7 +21,7 @@ struct ErrorView: View {
             
             Text(error.message)
                 .font(.body)
-                .foregroundColor(.secondary)
+                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
             
@@ -33,7 +34,7 @@ struct ErrorView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 12)
-                        .background(Color.blue, in: RoundedRectangle(cornerRadius: 8))
+                        .background(AppColors.primary(isDarkMode: isDarkMode), in: RoundedRectangle(cornerRadius: 8))
                 }
                 .buttonStyle(.plain)
             } else if let onRetry = onRetry {
@@ -43,7 +44,7 @@ struct ErrorView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 12)
-                        .background(Color.blue, in: RoundedRectangle(cornerRadius: 8))
+                        .background(AppColors.primary(isDarkMode: isDarkMode), in: RoundedRectangle(cornerRadius: 8))
                 }
                 .buttonStyle(.plain)
             }
@@ -69,15 +70,15 @@ struct ErrorView: View {
     private func getErrorColor(for category: ErrorHandler.ErrorCategory) -> Color {
         switch category {
         case .network:
-            return .blue
+            return AppColors.warning
         case .server:
-            return .orange
+            return AppColors.error
         case .authentication:
-            return .red
+            return AppColors.primary(isDarkMode: isDarkMode)
         case .data:
-            return .purple
+            return AppColors.primary(isDarkMode: isDarkMode)
         default:
-            return .red
+            return AppColors.gray
         }
     }
 }

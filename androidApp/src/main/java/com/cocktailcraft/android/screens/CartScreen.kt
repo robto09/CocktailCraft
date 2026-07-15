@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocktailcraft.android.util.rememberHapticHandler
 import com.cocktailcraft.android.util.toFavoriteIdSet
 import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.CartItemCard
@@ -36,6 +37,7 @@ import com.cocktailcraft.android.ui.components.ConfirmationDialog
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.OrderSummaryCard
+import com.cocktailcraft.android.ui.components.PrimaryButton
 import com.cocktailcraft.android.ui.components.SectionHeader
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.SharedCartViewModel
@@ -64,6 +66,7 @@ fun CartScreen(
     // O(1) membership per row instead of favorites.any {} per visible item (AN-3)
     val favoriteIds = remember(favorites) { favorites.toFavoriteIdSet() }
     val scope = rememberCoroutineScope()
+    val hapticHandler = rememberHapticHandler()
 
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
 
@@ -144,23 +147,15 @@ fun CartScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Checkout Button
-            Button(
-                onClick = { showPlaceOrderDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.Primary
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.cart_place_order),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-            }
+            // Checkout Button (confirm haptic, parity with iOS)
+            PrimaryButton(
+                text = stringResource(R.string.cart_place_order),
+                onClick = {
+                    hapticHandler.performConfirm()
+                    showPlaceOrderDialog = true
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 

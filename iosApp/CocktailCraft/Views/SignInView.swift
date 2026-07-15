@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SignInView: View {
+    @Environment(\.isDarkMode) private var isDarkMode
     @State private var email = ""
     @State private var password = ""
     @State private var isPasswordVisible = false
@@ -18,16 +19,11 @@ struct SignInView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "person.circle.fill")
                         .font(.system(size: 60))
-                        .foregroundColor(.blue)
-
-                    Text("Sign In")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
+                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
 
                     Text("Welcome back! Please sign in to your account.")
                         .font(.body)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 32)
@@ -38,7 +34,7 @@ struct SignInView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Email")
                             .font(.headline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                         
                         TextField("Enter your email", text: $email)
                             .textFieldStyle(CustomTextFieldStyle())
@@ -53,7 +49,7 @@ struct SignInView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Password")
                             .font(.headline)
-                            .foregroundColor(.primary)
+                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                         
                         HStack {
                             if isPasswordVisible {
@@ -70,7 +66,7 @@ struct SignInView: View {
                                 isPasswordVisible.toggle()
                             }) {
                                 Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                                     .minimumHitTarget()
                             }
                             .accessibilityLabel(isPasswordVisible ? "Hide password" : "Show password")
@@ -82,40 +78,28 @@ struct SignInView: View {
                 .padding(.horizontal)
                 
                 // Sign In Button
-                Button(action: {
-                    guard !isLoading else { return }
-                    isLoading = true
-                    Task {
-                        await onSignIn(email, password)
-                        isLoading = false
-                    }
-                }) {
-                    HStack {
-                        if isLoading {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .foregroundColor(.white)
+                PrimaryButton(
+                    title: String(localized: "Sign In"),
+                    isLoading: isLoading,
+                    isDisabled: !isFormValid,
+                    action: {
+                        guard !isLoading else { return }
+                        isLoading = true
+                        Task {
+                            await onSignIn(email, password)
+                            isLoading = false
                         }
-                        
-                        Text("Sign In")
-                            .font(.headline)
-                            .fontWeight(.medium)
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(isFormValid ? .blue : .gray)
-                    .cornerRadius(8)
-                }
-                .disabled(!isFormValid || isLoading)
+                )
                 .padding(.horizontal)
                 .accessibilityLabel("Sign In")
                 .accessibilityIdentifier("signin.submitButton")
                 
                 Spacer()
             }
-            .background(Color(.systemBackground))
-            .navigationBarTitleDisplayMode(.inline)
+            .background(AppColors.background(isDarkMode: isDarkMode))
+            .navigationTitle("Sign In")
+            .brandedNavigationBar()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
@@ -123,6 +107,7 @@ struct SignInView: View {
                     }
                     .accessibilityLabel("Cancel")
                     .accessibilityIdentifier("signin.cancelButton")
+                    .tint(.white)
                 }
             }
         }
@@ -134,14 +119,16 @@ struct SignInView: View {
 }
 
 struct CustomTextFieldStyle: TextFieldStyle {
+    @Environment(\.isDarkMode) private var isDarkMode
+
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration
             .padding()
-            .background(Color(.systemGray6))
+            .background(AppColors.surface(isDarkMode: isDarkMode))
             .cornerRadius(8)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    .stroke(AppColors.gray.opacity(0.3), lineWidth: 1)
             )
     }
 }

@@ -13,7 +13,7 @@ struct Toast: View {
             switch self {
             case .success: return AppColors.success
             case .error: return AppColors.error
-            case .info: return .blue
+            case .info: return AppColors.primaryLight
             }
         }
         

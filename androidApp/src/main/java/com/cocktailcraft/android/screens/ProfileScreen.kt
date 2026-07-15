@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -67,7 +68,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.navigation.NavigationManager
+import com.cocktailcraft.android.ui.components.AccentColorPicker
 import com.cocktailcraft.android.ui.components.AnimatedThemeToggleRow
+import com.cocktailcraft.android.ui.components.PrimaryButton
+import com.cocktailcraft.android.ui.components.SettingsItem
 import com.cocktailcraft.android.BuildConfig
 import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.SignInDialog
@@ -201,6 +205,22 @@ fun ProfileScreen(
             onLogoutClick = { showLogoutDialog = true }
         )
 
+        // Appearance / accessibility settings (accent, font size, contrast,
+        // motion) — parity with the iOS Settings sheet
+        AppearanceSettingsCard(
+            accentColor = themeState.accentColor,
+            accentOptions = themeViewModel.availableAccentColors,
+            fontSize = themeState.fontSize,
+            fontSizeOptions = themeViewModel.availableFontSizes,
+            fontSizeLabel = { themeViewModel.getFontSizeDisplayName(it) },
+            isHighContrast = themeState.isHighContrast,
+            isReducedMotion = themeState.isReducedMotion,
+            onSelectAccent = { scope.launch { themeViewModel.setAccentColor(it) } },
+            onSelectFontSize = { scope.launch { themeViewModel.setFontSize(it) } },
+            onToggleHighContrast = { scope.launch { themeViewModel.toggleHighContrast() } },
+            onToggleReducedMotion = { scope.launch { themeViewModel.toggleReducedMotion() } }
+        )
+
         // App information
         AboutCard()
     }
@@ -226,45 +246,6 @@ fun ProfileScreen(
                     Text(stringResource(R.string.ok))
                 }
             }
-        )
-    }
-}
-
-@Composable
-fun SettingsItem(
-    icon: ImageVector,
-    title: String,
-    onClick: () -> Unit,
-    textColor: Color = AppColors.TextPrimary
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = Spacing.md),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = textColor,
-            modifier = Modifier.size(24.dp)
-        )
-
-        Spacer(modifier = Modifier.width(Spacing.lg))
-
-        Text(
-            text = title,
-            fontSize = 16.sp,
-            color = textColor,
-            modifier = Modifier.weight(1f)
-        )
-
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = AppColors.Gray,
-            modifier = Modifier.size(20.dp)
         )
     }
 }
@@ -352,17 +333,13 @@ private fun SignInPromptSection(
         modifier = Modifier.padding(bottom = Spacing.lg)
     )
 
-    Button(
+    PrimaryButton(
+        text = stringResource(R.string.sign_in),
         onClick = onSignInClick,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = AppColors.Primary
-        ),
         modifier = Modifier
             .fillMaxWidth(0.8f)
             .padding(vertical = Spacing.xs)
-    ) {
-        Text(stringResource(R.string.sign_in))
-    }
+    )
 
     Spacer(modifier = Modifier.height(Spacing.sm))
 
@@ -509,6 +486,107 @@ private fun AppSettingsCard(
                     textColor = AppColors.Error
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun AppearanceSettingsCard(
+    accentColor: String,
+    accentOptions: List<String>,
+    fontSize: String,
+    fontSizeOptions: List<String>,
+    fontSizeLabel: (String) -> String,
+    isHighContrast: Boolean,
+    isReducedMotion: Boolean,
+    onSelectAccent: (String) -> Unit,
+    onSelectFontSize: (String) -> Unit,
+    onToggleHighContrast: () -> Unit,
+    onToggleReducedMotion: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = Spacing.lg),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = AppColors.Surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(Spacing.lg)
+        ) {
+            Text(
+                text = stringResource(R.string.profile_appearance),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.TextPrimary,
+                modifier = Modifier.padding(bottom = Spacing.lg)
+            )
+
+            // Accent color
+            Text(
+                text = stringResource(R.string.accent_color),
+                fontSize = 16.sp,
+                color = AppColors.TextPrimary
+            )
+            AccentColorPicker(
+                selected = accentColor,
+                options = accentOptions,
+                onSelect = onSelectAccent
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+
+            // Font size
+            Text(
+                text = stringResource(R.string.font_size),
+                fontSize = 16.sp,
+                color = AppColors.TextPrimary
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = Spacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+            ) {
+                fontSizeOptions.forEach { option ->
+                    val selected = option.equals(fontSize, ignoreCase = true)
+                    Text(
+                        text = fontSizeLabel(option),
+                        fontSize = 14.sp,
+                        color = if (selected) Color.White else AppColors.TextPrimary,
+                        modifier = Modifier
+                            .background(
+                                color = if (selected) AppColors.Primary else AppColors.LightGray.copy(alpha = 0.4f),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            .clickable { onSelectFontSize(option) }
+                            .padding(horizontal = Spacing.md, vertical = Spacing.sm)
+                    )
+                }
+            }
+
+            // High contrast
+            AnimatedThemeToggleRow(
+                title = stringResource(R.string.high_contrast),
+                subtitle = if (isHighContrast) stringResource(R.string.profile_toggle_on) else stringResource(R.string.profile_toggle_off),
+                icon = Icons.Default.Visibility,
+                isChecked = isHighContrast,
+                onToggle = onToggleHighContrast,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Reduce motion
+            AnimatedThemeToggleRow(
+                title = stringResource(R.string.reduced_motion),
+                subtitle = if (isReducedMotion) stringResource(R.string.profile_toggle_on) else stringResource(R.string.profile_toggle_off),
+                icon = Icons.Default.Speed,
+                isChecked = isReducedMotion,
+                onToggle = onToggleReducedMotion,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

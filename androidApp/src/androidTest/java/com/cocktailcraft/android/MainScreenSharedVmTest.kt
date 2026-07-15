@@ -92,6 +92,12 @@ class MainScreenSharedVmTest {
         }
     }
 
+    private fun waitForTextGone(text: String, timeoutMillis: Long = 10_000) {
+        composeTestRule.waitUntil(timeoutMillis) {
+            composeTestRule.onAllNodesWithText(text).fetchSemanticsNodes().isEmpty()
+        }
+    }
+
     @Test
     fun homeShowsCocktailsFromRepository() {
         launchApp()
@@ -104,9 +110,15 @@ class MainScreenSharedVmTest {
     fun addToCartFromHome_showsItemInCartTab() {
         launchApp()
 
-        // The first "Add to Cart" button belongs to the first list item;
-        // HomeScreen's onAddToCart then auto-navigates to the Cart screen.
+        // The first "Add to Cart" button belongs to the first list item.
+        // Add-to-cart keeps the user on Home with a snackbar confirmation
+        // (parity with iOS), so the Cart tab is opened explicitly.
         composeTestRule.onAllNodesWithContentDescription("Add to Cart").onFirst().performClick()
+        // The snackbar confirmation only shows after the async add-to-cart
+        // landed in shared state — without this sync the tab switch can race
+        // the write and Cart renders empty.
+        waitForText("Added Test Mojito to cart")
+        composeTestRule.onNodeWithTag("nav_cart").performClick()
 
         waitForText("Place Order")
         composeTestRule.onNodeWithText("Test Mojito").assertIsDisplayed()
@@ -162,17 +174,22 @@ class MainScreenSharedVmTest {
     }
 
     /**
-     * Regression test: a plain navigate(CartRoute) from add-to-cart, later
-     * popped by popUpTo(Home) { saveState = true }, used to key the popped
-     * Cart segment to Home's destination id — so navigate(Home) with
-     * restoreState = true re-pushed Cart instead of showing Home, leaving
-     * Home unreachable.
+     * Regression test for the Home-restoration bug: after visiting Cart with
+     * items in it, navigate(Home) with restoreState once re-pushed Cart
+     * instead of showing Home, leaving Home unreachable. (Add-to-cart no
+     * longer auto-navigates — parity with iOS — so Cart is opened via the
+     * bottom nav.)
      */
     @Test
     fun homeTab_afterAddToCart_returnsToHome() {
         launchApp()
 
         composeTestRule.onAllNodesWithContentDescription("Add to Cart").onFirst().performClick()
+        // The snackbar confirmation only shows after the async add-to-cart
+        // landed in shared state — without this sync the tab switch can race
+        // the write and Cart renders empty.
+        waitForText("Added Test Mojito to cart")
+        composeTestRule.onNodeWithTag("nav_cart").performClick()
         waitForText("Place Order")
 
         composeTestRule.onNodeWithTag("nav_home").performClick()
@@ -187,11 +204,22 @@ class MainScreenSharedVmTest {
         launchApp()
 
         composeTestRule.onAllNodesWithContentDescription("Add to Cart").onFirst().performClick()
+        // The snackbar confirmation only shows after the async add-to-cart
+        // landed in shared state — without this sync the tab switch can race
+        // the write and Cart renders empty.
+        waitForText("Added Test Mojito to cart")
+        composeTestRule.onNodeWithTag("nav_cart").performClick()
         waitForText("Place Order")
+        // The add-to-cart snackbar floats directly over the checkout button
+        // until it auto-dismisses; clicking through it hits the snackbar.
+        waitForTextGone("Added Test Mojito to cart")
         composeTestRule.onNodeWithText("Place Order").performClick()
         waitForText("Confirm")
         composeTestRule.onNodeWithText("Confirm").performClick()
-        waitForText("Your Orders")
+        // Placing the order lands on the Orders list; the new OrderCard shows
+        // the placed order's "Processing" status (the old in-list "Your
+        // Orders" heading is gone — the top bar carries the title now).
+        waitForText("Processing")
 
         composeTestRule.onNodeWithTag("nav_cart").performClick()
         waitForText("Your cart is empty")

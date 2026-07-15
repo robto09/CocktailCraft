@@ -51,7 +51,7 @@ fun OfflineModeIndicator(
                 .fillMaxWidth()
                 .background(
                     if (isOfflineModeEnabled) AppColors.Primary.copy(alpha = 0.8f)
-                    else Color(0xFFE57373) // Light red for network offline
+                    else AppColors.Error // Network offline
                 )
                 .clickable(enabled = onClick != null) { onClick?.invoke() }
                 .padding(vertical = 8.dp, horizontal = 16.dp)

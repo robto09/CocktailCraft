@@ -93,9 +93,27 @@ class SharedThemeViewModelTest : MainDispatcherTest() {
 
         val state = vm.uiState.value
         assertEquals(ThemeMode.DARK, state.themeMode)
-        assertEquals("blue", state.accentColor)
+        assertEquals("coral", state.accentColor)
         assertEquals("medium", state.fontSize)
         assertFalse(state.isHighContrast)
         assertFalse(state.isReducedMotion)
+    }
+
+    @Test
+    fun legacyNeverHonoredAccentColorKeyResetsToBrandDefault() = runTest {
+        val harness = Harness(StandardTestDispatcher(testScheduler))
+        // "accentColor" was persisted while the setting was non-functional
+        // (a "blue" default no user ever saw honored). The field now
+        // serializes as "accent", so the stale key is ignored and everyone
+        // starts from the brand coral default once accents actually work.
+        harness.settings.putString(
+            "guest_preferences",
+            """{"darkMode":false,"followSystemTheme":true,"notificationsEnabled":true,"language":"en","accentColor":"blue"}"""
+        )
+
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        assertEquals("coral", vm.uiState.value.accentColor)
     }
 }

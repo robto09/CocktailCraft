@@ -12,10 +12,11 @@ enum WidgetKind {
     static let randomCocktail = "CocktailCraftRandomWidget"
 }
 
-/// Brand color components (sRGB, 0-1), shared by the app theme (AppColors)
-/// and the widget extension (WidgetColors). The extension links neither the
-/// app target nor the shared framework, so this is the single definition
-/// both sides build their SwiftUI Color from — the values cannot drift.
+/// Brand color components (sRGB, 0-1) for the WIDGET EXTENSION's WidgetColors.
+/// The app theme (AppColors) now reads the cross-platform design tokens in
+/// shared/designsystem/DesignTokens.kt (ColorTokens); the extension links
+/// neither the app target nor the shared framework, so it keeps this mirror.
+/// If a brand color changes in the shared tokens, update it here too.
 enum BrandColorComponents {
     /// Coral/orange primary — #EB6A43.
     static let primary = (red: 0xEB / 255.0, green: 0x6A / 255.0, blue: 0x43 / 255.0)

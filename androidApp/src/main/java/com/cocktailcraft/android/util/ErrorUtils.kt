@@ -39,8 +39,8 @@ object ErrorUtils {
     fun getErrorColor(category: ErrorHandler.ErrorCategory): Color {
         return when (category) {
             ErrorHandler.ErrorCategory.NETWORK -> AppColors.Primary
-            ErrorHandler.ErrorCategory.SERVER -> Color(0xFFF57C00) // Orange
-            ErrorHandler.ErrorCategory.AUTHENTICATION -> Color(0xFFD32F2F) // Red
+            ErrorHandler.ErrorCategory.SERVER -> AppColors.Warning
+            ErrorHandler.ErrorCategory.AUTHENTICATION -> AppColors.Error
             else -> AppColors.Error
         }
     }

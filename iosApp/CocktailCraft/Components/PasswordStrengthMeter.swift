@@ -12,7 +12,7 @@ struct PasswordStrengthMeter: View {
                 ForEach(0..<5, id: \.self) { index in
                     Rectangle()
                         .frame(height: 4)
-                        .foregroundColor(index < strength ? color : Color.gray.opacity(0.3))
+                        .foregroundColor(index < strength ? color : AppColors.lightGray)
                         .cornerRadius(2)
                 }
             }
@@ -25,11 +25,11 @@ struct PasswordStrengthMeter: View {
 
     private var color: Color {
         switch strength {
-        case 0...1: return .red
-        case 2: return .orange
-        case 3: return .yellow
-        case 4...5: return .green
-        default: return .gray
+        case 0...1: return AppColors.error
+        case 2: return AppColors.warning
+        case 3: return AppColors.secondaryLight
+        case 4...5: return AppColors.success
+        default: return AppColors.gray
         }
     }
 

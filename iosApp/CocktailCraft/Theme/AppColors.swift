@@ -1,44 +1,59 @@
 import SwiftUI
+import shared
 
-/// App color scheme matching Android design
+/// App color scheme, mapped 1:1 from the cross-platform design tokens in
+/// shared/designsystem/DesignTokens.kt (ColorTokens) — the single source of
+/// truth for BOTH iOS and Android, so the palettes can never drift.
+///
+/// The widget extension cannot link the shared framework, so it keeps its own
+/// mirror of the two brand colors in BrandColorComponents
+/// (Utils/WidgetBridge.swift) — update that alongside any brand color change
+/// in the shared tokens.
 struct AppColors {
 
     // MARK: - Primary Colors
-    // Light-mode brand colors come from BrandColorComponents
-    // (WidgetBridge.swift), the single definition also compiled into the
-    // widget extension.
-    static let primaryLight = Color(red: BrandColorComponents.primary.red,
-                                    green: BrandColorComponents.primary.green,
-                                    blue: BrandColorComponents.primary.blue)  // Coral/Orange for main elements
-    static let primaryDark = Color(hex: "FF8A65")   // Lighter coral for dark theme
-    static let secondaryLight = Color(red: BrandColorComponents.secondary.red,
-                                      green: BrandColorComponents.secondary.green,
-                                      blue: BrandColorComponents.secondary.blue) // Yellow/Gold for accents
-    static let secondaryDark = Color(hex: "FFD180")  // Lighter gold for dark theme
+    static let primaryLight = Color(token: ColorTokens.shared.primaryLight)   // Coral/Orange for main elements
+    static let primaryDark = Color(token: ColorTokens.shared.primaryDark)     // Lighter coral for dark theme
+    static let secondaryLight = Color(token: ColorTokens.shared.secondaryLight) // Yellow/Gold for accents
+    static let secondaryDark = Color(token: ColorTokens.shared.secondaryDark)   // Lighter gold for dark theme
 
     // MARK: - Background Colors
-    static let backgroundLight = Color(hex: "FAFAFA") // Light gray background
-    static let backgroundDark = Color(hex: "121212")  // Dark background
-    static let surfaceLight = Color(hex: "FFFFFF")    // White surface/cards
-    static let surfaceDark = Color(hex: "1E1E1E")     // Dark surface/cards
+    static let backgroundLight = Color(token: ColorTokens.shared.backgroundLight) // Light gray background
+    static let backgroundDark = Color(token: ColorTokens.shared.backgroundDark)   // Dark background
+    static let surfaceLight = Color(token: ColorTokens.shared.surfaceLight)       // White surface/cards
+    static let surfaceDark = Color(token: ColorTokens.shared.surfaceDark)         // Dark surface/cards
 
     // MARK: - Text Colors
-    static let textPrimaryLight = Color(hex: "000000") // Black text
-    static let textPrimaryDark = Color(hex: "FFFFFF")  // White text
-    static let textSecondaryLight = Color(hex: "8E8E93") // Gray secondary text
-    static let textSecondaryDark = Color(hex: "B0B0B0")  // Light gray secondary text
+    static let textPrimaryLight = Color(token: ColorTokens.shared.textPrimaryLight) // Black text
+    static let textPrimaryDark = Color(token: ColorTokens.shared.textPrimaryDark)   // White text
+    static let textSecondaryLight = Color(token: ColorTokens.shared.textSecondaryLight) // Gray secondary text
+    static let textSecondaryDark = Color(token: ColorTokens.shared.textSecondaryDark)   // Light gray secondary text
 
     // MARK: - Utility Colors
-    static let success = Color(hex: "FF8A65")    // Coral success (matches primary dark)
-    static let error = Color(hex: "FF3B30")      // Red
-    static let warning = Color(hex: "FF9500")    // Orange for stars
-    static let gray = Color(hex: "8E8E93")       // Secondary text
-    static let lightGray = Color(hex: "E5E5EA")  // Backgrounds
-    static let chipBackground = Color(hex: "9C5C38") // Brown for category chips
+    // Semantic statuses come from the shared tokens: one green/red/amber per
+    // meaning on both platforms. (success was previously a coral that
+    // duplicated primaryDark — that was a bug, fixed by the token migration.)
+    static let success = Color(token: ColorTokens.shared.success)   // Green
+    static let error = Color(token: ColorTokens.shared.error)       // Red
+    static let warning = Color(token: ColorTokens.shared.warning)   // Orange for stars
+    static let gray = Color(token: ColorTokens.shared.gray)         // Secondary text
+    static let darkGray = Color(token: ColorTokens.shared.darkGray) // Stronger secondary text
+    static let lightGray = Color(token: ColorTokens.shared.lightGray) // Backgrounds
+    static let chipBackground = Color(token: ColorTokens.shared.chipBackground) // Brown for category chips
+
+    // MARK: - User appearance settings (accent + high contrast)
+    // Written only by ContentView from the shared theme state, mirroring
+    // Android's AppColors globals. ContentView re-identifies the view tree
+    // when either changes, so no view can render a stale value.
+    static var accentName: String = AccentColorTokens.shared.DEFAULT
+    static var isHighContrast: Bool = false
 
     // MARK: - Dynamic Colors (controlled by app theme preference)
+    // Primary follows the user-selected accent ("coral" = brand default)
     static func primary(isDarkMode: Bool) -> Color {
-        isDarkMode ? primaryDark : primaryLight
+        Color(token: isDarkMode
+            ? AccentColorTokens.shared.dark(name: accentName)
+            : AccentColorTokens.shared.light(name: accentName))
     }
 
     static func secondary(isDarkMode: Bool) -> Color {
@@ -57,8 +72,15 @@ struct AppColors {
         isDarkMode ? textPrimaryDark : textPrimaryLight
     }
 
+    // High contrast pushes secondary text further from the background,
+    // matching Android's AppColors.TextSecondary behavior.
     static func textSecondary(isDarkMode: Bool) -> Color {
-        isDarkMode ? textSecondaryDark : textSecondaryLight
+        switch (isHighContrast, isDarkMode) {
+        case (true, true): return lightGray
+        case (true, false): return darkGray
+        case (false, true): return textSecondaryDark
+        case (false, false): return textSecondaryLight
+        }
     }
 
     // The old trait-collection-driven static vars (primary, background, ...)
@@ -69,8 +91,22 @@ struct AppColors {
     // above with @Environment(\.isDarkMode).
 }
 
-// MARK: - Color Extension for Hex Support
+// MARK: - Color Extensions
+
 extension Color {
+    /// Builds a Color from a shared-framework design token (packed ARGB,
+    /// 0xAARRGGBB, as a Kotlin Long / Swift Int64).
+    init(token: Int64) {
+        let argb = UInt64(bitPattern: token)
+        self.init(
+            .sRGB,
+            red: Double((argb >> 16) & 0xFF) / 255,
+            green: Double((argb >> 8) & 0xFF) / 255,
+            blue: Double(argb & 0xFF) / 255,
+            opacity: Double((argb >> 24) & 0xFF) / 255
+        )
+    }
+
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
@@ -96,4 +132,3 @@ extension Color {
         )
     }
 }
-

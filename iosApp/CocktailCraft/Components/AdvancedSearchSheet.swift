@@ -95,14 +95,14 @@ struct AdvancedSearchSheet: View {
                 }
             }
             .navigationTitle("Advanced Search")
-            .navigationBarTitleDisplayMode(.inline)
+            .brandedNavigationBar()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Clear") {
                         viewModel.clearSearchFilters()
                         dismiss()
                     }
-                    .tint(primaryColor)
+                    .tint(.white)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Apply") {
@@ -119,9 +119,11 @@ struct AdvancedSearchSheet: View {
                             await viewModel.applyFilters(filters)
                         }
                     }
-                    // Filled brand-color pill, matching the Android sheet's Apply
+                    // White pill with brand-color label so it stays visible
+                    // on the branded coral navigation bar
                     .buttonStyle(.borderedProminent)
-                    .tint(primaryColor)
+                    .tint(.white)
+                    .foregroundStyle(primaryColor)
                 }
             }
             .task {

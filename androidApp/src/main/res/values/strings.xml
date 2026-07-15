@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Cocktail Bar</string>
+    <string name="app_name">CocktailCraft</string>
     
     <!-- Authentication -->
     <string name="sign_in">Sign In</string>
@@ -75,10 +75,6 @@
     <string name="cancel">Cancel</string>
     <string name="name">Name</string>
 
-    <!-- Navigation titles -->
-    <string name="my_bar">My Bar</string>
-    <string name="recipes">Recipes</string>
-
     <!-- Home / search -->
     <string name="browse_cocktails">Browse Cocktails</string>
 
@@ -107,7 +103,7 @@
     <string name="glass_label">Glass: %1$s</string>
     <string name="reviews_title">Reviews (%1$d)</string>
     <string name="write_review">Write a Review</string>
-    <string name="added_to_cart">%1$s added to cart</string>
+    <string name="added_to_cart">Added %1$s to cart</string>
     <string name="alcoholic">Alcoholic</string>
     <string name="non_alcoholic">Non-Alcoholic</string>
 
@@ -120,6 +116,11 @@
     <string name="order_history">Order History</string>
     <string name="help_support">Help &amp; Support</string>
     <string name="offline_mode">Offline Mode</string>
+    <string name="profile_appearance">Appearance</string>
+    <string name="accent_color">Accent Color</string>
+    <string name="font_size">Font Size</string>
+    <string name="high_contrast">High Contrast</string>
+    <string name="reduced_motion">Reduce Motion</string>
     <string name="follow_system_theme">Follow System Theme</string>
     <string name="logout_confirm">Are you sure you want to logout?</string>
 
@@ -215,9 +216,9 @@
     <string name="profile_controlled_by_system">Controlled by system</string>
     <string name="profile_light_mode">Light Mode</string>
     <string name="profile_about">About</string>
-    <string name="profile_about_app_name">Cocktail Bar App</string>
+    <string name="profile_about_app_name">CocktailCraft</string>
     <string name="profile_version_format">Version %1$s</string>
-    <string name="profile_copyright">© 2026 Cocktail Bar. All rights reserved.</string>
+    <string name="profile_copyright">© 2026 CocktailCraft. All rights reserved.</string>
 
     <!-- Reviews & dialogs -->
     <string name="review_your_name">Your Name</string>
