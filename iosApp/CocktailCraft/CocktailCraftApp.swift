@@ -1,6 +1,5 @@
 import SwiftUI
 import shared
-import BackgroundTasks
 #if DEBUG
 import DebugSwift
 #endif
@@ -20,12 +19,6 @@ struct CocktailCraftApp: App {
         // SwiftUI-rendered toolbar items follow .tint, but the UIKit-provided
         // back indicator follows this appearance proxy.
         UINavigationBar.appearance().tintColor = .white
-
-        // Register background tasks synchronously: BGTaskScheduler requires
-        // all launch handlers to be registered before the app finishes
-        // launching, and the previous Task-wrapped call deferred past that
-        // deadline.
-        BackgroundSyncManager.shared.registerBackgroundTasks()
 
         // Keep the home-screen widgets' favorites snapshot current
         WidgetDataBridge.shared.start()

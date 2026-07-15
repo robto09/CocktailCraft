@@ -10,17 +10,13 @@ struct OfflineBanner: View {
                 HStack {
                     Image(systemName: "wifi.slash")
                         .foregroundColor(.white)
-                    
-                    Text("You're offline")
+
+                    Text("You're offline — showing saved cocktails.")
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(.white)
-                    
+
                     Spacer()
-                    
-                    Text("Some features may be limited")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.8))
                 }
                 .padding(.horizontal)
                 .padding(.vertical, 12)
