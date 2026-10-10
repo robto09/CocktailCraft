@@ -4,6 +4,16 @@ plugins {
     alias(libs.plugins.android.kotlinMultiplatformLibrary)
     kotlin("native.cocoapods")
     alias(libs.plugins.skie)
+    alias(libs.plugins.sqldelight)
+}
+
+// Offline cocktail cache storage (see CocktailCache)
+sqldelight {
+    databases {
+        create("CocktailCraftDatabase") {
+            packageName.set("com.cocktailcraft.data.cache.db")
+        }
+    }
 }
 
 // Configure SKIE for enhanced Swift interop
@@ -62,6 +72,9 @@ kotlin {
             baseName = "shared"
             isStatic = true
         }
+        // The framework is static, so the SQLDelight native driver's sqlite3
+        // dependency has to be linked by the app that consumes the pod.
+        extraSpecAttributes["libraries"] = "'c++', 'sqlite3'"
     }
 
 
@@ -101,8 +114,6 @@ kotlin {
 
                 // Multiplatform logging
                 implementation(libs.kermit)
-
-                // No external caching library needed - using custom implementation
             }
         }
 
@@ -114,12 +125,14 @@ kotlin {
                 implementation(libs.multiplatform.settings.core)
                 // Keystore-backed EncryptedSharedPreferences for the auth store
                 implementation(libs.androidx.security.crypto)
+                implementation(libs.sqldelight.android.driver)
             }
         }
 
         // iosMain comes from the default Kotlin hierarchy template
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+            implementation(libs.sqldelight.native.driver)
         }
 
         val commonTest by getting {
@@ -146,6 +159,9 @@ kotlin {
                 implementation(libs.junit.jupiter.api)
                 implementation(libs.junit.jupiter.engine)
                 implementation(libs.junit.jupiter.params)
+
+                // In-memory SQLite for the offline cache tests
+                implementation(libs.sqldelight.sqlite.driver)
             }
         }
 

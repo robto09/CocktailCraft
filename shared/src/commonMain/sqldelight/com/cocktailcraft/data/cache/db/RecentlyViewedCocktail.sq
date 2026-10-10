@@ -1,0 +1,35 @@
+-- Recently viewed cocktails (capped by CocktailCache). Kept apart from
+-- cached_cocktail so evicting a cocktail from the offline cache does not drop
+-- it from the recently viewed list that Home and the Android widgets read.
+--
+--   viewed_at  epoch millis of the last view; CocktailCache keeps it strictly
+--              increasing so the list order is stable.
+CREATE TABLE recently_viewed_cocktail (
+    id TEXT NOT NULL PRIMARY KEY,
+    payload TEXT NOT NULL,
+    viewed_at INTEGER NOT NULL
+);
+
+upsert:
+INSERT OR REPLACE INTO recently_viewed_cocktail(id, payload, viewed_at)
+VALUES (?, ?, ?);
+
+-- One-time import from the old Settings cache: never overwrite newer rows.
+insertIfAbsent:
+INSERT OR IGNORE INTO recently_viewed_cocktail(id, payload, viewed_at)
+VALUES (?, ?, ?);
+
+selectMostRecentFirst:
+SELECT id, payload FROM recently_viewed_cocktail ORDER BY viewed_at DESC;
+
+maxViewedAt:
+SELECT MAX(viewed_at) AS value FROM recently_viewed_cocktail;
+
+deleteById:
+DELETE FROM recently_viewed_cocktail WHERE id = ?;
+
+trimToCapacity:
+DELETE FROM recently_viewed_cocktail
+WHERE id NOT IN (
+    SELECT id FROM recently_viewed_cocktail ORDER BY viewed_at DESC LIMIT :capacity
+);
