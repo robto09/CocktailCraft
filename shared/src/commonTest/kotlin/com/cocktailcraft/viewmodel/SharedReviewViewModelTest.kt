@@ -136,4 +136,78 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
         assertEquals(5.0f, vm.uiState.value.averageRating)
         assertEquals("It grew on me after all.", vm.uiState.value.currentCocktailReviews.single().comment)
     }
+
+    @Test
+    fun blankUserNameIsRejectedAndNothingIsStored() = runTest {
+        // Neither platform requires sign-in; the name typed into the review
+        // form is the only identity, so a blank one must be refused here.
+        val vm = viewModel(MapSettings())
+        advanceUntilIdle()
+
+        assertFalse(vm.submitReview("c1", 4.0f, "Great balance of sweet and sour.", "   "))
+        advanceUntilIdle()
+
+        assertEquals("Invalid User", vm.error.value?.title)
+        assertEquals("User name is required to submit a review", vm.error.value?.message)
+        assertEquals(0, vm.getReviewCount("c1"))
+    }
+
+    @Test
+    fun eachValidationRuleReportsItsOwnMessage() = runTest {
+        // The iOS review sheet shows these messages verbatim, so pin them.
+        val vm = viewModel(MapSettings())
+        advanceUntilIdle()
+
+        fun rejection(rating: Float, comment: String): String? {
+            assertFalse(vm.validateReview(rating, comment))
+            return vm.error.value?.message.also { vm.clearError() }
+        }
+
+        assertEquals("Rating must be between 1 and 5 stars", rejection(0.0f, "Long enough comment."))
+        assertEquals("Rating must be between 1 and 5 stars", rejection(5.5f, "Long enough comment."))
+        assertEquals("Please provide a comment for your review", rejection(3.0f, "   "))
+        assertEquals("Review comment must be at least 10 characters long", rejection(3.0f, "Too short"))
+        assertEquals("Review comment must be less than 500 characters", rejection(3.0f, "a".repeat(501)))
+
+        assertTrue(vm.validateReview(1.0f, "a".repeat(10)), "10 characters is the lower bound")
+        assertTrue(vm.validateReview(5.0f, "a".repeat(500)), "500 characters is the upper bound")
+        assertEquals(null, vm.error.value)
+    }
+
+    @Test
+    fun submitTrimsNameAndComment() = runTest {
+        val vm = viewModel(MapSettings())
+        advanceUntilIdle()
+        vm.loadReviewsForCocktail("c1")
+
+        assertTrue(vm.submitReview("c1", 5.0f, "  Great balance of sweet and sour.  ", "  Robert  "))
+        advanceUntilIdle()
+
+        val review = vm.uiState.value.currentCocktailReviews.single()
+        assertEquals("Robert", review.userName)
+        assertEquals("Great balance of sweet and sour.", review.comment)
+        assertEquals("c1", review.cocktailId)
+    }
+
+    @Test
+    fun selectingUnreviewedCocktailShowsEmptyState() = runTest {
+        val settings = MapSettings()
+        val repo = repository(settings)
+        repo.addReview(Review(id = "r1", cocktailId = "c1", userName = "A", rating = 4.0f, comment = "Really quite refreshing.", date = "2026-07-01")).getOrThrow()
+
+        val vm = viewModel(settings)
+        advanceUntilIdle()
+        vm.loadReviewsForCocktail("c1")
+        assertEquals(1, vm.uiState.value.reviewCount)
+
+        vm.loadReviewsForCocktail("c2")
+
+        val state = vm.uiState.value
+        assertEquals("c2", state.currentCocktailId)
+        assertTrue(state.currentCocktailReviews.isEmpty())
+        assertEquals(0, state.reviewCount)
+        assertEquals(0.0f, state.averageRating)
+        assertTrue(vm.isEmpty)
+        assertFalse(vm.hasReviews)
+    }
 }
