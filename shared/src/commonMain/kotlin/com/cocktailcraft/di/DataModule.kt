@@ -48,14 +48,7 @@ val dataModule = module {
     single<CoroutineDispatcher>(named("ioDispatcher")) { Dispatchers.IO }
 
     // Offline decision — single source of truth for "is the app offline" (AR-7)
-    single {
-        com.cocktailcraft.data.cache.OfflineModePolicy(
-            settings = get(),
-            appConfig = get(),
-            networkMonitor = get(),
-            ioDispatcher = get(named("ioDispatcher"))
-        )
-    }
+    single { com.cocktailcraft.data.cache.OfflineModePolicy(networkMonitor = get()) }
 
     // Cache
     single { CocktailCache(
@@ -76,9 +69,7 @@ val dataModule = module {
     single<CocktailOfflineRepository> {
         CocktailOfflineRepositoryImpl(
             offlineModePolicy = get(),
-            cocktailCache = get(),
-            cacheManager = get(),
-            remote = get()
+            cocktailCache = get()
         )
     }
 

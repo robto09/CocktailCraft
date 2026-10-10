@@ -15,7 +15,6 @@ This directory contains the technical documentation for CocktailCraft, a Kotlin 
 - **[Recommendation System](RecommendationSystem.md)**: Category-based related-cocktail suggestions and their design constraints
 - **[UI Components](UI_Components.md)**: Reusable Android Compose components and the animation system
 - **[iOS UI Components](iOS_UI_Components.md)**: Reusable SwiftUI components
-- **[iOS Background Sync](ios-background-sync.md)**: Background data synchronization with BGTaskScheduler on iOS
 
 ## Build, Tooling & Testing
 

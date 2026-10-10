@@ -61,8 +61,7 @@ val dataModule = module {
     single<CoroutineDispatcher>(named("ioDispatcher")) { Dispatchers.IO }
 
     // Offline decision — single source of truth for "is the app offline" (AR-7)
-    single { OfflineModePolicy(settings = get(), appConfig = get(), networkMonitor = get(),
-        ioDispatcher = get(named("ioDispatcher"))) }
+    single { OfflineModePolicy(networkMonitor = get()) }
 
     // Caches
     single { CocktailCache(/* settings, json, appConfig, ioDispatcher, offlineModePolicy */) }
@@ -94,7 +93,7 @@ Note the `secureSettingsQualifier` for `AuthRepositoryImpl`: auth data uses the 
 
 ### 4. Domain Module (`DomainModule.kt`)
 
-Use cases (all `factory`), the shared ViewModels, and the background sync service. The `AppConfig` binding lives in each `platformModule()` (AR-4) — the platform knows whether this is a debug build; commonMain doesn't. A use case must earn its indirection (AR-8): pure 1:1 pass-throughs with a single consumer are collapsed onto the repository interface instead (`ManageOrdersUseCase` was removed this way).
+Use cases (all `factory`) and the shared ViewModels. The `AppConfig` binding lives in each `platformModule()` (AR-4) — the platform knows whether this is a debug build; commonMain doesn't. A use case must earn its indirection (AR-8): pure 1:1 pass-throughs with a single consumer are collapsed onto the repository interface instead (`ManageOrdersUseCase` was removed this way).
 
 ```kotlin
 val domainModule = module {
@@ -105,7 +104,6 @@ val domainModule = module {
     factory { GetCocktailDetailUseCase(detailRepository = get(), favoritesRepository = get(), searchRepository = get()) }
     factory { ManageFavoritesUseCase(favoritesRepository = get(), detailRepository = get()) }
     factory { ManageCartUseCase(cartRepository = get(), detailRepository = get()) }
-    factory { ManageOfflineModeUseCase(offlineRepository = get(), catalogRepository = get()) }
     factory { ManageProfileUseCase(authRepository = get()) }
     factory { ManageReviewsUseCase(repository = get()) }
     factory { AnalyzeCocktailUseCase() }
@@ -125,11 +123,7 @@ val domainModule = module {
     single { SharedFavoritesViewModel(manageFavoritesUseCase = get()) }
     single { SharedOrderViewModel(orderRepository = get(), placeOrderUseCase = get()) }
     single { SharedProfileViewModel(manageProfileUseCase = get()) }
-    single { SharedOfflineModeViewModel(manageOfflineModeUseCase = get(), networkMonitor = get()) }
     single { SharedThemeViewModel(manageProfileUseCase = get()) }
-
-    // Cross-platform sync orchestration (schedulers are platform-side)
-    single { BackgroundSyncService(catalogRepository = get(), networkMonitor = get()) }
 }
 ```
 

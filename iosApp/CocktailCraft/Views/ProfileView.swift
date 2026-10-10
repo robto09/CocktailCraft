@@ -10,7 +10,6 @@ struct ProfileView: View {
     @State private var showingSignIn = false
     @State private var showingSignUp = false
     @State private var showingLogoutAlert = false
-    @State private var showingOfflineMode = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.isDarkMode) var isDarkMode
 
@@ -107,9 +106,6 @@ struct ProfileView: View {
                 getPasswordStrength: viewModel.getPasswordStrength,
                 meetsPasswordPolicy: viewModel.meetsPasswordPolicy
             )
-        }
-        .sheet(isPresented: $showingOfflineMode) {
-            OfflineModeView()
         }
         .alert("Logout", isPresented: $showingLogoutAlert) {
             Button("Cancel", role: .cancel) { }
@@ -232,14 +228,6 @@ struct ProfileView: View {
                         // Navigate to Orders tab
                         router.selectedTab = .orders
                     }
-                )
-
-                Divider()
-
-                SettingsRow(
-                    icon: "icloud.slash",
-                    title: "Offline Mode",
-                    action: { showingOfflineMode = true }
                 )
 
                 Divider()

@@ -11,7 +11,6 @@ import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.repository.ReviewRepository
-import com.cocktailcraft.domain.service.BackgroundSyncService
 import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.util.NetworkMonitor
@@ -19,7 +18,6 @@ import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
-import com.cocktailcraft.viewmodel.SharedOfflineModeViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.viewmodel.SharedProfileViewModel
 import com.cocktailcraft.viewmodel.SharedReviewViewModel
@@ -95,7 +93,6 @@ class KoinDependencyGraphTest : MainDispatcherTest() {
         assertNotNull(koin.get<SharedFavoritesViewModel>())
         assertNotNull(koin.get<SharedOrderViewModel>())
         assertNotNull(koin.get<SharedProfileViewModel>())
-        assertNotNull(koin.get<SharedOfflineModeViewModel>())
         assertNotNull(koin.get<SharedThemeViewModel>())
     }
 
@@ -107,12 +104,5 @@ class KoinDependencyGraphTest : MainDispatcherTest() {
         assertSame(koin.get<CocktailSearchRepository>(), koin.get<CocktailSearchRepository>())
         assertSame(koin.get<CocktailDetailRepository>(), koin.get<CocktailDetailRepository>())
         assertSame(koin.get<CocktailCatalogRepository>(), koin.get<CocktailCatalogRepository>())
-    }
-
-    @Test
-    fun backgroundSyncServiceResolves() {
-        val koin = startTestKoin()
-
-        assertNotNull(koin.get<BackgroundSyncService>())
     }
 }

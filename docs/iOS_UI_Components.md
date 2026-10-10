@@ -10,7 +10,7 @@ Scope note: the iOS app extracts fewer components than Android. Several screens 
 2. [Cocktail & Home Components](#cocktail--home-components)
 3. [Cart Components](#cart-components)
 4. [Profile & Auth Components](#profile--auth-components)
-5. [Offline & Sync Components](#offline--sync-components)
+5. [Offline Components](#offline-components)
 6. [Feedback & State Components](#feedback--state-components)
 7. [Usage Guidelines](#usage-guidelines)
 
@@ -72,7 +72,7 @@ CocktailCard(
 
 **Parameters**: `imageUrl: String?`, `height: CGFloat = 300`, `cornerRadius: CGFloat = 0`, `width: CGFloat? = nil` (nil keeps flexible-width hero behavior).
 
-**Used in**: `CocktailCard`, `CartItemCard`, `CocktailDetailView`, `OfflineModeView`.
+**Used in**: `CocktailCard`, `CartItemCard`, `CocktailDetailView`.
 
 ### HomeSearchBar
 **Purpose**: Home search field with clear button and the advanced-search toggle button.
@@ -151,17 +151,12 @@ A small collection of profile-screen building blocks:
 
 **Used in**: `SignUpView`, `ChangePasswordView`.
 
-## Offline & Sync Components
+## Offline Components
 
 ### OfflineBanner
-**Purpose**: Orange "You're offline" banner that animates in/out, driven by `NetworkMonitor.shared`. Takes no parameters.
+**Purpose**: "You're offline — showing saved cocktails." banner that animates in/out while the network is down, driven by `NetworkMonitor.shared`. Takes no parameters. Cached content keeps rendering underneath it.
 
 **Used in**: `ContentView` (overlaid on the tab navigation, app-wide).
-
-### BackgroundSyncCard
-**Purpose**: Background-sync status and controls: enable/disable toggle, last-sync and next-sync display, and a manual "Sync Now" button. Reads `BackgroundSyncManager.shared` directly; takes no parameters (file-local `SyncInfoRow` renders the status lines).
-
-**Used in**: `OfflineModeView`.
 
 ## Feedback & State Components
 

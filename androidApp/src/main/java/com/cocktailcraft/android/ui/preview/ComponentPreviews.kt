@@ -9,7 +9,6 @@ import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.components.CocktailLoadingShimmer
 import com.cocktailcraft.android.ui.components.CocktailSearchBar
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
-import com.cocktailcraft.android.ui.components.NetworkStatusCard
 import com.cocktailcraft.android.ui.components.SignInDialog
 import com.cocktailcraft.android.ui.components.SignUpDialog
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
@@ -148,22 +147,6 @@ private fun CartItemCardDarkPreview() {
             isFavorite = false,
             onToggleFavorite = {}
         )
-    }
-}
-
-@Preview(name = "Network status — online", showBackground = true)
-@Composable
-private fun NetworkStatusCardOnlinePreview() {
-    AnimatedCocktailBarTheme(darkTheme = false) {
-        NetworkStatusCard(isNetworkAvailable = true)
-    }
-}
-
-@Preview(name = "Network status — offline", showBackground = true)
-@Composable
-private fun NetworkStatusCardOfflinePreview() {
-    AnimatedCocktailBarTheme(darkTheme = false) {
-        NetworkStatusCard(isNetworkAvailable = false)
     }
 }
 

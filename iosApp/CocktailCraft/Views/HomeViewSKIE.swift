@@ -30,6 +30,15 @@ struct HomeViewSKIE: View {
                 CocktailListSkeleton()
                     .background(backgroundColor)
                     .transition(.opacity)
+            } else if viewModel.state.cocktails.isEmpty && !viewModel.state.isNetworkAvailable
+                        && !isSearchInProgress && selectedCategory == nil {
+                // Offline with nothing cached (e.g. first launch in airplane
+                // mode): full-screen no-connection state with Retry, parity
+                // with Android's NetworkErrorStateDisplay. Offline searches,
+                // filters, and category picks with no matches keep the normal
+                // empty state; with cached content the list renders under the
+                // global OfflineBanner.
+                noConnectionState
             } else if viewModel.state.cocktails.isEmpty && !viewModel.state.isLoading {
                 emptyState
             } else {
@@ -120,6 +129,17 @@ struct HomeViewSKIE: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+        .background(backgroundColor)
+    }
+
+    private var noConnectionState: some View {
+        EmptyStateView(
+            icon: "wifi.slash",
+            title: String(localized: "No internet connection"),
+            message: String(localized: "Check your connection and try again."),
+            actionTitle: String(localized: "Retry"),
+            action: { viewModel.retry() }
+        )
         .background(backgroundColor)
     }
 

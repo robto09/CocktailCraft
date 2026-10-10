@@ -25,7 +25,6 @@ class CocktailDetailRepositoryImplTest {
 
     private class Fixture(
         val detail: CocktailDetailRepositoryImpl,
-        val offline: CocktailOfflineRepositoryImpl,
         val cache: CocktailCache
     )
 
@@ -37,15 +36,13 @@ class CocktailDetailRepositoryImplTest {
         online: Boolean = true
     ): Fixture {
         val networkMonitor = FakeNetworkMonitor(online)
-        val policy = OfflineModePolicy(settings, config, networkMonitor)
+        val policy = OfflineModePolicy(networkMonitor)
         val cache = CocktailCache(settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
         val cacheManager = CocktailCacheManager()
         val remote = CocktailRemoteDataSource(api, cacheManager)
         val offline = CocktailOfflineRepositoryImpl(
             offlineModePolicy = policy,
-            cocktailCache = cache,
-            cacheManager = cacheManager,
-            remote = remote
+            cocktailCache = cache
         )
         val detail = CocktailDetailRepositoryImpl(
             remote = remote,
@@ -53,7 +50,7 @@ class CocktailDetailRepositoryImplTest {
             appConfig = config,
             offlineRepository = offline
         )
-        return Fixture(detail, offline, cache)
+        return Fixture(detail, cache)
     }
 
     private fun remoteDto(id: String, name: String) = CocktailDto(
@@ -84,10 +81,9 @@ class CocktailDetailRepositoryImplTest {
     @Test
     fun offlineReturnsCachedPartialInsteadOfFetching() = runTest {
         // A partial cache entry doesn't satisfy the full-details fast path,
-        // but offline mode must still serve it rather than hit the API.
-        val fixture = fixture(api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))))
+        // but while offline it must still be served rather than hit the API.
+        val fixture = fixture(api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))), online = false)
         fixture.cache.cacheCocktail(partialCocktail("1", name = "Cached Partial"))
-        fixture.offline.setOfflineMode(true)
 
         val result = fixture.detail.getCocktailById("1")
 
@@ -96,8 +92,7 @@ class CocktailDetailRepositoryImplTest {
 
     @Test
     fun offlineWithNothingCachedReturnsNullSuccess() = runTest {
-        val fixture = fixture(api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))))
-        fixture.offline.setOfflineMode(true)
+        val fixture = fixture(api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))), online = false)
 
         val result = fixture.detail.getCocktailById("1")
 
@@ -136,9 +131,8 @@ class CocktailDetailRepositoryImplTest {
 
     @Test
     fun refreshWhileOfflineReturnsCachedWithoutFetching() = runTest {
-        val fixture = fixture(api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))))
+        val fixture = fixture(api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))), online = false)
         fixture.cache.cacheCocktail(testCocktail("1", name = "Cached Margarita"))
-        fixture.offline.setOfflineMode(true)
 
         val result = fixture.detail.refreshCocktailById("1")
 

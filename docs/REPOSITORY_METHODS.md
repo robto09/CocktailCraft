@@ -56,15 +56,11 @@ suspend fun isCocktailFavorite(id: String): Result<Boolean>
 ```
 
 ### CocktailOfflineRepository
-Offline mode, connectivity, recently viewed, and cache clearing.
+Connectivity state and recently viewed cocktails.
 
 ```kotlin
-suspend fun checkApiConnectivity(): Result<Boolean>
 suspend fun getRecentlyViewedCocktails(): Result<List<Cocktail>>
-suspend fun setOfflineMode(enabled: Boolean)
-suspend fun isOfflineModeEnabled(): Boolean
-suspend fun isOffline(): Boolean   // user forced offline OR network currently down
-suspend fun clearCache(): Result<Unit>
+suspend fun isOffline(): Boolean   // network currently down
 ```
 
 ## Commerce and account

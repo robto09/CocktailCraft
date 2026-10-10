@@ -5,7 +5,6 @@ import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
 import com.cocktailcraft.domain.usecase.LoadCocktailsByCategoryUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
-import com.cocktailcraft.domain.usecase.ManageOfflineModeUseCase
 import com.cocktailcraft.domain.usecase.SearchCocktailsUseCase
 import com.cocktailcraft.domain.usecase.SortCocktailsUseCase
 import com.cocktailcraft.testutil.FakeCatalogRepository
@@ -17,6 +16,7 @@ import com.cocktailcraft.testutil.FakeSearchRepository
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -43,7 +43,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
             loadCocktailsByCategoryUseCase = LoadCocktailsByCategoryUseCase(search),
             sortCocktailsUseCase = SortCocktailsUseCase(),
             manageFavoritesUseCase = ManageFavoritesUseCase(favorites, detail),
-            manageOfflineModeUseCase = ManageOfflineModeUseCase(offline, catalog),
+            offlineRepository = offline,
             getCocktailDetailUseCase = GetCocktailDetailUseCase(detail, favorites, search),
             catalogRepository = catalog,
             networkMonitor = network
@@ -326,20 +326,76 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     }
 
     @Test
-    fun networkLossAutoEnablesOfflineMode() = runTest {
+    fun networkLossKeepsLoadedListAndPausesPagination() = runTest {
         val harness = Harness()
-        harness.search.all = listOf(testCocktail("1"))
+        harness.search.all = (1..12).map { testCocktail("c$it", category = "Cocktail") }
         val vm = harness.viewModel()
         advanceUntilIdle()
         assertTrue(vm.uiState.value.isNetworkAvailable)
-        assertFalse(vm.uiState.value.isOfflineMode)
+        assertEquals(10, vm.uiState.value.cocktails.size)
+        assertTrue(vm.uiState.value.hasMoreData)
 
         harness.network.setOnline(false)
         advanceUntilIdle()
-
         assertFalse(vm.uiState.value.isNetworkAvailable)
-        assertTrue(vm.uiState.value.isOfflineMode)
-        assertTrue(harness.offline.offlineModeEnabled, "offline preference must be persisted")
+
+        // Offline load-more is a silent no-op: the list ends at the loaded
+        // data, no error, and hasMoreData stays true so pagination resumes
+        // once connectivity returns.
+        vm.loadMoreCocktails()
+
+        assertEquals(10, vm.uiState.value.cocktails.size)
+        assertTrue(vm.uiState.value.hasMoreData)
+        assertNull(vm.error.value, "offline load-more must not surface an error")
+    }
+
+    @Test
+    fun networkRestoreAfterOfflineLoadRefetchesFreshData() = runTest {
+        val harness = Harness()
+        harness.search.all = listOf(testCocktail("cached", category = "Cocktail"))
+        harness.network.setOnline(false)
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        // Loaded while offline: content came from the cache-backed fallback.
+        assertFalse(vm.uiState.value.isNetworkAvailable)
+        assertEquals(listOf("cached"), vm.uiState.value.cocktails.map { it.id })
+
+        // Fresh content is available once connectivity returns.
+        harness.search.all = listOf(
+            testCocktail("fresh1", category = "Cocktail"),
+            testCocktail("fresh2", category = "Cocktail")
+        )
+        harness.network.setOnline(true)
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.isNetworkAvailable)
+        assertEquals(setOf("fresh1", "fresh2"),
+            vm.uiState.value.cocktails.map { it.id }.toSet(),
+            "a restore after an offline load must refresh the stale cached list")
+    }
+
+    @Test
+    fun networkRestoreDuringInFlightOfflineLoadStillRefreshes() = runTest {
+        val harness = Harness()
+        harness.search.all = listOf(testCocktail("cached", category = "Cocktail"))
+        harness.search.filterDelayMs = 1_000
+        harness.network.setOnline(false)
+        val vm = harness.viewModel()
+        advanceTimeBy(500) // initial offline load is suspended mid-flight
+
+        // Connectivity returns before the offline load publishes its snapshot.
+        harness.search.all = listOf(
+            testCocktail("fresh1", category = "Cocktail"),
+            testCocktail("fresh2", category = "Cocktail")
+        )
+        harness.network.setOnline(true)
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.isNetworkAvailable)
+        assertEquals(setOf("fresh1", "fresh2"),
+            vm.uiState.value.cocktails.map { it.id }.toSet(),
+            "a restore during an in-flight offline load must still refresh the stale snapshot")
     }
 
     @Test
