@@ -38,7 +38,7 @@ class CocktailCacheTest {
     }
 
     private fun cache(settings: Settings, online: Boolean = true, appConfig: AppConfig = config) =
-        CocktailCache(settings, json, appConfig, offlineModePolicy = OfflineModePolicy(settings, appConfig, FakeNetworkMonitor(online)))
+        CocktailCache(settings, json, appConfig, offlineModePolicy = OfflineModePolicy(FakeNetworkMonitor(online)))
 
     private fun nowMs() = Clock.System.now().toEpochMilliseconds()
 
@@ -204,18 +204,6 @@ class CocktailCacheTest {
 
         assertEquals("old", cache.getCachedCocktail("old")?.id)
         assertEquals(listOf("old"), cache.getAllCachedCocktails().map { it.id })
-    }
-
-    @Test
-    fun expiredEntryIsStillServedWhenOfflineModeIsForced() = runTest {
-        val settings = MapSettings()
-        settings.putBoolean(config.offlineModeEnabledKey, true)
-        persistEntries(settings, listOf(CachedCocktailEntry(testCocktail("old"), cachedAtMs = 1L)))
-
-        // Network is up, but the user forced offline mode — no expiry
-        val cache = cache(settings, online = true)
-
-        assertEquals("old", cache.getCachedCocktail("old")?.id)
     }
 
     @Test

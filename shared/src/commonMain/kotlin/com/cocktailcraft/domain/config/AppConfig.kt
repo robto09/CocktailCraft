@@ -68,9 +68,4 @@ internal interface AppConfig {
      * Maximum number of cocktails to cache for offline mode
      */
     val maxOfflineCocktails: Int
-
-    /**
-     * Key for storing offline mode status in local storage
-     */
-    val offlineModeEnabledKey: String
 }

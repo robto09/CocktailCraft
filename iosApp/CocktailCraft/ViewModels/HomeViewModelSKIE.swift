@@ -107,10 +107,6 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
         return sharedViewModel.getCocktailsByCategory(category: category, limit: limit)
     }
 
-    func setOfflineMode(_ enabled: Bool) {
-        sharedViewModel.setOfflineMode(enabled: enabled)
-    }
-
     func clearSearch() {
         sharedViewModel.clearSearch()
     }

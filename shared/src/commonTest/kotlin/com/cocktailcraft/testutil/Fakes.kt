@@ -15,6 +15,7 @@ import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.NetworkMonitor
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -173,9 +174,18 @@ class FakeSearchRepository(var all: List<Cocktail> = emptyList()) : CocktailSear
         return Result.Success(all)
     }
 
+    /**
+     * When > 0, filterByCategory decides its result at call time and then
+     * suspends this long before returning — models the real fetcher's cache
+     * IO / timing-out network attempt, for in-flight race tests.
+     */
+    var filterDelayMs: Long = 0
+
     override suspend fun filterByCategory(category: String): Result<List<Cocktail>> {
         errorMessage?.let { return Result.Error(it) }
-        return Result.Success(all.filter { it.category == category })
+        val result = all.filter { it.category == category } // snapshot at call time
+        if (filterDelayMs > 0) delay(filterDelayMs)
+        return Result.Success(result)
     }
 }
 
@@ -188,26 +198,12 @@ class FakeCatalogRepository(var all: List<Cocktail> = emptyList()) : CocktailCat
 }
 
 class FakeOfflineRepository : CocktailOfflineRepository {
-    var offlineModeEnabled = false
+    var offline = false
     var recentlyViewed: List<Cocktail> = emptyList()
-    var clearCacheCalls = 0
-        private set
 
-    override suspend fun checkApiConnectivity(): Result<Boolean> = Result.Success(true)
     override suspend fun getRecentlyViewedCocktails(): Result<List<Cocktail>> = Result.Success(recentlyViewed)
-    override suspend fun setOfflineMode(enabled: Boolean) {
-        offlineModeEnabled = enabled
-    }
 
-    override suspend fun isOfflineModeEnabled(): Boolean = offlineModeEnabled
-
-    override suspend fun isOffline(): Boolean = offlineModeEnabled
-
-    override suspend fun clearCache(): Result<Unit> {
-        clearCacheCalls++
-        recentlyViewed = emptyList()
-        return Result.Success(Unit)
-    }
+    override suspend fun isOffline(): Boolean = offline
 }
 
 internal class FakeCocktailApi(var drinks: List<CocktailDto> = emptyList()) : CocktailApi {
@@ -238,9 +234,20 @@ internal class FakeCocktailApi(var drinks: List<CocktailDto> = emptyList()) : Co
     /** When set, only filter.php?c= throws it — kept separate from [endpointError] so intersection tests can fail a later filter while category succeeds. */
     var categoryEndpointError: Exception? = null
 
+    /**
+     * When true, filter.php?c= strips matches down to the partial records the
+     * real endpoint serves (id, name, thumbnail — no category/instructions).
+     */
+    var categoryFilterReturnsPartialDtos = false
+
     override suspend fun filterByCategory(category: String): List<CocktailDto> {
         categoryEndpointError?.let { throw it }
-        return drinks.filter { it.category == category }
+        val matches = drinks.filter { it.category == category }
+        return if (categoryFilterReturnsPartialDtos) {
+            matches.map { CocktailDto(id = it.id, name = it.name, imageUrl = it.imageUrl) }
+        } else {
+            matches
+        }
     }
 
     /** list.php?c=list payload — seeded by catalog tests, empty by default. */

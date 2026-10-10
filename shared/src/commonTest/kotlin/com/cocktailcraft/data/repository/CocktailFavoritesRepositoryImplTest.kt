@@ -30,15 +30,13 @@ class CocktailFavoritesRepositoryImplTest {
         settings: Settings = MapSettings(),
         online: Boolean = true
     ): CocktailFavoritesRepositoryImpl {
-        val policy = OfflineModePolicy(settings, config, FakeNetworkMonitor(online))
+        val policy = OfflineModePolicy(FakeNetworkMonitor(online))
         val cache = CocktailCache(settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
         val cacheManager = CocktailCacheManager()
         val remote = CocktailRemoteDataSource(api, cacheManager)
         val offline = CocktailOfflineRepositoryImpl(
             offlineModePolicy = policy,
-            cocktailCache = cache,
-            cacheManager = cacheManager,
-            remote = remote
+            cocktailCache = cache
         )
         return CocktailFavoritesRepositoryImpl(
             settings = settings,

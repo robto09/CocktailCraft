@@ -3,7 +3,6 @@ package com.cocktailcraft
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
-import com.cocktailcraft.domain.service.BackgroundSyncService
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.util.getOrThrow
@@ -11,7 +10,6 @@ import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
-import com.cocktailcraft.viewmodel.SharedOfflineModeViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.viewmodel.SharedProfileViewModel
 import com.cocktailcraft.viewmodel.SharedThemeViewModel
@@ -47,8 +45,6 @@ class KoinHelper : KoinComponent {
 
     fun getNetworkMonitor(): NetworkMonitor = get()
 
-    fun getBackgroundSyncService(): BackgroundSyncService = get()
-
     /**
      * One-shot favorites snapshot for the iOS home-screen widget bridge.
      * Throws on a failed fetch (via getOrThrow) instead of returning an
@@ -74,8 +70,6 @@ class KoinHelper : KoinComponent {
     fun getSharedHomeViewModel(): SharedHomeViewModel = get()
 
     fun getSharedCartViewModel(): SharedCartViewModel = get()
-
-    fun getSharedOfflineModeViewModel(): SharedOfflineModeViewModel = get()
 
     fun getSharedOrderViewModel(): SharedOrderViewModel = get()
 

@@ -15,11 +15,9 @@ import kotlinx.coroutines.sync.withLock
  * Eviction matrix (SH-11): this class holds the VOLATILE side — per-category
  * lists with a 5-minute freshness window plus rate-limit bookkeeping — while
  * [CocktailCache] holds the PERSISTENT side (Settings-backed LRU, 24h TTL,
- * offline-aware). The two hold overlapping cocktail data with independent
- * expiry, so the single eviction entry point,
- * CocktailOfflineRepositoryImpl.clearCache(), always purges BOTH via
- * [clearDataCaches] + [CocktailCache.clearCache]. Never add an eviction path
- * that clears only one of the two.
+ * offline-aware). The two hold overlapping cocktail data with deliberately
+ * independent expiry; if a purge path is ever (re)introduced it must empty
+ * BOTH layers together, never just one.
  */
 internal class CocktailCacheManager {
 
@@ -65,17 +63,6 @@ internal class CocktailCacheManager {
 
     suspend fun setLastApiCallTime(value: Long) = mutex.withLock {
         _lastApiCallTime = value
-    }
-
-    /**
-     * Purge the volatile per-category data caches. Part of the user-facing
-     * "Clear Cache" path (SH-3), which must empty BOTH cache layers — this one
-     * and the persistent [CocktailCache] (SH-11). Rate-limit bookkeeping is
-     * deliberately preserved: clearing data must not grant a fresh API budget.
-     */
-    suspend fun clearDataCaches() = mutex.withLock {
-        _categoryCacheMap.clear()
-        _categoryLastFetchMap.clear()
     }
 }
 

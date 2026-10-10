@@ -118,7 +118,6 @@ fun HomeScreen(
     val isSearchActive = state.isSearchActive
     val searchQuery = state.searchQuery
     val favorites = favoritesState.favorites
-    val isOfflineMode = state.isOfflineMode
     val isNetworkAvailable = state.isNetworkAvailable
     val searchFilters = state.searchFilters
     val isAdvancedSearchActive = state.isAdvancedSearchActive
@@ -269,17 +268,8 @@ fun HomeScreen(
             isLoadingMore = isLoadingMore,
             hasMoreData = hasMoreData,
             favorites = favorites,
-            isOfflineMode = isOfflineMode,
             isNetworkAvailable = isNetworkAvailable,
             onRetry = { viewModel.retry() },
-            onEnableOfflineMode = {
-                viewModel.setOfflineMode(true)
-                viewModel.retry()
-            },
-            onGoOnline = {
-                viewModel.setOfflineMode(false)
-                viewModel.retry()
-            },
             onClearSearch = {
                 viewModel.toggleSearchMode(false)
             },
@@ -407,11 +397,8 @@ private fun HomeContentSection(
     isLoadingMore: Boolean,
     hasMoreData: Boolean,
     favorites: List<Cocktail>,
-    isOfflineMode: Boolean,
     isNetworkAvailable: Boolean,
     onRetry: () -> Unit,
-    onEnableOfflineMode: () -> Unit,
-    onGoOnline: () -> Unit,
     onClearSearch: () -> Unit,
     onClearCategory: () -> Unit,
     onClearFilters: () -> Unit = onClearSearch,
@@ -443,15 +430,14 @@ private fun HomeContentSection(
         if (isLoading && cocktails.isEmpty()) {
             // Show shimmer loading effect instead of spinner
             CocktailLoadingShimmer()
-        } else if (errorMessage.isNotBlank()) {
+        } else if (errorMessage.isNotBlank() && cocktails.isEmpty()) {
+            // Full-screen error only when there's no content to render —
+            // with cached content on screen the top banner carries the
+            // offline signal instead.
             NetworkErrorStateDisplay(
                 errorMessage = errorMessage,
-                isOfflineMode = isOfflineMode,
                 isNetworkAvailable = isNetworkAvailable,
-                hasContent = cocktails.isNotEmpty(),
-                onRetry = onRetry,
-                onEnableOfflineMode = onEnableOfflineMode,
-                onGoOnline = onGoOnline
+                onRetry = onRetry
             )
         } else if (cocktails.isEmpty()) {
             // Enhanced empty state message with animations
@@ -586,11 +572,8 @@ private fun HomeContentSectionPreview() {
             isLoadingMore = false,
             hasMoreData = false,
             favorites = emptyList(),
-            isOfflineMode = false,
             isNetworkAvailable = true,
             onRetry = {},
-            onEnableOfflineMode = {},
-            onGoOnline = {},
             onClearSearch = {},
             onClearCategory = {},
             onCocktailClick = {},
@@ -616,11 +599,8 @@ private fun HomeContentSectionDarkPreview() {
             isLoadingMore = false,
             hasMoreData = false,
             favorites = emptyList(),
-            isOfflineMode = false,
             isNetworkAvailable = true,
             onRetry = {},
-            onEnableOfflineMode = {},
-            onGoOnline = {},
             onClearSearch = {},
             onClearCategory = {},
             onCocktailClick = {},
@@ -646,11 +626,8 @@ private fun HomeContentSectionLargeFontPreview() {
             isLoadingMore = false,
             hasMoreData = false,
             favorites = emptyList(),
-            isOfflineMode = false,
             isNetworkAvailable = true,
             onRetry = {},
-            onEnableOfflineMode = {},
-            onGoOnline = {},
             onClearSearch = {},
             onClearCategory = {},
             onCocktailClick = {},

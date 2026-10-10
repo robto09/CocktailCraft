@@ -42,22 +42,6 @@
 	<string>CocktailCraft needs network access to fetch cocktail recipes and images.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>CocktailCraft may access local network for enhanced functionality.</string>
-	<!-- Background Modes: `fetch` backs BGAppRefreshTask, `processing` backs
-	     BGProcessingTask (the previous `background-app-refresh` /
-	     `background-fetch` strings are not recognized UIBackgroundModes
-	     values). Every identifier BGTaskScheduler.register is called with
-	     must also appear in BGTaskSchedulerPermittedIdentifiers, or
-	     registration fails at runtime and background sync never runs. -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-		<string>processing</string>
-	</array>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>com.cocktailcraft.background-refresh</string>
-		<string>com.cocktailcraft.background-fetch</string>
-	</array>
 	<!-- Deep links from the home-screen widgets:
 	     cocktailcraft://cocktail/{id} (see WidgetBridge.swift) -->
 	<key>CFBundleURLTypes</key>

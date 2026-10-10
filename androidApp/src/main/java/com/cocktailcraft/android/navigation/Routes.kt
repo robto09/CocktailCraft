@@ -22,9 +22,6 @@ data object FavoritesRoute
 data object OrderListRoute
 
 @Serializable
-data object OfflineModeRoute
-
-@Serializable
 data class CocktailDetailRoute(val cocktailId: String)
 
 /**
