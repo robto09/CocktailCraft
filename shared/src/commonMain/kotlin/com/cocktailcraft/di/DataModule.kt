@@ -1,7 +1,9 @@
 package com.cocktailcraft.di
 
+import app.cash.sqldelight.db.SqlDriver
 import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.CocktailCacheManager
+import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.data.repository.AuthRepositoryImpl
 import com.cocktailcraft.data.repository.CartRepositoryImpl
@@ -29,6 +31,9 @@ import kotlinx.serialization.json.Json
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
+/** File name of the SQLite database holding the offline cocktail cache. */
+internal const val COCKTAIL_DATABASE_NAME = "cocktailcraft_cache.db"
+
 /**
  * Koin module for data-related dependencies including repositories and caching.
  */
@@ -50,8 +55,16 @@ val dataModule = module {
     // Offline decision — single source of truth for "is the app offline" (AR-7)
     single { com.cocktailcraft.data.cache.OfflineModePolicy(networkMonitor = get()) }
 
-    // Cache
+    // Offline cocktail cache database over the platform's SqlDriver
+    // (platformModule). Creating it doesn't open the database file.
+    single { CocktailCraftDatabase(get<SqlDriver>()) }
+
+    // Cache. The database is injected lazily so resolving this single never
+    // touches disk; the cache opens it on first use, on the io dispatcher.
+    // Settings is still needed to import (once) the cache older versions
+    // kept there.
     single { CocktailCache(
+        database = inject<CocktailCraftDatabase>(),
         settings = get(),
         json = get(),
         appConfig = get(),

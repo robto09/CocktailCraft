@@ -2,6 +2,9 @@ package com.cocktailcraft.di
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.domain.config.AppConfig
 import android.content.SharedPreferences
@@ -42,6 +45,13 @@ actual fun platformModule() = module {
 
     // Network monitoring
     single<NetworkMonitor> { AndroidNetworkMonitor(get<Context>()) }
+
+    // SQLite driver for the offline cocktail cache. The file is opened on
+    // first query, not here. Excluded from backup like the prefs file that
+    // used to hold this cache (see backup_rules.xml).
+    single<SqlDriver> {
+        AndroidSqliteDriver(CocktailCraftDatabase.Schema, get<Context>(), COCKTAIL_DATABASE_NAME)
+    }
 }
 
 private const val SECURE_PREFS_FILE = "cocktailcraft_secure_prefs"

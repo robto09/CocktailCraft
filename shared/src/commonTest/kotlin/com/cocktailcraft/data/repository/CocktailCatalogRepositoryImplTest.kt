@@ -11,6 +11,7 @@ import com.cocktailcraft.data.remote.IngredientDto
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.testutil.FakeCocktailApi
 import com.cocktailcraft.testutil.FakeNetworkMonitor
+import com.cocktailcraft.testutil.createTestDatabase
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.test.runTest
@@ -32,7 +33,7 @@ class CocktailCatalogRepositoryImplTest {
     ): CocktailCatalogRepositoryImpl {
         val networkMonitor = FakeNetworkMonitor(online)
         val policy = OfflineModePolicy(networkMonitor)
-        val cache = CocktailCache(settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
+        val cache = CocktailCache(createTestDatabase(), settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
         val cacheManager = CocktailCacheManager()
         val remote = CocktailRemoteDataSource(api, cacheManager)
         val offline = CocktailOfflineRepositoryImpl(

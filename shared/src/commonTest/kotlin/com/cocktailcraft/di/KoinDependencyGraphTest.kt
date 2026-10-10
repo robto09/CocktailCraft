@@ -1,5 +1,8 @@
 package com.cocktailcraft.di
 
+import app.cash.sqldelight.db.SqlDriver
+import com.cocktailcraft.data.cache.CocktailCache
+import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.repository.AuthRepository
@@ -13,6 +16,7 @@ import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.MainDispatcherTest
+import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
@@ -36,7 +40,8 @@ import kotlin.test.assertSame
 /**
  * Builds the full production Koin graph ([appModule] = network + data + domain
  * modules) with a test platform module standing in for the bindings each
- * platform's platformModule() supplies natively (Settings, NetworkMonitor),
+ * platform's platformModule() supplies natively (Settings, NetworkMonitor,
+ * the offline cache's SqlDriver),
  * then resolves every registered ViewModel and repository. Any future DI
  * wiring break fails here instead of at app startup.
  *
@@ -53,6 +58,7 @@ class KoinDependencyGraphTest : MainDispatcherTest() {
         single<Settings> { MapSettings() }
         single<Settings>(secureSettingsQualifier) { MapSettings() }
         single<NetworkMonitor> { FakeNetworkMonitor() }
+        single<SqlDriver> { createInMemorySqlDriver() }
     }
 
     private fun startTestKoin(): Koin = startKoin {
@@ -77,6 +83,16 @@ class KoinDependencyGraphTest : MainDispatcherTest() {
         assertNotNull(koin.get<AuthRepository>())
         assertNotNull(koin.get<OrderRepository>())
         assertNotNull(koin.get<ReviewRepository>())
+    }
+
+    @Test
+    fun offlineCacheDatabaseResolves() {
+        val koin = startTestKoin()
+
+        // CocktailCache only injects the database lazily, so resolve it
+        // directly to prove the SqlDriver -> database wiring is complete.
+        assertNotNull(koin.get<CocktailCraftDatabase>())
+        assertNotNull(koin.get<CocktailCache>())
     }
 
     @Test

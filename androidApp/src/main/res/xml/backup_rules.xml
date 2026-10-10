@@ -3,4 +3,5 @@
 <full-backup-content>
     <exclude domain="sharedpref" path="cocktailcraft_prefs.xml" />
     <exclude domain="sharedpref" path="cocktailcraft_secure_prefs.xml" />
+    <exclude domain="database" path="cocktailcraft_cache.db" />
 </full-backup-content>

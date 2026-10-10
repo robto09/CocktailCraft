@@ -1,11 +1,13 @@
 package com.cocktailcraft
 
+import app.cash.sqldelight.db.SqlDriver
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.di.appModule
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.di.secureSettingsQualifier
 import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.MainDispatcherTest
+import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.util.NetworkMonitor
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
@@ -34,6 +36,7 @@ class KoinHelperTest : MainDispatcherTest() {
         single<Settings> { MapSettings() }
         single<Settings>(secureSettingsQualifier) { MapSettings() }
         single<NetworkMonitor> { FakeNetworkMonitor() }
+        single<SqlDriver> { createInMemorySqlDriver() }
     }
 
     @AfterTest

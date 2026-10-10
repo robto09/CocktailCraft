@@ -121,10 +121,8 @@ internal class CocktailCategoryFetcher(
      * listing rather than stranding them invisible while offline.
      */
     private suspend fun generalCacheForCategory(category: String): List<Cocktail> =
-        cocktailCache.getAllCachedCocktails()
-            .filter {
-                it.category == category ||
-                    (category == CocktailCategories.DEFAULT && it.category.isNullOrBlank())
-            }
-            .sortedByDescending { it.dateAdded }
+        cocktailCache.getCachedCocktailsByCategory(
+            category = category,
+            includeUncategorized = category == CocktailCategories.DEFAULT
+        ).sortedByDescending { it.dateAdded }
 }
