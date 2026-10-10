@@ -10,13 +10,18 @@ import SwiftUI
 /// Full detail screen driven by CocktailDetailViewModelSKIE. Section order
 /// mirrors Android's CocktailDetailScreen for design parity: header image,
 /// main info (name/rating/price/stock/cart controls/instructions),
-/// ingredients grouped by type, attribute chips, then related cocktails.
+/// ingredients grouped by type, attribute chips, related cocktails, then
+/// reviews.
 /// The section subviews live in Components/DetailSections.swift.
 struct CocktailDetailView: View {
     let cocktailId: String
     // Internal (not private) so the section extension in
     // Components/DetailSections.swift can read them.
     @State var viewModel = CocktailDetailViewModelSKIE()
+    // Screen-scoped like Android's koinViewModel<SharedReviewViewModel>();
+    // the wrapper owns the shared factory instance and clears it on deinit.
+    @State var reviewViewModel = ReviewViewModelSKIE()
+    @State var showingWriteReview = false
     @Environment(\.isDarkMode) var isDarkMode
 
     // Distinguishes "load not started yet" from "loaded but not found"
@@ -55,6 +60,8 @@ struct CocktailDetailView: View {
                         if viewModel.hasRelatedCocktails {
                             relatedCocktailsSection
                         }
+
+                        reviewsSection
                     }
                     .padding(.bottom, AppTheme.Spacing.xxl)
                 }
@@ -116,6 +123,33 @@ struct CocktailDetailView: View {
                 await viewModel.loadCocktail(cocktailId)
                 hasLoaded = true
             }
+        }
+        .task {
+            // Cheap and idempotent: only re-selects this cocktail's slice of
+            // the persisted review store, which the wrapper keeps mirroring.
+            await reviewViewModel.loadReviews(for: cocktailId)
+        }
+        .sheet(isPresented: $showingWriteReview, onDismiss: {
+            reviewViewModel.clearError()
+        }) {
+            WriteReviewView(
+                submissionError: reviewViewModel.error?.message,
+                onDismiss: { showingWriteReview = false },
+                onSubmit: { userName, rating, comment in
+                    let success = await reviewViewModel.submitReview(
+                        cocktailId: cocktailId,
+                        rating: Float(rating),
+                        comment: comment,
+                        userName: userName
+                    )
+                    if success {
+                        showingWriteReview = false
+                    }
+                },
+                onClearError: {
+                    if reviewViewModel.error != nil { reviewViewModel.clearError() }
+                }
+            )
         }
         // Only action errors alert here; a failed initial load renders the
         // full-screen ErrorView (with Retry) instead of a duplicate alert

@@ -294,6 +294,62 @@ extension CocktailDetailView {
             }
         }
     }
+
+    // MARK: - Reviews
+
+    /// Mirrors Android's DetailReviewsSection: count header with a
+    /// write-review action, an empty-state prompt, or the newest three
+    /// reviews separated by dividers.
+    var reviewsSection: some View {
+        let latestReviews = Array(reviewViewModel.reviews.prefix(Self.visibleReviewCount))
+
+        return VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+            HStack {
+                Text(String(localized: "Reviews (\(reviewViewModel.reviewCount))"))
+                    .font(.headline)
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                    .accessibilityIdentifier("detail.reviewsHeader")
+
+                Spacer()
+
+                Button(action: { showingWriteReview = true }) {
+                    Label(String(localized: "Write a Review"), systemImage: "square.and.pencil")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityIdentifier("detail.writeReviewButton")
+            }
+
+            if latestReviews.isEmpty {
+                Text(String(localized: "Be the first to review this cocktail"))
+                    .font(.body)
+                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, AppTheme.Spacing.xxl)
+                    .accessibilityIdentifier("detail.reviewsEmptyState")
+            } else {
+                ForEach(Array(latestReviews.enumerated()), id: \.element.id) { index, review in
+                    ReviewRow(review: review)
+
+                    if index < latestReviews.count - 1 {
+                        Divider()
+                            .padding(.vertical, AppTheme.Spacing.xs)
+                    }
+                }
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardStyle()
+        .padding(.horizontal)
+    }
+
+    /// Android shows the newest three reviews on the detail screen.
+    static var visibleReviewCount: Int { 3 }
 }
 
 // MARK: - Related Cocktail Card
