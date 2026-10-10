@@ -55,6 +55,11 @@ class SharedHomeViewModel internal constructor(
     // in-flight search so stale results can never win the race.
     private val searchQueryFlow = MutableStateFlow<String?>(null)
 
+    // True when the currently shown list was produced while the network was
+    // down (cache fallback). Lets the restore handler refresh content that a
+    // normal reconnect would otherwise leave stale.
+    private var lastLoadWasOffline = false
+
     init {
         initialize()
     }
@@ -66,8 +71,10 @@ class SharedHomeViewModel internal constructor(
             networkMonitor.isOnline.collectLatest { isOnline ->
                 _uiState.update { it.copy(isNetworkAvailable = isOnline) }
 
-                // Auto-retry on network restoration
-                if (isOnline && error.value != null && _uiState.value.cocktails.isEmpty()) {
+                // Auto-retry on network restoration: recover from an errored
+                // empty screen, and refresh content that was served from the
+                // offline cache fallback.
+                if (isOnline && ((error.value != null && _uiState.value.cocktails.isEmpty()) || lastLoadWasOffline)) {
                     retry()
                 }
             }
@@ -128,6 +135,12 @@ class SharedHomeViewModel internal constructor(
     suspend fun loadCocktailsByCategory(category: String?) {
         val targetCategory = category ?: CocktailCategories.DEFAULT
 
+        // Offline-ness of this load is decided when the fetch STARTS — the
+        // cache fallback serves a snapshot from that moment. Sample the
+        // monitor, not uiState: the collector that mirrors it into uiState
+        // may lag behind the actual network state.
+        val startedOffline = !networkMonitor.isOnline.value
+
         _uiState.update { it.copy(
             selectedCategory = category,
             isLoading = true,
@@ -145,6 +158,7 @@ class SharedHomeViewModel internal constructor(
                 isLoading = false
             ) }
             clearError()
+            settleOfflineLoad(startedOffline)
         } catch (e: Exception) {
             val isOffline = !_uiState.value.isNetworkAvailable
             if (!isOffline) {
@@ -157,7 +171,22 @@ class SharedHomeViewModel internal constructor(
                 )
             }
             // Try cached data before showing error
-            tryLoadCachedData(targetCategory, e)
+            tryLoadCachedData(targetCategory, e, startedOffline)
+        }
+    }
+
+    /**
+     * Bookkeeping after content was published by a load that may have been
+     * served from the offline cache fallback. If connectivity came back while
+     * that load was still in flight, the restore handler found no flag to act
+     * on — refresh immediately instead of leaving the stale snapshot visible.
+     */
+    private fun settleOfflineLoad(startedOffline: Boolean) {
+        if (startedOffline && networkMonitor.isOnline.value) {
+            lastLoadWasOffline = false
+            retry()
+        } else {
+            lastLoadWasOffline = startedOffline
         }
     }
     
@@ -430,7 +459,7 @@ class SharedHomeViewModel internal constructor(
     
     // Private helper functions
 
-    private suspend fun tryLoadCachedData(category: String, originalError: Exception) {
+    private suspend fun tryLoadCachedData(category: String, originalError: Exception, startedOffline: Boolean) {
         try {
             val cachedCocktails = offlineRepository.getRecentlyViewedCocktails().getOrDefault(emptyList())
                 .filter { category == CocktailCategories.DEFAULT || it.category == category }
@@ -438,6 +467,7 @@ class SharedHomeViewModel internal constructor(
             if (cachedCocktails.isNotEmpty()) {
                 _uiState.update { it.copy(cocktails = cachedCocktails, isLoading = false) }
                 clearError()
+                settleOfflineLoad(startedOffline)
             } else {
                 throw originalError
             }

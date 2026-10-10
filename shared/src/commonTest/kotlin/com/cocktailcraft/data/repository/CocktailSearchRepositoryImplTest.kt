@@ -6,10 +6,12 @@ import com.cocktailcraft.data.cache.OfflineModePolicy
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.remote.CocktailDto
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
+import com.cocktailcraft.domain.model.CocktailCategories
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.testutil.FakeCocktailApi
 import com.cocktailcraft.testutil.FakeNetworkMonitor
+import com.cocktailcraft.testutil.testCocktail
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.test.runTest
@@ -24,7 +26,8 @@ class CocktailSearchRepositoryImplTest {
 
     private class Fixture(
         val search: CocktailSearchRepositoryImpl,
-        val network: FakeNetworkMonitor
+        val network: FakeNetworkMonitor,
+        val cache: CocktailCache
     )
 
     // Mirrors the DataModule wiring: remote source + focused offline repo +
@@ -55,7 +58,7 @@ class CocktailSearchRepositoryImplTest {
             offlineRepository = offline,
             categoryFetcher = fetcher
         )
-        return Fixture(search, networkMonitor)
+        return Fixture(search, networkMonitor, cache)
     }
 
     private fun repository(
@@ -222,6 +225,54 @@ class CocktailSearchRepositoryImplTest {
         val result = repo.filterByCategory("Shot")
 
         assertTrue((result as Result.Success).data.isEmpty())
+    }
+
+    // --- offline cache fallback: category stamping + legacy entries + fall-through ---
+
+    @Test
+    fun filterByCategoryStampsFetchCategoryOnPartialResults() = runTest {
+        val api = FakeCocktailApi(drinks = sampleDrinks())
+        api.categoryFilterReturnsPartialDtos = true
+        val repo = repository(api = api)
+
+        val result = repo.filterByCategory("Cocktail")
+
+        val cocktails = (result as Result.Success).data
+        assertEquals(setOf("2", "3"), cocktails.map { it.id }.toSet())
+        assertTrue(cocktails.all { it.category == "Cocktail" },
+            "partial filter.php records must be stamped with the category they were fetched by")
+    }
+
+    @Test
+    fun filterByCategoryOfflineServesLegacyCacheEntriesWithoutCategory() = runTest {
+        val fixture = fixture(api = FakeCocktailApi())
+
+        // Entries persisted before category stamping existed carry no category.
+        fixture.cache.cacheCocktails(listOf(
+            testCocktail("legacy1", category = null),
+            testCocktail("legacy2", category = null)
+        ))
+        fixture.network.setOnline(false)
+
+        val result = fixture.search.filterByCategory(CocktailCategories.DEFAULT)
+
+        assertEquals(setOf("legacy1", "legacy2"),
+            (result as Result.Success).data.map { it.id }.toSet(),
+            "the default offline browse must surface cached entries that predate category stamping")
+    }
+
+    @Test
+    fun filterByCategoryOfflineWithEmptyCacheStillAttemptsTheNetwork() = runTest {
+        // The network monitor can report a stale "offline" (path updates lag, and
+        // the iOS simulator can drop them entirely). With nothing cached there is
+        // nothing to lose: attempt the fetch instead of failing preemptively.
+        val fixture = fixture(api = FakeCocktailApi(drinks = sampleDrinks()), online = false)
+
+        val result = fixture.search.filterByCategory("Cocktail")
+
+        assertEquals(setOf("2", "3"),
+            (result as Result.Success).data.map { it.id }.toSet(),
+            "an explicit fetch with an empty cache must try the network even when the monitor says offline")
     }
 
     @Test
