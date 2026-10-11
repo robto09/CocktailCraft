@@ -30,18 +30,18 @@ TheCocktailDB's `filter.php` accepts only **one parameter per request** and cann
 
 This is accurate (every id comes from the server), needs no per-drink hydration, and invents no data. Cost is one sequential call per active filter; typical usage is one or two filters. Slim results render with the same "tap to view" placeholder cards used elsewhere for category browsing, and the detail view hydrates on tap.
 
-The implementation lives in `CocktailSearchRepositoryImpl.advancedSearch(filters)` (`shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/CocktailSearchRepositoryImpl.kt`), reached through `SearchCocktailsUseCase.search(filters)`.
+The implementation lives in `CocktailSearchRepositoryImpl.advancedSearch(filters)` (`core/data/src/commonMain/kotlin/com/cocktailcraft/data/repository/CocktailSearchRepositoryImpl.kt`), reached through `SearchCocktailsUseCase.search(filters)`.
 
 ## Shared state and ViewModel
 
-`SharedHomeViewModel` (`shared/src/commonMain/kotlin/com/cocktailcraft/viewmodel/SharedHomeViewModel.kt`) is the single entry point for both platforms:
+`SharedHomeViewModel` (`presentation/src/commonMain/kotlin/com/cocktailcraft/viewmodel/SharedHomeViewModel.kt`) is the single entry point for both platforms:
 
 - **`applyFilters(filters: SearchFilters)`** — stores `filters` in `uiState.searchFilters` (so the active-filter chips reflect them) and loads the intersected results.
 - **`clearSearchFilters()`** — resets to an empty `SearchFilters()` and reloads the default list.
 - **`searchCocktails(query)`** — composes the query with any active filters (`searchFilters.copy(query = query)`), so the search bar and the advanced filters work together rather than overriding each other.
 - **`loadFilterOptions()`** — populates the API-backed option lists `uiState.filterCategories` / `filterIngredients` via `list.php` (`?c/i=list`) through `CocktailCatalogRepository`. Both platforms consume the same lists.
 
-`SearchFilters` (`shared/src/commonMain/kotlin/com/cocktailcraft/domain/model/SearchFilters.kt`) is a four-field data class with a single `hasActiveFilters()` helper:
+`SearchFilters` (`core/domain/src/commonMain/kotlin/com/cocktailcraft/domain/model/SearchFilters.kt`) is a four-field data class with a single `hasActiveFilters()` helper:
 
 ```kotlin
 data class SearchFilters(

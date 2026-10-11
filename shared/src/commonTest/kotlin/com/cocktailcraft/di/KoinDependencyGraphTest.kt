@@ -1,10 +1,8 @@
 package com.cocktailcraft.di
 
 import app.cash.sqldelight.db.SqlDriver
-import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
-import com.cocktailcraft.data.local.LocalDatabase
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
@@ -47,12 +45,14 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /**
- * Builds the full production Koin graph ([appModule] = network + data + domain
- * modules) with a test platform module standing in for the bindings each
- * platform's platformModule() supplies natively (Settings, NetworkMonitor,
- * the app database's SqlDriver),
- * then resolves every registered ViewModel and repository. Any future DI
- * wiring break fails here instead of at app startup.
+ * Builds the full production Koin graph ([appModule] = network + data +
+ * domain + presentation modules, assembled from every layer's module) with a
+ * test platform module standing in for the bindings each platform's
+ * platformModule() supplies natively (Settings, NetworkMonitor, the app
+ * database's SqlDriver), then resolves every registered ViewModel and
+ * repository. Any future DI wiring break fails here instead of at app
+ * startup. The data layer's internal singletons (cache, LocalDatabase) are
+ * checked by DataModuleGraphTest in :core:data, which can name them.
  *
  * Extends [MainDispatcherTest] because resolving ViewModels constructs them:
  * their init blocks launch on viewModelScope (Dispatchers.Main.immediate), and
@@ -67,7 +67,7 @@ class KoinDependencyGraphTest : MainDispatcherTest() {
         single<Settings> { MapSettings() }
         single<Settings>(secureSettingsQualifier) { MapSettings() }
         single<NetworkMonitor> { FakeNetworkMonitor() }
-        single<SqlDriver> { createInMemorySqlDriver() }
+        single<SqlDriver> { createInMemorySqlDriver(CocktailCraftDatabase.Schema) }
     }
 
     private fun startTestKoin(): Koin = startKoin {
@@ -92,18 +92,6 @@ class KoinDependencyGraphTest : MainDispatcherTest() {
         assertNotNull(koin.get<AuthRepository>())
         assertNotNull(koin.get<OrderRepository>())
         assertNotNull(koin.get<ReviewRepository>())
-    }
-
-    @Test
-    fun appDatabaseResolves() {
-        val koin = startTestKoin()
-
-        // CocktailCache and LocalDatabase only inject the database lazily, so
-        // resolve it directly to prove the SqlDriver -> database wiring is
-        // complete.
-        assertNotNull(koin.get<CocktailCraftDatabase>())
-        assertNotNull(koin.get<CocktailCache>())
-        assertSame(koin.get<LocalDatabase>(), koin.get<LocalDatabase>())
     }
 
     @Test

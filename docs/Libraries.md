@@ -2,9 +2,11 @@
 
 This document lists the libraries used in the CocktailCraft application, with their versions and purposes.
 
-All versions are managed in a single version catalog: **`libraries.toml`** at the repository root, wired up as the `libs` catalog in `settings.gradle.kts` (`versionCatalogs { create("libs") { from(files("libraries.toml")) } }`). The build files (`shared/build.gradle.kts`, `androidApp/build.gradle.kts`, `baselineprofile/build.gradle.kts`) reference dependencies only through the catalog — update versions there, not in the build files.
+All versions are managed in a single version catalog: **`libraries.toml`** at the repository root, wired up as the `libs` catalog in `settings.gradle.kts` (`versionCatalogs { create("libs") { from(files("libraries.toml")) } }`). The build files (`shared/`, `presentation/` and `core/*/build.gradle.kts`, `androidApp/build.gradle.kts`, `baselineprofile/build.gradle.kts`) and the `build-logic` convention plugin (AR-10) reference dependencies and SDK/JVM levels only through the catalog — update versions there, not in the build files.
 
-## Shared Module (Kotlin Multiplatform)
+## Shared Modules (Kotlin Multiplatform)
+
+Used across `:shared` and the `:core:*`/`:presentation` modules it is split into (see README "Module Structure" for which module uses what).
 
 | Library | Version | Purpose |
 |---------|---------|---------|
@@ -17,7 +19,7 @@ All versions are managed in a single version catalog: **`libraries.toml`** at th
 | Multiplatform Settings | 1.3.0 | Cross-platform key-value storage (auth data, in the secure store; older versions' cart/orders/favorites/reviews are read once to import them into SQLite) |
 | SQLDelight | 2.4.1 | SQLite storage for the offline cocktail cache, cart, orders, favorites and reviews (`android-driver` on Android, `native-driver` on iOS; the iOS app links `sqlite3` itself via `OTHER_LDFLAGS` in `iosApp/project.yml`; `coroutines-extensions` for reactive `Query.asFlow()` reads) |
 | Kermit | 2.1.0 | Multiplatform logging |
-| moko-resources | 0.27.1 | Single source for the app's strings: generates `MR.strings`/`MR.plurals`, Android string resources and the iOS strings bundle from `shared/src/commonMain/moko-resources` (exported to Swift; see README "Localization") |
+| moko-resources | 0.27.1 | Single source for the app's strings: generates `MR.strings`/`MR.plurals`, Android string resources and the iOS strings bundle from `core/resources/src/commonMain/moko-resources` (exported to Swift; see README "Localization") |
 | SKIE | 0.10.13 | Swift interop: Flow → AsyncSequence, suspend → async/await, enum/sealed-class bridging |
 | AndroidX Lifecycle ViewModel | 2.10.0 | Multiplatform `ViewModel` base for the shared ViewModels (exposed as `api` so consumers see the supertype) |
 | AndroidX Security Crypto | 1.1.0-alpha06 | Keystore-backed `EncryptedSharedPreferences` for the Android auth store |
@@ -41,9 +43,9 @@ Compose library versions come from the **Compose BOM 2026.06.01** — the indivi
 ## iOS App (Swift Package Manager)
 
 Declared under `packages:` in `iosApp/project.yml` and pinned by the committed
-`Package.resolved`. The shared module reaches Xcode through Kotlin's direct
-integration (`:shared:embedAndSignAppleFrameworkForXcode`), not a package
-manager.
+`Package.resolved`. The shared Kotlin code reaches Xcode as the `shared` framework built by the
+`:shared` umbrella module through Kotlin's direct integration
+(`:shared:embedAndSignAppleFrameworkForXcode`), not a package manager.
 
 | Library | Version | Purpose |
 |---------|---------|---------|

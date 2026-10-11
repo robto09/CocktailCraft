@@ -2,7 +2,7 @@
 
 ## Overview
 
-The former monolithic `CocktailRepository` was split into focused, single-concern repositories. There are **nine repository interfaces**, all in `shared/src/commonMain/kotlin/com/cocktailcraft/domain/repository/`, with implementations in `shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/` (plus the `CocktailCategoryFetcher` helper shared by the search and catalog implementations). All repositories are Kotlin Multiplatform and behave identically on Android and iOS.
+The former monolithic `CocktailRepository` was split into focused, single-concern repositories. There are **nine repository interfaces**, all in `core/domain/src/commonMain/kotlin/com/cocktailcraft/domain/repository/` (`:core:domain`), with `internal` implementations in `core/data/src/commonMain/kotlin/com/cocktailcraft/data/repository/` (`:core:data`) (plus the `CocktailCategoryFetcher` helper shared by the search and catalog implementations). All repositories are Kotlin Multiplatform and behave identically on Android and iOS.
 
 **The KDoc on the interfaces is the source of truth** — this page is a quick index, kept deliberately brief.
 
@@ -14,7 +14,7 @@ The former monolithic `CocktailRepository` was split into focused, single-concer
 
 ## Storage
 
-Everything except auth lives in one SQLite database (`cocktailcraft_cache.db`, schema in `shared/src/commonMain/sqldelight/`):
+Everything except auth lives in one SQLite database (`cocktailcraft_cache.db`, schema in `core/data/src/commonMain/sqldelight/`):
 
 | Data | Table(s) | Owner |
 |------|----------|-------|
@@ -25,7 +25,7 @@ Everything except auth lives in one SQLite database (`cocktailcraft_cache.db`, s
 | Reviews | `cocktail_review` | `ReviewRepositoryImpl` |
 
 - The cart, order, favorites and review repositories reach the database through `LocalDatabase` (`data/local/`), which opens it lazily on the IO dispatcher. On the first open after upgrading from a version that kept this data as JSON in `Settings`, `LegacySettingsImport` copies it into the tables (one transaction per store, `INSERT OR IGNORE`, so it is safe to re-run) and then deletes the old keys. Unreadable JSON is dropped entry by entry.
-- Every schema change needs a numbered migration in `shared/src/commonMain/sqldelight/migrations/` and a regenerated snapshot in `databases/`; `verifySqlDelightMigration` (part of `check`) fails otherwise.
+- Every schema change needs a numbered migration in `core/data/src/commonMain/sqldelight/migrations/` and a regenerated snapshot in `databases/`; `verifySqlDelightMigration` (part of `check`) fails otherwise.
 - Auth data (accounts, password hashes, session, sign-in throttling, guest preferences) deliberately stays in the platform-secure `Settings` store: it holds credentials and PII, and the database file is not encrypted.
 
 ## Cocktail data (the split of the old monolith)
@@ -143,5 +143,5 @@ suspend fun deleteReview(reviewId: String): Result<Boolean>                     
 
 ## Where things are wired
 
-- Koin bindings: `shared/src/commonMain/kotlin/com/cocktailcraft/di/DataModule.kt` (see [DependencyInjection.md](DependencyInjection.md))
+- Koin bindings: `core/data/src/commonMain/kotlin/com/cocktailcraft/di/DataModule.kt` (see [DependencyInjection.md](DependencyInjection.md))
 - Consumers inject the interfaces (mostly via use cases in `domain/usecase/`), never the `*Impl` classes.

@@ -316,7 +316,7 @@ graph TD
 
 This package diagram shows the organization of the CocktailCraft codebase, including:
 
-1. **Android App**: Compose screens, UI components, navigation, widget/work/sync platform integrations — the ViewModels live in the shared module, not here
+1. **Android App**: Compose screens, UI components, navigation, widget/work/sync platform integrations — the ViewModels live in the shared `:presentation` KMP module, not here
 2. **Shared Module**:
    - Domain Layer: Models, the nine focused Repository Interfaces (the former monolithic `CocktailRepository` was split into Search/Detail/Catalog/Favorites/Offline plus Cart/Auth/Order/Review), Use Cases, and `BackgroundSyncService`
    - Data Layer: one implementation per repository interface (plus the `CocktailCategoryFetcher` helper), the remote data source, and the caching/offline stack (`CocktailCache`, `CocktailCacheManager`, `OfflineModePolicy`)

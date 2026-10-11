@@ -7,7 +7,7 @@ This document describes the **completed implementation** of shared ViewModels us
 ## ViewModel Inventory
 
 ### Shared ViewModels (Kotlin Multiplatform)
-**Location**: `shared/src/commonMain/kotlin/com/cocktailcraft/viewmodel/`
+**Location**: `presentation/src/commonMain/kotlin/com/cocktailcraft/viewmodel/` (the `:presentation` module, re-exported to Android and Swift by the `:shared` umbrella)
 
 **8 ViewModels + base class** — these contain the business logic, state management, and data operations, written once and used by both platforms:
 
@@ -369,7 +369,7 @@ Maintaining the same logic in two places loses the point of Kotlin Multiplatform
 5. ✅ **No mirroring**: Views read `state.<field>`; wrappers never re-publish individual fields or forward snapshot getters
 
 ### Testing Strategy (IMPLEMENTED)
-1. ✅ **Shared Logic**: Business logic tested in shared module
+1. ✅ **Shared Logic**: Business logic tested in the shared KMP modules (ViewModels in `:presentation`)
 2. ✅ **Platform Integration**: Wrappers and UI integration tested
 3. ✅ **Build Validation**: Both platforms compile successfully
 

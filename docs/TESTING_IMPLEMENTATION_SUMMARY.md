@@ -1,14 +1,19 @@
 # Testing Framework Setup
 
 ## Overview
-This document summarizes the testing setup for the CocktailCraft Kotlin Multiplatform project. Most coverage lives in the **shared module's `commonTest`** suite (repositories, use cases, ViewModels, cache, DI graph), with platform suites on top.
+This document summarizes the testing setup for the CocktailCraft Kotlin Multiplatform project. Most coverage lives in the shared KMP modules' **`commonTest`** suites (repositories, use cases, ViewModels, cache, DI graph) — each module's tests sit next to its code — with platform suites on top.
 
 > The test trees themselves are the up-to-date catalog — this page deliberately describes areas, not individual test files, so it doesn't drift when tests are added or renamed.
 
 ## Test Structure
 
 ```
-├── shared/src/commonTest/              # Main suite: data, domain, viewmodel, di, util
+├── core/common/src/commonTest/         # ErrorHandler
+├── core/domain/src/commonTest/         # use cases, policies, validators
+├── core/data/src/commonTest/           # repositories, cache, API, database, data DI
+├── presentation/src/commonTest/        # the shared ViewModels
+├── shared/src/{commonTest,androidHostTest,iosTest}/  # full DI graph, KoinHelper, Android strings
+├── core/testing/src/commonMain/        # test-only module: fakes, test data, test bases
 ├── androidApp/src/test/                # Android JVM unit tests (Robolectric-capable)
 ├── androidApp/src/androidTest/         # Android instrumented/Compose UI tests
 ├── iosApp/CocktailCraftTests/          # iOS unit tests (XCTest)
@@ -17,13 +22,13 @@ This document summarizes the testing setup for the CocktailCraft Kotlin Multipla
 
 ## What's Covered
 
-### Shared (`shared/src/commonTest/kotlin/com/cocktailcraft/`)
-- **`data/`**: repository implementations (auth, cart, orders, reviews, favorites, offline, search), `CocktailCache`, API response parsing and `CocktailApiImpl`, auth-storage migration and password hashing
-- **`domain/`**: use case tests (e.g. `PlaceOrderUseCaseTest`, `ManageFavoritesUseCaseTest`), input validation, domain policies
-- **`viewmodel/`**: tests for all nine `Shared*ViewModel`s
-- **`di/`**: `KoinDependencyGraphTest` (the real module graph must resolve) and the network retry policy
-- **`util/`**: `ErrorHandler` classification, `Result` helpers
-- **`testutil/`**: hand-written fakes (`Fakes.kt`), test data, and the main-dispatcher test base — tests construct ViewModels/use cases directly via constructor injection; there is no mock-based Koin test module
+### Shared KMP modules (`<module>/src/commonTest/kotlin/com/cocktailcraft/`)
+- **`core/data` → `data/`, `di/`, `util/`**: repository implementations (auth, cart, orders, reviews, favorites, offline, search), `CocktailCache`, API response parsing and `CocktailApiImpl`, auth-storage migration and password hashing, the network retry policy, `DataModuleGraphTest` (the data layer's internal singletons resolve), `Result` helpers at the repository boundary
+- **`core/domain` → `domain/`**: use case tests (e.g. `PlaceOrderUseCaseTest`, `ManageFavoritesUseCaseTest`), input validation, domain policies
+- **`core/common` → `util/`**: `ErrorHandler` classification
+- **`presentation` → `viewmodel/`**: tests for the `Shared*ViewModel`s; the Profile/Theme/Review ones run against the real repositories through `testutil/DataLayer.kt` (`:core:data` is a test-only dependency there)
+- **`shared` → `di/`, `KoinHelperTest`, `resources/`**: `KoinDependencyGraphTest` (the full production graph must resolve), its iOS mirror for `KoinHelper`, and Android resolution of the shared strings
+- **`core/testing` → `testutil/`**: hand-written fakes (`Fakes.kt`), test data, the main-dispatcher test base and an in-memory SQLite driver — tests construct ViewModels/use cases directly via constructor injection; there is no mock-based Koin test module
 
 ### Android
 - **`androidApp/src/test`**: JVM unit tests (framework verification and Android-specific units)
@@ -42,8 +47,9 @@ This document summarizes the testing setup for the CocktailCraft Kotlin Multipla
 ## How to Run Tests
 
 ```bash
-# Shared module (the bulk of the coverage)
-./gradlew :shared:testAndroidHostTest
+# Shared KMP modules (the bulk of the coverage), on the JVM and the iOS simulator
+./gradlew testAndroidHostTest
+./gradlew iosSimulatorArm64Test
 
 # Android unit tests
 ./gradlew :androidApp:testDebugUnitTest

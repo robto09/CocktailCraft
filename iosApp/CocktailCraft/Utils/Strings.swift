@@ -2,7 +2,7 @@ import Foundation
 import shared
 
 // Swift-side access to the shared strings (MR.strings / MR.plurals, defined
-// once in shared/src/commonMain/moko-resources). moko-resources generates a
+// once in core/resources/src/commonMain/moko-resources). moko-resources generates a
 // Localizable.strings(dict) bundle that the "Compile Kotlin Framework" phase
 // copies into the app; these helpers resolve against it for the current
 // locale so call sites stay terse:

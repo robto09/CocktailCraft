@@ -10,8 +10,8 @@ import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.StringDesc
 
 // UI-edge resolution of the shared strings (MR.strings / MR.plurals, defined
-// once in shared/src/commonMain/moko-resources). moko generates them as
-// Android string resources in the shared module, so these are thin overloads
+// once in core/resources/src/commonMain/moko-resources). moko generates them as
+// Android string resources in the :core:resources module, so these are thin overloads
 // of the Compose/Context lookups that keep call sites terse:
 // stringResource(MR.strings.cart_empty_title).
 
