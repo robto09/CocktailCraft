@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -61,7 +62,8 @@ fun OrderListScreen(
                 title = stringResource(R.string.error),
                 message = error?.message ?: stringResource(R.string.order_unknown_error),
                 actionButtonText = stringResource(R.string.cart_try_again),
-                onActionButtonClick = { scope.launch { orderViewModel.loadOrders() } }
+                onActionButtonClick = { scope.launch { orderViewModel.loadOrders() } },
+                icon = Icons.Filled.Warning
             )
         } else if (!isLoading && state.orders.isEmpty()) {
             EmptyStateComponent(

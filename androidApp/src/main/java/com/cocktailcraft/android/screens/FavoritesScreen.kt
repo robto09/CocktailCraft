@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -62,7 +63,8 @@ fun FavoritesScreen(
                 title = stringResource(R.string.error),
                 message = error?.toString() ?: stringResource(R.string.cart_unknown_error),
                 actionButtonText = stringResource(R.string.cart_try_again),
-                onActionButtonClick = { /* Add retry logic here */ }
+                onActionButtonClick = { /* Add retry logic here */ },
+                icon = Icons.Filled.Warning
             )
         }
         // Show empty favorites state

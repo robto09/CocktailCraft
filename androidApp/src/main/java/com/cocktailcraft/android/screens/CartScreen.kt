@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -87,7 +88,8 @@ fun CartScreen(
                 title = stringResource(R.string.error),
                 message = error?.toString() ?: stringResource(R.string.cart_unknown_error),
                 actionButtonText = stringResource(R.string.cart_try_again),
-                onActionButtonClick = { /* Add retry logic here */ }
+                onActionButtonClick = { /* Add retry logic here */ },
+                icon = Icons.Filled.Warning
             )
         }
         // Show empty cart state
