@@ -45,6 +45,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -89,7 +90,6 @@ import com.cocktailcraft.android.ui.components.NetworkErrorStateDisplay
 import com.cocktailcraft.android.ui.components.SearchFilterChips
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.ListOptimizations.OnBottomReached
 import com.cocktailcraft.android.util.ListOptimizations.OnScrollPastThreshold
@@ -189,7 +189,7 @@ fun HomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.Background)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // For now, we'll skip the error banner since we're using legacy error handling
         // We'll implement it in the future when we fully migrate to the new error system
@@ -423,7 +423,7 @@ internal fun HomeContentSection(
                 isRefreshing = isLoading,
                 modifier = Modifier.align(Alignment.TopCenter),
                 containerColor = Color.White,
-                color = AppColors.Primary
+                color = MaterialTheme.colorScheme.primary
             )
         }
     ) {

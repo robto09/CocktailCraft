@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -11,7 +12,6 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.designsystem.AccentColorTokens
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -84,7 +84,7 @@ abstract class ScreenshotTest(private val variant: ThemeVariant) {
                 Box(
                     modifier = Modifier
                         .testTag(CAPTURE_TAG)
-                        .background(AppColors.Background)
+                        .background(MaterialTheme.colorScheme.background)
                         .padding(8.dp)
                 ) {
                     content()

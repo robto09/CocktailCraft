@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -14,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * A reusable section header component with optional action button.
@@ -34,8 +34,8 @@ fun SectionHeader(
     modifier: Modifier = Modifier,
     actionText: String? = null,
     onActionClick: (() -> Unit)? = null,
-    titleColor: androidx.compose.ui.graphics.Color = AppColors.TextPrimary,
-    actionColor: androidx.compose.ui.graphics.Color = AppColors.Primary,
+    titleColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
+    actionColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary,
     fontSize: Int = 18,
     fontWeight: FontWeight = FontWeight.Bold
 ) {

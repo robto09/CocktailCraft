@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * The app's single branded top bar: coral background, centered white bold
@@ -63,7 +62,7 @@ fun AppTopBar(
             },
             actions = actions,
             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = AppColors.Primary,
+                containerColor = MaterialTheme.colorScheme.primary,
                 titleContentColor = Color.White,
                 navigationIconContentColor = Color.White,
                 actionIconContentColor = Color.White

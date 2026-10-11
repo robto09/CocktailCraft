@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,7 +26,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * A full-screen error state for load failures, shown only when there is no
@@ -50,7 +50,7 @@ fun NetworkErrorStateDisplay(
     iconSize: Int = 48,
     titleFontSize: Int = 18,
     messageFontSize: Int = 14,
-    retryButtonColor: Color = AppColors.Primary
+    retryButtonColor: Color = MaterialTheme.colorScheme.primary
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
@@ -68,7 +68,7 @@ fun NetworkErrorStateDisplay(
 
             if (!isNetworkAvailable) {
                 icon = Icons.Default.WifiOff
-                iconTint = AppColors.Primary
+                iconTint = MaterialTheme.colorScheme.primary
                 title = stringResource(R.string.common_network_unavailable)
                 message = stringResource(R.string.error_no_cached_cocktails)
             } else {
@@ -99,7 +99,7 @@ fun NetworkErrorStateDisplay(
 
             Text(
                 text = message,
-                color = AppColors.TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 fontSize = messageFontSize.sp
             )

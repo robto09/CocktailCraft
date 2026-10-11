@@ -169,13 +169,13 @@ ConfirmationDialog(
 DetailInfoCard(
     title = "How to Prepare",
     modifier = Modifier.padding(vertical = 8.dp),
-    backgroundColor = AppColors.Surface.copy(alpha = 0.8f)
+    backgroundColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
 ) {
     // Content goes here
     Text(
         text = instructionsText,
         fontSize = 15.sp,
-        color = AppColors.TextPrimary,
+        color = MaterialTheme.colorScheme.onSurface,
         lineHeight = 24.sp
     )
 }
@@ -369,7 +369,7 @@ FilterChip(
 RatingBar(
     rating = 4.5f,
     stars = 5,
-    starsColor = AppColors.Secondary,
+    starsColor = CocktailCraftTheme.extendedColors.rating,
     useHalfStars = true
 )
 ```
@@ -611,9 +611,54 @@ AnimatedButton(onClick = { /* action */ }) {
 - **`AnimatedIconButton`**: icon button with press-scale and optional haptic feedback
 - **`AnimatedFloatingActionButton`**: FAB with press-scale
 
+### Theming and Colors
+
+`AnimatedCocktailBarTheme` (`ui/theme/AnimatedTheme.kt`) is the app's single
+theme. Its Material 3 color scheme is built in `ui/theme/Theme.kt`
+(`cocktailColorScheme`) from the shared `ColorTokens`
+(`shared/.../designsystem/DesignTokens.kt`) and honours the user's accent
+color (primary) and high-contrast setting (stronger secondary text). Read
+colors only through the theme — there is no global color object (AN-5):
+
+- **`MaterialTheme.colorScheme`** for every role Material defines
+- **`CocktailCraftTheme.extendedColors`** for brand/semantic colors Material
+  has no role for
+- **`CocktailCraftTheme.isDarkTheme`** for theme-specific assets
+  (`ThemeAssets`)
+
+| Design token | Read it as |
+|---|---|
+| primary (follows accent) | `colorScheme.primary` |
+| secondary (gold) | `colorScheme.secondary` |
+| chipBackground (brown) | `colorScheme.tertiary` |
+| background / surface | `colorScheme.background` / `surface` |
+| textPrimary | `colorScheme.onSurface` |
+| textSecondary (high-contrast aware) | `colorScheme.onSurfaceVariant` |
+| gray | `colorScheme.outline` |
+| error | `colorScheme.error` |
+| success / warning | `extendedColors.success` / `warning` |
+| rating stars | `extendedColors.rating` |
+| lightGray (dividers, unfocused borders, placeholders) | `extendedColors.neutralSubtle` |
+
+`lightGray` is deliberately not `outlineVariant`: that role feeds Material
+defaults (chip and outlined-button borders, default dividers) and remapping
+it would restyle them. Code outside composition must not read theme colors —
+pass the color in instead. Home-screen widgets are Glance and use their own
+`GlanceTheme` color providers (`widget/WidgetTheme.kt`).
+
+Android dynamic color (Material You) is supported by the theme's
+`dynamicColor` parameter but stays **off** by default: the app has a brand
+palette and a user accent picker that a wallpaper-derived scheme would
+override. Extended colors stay on-brand either way.
+
+```kotlin
+Text("In stock", color = CocktailCraftTheme.extendedColors.success)
+Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) { /* ... */ }
+```
+
 ### Theme Transitions
 
-- **`AnimatedCocktailBarTheme(darkTheme, content)`** (`ui/theme/AnimatedTheme.kt`): the app's single theme; animates every palette color when switching between light and dark modes
+- **`AnimatedCocktailBarTheme(darkTheme, accentColor, highContrast, ...)`**: animates the theme-dependent palette roles (and the rating gold) when switching between light and dark modes or accents; Reduce Motion makes the switch instant
 - **`AnimatedThemeSwitch(isDarkMode, onToggle)`**: custom switch with animated track/thumb colors, spring-based thumb position, and an animated light/dark icon
 
 ```kotlin
@@ -689,7 +734,7 @@ Recent refactoring in the CocktailCraft app focused on:
 1. **Component Naming**: Use clear, descriptive names that indicate the component's purpose
 2. **Documentation**: Add KDoc comments to explain parameters and usage
 3. **Default Values**: Provide sensible defaults for optional parameters
-4. **Theming**: Use app theme colors and dimensions for consistency
+4. **Theming**: Read colors from `MaterialTheme.colorScheme` / `CocktailCraftTheme.extendedColors` (never hardcode `Color.White` for surfaces) and use `Spacing` for dimensions
 5. **Accessibility**: Ensure components are accessible with proper content descriptions
 6. **Composition**: Prefer composition over inheritance for component reuse
 7. **Testing**: Write tests for components to ensure they work as expected

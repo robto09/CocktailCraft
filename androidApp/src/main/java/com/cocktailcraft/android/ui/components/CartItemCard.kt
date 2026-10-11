@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.components.LightweightOptimizedImage
 import java.text.NumberFormat
 import java.util.Locale
@@ -45,7 +45,7 @@ import java.util.Locale
  * @param showDeleteButton Whether to show the delete button (default: true)
  * @param showQuantityControls Whether to show the quantity controls (default: true)
  * @param cardElevation Elevation for the card (default: 1.dp)
- * @param backgroundColor Background color for the card (default: Color.White)
+ * @param backgroundColor Background color for the card (default: theme surface)
  * @param cornerRadius Corner radius for the card (default: 12.dp)
  * @param imageSize Size of the product image (default: 80.dp)
  * @param maxLines Maximum lines for the product name (default: 1)
@@ -63,7 +63,7 @@ fun CartItemCard(
     showDeleteButton: Boolean = true,
     showQuantityControls: Boolean = true,
     cardElevation: Dp = 1.dp,
-    backgroundColor: Color = Color.White,
+    backgroundColor: Color = MaterialTheme.colorScheme.surface,
     cornerRadius: Dp = 12.dp,
     imageSize: Dp = 80.dp,
     maxLines: Int = 1,
@@ -114,7 +114,7 @@ fun CartItemCard(
                         text = item.cocktail.name,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = AppColors.TextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f),
                         maxLines = maxLines,
                         overflow = TextOverflow.Ellipsis
@@ -129,7 +129,7 @@ fun CartItemCard(
                             Icon(
                                 imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                                 contentDescription = if (isFavorite) stringResource(R.string.list_remove_from_favorites) else stringResource(R.string.list_add_to_favorites),
-                                tint = if (isFavorite) AppColors.Secondary else AppColors.Gray,
+                                tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -142,7 +142,7 @@ fun CartItemCard(
                 Text(
                     text = currencyFormatter.format(item.cocktail.price),
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.Primary,
+                    color = MaterialTheme.colorScheme.primary,
                     fontSize = 14.sp
                 )
 
@@ -152,7 +152,7 @@ fun CartItemCard(
                     Text(
                         text = alcoholicStatus,
                         fontSize = 12.sp,
-                        color = AppColors.TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -175,13 +175,13 @@ fun CartItemCard(
                                 Box(
                                     modifier = Modifier
                                         .size(36.dp)
-                                        .background(AppColors.LightGray, CircleShape),
+                                        .background(CocktailCraftTheme.extendedColors.neutralSubtle, CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Remove,
                                         contentDescription = stringResource(R.string.cart_decrease_quantity),
-                                        tint = AppColors.TextPrimary,
+                                        tint = MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.size(16.dp)
                                     )
                                 }
@@ -198,7 +198,7 @@ fun CartItemCard(
                                 Box(
                                     modifier = Modifier
                                         .size(36.dp)
-                                        .background(AppColors.Primary, CircleShape),
+                                        .background(MaterialTheme.colorScheme.primary, CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
@@ -215,7 +215,7 @@ fun CartItemCard(
                         Text(
                             text = stringResource(R.string.cart_quantity_label, item.quantity),
                             fontSize = 14.sp,
-                            color = AppColors.TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -227,7 +227,7 @@ fun CartItemCard(
                             text = currencyFormatter.format(item.cocktail.price * item.quantity),
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
-                            color = AppColors.TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
                         // Delete button (optional)
@@ -239,7 +239,7 @@ fun CartItemCard(
                                 Icon(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = stringResource(R.string.remove_from_cart),
-                                    tint = AppColors.Error,
+                                    tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }

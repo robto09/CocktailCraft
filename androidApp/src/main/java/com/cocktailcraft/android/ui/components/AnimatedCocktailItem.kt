@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,7 +53,7 @@ import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.animation.AnimationUtils
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.rememberHapticHandler
 
 /**
@@ -90,7 +91,7 @@ fun AnimatedCocktailItem(
             ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp,
@@ -131,7 +132,7 @@ fun CocktailItemContent(
             modifier = Modifier
                 .size(100.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(AppColors.LightGray)
+                .background(CocktailCraftTheme.extendedColors.neutralSubtle)
         ) {
             // Use our optimized image component
             OptimizedImage(
@@ -173,7 +174,7 @@ fun CocktailItemContent(
                 text = cocktail.name,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
-                color = AppColors.TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -190,7 +191,7 @@ fun CocktailItemContent(
                     }
                 },
                 fontSize = 14.sp,
-                color = AppColors.TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -213,7 +214,7 @@ fun CocktailItemContent(
                     stringResource(R.string.list_tap_to_view_ingredients)
                 },
                 fontSize = 12.sp,
-                color = AppColors.TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontStyle = FontStyle.Italic,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -230,7 +231,7 @@ fun CocktailItemContent(
                     text = stringResource(R.string.list_price_format, cocktail.price),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = AppColors.Primary
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -243,7 +244,7 @@ fun CocktailItemContent(
                     },
                     icon = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                     contentDescription = if (isFavorite) stringResource(R.string.list_remove_from_favorites) else stringResource(R.string.list_add_to_favorites),
-                    tint = if (isFavorite) AppColors.Secondary else AppColors.Gray
+                    tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline
                 )
 
                 // Add to cart button with animation
@@ -251,7 +252,7 @@ fun CocktailItemContent(
                     onClick = { onAddToCart(cocktail) },
                     icon = Icons.Default.ShoppingCart,
                     contentDescription = stringResource(R.string.add_to_cart),
-                    tint = if (cocktail.stockCount > 0) AppColors.Primary else AppColors.Gray,
+                    tint = if (cocktail.stockCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                     enabled = cocktail.stockCount > 0
                 )
             }

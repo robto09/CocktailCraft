@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,7 +16,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * A reusable confirmation dialog component.
@@ -43,8 +43,8 @@ fun ConfirmationDialog(
     onDismiss: () -> Unit,
     titleFontSize: Int = 18,
     messageFontSize: Int = 16,
-    confirmButtonColor: androidx.compose.ui.graphics.Color = AppColors.Primary,
-    dismissButtonColor: androidx.compose.ui.graphics.Color = AppColors.Primary
+    confirmButtonColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary,
+    dismissButtonColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary
 ) {
     if (showDialog) {
         AlertDialog(
@@ -90,7 +90,7 @@ fun ConfirmationDialog(
                     )
                 }
             },
-            containerColor = AppColors.Surface,
+            containerColor = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(16.dp)
         )
     }

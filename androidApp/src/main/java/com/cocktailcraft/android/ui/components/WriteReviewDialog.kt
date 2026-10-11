@@ -15,7 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,7 +38,7 @@ fun WriteReviewDialog(
                     text = stringResource(R.string.write_review),
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.Primary
+                    color = MaterialTheme.colorScheme.primary
                 )
             },
             text = {
@@ -53,7 +53,7 @@ fun WriteReviewDialog(
                             text = stringResource(R.string.review_your_name),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
-                            color = AppColors.Primary,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
                         OutlinedTextField(
@@ -62,7 +62,7 @@ fun WriteReviewDialog(
                                 userName = it
                                 hasError = false
                             },
-                            placeholder = { Text(stringResource(R.string.review_enter_your_name), color = AppColors.Gray) },
+                            placeholder = { Text(stringResource(R.string.review_enter_your_name), color = MaterialTheme.colorScheme.outline) },
                             isError = hasError && userName.isBlank(),
                             supportingText = {
                                 if (hasError && userName.isBlank()) {
@@ -76,10 +76,10 @@ fun WriteReviewDialog(
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = AppColors.Primary,
-                                unfocusedBorderColor = AppColors.LightGray,
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = CocktailCraftTheme.extendedColors.neutralSubtle,
                                 errorBorderColor = MaterialTheme.colorScheme.error,
-                                focusedContainerColor = AppColors.Surface, unfocusedContainerColor = AppColors.Surface
+                                focusedContainerColor = MaterialTheme.colorScheme.surface, unfocusedContainerColor = MaterialTheme.colorScheme.surface
                             )
                         )
                     }
@@ -90,14 +90,14 @@ fun WriteReviewDialog(
                             text = stringResource(R.string.review_your_rating),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
-                            color = AppColors.Primary,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
 
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(AppColors.Surface, RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
                                 .padding(8.dp),
                             horizontalArrangement = Arrangement.Center
                         ) {
@@ -109,7 +109,7 @@ fun WriteReviewDialog(
                                     Icon(
                                         imageVector = Icons.Filled.Star,
                                         contentDescription = stringResource(R.string.review_rate_star, index + 1),
-                                        tint = if (index < userRating) AppColors.Secondary else AppColors.LightGray,
+                                        tint = if (index < userRating) CocktailCraftTheme.extendedColors.rating else CocktailCraftTheme.extendedColors.neutralSubtle,
                                         modifier = Modifier.size(36.dp)
                                     )
                                 }
@@ -134,7 +134,7 @@ fun WriteReviewDialog(
                             text = stringResource(R.string.review_your_review),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
-                            color = AppColors.Primary,
+                            color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
                         OutlinedTextField(
@@ -144,14 +144,14 @@ fun WriteReviewDialog(
                                     userComment = it
                                 }
                             },
-                            placeholder = { Text(stringResource(R.string.review_share_experience_placeholder), color = AppColors.Gray) },
+                            placeholder = { Text(stringResource(R.string.review_share_experience_placeholder), color = MaterialTheme.colorScheme.outline) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(120.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = AppColors.Primary,
-                                unfocusedBorderColor = AppColors.LightGray,
-                                focusedContainerColor = AppColors.Surface, unfocusedContainerColor = AppColors.Surface
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = CocktailCraftTheme.extendedColors.neutralSubtle,
+                                focusedContainerColor = MaterialTheme.colorScheme.surface, unfocusedContainerColor = MaterialTheme.colorScheme.surface
                             )
                         )
 
@@ -161,7 +161,7 @@ fun WriteReviewDialog(
                             Text(
                                 text = stringResource(R.string.review_character_count, userComment.length),
                                 fontSize = 12.sp,
-                                color = AppColors.Gray,
+                                color = MaterialTheme.colorScheme.outline,
                                 modifier = Modifier
                                     .align(Alignment.CenterEnd)
                                     .padding(top = 4.dp)
@@ -185,7 +185,7 @@ fun WriteReviewDialog(
                         }
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = AppColors.Primary
+                        containerColor = MaterialTheme.colorScheme.primary
                     ),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.padding(horizontal = 8.dp)
@@ -200,9 +200,9 @@ fun WriteReviewDialog(
             dismissButton = {
                 OutlinedButton(
                     onClick = onDismiss,
-                    border = BorderStroke(1.dp, AppColors.Primary),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = AppColors.Primary
+                        contentColor = MaterialTheme.colorScheme.primary
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {

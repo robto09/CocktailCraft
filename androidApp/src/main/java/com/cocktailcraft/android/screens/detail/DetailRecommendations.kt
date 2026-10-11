@@ -40,7 +40,7 @@ import com.cocktailcraft.android.ui.components.rememberShimmerTranslate
 import com.cocktailcraft.android.ui.components.shimmerEffect
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.domain.model.Cocktail
 
@@ -62,7 +62,7 @@ internal fun DetailRecommendationsSection(
             .fillMaxWidth()
             .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
@@ -81,7 +81,7 @@ internal fun DetailRecommendationsSection(
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp
                 ),
-                color = AppColors.TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(Spacing.lg))
@@ -94,7 +94,7 @@ internal fun DetailRecommendationsSection(
                 Text(
                     text = stringResource(R.string.detail_loading_recommendations),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = AppColors.TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = Spacing.lg)
                 )
             } else {
@@ -150,7 +150,7 @@ internal fun RecommendationCard(
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp
@@ -163,7 +163,7 @@ internal fun RecommendationCard(
                     .height(140.dp)
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-                    .background(AppColors.LightGray),
+                    .background(CocktailCraftTheme.extendedColors.neutralSubtle),
                 contentAlignment = Alignment.Center
             ) {
                 // Show a placeholder icon if image URL is empty
@@ -172,7 +172,7 @@ internal fun RecommendationCard(
                         imageVector = Icons.Default.LocalBar,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
-                        tint = AppColors.Gray
+                        tint = MaterialTheme.colorScheme.outline
                     )
                 } else {
                     // Use our optimized image component
@@ -197,7 +197,7 @@ internal fun RecommendationCard(
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Bold
                     ),
-                    color = AppColors.TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -210,7 +210,7 @@ internal fun RecommendationCard(
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Bold
                     ),
-                    color = AppColors.Primary
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }

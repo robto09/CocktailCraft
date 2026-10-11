@@ -64,7 +64,6 @@ import com.cocktailcraft.android.screens.FavoritesScreen
 import com.cocktailcraft.android.screens.HomeScreen
 import com.cocktailcraft.android.screens.OrderListScreen
 import com.cocktailcraft.android.screens.ProfileScreen
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
 import com.cocktailcraft.domain.model.Cocktail
@@ -156,7 +155,7 @@ fun MainScreen() {
                 // bar, then padding so the indicator/title start below it.
                 Column(
                     modifier = Modifier
-                        .background(AppColors.Primary)
+                        .background(MaterialTheme.colorScheme.primary)
                         .statusBarsPadding()
                 ) {
                     // Banner shown while the device has no connection
@@ -184,8 +183,8 @@ fun MainScreen() {
             // Only show the bottom navigation bar if we're NOT on the detail screen
             if (!isDetailScreen) {
                 NavigationBar(
-                    containerColor = AppColors.Surface,
-                    contentColor = AppColors.Primary,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.primary,
                     tonalElevation = 8.dp
                 ) {
                     items.forEach { screen ->
@@ -214,11 +213,11 @@ fun MainScreen() {
                                 navigationManager.navigateToBottomNavDestination(screen)
                             },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = AppColors.Primary,
-                                selectedTextColor = AppColors.Primary,
-                                indicatorColor = AppColors.Surface,
-                                unselectedIconColor = AppColors.Gray,
-                                unselectedTextColor = AppColors.Gray
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = MaterialTheme.colorScheme.surface,
+                                unselectedIconColor = MaterialTheme.colorScheme.outline,
+                                unselectedTextColor = MaterialTheme.colorScheme.outline
                             )
                         )
                     }
@@ -226,7 +225,7 @@ fun MainScreen() {
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = AppColors.Background
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         NavHost(
             navController = navController,

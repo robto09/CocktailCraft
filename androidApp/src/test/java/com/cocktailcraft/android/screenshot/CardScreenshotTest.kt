@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.ui.components.AnimatedCocktailItem
@@ -17,7 +18,6 @@ import com.cocktailcraft.android.ui.components.OrderCard
 import com.cocktailcraft.android.ui.components.OrderSummaryCard
 import com.cocktailcraft.android.ui.components.SettingsCard
 import com.cocktailcraft.android.ui.components.SettingsItem
-import com.cocktailcraft.android.ui.theme.AppColors
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
@@ -82,7 +82,7 @@ class CardScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
     fun detailInfoCard() = snapshot("DetailInfoCard") {
         DetailInfoCard(
             title = "Instructions",
-            content = { Text(ScreenshotFixtures.cocktail.instructions.orEmpty(), color = AppColors.TextSecondary) }
+            content = { Text(ScreenshotFixtures.cocktail.instructions.orEmpty(), color = MaterialTheme.colorScheme.onSurfaceVariant) }
         )
     }
 

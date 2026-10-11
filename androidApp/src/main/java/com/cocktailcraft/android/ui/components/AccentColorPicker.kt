@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,7 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.designsystem.AccentColorTokens
 
@@ -44,7 +45,7 @@ fun AccentColorPicker(
     ) {
         options.forEach { name ->
             val swatchColor = Color(
-                if (AppColors.isDarkTheme) AccentColorTokens.dark(name)
+                if (CocktailCraftTheme.isDarkTheme) AccentColorTokens.dark(name)
                 else AccentColorTokens.light(name)
             )
             val isSelected = name.equals(selected, ignoreCase = true)
@@ -54,7 +55,7 @@ fun AccentColorPicker(
                     .size(36.dp)
                     .then(
                         if (isSelected) {
-                            Modifier.border(2.dp, AppColors.TextPrimary, CircleShape)
+                            Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
                         } else {
                             Modifier
                         }

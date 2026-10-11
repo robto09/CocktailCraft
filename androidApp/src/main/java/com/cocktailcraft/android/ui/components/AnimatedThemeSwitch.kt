@@ -44,7 +44,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * A custom animated switch for toggling between light and dark themes.
@@ -72,7 +71,7 @@ fun AnimatedThemeSwitch(
 
     // Animate the thumb color
     val thumbColor by animateColorAsState(
-        targetValue = AppColors.Primary, // follows the selected accent
+        targetValue = MaterialTheme.colorScheme.primary, // follows the selected accent
         animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
         label = "thumb_color"
     )
@@ -161,7 +160,7 @@ fun AnimatedThemeToggleRow(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = AppColors.TextPrimary,
+            tint = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier
                 .size(24.dp)
                 .alpha(alpha)
@@ -177,13 +176,13 @@ fun AnimatedThemeToggleRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
-                color = AppColors.TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = AppColors.TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 

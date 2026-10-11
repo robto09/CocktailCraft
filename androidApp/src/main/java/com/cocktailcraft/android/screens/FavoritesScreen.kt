@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -29,7 +30,6 @@ import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.SectionHeader
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import kotlinx.coroutines.launch
@@ -51,7 +51,7 @@ fun FavoritesScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.Background)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Show loading state
         LoadingStateComponent(isLoading = isLoading)
@@ -89,7 +89,7 @@ fun FavoritesScreen(
                         isRefreshing = isLoading,
                         modifier = Modifier.align(Alignment.TopCenter),
                         containerColor = Color.White,
-                        color = AppColors.Primary
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             ) {

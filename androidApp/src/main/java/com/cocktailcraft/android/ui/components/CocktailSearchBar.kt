@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -26,7 +27,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 
 /**
  * A reusable search bar component with an advanced search button.
@@ -57,12 +58,12 @@ fun CocktailSearchBar(
     onToggleAdvancedSearch: () -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = stringResource(R.string.search_cocktails_placeholder),
-    searchIconTint: Color = AppColors.Gray,
-    clearIconTint: Color = AppColors.Gray,
-    activeFilterButtonColor: Color = AppColors.Primary,
-    inactiveFilterButtonColor: Color = AppColors.LightGray,
+    searchIconTint: Color = MaterialTheme.colorScheme.outline,
+    clearIconTint: Color = MaterialTheme.colorScheme.outline,
+    activeFilterButtonColor: Color = MaterialTheme.colorScheme.primary,
+    inactiveFilterButtonColor: Color = CocktailCraftTheme.extendedColors.neutralSubtle,
     activeFilterIconTint: Color = Color.White,
-    inactiveFilterIconTint: Color = AppColors.TextSecondary
+    inactiveFilterIconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     Row(
         modifier = modifier
@@ -96,10 +97,10 @@ fun CocktailSearchBar(
                 }
             },
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = AppColors.Primary,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = Color.Gray,
-                cursorColor = AppColors.Primary,
-                focusedLeadingIconColor = AppColors.Primary,
+                cursorColor = MaterialTheme.colorScheme.primary,
+                focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
                 unfocusedLeadingIconColor = Color.Gray,
                 focusedContainerColor = Color.White, unfocusedContainerColor = Color.White
             ),

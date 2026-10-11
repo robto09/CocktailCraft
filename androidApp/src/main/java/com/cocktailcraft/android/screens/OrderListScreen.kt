@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -28,7 +29,6 @@ import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.OrderCard
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import kotlinx.coroutines.launch
@@ -52,7 +52,7 @@ fun OrderListScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.Background)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         LoadingStateComponent(isLoading = isLoading)
 
@@ -85,7 +85,7 @@ fun OrderListScreen(
                         isRefreshing = isLoading,
                         modifier = Modifier.align(Alignment.TopCenter),
                         containerColor = Color.White,
-                        color = AppColors.Primary
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             ) {

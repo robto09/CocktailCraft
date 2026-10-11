@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,7 +24,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * A banner shown while the device has no network connection. Cached
@@ -41,7 +41,7 @@ fun OfflineModeIndicator(isOffline: Boolean) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(AppColors.Error)
+                .background(MaterialTheme.colorScheme.error)
                 .padding(vertical = 8.dp, horizontal = 16.dp)
         ) {
             Row(

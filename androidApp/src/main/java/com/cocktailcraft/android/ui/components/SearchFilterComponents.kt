@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 
 /**
  * Section component for filter categories
@@ -84,7 +84,7 @@ fun FilterSection(
             Icon(
                 imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                 contentDescription = if (expanded) stringResource(R.string.filter_collapse) else stringResource(R.string.filter_expand),
-                tint = AppColors.TextSecondary
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -177,18 +177,18 @@ private fun ExposedDropdownMenuBoxScope.SelectorField(
             Text(
                 text = placeholder,
                 style = MaterialTheme.typography.bodyMedium,
-                color = AppColors.TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
         shape = RoundedCornerShape(8.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = AppColors.TextPrimary,
-            unfocusedTextColor = AppColors.TextPrimary,
-            focusedBorderColor = AppColors.Primary,
-            unfocusedBorderColor = AppColors.LightGray,
-            focusedTrailingIconColor = AppColors.TextSecondary,
-            unfocusedTrailingIconColor = AppColors.TextSecondary
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = CocktailCraftTheme.extendedColors.neutralSubtle,
+            focusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unfocusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -252,7 +252,7 @@ fun IngredientSelectionDialog(
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = AppColors.Surface
+            color = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier
@@ -277,15 +277,15 @@ fun IngredientSelectionDialog(
                         Icon(
                             Icons.Default.Search,
                             contentDescription = stringResource(R.string.search),
-                            tint = AppColors.Gray
+                            tint = MaterialTheme.colorScheme.outline
                         )
                     },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AppColors.Primary,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = Color.Gray,
-                        cursorColor = AppColors.Primary,
-                        focusedLeadingIconColor = AppColors.Primary,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
                         unfocusedLeadingIconColor = Color.Gray,
                         focusedContainerColor = Color.White, unfocusedContainerColor = Color.White
                     )

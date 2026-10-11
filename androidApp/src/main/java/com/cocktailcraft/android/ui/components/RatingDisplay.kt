@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 
 /**
  * A reusable rating display component that shows a rating with stars and review count.
@@ -38,8 +39,8 @@ fun RatingDisplay(
     starSize: Int = 16,
     ratingTextSize: Int = 14,
     reviewCountTextSize: Int = 14,
-    starsColor: androidx.compose.ui.graphics.Color = AppColors.Secondary,
-    textColor: androidx.compose.ui.graphics.Color = AppColors.TextSecondary,
+    starsColor: androidx.compose.ui.graphics.Color = CocktailCraftTheme.extendedColors.rating,
+    textColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
     useHalfStars: Boolean = true
 ) {
     Row(

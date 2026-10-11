@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 
 /**
  * A reusable rating bar component that displays a row of stars representing a rating.
@@ -32,7 +32,7 @@ fun RatingBar(
     rating: Float,
     modifier: Modifier = Modifier,
     stars: Int = 5,
-    starsColor: Color = AppColors.Secondary,
+    starsColor: Color = CocktailCraftTheme.extendedColors.rating,
     starSize: Dp = 16.dp,
     spaceBetween: Dp = 2.dp,
     useHalfStars: Boolean = false
