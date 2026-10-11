@@ -72,39 +72,11 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
         await run { try await cartViewModel.addToCart(cocktail: cocktail, quantity: 1) }
     }
 
-    func sortByPrice(ascending: Bool) async {
-        await run { try await sharedViewModel.sortByPrice(ascending: ascending) }
-    }
-
-    func sortByRating() async {
-        await run { try await sharedViewModel.sortByRating() }
-    }
-
-    func sortByPopularity() async {
-        await run { try await sharedViewModel.sortByPopularity() }
-    }
-
-    func getCocktailById(_ id: String) async -> Cocktail? {
-        return await run(fallback: nil as Cocktail?) { try await sharedViewModel.getCocktailById(id: id) }
-    }
-
     // MARK: - Synchronous Methods
-
-    func isFavorite(_ cocktailId: String) -> Bool {
-        return sharedViewModel.isFavorite(cocktailId: cocktailId)
-    }
-
-    func getCategories() -> [String] {
-        return sharedViewModel.getCategories()
-    }
 
     /// Canonical curated category list from shared (CocktailCategories.CURATED).
     var curatedCategories: [String] {
         return sharedViewModel.curatedCategories
-    }
-
-    func getCocktailsByCategory(_ category: String, limit: Int32 = 3) -> [Cocktail] {
-        return sharedViewModel.getCocktailsByCategory(category: category, limit: limit)
     }
 
     func clearSearch() {

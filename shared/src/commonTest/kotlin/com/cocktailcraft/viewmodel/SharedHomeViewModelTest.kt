@@ -164,22 +164,6 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     }
 
     @Test
-    fun getCocktailsByCategoryIsStableAcrossCalls() = runTest {
-        // SH-10: shuffled() returned a different list every call, causing
-        // pointless recomposition on Android and unstable results on iOS.
-        val harness = Harness()
-        harness.search.all = (1..8).map { testCocktail("id$it", category = "Cocktail") }
-        val vm = harness.viewModel()
-        advanceUntilIdle()
-
-        val first = vm.getCocktailsByCategory("Cocktail", 3)
-        val second = vm.getCocktailsByCategory("Cocktail", 3)
-
-        assertEquals(first.map { it.id }, second.map { it.id })
-        assertEquals(3, first.size)
-    }
-
-    @Test
     fun viewModelNeverStartsOrStopsTheSharedNetworkMonitor() = runTest {
         // SH-2: monitoring lifecycle belongs to app init; a second start from a
         // ViewModel double-registers the Android NetworkCallback and throws.
@@ -490,16 +474,6 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         assertEquals(listOf("1"), vm.uiState.value.cocktails.map { it.id })
     }
 
-    @Test
-    fun getCategoriesReturnsDistinctSortedCategories() = runTest {
-        val harness = Harness()
-        harness.search.all = listOf(
-            testCocktail("1", category = "Cocktail"),
-            testCocktail("2", category = "Cocktail")
-        )
-        val vm = harness.viewModel()
-        advanceUntilIdle()
-
-        assertEquals(listOf("Cocktail"), vm.getCategories())
-    }
+    private fun SharedHomeViewModel.isFavorite(cocktailId: String): Boolean =
+        uiState.value.favorites.any { it.id == cocktailId }
 }
