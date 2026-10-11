@@ -31,13 +31,12 @@ import com.cocktailcraft.android.util.rememberHapticHandler
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.add_to_cart
-import com.cocktailcraft.resources.list_add_to_favorites
+import com.cocktailcraft.resources.add_to_cart_item_a11y
 import com.cocktailcraft.resources.list_alcoholic_unknown
 import com.cocktailcraft.resources.list_out_of_stock
 import com.cocktailcraft.resources.list_price_format
-import com.cocktailcraft.resources.list_remove_from_favorites
 import com.cocktailcraft.resources.list_tap_to_view_ingredients
+import com.cocktailcraft.resources.list_view_details_label
 
 @Composable
 fun CocktailItem(
@@ -52,7 +51,10 @@ fun CocktailItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(
+                onClick = onClick,
+                onClickLabel = stringResource(MR.strings.list_view_details_label, cocktail.name)
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -72,10 +74,11 @@ fun CocktailItem(
                     .clip(RoundedCornerShape(8.dp))
                     .background(CocktailCraftTheme.extendedColors.neutralSubtle)
             ) {
-                // Use our optimized image component
+                // Use our optimized image component (decorative: the name
+                // is read from the text beside it)
                 OptimizedImage(
                     url = cocktail.imageUrl,
-                    contentDescription = cocktail.name,
+                    contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                     targetSize = 200 // Target size for better memory usage
@@ -112,7 +115,7 @@ fun CocktailItem(
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
 
@@ -129,7 +132,7 @@ fun CocktailItem(
                     },
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
 
@@ -173,21 +176,14 @@ fun CocktailItem(
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // Favorite button with haptic feedback — default IconButton
-                    // size keeps the 48 dp minimum touch target
-                    IconButton(
-                        onClick = {
+                    // Favorite toggle with haptic feedback
+                    FavoriteToggleButton(
+                        isFavorite = isFavorite,
+                        onToggle = {
                             hapticHandler.performToggleFavorite(isFavorite)
                             onToggleFavorite(cocktail)
                         }
-                    ) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = if (isFavorite) stringResource(MR.strings.list_remove_from_favorites) else stringResource(MR.strings.list_add_to_favorites),
-                            tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                    )
 
                     // Add to cart button
                     IconButton(
@@ -196,7 +192,7 @@ fun CocktailItem(
                     ) {
                         Icon(
                             imageVector = Icons.Default.ShoppingCart,
-                            contentDescription = stringResource(MR.strings.add_to_cart),
+                            contentDescription = stringResource(MR.strings.add_to_cart_item_a11y, cocktail.name),
                             tint = if (cocktail.stockCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                             modifier = Modifier.size(20.dp)
                         )

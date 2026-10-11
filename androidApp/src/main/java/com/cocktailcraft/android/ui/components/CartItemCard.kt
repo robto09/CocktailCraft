@@ -8,8 +8,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -18,7 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -29,17 +30,17 @@ import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.cart_decrease_quantity
-import com.cocktailcraft.resources.cart_increase_quantity
+import com.cocktailcraft.resources.cart_decrease_quantity_a11y
+import com.cocktailcraft.resources.cart_increase_quantity_a11y
 import com.cocktailcraft.resources.cart_quantity_label
-import com.cocktailcraft.resources.list_add_to_favorites
-import com.cocktailcraft.resources.list_remove_from_favorites
-import com.cocktailcraft.resources.remove_from_cart
+import com.cocktailcraft.resources.cart_remove_item_a11y
 import java.text.NumberFormat
 import java.util.Locale
 
 /**
  * A reusable card component to display items in the shopping cart.
+ * At large font sizes the line total and remove button wrap below the
+ * quantity stepper instead of squeezing (and clipping) each other.
  *
  * @param item The cart item to display
  * @param onIncreaseQuantity Callback when the user increases the quantity
@@ -57,6 +58,7 @@ import java.util.Locale
  * @param maxLines Maximum lines for the product name (default: 1)
  * @param onClick Optional callback when the user clicks on the card (default: null)
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CartItemCard(
     item: CocktailCartItem,
@@ -93,10 +95,11 @@ fun CartItemCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Product Image - using lightweight optimized image
+            // Product Image - using lightweight optimized image (decorative:
+            // the name is read from the text beside it)
             LightweightOptimizedImage(
                 url = item.cocktail.imageUrl,
-                contentDescription = item.cocktail.name,
+                contentDescription = null,
                 modifier = Modifier
                     .size(imageSize)
                     .clip(RoundedCornerShape(8.dp)),
@@ -126,19 +129,12 @@ fun CartItemCard(
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    // Favorites button (optional) — default IconButton size
-                    // keeps the 48 dp minimum touch target
+                    // Favorites toggle (optional)
                     if (showFavoriteButton) {
-                        IconButton(
-                            onClick = onToggleFavorite
-                        ) {
-                            Icon(
-                                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = if (isFavorite) stringResource(MR.strings.list_remove_from_favorites) else stringResource(MR.strings.list_add_to_favorites),
-                                tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
+                        FavoriteToggleButton(
+                            isFavorite = isFavorite,
+                            onToggle = onToggleFavorite
+                        )
                     }
                 }
 
@@ -165,8 +161,8 @@ fun CartItemCard(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Price & Quantity Controls Row
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                FlowRow(
+                    itemVerticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -186,16 +182,24 @@ fun CartItemCard(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Remove,
-                                        contentDescription = stringResource(MR.strings.cart_decrease_quantity),
+                                        contentDescription = stringResource(MR.strings.cart_decrease_quantity_a11y, item.cocktail.name),
                                         tint = MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.size(16.dp)
                                     )
                                 }
                             }
 
+                            // Live region: TalkBack announces the new quantity
+                            // after a stepper tap (focus stays on the button)
+                            val quantityLabel = stringResource(MR.strings.cart_quantity_label, item.quantity)
                             Text(
                                 text = item.quantity.toString(),
-                                modifier = Modifier.padding(horizontal = 16.dp),
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .semantics {
+                                        contentDescription = quantityLabel
+                                        liveRegion = LiveRegionMode.Polite
+                                    },
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp
                             )
@@ -209,7 +213,7 @@ fun CartItemCard(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
-                                        contentDescription = stringResource(MR.strings.cart_increase_quantity),
+                                        contentDescription = stringResource(MR.strings.cart_increase_quantity_a11y, item.cocktail.name),
                                         tint = Color.White,
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -233,7 +237,8 @@ fun CartItemCard(
                             text = currencyFormatter.format(item.cocktail.price * item.quantity),
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1
                         )
 
                         // Delete button (optional)
@@ -244,7 +249,7 @@ fun CartItemCard(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = stringResource(MR.strings.remove_from_cart),
+                                    contentDescription = stringResource(MR.strings.cart_remove_item_a11y, item.cocktail.name),
                                     tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(20.dp)
                                 )

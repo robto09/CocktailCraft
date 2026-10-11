@@ -1,11 +1,11 @@
 package com.cocktailcraft.android.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -58,6 +60,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -141,6 +147,7 @@ fun ProfileScreen(
         themeState = themeState,
         error = error,
         accentOptions = themeViewModel.availableAccentColors,
+        accentLabel = { themeViewModel.getAccentColorDisplayName(it).toString(context) },
         fontSizeOptions = themeViewModel.availableFontSizes,
         fontSizeLabel = { themeViewModel.getFontSizeDisplayName(it).toString(context) },
         onSignIn = { email, password -> scope.launch { profileViewModel.signIn(email, password) } },
@@ -175,6 +182,7 @@ internal fun ProfileContent(
     themeState: ThemeUiState,
     error: ErrorHandler.UserFriendlyError?,
     accentOptions: List<String>,
+    accentLabel: (String) -> String,
     fontSizeOptions: List<String>,
     fontSizeLabel: (String) -> String,
     onSignIn: (email: String, password: String) -> Unit,
@@ -295,6 +303,7 @@ internal fun ProfileContent(
         AppearanceSettingsCard(
             accentColor = themeState.accentColor,
             accentOptions = accentOptions,
+            accentLabel = accentLabel,
             fontSize = themeState.fontSize,
             fontSizeOptions = fontSizeOptions,
             fontSizeLabel = fontSizeLabel,
@@ -359,10 +368,11 @@ internal fun ProfileHeaderCard(
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Profile picture
+            // Profile picture (decorative initial: the name follows)
             Box(
                 modifier = Modifier
                     .size(80.dp)
+                    .clearAndSetSemantics {}
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -458,7 +468,9 @@ internal fun AccountSettingsCard() {
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = Spacing.lg)
+                modifier = Modifier
+                    .padding(bottom = Spacing.lg)
+                    .semantics { heading() }
             )
 
             SettingsItem(
@@ -516,7 +528,9 @@ internal fun AppSettingsCard(
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = Spacing.lg)
+                modifier = Modifier
+                    .padding(bottom = Spacing.lg)
+                    .semantics { heading() }
             )
 
             SettingsItem(
@@ -568,10 +582,12 @@ internal fun AppSettingsCard(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun AppearanceSettingsCard(
     accentColor: String,
     accentOptions: List<String>,
+    accentLabel: (String) -> String,
     fontSize: String,
     fontSizeOptions: List<String>,
     fontSizeLabel: (String) -> String,
@@ -600,7 +616,9 @@ internal fun AppearanceSettingsCard(
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = Spacing.lg)
+                modifier = Modifier
+                    .padding(bottom = Spacing.lg)
+                    .semantics { heading() }
             )
 
             // Accent color
@@ -612,7 +630,8 @@ internal fun AppearanceSettingsCard(
             AccentColorPicker(
                 selected = accentColor,
                 options = accentOptions,
-                onSelect = onSelectAccent
+                onSelect = onSelectAccent,
+                optionLabel = accentLabel
             )
 
             Spacer(modifier = Modifier.height(Spacing.md))
@@ -623,11 +642,15 @@ internal fun AppearanceSettingsCard(
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Row(
+            // A radio group for TalkBack ("Medium, selected, 2 of 4"); wraps
+            // instead of running off the card at large font sizes
+            FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = Spacing.sm),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+                    .padding(vertical = Spacing.sm)
+                    .selectableGroup(),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm)
             ) {
                 fontSizeOptions.forEach { option ->
                     val selected = option.equals(fontSize, ignoreCase = true)
@@ -640,7 +663,11 @@ internal fun AppearanceSettingsCard(
                                 color = if (selected) MaterialTheme.colorScheme.primary else CocktailCraftTheme.extendedColors.neutralSubtle.copy(alpha = 0.4f),
                                 shape = RoundedCornerShape(16.dp)
                             )
-                            .clickable { onSelectFontSize(option) }
+                            .selectable(
+                                selected = selected,
+                                role = Role.RadioButton,
+                                onClick = { onSelectFontSize(option) }
+                            )
                             .padding(horizontal = Spacing.md, vertical = Spacing.sm)
                     )
                 }
@@ -687,7 +714,9 @@ private fun AboutCard() {
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = Spacing.lg)
+                modifier = Modifier
+                    .padding(bottom = Spacing.lg)
+                    .semantics { heading() }
             )
 
             Text(

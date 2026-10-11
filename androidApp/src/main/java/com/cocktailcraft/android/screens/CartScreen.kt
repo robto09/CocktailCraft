@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -112,6 +113,13 @@ fun CartScreen(
 }
 
 /**
+ * Above this font scale (the 1.3x maximum of Android's standard sizes, i.e.
+ * the accessibility "non-linear" sizes), the cart's checkout section scrolls
+ * with the items instead of being pinned.
+ */
+private const val LARGE_FONT_SCALE = 1.3f
+
+/**
  * Stateless cart content: renders [state] and reports every intent upward,
  * so it can be previewed/screenshot-tested without a ViewModel.
  */
@@ -172,6 +180,36 @@ internal fun CartContent(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
+            // Order summary + checkout button: pinned below the list, except
+            // at large font scales, where pinning them would leave almost no
+            // room for the items — there they scroll with the list instead.
+            val checkoutSection: @Composable () -> Unit = {
+                Column {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Order Summary
+                    OrderSummaryCard(
+                        subtotal = totalPrice,
+                        deliveryFee = 5.99,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        currencyFormatter = currencyFormatter
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Checkout Button (confirm haptic, parity with iOS)
+                    PrimaryButton(
+                        text = stringResource(MR.strings.cart_place_order),
+                        onClick = {
+                            hapticHandler.performConfirm()
+                            showPlaceOrderDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+            val scrollCheckoutWithItems = LocalDensity.current.fontScale > LARGE_FONT_SCALE
+
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
@@ -189,29 +227,15 @@ internal fun CartContent(
                         onToggleFavorite = { onToggleFavorite(item) }
                     )
                 }
+
+                if (scrollCheckoutWithItems) {
+                    item(key = "checkout") { checkoutSection() }
+                }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Order Summary
-            OrderSummaryCard(
-                subtotal = totalPrice,
-                deliveryFee = 5.99,
-                modifier = Modifier.padding(vertical = 8.dp),
-                currencyFormatter = currencyFormatter
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Checkout Button (confirm haptic, parity with iOS)
-            PrimaryButton(
-                text = stringResource(MR.strings.cart_place_order),
-                onClick = {
-                    hapticHandler.performConfirm()
-                    showPlaceOrderDialog = true
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
+            if (!scrollCheckoutWithItems) {
+                checkoutSection()
+            }
         }
     }
 
