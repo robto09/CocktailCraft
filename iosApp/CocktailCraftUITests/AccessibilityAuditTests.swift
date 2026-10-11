@@ -55,7 +55,8 @@ class AccessibilityAuditTests: UITestSetup {
         // Same DEBUG deep-link hook as DeepLinkTests (TheCocktailDB's Margarita)
         app.launchEnvironment["DEEPLINK_COCKTAIL_ID"] = "11007"
         app.launch()
-        let detailScreen = app.otherElements["detail.screen"].firstMatch
+        // Any type: the root is a ScrollView once loaded (see DeepLinkTests)
+        let detailScreen = app.descendants(matching: .any)["detail.screen"].firstMatch
         XCTAssertTrue(waitForElement(detailScreen, timeout: 15), "Detail screen should be displayed")
         // Content, or the loading/error state when offline
         _ = app.buttons["detail.writeReviewButton"].waitForExistence(timeout: 10)

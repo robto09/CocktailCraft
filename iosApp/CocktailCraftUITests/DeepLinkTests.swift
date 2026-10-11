@@ -26,8 +26,10 @@ class DeepLinkTests: UITestSetup {
     func testColdLaunchDeepLinkShowsCocktailDetail() {
         // detail.screen marks CocktailDetailView's root in every branch
         // (loading/loaded/error), so this asserts the navigation itself
-        // without depending on live network data.
-        let detailScreen = app.otherElements["detail.screen"].firstMatch
+        // without depending on live network data. The root's element type
+        // differs by branch (a ScrollView once loaded, a plain container while
+        // loading or on error), so match the identifier on any type.
+        let detailScreen = app.descendants(matching: .any)["detail.screen"].firstMatch
         XCTAssertTrue(waitForElement(detailScreen, timeout: 15.0),
                       "Deep link should push the cocktail detail screen on launch")
 
