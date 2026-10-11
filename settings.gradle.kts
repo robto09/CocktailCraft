@@ -27,6 +27,7 @@ dependencyResolutionManagement {
 rootProject.name = "CocktailCraft"
 include(":androidApp")
 include(":shared")
+include(":presentation")
 include(":core:resources")
 include(":core:designsystem")
 include(":core:common")

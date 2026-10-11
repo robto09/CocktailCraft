@@ -60,6 +60,7 @@ kotlin {
             export(project(":core:designsystem"))
             export(project(":core:common"))
             export(project(":core:domain"))
+            export(project(":presentation"))
             // The framework is static, so the SQLDelight native driver's
             // sqlite3 (and the K/N runtime's libc++) are not linked here: the
             // app links them itself via OTHER_LDFLAGS in project.yml.
@@ -74,39 +75,22 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                // Shared strings (MR) and design tokens: part of the API Android
-                // and Swift consume, so api() — export() requires it.
+                // Everything Android and Swift consume — api(), which export()
+                // also requires: the shared ViewModels and UiState
+                // (:presentation), models/repository interfaces/validators
+                // (:core:domain), Result/ErrorHandler/NetworkMonitor
+                // (:core:common), strings (MR) and design tokens
+                api(project(":presentation"))
+                api(project(":core:domain"))
+                api(project(":core:common"))
                 api(project(":core:resources"))
                 api(project(":core:designsystem"))
-                // Result/ErrorCode, ErrorHandler, NetworkMonitor — used from Swift
-                api(project(":core:common"))
-                // Models, repository interfaces, validators — used from Swift
-                api(project(":core:domain"))
                 // Repository implementations, database, network, platform
                 // drivers: wired into Koin here, invisible to both apps
                 implementation(project(":core:data"))
 
-                // DI
+                // initKoin/KoinHelper assemble the per-layer Koin modules
                 implementation(libs.koin.core)
-                implementation(libs.koin.core.viewmodel)
-                // VMs extend the multiplatform androidx ViewModel — api so Android
-                // consumers see the supertype for koinViewModel scoping
-                // Deliberately api(), not implementation() (AR-12): the shared
-                // ViewModels extend androidx ViewModel, so the type must be on the
-                // consumers' compile classpath; demoting it breaks androidApp.
-                // Export-surface trimming happens via @HiddenFromObjC on
-                // Kotlin-side helpers instead (see Result.kt, BaseNetworkMonitor).
-                api(libs.androidx.lifecycle.viewmodel)
-
-                // Multiplatform logging
-                implementation(libs.kermit)
-            }
-        }
-
-        val androidMain by getting {
-            dependencies {
-                // Provides the Android Dispatchers.Main implementation for viewModelScope
-                implementation(libs.kotlinx.coroutines.android)
             }
         }
 

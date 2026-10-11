@@ -15,10 +15,11 @@ import org.koin.dsl.module
 import kotlin.test.AfterTest
 
 /**
- * Base for the ViewModel integration tests that run here, in the umbrella,
- * against the production data layer: the repository implementations are
- * internal to :core:data, so [dataLayer] resolves them through its
- * dataModule instead of constructing them.
+ * Base for the ViewModel integration tests that run against the production
+ * data layer (VM + use case + real repository + storage). :core:data is a
+ * test-only dependency of this module, and its repository implementations
+ * are internal, so [dataLayer] resolves them through dataModule instead of
+ * constructing them.
  */
 abstract class DataLayerTest : MainDispatcherTest() {
 
