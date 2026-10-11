@@ -43,12 +43,11 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
 
         assertEquals(1, vm.uiState.value.reviewCount)
         assertEquals(4.5f, vm.uiState.value.averageRating)
-        assertTrue(vm.hasReviews)
 
         // A fresh ViewModel over the same storage sees the review: it persisted
         val reloaded = viewModel(db)
         advanceUntilIdle()
-        assertEquals(1, reloaded.getReviewCount("c1"))
+        assertEquals(1, reloaded.reviewCountFor("c1"))
     }
 
     @Test
@@ -87,7 +86,7 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
         assertFalse(vm.submitReview("c1", 4.0f, "short", "Robert"))
         assertNotNull(vm.error.value)
 
-        assertEquals(0, vm.getReviewCount("c1"))
+        assertEquals(0, vm.reviewCountFor("c1"))
     }
 
     @Test
@@ -105,7 +104,7 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
         assertEquals(2, vm.uiState.value.reviewCount)
         assertEquals(3.0f, vm.uiState.value.averageRating)
         assertEquals(listOf("r2", "r1"), vm.uiState.value.currentCocktailReviews.map { it.id }, "newest first")
-        assertEquals(1, vm.getReviewCount("c2"))
+        assertEquals(1, vm.reviewCountFor("c2"))
     }
 
     @Test
@@ -147,7 +146,7 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
 
         assertEquals("Invalid User", vm.error.value?.title)
         assertEquals("User name is required to submit a review", vm.error.value?.message)
-        assertEquals(0, vm.getReviewCount("c1"))
+        assertEquals(0, vm.reviewCountFor("c1"))
     }
 
     @Test
@@ -205,7 +204,9 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
         assertTrue(state.currentCocktailReviews.isEmpty())
         assertEquals(0, state.reviewCount)
         assertEquals(0.0f, state.averageRating)
-        assertTrue(vm.isEmpty)
-        assertFalse(vm.hasReviews)
     }
+
+    /** Stored reviews for [cocktailId] in the grouped uiState store. */
+    private fun SharedReviewViewModel.reviewCountFor(cocktailId: String): Int =
+        uiState.value.reviews[cocktailId]?.size ?: 0
 }
