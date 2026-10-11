@@ -10,6 +10,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import com.cocktailcraft.android.util.pluralStringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.review_count
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -71,10 +74,7 @@ fun RatingDisplay(
             Spacer(modifier = Modifier.width(4.dp))
             
             Text(
-                text = stringResource(
-                    if (reviewCount == 1) R.string.review_count_singular else R.string.review_count_plural,
-                    reviewCount
-                ),
+                text = pluralStringResource(MR.plurals.review_count, reviewCount, reviewCount),
                 fontSize = reviewCountTextSize.sp,
                 color = textColor
             )

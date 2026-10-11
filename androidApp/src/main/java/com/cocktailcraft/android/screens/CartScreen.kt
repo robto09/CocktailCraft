@@ -28,6 +28,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.cart_empty_title
+import com.cocktailcraft.resources.confirm_order_message
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.util.rememberHapticHandler
@@ -146,7 +150,7 @@ internal fun CartContent(
         // Show empty cart state
         else if (!isLoading && cartItems.isEmpty()) {
             EmptyStateComponent(
-                title = stringResource(R.string.cart_empty_title),
+                title = stringResource(MR.strings.cart_empty_title),
                 message = stringResource(R.string.cart_empty_message),
                 actionButtonText = stringResource(R.string.cart_start_shopping),
                 onActionButtonClick = onStartShopping,
@@ -208,7 +212,7 @@ internal fun CartContent(
     ConfirmationDialog(
         showDialog = showPlaceOrderDialog,
         title = stringResource(R.string.confirm_order_title),
-        message = stringResource(R.string.confirm_order_message, currencyFormatter.format(totalPrice + 5.99)),
+        message = stringResource(MR.strings.confirm_order_message, currencyFormatter.format(totalPrice + 5.99)),
         confirmButtonText = stringResource(R.string.cart_confirm),
         dismissButtonText = stringResource(R.string.cancel),
         onConfirm = {

@@ -13,7 +13,7 @@ struct CartView: View {
             if cartViewModel.state.cartItems.isEmpty {
                 EmptyStateView(
                     icon: "cart",
-                    title: "Your cart is empty",
+                    title: L(\.cart_empty_title),
                     message: "Add some cocktails to get started"
                 )
                 .navigationTitle("Cart")
@@ -74,7 +74,7 @@ struct CartView: View {
         .alert(isPresented: $showCheckoutConfirmation) {
             Alert(
                 title: Text("Confirm Order"),
-                message: Text("Are you sure you want to place this order for \(cartViewModel.state.finalTotal.asPrice)?"),
+                message: Text(L(\.confirm_order_message, cartViewModel.state.finalTotal.asPrice)),
                 primaryButton: .default(Text("Confirm")) {
                     Task {
                         // Order and cart state propagate reactively from the

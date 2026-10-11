@@ -35,6 +35,9 @@ targets:
     # FRAMEWORK_SEARCH_PATHS / OTHER_LDFLAGS below pick up. It must run
     # before Compile Sources, and Gradle needs ENABLE_USER_SCRIPT_SANDBOXING
     # off to write outside the sandbox.
+    # A static framework cannot carry resources, so the same Gradle call also
+    # copies the shared strings bundle (moko-resources' generated
+    # Localizable.strings/.stringsdict, see Utils/Strings.swift) into the app.
     preBuildScripts:
       - name: Compile Kotlin Framework
         basedOnDependencyAnalysis: false
@@ -45,7 +48,12 @@ targets:
             exit 0
           fi
           cd "$SRCROOT/.."
-          ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+          ./gradlew :shared:embedAndSignAppleFrameworkForXcode :shared:copyFrameworkResourcesToApp \
+            -Pmoko.resources.PLATFORM_NAME="$PLATFORM_NAME" \
+            -Pmoko.resources.CONFIGURATION="$CONFIGURATION" \
+            -Pmoko.resources.ARCHS="$ARCHS" \
+            -Pmoko.resources.BUILT_PRODUCTS_DIR="$BUILT_PRODUCTS_DIR" \
+            -Pmoko.resources.CONTENTS_FOLDER_PATH="$CONTENTS_FOLDER_PATH"
     # DebugSwift must never ship. SPM cannot link a package per
     # configuration, so Release drops DebugSwift.o from the link via
     # EXCLUDED_SOURCE_FILE_NAMES (below); this phase then removes the resource

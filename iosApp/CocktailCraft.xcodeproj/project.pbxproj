@@ -37,6 +37,7 @@
 		6000E7B37198571C24F4D5EE /* CategoryChipRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 838D652D50C7E0C9D6B8F18E /* CategoryChipRow.swift */; };
 		626F24717F53ED7C42C93FE9 /* TestSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C722B2F49CF2565F2E2703B /* TestSetup.swift */; };
 		631932ECF8AC75AFB5416740 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D295EC1E30F565480A8AEB /* EmptyStateView.swift */; };
+		6A3955096E5470830FE423AF /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A479F6F6F05ADE26BEFFE2EF /* Strings.swift */; };
 		70A2D664D871ECC8DDB95D8E /* SharedErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD98A7B406A27881A66A031B /* SharedErrorAlert.swift */; };
 		73E3063D1FA4CD64012F3D01 /* ReviewComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 711196F1A4BC17AFC4F2C53E /* ReviewComponents.swift */; };
 		7666400114820764D3FF3EA7 /* CartScreenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60D905093AD2FAAC7A5105EB /* CartScreenTests.swift */; };
@@ -60,6 +61,7 @@
 		B4F08B8E6727BC900E81D87D /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 00CEEB753F07B3027707B278 /* SnapshotTesting */; };
 		BABB3246B048D69A6406DAEE /* FavoritesWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00243B0F0E257ACEDF96431F /* FavoritesWidget.swift */; };
 		BF8BE75EA2A85E669160547D /* ProfileSupportViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCD7B48C5A8B2B9FF154993D /* ProfileSupportViews.swift */; };
+		C57FE7E88FFBB3EEC4F5BB96 /* SharedStringsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11117C70FE00BCB4668E6E9 /* SharedStringsTests.swift */; };
 		C7649F506F59038A4A033669 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = D8C0E71A2E86B9678C7301ED /* Kingfisher */; };
 		CC48B2BA1BDE316893EC3B2A /* OrderViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 105923BA1B2DFAA8FE9244E1 /* OrderViewModelSKIE.swift */; };
 		CEADFEC7BB2169875DD66242 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94DF7AD6512988642980335E /* WidgetBridge.swift */; };
@@ -173,6 +175,7 @@
 		9DFADB5617C594B52D575942 /* UITestSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestSetup.swift; sourceTree = "<group>"; };
 		9F2290935721E307B997FFA6 /* ThemeViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeViewModelSKIE.swift; sourceTree = "<group>"; };
 		A3C7DC400A8E325910868C64 /* CocktailCraftTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CocktailCraftTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A479F6F6F05ADE26BEFFE2EF /* Strings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Strings.swift; sourceTree = "<group>"; };
 		A55E0C13C21DD240AA526781 /* ChangePasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordView.swift; sourceTree = "<group>"; };
 		A84F408D86DAE9FBDA55F365 /* DetailSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailSections.swift; sourceTree = "<group>"; };
 		AD14EE492DD75C2B42FCE09F /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
@@ -192,6 +195,7 @@
 		EF5B4E2B63A932CE57642AE3 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		EFB2F5C575682386E25C6505 /* CocktailDetailViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailDetailViewModelSKIE.swift; sourceTree = "<group>"; };
 		F0C4D551F91412F5FD5C211A /* CheckoutButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckoutButton.swift; sourceTree = "<group>"; };
+		F11117C70FE00BCB4668E6E9 /* SharedStringsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedStringsTests.swift; sourceTree = "<group>"; };
 		F4EA773C39DD6E2D60B60101 /* CocktailCraftWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = CocktailCraftWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F6BA2A013D84D8BDD3B65C9A /* RandomCocktailWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomCocktailWidget.swift; sourceTree = "<group>"; };
 		F79C3BBEFD0B2BE551CBB4A8 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -254,6 +258,7 @@
 			children = (
 				63786090651668CDB0593815 /* AppRouter.swift */,
 				509CBA5BD785E60D138BA5C8 /* NetworkMonitor.swift */,
+				A479F6F6F05ADE26BEFFE2EF /* Strings.swift */,
 				94DF7AD6512988642980335E /* WidgetBridge.swift */,
 				158E5268B263E67FCA03C4E7 /* WidgetDataBridge.swift */,
 			);
@@ -344,6 +349,7 @@
 			children = (
 				7AC758FEB87EDF17D2FFE28E /* CoreUnitTests.swift */,
 				1504F3D3B693833EB60B6F05 /* ReviewViewModelSKIETests.swift */,
+				F11117C70FE00BCB4668E6E9 /* SharedStringsTests.swift */,
 				6B669884A0ECE3EF5F782D5F /* SharedViewModelWrapperTests.swift */,
 				6C722B2F49CF2565F2E2703B /* TestSetup.swift */,
 				4525CA0675F84BEE843C6C8D /* WidgetBridgeTests.swift */,
@@ -578,7 +584,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode\n";
+			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode :shared:copyFrameworkResourcesToApp \\\n  -Pmoko.resources.PLATFORM_NAME=\"$PLATFORM_NAME\" \\\n  -Pmoko.resources.CONFIGURATION=\"$CONFIGURATION\" \\\n  -Pmoko.resources.ARCHS=\"$ARCHS\" \\\n  -Pmoko.resources.BUILT_PRODUCTS_DIR=\"$BUILT_PRODUCTS_DIR\" \\\n  -Pmoko.resources.CONTENTS_FOLDER_PATH=\"$CONTENTS_FOLDER_PATH\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -616,6 +622,7 @@
 				7FEA1EA6B431A96104100455 /* CoreUnitTests.swift in Sources */,
 				1FE85FF6D334BCAFFC5CB097 /* ReviewViewModelSKIETests.swift in Sources */,
 				4EAB0A65C52EA16153C6396F /* ScreenSnapshotTests.swift in Sources */,
+				C57FE7E88FFBB3EEC4F5BB96 /* SharedStringsTests.swift in Sources */,
 				88022EC2C7FC54498BFCC0C2 /* SharedViewModelWrapperTests.swift in Sources */,
 				E5A53AC8D3EF0D0DD95BBAB0 /* SnapshotSupport.swift in Sources */,
 				626F24717F53ED7C42C93FE9 /* TestSetup.swift in Sources */,
@@ -671,6 +678,7 @@
 				A0FF029431994B1ECD80D88F /* SharedViewModelWrapper.swift in Sources */,
 				1ABC1FAFD32D199EF8772B5C /* SignInView.swift in Sources */,
 				D8812ACCBB87AF678F14A2DF /* SignUpView.swift in Sources */,
+				6A3955096E5470830FE423AF /* Strings.swift in Sources */,
 				DA5E1498FB4BC7963478C359 /* ThemeViewModelSKIE.swift in Sources */,
 				EF018FBC5C1312DB79C5D641 /* Toast.swift in Sources */,
 				CEADFEC7BB2169875DD66242 /* WidgetBridge.swift in Sources */,
