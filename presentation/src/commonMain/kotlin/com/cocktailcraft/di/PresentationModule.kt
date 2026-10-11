@@ -2,11 +2,13 @@ package com.cocktailcraft.di
 
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
+import kotlin.native.HiddenFromObjC
 
 /**
  * Koin module for the shared ViewModels. Their use cases come from
  * domainModule, their repositories and NetworkMonitor from the data layer.
  */
+@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper (AR-12)
 val presentationModule = module {
     // Screen-scoped ViewModels — new instance per screen; the viewModel DSL
     // lets Android's koinViewModel() scope them to the nav back-stack entry

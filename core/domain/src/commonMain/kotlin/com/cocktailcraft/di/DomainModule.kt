@@ -10,12 +10,14 @@ import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.usecase.SearchCocktailsUseCase
 import com.cocktailcraft.domain.usecase.SortCocktailsUseCase
 import org.koin.dsl.module
+import kotlin.native.HiddenFromObjC
 
 /**
  * Koin module for the domain layer's use cases. The shared ViewModels that
  * consume them are wired in presentationModule; the repositories they need
  * come from the data layer's modules.
  */
+@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper (AR-12)
 val domainModule = module {
     // AppConfig binding lives in each platformModule() (AR-4): the platform
     // knows whether this is a debug build; commonMain doesn't.
