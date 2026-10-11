@@ -25,7 +25,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Offline Mode**: Browse recently viewed cocktails and favorites without internet connection
 - **Background Sync**: Automatic data synchronization when app is backgrounded for fresh content on launch
 - **Home Screen Widgets**: Android and iOS (WidgetKit) widgets with deep links into the app
-- **Localization**: Localized UI strings on both platforms (Android resources + iOS string catalogs) with locale-aware prices
+- **Localization**: One shared set of UI strings for both platforms (moko-resources in the shared module) with locale-aware prices
 - **Robust Error Handling**: User-friendly error messages with recovery options
 - **Polished Animations**: Enhanced user experience with smooth animations and micro-interactions
 - **Cross-Platform**: Same codebase for both Android and iOS platforms with platform-specific UI components
@@ -258,6 +258,65 @@ For details about the iOS migration, SKIE implementation, and native Swift async
 - **SharedViewModel**: Common error handling for all ViewModels
 - **ErrorDialog & ErrorBanner**: User-friendly error display components
 - **Recovery Actions**: Actionable error messages with recovery options
+- **Localized copy**: Error titles, messages and actions are shared `StringDesc`s, resolved for the user's locale by each platform (see [Localization](#localization))
+
+### Localization
+The app's user-facing strings have a single source in the shared module,
+managed by [moko-resources](https://github.com/icerockdev/moko-resources):
+
+```
+shared/src/commonMain/moko-resources/
+├── base/strings.xml    # English (base) — every UI, widget and error string
+├── base/plurals.xml    # count-dependent copy
+└── <lang>/strings.xml  # a translation (none ship yet)
+```
+
+At build time moko-resources generates the `MR.strings` / `MR.plurals`
+accessors (package `com.cocktailcraft.resources`), Android string resources in
+the shared module, and an iOS `Localizable.strings`/`.stringsdict` bundle that
+the iOS app's "Compile Kotlin Framework" phase copies into the app (the shared
+framework is static, so it cannot carry the bundle itself).
+
+| Where | How to use a string |
+|-------|---------------------|
+| Shared Kotlin (ViewModels, `ErrorHandler`, validators) | Return/emit a `StringDesc` — `MR.strings.key.desc()`, `MR.strings.key.format(arg)`, or `StringDesc.Raw(text)` for untranslated data-layer text. Never resolve it in shared code: `UserFriendlyError.title/message`, `RecoveryAction.actionLabel` and the theme/order display names are `StringDesc`s. |
+| Android Compose | `stringResource(MR.strings.key)`, `stringResource(MR.strings.key, arg)`, `pluralStringResource(MR.plurals.key, count, count)` and `desc.resolve()` from `androidApp/.../util/SharedStrings.kt` |
+| Android Glance widgets / non-Compose | `context.getString(MR.strings.key, …)` (same file) |
+| iOS SwiftUI | `L(\.key)`, `L(\.key, arg1, arg2)`, `L(\.key, count: n)` from `iosApp/CocktailCraft/Utils/Strings.swift`; `desc.localized()` for a shared `StringDesc` |
+
+**Adding a string**: add it to `base/strings.xml` (or `plurals.xml`) with a
+readable `snake_case` key grouped by screen, escaped like an Android resource
+(`\'`, `\"`, `&amp;`), with positional format arguments (`%1$s`, `%2$d`) so a
+translation can reorder them. Build once (or run `./gradlew
+:shared:generateMRcommonMain`) and use it from either platform as above. On
+iOS, pass Swift `Int`s/`String`s as the arguments — every specifier is
+formatted as an object, so avoid precision specifiers like `%.2f` in strings
+iOS uses (prices are formatted separately, see below). Keys ending in `_ios`
+hold copy that currently differs from the Android wording of the same element;
+unifying such a pair is a visual change that needs the screenshot baselines
+re-recorded.
+
+**Adding a language**: create `shared/src/commonMain/moko-resources/<lang>/strings.xml`
+(and `plurals.xml` with that language's plural quantities) translating the
+base keys — untranslated keys fall back to English — then add the language
+code to `CFBundleLocalizations` in `iosApp/CocktailCraft/Info.plist` so iOS
+offers it. Android needs nothing else (moko generates `values-<lang>`).
+Translate the native leftovers below as well.
+
+**Still native, and why**:
+- **iOS widget extension** (`iosApp/CocktailCraftWidgets/Localizable.xcstrings`):
+  the extension does not link the shared framework — it renders App Group
+  snapshots written by the app, and pulling the Kotlin/Native framework and
+  runtime into a memory-capped extension for ten strings isn't worth it — so
+  it cannot read the shared bundle.
+- **Android OS-read metadata** (`androidApp/src/main/res/values/strings.xml`):
+  the launcher label, the widget picker names/descriptions and the static
+  widget preview layouts, which the system reads from the app's own resources
+  (their iOS counterparts are the widget's `configurationDisplayName`s).
+- The Debug-only DebugSwift menu labels, which never ship.
+
+Prices stay locale-aware and are formatted per platform, not through strings
+(IO-6).
 
 ## Test Coverage
 The application includes comprehensive test coverage:

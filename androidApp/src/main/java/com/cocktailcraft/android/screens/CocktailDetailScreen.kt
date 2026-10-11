@@ -15,7 +15,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,30 +22,33 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
-import com.cocktailcraft.android.util.toFavoriteIdSet
-import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.model.Review
-import com.cocktailcraft.android.R
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.screens.detail.DetailChipsSection
 import com.cocktailcraft.android.screens.detail.DetailIngredientsSection
 import com.cocktailcraft.android.screens.detail.DetailMainInfoCard
 import com.cocktailcraft.android.screens.detail.DetailRecommendationsSection
 import com.cocktailcraft.android.screens.detail.DetailReviewsSection
-import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.DetailHeaderImage
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.WriteReviewDialog
+import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.rememberHapticHandler
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.android.util.toFavoriteIdSet
+import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.added_to_cart
+import com.cocktailcraft.resources.detail_title_fallback
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedReviewViewModel
 import com.cocktailcraft.viewmodel.state.DetailUiState
-import com.cocktailcraft.android.navigation.NavigationManager
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
-import com.cocktailcraft.android.util.rememberHapticHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -211,7 +213,7 @@ internal fun CocktailDetailContent(
 
                     // Cocktail details
                     item {
-                        val addedToCartMessage = stringResource(R.string.added_to_cart, cocktailData.name)
+                        val addedToCartMessage = stringResource(MR.strings.added_to_cart, cocktailData.name)
                         DetailMainInfoCard(
                             cocktail = cocktailData,
                             isFavorite = isFavorite,
@@ -286,7 +288,7 @@ private fun CocktailDetailTopBar(
     onBackClick: () -> Unit
 ) {
     AppTopBar(
-        title = cocktailName ?: stringResource(R.string.detail_title_fallback),
+        title = cocktailName ?: stringResource(MR.strings.detail_title_fallback),
         showBackButton = true,
         onBackClick = onBackClick
     )

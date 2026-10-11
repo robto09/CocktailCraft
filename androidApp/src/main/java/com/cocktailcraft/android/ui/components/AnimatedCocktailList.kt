@@ -18,15 +18,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.util.toFavoriteIdSet
 import com.cocktailcraft.android.util.ListOptimizations.OnBottomReached
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.android.util.toFavoriteIdSet
+import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.list_all_cocktails
+import com.cocktailcraft.resources.list_category_cocktails
+import com.cocktailcraft.resources.list_end_of_list_message
+import com.cocktailcraft.resources.list_search_results
 
 /**
  * A reusable component for displaying a list of cocktails with animations.
@@ -104,9 +108,9 @@ fun AnimatedCocktailList(
         item(key = "header") {
             Text(
                 text = when {
-                    isSearchActive -> stringResource(R.string.list_search_results)
-                    selectedCategory != null -> stringResource(R.string.list_category_cocktails, selectedCategory)
-                    else -> stringResource(R.string.list_all_cocktails)
+                    isSearchActive -> stringResource(MR.strings.list_search_results)
+                    selectedCategory != null -> stringResource(MR.strings.list_category_cocktails, selectedCategory)
+                    else -> stringResource(MR.strings.list_all_cocktails)
                 },
                 fontSize = headerFontSize.sp,
                 fontWeight = FontWeight.Bold,
@@ -169,7 +173,7 @@ fun AnimatedCocktailList(
         if (!hasMoreData && !isSearchActive && cocktails.isNotEmpty()) {
             item(key = "end_of_list") {
                 Text(
-                    text = stringResource(R.string.list_end_of_list_message),
+                    text = stringResource(MR.strings.list_end_of_list_message),
                     modifier = Modifier
                         .animateItem()
                         .fillMaxWidth()

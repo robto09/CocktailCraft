@@ -81,7 +81,7 @@ internal class CocktailDetailRepositoryImpl(
             Logger.e { "Error refreshing cocktail $id: ${e.message}" }
             Result.Error(
                 message = e.message ?: "Failed to refresh cocktail",
-                code = ErrorHandler.getErrorFromException(e, "Failed to refresh cocktail").errorCode
+                code = ErrorHandler.getErrorFromException(e).errorCode
             )
         }
     }

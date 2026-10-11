@@ -6,16 +6,26 @@ import com.cocktailcraft.domain.model.CocktailCategories
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
-import com.cocktailcraft.domain.usecase.SearchCocktailsUseCase
-import com.cocktailcraft.domain.usecase.LoadCocktailsByCategoryUseCase
-import com.cocktailcraft.domain.usecase.SortCocktailsUseCase
-import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
+import com.cocktailcraft.domain.usecase.LoadCocktailsByCategoryUseCase
+import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
+import com.cocktailcraft.domain.usecase.SearchCocktailsUseCase
+import com.cocktailcraft.domain.usecase.SortCocktailsUseCase
 import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.common_retry
+import com.cocktailcraft.resources.error_apply_filters_failed
+import com.cocktailcraft.resources.error_load_cocktail_details_failed
+import com.cocktailcraft.resources.error_load_cocktails_failed
+import com.cocktailcraft.resources.error_load_more_cocktails_failed
+import com.cocktailcraft.resources.error_refresh_cocktail_details_failed
+import com.cocktailcraft.resources.error_sort_cocktails_failed
+import com.cocktailcraft.resources.error_update_favorites_failed
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.viewmodel.state.HomeUiState
+import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -164,8 +174,8 @@ class SharedHomeViewModel internal constructor(
             if (!isOffline) {
                 handleException(
                     e,
-                    "Failed to load cocktails",
-                    recoveryAction = ErrorHandler.RecoveryAction("Retry") {
+                    MR.strings.error_load_cocktails_failed,
+                    recoveryAction = ErrorHandler.RecoveryAction(MR.strings.common_retry.desc()) {
                         viewModelScope.launch { loadCocktailsByCategory(category) }
                     }
                 )
@@ -250,8 +260,8 @@ class SharedHomeViewModel internal constructor(
             // retryable error, never masquerade as the end of the list.
             handleException(
                 e,
-                "Failed to load more cocktails",
-                recoveryAction = ErrorHandler.RecoveryAction("Retry") {
+                MR.strings.error_load_more_cocktails_failed,
+                recoveryAction = ErrorHandler.RecoveryAction(MR.strings.common_retry.desc()) {
                     viewModelScope.launch { loadMoreCocktails() }
                 }
             )
@@ -280,7 +290,7 @@ class SharedHomeViewModel internal constructor(
                 currentPage = 1
             ) }
         } catch (e: Exception) {
-            handleException(e, "Failed to apply filters")
+            handleException(e, MR.strings.error_apply_filters_failed)
             _uiState.update { it.copy(isLoading = false) }
         }
     }
@@ -313,7 +323,7 @@ class SharedHomeViewModel internal constructor(
         try {
             manageFavoritesUseCase.toggle(cocktail)
         } catch (e: Exception) {
-            handleException(e, "Failed to update favorites")
+            handleException(e, MR.strings.error_update_favorites_failed)
         }
     }
 
@@ -326,7 +336,7 @@ class SharedHomeViewModel internal constructor(
             val sortType = if (ascending) SortCocktailsUseCase.SortType.PRICE_ASC else SortCocktailsUseCase.SortType.PRICE_DESC
             _uiState.update { it.copy(cocktails = sortCocktailsUseCase(it.cocktails, sortType)) }
         } catch (e: Exception) {
-            handleException(e, "Failed to sort cocktails")
+            handleException(e, MR.strings.error_sort_cocktails_failed)
         }
     }
 
@@ -337,7 +347,7 @@ class SharedHomeViewModel internal constructor(
         try {
             _uiState.update { it.copy(cocktails = sortCocktailsUseCase(it.cocktails, SortCocktailsUseCase.SortType.RATING)) }
         } catch (e: Exception) {
-            handleException(e, "Failed to sort cocktails")
+            handleException(e, MR.strings.error_sort_cocktails_failed)
         }
     }
 
@@ -348,7 +358,7 @@ class SharedHomeViewModel internal constructor(
         try {
             _uiState.update { it.copy(cocktails = sortCocktailsUseCase(it.cocktails, SortCocktailsUseCase.SortType.POPULARITY)) }
         } catch (e: Exception) {
-            handleException(e, "Failed to sort cocktails")
+            handleException(e, MR.strings.error_sort_cocktails_failed)
         }
     }
 
@@ -360,7 +370,7 @@ class SharedHomeViewModel internal constructor(
         return try {
             getCocktailDetailUseCase(id).getOrNull()
         } catch (e: Exception) {
-            handleException(e, "Failed to load cocktail details")
+            handleException(e, MR.strings.error_load_cocktail_details_failed)
             null
         }
     }
@@ -372,7 +382,7 @@ class SharedHomeViewModel internal constructor(
         try {
             getCocktailDetailUseCase.refresh(id)
         } catch (e: Exception) {
-            handleException(e, "Failed to refresh cocktail details")
+            handleException(e, MR.strings.error_refresh_cocktail_details_failed)
         }
     }
     
@@ -435,8 +445,8 @@ class SharedHomeViewModel internal constructor(
         } catch (e: Exception) {
             handleException(
                 originalError,
-                "Failed to load cocktails",
-                recoveryAction = ErrorHandler.RecoveryAction("Retry") { retry() }
+                MR.strings.error_load_cocktails_failed,
+                recoveryAction = ErrorHandler.RecoveryAction(MR.strings.common_retry.desc()) { retry() }
             )
             _uiState.update { it.copy(isLoading = false) }
         }

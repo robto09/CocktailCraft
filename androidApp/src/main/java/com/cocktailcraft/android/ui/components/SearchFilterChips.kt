@@ -31,11 +31,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.SearchFilters
-import com.cocktailcraft.android.R
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.alcoholic
+import com.cocktailcraft.resources.category_label
+import com.cocktailcraft.resources.filter_active_filters
+import com.cocktailcraft.resources.filter_alcoholic_filter
+import com.cocktailcraft.resources.filter_clear
+import com.cocktailcraft.resources.filter_clear_all
+import com.cocktailcraft.resources.filter_filters
+import com.cocktailcraft.resources.filter_ingredient_label
+import com.cocktailcraft.resources.non_alcoholic
 
 /**
  * Component to display active search filters as chips
@@ -74,7 +83,7 @@ fun SearchFilterChips(
                 ) {
                     Icon(
                         imageVector = Icons.Default.FilterAlt,
-                        contentDescription = stringResource(R.string.filter_filters),
+                        contentDescription = stringResource(MR.strings.filter_filters),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
@@ -82,7 +91,7 @@ fun SearchFilterChips(
                     Spacer(modifier = Modifier.width(4.dp))
 
                     Text(
-                        text = stringResource(R.string.filter_active_filters),
+                        text = stringResource(MR.strings.filter_active_filters),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -90,7 +99,7 @@ fun SearchFilterChips(
                     Spacer(modifier = Modifier.weight(1f))
 
                     Text(
-                        text = stringResource(R.string.filter_clear_all),
+                        text = stringResource(MR.strings.filter_clear_all),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.clickable { onClearAllFilters() }
@@ -107,7 +116,7 @@ fun SearchFilterChips(
                     // Category filter
                     if (filters.category != null) {
                         ActiveFilterChip(
-                            label = stringResource(R.string.category_label, filters.category!!),
+                            label = stringResource(MR.strings.category_label, filters.category!!),
                             onClear = { onClearFilter("category") }
                         )
                     }
@@ -115,7 +124,7 @@ fun SearchFilterChips(
                     // Ingredient filter
                     if (filters.ingredient != null) {
                         ActiveFilterChip(
-                            label = stringResource(R.string.filter_ingredient_label, filters.ingredient!!),
+                            label = stringResource(MR.strings.filter_ingredient_label, filters.ingredient!!),
                             onClear = { onClearFilter("ingredient") }
                         )
                     }
@@ -123,9 +132,9 @@ fun SearchFilterChips(
                     // Alcoholic filter
                     if (filters.alcoholic != null) {
                         val alcoholicLabel = when (filters.alcoholic) {
-                            true -> stringResource(R.string.alcoholic)
-                            false -> stringResource(R.string.non_alcoholic)
-                            else -> stringResource(R.string.filter_alcoholic_filter)
+                            true -> stringResource(MR.strings.alcoholic)
+                            false -> stringResource(MR.strings.non_alcoholic)
+                            else -> stringResource(MR.strings.filter_alcoholic_filter)
                         }
                         ActiveFilterChip(
                             label = alcoholicLabel,
@@ -169,7 +178,7 @@ fun ActiveFilterChip(
         trailingIcon = {
             Icon(
                 imageVector = Icons.Default.Clear,
-                contentDescription = stringResource(R.string.filter_clear),
+                contentDescription = stringResource(MR.strings.filter_clear),
                 modifier = Modifier.size(16.dp)
             )
         }

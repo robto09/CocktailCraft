@@ -9,12 +9,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
+import com.cocktailcraft.android.util.pluralStringResource
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.review_count
+import com.cocktailcraft.resources.review_rating_value
 
 /**
  * A reusable rating display component that shows a rating with stars and review count.
@@ -50,7 +53,7 @@ fun RatingDisplay(
     ) {
         // Display the rating value
         Text(
-            text = stringResource(R.string.review_rating_value, rating),
+            text = stringResource(MR.strings.review_rating_value, rating),
             fontSize = ratingTextSize.sp,
             fontWeight = FontWeight.Bold,
             color = textColor
@@ -71,10 +74,7 @@ fun RatingDisplay(
             Spacer(modifier = Modifier.width(4.dp))
             
             Text(
-                text = stringResource(
-                    if (reviewCount == 1) R.string.review_count_singular else R.string.review_count_plural,
-                    reviewCount
-                ),
+                text = pluralStringResource(MR.plurals.review_count, reviewCount, reviewCount),
                 fontSize = reviewCountTextSize.sp,
                 color = textColor
             )

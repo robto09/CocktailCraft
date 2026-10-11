@@ -8,8 +8,38 @@ import com.cocktailcraft.domain.usecase.ManageProfileUseCase
 import com.cocktailcraft.domain.util.AuthInputValidator
 import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.error_change_failed_title
+import com.cocktailcraft.resources.error_change_password_check_current
+import com.cocktailcraft.resources.error_change_password_failed
+import com.cocktailcraft.resources.error_check_auth_failed
+import com.cocktailcraft.resources.error_create_account_failed
+import com.cocktailcraft.resources.error_current_password_required
+import com.cocktailcraft.resources.error_invalid_credentials
+import com.cocktailcraft.resources.error_invalid_email_message
+import com.cocktailcraft.resources.error_invalid_email_title
+import com.cocktailcraft.resources.error_invalid_name_title
+import com.cocktailcraft.resources.error_invalid_password_title
+import com.cocktailcraft.resources.error_name_required
+import com.cocktailcraft.resources.error_password_policy
+import com.cocktailcraft.resources.error_password_required
+import com.cocktailcraft.resources.error_sign_in_failed
+import com.cocktailcraft.resources.error_sign_in_failed_title
+import com.cocktailcraft.resources.error_sign_out_failed
+import com.cocktailcraft.resources.error_sign_out_failed_message
+import com.cocktailcraft.resources.error_sign_out_failed_title
+import com.cocktailcraft.resources.error_sign_up_failed_message
+import com.cocktailcraft.resources.error_sign_up_failed_title
+import com.cocktailcraft.resources.error_update_address_failed
+import com.cocktailcraft.resources.error_update_failed_title
+import com.cocktailcraft.resources.error_update_profile_failed
+import com.cocktailcraft.resources.error_update_profile_info_failed
+import com.cocktailcraft.resources.password_changed_message
+import com.cocktailcraft.resources.password_changed_title
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.ProfileUiState
+import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.format
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -58,7 +88,7 @@ class SharedProfileViewModel internal constructor(
                 _uiState.update { it.copy(user = null) }
             }
         } catch (e: Exception) {
-            handleException(e, "Failed to check authentication status")
+            handleException(e, MR.strings.error_check_auth_failed)
         }
     }
     
@@ -72,8 +102,8 @@ class SharedProfileViewModel internal constructor(
         // rules apply where the email is first stored (signUp/updateProfile).
         if (email.isBlank() || !email.contains('@')) {
             setError(
-                "Invalid Email",
-                "Please enter a valid email address",
+                MR.strings.error_invalid_email_title,
+                MR.strings.error_invalid_email_message,
                 ErrorHandler.ErrorCategory.DATA
             )
             return false
@@ -83,8 +113,8 @@ class SharedProfileViewModel internal constructor(
         // under an older policy, so sign-in only rejects empty input.
         if (password.isBlank()) {
             setError(
-                "Invalid Password",
-                "Please enter your password",
+                MR.strings.error_invalid_password_title,
+                MR.strings.error_password_required,
                 ErrorHandler.ErrorCategory.DATA
             )
             return false
@@ -100,15 +130,15 @@ class SharedProfileViewModel internal constructor(
             } else {
                 _uiState.update { it.copy(authStatus = "Sign In Failed") }
                 setError(
-                    "Sign In Failed",
-                    "Invalid email or password",
+                    MR.strings.error_sign_in_failed_title,
+                    MR.strings.error_invalid_credentials,
                     ErrorHandler.ErrorCategory.AUTHENTICATION
                 )
             }
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
             success
         } catch (e: Exception) {
-            handleException(e, "Failed to sign in")
+            handleException(e, MR.strings.error_sign_in_failed)
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
             false
         }
@@ -121,8 +151,8 @@ class SharedProfileViewModel internal constructor(
     suspend fun signUp(name: String, email: String, password: String): Boolean {
         if (name.isBlank()) {
             setError(
-                "Invalid Name",
-                "Please enter your name",
+                MR.strings.error_invalid_name_title,
+                MR.strings.error_name_required,
                 ErrorHandler.ErrorCategory.DATA
             )
             return false
@@ -130,8 +160,8 @@ class SharedProfileViewModel internal constructor(
         
         if (!isValidEmail(email)) {
             setError(
-                "Invalid Email",
-                "Please enter a valid email address",
+                MR.strings.error_invalid_email_title,
+                MR.strings.error_invalid_email_message,
                 ErrorHandler.ErrorCategory.DATA
             )
             return false
@@ -139,8 +169,8 @@ class SharedProfileViewModel internal constructor(
         
         if (!meetsPasswordPolicy(password)) {
             setError(
-                "Invalid Password",
-                PASSWORD_POLICY_MESSAGE,
+                MR.strings.error_invalid_password_title,
+                passwordPolicyMessage(),
                 ErrorHandler.ErrorCategory.DATA
             )
             return false
@@ -157,15 +187,15 @@ class SharedProfileViewModel internal constructor(
             } else {
                 _uiState.update { it.copy(authStatus = "Sign Up Failed") }
                 setError(
-                    "Sign Up Failed",
-                    "Failed to create account. Email may already be in use.",
+                    MR.strings.error_sign_up_failed_title,
+                    MR.strings.error_sign_up_failed_message,
                     ErrorHandler.ErrorCategory.AUTHENTICATION
                 )
             }
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
             success
         } catch (e: Exception) {
-            handleException(e, "Failed to create account")
+            handleException(e, MR.strings.error_create_account_failed)
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
             false
         }
@@ -184,14 +214,14 @@ class SharedProfileViewModel internal constructor(
             } else {
                 _uiState.update { it.copy(authStatus = "Sign Out Failed") }
                 setError(
-                    "Sign Out Failed",
-                    "Failed to sign out. Please try again.",
+                    MR.strings.error_sign_out_failed_title,
+                    MR.strings.error_sign_out_failed_message,
                     ErrorHandler.ErrorCategory.SERVER
                 )
             }
             success
         } catch (e: Exception) {
-            handleException(e, "Failed to sign out")
+            handleException(e, MR.strings.error_sign_out_failed)
             false
         }
     }
@@ -203,8 +233,8 @@ class SharedProfileViewModel internal constructor(
     suspend fun updateProfile(name: String, email: String): Boolean {
         if (name.isBlank()) {
             setError(
-                "Invalid Name",
-                "Please enter your name",
+                MR.strings.error_invalid_name_title,
+                MR.strings.error_name_required,
                 ErrorHandler.ErrorCategory.DATA
             )
             return false
@@ -212,8 +242,8 @@ class SharedProfileViewModel internal constructor(
         
         if (!isValidEmail(email)) {
             setError(
-                "Invalid Email",
-                "Please enter a valid email address",
+                MR.strings.error_invalid_email_title,
+                MR.strings.error_invalid_email_message,
                 ErrorHandler.ErrorCategory.DATA
             )
             return false
@@ -226,14 +256,14 @@ class SharedProfileViewModel internal constructor(
                 loadCurrentUser()
             } else {
                 setError(
-                    "Update Failed",
-                    "Failed to update profile information",
+                    MR.strings.error_update_failed_title,
+                    MR.strings.error_update_profile_info_failed,
                     ErrorHandler.ErrorCategory.SERVER
                 )
             }
             nameSuccess
         } catch (e: Exception) {
-            handleException(e, "Failed to update profile")
+            handleException(e, MR.strings.error_update_profile_failed)
             false
         }
     }
@@ -250,14 +280,14 @@ class SharedProfileViewModel internal constructor(
                 loadCurrentUser()
             } else {
                 setError(
-                    "Update Failed",
-                    "Failed to update address",
+                    MR.strings.error_update_failed_title,
+                    MR.strings.error_update_address_failed,
                     ErrorHandler.ErrorCategory.SERVER
                 )
             }
             success
         } catch (e: Exception) {
-            handleException(e, "Failed to update address")
+            handleException(e, MR.strings.error_update_address_failed)
             false
         }
     }
@@ -271,8 +301,8 @@ class SharedProfileViewModel internal constructor(
         // has to meet it.
         if (oldPassword.isBlank()) {
             setError(
-                "Invalid Password",
-                "Please enter your current password",
+                MR.strings.error_invalid_password_title,
+                MR.strings.error_current_password_required,
                 ErrorHandler.ErrorCategory.DATA
             )
             return false
@@ -280,8 +310,8 @@ class SharedProfileViewModel internal constructor(
 
         if (!meetsPasswordPolicy(newPassword)) {
             setError(
-                "Invalid Password",
-                PASSWORD_POLICY_MESSAGE,
+                MR.strings.error_invalid_password_title,
+                passwordPolicyMessage(),
                 ErrorHandler.ErrorCategory.DATA
             )
             return false
@@ -292,20 +322,20 @@ class SharedProfileViewModel internal constructor(
             val success = manageProfileUseCase.changePassword(oldPassword, newPassword).getOrThrow()
             if (success) {
                 setError(
-                    "Password Changed",
-                    "Your password has been updated successfully",
+                    MR.strings.password_changed_title,
+                    MR.strings.password_changed_message,
                     ErrorHandler.ErrorCategory.UNKNOWN
                 )
             } else {
                 setError(
-                    "Change Failed",
-                    "Failed to change password. Check your current password.",
+                    MR.strings.error_change_failed_title,
+                    MR.strings.error_change_password_check_current,
                     ErrorHandler.ErrorCategory.AUTHENTICATION
                 )
             }
             success
         } catch (e: Exception) {
-            handleException(e, "Failed to change password")
+            handleException(e, MR.strings.error_change_password_failed)
             false
         }
     }
@@ -362,9 +392,6 @@ class SharedProfileViewModel internal constructor(
         }
     }
 
-    private companion object {
-        val PASSWORD_POLICY_MESSAGE =
-            "Password must be at least ${AuthInputValidator.MIN_PASSWORD_LENGTH} characters " +
-                "and mix at least two of: uppercase letters, lowercase letters, numbers, symbols"
-    }
+    private fun passwordPolicyMessage(): StringDesc =
+        MR.strings.error_password_policy.format(AuthInputValidator.MIN_PASSWORD_LENGTH)
 }

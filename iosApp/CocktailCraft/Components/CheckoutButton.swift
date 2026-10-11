@@ -8,7 +8,7 @@ struct CheckoutButton: View {
     @Environment(\.isDarkMode) var isDarkMode
     
     init(
-        title: String = "Place Order",
+        title: String = L(\.cart_place_order),
         isEnabled: Bool = true,
         isLoading: Bool = false,
         action: @escaping () -> Void
@@ -56,21 +56,21 @@ struct CheckoutButton: View {
 #Preview {
     VStack(spacing: 20) {
         CheckoutButton(
-            title: "Place Order",
+            title: L(\.cart_place_order),
             isEnabled: true,
             isLoading: false,
             action: {}
         )
         
         CheckoutButton(
-            title: "Processing...",
+            title: L(\.checkout_processing),
             isEnabled: false,
             isLoading: true,
             action: {}
         )
         
         CheckoutButton(
-            title: "Place Order",
+            title: L(\.cart_place_order),
             isEnabled: false,
             isLoading: false,
             action: {}

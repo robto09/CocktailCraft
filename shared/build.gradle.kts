@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.kotlinMultiplatformLibrary)
     alias(libs.plugins.skie)
     alias(libs.plugins.sqldelight)
+    alias(libs.plugins.moko.resources)
 }
 
 // Local storage: the offline cocktail cache (see CocktailCache) and the
@@ -57,7 +58,11 @@ kotlin {
         minSdk = 24
 
         // Host-side (JVM) unit tests, equivalent of the old androidUnitTest
-        withHostTestBuilder {}
+        withHostTestBuilder {}.configure {
+            // moko-resources strings resolve through the generated Android R
+            // class, so host tests need the merged resources
+            isIncludeAndroidResources = true
+        }
 
         lint {
             disable.add("MissingPermission")
@@ -79,6 +84,9 @@ kotlin {
             isStatic = true
             // Silences the "cannot infer a bundle ID" link warning.
             binaryOption("bundleId", "com.cocktailcraft.shared")
+            // StringResource/StringDesc and their localized() helpers are
+            // used directly from Swift (see Strings.swift in the iOS app).
+            export(libs.moko.resources)
             // The framework is static, so the SQLDelight native driver's
             // sqlite3 (and the K/N runtime's libc++) are not linked here: the
             // app links them itself via OTHER_LDFLAGS in project.yml.
@@ -117,6 +125,10 @@ kotlin {
             // Export-surface trimming happens via @HiddenFromObjC on
             // Kotlin-side helpers instead (see Result.kt, BaseNetworkMonitor).
             api(libs.androidx.lifecycle.viewmodel)
+            // Shared strings: the generated MR accessors (StringResource) and
+            // StringDesc are part of the shared API, and the framework
+            // exports them for Swift.
+            api(libs.moko.resources)
 
                 // Multiplatform logging
                 implementation(libs.kermit)
@@ -176,4 +188,15 @@ kotlin {
 
 
     }
+}
+
+// Single source for the app's user-facing strings: base (English) and
+// per-language strings.xml/plurals.xml under src/commonMain/moko-resources.
+// Generates MR.strings / MR.plurals, Android string resources in this
+// module's R class, and Localizable.strings(dict) in a resource bundle that
+// the iOS app copies in (copyFrameworkResourcesToApp, run by the "Compile
+// Kotlin Framework" phase in iosApp/project.yml). See README "Localization".
+multiplatformResources {
+    resourcesPackage.set("com.cocktailcraft.resources")
+    iosBaseLocalizationRegion.set("en")
 }

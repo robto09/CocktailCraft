@@ -4,10 +4,17 @@ import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.usecase.AnalyzeCocktailUseCase
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
-import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
+import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.error_add_to_cart_failed
+import com.cocktailcraft.resources.error_load_cocktail_details_failed
+import com.cocktailcraft.resources.error_refresh_cocktail_details_failed
+import com.cocktailcraft.resources.error_remove_from_cart_failed
+import com.cocktailcraft.resources.error_update_cart_quantity_failed
+import com.cocktailcraft.resources.error_update_favorites_failed
 import com.cocktailcraft.viewmodel.state.DetailUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -52,7 +59,7 @@ class SharedCocktailDetailViewModel internal constructor(
             }
             _uiState.update { it.copy(isLoading = false) }
         } catch (e: Exception) {
-            handleException(e, "Failed to load cocktail details")
+            handleException(e, MR.strings.error_load_cocktail_details_failed)
             _uiState.update { it.copy(isLoading = false) }
         }
     }
@@ -69,7 +76,7 @@ class SharedCocktailDetailViewModel internal constructor(
         _uiState.update { it.copy(isFavorite = !wasFavorite) }
 
         val reconciled = manageFavoritesUseCase.toggle(currentCocktail)
-            .getOrReport(default = wasFavorite, fallbackMessage = "Failed to update favorites")
+            .getOrReport(default = wasFavorite, fallbackMessage = MR.strings.error_update_favorites_failed)
         _uiState.update { it.copy(isFavorite = reconciled) }
     }
 
@@ -83,7 +90,7 @@ class SharedCocktailDetailViewModel internal constructor(
             manageCartUseCase.addToCart(currentCocktail, quantity)
             updateCartStatus(currentCocktail.id)
         } catch (e: Exception) {
-            handleException(e, "Failed to add to cart")
+            handleException(e, MR.strings.error_add_to_cart_failed)
         }
     }
 
@@ -97,7 +104,7 @@ class SharedCocktailDetailViewModel internal constructor(
             }
             updateCartStatus(currentCocktail.id)
         } catch (e: Exception) {
-            handleException(e, "Failed to update cart quantity")
+            handleException(e, MR.strings.error_update_cart_quantity_failed)
         }
     }
 
@@ -107,7 +114,7 @@ class SharedCocktailDetailViewModel internal constructor(
             manageCartUseCase.removeFromCart(currentCocktail.id)
             updateCartStatus(currentCocktail.id)
         } catch (e: Exception) {
-            handleException(e, "Failed to remove from cart")
+            handleException(e, MR.strings.error_remove_from_cart_failed)
         }
     }
     
@@ -176,7 +183,7 @@ class SharedCocktailDetailViewModel internal constructor(
             }
             _uiState.update { it.copy(isLoading = false) }
         } catch (e: Exception) {
-            handleException(e, "Failed to refresh cocktail details")
+            handleException(e, MR.strings.error_refresh_cocktail_details_failed)
             _uiState.update { it.copy(isLoading = false) }
         }
     }

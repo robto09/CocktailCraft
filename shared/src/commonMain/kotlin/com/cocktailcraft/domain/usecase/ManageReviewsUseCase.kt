@@ -3,8 +3,16 @@ package com.cocktailcraft.domain.usecase
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.util.Result
-import kotlinx.coroutines.flow.Flow
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.review_error_comment_required
+import com.cocktailcraft.resources.review_error_comment_too_long
+import com.cocktailcraft.resources.review_error_comment_too_short
+import com.cocktailcraft.resources.review_error_rating_range
+import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.desc.desc
+import dev.icerock.moko.resources.format
 import kotlin.time.Clock
+import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
@@ -52,14 +60,22 @@ internal class ManageReviewsUseCase(
         return distribution
     }
 
-    fun validateReview(rating: Float, comment: String): String? {
+    /** The validation failure to show, or null when the review is valid. */
+    fun validateReview(rating: Float, comment: String): StringDesc? {
         return when {
-            rating < 1.0f || rating > 5.0f -> "Rating must be between 1 and 5 stars"
-            comment.isBlank() -> "Please provide a comment for your review"
-            comment.length < 10 -> "Review comment must be at least 10 characters long"
-            comment.length > 500 -> "Review comment must be less than 500 characters"
+            rating < 1.0f || rating > 5.0f -> MR.strings.review_error_rating_range.desc()
+            comment.isBlank() -> MR.strings.review_error_comment_required.desc()
+            comment.length < MIN_COMMENT_LENGTH ->
+                MR.strings.review_error_comment_too_short.format(MIN_COMMENT_LENGTH)
+            comment.length > MAX_COMMENT_LENGTH ->
+                MR.strings.review_error_comment_too_long.format(MAX_COMMENT_LENGTH)
             else -> null
         }
+    }
+
+    private companion object {
+        const val MIN_COMMENT_LENGTH = 10
+        const val MAX_COMMENT_LENGTH = 500
     }
 
     private fun getCurrentDate(): String {

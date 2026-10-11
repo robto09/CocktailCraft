@@ -19,7 +19,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,12 +26,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.util.rememberHapticHandler
-import com.cocktailcraft.android.util.toFavoriteIdSet
-import com.cocktailcraft.android.R
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.CartItemCard
 import com.cocktailcraft.android.ui.components.ConfirmationDialog
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
@@ -40,16 +37,30 @@ import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.OrderSummaryCard
 import com.cocktailcraft.android.ui.components.PrimaryButton
 import com.cocktailcraft.android.ui.components.SectionHeader
+import com.cocktailcraft.android.util.rememberHapticHandler
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.android.util.toFavoriteIdSet
+import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.cancel
+import com.cocktailcraft.resources.cart_confirm
+import com.cocktailcraft.resources.cart_empty_message
+import com.cocktailcraft.resources.cart_empty_title
+import com.cocktailcraft.resources.cart_place_order
+import com.cocktailcraft.resources.cart_section_title
+import com.cocktailcraft.resources.cart_start_shopping
+import com.cocktailcraft.resources.cart_try_again
+import com.cocktailcraft.resources.confirm_order_message
+import com.cocktailcraft.resources.confirm_order_title
+import com.cocktailcraft.resources.error
+import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
-import com.cocktailcraft.android.navigation.NavigationManager
-import com.cocktailcraft.domain.model.CocktailCartItem
-import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.CartUiState
-import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 @Composable
 fun CartScreen(
@@ -137,18 +148,18 @@ internal fun CartContent(
         // Show error state
         if (!isLoading && error != null) {
             EmptyStateComponent(
-                title = stringResource(R.string.error),
+                title = stringResource(MR.strings.error),
                 message = error.toString(),
-                actionButtonText = stringResource(R.string.cart_try_again),
+                actionButtonText = stringResource(MR.strings.cart_try_again),
                 onActionButtonClick = { /* Add retry logic here */ }
             )
         }
         // Show empty cart state
         else if (!isLoading && cartItems.isEmpty()) {
             EmptyStateComponent(
-                title = stringResource(R.string.cart_empty_title),
-                message = stringResource(R.string.cart_empty_message),
-                actionButtonText = stringResource(R.string.cart_start_shopping),
+                title = stringResource(MR.strings.cart_empty_title),
+                message = stringResource(MR.strings.cart_empty_message),
+                actionButtonText = stringResource(MR.strings.cart_start_shopping),
                 onActionButtonClick = onStartShopping,
                 icon = Icons.Filled.ShoppingCart
             )
@@ -156,7 +167,7 @@ internal fun CartContent(
         // Show cart items
         else if (!isLoading) {
             SectionHeader(
-                title = stringResource(R.string.cart_section_title),
+                title = stringResource(MR.strings.cart_section_title),
                 fontSize = 20,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -194,7 +205,7 @@ internal fun CartContent(
 
             // Checkout Button (confirm haptic, parity with iOS)
             PrimaryButton(
-                text = stringResource(R.string.cart_place_order),
+                text = stringResource(MR.strings.cart_place_order),
                 onClick = {
                     hapticHandler.performConfirm()
                     showPlaceOrderDialog = true
@@ -207,10 +218,10 @@ internal fun CartContent(
     // Order Confirmation Dialog
     ConfirmationDialog(
         showDialog = showPlaceOrderDialog,
-        title = stringResource(R.string.confirm_order_title),
-        message = stringResource(R.string.confirm_order_message, currencyFormatter.format(totalPrice + 5.99)),
-        confirmButtonText = stringResource(R.string.cart_confirm),
-        dismissButtonText = stringResource(R.string.cancel),
+        title = stringResource(MR.strings.confirm_order_title),
+        message = stringResource(MR.strings.confirm_order_message, currencyFormatter.format(totalPrice + 5.99)),
+        confirmButtonText = stringResource(MR.strings.cart_confirm),
+        dismissButtonText = stringResource(MR.strings.cancel),
         onConfirm = {
             showPlaceOrderDialog = false
             onConfirmOrder()

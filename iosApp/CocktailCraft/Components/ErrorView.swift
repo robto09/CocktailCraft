@@ -15,11 +15,11 @@ struct ErrorView: View {
                 .frame(width: 60, height: 60)
                 .foregroundColor(getErrorColor(for: error.category))
             
-            Text(error.title)
+            Text(error.title.localized())
                 .font(.title3)
                 .fontWeight(.semibold)
             
-            Text(error.message)
+            Text(error.message.localized())
                 .font(.body)
                 .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                 .multilineTextAlignment(.center)
@@ -29,7 +29,7 @@ struct ErrorView: View {
                 Button(action: {
                     recoveryAction.action()
                 }) {
-                    Text(recoveryAction.actionLabel)
+                    Text(recoveryAction.actionLabel.localized())
                         .font(.headline)
                         .foregroundStyle(.white)
                         .padding(.horizontal, 24)
@@ -39,7 +39,7 @@ struct ErrorView: View {
                 .buttonStyle(.plain)
             } else if let onRetry = onRetry {
                 Button(action: onRetry) {
-                    Text("Try Again")
+                    Text(L(\.dialog_try_again))
                         .font(.headline)
                         .foregroundStyle(.white)
                         .padding(.horizontal, 24)

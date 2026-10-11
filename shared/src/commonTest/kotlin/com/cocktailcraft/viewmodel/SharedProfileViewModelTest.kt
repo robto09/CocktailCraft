@@ -7,21 +7,30 @@ import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.usecase.ManageProfileUseCase
 import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.error_invalid_email_title
+import com.cocktailcraft.resources.error_invalid_name_title
+import com.cocktailcraft.resources.error_invalid_password_title
+import com.cocktailcraft.resources.error_sign_in_failed_title
+import com.cocktailcraft.resources.error_sign_up_failed_title
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.util.ErrorHandler
 import com.russhwolf.settings.MapSettings
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
+import dev.icerock.moko.resources.desc.Raw
+import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.desc.desc
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 
 /** An auth store that is completely unavailable, for error-propagation tests. */
 private class FailingAuthRepository(
@@ -111,7 +120,7 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
         assertFalse(vm.signIn("not-an-email", "secret123"))
 
         val error = assertNotNull(vm.error.value)
-        assertEquals("Invalid Email", error.title)
+        assertEquals(MR.strings.error_invalid_email_title.desc(), error.title)
         assertEquals(ErrorHandler.ErrorCategory.DATA, error.category)
         assertFalse(vm.uiState.value.isAuthenticating, "validation failures must not start authentication")
     }
@@ -124,7 +133,7 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
         assertFalse(vm.signIn("ada@example.com", "   "))
 
         val error = assertNotNull(vm.error.value)
-        assertEquals("Invalid Password", error.title)
+        assertEquals(MR.strings.error_invalid_password_title.desc(), error.title)
         assertEquals(ErrorHandler.ErrorCategory.DATA, error.category)
     }
 
@@ -152,7 +161,7 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
 
         assertEquals("Sign In Failed", vm.uiState.value.authStatus)
         val error = assertNotNull(vm.error.value)
-        assertEquals("Sign In Failed", error.title)
+        assertEquals(MR.strings.error_sign_in_failed_title.desc(), error.title)
         assertEquals(ErrorHandler.ErrorCategory.AUTHENTICATION, error.category)
         assertFalse(vm.uiState.value.isLoggedIn)
         assertFalse(vm.uiState.value.isAuthenticating)
@@ -190,7 +199,7 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
 
         assertEquals("Sign Up Failed", vm.uiState.value.authStatus)
         val error = assertNotNull(vm.error.value)
-        assertEquals("Sign Up Failed", error.title)
+        assertEquals(MR.strings.error_sign_up_failed_title.desc(), error.title)
         assertEquals(ErrorHandler.ErrorCategory.AUTHENTICATION, error.category)
     }
 
@@ -203,7 +212,7 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
         assertFalse(vm.signUp("Ada Lovelace", "ada@example.com", "12345678"))
 
         val error = assertNotNull(vm.error.value)
-        assertEquals("Invalid Password", error.title)
+        assertEquals(MR.strings.error_invalid_password_title.desc(), error.title)
         assertEquals(ErrorHandler.ErrorCategory.DATA, error.category)
     }
 
@@ -215,7 +224,7 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
         assertFalse(vm.signUp("   ", "ada@example.com", "secret123"))
 
         val error = assertNotNull(vm.error.value)
-        assertEquals("Invalid Name", error.title)
+        assertEquals(MR.strings.error_invalid_name_title.desc(), error.title)
         assertEquals(ErrorHandler.ErrorCategory.DATA, error.category)
     }
 
@@ -256,7 +265,7 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
         assertFalse(vm.changePassword("123", "456"))
 
         val error = assertNotNull(vm.error.value)
-        assertEquals("Invalid Password", error.title)
+        assertEquals(MR.strings.error_invalid_password_title.desc(), error.title)
     }
 
     @Test
@@ -267,7 +276,7 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
         assertFalse(vm.signIn("ada@example.com", "secret123"))
 
         val error = assertNotNull(vm.error.value)
-        assertEquals("auth storage unavailable", error.message)
+        assertEquals(StringDesc.Raw("auth storage unavailable"), error.message)
         assertFalse(vm.uiState.value.isAuthenticating)
         assertFalse(vm.uiState.value.isLoading)
         assertFalse(vm.uiState.value.isLoggedIn)

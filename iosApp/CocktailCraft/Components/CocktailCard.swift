@@ -50,7 +50,7 @@ struct CocktailCard: View {
                         .fill(Color.black.opacity(0.6))
                         .cornerRadius(12)
                         .overlay(
-                            Text("Out of Stock")
+                            Text(L(\.list_out_of_stock))
                                 .font(.caption)
                                 .foregroundColor(.white)
                                 .fontWeight(.medium)
@@ -69,7 +69,7 @@ struct CocktailCard: View {
                 
                 // Category Info (Alcoholic • Category)
                 if let category = cocktail.category {
-                    Text("Alcoholic • \(category)")
+                    Text(L(\.list_alcoholic_category, category))
                         .font(.subheadline.weight(.medium))
                         .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         .lineLimit(1)
@@ -113,7 +113,7 @@ struct CocktailCard: View {
                                     .minimumHitTarget()
                             }
                             .buttonStyle(.borderless)
-                            .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
+                            .accessibilityLabel(isFavorite ? L(\.list_remove_from_favorites) : L(\.list_add_to_favorites))
                             .accessibilityIdentifier("card.favoriteButton")
                         }
 
@@ -127,7 +127,7 @@ struct CocktailCard: View {
                             }
                             .disabled(isOutOfStock)
                             .buttonStyle(.borderless)
-                            .accessibilityLabel("Add to cart")
+                            .accessibilityLabel(L(\.add_to_cart_ios))
                             .accessibilityIdentifier("card.addToCartButton")
                         }
                     }
@@ -163,7 +163,7 @@ struct CocktailCard: View {
                         .fill(Color.black.opacity(0.6))
                         .cornerRadius(12)
                         .overlay(
-                            Text("Out of Stock")
+                            Text(L(\.list_out_of_stock))
                                 .font(.caption)
                                 .foregroundColor(.white)
                                 .fontWeight(.medium)
@@ -183,7 +183,7 @@ struct CocktailCard: View {
                 
                 // Category Info (Alcoholic • Category)
                 if let category = cocktail.category {
-                    Text("Alcoholic • \(category)")
+                    Text(L(\.list_alcoholic_category, category))
                         .font(.footnote.weight(.medium))
                         .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         .lineLimit(2)
@@ -225,7 +225,7 @@ struct CocktailCard: View {
                                     .minimumHitTarget()
                             }
                             .buttonStyle(.borderless)
-                            .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
+                            .accessibilityLabel(isFavorite ? L(\.list_remove_from_favorites) : L(\.list_add_to_favorites))
                             .accessibilityIdentifier("card.favoriteButton")
                         }
 
@@ -239,7 +239,7 @@ struct CocktailCard: View {
                             }
                             .disabled(isOutOfStock)
                             .buttonStyle(.borderless)
-                            .accessibilityLabel("Add to cart")
+                            .accessibilityLabel(L(\.add_to_cart_ios))
                             .accessibilityIdentifier("card.addToCartButton")
                         }
                     }
@@ -265,7 +265,7 @@ struct CocktailCard: View {
             let ingredientNames = firstTwo.compactMap { $0.name }
             return ingredientNames.joined(separator: ", ")
         }
-        return "Premium ingredients"
+        return L(\.list_premium_ingredients)
     }
 }
 

@@ -7,9 +7,21 @@ import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.error_empty_cart_title
+import com.cocktailcraft.resources.error_order_failed_title
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.util.ErrorHandler
+import dev.icerock.moko.resources.desc.Raw
+import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.desc.desc
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -19,12 +31,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 private fun testOrder(
     id: String,
@@ -162,7 +168,7 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         vm.loadOrders()
 
         val error = assertNotNull(vm.error.value)
-        assertEquals("orders backend down", error.message)
+        assertEquals(StringDesc.Raw("orders backend down"), error.message)
         assertFalse(vm.uiState.value.isLoading)
     }
 
@@ -196,7 +202,7 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         val error = assertNotNull(vm.error.value)
-        assertEquals("Empty Cart", error.title)
+        assertEquals(MR.strings.error_empty_cart_title.desc(), error.title)
         assertEquals(ErrorHandler.ErrorCategory.DATA, error.category)
         assertTrue(vm.uiState.value.orders.isEmpty())
         assertFalse(vm.uiState.value.isPlacingOrder)
@@ -214,8 +220,8 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         val error = assertNotNull(vm.error.value)
-        assertEquals("Order Failed", error.title)
-        assertEquals("order store failed", error.message)
+        assertEquals(MR.strings.error_order_failed_title.desc(), error.title)
+        assertEquals(StringDesc.Raw("order store failed"), error.message)
         assertEquals(ErrorHandler.ErrorCategory.SERVER, error.category)
         assertNull(vm.uiState.value.currentOrder)
         assertFalse(vm.uiState.value.isPlacingOrder)

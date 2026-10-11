@@ -46,7 +46,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,25 +62,59 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.cocktailcraft.android.BuildConfig
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.AccentColorPicker
 import com.cocktailcraft.android.ui.components.AnimatedThemeToggleRow
 import com.cocktailcraft.android.ui.components.PrimaryButton
 import com.cocktailcraft.android.ui.components.SettingsItem
-import com.cocktailcraft.android.BuildConfig
-import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.SignInDialog
 import com.cocktailcraft.android.ui.components.SignUpDialog
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.resolve
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.accent_color
+import com.cocktailcraft.resources.cancel
+import com.cocktailcraft.resources.change_password
+import com.cocktailcraft.resources.create_account
+import com.cocktailcraft.resources.dark_mode
+import com.cocktailcraft.resources.edit_profile
+import com.cocktailcraft.resources.email_preferences
+import com.cocktailcraft.resources.error
+import com.cocktailcraft.resources.follow_system_theme
+import com.cocktailcraft.resources.font_size
+import com.cocktailcraft.resources.help_support
+import com.cocktailcraft.resources.high_contrast
+import com.cocktailcraft.resources.logout
+import com.cocktailcraft.resources.logout_confirm
+import com.cocktailcraft.resources.notification_settings
+import com.cocktailcraft.resources.ok
+import com.cocktailcraft.resources.order_history
+import com.cocktailcraft.resources.profile_about
+import com.cocktailcraft.resources.profile_about_app_name
+import com.cocktailcraft.resources.profile_account_settings
+import com.cocktailcraft.resources.profile_app_settings
+import com.cocktailcraft.resources.profile_appearance
+import com.cocktailcraft.resources.profile_controlled_by_system
+import com.cocktailcraft.resources.profile_copyright
+import com.cocktailcraft.resources.profile_guest_email
+import com.cocktailcraft.resources.profile_guest_user
+import com.cocktailcraft.resources.profile_sign_in_prompt
+import com.cocktailcraft.resources.profile_toggle_off
+import com.cocktailcraft.resources.profile_toggle_on
+import com.cocktailcraft.resources.profile_version_format
+import com.cocktailcraft.resources.reduced_motion
+import com.cocktailcraft.resources.sign_in
+import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedProfileViewModel
 import com.cocktailcraft.viewmodel.SharedThemeViewModel
-import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.ProfileUiState
 import com.cocktailcraft.viewmodel.state.ThemeUiState
 import kotlinx.coroutines.launch
@@ -94,6 +127,7 @@ fun ProfileScreen(
     themeViewModel: SharedThemeViewModel = koinInject()
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     // Get user data from ViewModel
     val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
@@ -108,7 +142,7 @@ fun ProfileScreen(
         error = error,
         accentOptions = themeViewModel.availableAccentColors,
         fontSizeOptions = themeViewModel.availableFontSizes,
-        fontSizeLabel = { themeViewModel.getFontSizeDisplayName(it) },
+        fontSizeLabel = { themeViewModel.getFontSizeDisplayName(it).toString(context) },
         onSignIn = { email, password -> scope.launch { profileViewModel.signIn(email, password) } },
         onSignUp = { name, email, password -> scope.launch { profileViewModel.signUp(name, email, password) } },
         onConfirmLogout = {
@@ -167,8 +201,8 @@ internal fun ProfileContent(
     var showSignUpDialog by rememberSaveable { mutableStateOf(false) }
 
     // Sample profile data (in a real app, this would come from a ViewModel)
-    val userName = user?.name ?: stringResource(R.string.profile_guest_user)
-    val userEmail = user?.email ?: stringResource(R.string.profile_guest_email)
+    val userName = user?.name ?: stringResource(MR.strings.profile_guest_user)
+    val userEmail = user?.email ?: stringResource(MR.strings.profile_guest_email)
 
     // Sign in dialog state
     if (showSignInDialog) {
@@ -196,8 +230,8 @@ internal fun ProfileContent(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            title = { Text(stringResource(R.string.logout)) },
-            text = { Text(stringResource(R.string.logout_confirm)) },
+            title = { Text(stringResource(MR.strings.logout)) },
+            text = { Text(stringResource(MR.strings.logout_confirm)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -208,14 +242,14 @@ internal fun ProfileContent(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(stringResource(R.string.logout))
+                    Text(stringResource(MR.strings.logout))
                 }
             },
             dismissButton = {
                 OutlinedButton(
                     onClick = { showLogoutDialog = false }
                 ) {
-                    Text(stringResource(R.string.cancel))
+                    Text(stringResource(MR.strings.cancel))
                 }
             }
         )
@@ -285,8 +319,8 @@ internal fun ProfileContent(
     error?.let { errorInfo ->
         AlertDialog(
             onDismissRequest = onDismissError,
-            title = { Text(stringResource(R.string.error)) },
-            text = { Text(errorInfo.message) },
+            title = { Text(stringResource(MR.strings.error)) },
+            text = { Text(errorInfo.message.resolve()) },
             confirmButton = {
                 Button(
                     onClick = onDismissError,
@@ -294,7 +328,7 @@ internal fun ProfileContent(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(stringResource(R.string.ok))
+                    Text(stringResource(MR.strings.ok))
                 }
             }
         )
@@ -378,14 +412,14 @@ private fun SignInPromptSection(
     Spacer(modifier = Modifier.height(Spacing.xxl))
 
     Text(
-        text = stringResource(R.string.profile_sign_in_prompt),
+        text = stringResource(MR.strings.profile_sign_in_prompt),
         fontSize = 16.sp,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(bottom = Spacing.lg)
     )
 
     PrimaryButton(
-        text = stringResource(R.string.sign_in),
+        text = stringResource(MR.strings.sign_in),
         onClick = onSignInClick,
         modifier = Modifier
             .fillMaxWidth(0.8f)
@@ -400,7 +434,7 @@ private fun SignInPromptSection(
             .fillMaxWidth(0.8f)
             .padding(vertical = Spacing.xs)
     ) {
-        Text(stringResource(R.string.create_account))
+        Text(stringResource(MR.strings.create_account))
     }
 }
 
@@ -420,7 +454,7 @@ internal fun AccountSettingsCard() {
             modifier = Modifier.padding(Spacing.lg)
         ) {
             Text(
-                text = stringResource(R.string.profile_account_settings),
+                text = stringResource(MR.strings.profile_account_settings),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -429,25 +463,25 @@ internal fun AccountSettingsCard() {
 
             SettingsItem(
                 icon = Icons.Default.Person,
-                title = stringResource(R.string.edit_profile),
+                title = stringResource(MR.strings.edit_profile),
                 onClick = { /* Handle edit profile */ }
             )
 
             SettingsItem(
                 icon = Icons.Default.Lock,
-                title = stringResource(R.string.change_password),
+                title = stringResource(MR.strings.change_password),
                 onClick = { /* Handle change password */ }
             )
 
             SettingsItem(
                 icon = Icons.Default.Email,
-                title = stringResource(R.string.email_preferences),
+                title = stringResource(MR.strings.email_preferences),
                 onClick = { /* Handle email preferences */ }
             )
 
             SettingsItem(
                 icon = Icons.Default.Notifications,
-                title = stringResource(R.string.notification_settings),
+                title = stringResource(MR.strings.notification_settings),
                 onClick = { /* Handle notification settings */ }
             )
         }
@@ -478,7 +512,7 @@ internal fun AppSettingsCard(
             modifier = Modifier.padding(Spacing.lg)
         ) {
             Text(
-                text = stringResource(R.string.profile_app_settings),
+                text = stringResource(MR.strings.profile_app_settings),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -487,20 +521,20 @@ internal fun AppSettingsCard(
 
             SettingsItem(
                 icon = Icons.Default.DateRange,
-                title = stringResource(R.string.order_history),
+                title = stringResource(MR.strings.order_history),
                 onClick = onOrderHistoryClick
             )
 
             SettingsItem(
                 icon = Icons.Default.Help,
-                title = stringResource(R.string.help_support),
+                title = stringResource(MR.strings.help_support),
                 onClick = { /* Handle help & support */ }
             )
 
             // Follow System Theme Toggle with animated switch
             AnimatedThemeToggleRow(
-                title = stringResource(R.string.follow_system_theme),
-                subtitle = if (isSystemTheme) stringResource(R.string.profile_toggle_on) else stringResource(R.string.profile_toggle_off),
+                title = stringResource(MR.strings.follow_system_theme),
+                subtitle = if (isSystemTheme) stringResource(MR.strings.profile_toggle_on) else stringResource(MR.strings.profile_toggle_off),
                 icon = Icons.Default.DateRange,
                 isChecked = isSystemTheme,
                 onToggle = onToggleFollowSystemTheme,
@@ -509,11 +543,11 @@ internal fun AppSettingsCard(
 
             // Dark Mode Toggle with animated switch (only enabled if not following system theme)
             AnimatedThemeToggleRow(
-                title = stringResource(R.string.dark_mode),
+                title = stringResource(MR.strings.dark_mode),
                 subtitle = if (isSystemTheme)
-                    stringResource(R.string.profile_controlled_by_system)
+                    stringResource(MR.strings.profile_controlled_by_system)
                 else
-                    if (isDarkMode) stringResource(R.string.profile_toggle_on) else stringResource(R.string.profile_toggle_off),
+                    if (isDarkMode) stringResource(MR.strings.profile_toggle_on) else stringResource(MR.strings.profile_toggle_off),
                 icon = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
                 isChecked = isDarkMode,
                 onToggle = onToggleDarkMode,
@@ -525,7 +559,7 @@ internal fun AppSettingsCard(
             if (isLoggedIn) {
                 SettingsItem(
                     icon = Icons.Default.ExitToApp,
-                    title = stringResource(R.string.logout),
+                    title = stringResource(MR.strings.logout),
                     onClick = onLogoutClick,
                     textColor = MaterialTheme.colorScheme.error
                 )
@@ -562,7 +596,7 @@ internal fun AppearanceSettingsCard(
             modifier = Modifier.padding(Spacing.lg)
         ) {
             Text(
-                text = stringResource(R.string.profile_appearance),
+                text = stringResource(MR.strings.profile_appearance),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -571,7 +605,7 @@ internal fun AppearanceSettingsCard(
 
             // Accent color
             Text(
-                text = stringResource(R.string.accent_color),
+                text = stringResource(MR.strings.accent_color),
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -585,7 +619,7 @@ internal fun AppearanceSettingsCard(
 
             // Font size
             Text(
-                text = stringResource(R.string.font_size),
+                text = stringResource(MR.strings.font_size),
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -614,8 +648,8 @@ internal fun AppearanceSettingsCard(
 
             // High contrast
             AnimatedThemeToggleRow(
-                title = stringResource(R.string.high_contrast),
-                subtitle = if (isHighContrast) stringResource(R.string.profile_toggle_on) else stringResource(R.string.profile_toggle_off),
+                title = stringResource(MR.strings.high_contrast),
+                subtitle = if (isHighContrast) stringResource(MR.strings.profile_toggle_on) else stringResource(MR.strings.profile_toggle_off),
                 icon = Icons.Default.Visibility,
                 isChecked = isHighContrast,
                 onToggle = onToggleHighContrast,
@@ -624,8 +658,8 @@ internal fun AppearanceSettingsCard(
 
             // Reduce motion
             AnimatedThemeToggleRow(
-                title = stringResource(R.string.reduced_motion),
-                subtitle = if (isReducedMotion) stringResource(R.string.profile_toggle_on) else stringResource(R.string.profile_toggle_off),
+                title = stringResource(MR.strings.reduced_motion),
+                subtitle = if (isReducedMotion) stringResource(MR.strings.profile_toggle_on) else stringResource(MR.strings.profile_toggle_off),
                 icon = Icons.Default.Speed,
                 isChecked = isReducedMotion,
                 onToggle = onToggleReducedMotion,
@@ -649,7 +683,7 @@ private fun AboutCard() {
             modifier = Modifier.padding(Spacing.lg)
         ) {
             Text(
-                text = stringResource(R.string.profile_about),
+                text = stringResource(MR.strings.profile_about),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -657,7 +691,7 @@ private fun AboutCard() {
             )
 
             Text(
-                text = stringResource(R.string.profile_about_app_name),
+                text = stringResource(MR.strings.profile_about_app_name),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
@@ -666,7 +700,7 @@ private fun AboutCard() {
             Spacer(modifier = Modifier.height(Spacing.xs))
 
             Text(
-                text = stringResource(R.string.profile_version_format, BuildConfig.VERSION_NAME),
+                text = stringResource(MR.strings.profile_version_format, BuildConfig.VERSION_NAME),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -674,7 +708,7 @@ private fun AboutCard() {
             Spacer(modifier = Modifier.height(Spacing.lg))
 
             Text(
-                text = stringResource(R.string.profile_copyright),
+                text = stringResource(MR.strings.profile_copyright),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

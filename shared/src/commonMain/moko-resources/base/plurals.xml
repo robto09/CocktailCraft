@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Count-dependent copy (see strings.xml in this folder for conventions).
+    Every language must provide the quantities its plural rules need;
+    English uses "one" and "other". The count is also format argument %1$d.
+-->
+<resources>
+    <plural name="review_count">
+        <item quantity="one">(%1$d review)</item>
+        <item quantity="other">(%1$d reviews)</item>
+    </plural>
+</resources>

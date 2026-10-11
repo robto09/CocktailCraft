@@ -26,20 +26,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuBoxScope
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,13 +48,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.alcoholic
+import com.cocktailcraft.resources.filter_all_categories
+import com.cocktailcraft.resources.filter_any
+import com.cocktailcraft.resources.filter_any_ingredient
+import com.cocktailcraft.resources.filter_collapse
+import com.cocktailcraft.resources.filter_expand
+import com.cocktailcraft.resources.filter_select_an_ingredient
+import com.cocktailcraft.resources.filter_select_category
+import com.cocktailcraft.resources.filter_select_ingredient_title
+import com.cocktailcraft.resources.non_alcoholic
+import com.cocktailcraft.resources.search
+import com.cocktailcraft.resources.search_ingredients_placeholder
 
 /**
  * Section component for filter categories
@@ -83,7 +95,7 @@ fun FilterSection(
 
             Icon(
                 imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = if (expanded) stringResource(R.string.filter_collapse) else stringResource(R.string.filter_expand),
+                contentDescription = if (expanded) stringResource(MR.strings.filter_collapse) else stringResource(MR.strings.filter_expand),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -126,7 +138,7 @@ fun CategorySelector(
     ) {
         SelectorField(
             value = selectedCategory,
-            placeholder = stringResource(R.string.filter_select_category),
+            placeholder = stringResource(MR.strings.filter_select_category),
             expanded = expanded
         )
 
@@ -136,7 +148,7 @@ fun CategorySelector(
         ) {
             // "All" option clears the category filter
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.filter_all_categories)) },
+                text = { Text(stringResource(MR.strings.filter_all_categories)) },
                 onClick = {
                     onCategorySelected(null)
                     expanded = false
@@ -213,17 +225,17 @@ fun AlcoholicFilterContent(
         FilterChip(
             selected = alcoholic == null,
             onClick = { onAlcoholicChanged(null) },
-            label = stringResource(R.string.filter_any)
+            label = stringResource(MR.strings.filter_any)
         )
         FilterChip(
             selected = alcoholic == true,
             onClick = { onAlcoholicChanged(true) },
-            label = stringResource(R.string.alcoholic)
+            label = stringResource(MR.strings.alcoholic)
         )
         FilterChip(
             selected = alcoholic == false,
             onClick = { onAlcoholicChanged(false) },
-            label = stringResource(R.string.non_alcoholic)
+            label = stringResource(MR.strings.non_alcoholic)
         )
     }
 }
@@ -260,7 +272,7 @@ fun IngredientSelectionDialog(
                     .navigationBarsPadding()
             ) {
                 AppTopBar(
-                    title = stringResource(R.string.filter_select_ingredient_title),
+                    title = stringResource(MR.strings.filter_select_ingredient_title),
                     showBackButton = true,
                     onBackClick = onDismiss
                 )
@@ -272,11 +284,11 @@ fun IngredientSelectionDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 16.dp),
-                    placeholder = { Text(stringResource(R.string.search_ingredients_placeholder)) },
+                    placeholder = { Text(stringResource(MR.strings.search_ingredients_placeholder)) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Search,
-                            contentDescription = stringResource(R.string.search),
+                            contentDescription = stringResource(MR.strings.search),
                             tint = MaterialTheme.colorScheme.outline
                         )
                     },
@@ -343,7 +355,7 @@ private fun IngredientRow(
         )
 
         Text(
-            text = label ?: stringResource(R.string.filter_any_ingredient),
+            text = label ?: stringResource(MR.strings.filter_any_ingredient),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(start = 8.dp)
         )
@@ -371,7 +383,7 @@ fun IngredientSelector(
     ) {
         SelectorField(
             value = selectedIngredient,
-            placeholder = stringResource(R.string.filter_select_an_ingredient),
+            placeholder = stringResource(MR.strings.filter_select_an_ingredient),
             expanded = false
         )
     }

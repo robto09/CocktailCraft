@@ -70,7 +70,7 @@ struct CocktailDetailView: View {
                         ShareLink(item: viewModel.state.shareableText) {
                             Image(systemName: "square.and.arrow.up")
                         }
-                        .accessibilityLabel("Share cocktail")
+                        .accessibilityLabel(L(\.detail_share_cocktail))
                         .accessibilityIdentifier("detail.shareButton")
                         .tint(.white)
 
@@ -81,12 +81,12 @@ struct CocktailDetailView: View {
                                 .foregroundColor(.white)
                                 .minimumHitTarget()
                         }
-                        .accessibilityLabel(viewModel.state.isFavorite ? "Remove from favorites" : "Add to favorites")
+                        .accessibilityLabel(viewModel.state.isFavorite ? L(\.detail_remove_from_favorites) : L(\.detail_add_to_favorites))
                         .accessibilityIdentifier("detail.favoriteButton")
                     }
                 }
             } else if viewModel.state.isLoading || !hasLoaded {
-                LoadingStateView(message: "Loading cocktail details...")
+                LoadingStateView(message: L(\.detail_loading))
             } else if let error = viewModel.error {
                 ErrorView(
                     error: error,
@@ -99,9 +99,9 @@ struct CocktailDetailView: View {
                     Image(systemName: "wineglass")
                         .font(.largeTitle)
                         .foregroundColor(.secondary)
-                    Text("Cocktail not found")
+                    Text(L(\.detail_not_found_title))
                         .font(.headline)
-                    Text("The requested cocktail could not be loaded")
+                    Text(L(\.detail_not_found_message))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -133,7 +133,7 @@ struct CocktailDetailView: View {
             reviewViewModel.clearError()
         }) {
             WriteReviewView(
-                submissionError: reviewViewModel.error?.message,
+                submissionError: reviewViewModel.error?.message.localized(),
                 onDismiss: { showingWriteReview = false },
                 onSubmit: { userName, rating, comment in
                     let success = await reviewViewModel.submitReview(

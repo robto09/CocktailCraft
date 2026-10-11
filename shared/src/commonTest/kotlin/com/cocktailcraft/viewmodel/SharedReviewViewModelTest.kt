@@ -6,19 +6,29 @@ import com.cocktailcraft.data.repository.ReviewRepositoryImpl
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
 import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.error_invalid_user_title
+import com.cocktailcraft.resources.error_review_user_required
+import com.cocktailcraft.resources.review_error_comment_required
+import com.cocktailcraft.resources.review_error_comment_too_long
+import com.cocktailcraft.resources.review_error_comment_too_short
+import com.cocktailcraft.resources.review_error_rating_range
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.createTestLocalDatabase
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
+import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.desc.desc
+import dev.icerock.moko.resources.format
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SharedReviewViewModelTest : MainDispatcherTest() {
@@ -144,27 +154,28 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
         assertFalse(vm.submitReview("c1", 4.0f, "Great balance of sweet and sour.", "   "))
         advanceUntilIdle()
 
-        assertEquals("Invalid User", vm.error.value?.title)
-        assertEquals("User name is required to submit a review", vm.error.value?.message)
+        assertEquals(MR.strings.error_invalid_user_title.desc(), vm.error.value?.title)
+        assertEquals(MR.strings.error_review_user_required.desc(), vm.error.value?.message)
         assertEquals(0, vm.reviewCountFor("c1"))
     }
 
     @Test
     fun eachValidationRuleReportsItsOwnMessage() = runTest {
-        // The iOS review sheet shows these messages verbatim, so pin them.
+        // The iOS review sheet shows these messages verbatim, so pin them
+        // (their English copy is pinned in SharedStringsTest).
         val vm = viewModel(createTestDatabase())
         advanceUntilIdle()
 
-        fun rejection(rating: Float, comment: String): String? {
+        fun rejection(rating: Float, comment: String): StringDesc? {
             assertFalse(vm.validateReview(rating, comment))
             return vm.error.value?.message.also { vm.clearError() }
         }
 
-        assertEquals("Rating must be between 1 and 5 stars", rejection(0.0f, "Long enough comment."))
-        assertEquals("Rating must be between 1 and 5 stars", rejection(5.5f, "Long enough comment."))
-        assertEquals("Please provide a comment for your review", rejection(3.0f, "   "))
-        assertEquals("Review comment must be at least 10 characters long", rejection(3.0f, "Too short"))
-        assertEquals("Review comment must be less than 500 characters", rejection(3.0f, "a".repeat(501)))
+        assertEquals(MR.strings.review_error_rating_range.desc(), rejection(0.0f, "Long enough comment."))
+        assertEquals(MR.strings.review_error_rating_range.desc(), rejection(5.5f, "Long enough comment."))
+        assertEquals(MR.strings.review_error_comment_required.desc(), rejection(3.0f, "   "))
+        assertEquals(MR.strings.review_error_comment_too_short.format(10), rejection(3.0f, "Too short"))
+        assertEquals(MR.strings.review_error_comment_too_long.format(500), rejection(3.0f, "a".repeat(501)))
 
         assertTrue(vm.validateReview(1.0f, "a".repeat(10)), "10 characters is the lower bound")
         assertTrue(vm.validateReview(5.0f, "a".repeat(500)), "500 characters is the upper bound")

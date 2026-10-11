@@ -87,14 +87,14 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
     }
 
     func getStockStatus() -> String {
-        guard let cocktail = state.cocktail else { return "Unknown" }
+        guard let cocktail = state.cocktail else { return L(\.common_unknown) }
 
         if !cocktail.inStock {
-            return "Out of Stock"
+            return L(\.detail_out_of_stock)
         } else if cocktail.stockCount <= 5 {
-            return "Low Stock (\(cocktail.stockCount) left)"
+            return L(\.detail_low_stock, cocktail.stockCount)
         } else {
-            return "In Stock"
+            return L(\.detail_in_stock_ios)
         }
     }
 

@@ -19,16 +19,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.domain.model.CocktailCartItem
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.components.LightweightOptimizedImage
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.cart_decrease_quantity
+import com.cocktailcraft.resources.cart_increase_quantity
+import com.cocktailcraft.resources.cart_quantity_label
+import com.cocktailcraft.resources.list_add_to_favorites
+import com.cocktailcraft.resources.list_remove_from_favorites
+import com.cocktailcraft.resources.remove_from_cart
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -128,7 +134,7 @@ fun CartItemCard(
                         ) {
                             Icon(
                                 imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = if (isFavorite) stringResource(R.string.list_remove_from_favorites) else stringResource(R.string.list_add_to_favorites),
+                                contentDescription = if (isFavorite) stringResource(MR.strings.list_remove_from_favorites) else stringResource(MR.strings.list_add_to_favorites),
                                 tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -180,7 +186,7 @@ fun CartItemCard(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Remove,
-                                        contentDescription = stringResource(R.string.cart_decrease_quantity),
+                                        contentDescription = stringResource(MR.strings.cart_decrease_quantity),
                                         tint = MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -203,7 +209,7 @@ fun CartItemCard(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
-                                        contentDescription = stringResource(R.string.cart_increase_quantity),
+                                        contentDescription = stringResource(MR.strings.cart_increase_quantity),
                                         tint = Color.White,
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -213,7 +219,7 @@ fun CartItemCard(
                     } else {
                         // If quantity controls are not shown, at least show the quantity
                         Text(
-                            text = stringResource(R.string.cart_quantity_label, item.quantity),
+                            text = stringResource(MR.strings.cart_quantity_label, item.quantity),
                             fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -238,7 +244,7 @@ fun CartItemCard(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = stringResource(R.string.remove_from_cart),
+                                    contentDescription = stringResource(MR.strings.remove_from_cart),
                                     tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(20.dp)
                                 )

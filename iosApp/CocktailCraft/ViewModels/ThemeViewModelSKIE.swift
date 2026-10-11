@@ -67,10 +67,10 @@ final class ThemeViewModelSKIE: SharedViewModelWrapper<ThemeUiState> {
     // MARK: - Synchronous Methods
 
     func getAccentColorDisplayName(_ color: String) -> String {
-        return sharedViewModel.getAccentColorDisplayName(color: color)
+        return sharedViewModel.getAccentColorDisplayName(color: color).localized()
     }
 
     func getFontSizeDisplayName(_ size: String) -> String {
-        return sharedViewModel.getFontSizeDisplayName(size: size)
+        return sharedViewModel.getFontSizeDisplayName(size: size).localized()
     }
 }

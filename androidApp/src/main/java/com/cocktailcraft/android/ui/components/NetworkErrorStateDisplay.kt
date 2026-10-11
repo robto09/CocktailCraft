@@ -20,12 +20,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.R
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.common_network_unavailable
+import com.cocktailcraft.resources.common_retry
+import com.cocktailcraft.resources.error
+import com.cocktailcraft.resources.error_no_cached_cocktails
+import com.cocktailcraft.resources.error_unable_to_load_cocktails
 
 /**
  * A full-screen error state for load failures, shown only when there is no
@@ -69,18 +74,18 @@ fun NetworkErrorStateDisplay(
             if (!isNetworkAvailable) {
                 icon = Icons.Default.WifiOff
                 iconTint = MaterialTheme.colorScheme.primary
-                title = stringResource(R.string.common_network_unavailable)
-                message = stringResource(R.string.error_no_cached_cocktails)
+                title = stringResource(MR.strings.common_network_unavailable)
+                message = stringResource(MR.strings.error_no_cached_cocktails)
             } else {
                 icon = Icons.Default.Error
                 iconTint = Color.Red
-                title = stringResource(R.string.error_unable_to_load_cocktails)
+                title = stringResource(MR.strings.error_unable_to_load_cocktails)
                 message = errorMessage
             }
 
             Icon(
                 imageVector = icon,
-                contentDescription = stringResource(R.string.error),
+                contentDescription = stringResource(MR.strings.error),
                 tint = iconTint,
                 modifier = Modifier.size(iconSize.dp)
             )
@@ -112,7 +117,7 @@ fun NetworkErrorStateDisplay(
                     containerColor = retryButtonColor
                 )
             ) {
-                Text(stringResource(R.string.common_retry))
+                Text(stringResource(MR.strings.common_retry))
             }
         }
     }

@@ -61,7 +61,7 @@ abstract class SharedViewModel : ViewModel() {
     private val _error = MutableStateFlow<ErrorHandler.UserFriendlyError?>(null)
     val error: StateFlow<ErrorHandler.UserFriendlyError?> = _error.asStateFlow()
 
-    protected open fun handleException(exception: Throwable, defaultMessage: String) {
+    protected open fun handleException(exception: Throwable, defaultMessage: StringResource) {
         /* CancellationException guard + ErrorHandler classification */
     }
 }

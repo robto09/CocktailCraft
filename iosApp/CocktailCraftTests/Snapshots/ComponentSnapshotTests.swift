@@ -132,8 +132,8 @@ final class ComponentSnapshotTests: SnapshotTestCase {
     func testErrorViewNetwork() {
         assertSnapshots(of: ErrorView(
             error: ErrorHandler.UserFriendlyError(
-                title: "No Internet Connection",
-                message: "Check your connection and try again.",
+                title: RawStringDesc(string: "No Internet Connection"),
+                message: RawStringDesc(string: "Check your connection and try again."),
                 category: .network,
                 recoveryAction: nil,
                 originalException: nil,
@@ -146,8 +146,8 @@ final class ComponentSnapshotTests: SnapshotTestCase {
     func testErrorViewServer() {
         assertSnapshots(of: ErrorView(
             error: ErrorHandler.UserFriendlyError(
-                title: "Server Error",
-                message: "Something went wrong on our end.",
+                title: RawStringDesc(string: "Server Error"),
+                message: RawStringDesc(string: "Something went wrong on our end."),
                 category: .server,
                 recoveryAction: nil,
                 originalException: nil,

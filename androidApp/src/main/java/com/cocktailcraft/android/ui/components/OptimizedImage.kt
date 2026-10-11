@@ -20,16 +20,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
-import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.ImageLoaderSingleton
 import com.cocktailcraft.android.util.ImageUtils
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.common_image_not_available
 
 /**
  * An optimized image component that uses our custom image loading system.
@@ -93,7 +94,7 @@ fun OptimizedImage(
             state is AsyncImagePainter.State.Error ->
                 Icon(
                     imageVector = Icons.Default.LocalBar,
-                    contentDescription = stringResource(R.string.common_image_not_available),
+                    contentDescription = stringResource(MR.strings.common_image_not_available),
                     tint = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.size(48.dp)
                 )
@@ -153,7 +154,7 @@ fun HeroOptimizedImage(
             ) {
                 Icon(
                     imageVector = Icons.Default.LocalBar,
-                    contentDescription = stringResource(R.string.common_image_not_available),
+                    contentDescription = stringResource(MR.strings.common_image_not_available),
                     tint = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.size(48.dp)
                 )

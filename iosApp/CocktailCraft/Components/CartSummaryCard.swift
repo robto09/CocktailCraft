@@ -8,7 +8,7 @@ struct CartSummaryCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
-            Text("Order Summary")
+            Text(L(\.order_summary_title))
                 .font(AppTheme.Typography.title2)
                 .fontWeight(.bold)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
@@ -17,7 +17,7 @@ struct CartSummaryCard: View {
             VStack(spacing: 0) {
                 // Subtotal
                 SummaryRow(
-                    label: "Subtotal",
+                    label: L(\.order_subtotal),
                     value: subtotal,
                     isTotal: false
                 )
@@ -27,7 +27,7 @@ struct CartSummaryCard: View {
 
                 // Delivery Fee
                 SummaryRow(
-                    label: "Delivery Fee",
+                    label: L(\.order_delivery_fee),
                     value: deliveryFee,
                     isTotal: false
                 )
@@ -37,7 +37,7 @@ struct CartSummaryCard: View {
 
                 // Total
                 SummaryRow(
-                    label: "Total",
+                    label: L(\.total),
                     value: total,
                     isTotal: true
                 )

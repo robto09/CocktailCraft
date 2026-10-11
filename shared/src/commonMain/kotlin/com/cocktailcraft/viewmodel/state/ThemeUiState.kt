@@ -3,6 +3,12 @@ package com.cocktailcraft.viewmodel.state
 import com.cocktailcraft.designsystem.AccentColorTokens
 import com.cocktailcraft.domain.model.ThemeMode
 import com.cocktailcraft.domain.model.UserPreferences
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.theme_mode_dark
+import com.cocktailcraft.resources.theme_mode_light
+import com.cocktailcraft.resources.theme_mode_system
+import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.desc.desc
 
 /**
  * Consolidated UI state for the Theme screen.
@@ -22,10 +28,10 @@ data class ThemeUiState(
     val isSystemTheme: Boolean get() = themeMode == ThemeMode.SYSTEM
 
     /** User-facing name of the selected [themeMode] ("System", "Light", "Dark"). */
-    val themeModeDisplayName: String
+    val themeModeDisplayName: StringDesc
         get() = when (themeMode) {
-            ThemeMode.LIGHT -> "Light"
-            ThemeMode.DARK -> "Dark"
-            ThemeMode.SYSTEM -> "System"
-        }
+            ThemeMode.LIGHT -> MR.strings.theme_mode_light
+            ThemeMode.DARK -> MR.strings.theme_mode_dark
+            ThemeMode.SYSTEM -> MR.strings.theme_mode_system
+        }.desc()
 }

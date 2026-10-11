@@ -25,11 +25,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.R
+import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.SearchFilters
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.alcoholic
+import com.cocktailcraft.resources.filter_apply
+import com.cocktailcraft.resources.filter_category
+import com.cocktailcraft.resources.filter_clear
+import com.cocktailcraft.resources.filter_ingredient
+import com.cocktailcraft.resources.search_advanced_search
 import kotlinx.coroutines.launch
 
 /**
@@ -86,13 +92,13 @@ fun AdvancedSearchBottomSheet(
                         animateClose()
                     }
                 ) {
-                    Text(stringResource(R.string.filter_clear))
+                    Text(stringResource(MR.strings.filter_clear))
                 }
 
                 Spacer(modifier = Modifier.weight(1f))
 
                 Text(
-                    text = stringResource(R.string.search_advanced_search),
+                    text = stringResource(MR.strings.search_advanced_search),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -107,13 +113,13 @@ fun AdvancedSearchBottomSheet(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text(stringResource(R.string.filter_apply))
+                    Text(stringResource(MR.strings.filter_apply))
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            FilterSection(title = stringResource(R.string.filter_category)) {
+            FilterSection(title = stringResource(MR.strings.filter_category)) {
                 CategorySelector(
                     categories = categories,
                     selectedCategory = filters.category,
@@ -123,7 +129,7 @@ fun AdvancedSearchBottomSheet(
                 )
             }
 
-            FilterSection(title = stringResource(R.string.filter_ingredient)) {
+            FilterSection(title = stringResource(MR.strings.filter_ingredient)) {
                 IngredientSelector(
                     ingredients = ingredients,
                     selectedIngredient = filters.ingredient,
@@ -133,7 +139,7 @@ fun AdvancedSearchBottomSheet(
                 )
             }
 
-            FilterSection(title = stringResource(R.string.alcoholic)) {
+            FilterSection(title = stringResource(MR.strings.alcoholic)) {
                 AlcoholicFilterContent(
                     alcoholic = filters.alcoholic,
                     onAlcoholicChanged = { alcoholicValue ->

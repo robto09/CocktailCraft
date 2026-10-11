@@ -45,7 +45,7 @@ struct HomeViewSKIE: View {
                 cocktailList
             }
         }
-        .navigationTitle("CocktailCraft")
+        .navigationTitle(L(\.app_title))
         .brandedNavigationBar()
         .navigationDestination(for: String.self) { cocktailId in
             CocktailDetailView(cocktailId: cocktailId)
@@ -135,9 +135,9 @@ struct HomeViewSKIE: View {
     private var noConnectionState: some View {
         EmptyStateView(
             icon: "wifi.slash",
-            title: String(localized: "No internet connection"),
-            message: String(localized: "Check your connection and try again."),
-            actionTitle: String(localized: "Retry"),
+            title: L(\.home_no_connection_title),
+            message: L(\.home_no_connection_message),
+            actionTitle: L(\.common_retry),
             action: { viewModel.retry() }
         )
         .background(backgroundColor)
@@ -220,7 +220,7 @@ struct HomeViewSKIE: View {
                                 // mid-task MainActor.run hop.
                                 Task { @MainActor in
                                     await viewModel.addToCart(cocktail)
-                                    toastMessage = String(localized: "Added \(cocktail.name) to cart")
+                                    toastMessage = L(\.added_to_cart, cocktail.name)
                                     withAnimation {
                                         showingToast = true
                                     }
@@ -259,7 +259,7 @@ struct HomeViewSKIE: View {
                     await viewModel.loadMoreCocktails()
                 }
             }) {
-                Text(String(localized: "Load More"))
+                Text(L(\.home_load_more))
                     .font(.callout)
                     .fontWeight(.medium)
                     .foregroundColor(primaryColor)
@@ -275,7 +275,7 @@ struct HomeViewSKIE: View {
             HStack {
                 ProgressView()
                     .foregroundColor(primaryColor)
-                Text(String(localized: "Loading more..."))
+                Text(L(\.home_loading_more))
                     .font(.callout)
                     .foregroundColor(textSecondary)
             }

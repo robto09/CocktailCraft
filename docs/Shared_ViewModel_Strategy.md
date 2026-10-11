@@ -136,7 +136,7 @@ abstract class SharedViewModel : ViewModel() {
 
     protected open fun handleException(
         exception: Throwable,
-        defaultMessage: String = "Something went wrong. Please try again.",
+        defaultMessage: StringResource = MR.strings.error_generic,
         recoveryAction: ErrorHandler.RecoveryAction? = null
     ) { /* CancellationException guard + ErrorHandler classification */ }
 }

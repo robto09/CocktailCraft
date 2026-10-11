@@ -1,5 +1,8 @@
 package com.cocktailcraft.android.ui.main
 
+import android.content.Intent
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -7,12 +10,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.exclude
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,18 +31,17 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import android.content.Intent
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.LocalActivity
-import androidx.compose.runtime.DisposableEffect
 import androidx.core.util.Consumer
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
@@ -48,7 +50,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
-import com.cocktailcraft.android.R
 import com.cocktailcraft.android.navigation.COCKTAIL_DEEP_LINK_BASE_PATH
 import com.cocktailcraft.android.navigation.CartRoute
 import com.cocktailcraft.android.navigation.CocktailDetailRoute
@@ -66,15 +67,21 @@ import com.cocktailcraft.android.screens.OrderListScreen
 import com.cocktailcraft.android.screens.ProfileScreen
 import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
+import com.cocktailcraft.android.util.getString
+import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.added_to_cart
+import com.cocktailcraft.resources.app_title
+import com.cocktailcraft.resources.cart
+import com.cocktailcraft.resources.favorites
+import com.cocktailcraft.resources.orders
+import com.cocktailcraft.resources.profile
 import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
-import androidx.compose.runtime.collectAsState
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -139,7 +146,7 @@ fun MainScreen() {
         scope.launch {
             sharedCartViewModel.addToCart(cocktail)
             snackbarHostState.showSnackbar(
-                message = context.getString(R.string.added_to_cart, cocktail.name),
+                message = context.getString(MR.strings.added_to_cart, cocktail.name),
                 duration = SnackbarDuration.Short
             )
         }
@@ -164,12 +171,12 @@ fun MainScreen() {
                     AppTopBar(
                         title = when {
                             // Home leads with the brand, same as iOS
-                            currentDestination?.hasRoute<HomeRoute>() == true -> stringResource(R.string.app_name)
-                            currentDestination?.hasRoute<CartRoute>() == true -> stringResource(R.string.cart)
-                            currentDestination?.hasRoute<FavoritesRoute>() == true -> stringResource(R.string.favorites)
-                            currentDestination?.hasRoute<OrderListRoute>() == true -> stringResource(R.string.orders)
-                            currentDestination?.hasRoute<ProfileRoute>() == true -> stringResource(R.string.profile)
-                            else -> stringResource(R.string.app_name)
+                            currentDestination?.hasRoute<HomeRoute>() == true -> stringResource(MR.strings.app_title)
+                            currentDestination?.hasRoute<CartRoute>() == true -> stringResource(MR.strings.cart)
+                            currentDestination?.hasRoute<FavoritesRoute>() == true -> stringResource(MR.strings.favorites)
+                            currentDestination?.hasRoute<OrderListRoute>() == true -> stringResource(MR.strings.orders)
+                            currentDestination?.hasRoute<ProfileRoute>() == true -> stringResource(MR.strings.profile)
+                            else -> stringResource(MR.strings.app_title)
                         },
                         // The wrapping Column already consumed the status-bar
                         // inset; keep only the horizontal/cutout parts here so
@@ -196,15 +203,15 @@ fun MainScreen() {
                                     BadgedBox(badge = {
                                         Badge { Text(cartUiState.itemCount.toString()) }
                                     }) {
-                                        Icon(screen.icon, contentDescription = stringResource(screen.titleRes))
+                                        Icon(screen.icon, contentDescription = stringResource(screen.title))
                                     }
                                 } else {
-                                    Icon(screen.icon, contentDescription = stringResource(screen.titleRes))
+                                    Icon(screen.icon, contentDescription = stringResource(screen.title))
                                 }
                             },
                             label = {
                                 Text(
-                                    stringResource(screen.titleRes),
+                                    stringResource(screen.title),
                                     style = MaterialTheme.typography.labelMedium
                                 )
                             },

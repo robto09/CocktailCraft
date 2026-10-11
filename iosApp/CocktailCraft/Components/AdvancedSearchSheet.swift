@@ -8,11 +8,11 @@ private enum AlcoholicFilter: Hashable, CaseIterable {
     case alcoholic
     case nonAlcoholic
 
-    var label: LocalizedStringKey {
+    var label: String {
         switch self {
-        case .any: return "Any"
-        case .alcoholic: return "Alcoholic"
-        case .nonAlcoholic: return "Non-Alcoholic"
+        case .any: return L(\.filter_any)
+        case .alcoholic: return L(\.alcoholic)
+        case .nonAlcoholic: return L(\.non_alcoholic)
         }
     }
 
@@ -66,15 +66,15 @@ struct AdvancedSearchSheet: View {
 
                 Spacer().frame(height: 8)
 
-                FilterSection(title: "Category") {
+                FilterSection(title: L(\.filter_category)) {
                     categorySelector
                 }
 
-                FilterSection(title: "Ingredient") {
+                FilterSection(title: L(\.filter_ingredient)) {
                     ingredientSelector
                 }
 
-                FilterSection(title: "Alcoholic") {
+                FilterSection(title: L(\.alcoholic)) {
                     alcoholicChips
                 }
 
@@ -104,7 +104,7 @@ struct AdvancedSearchSheet: View {
 
     private var header: some View {
         HStack {
-            Button("Clear") {
+            Button(L(\.filter_clear)) {
                 viewModel.clearSearchFilters()
                 dismiss()
             }
@@ -113,7 +113,7 @@ struct AdvancedSearchSheet: View {
 
             Spacer()
 
-            Text("Advanced Search")
+            Text(L(\.search_advanced_search))
                 .font(.headline.weight(.bold))
                 .foregroundColor(textPrimary)
 
@@ -133,7 +133,7 @@ struct AdvancedSearchSheet: View {
                     await viewModel.applyFilters(filters)
                 }
             } label: {
-                Text("Apply")
+                Text(L(\.filter_apply))
                     .font(.subheadline.weight(.medium))
                     .foregroundColor(.white)
                     .padding(.horizontal, 20)
@@ -152,14 +152,14 @@ struct AdvancedSearchSheet: View {
             // An embedded Picker (rather than plain Buttons) so the open menu
             // checkmarks the current selection and reads as a picker to
             // VoiceOver, while keeping the custom outlined label.
-            Picker("Category", selection: $selectedCategory) {
-                Text("All Categories").tag(String?.none)
+            Picker(L(\.filter_category), selection: $selectedCategory) {
+                Text(L(\.filter_all_categories)).tag(String?.none)
                 ForEach(viewModel.state.filterCategories, id: \.self) { category in
                     Text(category).tag(String?.some(category))
                 }
             }
         } label: {
-            SelectorRow(selection: selectedCategory, placeholder: "Select a category")
+            SelectorRow(selection: selectedCategory, placeholder: L(\.filter_select_category))
         }
         .buttonStyle(.plain)
     }
@@ -168,7 +168,7 @@ struct AdvancedSearchSheet: View {
         Button {
             showingIngredientPicker = true
         } label: {
-            SelectorRow(selection: selectedIngredient, placeholder: "Select an ingredient")
+            SelectorRow(selection: selectedIngredient, placeholder: L(\.filter_select_an_ingredient))
         }
         .buttonStyle(.plain)
     }
@@ -198,7 +198,7 @@ struct AdvancedSearchSheet: View {
 // MARK: - Filter section (collapsible title + divider, matching Android)
 
 private struct FilterSection<Content: View>: View {
-    let title: LocalizedStringKey
+    let title: String
     @ViewBuilder let content: Content
 
     @State private var expanded = true
@@ -224,7 +224,7 @@ private struct FilterSection<Content: View>: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(title)
-            .accessibilityValue(expanded ? Text("Collapse") : Text("Expand"))
+            .accessibilityValue(expanded ? L(\.filter_collapse) : L(\.filter_expand))
 
             if expanded {
                 content
@@ -244,7 +244,7 @@ private struct FilterSection<Content: View>: View {
 
 private struct SelectorRow: View {
     let selection: String?
-    let placeholder: LocalizedStringKey
+    let placeholder: String
 
     @Environment(\.isDarkMode) private var isDarkMode
 
@@ -305,13 +305,13 @@ private struct IngredientPickerSheet: View {
             .searchable(
                 text: $searchQuery,
                 placement: .navigationBarDrawer(displayMode: .always),
-                prompt: "Search ingredients"
+                prompt: L(\.search_ingredients_placeholder)
             )
-            .navigationTitle("Select Ingredient")
+            .navigationTitle(L(\.filter_select_ingredient_title))
             .brandedNavigationBar()
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Cancel") { dismiss() }
+                    Button(L(\.cancel)) { dismiss() }
                         .tint(.white)
                 }
             }
@@ -329,7 +329,7 @@ private struct IngredientPickerSheet: View {
                 if let label {
                     Text(label)
                 } else {
-                    Text("Any ingredient")
+                    Text(L(\.filter_any_ingredient))
                 }
 
                 Spacer()

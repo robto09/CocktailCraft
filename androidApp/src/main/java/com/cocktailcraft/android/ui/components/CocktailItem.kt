@@ -19,18 +19,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.components.OptimizedImage
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.rememberHapticHandler
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.add_to_cart
+import com.cocktailcraft.resources.list_add_to_favorites
+import com.cocktailcraft.resources.list_alcoholic_unknown
+import com.cocktailcraft.resources.list_out_of_stock
+import com.cocktailcraft.resources.list_price_format
+import com.cocktailcraft.resources.list_remove_from_favorites
+import com.cocktailcraft.resources.list_tap_to_view_ingredients
 
 @Composable
 fun CocktailItem(
@@ -83,7 +90,7 @@ fun CocktailItem(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = stringResource(R.string.list_out_of_stock),
+                            text = stringResource(MR.strings.list_out_of_stock),
                             color = Color.White,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
@@ -114,7 +121,7 @@ fun CocktailItem(
                 // Display alcoholic info with category info
                 Text(
                     text = buildString {
-                        append(cocktail.alcoholic ?: stringResource(R.string.list_alcoholic_unknown))
+                        append(cocktail.alcoholic ?: stringResource(MR.strings.list_alcoholic_unknown))
                         cocktail.category?.let {
                             append(" • ")
                             append(it)
@@ -141,7 +148,7 @@ fun CocktailItem(
                                 .let { if (cocktail.ingredients.size > 2) "$it..." else it }
                         }
                     } else {
-                        stringResource(R.string.list_tap_to_view_ingredients)
+                        stringResource(MR.strings.list_tap_to_view_ingredients)
                     },
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -158,7 +165,7 @@ fun CocktailItem(
                 ) {
                     // Price
                     Text(
-                        text = stringResource(R.string.list_price_format, cocktail.price),
+                        text = stringResource(MR.strings.list_price_format, cocktail.price),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.primary
@@ -176,7 +183,7 @@ fun CocktailItem(
                     ) {
                         Icon(
                             imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = if (isFavorite) stringResource(R.string.list_remove_from_favorites) else stringResource(R.string.list_add_to_favorites),
+                            contentDescription = if (isFavorite) stringResource(MR.strings.list_remove_from_favorites) else stringResource(MR.strings.list_add_to_favorites),
                             tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
                             modifier = Modifier.size(20.dp)
                         )
@@ -189,7 +196,7 @@ fun CocktailItem(
                     ) {
                         Icon(
                             imageVector = Icons.Default.ShoppingCart,
-                            contentDescription = stringResource(R.string.add_to_cart),
+                            contentDescription = stringResource(MR.strings.add_to_cart),
                             tint = if (cocktail.stockCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                             modifier = Modifier.size(20.dp)
                         )

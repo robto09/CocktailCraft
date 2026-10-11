@@ -16,9 +16,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.R
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.common_back
 
 /**
  * The app's single branded top bar: coral background, centered white bold
@@ -54,7 +55,7 @@ fun AppTopBar(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.common_back),
+                            contentDescription = stringResource(MR.strings.common_back),
                             tint = Color.White
                         )
                     }

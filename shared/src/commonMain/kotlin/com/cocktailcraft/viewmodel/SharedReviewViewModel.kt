@@ -4,6 +4,16 @@ import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
 import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.error_delete_review_failed
+import com.cocktailcraft.resources.error_invalid_user_title
+import com.cocktailcraft.resources.error_review_delete_not_found
+import com.cocktailcraft.resources.error_review_not_found_title
+import com.cocktailcraft.resources.error_review_update_not_found
+import com.cocktailcraft.resources.error_review_user_required
+import com.cocktailcraft.resources.error_submit_review_failed
+import com.cocktailcraft.resources.error_update_review_failed
+import com.cocktailcraft.resources.error_validation_title
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.ReviewUiState
 import kotlinx.coroutines.flow.*
@@ -54,8 +64,8 @@ class SharedReviewViewModel internal constructor(
 
         if (userName.isBlank()) {
             setError(
-                "Invalid User",
-                "User name is required to submit a review",
+                MR.strings.error_invalid_user_title,
+                MR.strings.error_review_user_required,
                 ErrorHandler.ErrorCategory.DATA
             )
             return false
@@ -65,7 +75,7 @@ class SharedReviewViewModel internal constructor(
             manageReviewsUseCase.submitReview(cocktailId, rating, comment, userName).getOrThrow()
             true
         } catch (e: Exception) {
-            handleException(e, "Failed to submit review")
+            handleException(e, MR.strings.error_submit_review_failed)
             false
         }
     }
@@ -83,14 +93,14 @@ class SharedReviewViewModel internal constructor(
             val found = manageReviewsUseCase.updateReview(reviewId, rating, comment).getOrThrow()
             if (!found) {
                 setError(
-                    "Review Not Found",
-                    "The review you're trying to update was not found",
+                    MR.strings.error_review_not_found_title,
+                    MR.strings.error_review_update_not_found,
                     ErrorHandler.ErrorCategory.DATA
                 )
             }
             found
         } catch (e: Exception) {
-            handleException(e, "Failed to update review")
+            handleException(e, MR.strings.error_update_review_failed)
             false
         }
     }
@@ -104,14 +114,14 @@ class SharedReviewViewModel internal constructor(
             val found = manageReviewsUseCase.deleteReview(reviewId).getOrThrow()
             if (!found) {
                 setError(
-                    "Review Not Found",
-                    "The review you're trying to delete was not found",
+                    MR.strings.error_review_not_found_title,
+                    MR.strings.error_review_delete_not_found,
                     ErrorHandler.ErrorCategory.DATA
                 )
             }
             found
         } catch (e: Exception) {
-            handleException(e, "Failed to delete review")
+            handleException(e, MR.strings.error_delete_review_failed)
             false
         }
     }
@@ -125,7 +135,7 @@ class SharedReviewViewModel internal constructor(
         val errorMessage = manageReviewsUseCase.validateReview(rating, comment)
         if (errorMessage != null) {
             setError(
-                "Validation Error",
+                MR.strings.error_validation_title,
                 errorMessage,
                 ErrorHandler.ErrorCategory.DATA
             )

@@ -3,13 +3,32 @@ package com.cocktailcraft.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
-import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.repository.OrderRepository
+import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.error_cancel_order_failed
+import com.cocktailcraft.resources.error_cancellation_failed_message
+import com.cocktailcraft.resources.error_cancellation_failed_title
+import com.cocktailcraft.resources.error_empty_cart_message
+import com.cocktailcraft.resources.error_empty_cart_title
+import com.cocktailcraft.resources.error_load_order_details_failed
+import com.cocktailcraft.resources.error_load_orders_failed
+import com.cocktailcraft.resources.error_order_failed_title
+import com.cocktailcraft.resources.error_place_order_failed
+import com.cocktailcraft.resources.error_update_order_status_failed
+import com.cocktailcraft.resources.order_status_cancelled
+import com.cocktailcraft.resources.order_status_delivered
+import com.cocktailcraft.resources.order_status_pending
+import com.cocktailcraft.resources.order_status_processing
+import com.cocktailcraft.resources.order_status_shipped
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.OrderUiState
+import dev.icerock.moko.resources.desc.Raw
+import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -59,7 +78,7 @@ class SharedOrderViewModel internal constructor(
                 isLoading = false
             ) }
         } catch (e: Exception) {
-            handleException(e, "Failed to load orders")
+            handleException(e, MR.strings.error_load_orders_failed)
             _uiState.update { it.copy(isLoading = false) }
         }
     }
@@ -74,8 +93,8 @@ class SharedOrderViewModel internal constructor(
     suspend fun placeOrder(cartItems: List<CocktailCartItem>, totalPrice: Double): Boolean {
         if (cartItems.isEmpty()) {
             setError(
-                "Empty Cart",
-                "Cannot place order with empty cart",
+                MR.strings.error_empty_cart_title,
+                MR.strings.error_empty_cart_message,
                 ErrorHandler.ErrorCategory.DATA
             )
             return false
@@ -93,8 +112,9 @@ class SharedOrderViewModel internal constructor(
                 }
                 is Result.Error -> {
                     setError(
-                        "Order Failed",
-                        result.message,
+                        MR.strings.error_order_failed_title,
+                        ErrorHandler.rawMessage(result.message)
+                            ?: MR.strings.error_place_order_failed.desc(),
                         ErrorHandler.ErrorCategory.SERVER
                     )
                     _uiState.update { it.copy(isPlacingOrder = false, isLoading = false) }
@@ -105,7 +125,7 @@ class SharedOrderViewModel internal constructor(
                 }
             }
         } catch (e: Exception) {
-            handleException(e, "Failed to place order")
+            handleException(e, MR.strings.error_place_order_failed)
             _uiState.update { it.copy(isPlacingOrder = false, isLoading = false) }
             return false
         }
@@ -119,7 +139,7 @@ class SharedOrderViewModel internal constructor(
         return try {
             orderRepository.getOrderById(orderId).getOrNull()
         } catch (e: Exception) {
-            handleException(e, "Failed to load order details")
+            handleException(e, MR.strings.error_load_order_details_failed)
             null
         }
     }
@@ -135,11 +155,11 @@ class SharedOrderViewModel internal constructor(
                 loadOrders() // Refresh orders list
                 true
             } else {
-                handleException(Exception("Failed to update order status"), "Failed to update order status")
+                handleException(Exception("Failed to update order status"), MR.strings.error_update_order_status_failed)
                 false
             }
         } catch (e: Exception) {
-            handleException(e, "Failed to update order status")
+            handleException(e, MR.strings.error_update_order_status_failed)
             false
         }
     }
@@ -155,14 +175,14 @@ class SharedOrderViewModel internal constructor(
                 loadOrders()
             } else {
                 setError(
-                    "Cancellation Failed",
-                    "Unable to cancel order at this time",
+                    MR.strings.error_cancellation_failed_title,
+                    MR.strings.error_cancellation_failed_message,
                     ErrorHandler.ErrorCategory.SERVER
                 )
             }
             success
         } catch (e: Exception) {
-            handleException(e, "Failed to cancel order")
+            handleException(e, MR.strings.error_cancel_order_failed)
             false
         }
     }
@@ -172,14 +192,14 @@ class SharedOrderViewModel internal constructor(
     /**
      * Get order status display text.
      */
-    fun getOrderStatusDisplay(status: String): String {
+    fun getOrderStatusDisplay(status: String): StringDesc {
         return when (status.lowercase()) {
-            "pending" -> "Order Pending"
-            "processing" -> "Being Prepared"
-            "shipped" -> "On the Way"
-            "delivered" -> "Delivered"
-            "cancelled" -> "Cancelled"
-            else -> status
+            "pending" -> MR.strings.order_status_pending.desc()
+            "processing" -> MR.strings.order_status_processing.desc()
+            "shipped" -> MR.strings.order_status_shipped.desc()
+            "delivered" -> MR.strings.order_status_delivered.desc()
+            "cancelled" -> MR.strings.order_status_cancelled.desc()
+            else -> StringDesc.Raw(status)
         }
     }
     

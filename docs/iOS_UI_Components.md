@@ -128,7 +128,7 @@ CocktailCard(
 ### CheckoutButton
 **Purpose**: Primary checkout action button with loading and disabled states.
 
-**Parameters**: `title: String = "Place Order"`, `isEnabled: Bool = true`, `isLoading: Bool = false`, `action`.
+**Parameters**: `title: String = L(\.cart_place_order)`, `isEnabled: Bool = true`, `isLoading: Bool = false`, `action`.
 
 **Used in**: `CartView`.
 
@@ -170,7 +170,7 @@ A small collection of profile-screen building blocks:
 **Used in**: nearly every screen (`HomeViewSKIE`, `FavoritesView`, `CartView`, `OrderListView`, `ProfileView`, `CocktailDetailView`, ...).
 
 ### ErrorView
-**Purpose**: Full-frame error state for a shared `ErrorHandler.UserFriendlyError`, with a category-specific icon/color and a recovery-action or retry button.
+**Purpose**: Full-frame error state for a shared `ErrorHandler.UserFriendlyError`, with a category-specific icon/color and a recovery-action or retry button. The error's title, message and action label are shared `StringDesc`s, shown via `.localized()`.
 
 **Parameters**: `error: ErrorHandler.UserFriendlyError`, `onRetry: (() -> Void)?`.
 
@@ -214,3 +214,4 @@ A small collection of profile-screen building blocks:
 5. **Errors**: Screens backed by a shared ViewModel surface errors with `.sharedErrorAlert`; use `ErrorView` for full-frame error states.
 6. **Loading and empty states**: Prefer `LoadingStateView` and `EmptyStateView` over ad-hoc arrangements.
 7. **Reuse first**: Check this list before writing a new component, and document new components here.
+8. **Copy**: Never hardcode user-facing text (labels, placeholders, accessibility labels/hints). Add it to the shared strings and use `L(\.key)` from `Utils/Strings.swift`; pass the resulting `String` to `Text`, `Button`, `Label`, `.navigationTitle`, `.accessibilityLabel`, … (see README "Localization"). Component parameters for copy are `String`, not `LocalizedStringKey`.

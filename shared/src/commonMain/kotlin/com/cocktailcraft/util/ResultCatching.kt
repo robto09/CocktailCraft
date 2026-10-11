@@ -23,7 +23,7 @@ internal inline fun <T> runCatchingResult(defaultMessage: String, block: () -> R
     } catch (e: Exception) {
         Result.Error(
             message = e.message ?: defaultMessage,
-            code = ErrorHandler.getErrorFromException(e, defaultMessage).errorCode
+            code = ErrorHandler.getErrorFromException(e).errorCode
         )
     }
 }

@@ -20,7 +20,7 @@ struct ContentView: View {
                     HomeViewSKIE()
                 }
                 .tabItem {
-                    Label("Home", systemImage: "house.fill")
+                    Label(L(\.home), systemImage: "house.fill")
                 }
                 .tag(AppRouter.Tab.home)
                 .brandedTabBar()
@@ -30,7 +30,7 @@ struct ContentView: View {
                     CartView()
                 }
                 .tabItem {
-                    Label("Cart", systemImage: "cart.fill")
+                    Label(L(\.cart), systemImage: "cart.fill")
                 }
                 .badge(Int(cartViewModel.state.itemCount))
                 .tag(AppRouter.Tab.cart)
@@ -41,7 +41,7 @@ struct ContentView: View {
                     FavoritesView()
                 }
                 .tabItem {
-                    Label("Favorites", systemImage: "heart.fill")
+                    Label(L(\.favorites), systemImage: "heart.fill")
                 }
                 .tag(AppRouter.Tab.favorites)
                 .brandedTabBar()
@@ -51,7 +51,7 @@ struct ContentView: View {
                     OrderListView()
                 }
                 .tabItem {
-                    Label("Orders", systemImage: "list.bullet")
+                    Label(L(\.orders), systemImage: "list.bullet")
                 }
                 .tag(AppRouter.Tab.orders)
                 .brandedTabBar()
@@ -61,7 +61,7 @@ struct ContentView: View {
                     ProfileView()
                 }
                 .tabItem {
-                    Label("Profile", systemImage: "person.fill")
+                    Label(L(\.profile), systemImage: "person.fill")
                 }
                 .tag(AppRouter.Tab.profile)
                 .brandedTabBar()
