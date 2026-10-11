@@ -14,10 +14,12 @@ struct ErrorView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 60, height: 60)
                 .foregroundColor(getErrorColor(for: error.category))
-            
+                .accessibilityHidden(true)
+
             Text(error.title.localized())
                 .font(.title3)
                 .fontWeight(.semibold)
+                .accessibilityAddTraits(.isHeader)
             
             Text(error.message.localized())
                 .font(.body)

@@ -72,6 +72,7 @@ struct OrderListView: View {
             Text(L(\.order_number, order.id))
                 .font(.headline)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                .accessibilityAddTraits(.isHeader)
             // Colored status indicator matching Android's OrderCard
             HStack(spacing: 6) {
                 Circle()
@@ -86,6 +87,7 @@ struct OrderListView: View {
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
     }
 
     private func statusColor(_ status: String) -> Color {

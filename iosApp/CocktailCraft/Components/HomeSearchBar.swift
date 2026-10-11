@@ -31,6 +31,9 @@ struct HomeSearchBar: View {
                     Button(action: onClear) {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(textSecondary)
+                            // ~44 pt tap area around the small glyph, without
+                            // changing the field's layout
+                            .contentShape(Rectangle().inset(by: -12))
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(L(\.search_clear_search))
@@ -52,6 +55,8 @@ struct HomeSearchBar: View {
                     .background(surfaceColor)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
+                    // 44 pt tap area around the 36 pt button
+                    .contentShape(Rectangle().inset(by: -4))
             }
             .buttonStyle(.plain)
             .accessibilityLabel(L(\.search_advanced_search_ios))
@@ -83,6 +88,7 @@ struct ActiveFiltersCard: View {
                 Text(L(\.filter_active_filters))
                     .font(.caption)
                     .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .accessibilityAddTraits(.isHeader)
 
                 Spacer()
 
@@ -90,6 +96,8 @@ struct ActiveFiltersCard: View {
                     Text(L(\.filter_clear_all))
                         .font(.caption)
                         .foregroundColor(primaryColor)
+                        // 44 pt tall tap area without growing the header row
+                        .contentShape(Rectangle().inset(by: -14))
                 }
                 .buttonStyle(.plain)
             }

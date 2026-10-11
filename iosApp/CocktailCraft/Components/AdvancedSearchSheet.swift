@@ -224,7 +224,9 @@ private struct FilterSection<Content: View>: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(title)
-            .accessibilityValue(expanded ? L(\.filter_collapse) : L(\.filter_expand))
+            .accessibilityValue(expanded ? L(\.filter_section_expanded_a11y) : L(\.filter_section_collapsed_a11y))
+            .accessibilityHint(expanded ? L(\.filter_collapse) : L(\.filter_expand))
+            .accessibilityAddTraits(.isHeader)
 
             if expanded {
                 content

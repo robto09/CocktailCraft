@@ -23,6 +23,7 @@ struct CocktailDetailView: View {
     @State var reviewViewModel = ReviewViewModelSKIE()
     @State var showingWriteReview = false
     @Environment(\.isDarkMode) var isDarkMode
+    @Environment(\.dynamicTypeSize) var dynamicTypeSize
 
     // Distinguishes "load not started yet" from "loaded but not found"
     @State private var hasLoaded = false
@@ -81,7 +82,8 @@ struct CocktailDetailView: View {
                                 .foregroundColor(.white)
                                 .minimumHitTarget()
                         }
-                        .accessibilityLabel(viewModel.state.isFavorite ? L(\.detail_remove_from_favorites) : L(\.detail_add_to_favorites))
+                        .accessibilityLabel(L(\.favorite_toggle_a11y))
+                        .accessibilityAddTraits(viewModel.state.isFavorite ? .isSelected : [])
                         .accessibilityIdentifier("detail.favoriteButton")
                     }
                 }
@@ -99,8 +101,10 @@ struct CocktailDetailView: View {
                     Image(systemName: "wineglass")
                         .font(.largeTitle)
                         .foregroundColor(.secondary)
+                        .accessibilityHidden(true)
                     Text(L(\.detail_not_found_title))
                         .font(.headline)
+                        .accessibilityAddTraits(.isHeader)
                     Text(L(\.detail_not_found_message))
                         .font(.subheadline)
                         .foregroundColor(.secondary)

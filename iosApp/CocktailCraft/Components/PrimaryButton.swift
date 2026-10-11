@@ -30,6 +30,7 @@ struct PrimaryButton: View {
                     HStack(spacing: AppTheme.Spacing.sm) {
                         if let icon {
                             Image(systemName: icon)
+                                .accessibilityHidden(true)
                         }
                         Text(title)
                             .fontWeight(.bold)
@@ -43,5 +44,6 @@ struct PrimaryButton: View {
             .cornerRadius(AppTheme.CornerRadius.md)
         }
         .disabled(isDisabled || isLoading)
+        .accessibilityLabel(title)
     }
 }

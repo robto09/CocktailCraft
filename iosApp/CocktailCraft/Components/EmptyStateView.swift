@@ -17,10 +17,13 @@ struct EmptyStateView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 80, height: 80)
                 .foregroundColor(.gray)
+                .accessibilityHidden(true)
 
             Text(title)
                 .font(.title2)
                 .fontWeight(.semibold)
+                .multilineTextAlignment(.center)
+                .accessibilityAddTraits(.isHeader)
                 // Stable hook for UI tests, so they don't key on display copy
                 .accessibilityIdentifier("emptyState.title")
 
@@ -72,7 +75,8 @@ struct SearchEmptyStateView: View {
                     .foregroundColor(primaryColor)
             }
             .frame(width: 80, height: 80)
-            .accessibilityLabel(L(\.search_no_results_icon))
+            // Decorative: the title below says what happened
+            .accessibilityHidden(true)
 
             Spacer().frame(height: 24)
 
@@ -80,6 +84,7 @@ struct SearchEmptyStateView: View {
                 .font(.title3.weight(.bold))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .multilineTextAlignment(.center)
+                .accessibilityAddTraits(.isHeader)
                 // Stable hook for UI tests, so they don't key on display copy
                 .accessibilityIdentifier("emptyState.title")
 
@@ -174,6 +179,7 @@ struct SearchEmptyStateView: View {
                 .foregroundColor(.white)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 10)
+                .frame(minHeight: 44)
                 .background(Capsule().fill(primaryColor))
         }
         .buttonStyle(.plain)
@@ -187,6 +193,7 @@ struct SearchEmptyStateView: View {
                 .foregroundColor(primaryColor)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 10)
+                .frame(minHeight: 44)
                 .background(Capsule().stroke(primaryColor, lineWidth: 1))
         }
         .buttonStyle(.plain)

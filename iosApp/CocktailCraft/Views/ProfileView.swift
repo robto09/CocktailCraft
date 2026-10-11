@@ -123,29 +123,36 @@ struct ProfileView: View {
     // MARK: - Profile Header Card
     private var profileHeaderCard: some View {
         VStack(spacing: 16) {
-            // Profile Picture
-            ZStack {
-                Circle()
-                    .fill(AppColors.primary(isDarkMode: isDarkMode).opacity(0.2))
-                    .frame(width: 80, height: 80)
+            // Avatar and user info read as one element ("Guest, guest@…");
+            // the element's frame also covers the decorative initial
+            VStack(spacing: 16) {
+                // Profile Picture
+                ZStack {
+                    Circle()
+                        .fill(AppColors.primary(isDarkMode: isDarkMode).opacity(0.2))
+                        .frame(width: 80, height: 80)
 
-                Text(viewModel.userName.prefix(1).uppercased())
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                    Text(viewModel.userName.prefix(1).uppercased())
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                }
+                // Decorative initial: the name follows
+                .accessibilityHidden(true)
+
+                // User Info
+                VStack(spacing: 4) {
+                    Text(viewModel.userName)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+
+                    Text(viewModel.userEmail)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
             }
-
-            // User Info
-            VStack(spacing: 4) {
-                Text(viewModel.userName)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-
-                Text(viewModel.userEmail)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
+            .accessibilityElement(children: .combine)
 
             // Sign In/Sign Up Buttons (if not logged in)
             if !viewModel.state.isLoggedIn {
@@ -179,6 +186,7 @@ struct ProfileView: View {
             Text(L(\.profile_account_settings))
                 .font(.headline)
                 .fontWeight(.bold)
+                .accessibilityAddTraits(.isHeader)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
             // Email Preferences / Notification Settings / Help & Support rows
@@ -210,6 +218,7 @@ struct ProfileView: View {
             Text(L(\.profile_app_settings))
                 .font(.headline)
                 .fontWeight(.bold)
+                .accessibilityAddTraits(.isHeader)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
             VStack(spacing: 0) {
@@ -285,6 +294,7 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text(L(\.profile_about))
                 .font(.headline)
+                .accessibilityAddTraits(.isHeader)
                 .fontWeight(.bold)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 

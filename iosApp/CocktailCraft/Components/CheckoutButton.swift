@@ -47,6 +47,8 @@ struct CheckoutButton: View {
             .cornerRadius(AppTheme.CornerRadius.md)
         }
         .disabled(!isEnabled || isLoading)
+        // Keeps its name while the spinner replaces the title
+        .accessibilityLabel(title)
         .accessibilityIdentifier("cart.placeOrderButton")
         .padding(.horizontal, AppTheme.Spacing.lg)
         .animation(AppTheme.Animation.quick, value: isLoading)
