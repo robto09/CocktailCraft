@@ -249,7 +249,7 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun ProfileHeaderCard(
+internal fun ProfileHeaderCard(
     userName: String,
     userEmail: String,
     isLoggedIn: Boolean,
@@ -352,7 +352,7 @@ private fun SignInPromptSection(
 }
 
 @Composable
-private fun AccountSettingsCard() {
+internal fun AccountSettingsCard() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -402,7 +402,7 @@ private fun AccountSettingsCard() {
 }
 
 @Composable
-private fun AppSettingsCard(
+internal fun AppSettingsCard(
     isLoggedIn: Boolean,
     isDarkMode: Boolean,
     isSystemTheme: Boolean,
@@ -482,7 +482,7 @@ private fun AppSettingsCard(
 }
 
 @Composable
-private fun AppearanceSettingsCard(
+internal fun AppearanceSettingsCard(
     accentColor: String,
     accentOptions: List<String>,
     fontSize: String,

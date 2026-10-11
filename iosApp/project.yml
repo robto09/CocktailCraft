@@ -18,6 +18,10 @@ packages:
   Kingfisher:
     url: https://github.com/onevcat/Kingfisher
     majorVersion: 7.12.0
+  # Test-only: snapshot tests in CocktailCraftTests (see README "Screenshot tests").
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    from: "1.19.6"
 
 targets:
   CocktailCraft:
@@ -167,9 +171,14 @@ targets:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - CocktailCraftTests
+      - path: CocktailCraftTests
+        # Snapshot reference images are read from the source tree at test
+        # time, not from the bundle
+        excludes:
+          - "**/__Snapshots__"
     dependencies:
       - target: CocktailCraft
+      - package: SnapshotTesting
     settings:
       TEST_HOST: "$(BUILT_PRODUCTS_DIR)/CocktailCraft.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CocktailCraft"
       BUNDLE_LOADER: "$(TEST_HOST)"
@@ -203,6 +212,9 @@ schemes:
       config: Debug
     test:
       config: Debug
+      # Pinned so snapshot tests (prices, copy) don't follow the host locale
+      language: en
+      region: US
       targets:
         - CocktailCraftTests
         - CocktailCraftUITests

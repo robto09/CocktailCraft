@@ -186,6 +186,7 @@ For detailed information about the dependency injection implementation, see:
 - **XCUITest**: iOS UI testing framework
 - **Koin Test**: Dependency injection testing utilities
 - **Robolectric**: Android unit testing framework
+- **Roborazzi** / **swift-snapshot-testing**: Screenshot tests on Android / iOS
 
 **Testing Setup:**
 - [Testing Implementation Summary](docs/TESTING_IMPLEMENTATION_SUMMARY.md) - Complete testing framework overview and setup
@@ -343,9 +344,55 @@ Run them with:
 
 ```bash
 ./gradlew :shared:testAndroidHostTest       # Shared module tests
-./gradlew :androidApp:testDebugUnitTest     # Android unit tests
+./gradlew :androidApp:testDebugUnitTest     # Android unit tests (incl. screenshot verify)
 # iOS (from iosApp/, after xcodegen generate):
 xcodebuild test -project CocktailCraft.xcodeproj -scheme CocktailCraft \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+  -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5'
+```
+
+### Screenshot tests
+
+Both platforms snapshot the design-system components and the stateless parts
+of the main screens in light and dark mode, plus high-contrast, large-font and
+accent-color variants of a few key components. Reference images are committed;
+a visual change fails the test until the references are re-recorded and the
+new images reviewed in the diff. Sample data never carries image URLs, so no
+test touches the network.
+
+**Android** — [Roborazzi](https://github.com/takahirom/roborazzi) on
+Robolectric (JVM, no emulator). Tests live in
+`androidApp/src/test/java/com/cocktailcraft/android/screenshot`, references in
+`androidApp/src/test/screenshots`. A plain `testDebugUnitTest` run verifies
+(`roborazzi.test.verify=true` in `gradle.properties`).
+
+```bash
+./gradlew :androidApp:recordRoborazziDebug    # re-record references after an intended change
+./gradlew :androidApp:verifyRoborazziDebug    # verify only (same as testDebugUnitTest)
+./gradlew :androidApp:compareRoborazziDebug   # write *_compare.png diffs without failing
+```
+
+Failed comparisons write `*_compare.png` / `*_actual.png` to
+`androidApp/build/outputs/roborazzi`. Robolectric is pinned to SDK 34 and a
+360x640dp xhdpi window (`androidApp/src/test/resources/robolectric.properties`);
+references were recorded on macOS — font rasterization can differ slightly
+on Linux CI.
+
+**iOS** — [swift-snapshot-testing](https://github.com/pointfreeco/swift-snapshot-testing)
+(Swift package, `CocktailCraftTests` target only). Tests live in
+`iosApp/CocktailCraftTests/Snapshots`, references in its `__Snapshots__`
+folder. Renders use a fixed width, @3x, phone traits, pinned Dynamic Type and
+the scheme's `en`/`US` locale. **References must be recorded on the iPhone 16
+Pro simulator running iOS 18.5**; on any other iOS runtime the snapshot tests
+skip themselves (text rasterization differs between runtimes).
+
+```bash
+# from iosApp/ — verify (missing references are recorded and fail once)
+xcodebuild test -project CocktailCraft.xcodeproj -scheme CocktailCraft \
+  -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' \
+  -only-testing:CocktailCraftTests
+# re-record every reference (the run reports failures; re-run to verify)
+TEST_RUNNER_SNAPSHOT_TESTING_RECORD=all xcodebuild test -project CocktailCraft.xcodeproj \
+  -scheme CocktailCraft -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' \
+  -only-testing:CocktailCraftTests
 ```
 

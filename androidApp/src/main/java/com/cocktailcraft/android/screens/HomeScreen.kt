@@ -386,7 +386,7 @@ private fun HomeCategoryChipsRow(
 
 // Main content (loading / error / empty / list branches) wrapped in pull-to-refresh
 @Composable
-private fun HomeContentSection(
+internal fun HomeContentSection(
     isLoading: Boolean,
     errorMessage: String,
     cocktails: List<Cocktail>,
