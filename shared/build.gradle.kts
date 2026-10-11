@@ -1,7 +1,7 @@
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
+    // Targets, toolchain, SDK levels, opt-ins, host tests (build-logic, AR-10)
+    id("cocktailcraft.kmp.library")
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.android.kotlinMultiplatformLibrary)
     alias(libs.plugins.skie)
     alias(libs.plugins.sqldelight)
     alias(libs.plugins.moko.resources)
@@ -43,26 +43,8 @@ skie {
 }
 
 kotlin {
-    jvmToolchain(libs.versions.jvmTarget.get().toInt())
-
-    sourceSets.all {
-        // For @HiddenFromObjC on serializer companions
-        languageSettings.optIn("kotlin.experimental.ExperimentalObjCRefinement")
-        // kotlin.time.Clock/Instant (kotlinx-datetime 0.7+) — stable in Kotlin 2.3
-        languageSettings.optIn("kotlin.time.ExperimentalTime")
-    }
-
     android {
         namespace = "com.cocktailcraft"
-        compileSdk = libs.versions.compileSdk.get().toInt()
-        minSdk = 24
-
-        // Host-side (JVM) unit tests, equivalent of the old androidUnitTest
-        withHostTestBuilder {}.configure {
-            // moko-resources strings resolve through the generated Android R
-            // class, so host tests need the merged resources
-            isIncludeAndroidResources = true
-        }
 
         lint {
             disable.add("MissingPermission")
@@ -74,12 +56,8 @@ kotlin {
     // builds the framework for the active Xcode configuration/SDK/arch and
     // drops it in build/xcode-frameworks/ (see iosApp/project.yml). The iOS
     // deployment target lives in project.yml.
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
+        binaries.framework {
             baseName = "shared"
             isStatic = true
             // Silences the "cannot infer a bundle ID" link warning.

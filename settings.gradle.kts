@@ -1,4 +1,6 @@
 pluginManagement {
+    // Convention plugins (cocktailcraft.kmp.library) for the KMP modules
+    includeBuild("build-logic")
     repositories {
         google()
         mavenCentral()

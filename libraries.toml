@@ -1,8 +1,9 @@
 [versions]
 # Build convention values (AR-10) — single source for SDK levels and the JVM
-# target consumed by shared/androidApp/baselineprofile build files. minSdk is
-# NOT centralized on purpose: shared/androidApp use 24, baselineprofile needs
-# 28 (macrobenchmark requirement).
+# target consumed by the KMP convention plugin (build-logic) and the
+# androidApp/baselineprofile build files. minSdk is NOT centralized on
+# purpose: the KMP libraries/androidApp use 24, baselineprofile needs 28
+# (macrobenchmark requirement).
 compileSdk = "36"
 jvmTarget = "17"
 agp = "9.2.1"
@@ -44,6 +45,11 @@ sqldelight = "2.4.1"
 turbine = "1.2.1"
 
 [libraries]
+# Build logic (build-logic/convention) — compileOnly plugin APIs; the root
+# build supplies the real plugins via `apply false`
+android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+
 # Kotlinx
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
