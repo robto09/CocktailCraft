@@ -52,7 +52,7 @@ VStack { ... }.cardStyle()
 ## Cocktail & Home Components
 
 ### CocktailCard
-**Purpose**: The main cocktail card, with `.horizontal` (Home list) and `.vertical` (Favorites grid) layouts. Its out-of-stock rule intentionally mirrors `CocktailDetailViewModelSKIE.canAddToCart()`.
+**Purpose**: The main cocktail card, with `.horizontal` (Home list) and `.vertical` (Favorites grid) layouts. Its out-of-stock rule intentionally mirrors `CocktailDetailViewModelSKIE.canAddToCart()`. VoiceOver reads the whole card (name, category, ingredients, price, stock) in one stop on the title; the heart ("Favorite", selected when on) and "Add <name> to cart" buttons stay separate elements. At accessibility text sizes the horizontal layout stacks the image above the text.
 
 ```swift
 CocktailCard(
@@ -112,7 +112,7 @@ CocktailCard(
 ## Cart Components
 
 ### CartItemCard
-**Purpose**: Cart row with image, name/category, quantity stepper, remove, and an optional favorite toggle.
+**Purpose**: Cart row with image, name/category, quantity stepper, remove, and an optional favorite toggle. Stepper and remove buttons are labeled with the item name and quantity changes are announced; the line total and remove button move below the stepper when the row doesn't fit (large Dynamic Type).
 
 **Parameters**: `item: CocktailCartItem`, `onIncrementQuantity`, `onDecrementQuantity`, `onRemoveFromCart`, `onToggleFavorite: (() -> Void)?`.
 
@@ -138,7 +138,7 @@ CocktailCard(
 A small collection of profile-screen building blocks:
 
 - **SettingsRow** — tappable menu row (`icon`, `title`, `action`, `textColor = .primary`) with chevron, full-width hit testing, and the accessibility identifier `profile.row.<title>`
-- **ThemeToggleRow** — toggle row (`title`, `subtitle`, `icon`, `isChecked`, `onToggle: (Bool) -> Void`, `enabled = true`); the callback receives the toggle's target value so duplicate firings are idempotent
+- **ThemeToggleRow** — toggle row (`title`, `subtitle`, `icon`, `isChecked`, `onToggle: (Bool) -> Void`, `enabled = true`); the callback receives the toggle's target value so duplicate firings are idempotent. VoiceOver sees one switch per row (label, On/Off value, toggle trait)
 - **AnimatedThemeSwitch** — animated sun/moon switch (currently unused by any screen)
 - **PrimaryButtonStyle** / **SecondaryButtonStyle** — `ButtonStyle`s for the sign-in/sign-up buttons
 
@@ -214,4 +214,5 @@ A small collection of profile-screen building blocks:
 5. **Errors**: Screens backed by a shared ViewModel surface errors with `.sharedErrorAlert`; use `ErrorView` for full-frame error states.
 6. **Loading and empty states**: Prefer `LoadingStateView` and `EmptyStateView` over ad-hoc arrangements.
 7. **Reuse first**: Check this list before writing a new component, and document new components here.
-8. **Copy**: Never hardcode user-facing text (labels, placeholders, accessibility labels/hints). Add it to the shared strings and use `L(\.key)` from `Utils/Strings.swift`; pass the resulting `String` to `Text`, `Button`, `Label`, `.navigationTitle`, `.accessibilityLabel`, … (see README "Localization"). Component parameters for copy are `String`, not `LocalizedStringKey`.
+8. **Accessibility**: Hide decorative images (`CocktailImageView` already is), mark section titles `.isHeader`, give toggles one stable label plus `.isSelected`/`.isToggle`, and let rows wrap or stack at accessibility text sizes — see README "Accessibility" for the conventions and the automated audit.
+9. **Copy**: Never hardcode user-facing text (labels, placeholders, accessibility labels/hints). Add it to the shared strings and use `L(\.key)` from `Utils/Strings.swift`; pass the resulting `String` to `Text`, `Button`, `Label`, `.navigationTitle`, `.accessibilityLabel`, … (see README "Localization"). Component parameters for copy are `String`, not `LocalizedStringKey`.

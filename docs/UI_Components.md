@@ -23,6 +23,7 @@ This document provides an overview of the reusable UI components in the Cocktail
    - [AnimatedCocktailItem](#animatedcocktailitem)
    - [CartItemCard](#cartitemcard)
    - [FilterChip](#filterchip)
+   - [FavoriteToggleButton](#favoritetogglebutton)
    - [RatingBar](#ratingbar)
    - [OptimizedImage](#optimizedimage)
    - [ErrorDialog and ErrorBanner](#errordialog-and-errorbanner)
@@ -359,6 +360,21 @@ FilterChip(
 ```
 
 **When to use**: For filtering options in search or browse screens.
+
+### FavoriteToggleButton
+
+**Purpose**: The heart toggle on cocktail cards, cart rows and the detail screen. An `IconToggleButton` with one stable "Favorite" label, so TalkBack reads (and announces changes to) its on/off state instead of a label that flips between "Add to" and "Remove from" favorites. Keeps the 48dp touch target.
+
+**Usage**:
+```kotlin
+FavoriteToggleButton(
+    isFavorite = isFavorite,
+    onToggle = { onToggleFavorite(cocktail) },
+    iconSize = 24.dp
+)
+```
+
+**When to use**: Any favorite on/off control — don't build a heart from a plain `IconButton`.
 
 ### RatingBar
 
@@ -735,7 +751,7 @@ Recent refactoring in the CocktailCraft app focused on:
 2. **Documentation**: Add KDoc comments to explain parameters and usage
 3. **Default Values**: Provide sensible defaults for optional parameters
 4. **Theming**: Read colors from `MaterialTheme.colorScheme` / `CocktailCraftTheme.extendedColors` (never hardcode `Color.White` for surfaces) and use `Spacing` for dimensions
-5. **Accessibility**: Ensure components are accessible with proper content descriptions
+5. **Accessibility**: Ensure components are accessible with proper content descriptions — see README "Accessibility" for the conventions and the automated checks
 6. **Composition**: Prefer composition over inheritance for component reuse
 7. **Testing**: Write tests for components to ensure they work as expected
 8. **Strings**: Never hardcode user-facing copy (Compose literals are invisible to the `HardcodedText` lint check). Add it to the shared strings and read it with `stringResource(MR.strings.key)` / `pluralStringResource(MR.plurals.key, …)` from `util/SharedStrings.kt` — see README "Localization"
