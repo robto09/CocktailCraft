@@ -6,13 +6,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.ui.components.AccentColorPicker
 import com.cocktailcraft.android.ui.components.CategoryFilterRow
 import com.cocktailcraft.android.ui.components.FilterChip
 import com.cocktailcraft.android.ui.components.SearchFilterChips
 import com.cocktailcraft.android.ui.components.StatusIndicator
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.designsystem.AccentColorTokens
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -69,12 +70,12 @@ class ChipScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
     @Test
     fun statusIndicator() = snapshot("StatusIndicator") {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatusIndicator(status = "Online", isActive = true, activeColor = AppColors.Success)
-            StatusIndicator(status = "Offline", isActive = false, activeColor = AppColors.Success)
+            StatusIndicator(status = "Online", isActive = true, activeColor = CocktailCraftTheme.extendedColors.success)
+            StatusIndicator(status = "Offline", isActive = false, activeColor = CocktailCraftTheme.extendedColors.success)
             StatusIndicator(
                 status = "Delivered",
                 isActive = true,
-                activeColor = AppColors.Primary,
+                activeColor = MaterialTheme.colorScheme.primary,
                 icon = Icons.Default.CheckCircle
             )
         }

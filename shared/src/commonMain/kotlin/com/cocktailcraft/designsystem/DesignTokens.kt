@@ -4,7 +4,8 @@ package com.cocktailcraft.designsystem
  * Cross-platform design tokens: the single source of truth for CocktailCraft's
  * look and feel on both platforms.
  *
- * - Android maps these into AppColors / MaterialTheme (androidApp ui/theme).
+ * - Android maps these into MaterialTheme.colorScheme + CocktailCraftTheme
+ *   extended colors (androidApp ui/theme/Theme.kt).
  * - iOS maps them into AppColors / AppTheme (iosApp Theme/) through the
  *   shared framework.
  *

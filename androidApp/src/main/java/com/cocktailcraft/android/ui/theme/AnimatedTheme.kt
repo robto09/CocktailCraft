@@ -58,11 +58,6 @@ fun AnimatedCocktailBarTheme(
     reducedMotion: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    // AN-5 transition: keep the AppColors shim in step until it is deleted
-    AppColors.isDarkTheme = darkTheme
-    AppColors.accentName = accentColor
-    AppColors.isHighContrast = highContrast
-
     // Reduce Motion swaps the 600ms theme cross-fade for an instant switch
     val colorSpec: AnimationSpec<Color> = if (reducedMotion) snap() else ColorAnimationSpec
 

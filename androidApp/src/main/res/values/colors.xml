@@ -7,31 +7,31 @@
     tokens change, update the matching entry here.
 -->
 <resources>
-    <!-- AppColors.PrimaryLight / PrimaryDark (coral) -->
+    <!-- ColorTokens.primaryLight / primaryDark (coral) -->
     <color name="cocktail_primary">#EB6A43</color>
     <color name="cocktail_primary_dark">#FF8A65</color>
 
-    <!-- AppColors.SecondaryLight / SecondaryDark (gold) -->
+    <!-- ColorTokens.secondaryLight / secondaryDark (gold) -->
     <color name="cocktail_secondary">#FFC84D</color>
     <color name="cocktail_secondary_dark">#FFD180</color>
 
-    <!-- AppColors.BackgroundLight / BackgroundDark -->
+    <!-- ColorTokens.backgroundLight / backgroundDark -->
     <color name="background_light">#FAFAFA</color>
     <color name="background_dark">#121212</color>
 
-    <!-- AppColors.SurfaceLight / SurfaceDark -->
+    <!-- ColorTokens.surfaceLight / surfaceDark -->
     <color name="surface_light">#FFFFFF</color>
     <color name="surface_dark">#1E1E1E</color>
 
-    <!-- AppColors.TextPrimaryLight / TextPrimaryDark -->
+    <!-- ColorTokens.textPrimaryLight / textPrimaryDark -->
     <color name="text_primary_light">#000000</color>
     <color name="text_primary_dark">#FFFFFF</color>
 
-    <!-- AppColors.TextSecondaryLight / TextSecondaryDark -->
+    <!-- ColorTokens.textSecondaryLight / textSecondaryDark -->
     <color name="text_secondary_light">#8E8E93</color>
     <color name="text_secondary_dark">#B0B0B0</color>
 
-    <!-- AppColors status colors -->
+    <!-- ColorTokens status colors (success / error / warning) -->
     <color name="success">#34C759</color>
     <color name="error">#FF3B30</color>
     <color name="warning">#FF9500</color>
