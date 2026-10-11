@@ -40,29 +40,9 @@ internal interface AppConfig {
     val maxRetries: Int
 
     /**
-     * Key for storing favorites in local storage
-     */
-    val favoritesStorageKey: String
-
-    /**
-     * Key for storing orders in local storage
-     */
-    val ordersStorageKey: String
-
-    /**
-     * Key for storing user reviews in local storage
-     */
-    val reviewsStorageKey: String
-
-    /**
      * Expiration time for cached data in milliseconds
      */
     val cacheExpirationMs: Long
-
-    /**
-     * Key for storing recently viewed cocktails in local storage
-     */
-    val recentlyViewedStorageKey: String
 
     /**
      * Maximum number of cocktails to cache for offline mode

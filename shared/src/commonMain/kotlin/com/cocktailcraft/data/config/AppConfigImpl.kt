@@ -27,12 +27,6 @@ internal class AppConfigImpl(
     // HttpRequestRetry — the single retry layer, SH-7/AR-4)
     override val maxRetries: Int = 3
 
-    // Storage keys
-    override val favoritesStorageKey: String = "favorite_cocktails"
-    override val ordersStorageKey: String = "orders_data"
-    override val reviewsStorageKey: String = "user_reviews"
-    override val recentlyViewedStorageKey: String = "recently_viewed_cocktails"
-
     // Cache configuration (enforced by CocktailCache)
     override val cacheExpirationMs: Long = 86400000 // 24 hours cache expiration
     // Maximum number of cocktails to cache. A single category can return ~100

@@ -14,8 +14,8 @@ All versions are managed in a single version catalog: **`libraries.toml`** at th
 | Kotlinx Serialization | 1.11.0 | JSON (de)serialization |
 | Kotlinx DateTime | 0.8.0 | Date and time handling |
 | Koin | 4.2.2 | Dependency injection (`koin-core`, `koin-core-viewmodel`; `koin-android`/`koin-androidx-compose` on Android) |
-| Multiplatform Settings | 1.3.0 | Cross-platform key-value storage |
-| SQLDelight | 2.4.1 | SQLite storage for the offline cocktail cache (`android-driver` on Android, `native-driver` on iOS; the iOS app links `sqlite3` itself via `OTHER_LDFLAGS` in `iosApp/project.yml`) |
+| Multiplatform Settings | 1.3.0 | Cross-platform key-value storage (auth data, in the secure store; older versions' cart/orders/favorites/reviews are read once to import them into SQLite) |
+| SQLDelight | 2.4.1 | SQLite storage for the offline cocktail cache, cart, orders, favorites and reviews (`android-driver` on Android, `native-driver` on iOS; the iOS app links `sqlite3` itself via `OTHER_LDFLAGS` in `iosApp/project.yml`; `coroutines-extensions` for reactive `Query.asFlow()` reads) |
 | Kermit | 2.1.0 | Multiplatform logging |
 | SKIE | 0.10.13 | Swift interop: Flow → AsyncSequence, suspend → async/await, enum/sealed-class bridging |
 | AndroidX Lifecycle ViewModel | 2.10.0 | Multiplatform `ViewModel` base for the shared ViewModels (exposed as `api` so consumers see the supertype) |
@@ -61,7 +61,7 @@ manager.
 | Kotlinx Coroutines Test | 1.11.0 | Coroutine test dispatchers and scopes |
 | Ktor Client Mock | 3.5.1 | `MockEngine` for exercising the real Ktor pipeline in API tests |
 | Multiplatform Settings Test | 1.3.0 | In-memory `Settings` for shared tests |
-| SQLDelight SQLite (JDBC) driver | 2.4.1 | In-memory database for the offline cache tests on the Android host (iOS tests use the native driver's in-memory mode) |
+| SQLDelight SQLite (JDBC) driver | 2.4.1 | In-memory database for the cache and repository tests on the Android host (iOS tests use the native driver's in-memory mode) |
 | Koin Test | 4.2.2 | DI graph verification (`koin-test`, `koin-test-junit4`) |
 | Robolectric | 4.11.1 | JVM-hosted Android unit tests |
 | Espresso | 3.7.0 | Instrumented UI testing |

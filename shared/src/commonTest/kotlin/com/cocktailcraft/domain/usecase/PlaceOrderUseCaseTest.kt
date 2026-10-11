@@ -16,6 +16,9 @@ import kotlin.test.assertTrue
 private class FakeOrderRepository : OrderRepository {
     val placedOrders = mutableListOf<Order>()
 
+    /** Orders that went through the checkout path (placeOrderAndClearCart). */
+    val checkedOutOrders = mutableListOf<Order>()
+
     /** When set, placeOrder returns Result.Error with this message. */
     var errorMessage: String? = null
 
@@ -25,6 +28,13 @@ private class FakeOrderRepository : OrderRepository {
     override suspend fun placeOrder(order: Order): Result<Unit> {
         errorMessage?.let { return Result.Error(it) }
         placedOrders += order
+        return Result.Success(Unit)
+    }
+
+    override suspend fun placeOrderAndClearCart(order: Order): Result<Unit> {
+        errorMessage?.let { return Result.Error(it) }
+        placedOrders += order
+        checkedOutOrders += order
         return Result.Success(Unit)
     }
 
@@ -62,6 +72,17 @@ class PlaceOrderUseCaseTest {
         assertEquals("Processing", order.status)
         // The exact order the caller gets back is what was persisted.
         assertEquals(listOf(order), repository.placedOrders)
+    }
+
+    @Test
+    fun invokeChecksOutSoTheCartIsClearedInTheSameTransaction() = runTest {
+        // Checkout goes through placeOrderAndClearCart, never plain
+        // placeOrder: callers rely on the cart being emptied atomically.
+        val cart = listOf(CocktailCartItem(cocktail = testCocktail("1"), quantity = 1))
+
+        val order = (useCase(cart, totalPrice = 10.0) as Result.Success).data
+
+        assertEquals(listOf(order), repository.checkedOutOrders)
     }
 
     @Test

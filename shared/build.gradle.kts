@@ -6,7 +6,8 @@ plugins {
     alias(libs.plugins.sqldelight)
 }
 
-// Offline cocktail cache storage (see CocktailCache)
+// Local storage: the offline cocktail cache (see CocktailCache) and the
+// user's cart, orders, favorites and reviews (see LocalDatabase)
 sqldelight {
     databases {
         create("CocktailCraftDatabase") {
@@ -119,6 +120,9 @@ kotlin {
 
                 // Multiplatform logging
                 implementation(libs.kermit)
+
+                // Query.asFlow() for the reactive cart/orders/favorites/reviews reads
+                implementation(libs.sqldelight.coroutines.extensions)
             }
         }
 
@@ -165,7 +169,7 @@ kotlin {
                 implementation(libs.junit.jupiter.engine)
                 implementation(libs.junit.jupiter.params)
 
-                // In-memory SQLite for the offline cache tests
+                // In-memory SQLite for the cache and repository tests
                 implementation(libs.sqldelight.sqlite.driver)
             }
         }

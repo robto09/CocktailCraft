@@ -13,6 +13,11 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 
+/**
+ * Checkout: turns the cart into an order. The order is stored and the cart
+ * emptied in one transaction ([OrderRepository.placeOrderAndClearCart]), so
+ * callers must not clear the cart themselves.
+ */
 internal class PlaceOrderUseCase(
     private val orderRepository: OrderRepository
 ) {
@@ -42,8 +47,8 @@ internal class PlaceOrderUseCase(
                 status = "Processing"
             )
 
-            Logger.d { "PlaceOrderUseCase: Created order object, calling repository.placeOrder" }
-            val placeResult = orderRepository.placeOrder(order)
+            Logger.d { "PlaceOrderUseCase: Created order object, calling repository.placeOrderAndClearCart" }
+            val placeResult = orderRepository.placeOrderAndClearCart(order)
             if (placeResult.isError()) {
                 return Result.Error((placeResult as Result.Error).message)
             }

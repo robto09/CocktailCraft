@@ -66,6 +66,8 @@ private class FakeOrderRepository : OrderRepository {
         return Result.Success(Unit)
     }
 
+    override suspend fun placeOrderAndClearCart(order: Order): Result<Unit> = placeOrder(order)
+
     override suspend fun getOrderById(id: String): Result<Order?> =
         Result.Success(orders.value.find { it.id == id })
 

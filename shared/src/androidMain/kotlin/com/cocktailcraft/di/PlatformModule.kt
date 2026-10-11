@@ -46,9 +46,11 @@ actual fun platformModule() = module {
     // Network monitoring
     single<NetworkMonitor> { AndroidNetworkMonitor(get<Context>()) }
 
-    // SQLite driver for the offline cocktail cache. The file is opened on
-    // first query, not here. Excluded from backup like the prefs file that
-    // used to hold this cache (see backup_rules.xml).
+    // SQLite driver for the app database (offline cocktail cache, cart,
+    // orders, favorites, reviews); it runs the .sqm migrations when an older
+    // schema version is opened. The file is opened on first query, not here.
+    // Excluded from backup like the prefs file that used to hold this data
+    // (see backup_rules.xml).
     single<SqlDriver> {
         AndroidSqliteDriver(CocktailCraftDatabase.Schema, get<Context>(), COCKTAIL_DATABASE_NAME)
     }

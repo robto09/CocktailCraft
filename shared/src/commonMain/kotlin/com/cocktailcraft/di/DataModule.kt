@@ -4,6 +4,8 @@ import app.cash.sqldelight.db.SqlDriver
 import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
+import com.cocktailcraft.data.local.LegacySettingsImport
+import com.cocktailcraft.data.local.LocalDatabase
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.data.repository.AuthRepositoryImpl
 import com.cocktailcraft.data.repository.CartRepositoryImpl
@@ -31,7 +33,11 @@ import kotlinx.serialization.json.Json
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
-/** File name of the SQLite database holding the offline cocktail cache. */
+/**
+ * File name of the app's SQLite database: the offline cocktail cache plus the
+ * user's cart, orders, favorites and reviews. The name predates the user-data
+ * tables; it stays so existing installs keep their database.
+ */
 internal const val COCKTAIL_DATABASE_NAME = "cocktailcraft_cache.db"
 
 /**
@@ -49,14 +55,14 @@ val dataModule = module {
         }
     }
 
-    // Background dispatcher for Settings I/O and JSON (de)serialization
+    // Background dispatcher for database and Settings I/O and JSON (de)serialization
     single<CoroutineDispatcher>(named("ioDispatcher")) { Dispatchers.IO }
 
     // Offline decision — single source of truth for "is the app offline" (AR-7)
     single { com.cocktailcraft.data.cache.OfflineModePolicy(networkMonitor = get()) }
 
-    // Offline cocktail cache database over the platform's SqlDriver
-    // (platformModule). Creating it doesn't open the database file.
+    // App database over the platform's SqlDriver (platformModule). Creating
+    // it doesn't open the database file.
     single { CocktailCraftDatabase(get<SqlDriver>()) }
 
     // Cache. The database is injected lazily so resolving this single never
@@ -71,6 +77,18 @@ val dataModule = module {
         ioDispatcher = get(named("ioDispatcher")),
         offlineModePolicy = get()
     ) }
+
+    // Database access for the cart, orders, favorites and reviews
+    // repositories. Like the cache, it opens the database lazily on the io
+    // dispatcher; the first open imports (once) the data older versions kept
+    // as JSON in Settings, then deletes those keys.
+    single {
+        LocalDatabase(
+            database = inject<CocktailCraftDatabase>(),
+            legacyImport = LegacySettingsImport(settings = get(), json = get()),
+            ioDispatcher = get(named("ioDispatcher"))
+        )
+    }
 
     // In-memory cache manager (thread-safe singleton)
     single { CocktailCacheManager() }
@@ -88,8 +106,8 @@ val dataModule = module {
 
     single<CocktailFavoritesRepository> {
         CocktailFavoritesRepositoryImpl(
-            settings = get(),
-            appConfig = get(),
+            localDatabase = get(),
+            json = get(),
             cocktailCache = get(),
             remote = get(),
             offlineRepository = get(),
@@ -133,7 +151,11 @@ val dataModule = module {
     }
 
     single<CartRepository> {
-        CartRepositoryImpl(get(), get(), get(named("ioDispatcher")))
+        CartRepositoryImpl(
+            localDatabase = get(),
+            json = get(),
+            ioDispatcher = get(named("ioDispatcher"))
+        )
     }
 
     single<AuthRepository> {
@@ -142,18 +164,14 @@ val dataModule = module {
 
     single<OrderRepository> {
         OrderRepositoryImpl(
-            settings = get(),
-            json = get(),
-            appConfig = get(),
+            localDatabase = get(),
             ioDispatcher = get(named("ioDispatcher"))
         )
     }
 
     single<ReviewRepository> {
         ReviewRepositoryImpl(
-            settings = get(),
-            json = get(),
-            appConfig = get(),
+            localDatabase = get(),
             ioDispatcher = get(named("ioDispatcher"))
         )
     }

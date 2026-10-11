@@ -48,8 +48,10 @@ actual fun platformModule() = module {
     // Network monitoring
     single<NetworkMonitor> { IOSNetworkMonitor() }
 
-    // SQLite driver for the offline cocktail cache. sqlite3 itself is linked
-    // into the app via OTHER_LDFLAGS in iosApp/project.yml (the framework is static).
+    // SQLite driver for the app database (offline cocktail cache, cart,
+    // orders, favorites, reviews); it runs the .sqm migrations when an older
+    // schema version is opened. sqlite3 itself is linked into the app via
+    // OTHER_LDFLAGS in iosApp/project.yml (the framework is static).
     single<SqlDriver> { NativeSqliteDriver(CocktailCraftDatabase.Schema, COCKTAIL_DATABASE_NAME) }
 }
 

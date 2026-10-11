@@ -10,9 +10,9 @@ import kotlinx.coroutines.flow.Flow
  */
 interface CocktailFavoritesRepository {
     /**
-     * Hot stream of resolved favorite cocktails, seeded on first collection
-     * and re-published after every mutation (SH-4) — mirrors
-     * [CartRepository.observeCartItems].
+     * Stream of favorite cocktails: the stored list on collection, then again
+     * after every add, remove or in-place upgrade from any screen (SH-4) —
+     * mirrors [CartRepository.observeCartItems].
      */
     fun observeFavorites(): Flow<List<Cocktail>>
 
