@@ -15,7 +15,9 @@ import kotlinx.coroutines.launch
 
 /**
  * Shared ViewModel for Profile functionality.
- * Uses consolidated [ProfileUiState] for atomic state updates.
+ * Uses consolidated [ProfileUiState] for atomic state updates; [uiState] is
+ * the only public state surface. The remaining synchronous helpers are pure
+ * input validators (they take the input, never read state).
  */
 class SharedProfileViewModel internal constructor(
     private val manageProfileUseCase: ManageProfileUseCase
@@ -24,13 +26,6 @@ class SharedProfileViewModel internal constructor(
     // Consolidated UI State
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
-
-    val hasUser: Boolean
-        get() = _uiState.value.user != null
-    val isGuest: Boolean
-        get() = !_uiState.value.isLoggedIn
-    val userName: String
-        get() = _uiState.value.user?.name ?: "Guest"
 
     init {
         initialize()
@@ -100,7 +95,7 @@ class SharedProfileViewModel internal constructor(
         return try {
             val success = manageProfileUseCase.signIn(email, password).getOrThrow()
             if (success) {
-                _uiState.update { it.copy(authError = null, authStatus = "Sign In Successful") }
+                _uiState.update { it.copy(authStatus = "Sign In Successful") }
                 checkAuthStatus()
             } else {
                 _uiState.update { it.copy(authStatus = "Sign In Failed") }
@@ -156,7 +151,7 @@ class SharedProfileViewModel internal constructor(
         return try {
             val success = manageProfileUseCase.signUp(email, password).getOrThrow()
             if (success) {
-                _uiState.update { it.copy(authError = null, authStatus = "Sign Up Successful") }
+                _uiState.update { it.copy(authStatus = "Sign Up Successful") }
                 updateProfile(name, email)
                 checkAuthStatus()
             } else {
@@ -185,7 +180,7 @@ class SharedProfileViewModel internal constructor(
         return try {
             val success = manageProfileUseCase.signOut().getOrThrow()
             if (success) {
-                _uiState.update { it.copy(user = null, isLoggedIn = false, authError = null, authStatus = "Signed Out") }
+                _uiState.update { it.copy(user = null, isLoggedIn = false, authStatus = "Signed Out") }
             } else {
                 _uiState.update { it.copy(authStatus = "Sign Out Failed") }
                 setError(
@@ -337,45 +332,6 @@ class SharedProfileViewModel internal constructor(
      */
     fun getPasswordStrength(password: String): Int = AuthInputValidator.passwordStrength(password)
 
-    /**
-     * Get display name for UI.
-     */
-    fun getDisplayName(): String {
-        return _uiState.value.user?.name?.takeIf { it.isNotBlank() } ?: "User"
-    }
-
-    /**
-     * Get user initials for avatar.
-     */
-    fun getUserInitials(): String {
-        val name = _uiState.value.user?.name ?: return "U"
-        val parts = name.trim().split(" ")
-        return when {
-            parts.size >= 2 -> "${parts[0].firstOrNull()?.uppercase()}${parts[1].firstOrNull()?.uppercase()}"
-            parts.isNotEmpty() -> parts[0].take(2).uppercase()
-            else -> "U"
-        }
-    }
-    
-    /**
-     * Check if user has complete profile.
-     */
-    fun hasCompleteProfile(): Boolean {
-        val user = _uiState.value.user ?: return false
-        return user.name.isNotBlank() && user.email.isNotBlank()
-    }
-    
-    /**
-     * Get user email.
-     */
-    fun getUserEmail(): String {
-        return _uiState.value.user?.email ?: ""
-    }
-
-    fun isEmailVerified(): Boolean {
-        return _uiState.value.user?.isEmailVerified ?: false
-    }
-    
     /**
      * Refresh profile data.
      */

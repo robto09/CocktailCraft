@@ -11,7 +11,6 @@ data class ProfileUiState(
     val isLoggedIn: Boolean = false,
     val authStatus: String = "Unknown",
     val isAuthenticating: Boolean = false,
-    val authError: String? = null,
     val preferences: UserPreferences = UserPreferences(),
     val isLoading: Boolean = false
 )
