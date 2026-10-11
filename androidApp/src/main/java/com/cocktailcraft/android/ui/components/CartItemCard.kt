@@ -45,7 +45,7 @@ import java.util.Locale
  * @param showDeleteButton Whether to show the delete button (default: true)
  * @param showQuantityControls Whether to show the quantity controls (default: true)
  * @param cardElevation Elevation for the card (default: 1.dp)
- * @param backgroundColor Background color for the card (default: Color.White)
+ * @param backgroundColor Background color for the card (default: theme surface)
  * @param cornerRadius Corner radius for the card (default: 12.dp)
  * @param imageSize Size of the product image (default: 80.dp)
  * @param maxLines Maximum lines for the product name (default: 1)
@@ -63,7 +63,7 @@ fun CartItemCard(
     showDeleteButton: Boolean = true,
     showQuantityControls: Boolean = true,
     cardElevation: Dp = 1.dp,
-    backgroundColor: Color = Color.White,
+    backgroundColor: Color = MaterialTheme.colorScheme.surface,
     cornerRadius: Dp = 12.dp,
     imageSize: Dp = 80.dp,
     maxLines: Int = 1,
