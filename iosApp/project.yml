@@ -3,7 +3,15 @@ options:
   bundleIdPrefix: com.cocktailcraft
   deploymentTarget:
     iOS: "17.0"
-  
+
+# Swift packages. Test-only for now (the shared framework and app pods still
+# come from CocoaPods). Exact resolution is pinned in the workspace's
+# Package.resolved.
+packages:
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    from: "1.19.6"
+
 targets:
   CocktailCraft:
     type: application
@@ -102,9 +110,14 @@ targets:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - CocktailCraftTests
+      - path: CocktailCraftTests
+        # Snapshot reference images are read from the source tree at test
+        # time, not from the bundle
+        excludes:
+          - "**/__Snapshots__"
     dependencies:
       - target: CocktailCraft
+      - package: SnapshotTesting
     settings:
       TEST_HOST: "$(BUILT_PRODUCTS_DIR)/CocktailCraft.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CocktailCraft"
       BUNDLE_LOADER: "$(TEST_HOST)"
@@ -132,6 +145,9 @@ schemes:
       config: Debug
     test:
       config: Debug
+      # Pinned so snapshot tests (prices, copy) don't follow the host locale
+      language: en
+      region: US
       targets:
         - CocktailCraftTests
         - CocktailCraftUITests
