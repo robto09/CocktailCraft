@@ -285,11 +285,9 @@ The application includes comprehensive test coverage:
    - Click Run
 
 5. **Run on iOS** (macOS only):
-   - Build the shared framework: `./gradlew :shared:podPublishXCFramework`
    - Navigate to `iosApp` directory: `cd iosApp`
    - Generate the Xcode project from the spec: `xcodegen generate` (`brew install xcodegen`)
-   - Install CocoaPods dependencies: `pod install`
-   - Open `CocktailCraft.xcworkspace` in Xcode
+   - Open `CocktailCraft.xcodeproj` in Xcode — no CocoaPods: Swift packages resolve automatically, and the shared Kotlin framework is built by the app's "Compile Kotlin Framework" build phase
    - Select a simulator and run the app
    - See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) for detailed setup
 
@@ -345,8 +343,8 @@ Run them with:
 ```bash
 ./gradlew :shared:testAndroidHostTest       # Shared module tests
 ./gradlew :androidApp:testDebugUnitTest     # Android unit tests
-# iOS (from iosApp/, after pod install / xcodegen generate):
-xcodebuild test -workspace CocktailCraft.xcworkspace -scheme CocktailCraft \
+# iOS (from iosApp/, after xcodegen generate):
+xcodebuild test -project CocktailCraft.xcodeproj -scheme CocktailCraft \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 ```
 

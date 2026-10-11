@@ -51,8 +51,8 @@ This document summarizes the testing setup for the CocktailCraft Kotlin Multipla
 # Android instrumented/UI tests (requires emulator or device)
 ./gradlew :androidApp:connectedDebugAndroidTest
 
-# iOS (from iosApp/, after pod install / xcodegen generate)
-xcodebuild test -workspace CocktailCraft.xcworkspace -scheme CocktailCraft \
+# iOS (from iosApp/, after xcodegen generate)
+xcodebuild test -project CocktailCraft.xcodeproj -scheme CocktailCraft \
   -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
