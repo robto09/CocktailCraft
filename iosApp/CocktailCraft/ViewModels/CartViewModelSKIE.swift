@@ -4,34 +4,11 @@ import shared
 /**
  * iOS ViewModel wrapper for SharedCartViewModel using pure SKIE integration.
  * State/error mirroring and observation-task lifecycle live in
- * SharedViewModelWrapper.
+ * SharedViewModelWrapper; views read `state.<field>` — including the
+ * derived `state.deliveryFee` / `state.finalTotal`, which come from the
+ * shared DeliveryPolicy (never hardcode delivery amounts on the Swift side).
  */
 final class CartViewModelSKIE: SharedViewModelWrapper<CartUiState> {
-
-    // Computed properties
-    var isEmpty: Bool {
-        state.cartItems.isEmpty
-    }
-
-    var hasItems: Bool {
-        !state.cartItems.isEmpty
-    }
-
-    var estimatedDeliveryTime: String {
-        sharedViewModel.getEstimatedDeliveryTime()
-    }
-
-    var isFreeDelivery: Bool {
-        sharedViewModel.isFreeDelivery()
-    }
-
-    var deliveryFee: Double {
-        sharedViewModel.getDeliveryFee()
-    }
-
-    var finalTotal: Double {
-        sharedViewModel.getFinalTotal()
-    }
 
     // Shared ViewModel instance
     private let sharedViewModel: SharedCartViewModel
@@ -65,51 +42,9 @@ final class CartViewModelSKIE: SharedViewModelWrapper<CartUiState> {
         await run { try await sharedViewModel.removeFromCart(cocktailId: cocktailId) }
     }
 
-    func updateQuantity(_ cocktailId: String, quantity: Int) async {
-        await run { try await sharedViewModel.updateQuantity(cocktailId: cocktailId, quantity: Int32(quantity)) }
-    }
-
-    func clearCart() async {
-        await run { try await sharedViewModel.clearCart() }
-    }
-
     // MARK: - Synchronous Methods
-
-    func isInCart(_ cocktailId: String) -> Bool {
-        return sharedViewModel.isInCart(cocktailId: cocktailId)
-    }
-
-    func getQuantity(_ cocktailId: String) -> Int {
-        return Int(sharedViewModel.getQuantity(cocktailId: cocktailId))
-    }
-
-    func getCartItem(_ cocktailId: String) -> CocktailCartItem? {
-        return sharedViewModel.getCartItem(cocktailId: cocktailId)
-    }
 
     func clearError() {
         sharedViewModel.clearError()
     }
-
-    func refresh() {
-        sharedViewModel.refresh()
-    }
-
-    // MARK: - Helper Methods for SwiftUI
-
-    func formatPrice(_ price: Double) -> String {
-        return price.asPrice
-    }
-
-    func getDeliveryText() -> String {
-        if isFreeDelivery {
-            return "FREE Delivery"
-        } else {
-            return formatPrice(deliveryFee) + " Delivery"
-        }
-    }
-
-    // Free-delivery thresholds live in the shared DeliveryPolicy — any future
-    // "spend X more for free delivery" nudge must delegate there, not
-    // hardcode amounts on the Swift side.
 }

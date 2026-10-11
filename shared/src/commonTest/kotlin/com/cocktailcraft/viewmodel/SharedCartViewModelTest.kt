@@ -35,7 +35,7 @@ class SharedCartViewModelTest : MainDispatcherTest() {
 
         assertEquals(2, vm.uiState.value.itemCount)
         assertEquals(24.0, vm.uiState.value.totalPrice)
-        assertTrue(vm.hasItems)
+        assertTrue(vm.uiState.value.cartItems.isNotEmpty())
         assertFalse(vm.uiState.value.isLoading)
     }
 
@@ -49,8 +49,7 @@ class SharedCartViewModelTest : MainDispatcherTest() {
 
         assertEquals(3, vm.uiState.value.itemCount)
         assertEquals(24.0, vm.uiState.value.totalPrice)
-        assertTrue(vm.isInCart("7"))
-        assertEquals(3, vm.getQuantity("7"))
+        assertEquals(3, vm.quantityOf("7"))
     }
 
     @Test
@@ -100,7 +99,7 @@ class SharedCartViewModelTest : MainDispatcherTest() {
         repository.failNextMutation = true
         vm.removeFromCart("1")
 
-        assertTrue(vm.isInCart("1"), "failed removal must be reverted")
+        assertEquals(1, vm.quantityOf("1"), "failed removal must be reverted")
         assertNotNull(vm.error.value)
     }
 
@@ -113,8 +112,8 @@ class SharedCartViewModelTest : MainDispatcherTest() {
 
         vm.decrementQuantity("1")
 
-        assertFalse(vm.isInCart("1"))
-        assertTrue(vm.isEmpty)
+        assertEquals(0, vm.quantityOf("1"))
+        assertTrue(vm.uiState.value.cartItems.isEmpty())
     }
 
     @Test
@@ -126,7 +125,7 @@ class SharedCartViewModelTest : MainDispatcherTest() {
 
         vm.clearCart()
 
-        assertTrue(vm.isEmpty)
+        assertTrue(vm.uiState.value.cartItems.isEmpty())
         assertEquals(0.0, vm.uiState.value.totalPrice)
         assertEquals(emptyList(), (repository.getCartItems() as Result.Success).data)
     }
@@ -138,13 +137,22 @@ class SharedCartViewModelTest : MainDispatcherTest() {
         val vm = viewModel(repository)
         advanceUntilIdle()
 
-        assertFalse(vm.isFreeDelivery())
-        assertEquals(5.99, vm.getDeliveryFee())
-        assertEquals(15.99, vm.getFinalTotal())
+        vm.uiState.test {
+            // Delivery pricing is derived on the emitted state, so every
+            // emission carries fee/total consistent with its subtotal.
+            val belowThreshold = awaitItem()
+            assertEquals(5.99, belowThreshold.deliveryFee)
+            assertEquals(15.99, belowThreshold.finalTotal)
 
-        vm.updateQuantity("1", 5) // 50.0 total → free delivery threshold
-        assertTrue(vm.isFreeDelivery())
-        assertEquals(0.0, vm.getDeliveryFee())
-        assertEquals(50.0, vm.getFinalTotal())
+            vm.updateQuantity("1", 5) // 50.0 total → free delivery threshold
+            val free = awaitItem()
+            assertEquals(0.0, free.deliveryFee)
+            assertEquals(50.0, free.finalTotal)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
+
+    /** Quantity of [cocktailId] in the current cart state (0 when absent). */
+    private fun SharedCartViewModel.quantityOf(cocktailId: String): Int =
+        uiState.value.cartItems.find { it.cocktail.id == cocktailId }?.quantity ?: 0
 }
