@@ -12,6 +12,10 @@ import kotlinx.coroutines.launch
  * Shared ViewModel for Favorites functionality.
  * Designed for full SKIE interoperability with iOS.
  *
+ * [uiState] is the only public state surface: platforms render the
+ * favorites list from it (and derive id sets for membership checks) rather
+ * than calling snapshot getters on the ViewModel.
+ *
  * Key SKIE features:
  * - StateFlows are automatically converted to Swift AsyncSequence
  * - Suspend functions become Swift async functions
@@ -24,11 +28,6 @@ class SharedFavoritesViewModel internal constructor(
     // Consolidated UI State
     private val _uiState = MutableStateFlow(FavoritesUiState())
     val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
-
-    val isEmpty: Boolean
-        get() = _uiState.value.favorites.isEmpty()
-    val hasItems: Boolean
-        get() = _uiState.value.favorites.isNotEmpty()
 
     init {
         // Reactive favorites (SH-4): the repository publishes after every
@@ -82,35 +81,7 @@ class SharedFavoritesViewModel internal constructor(
         }
     }
 
-    // MARK: - Synchronous Helper Methods
-
-    fun isFavorite(cocktailId: String): Boolean =
-        _uiState.value.favorites.any { it.id == cocktailId }
-
-    fun getFavoritesByCategory(category: String): List<Cocktail> =
-        _uiState.value.favorites.filter { it.category == category }
-
-    fun getFavoriteCategories(): List<String> =
-        _uiState.value.favorites.mapNotNull { it.category }.distinct().sorted()
-
-    fun searchFavorites(query: String): List<Cocktail> {
-        val favs = _uiState.value.favorites
-        if (query.isBlank()) return favs
-        return favs.filter { cocktail ->
-            cocktail.name.contains(query, ignoreCase = true) ||
-            cocktail.ingredients.any { it.name.contains(query, ignoreCase = true) }
-        }
-    }
-
-    fun getFavoritesSortedByName(): List<Cocktail> =
-        _uiState.value.favorites.sortedBy { it.name }
-
-    fun getFavoritesSortedByDate(): List<Cocktail> =
-        _uiState.value.favorites.sortedByDescending { it.dateAdded }
-
-    fun getFavoritesSortedByRating(): List<Cocktail> =
-        _uiState.value.favorites.sortedByDescending { it.rating }
-
+    /** Fire-and-forget [loadFavorites] for callers without a coroutine scope. */
     fun refresh() {
         viewModelScope.launch { loadFavorites() }
     }

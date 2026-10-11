@@ -31,7 +31,6 @@ class SharedFavoritesViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         assertEquals(2, vm.uiState.value.favoriteCount)
-        assertTrue(vm.hasItems)
         assertTrue(vm.isFavorite("1"))
     }
 
@@ -61,7 +60,7 @@ class SharedFavoritesViewModelTest : MainDispatcherTest() {
         advanceUntilIdle() // state arrives via the observed favorites flow (SH-4)
 
         assertFalse(vm.isFavorite("42"))
-        assertTrue(vm.isEmpty)
+        assertTrue(vm.uiState.value.favorites.isEmpty())
         assertTrue(repository.stored.isEmpty())
     }
 
@@ -76,34 +75,11 @@ class SharedFavoritesViewModelTest : MainDispatcherTest() {
         vm.clearAllFavorites()
         advanceUntilIdle() // state arrives via the observed favorites flow (SH-4)
 
-        assertTrue(vm.isEmpty)
+        assertTrue(vm.uiState.value.favorites.isEmpty())
         assertEquals(0, vm.uiState.value.favoriteCount)
         assertTrue(repository.stored.isEmpty())
     }
 
-    @Test
-    fun searchFavoritesMatchesNameAndIngredient() = runTest {
-        val repository = FakeFavoritesRepository()
-        repository.addToFavorites(testCocktail("1", name = "Margarita"))
-        repository.addToFavorites(testCocktail("2", name = "Mojito"))
-        val vm = viewModel(repository)
-        advanceUntilIdle()
-
-        assertEquals(listOf("Margarita"), vm.searchFavorites("marg").map { it.name })
-        // testCocktail fixtures all contain a "Gin" ingredient
-        assertEquals(2, vm.searchFavorites("gin").size)
-        assertEquals(2, vm.searchFavorites("").size)
-    }
-
-    @Test
-    fun sortHelpersOrderFavorites() = runTest {
-        val repository = FakeFavoritesRepository()
-        repository.addToFavorites(testCocktail("1", name = "Zombie", rating = 3.0f))
-        repository.addToFavorites(testCocktail("2", name = "Americano", rating = 5.0f))
-        val vm = viewModel(repository)
-        advanceUntilIdle()
-
-        assertEquals(listOf("Americano", "Zombie"), vm.getFavoritesSortedByName().map { it.name })
-        assertEquals(listOf("Americano", "Zombie"), vm.getFavoritesSortedByRating().map { it.name })
-    }
+    private fun SharedFavoritesViewModel.isFavorite(cocktailId: String): Boolean =
+        uiState.value.favorites.any { it.id == cocktailId }
 }
