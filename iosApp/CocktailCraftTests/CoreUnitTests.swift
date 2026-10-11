@@ -39,21 +39,18 @@ final class DeliveryPolicyBridgeTests: XCTestCase {
     }
 }
 
-/// Swift-side presentation mapping on the order wrapper (Koin-backed).
-@MainActor
-final class OrderStatusMappingTests: TestSetup {
+/// Derived values on the shared UiState classes (the single state surface)
+/// bridge as plain Swift properties, so views can read them off `state`.
+final class UiStateDerivedValueBridgeTests: XCTestCase {
 
-    func testStatusColors() {
-        let vm = OrderViewModelSKIE()
-        XCTAssertEqual(vm.getOrderStatusColor("delivered"), .green)
-        XCTAssertEqual(vm.getOrderStatusColor("cancelled"), .red)
-        XCTAssertEqual(vm.getOrderStatusColor("unknown-status"), .gray)
-    }
+    func testCartStateDerivesDeliveryPricing() {
+        let belowThreshold = CartUiState(cartItems: [], totalPrice: 10.0, itemCount: 1, isLoading: false)
+        XCTAssertEqual(belowThreshold.deliveryFee, 5.99, accuracy: 0.001)
+        XCTAssertEqual(belowThreshold.finalTotal, 15.99, accuracy: 0.001)
 
-    func testStatusIcons() {
-        let vm = OrderViewModelSKIE()
-        XCTAssertEqual(vm.getOrderStatusIcon("shipped"), "shippingbox")
-        XCTAssertEqual(vm.getOrderStatusIcon("pending"), "clock")
+        let free = CartUiState(cartItems: [], totalPrice: 50.0, itemCount: 5, isLoading: false)
+        XCTAssertEqual(free.deliveryFee, 0.0, accuracy: 0.001)
+        XCTAssertEqual(free.finalTotal, 50.0, accuracy: 0.001)
     }
 }
 

@@ -3,7 +3,6 @@ package com.cocktailcraft.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.config.DeliveryPolicy
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrThrow
@@ -13,7 +12,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Shared ViewModel for Cart functionality.
- * Uses consolidated [CartUiState] for atomic state updates.
+ * Uses consolidated [CartUiState] for atomic state updates; [uiState] is the
+ * only public state surface (delivery pricing is derived on the state).
  */
 class SharedCartViewModel internal constructor(
     private val manageCartUseCase: ManageCartUseCase
@@ -22,13 +22,6 @@ class SharedCartViewModel internal constructor(
     // Consolidated UI State
     private val _uiState = MutableStateFlow(CartUiState())
     val uiState: StateFlow<CartUiState> = _uiState.asStateFlow()
-
-    // Computed properties
-    val isEmpty: Boolean
-        get() = _uiState.value.cartItems.isEmpty()
-
-    val hasItems: Boolean
-        get() = _uiState.value.cartItems.isNotEmpty()
 
     init {
         // The repository exposes a hot StateFlow seeded from persistence —
@@ -135,29 +128,6 @@ class SharedCartViewModel internal constructor(
         }
     }
 
-    // MARK: - Synchronous Helper Methods
-
-    fun isInCart(cocktailId: String): Boolean {
-        return _uiState.value.cartItems.any { it.cocktail.id == cocktailId }
-    }
-
-    fun getQuantity(cocktailId: String): Int {
-        return _uiState.value.cartItems.find { it.cocktail.id == cocktailId }?.quantity ?: 0
-    }
-
-    fun getCartItem(cocktailId: String): CocktailCartItem? {
-        return _uiState.value.cartItems.find { it.cocktail.id == cocktailId }
-    }
-
-    fun getEstimatedDeliveryTime(): String =
-        DeliveryPolicy.estimatedDeliveryTime(_uiState.value.itemCount)
-
-    fun isFreeDelivery(): Boolean = DeliveryPolicy.isFreeDelivery(_uiState.value.totalPrice)
-
-    fun getDeliveryFee(): Double = DeliveryPolicy.deliveryFee(_uiState.value.totalPrice)
-
-    fun getFinalTotal(): Double = DeliveryPolicy.finalTotal(_uiState.value.totalPrice)
-    
     /**
      * Explicitly resync state with the repository (normally the collected
      * flow keeps it current on its own).

@@ -12,7 +12,8 @@ import kotlinx.coroutines.launch
 /**
  * Shared ViewModel for Review functionality.
  * Collects the persisted review store reactively, so submitted reviews
- * survive restarts and every state change flows through [uiState].
+ * survive restarts and every state change flows through [uiState] — the only
+ * public state surface (per-cocktail counts/averages are derived into it).
  */
 class SharedReviewViewModel internal constructor(
     private val manageReviewsUseCase: ManageReviewsUseCase
@@ -21,11 +22,6 @@ class SharedReviewViewModel internal constructor(
     // Consolidated UI State
     private val _uiState = MutableStateFlow(ReviewUiState())
     val uiState: StateFlow<ReviewUiState> = _uiState.asStateFlow()
-
-    val hasReviews: Boolean
-        get() = _uiState.value.currentCocktailReviews.isNotEmpty()
-    val isEmpty: Boolean
-        get() = _uiState.value.currentCocktailReviews.isEmpty()
 
     init {
         viewModelScope.launch {
@@ -123,23 +119,6 @@ class SharedReviewViewModel internal constructor(
     // MARK: - Synchronous Helper Methods
 
     /**
-     * Get average rating for a cocktail.
-     */
-    fun getAverageRating(cocktailId: String): Float {
-        val cocktailReviews = _uiState.value.reviews[cocktailId] ?: return 0.0f
-        return manageReviewsUseCase.computeAverageRating(cocktailReviews)
-    }
-
-    /**
-     * Get review count for a cocktail.
-     */
-    fun getReviewCount(cocktailId: String): Int =
-        _uiState.value.reviews[cocktailId]?.size ?: 0
-
-    fun getReviewsForCocktail(cocktailId: String): List<Review> =
-        _uiState.value.reviews[cocktailId]?.sortedByDescending { it.date } ?: emptyList()
-
-    /**
      * Validate review input.
      */
     fun validateReview(rating: Float, comment: String): Boolean {
@@ -153,13 +132,6 @@ class SharedReviewViewModel internal constructor(
             return false
         }
         return true
-    }
-
-    /**
-     * Get rating distribution for a cocktail.
-     */
-    fun getRatingDistribution(cocktailId: String): Map<Int, Int> {
-        return manageReviewsUseCase.getRatingDistribution(getReviewsForCocktail(cocktailId))
     }
 
     /** Re-derives the per-cocktail slices from the grouped store. */

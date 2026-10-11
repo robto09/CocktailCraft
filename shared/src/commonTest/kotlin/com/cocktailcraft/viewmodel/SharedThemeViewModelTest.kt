@@ -41,8 +41,8 @@ class SharedThemeViewModelTest : MainDispatcherTest() {
         vm.setThemeMode(ThemeMode.DARK)
         vm.setAccentColor("purple")
         vm.setFontSize("large")
-        vm.toggleHighContrast()
-        vm.toggleReducedMotion()
+        vm.setHighContrast(true)
+        vm.setReducedMotion(true)
 
         // Simulate an app restart: new ViewModel over the same storage.
         val restarted = harness.viewModel()
@@ -66,8 +66,8 @@ class SharedThemeViewModelTest : MainDispatcherTest() {
 
         vm.setAccentColor("green")
         vm.setFontSize("xlarge")
-        vm.toggleHighContrast()
-        vm.toggleReducedMotion()
+        vm.setHighContrast(true)
+        vm.setReducedMotion(true)
 
         val restarted = harness.viewModel()
         advanceUntilIdle()
@@ -77,6 +77,42 @@ class SharedThemeViewModelTest : MainDispatcherTest() {
         assertEquals("xlarge", state.fontSize)
         assertTrue(state.isHighContrast)
         assertTrue(state.isReducedMotion)
+    }
+
+    @Test
+    fun accessibilitySettersAreValueBasedAndIdempotent() = runTest {
+        // A re-fired UI callback must re-assert the same value, never flip it.
+        val harness = Harness(StandardTestDispatcher(testScheduler))
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        vm.setHighContrast(true)
+        vm.setHighContrast(true)
+        vm.setReducedMotion(true)
+        vm.setReducedMotion(true)
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.isHighContrast)
+        assertTrue(vm.uiState.value.isReducedMotion)
+
+        vm.setHighContrast(false)
+        vm.setReducedMotion(false)
+        advanceUntilIdle()
+        assertFalse(vm.uiState.value.isHighContrast)
+        assertFalse(vm.uiState.value.isReducedMotion)
+    }
+
+    @Test
+    fun themeModeDisplayNameIsDerivedFromThemeMode() = runTest {
+        val harness = Harness(StandardTestDispatcher(testScheduler))
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        vm.setThemeMode(ThemeMode.DARK)
+        assertEquals("Dark", vm.uiState.value.themeModeDisplayName)
+        vm.setThemeMode(ThemeMode.LIGHT)
+        assertEquals("Light", vm.uiState.value.themeModeDisplayName)
+        vm.setThemeMode(ThemeMode.SYSTEM)
+        assertEquals("System", vm.uiState.value.themeModeDisplayName)
     }
 
     @Test

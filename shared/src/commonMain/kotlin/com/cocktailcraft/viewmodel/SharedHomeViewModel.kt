@@ -19,15 +19,15 @@ import com.cocktailcraft.viewmodel.state.HomeUiState
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlin.math.absoluteValue
 
 /**
  * Shared ViewModel for Home screen functionality.
  * Designed for full SKIE interoperability with iOS.
  *
- * Uses consolidated [HomeUiState] for atomic state updates.
- * iOS SKIE wrappers observe the single [uiState] flow.
- * Individual StateFlow properties are derived for backward compatibility with Android.
+ * Uses consolidated [HomeUiState] for atomic state updates. [uiState] is the
+ * only public state surface — both the iOS SKIE wrapper and the Android
+ * screen render from it (favorites included); there are no per-field flows
+ * or snapshot getters.
  */
 @OptIn(FlowPreview::class)
 class SharedHomeViewModel internal constructor(
@@ -376,44 +376,9 @@ class SharedHomeViewModel internal constructor(
         }
     }
     
-    /**
-     * Get cocktails by category with limit. The selection is deterministic —
-     * ordered by a stable per-id key instead of shuffled() — so repeated calls
-     * over the same data return the same list: no gratuitous recomposition
-     * diffing on Android, no unstable results on iOS (SH-10). The id-hash key
-     * still gives a varied (non-alphabetical) pick, mirroring the
-     * deterministic demo-value derivation in CocktailRemoteDataSource.
-     */
-    fun getCocktailsByCategory(category: String, limit: Int = 3): List<Cocktail> {
-        val currentCocktails = _uiState.value.cocktails
-        val fromCurrentList = currentCocktails
-            .filter { it.category == category && !it.imageUrl.isNullOrBlank() }
-            .sortedBy { stableSelectionKey(it.id) }
-            .take(limit)
-
-        return if (fromCurrentList.size >= limit) {
-            fromCurrentList
-        } else {
-            currentCocktails
-                .filter { it.category != null && !it.imageUrl.isNullOrBlank() }
-                .sortedBy { stableSelectionKey(it.id) }
-                .take(limit)
-        }
-    }
-
-    private fun stableSelectionKey(id: String): Int = id.hashCode().absoluteValue
-
     /** Canonical curated category list — single source of truth for category chips on both platforms. */
     val curatedCategories: List<String>
         get() = CocktailCategories.CURATED
-
-    fun getCategories(): List<String> {
-        return _uiState.value.cocktails
-            .mapNotNull { it.category }
-            .distinct()
-            .filterNot { it.isBlank() }
-            .sorted()
-    }
 
     /** Clear only the query text; any active advanced-search filters are kept. */
     fun clearSearch() {
@@ -440,10 +405,6 @@ class SharedHomeViewModel internal constructor(
         searchQueryFlow.value = null // cancel any pending debounced search
         _uiState.update { it.copy(searchQuery = "", searchFilters = SearchFilters()) }
         viewModelScope.launch { loadCocktails() }
-    }
-
-    fun isFavorite(cocktailId: String): Boolean {
-        return _uiState.value.favorites.any { it.id == cocktailId }
     }
 
     fun retry() {

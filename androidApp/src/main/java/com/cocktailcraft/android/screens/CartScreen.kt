@@ -44,6 +44,9 @@ import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.android.navigation.NavigationManager
+import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.util.ErrorHandler
+import com.cocktailcraft.viewmodel.state.CartUiState
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
@@ -57,15 +60,65 @@ fun CartScreen(
     favoritesViewModel: SharedFavoritesViewModel
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val isLoading = state.isLoading
-    val cartItems = state.cartItems
-    val totalPrice = state.totalPrice
     val error by viewModel.error.collectAsStateWithLifecycle()
     val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
     val favorites = favoritesState.favorites
     // O(1) membership per row instead of favorites.any {} per visible item (AN-3)
     val favoriteIds = remember(favorites) { favorites.toFavoriteIdSet() }
     val scope = rememberCoroutineScope()
+
+    CartContent(
+        state = state,
+        error = error,
+        favoriteIds = favoriteIds,
+        onStartShopping = onStartShopping,
+        onIncreaseQuantity = { item -> scope.launch { viewModel.updateQuantity(item.cocktail.id, item.quantity + 1) } },
+        onDecreaseQuantity = { item ->
+            scope.launch {
+                if (item.quantity > 1) {
+                    viewModel.updateQuantity(item.cocktail.id, item.quantity - 1)
+                } else {
+                    viewModel.removeFromCart(item.cocktail.id)
+                }
+            }
+        },
+        onRemove = { item -> scope.launch { viewModel.removeFromCart(item.cocktail.id) } },
+        onToggleFavorite = { item -> scope.launch { favoritesViewModel.toggleFavorite(item.cocktail) } },
+        onConfirmOrder = {
+            // Navigate only after the order is persisted — this scope dies with
+            // the screen, so leaving early would cancel the work. placeOrder
+            // empties the cart in the same transaction (and leaves it alone if
+            // the order fails); a failure surfaces on the order list.
+            scope.launch {
+                orderViewModel.placeOrder(
+                    cartItems = state.cartItems,
+                    totalPrice = state.totalPrice + 5.99 // Include delivery fee
+                )
+                navigationManager.navigateToOrderList()
+            }
+        }
+    )
+}
+
+/**
+ * Stateless cart content: renders [state] and reports every intent upward,
+ * so it can be previewed/screenshot-tested without a ViewModel.
+ */
+@Composable
+internal fun CartContent(
+    state: CartUiState,
+    error: ErrorHandler.UserFriendlyError?,
+    favoriteIds: Set<String>,
+    onStartShopping: () -> Unit,
+    onIncreaseQuantity: (CocktailCartItem) -> Unit,
+    onDecreaseQuantity: (CocktailCartItem) -> Unit,
+    onRemove: (CocktailCartItem) -> Unit,
+    onToggleFavorite: (CocktailCartItem) -> Unit,
+    onConfirmOrder: () -> Unit
+) {
+    val isLoading = state.isLoading
+    val cartItems = state.cartItems
+    val totalPrice = state.totalPrice
     val hapticHandler = rememberHapticHandler()
 
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
@@ -85,7 +138,7 @@ fun CartScreen(
         if (!isLoading && error != null) {
             EmptyStateComponent(
                 title = stringResource(R.string.error),
-                message = error?.toString() ?: stringResource(R.string.cart_unknown_error),
+                message = error.toString(),
                 actionButtonText = stringResource(R.string.cart_try_again),
                 onActionButtonClick = { /* Add retry logic here */ }
             )
@@ -118,19 +171,11 @@ fun CartScreen(
                 itemsIndexed(cartItems) { _, item ->
                     CartItemCard(
                         item = item,
-                        onIncreaseQuantity = { scope.launch { viewModel.updateQuantity(item.cocktail.id, item.quantity + 1) } },
-                        onDecreaseQuantity = {
-                            scope.launch {
-                                if (item.quantity > 1) {
-                                    viewModel.updateQuantity(item.cocktail.id, item.quantity - 1)
-                                } else {
-                                    viewModel.removeFromCart(item.cocktail.id)
-                                }
-                            }
-                        },
-                        onRemove = { scope.launch { viewModel.removeFromCart(item.cocktail.id) } },
+                        onIncreaseQuantity = { onIncreaseQuantity(item) },
+                        onDecreaseQuantity = { onDecreaseQuantity(item) },
+                        onRemove = { onRemove(item) },
                         isFavorite = item.cocktail.id in favoriteIds,
-                        onToggleFavorite = { scope.launch { favoritesViewModel.toggleFavorite(item.cocktail) } }
+                        onToggleFavorite = { onToggleFavorite(item) }
                     )
                 }
             }
@@ -168,17 +213,7 @@ fun CartScreen(
         dismissButtonText = stringResource(R.string.cancel),
         onConfirm = {
             showPlaceOrderDialog = false
-            // Navigate only after the order is persisted — this scope dies with
-            // the screen, so leaving early would cancel the work. placeOrder
-            // empties the cart in the same transaction (and leaves it alone if
-            // the order fails); a failure surfaces on the order list.
-            scope.launch {
-                orderViewModel.placeOrder(
-                    cartItems = cartItems,
-                    totalPrice = totalPrice + 5.99 // Include delivery fee
-                )
-                navigationManager.navigateToOrderList()
-            }
+            onConfirmOrder()
         },
         onDismiss = { showPlaceOrderDialog = false }
     )

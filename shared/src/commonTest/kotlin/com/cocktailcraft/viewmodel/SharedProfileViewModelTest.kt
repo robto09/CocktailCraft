@@ -68,8 +68,6 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
         assertFalse(vm.uiState.value.isLoggedIn)
         assertEquals("Not Authenticated", vm.uiState.value.authStatus)
         assertNull(vm.uiState.value.user)
-        assertTrue(vm.isGuest)
-        assertEquals("Guest", vm.userName)
     }
 
     @Test
@@ -84,8 +82,6 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
         assertTrue(vm.uiState.value.isLoggedIn)
         assertEquals("Authenticated", vm.uiState.value.authStatus)
         assertEquals("Ada Lovelace", vm.uiState.value.user?.name)
-        assertTrue(vm.hasUser)
-        assertFalse(vm.isGuest)
     }
 
     @Test
@@ -101,8 +97,7 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
         assertTrue(vm.uiState.value.isLoggedIn)
         assertEquals("Authenticated", vm.uiState.value.authStatus)
         assertEquals("Ada Lovelace", vm.uiState.value.user?.name)
-        assertEquals("ada@example.com", vm.getUserEmail())
-        assertEquals("AL", vm.getUserInitials())
+        assertEquals("ada@example.com", vm.uiState.value.user?.email)
         assertFalse(vm.uiState.value.isAuthenticating)
         assertFalse(vm.uiState.value.isLoading)
         assertNull(vm.error.value)
@@ -176,7 +171,7 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
         assertEquals("Authenticated", vm.uiState.value.authStatus)
         assertTrue(vm.uiState.value.isLoggedIn, "a successful sign-up must refresh auth status")
         assertEquals("Ada Lovelace", vm.uiState.value.user?.name)
-        assertTrue(vm.hasCompleteProfile())
+        assertEquals("ada@example.com", vm.uiState.value.user?.email)
         assertFalse(vm.uiState.value.isAuthenticating)
         assertNull(vm.error.value)
         // Credentials really persisted: a fresh sign-in against the repository succeeds
@@ -238,8 +233,6 @@ class SharedProfileViewModelTest : MainDispatcherTest() {
         assertNull(vm.uiState.value.user)
         assertFalse(vm.uiState.value.isLoggedIn)
         assertEquals("Signed Out", vm.uiState.value.authStatus)
-        assertTrue(vm.isGuest)
-        assertEquals("Guest", vm.userName)
     }
 
     @Test

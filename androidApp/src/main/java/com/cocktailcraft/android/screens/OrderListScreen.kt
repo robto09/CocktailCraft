@@ -30,7 +30,9 @@ import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.OrderCard
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
+import com.cocktailcraft.viewmodel.state.OrderUiState
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,7 +42,6 @@ fun OrderListScreen(
     navigationManager: NavigationManager
 ) {
     val state by orderViewModel.uiState.collectAsStateWithLifecycle()
-    val isLoading = state.isLoading
     val error by orderViewModel.error.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
@@ -48,6 +49,28 @@ fun OrderListScreen(
     LaunchedEffect(Unit) {
         orderViewModel.loadOrders()
     }
+
+    OrderListContent(
+        state = state,
+        error = error,
+        onReload = { scope.launch { orderViewModel.loadOrders() } },
+        onBrowseCocktails = { navigationManager.navigateToHome() }
+    )
+}
+
+/**
+ * Stateless order-list content: renders [state] and reports every intent
+ * upward, so it can be previewed/screenshot-tested without a ViewModel.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun OrderListContent(
+    state: OrderUiState,
+    error: ErrorHandler.UserFriendlyError?,
+    onReload: () -> Unit,
+    onBrowseCocktails: () -> Unit
+) {
+    val isLoading = state.isLoading
 
     Column(
         modifier = Modifier
@@ -59,16 +82,16 @@ fun OrderListScreen(
         if (!isLoading && error != null) {
             EmptyStateComponent(
                 title = stringResource(R.string.error),
-                message = error?.message ?: stringResource(R.string.order_unknown_error),
+                message = error.message,
                 actionButtonText = stringResource(R.string.cart_try_again),
-                onActionButtonClick = { scope.launch { orderViewModel.loadOrders() } }
+                onActionButtonClick = onReload
             )
         } else if (!isLoading && state.orders.isEmpty()) {
             EmptyStateComponent(
                 title = stringResource(R.string.order_list_empty_title),
                 message = stringResource(R.string.order_list_empty_message),
                 actionButtonText = stringResource(R.string.browse_cocktails),
-                onActionButtonClick = { navigationManager.navigateToHome() },
+                onActionButtonClick = onBrowseCocktails,
                 icon = Icons.AutoMirrored.Filled.List
             )
         } else if (!isLoading) {
@@ -76,7 +99,7 @@ fun OrderListScreen(
             val pullToRefreshState = rememberPullToRefreshState()
             PullToRefreshBox(
                 isRefreshing = isLoading,
-                onRefresh = { scope.launch { orderViewModel.loadOrders() } },
+                onRefresh = onReload,
                 modifier = Modifier.fillMaxSize(),
                 state = pullToRefreshState,
                 indicator = {

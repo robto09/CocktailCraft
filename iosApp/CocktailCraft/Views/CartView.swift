@@ -51,8 +51,8 @@ struct CartView: View {
                         // Order Summary
                         CartSummaryCard(
                             subtotal: cartViewModel.state.totalPrice,
-                            deliveryFee: cartViewModel.deliveryFee,
-                            total: cartViewModel.finalTotal
+                            deliveryFee: cartViewModel.state.deliveryFee,
+                            total: cartViewModel.state.finalTotal
                         )
 
                         // Place Order Button
@@ -74,14 +74,14 @@ struct CartView: View {
         .alert(isPresented: $showCheckoutConfirmation) {
             Alert(
                 title: Text("Confirm Order"),
-                message: Text("Are you sure you want to place this order for \(cartViewModel.finalTotal.asPrice)?"),
+                message: Text("Are you sure you want to place this order for \(cartViewModel.state.finalTotal.asPrice)?"),
                 primaryButton: .default(Text("Confirm")) {
                     Task {
                         // Order and cart state propagate reactively from the
                         // shared flows — no notifications or delays needed.
                         // placeOrder empties the cart in the same transaction
                         // as the order insert, so there is no clearCart here.
-                        let success = await orderViewModel.placeOrder(cartItems: cartViewModel.state.cartItems, totalPrice: cartViewModel.finalTotal)
+                        let success = await orderViewModel.placeOrder(cartItems: cartViewModel.state.cartItems, totalPrice: cartViewModel.state.finalTotal)
                         if success {
                             router.selectedTab = .orders
                         }

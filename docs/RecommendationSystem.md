@@ -49,8 +49,6 @@ We implemented option 3 in its simplest useful form: a single category-based "re
 2. **`SharedCocktailDetailViewModel`**: exposes the result as `relatedCocktails` in the shared `DetailUiState`, consumed identically by both platforms.
 3. **UI Components**: the "You might also like" section — `DetailRecommendationsSection` in the Android `CocktailDetailScreen`, `relatedCocktailsSection` in the iOS `CocktailDetailView`.
 
-The Home screen additionally offers `SharedHomeViewModel.getCocktailsByCategory(category, limit)`, a purely local pick over the already-loaded list using a stable per-id sort key, so repeated calls return the same items (SH-10 determinism).
-
 ### Recommendation Strategy
 
 ```kotlin

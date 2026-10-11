@@ -128,7 +128,6 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         assertEquals(listOf("o2", "o1"), vm.uiState.value.orders.map { it.id })
         assertEquals(2, vm.uiState.value.orderCount)
         assertEquals(40.0, vm.uiState.value.totalSpent)
-        assertTrue(vm.hasOrders)
         assertFalse(vm.uiState.value.isLoading)
     }
 
@@ -199,7 +198,7 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         val error = assertNotNull(vm.error.value)
         assertEquals("Empty Cart", error.title)
         assertEquals(ErrorHandler.ErrorCategory.DATA, error.category)
-        assertTrue(vm.isEmpty)
+        assertTrue(vm.uiState.value.orders.isEmpty())
         assertFalse(vm.uiState.value.isPlacingOrder)
     }
 
@@ -220,7 +219,7 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         assertEquals(ErrorHandler.ErrorCategory.SERVER, error.category)
         assertNull(vm.uiState.value.currentOrder)
         assertFalse(vm.uiState.value.isPlacingOrder)
-        assertTrue(vm.isEmpty)
+        assertTrue(vm.uiState.value.orders.isEmpty())
     }
 
     @Test
@@ -229,13 +228,11 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         repository.seed(testOrder("o1", status = "Pending"))
         val vm = viewModel(repository)
         advanceUntilIdle()
-        assertTrue(vm.canCancelOrder("o1"))
 
         assertTrue(vm.cancelOrder("o1"))
         advanceUntilIdle()
 
         assertEquals("Cancelled", vm.uiState.value.orders.single().status)
-        assertFalse(vm.canCancelOrder("o1"))
     }
 
     @Test
@@ -248,7 +245,7 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         assertTrue(vm.updateOrderStatus("o1", "Delivered"))
         advanceUntilIdle()
 
-        assertEquals(listOf("o1"), vm.getOrdersByStatus("delivered").map { it.id })
+        assertEquals("Delivered", vm.uiState.value.orders.single().status)
         assertFalse(vm.uiState.value.isLoading)
     }
 }

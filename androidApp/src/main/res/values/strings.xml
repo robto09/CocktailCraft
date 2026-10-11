@@ -118,7 +118,6 @@
     <string name="logout_confirm">Are you sure you want to logout?</string>
 
     <!-- Cart & lists -->
-    <string name="cart_unknown_error">An unknown error occurred</string>
     <string name="cart_try_again">Try Again</string>
     <string name="cart_start_shopping">Start Shopping</string>
     <string name="cart_place_order">Place Order</string>
@@ -171,7 +170,6 @@
     <string name="offline_you_are_offline">You\'re offline — showing saved cocktails.</string>
 
     <!-- Orders -->
-    <string name="order_unknown_error">Unknown error</string>
     <string name="order_list_empty_title">No orders yet</string>
     <string name="order_list_empty_message">Your order history will appear here</string>
     <string name="order_list_title">Your Orders</string>

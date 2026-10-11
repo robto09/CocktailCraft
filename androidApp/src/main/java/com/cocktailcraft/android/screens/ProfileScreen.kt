@@ -81,6 +81,9 @@ import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.viewmodel.SharedProfileViewModel
 import com.cocktailcraft.viewmodel.SharedThemeViewModel
+import com.cocktailcraft.util.ErrorHandler
+import com.cocktailcraft.viewmodel.state.ProfileUiState
+import com.cocktailcraft.viewmodel.state.ThemeUiState
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -94,13 +97,67 @@ fun ProfileScreen(
 
     // Get user data from ViewModel
     val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
-    val isLoading = profileState.isLoading
-    val user = profileState.user
-    val isLoggedIn = profileState.isLoggedIn
     val error by profileViewModel.error.collectAsStateWithLifecycle()
 
     // Get theme data from ThemeViewModel
     val themeState by themeViewModel.uiState.collectAsStateWithLifecycle()
+
+    ProfileContent(
+        profileState = profileState,
+        themeState = themeState,
+        error = error,
+        accentOptions = themeViewModel.availableAccentColors,
+        fontSizeOptions = themeViewModel.availableFontSizes,
+        fontSizeLabel = { themeViewModel.getFontSizeDisplayName(it) },
+        onSignIn = { email, password -> scope.launch { profileViewModel.signIn(email, password) } },
+        onSignUp = { name, email, password -> scope.launch { profileViewModel.signUp(name, email, password) } },
+        onConfirmLogout = {
+            // Navigate only after sign-out completes — leaving the
+            // screen would cancel this composition-scoped coroutine.
+            scope.launch {
+                profileViewModel.signOut()
+                navigationManager.navigateToHome()
+            }
+        },
+        onOrderHistoryClick = { navigationManager.navigateToOrderList() },
+        onSetFollowSystemTheme = { enabled -> scope.launch { themeViewModel.setFollowSystemTheme(enabled) } },
+        onSetDarkMode = { enabled -> scope.launch { themeViewModel.setDarkMode(enabled) } },
+        onSelectAccent = { scope.launch { themeViewModel.setAccentColor(it) } },
+        onSelectFontSize = { scope.launch { themeViewModel.setFontSize(it) } },
+        onSetHighContrast = { enabled -> scope.launch { themeViewModel.setHighContrast(enabled) } },
+        onSetReducedMotion = { enabled -> scope.launch { themeViewModel.setReducedMotion(enabled) } },
+        onDismissError = { profileViewModel.clearError() }
+    )
+}
+
+/**
+ * Stateless profile content: renders the profile and theme state and reports
+ * every intent upward, so it can be previewed/screenshot-tested without
+ * ViewModels. Owns only UI-local state (which dialog is showing).
+ */
+@Composable
+internal fun ProfileContent(
+    profileState: ProfileUiState,
+    themeState: ThemeUiState,
+    error: ErrorHandler.UserFriendlyError?,
+    accentOptions: List<String>,
+    fontSizeOptions: List<String>,
+    fontSizeLabel: (String) -> String,
+    onSignIn: (email: String, password: String) -> Unit,
+    onSignUp: (name: String, email: String, password: String) -> Unit,
+    onConfirmLogout: () -> Unit,
+    onOrderHistoryClick: () -> Unit,
+    onSetFollowSystemTheme: (Boolean) -> Unit,
+    onSetDarkMode: (Boolean) -> Unit,
+    onSelectAccent: (String) -> Unit,
+    onSelectFontSize: (String) -> Unit,
+    onSetHighContrast: (Boolean) -> Unit,
+    onSetReducedMotion: (Boolean) -> Unit,
+    onDismissError: () -> Unit
+) {
+    val isLoading = profileState.isLoading
+    val user = profileState.user
+    val isLoggedIn = profileState.isLoggedIn
     val isDarkMode = themeState.isDarkMode
     val isSystemTheme = themeState.isSystemTheme
 
@@ -118,7 +175,7 @@ fun ProfileScreen(
         SignInDialog(
             onDismiss = { showSignInDialog = false },
             onSignIn = { email, password ->
-                scope.launch { profileViewModel.signIn(email, password) }
+                onSignIn(email, password)
                 showSignInDialog = false
             }
         )
@@ -129,7 +186,7 @@ fun ProfileScreen(
         SignUpDialog(
             onDismiss = { showSignUpDialog = false },
             onSignUp = { name, email, password ->
-                scope.launch { profileViewModel.signUp(name, email, password) }
+                onSignUp(name, email, password)
                 showSignUpDialog = false
             }
         )
@@ -145,12 +202,7 @@ fun ProfileScreen(
                 Button(
                     onClick = {
                         showLogoutDialog = false
-                        // Navigate only after sign-out completes — leaving the
-                        // screen would cancel this composition-scoped coroutine.
-                        scope.launch {
-                            profileViewModel.signOut()
-                            navigationManager.navigateToHome()
-                        }
+                        onConfirmLogout()
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
@@ -196,10 +248,10 @@ fun ProfileScreen(
             isLoggedIn = isLoggedIn,
             isDarkMode = isDarkMode,
             isSystemTheme = isSystemTheme,
-            onOrderHistoryClick = { navigationManager.navigateToOrderList() },
-            onToggleFollowSystemTheme = { scope.launch { themeViewModel.setFollowSystemTheme(!isSystemTheme) } },
+            onOrderHistoryClick = onOrderHistoryClick,
+            onToggleFollowSystemTheme = { onSetFollowSystemTheme(!isSystemTheme) },
             onToggleDarkMode = {
-                if (!isSystemTheme) scope.launch { themeViewModel.setDarkMode(!isDarkMode) }
+                if (!isSystemTheme) onSetDarkMode(!isDarkMode)
             },
             onLogoutClick = { showLogoutDialog = true }
         )
@@ -208,16 +260,16 @@ fun ProfileScreen(
         // motion) — parity with the iOS Settings sheet
         AppearanceSettingsCard(
             accentColor = themeState.accentColor,
-            accentOptions = themeViewModel.availableAccentColors,
+            accentOptions = accentOptions,
             fontSize = themeState.fontSize,
-            fontSizeOptions = themeViewModel.availableFontSizes,
-            fontSizeLabel = { themeViewModel.getFontSizeDisplayName(it) },
+            fontSizeOptions = fontSizeOptions,
+            fontSizeLabel = fontSizeLabel,
             isHighContrast = themeState.isHighContrast,
             isReducedMotion = themeState.isReducedMotion,
-            onSelectAccent = { scope.launch { themeViewModel.setAccentColor(it) } },
-            onSelectFontSize = { scope.launch { themeViewModel.setFontSize(it) } },
-            onToggleHighContrast = { scope.launch { themeViewModel.toggleHighContrast() } },
-            onToggleReducedMotion = { scope.launch { themeViewModel.toggleReducedMotion() } }
+            onSelectAccent = onSelectAccent,
+            onSelectFontSize = onSelectFontSize,
+            onToggleHighContrast = { onSetHighContrast(!themeState.isHighContrast) },
+            onToggleReducedMotion = { onSetReducedMotion(!themeState.isReducedMotion) }
         )
 
         // App information
@@ -232,12 +284,12 @@ fun ProfileScreen(
     // Show error message if needed
     error?.let { errorInfo ->
         AlertDialog(
-            onDismissRequest = { profileViewModel.clearError() },
+            onDismissRequest = onDismissError,
             title = { Text(stringResource(R.string.error)) },
             text = { Text(errorInfo.message) },
             confirmButton = {
                 Button(
-                    onClick = { profileViewModel.clearError() },
+                    onClick = onDismissError,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     )

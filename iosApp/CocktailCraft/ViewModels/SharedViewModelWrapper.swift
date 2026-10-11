@@ -5,17 +5,20 @@ import Observation
 /**
  * Generic base for the iOS wrappers around shared KMP ViewModels.
  *
- * Every wrapper does the same three things; they live here exactly once:
+ * Every wrapper does the same things; they live here exactly once:
  *  - seed `state` synchronously from the shared uiState StateFlow so the
  *    first frame renders current data,
- *  - mirror the uiState and error flows into Observation-tracked
- *    properties via SKIE's AsyncSequence bridging,
- *  - cancel the observation tasks on deinit.
+ *  - mirror the uiState and the base-class error flows into
+ *    Observation-tracked properties via SKIE's AsyncSequence bridging,
+ *  - forward `clearError()` (the error is the one consumable one-shot
+ *    channel; views clear it once shown),
+ *  - cancel the observation tasks on deinit, and clear a factory-scoped
+ *    shared instance the wrapper owns.
  *
- * Subclasses hold their typed shared ViewModel for method forwarding and
- * call `super.init(uiState:errorFlow:)`. Koin-`single`-backed wrappers
- * must NOT touch the shared instance in deinit; factory-scoped wrappers
- * (CocktailDetail) own theirs and call `onCleared()` in their own deinit.
+ * Views read `state.<field>` — the shared UiState is the single state
+ * surface. Subclasses only forward intents to their typed shared ViewModel
+ * (plus Swift-only presentation formatting) and call
+ * `super.init(viewModel:uiState:)`.
  */
 @MainActor
 @Observable
@@ -25,12 +28,23 @@ class SharedViewModelWrapper<UiState: AnyObject> {
     // The single error channel from the shared ViewModel base class
     var error: ErrorHandler.UserFriendlyError? = nil
 
+    @ObservationIgnored private let baseViewModel: SharedViewModel
+    @ObservationIgnored private let ownsViewModel: Bool
     @ObservationIgnored private var observationTasks: [Task<Void, Never>] = []
 
-    init(uiState: SkieSwiftStateFlow<UiState>,
-         errorFlow: SkieSwiftOptionalStateFlow<ErrorHandler.UserFriendlyError>) {
+    /// - Parameter ownsViewModel: true only for Koin `factory` instances the
+    ///   wrapper owns (CocktailDetail, Review) — their scope is cleared in
+    ///   deinit. Koin-`single`-backed wrappers must never clear the shared
+    ///   instance, whose scope has to survive any one wrapper.
+    init(viewModel: SharedViewModel,
+         uiState: SkieSwiftStateFlow<UiState>,
+         ownsViewModel: Bool = false) {
+        self.baseViewModel = viewModel
+        self.ownsViewModel = ownsViewModel
         // Seed synchronously so the first frame renders the current state
         self.state = uiState.value
+
+        let errorFlow = viewModel.error
 
         // The Tasks capture the flows, not the wrapper — [weak self] breaks
         // the wrapper <-> task retain cycle so deinit can run and cancel them.
@@ -50,6 +64,13 @@ class SharedViewModelWrapper<UiState: AnyObject> {
 
     deinit {
         observationTasks.forEach { $0.cancel() }
+        if ownsViewModel {
+            baseViewModel.onCleared()
+        }
+    }
+
+    func clearError() {
+        baseViewModel.clearError()
     }
 
     // MARK: - Forwarded-call error policy
