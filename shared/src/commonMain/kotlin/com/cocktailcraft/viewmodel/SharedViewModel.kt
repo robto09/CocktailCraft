@@ -18,8 +18,10 @@ import kotlinx.coroutines.flow.asStateFlow
 abstract class SharedViewModel : ViewModel() {
 
     // The single error channel, observed by both platforms for error UI.
-    // Loading state lives in each screen's UiState — there is deliberately
-    // no parallel isLoading flow here.
+    // It is the codebase's one-shot pattern: a consumable StateFlow (survives
+    // a moment with no collector) that the UI clears with clearError() once
+    // shown. Everything else a screen renders lives in the subclass's single
+    // uiState — there is deliberately no parallel isLoading flow here.
     private val _error = MutableStateFlow<ErrorHandler.UserFriendlyError?>(null)
     val error: StateFlow<ErrorHandler.UserFriendlyError?> = _error.asStateFlow()
 

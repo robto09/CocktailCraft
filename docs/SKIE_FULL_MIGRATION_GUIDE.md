@@ -86,7 +86,7 @@ class SharedHomeViewModel internal constructor(
 
 ### 📱 **iOS SKIE Wrapper Classes**
 
-Wrappers extend `SharedViewModelWrapper`, which owns the `uiState`/`error` mirroring and observation-task lifecycle; views read `viewModel.state.<field>`:
+Wrappers extend `SharedViewModelWrapper`, which owns the `uiState`/`error` mirroring, `clearError()`, and the observation-task lifecycle; views read `viewModel.state.<field>` (the shared `UiState` is the single state surface — see [Shared_ViewModel_Strategy.md](Shared_ViewModel_Strategy.md)):
 
 ```swift
 // iosApp/CocktailCraft/ViewModels/HomeViewModelSKIE.swift
@@ -99,7 +99,7 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
         self.sharedViewModel = viewModel
         // SKIE converts the uiState StateFlow to an AsyncSequence; the base
         // class observes it and republishes on the MainActor
-        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
+        super.init(viewModel: viewModel, uiState: viewModel.uiState)
     }
 
     // Call suspend functions with native async/await
