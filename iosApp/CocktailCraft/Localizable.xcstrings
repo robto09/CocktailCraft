@@ -243,6 +243,57 @@
     },
     "You're offline — showing saved cocktails." : {
       "comment" : "Banner shown while the device has no network connection."
+    },
+    "%lld out of %lld stars" : {
+      "comment" : "Accessibility label for a review's star rating."
+    },
+    "%lld/%lld" : {
+      "comment" : "Character counter under the review comment field (typed / maximum)."
+    },
+    "Anonymous" : {
+      "comment" : "Shown in place of a reviewer's name when it is blank."
+    },
+    "Be the first to review this cocktail" : {
+      "comment" : "Empty state of the Reviews card on the cocktail detail screen."
+    },
+    "Cancel" : {
+      "comment" : "Dismisses a sheet without saving."
+    },
+    "Enter your name" : {
+      "comment" : "Placeholder for the name field in the Write a Review sheet."
+    },
+    "Name is required" : {
+      "comment" : "Inline error when the review is submitted without a name."
+    },
+    "Please select a rating" : {
+      "comment" : "Inline error when the review is submitted without a star rating."
+    },
+    "Rate %lld" : {
+      "comment" : "Accessibility label for a star in the review rating picker. The argument is the star value (1-5)."
+    },
+    "Reviews (%lld)" : {
+      "comment" : "Header of the Reviews card on the cocktail detail screen. The argument is the number of reviews."
+    },
+    "Share your experience (at least 10 characters)" : {
+      "comment" : "Placeholder for the review comment field."
+    },
+    "Submit Review" : {
+      "comment" : "Button that submits the Write a Review form."
+    },
+    "Unknown date" : {
+      "comment" : "Shown in place of a review's date when it is missing."
+    },
+    "Write a Review" : {
+      "comment" : "Button on the Reviews card and title of the Write a Review sheet."
+    },
+    "Your Name" : {
+      "comment" : "Label for the name field in the Write a Review sheet."
+    },
+    "Your Rating" : {
+      "comment" : "Label for the star rating picker in the Write a Review sheet."
+    },
+    "Your Review" : {
+      "comment" : "Label for the comment field in the Write a Review sheet."
     }
   },
   "version" : "1.1"
