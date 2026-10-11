@@ -46,8 +46,12 @@ struct CocktailCraftApp: App {
             disable: [] // Enable all monitoring capabilities
         )
 
-        // Show DebugSwift interface
-        CocktailCraftApp.debugSwift.show()
+        // Show DebugSwift interface — except under the accessibility audit
+        // UI tests, which must audit only what ships (DebugSwift's floating
+        // overlay is Debug-only and not built for VoiceOver)
+        if ProcessInfo.processInfo.environment["HIDE_DEBUG_OVERLAY"] == nil {
+            CocktailCraftApp.debugSwift.show()
+        }
     }
 
     private func configureNetworkMonitoring() {
