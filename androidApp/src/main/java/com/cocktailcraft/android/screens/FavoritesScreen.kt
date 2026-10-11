@@ -32,6 +32,8 @@ import com.cocktailcraft.android.ui.components.SectionHeader
 import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
+import com.cocktailcraft.util.ErrorHandler
+import com.cocktailcraft.viewmodel.state.FavoritesUiState
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,10 +45,35 @@ fun FavoritesScreen(
     onAddToCart: (Cocktail) -> Unit
 ) {
     val state by favoritesViewModel.uiState.collectAsStateWithLifecycle()
-    val isLoading = state.isLoading
-    val favorites = state.favorites
     val error by favoritesViewModel.error.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+
+    FavoritesContent(
+        state = state,
+        error = error,
+        onRefresh = { favoritesViewModel.refresh() },
+        onBrowseProducts = onBrowseProducts,
+        onAddToCart = onAddToCart,
+        onToggleFavorite = { cocktail -> scope.launch { favoritesViewModel.toggleFavorite(cocktail) } }
+    )
+}
+
+/**
+ * Stateless favorites content: renders [state] and reports every intent
+ * upward, so it can be previewed/screenshot-tested without a ViewModel.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun FavoritesContent(
+    state: FavoritesUiState,
+    error: ErrorHandler.UserFriendlyError?,
+    onRefresh: () -> Unit,
+    onBrowseProducts: () -> Unit,
+    onAddToCart: (Cocktail) -> Unit,
+    onToggleFavorite: (Cocktail) -> Unit
+) {
+    val isLoading = state.isLoading
+    val favorites = state.favorites
 
     Column(
         modifier = Modifier
@@ -60,7 +87,7 @@ fun FavoritesScreen(
         if (!isLoading && error != null) {
             EmptyStateComponent(
                 title = stringResource(R.string.error),
-                message = error?.toString() ?: stringResource(R.string.cart_unknown_error),
+                message = error.toString(),
                 actionButtonText = stringResource(R.string.cart_try_again),
                 onActionButtonClick = { /* Add retry logic here */ }
             )
@@ -80,7 +107,7 @@ fun FavoritesScreen(
             val pullToRefreshState = rememberPullToRefreshState()
             PullToRefreshBox(
                 isRefreshing = isLoading,
-                onRefresh = { favoritesViewModel.refresh() },
+                onRefresh = onRefresh,
                 modifier = Modifier.fillMaxSize(),
                 state = pullToRefreshState,
                 indicator = {
@@ -120,7 +147,7 @@ fun FavoritesScreen(
                         },
                         isFavorite = true,
                         onToggleFavorite = { _ ->
-                            scope.launch { favoritesViewModel.toggleFavorite(cocktail) }
+                            onToggleFavorite(cocktail)
                         }
                     )
                 }
