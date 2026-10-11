@@ -1,21 +1,19 @@
 package com.cocktailcraft.viewmodel
 
 import app.cash.turbine.test
-import com.cocktailcraft.data.config.AppConfigImpl
+import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.repository.ReviewRepositoryImpl
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.MainDispatcherTest
-import com.russhwolf.settings.MapSettings
-import com.russhwolf.settings.Settings
+import com.cocktailcraft.testutil.createTestDatabase
+import com.cocktailcraft.testutil.createTestLocalDatabase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -25,18 +23,18 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class SharedReviewViewModelTest : MainDispatcherTest() {
 
-    private val json = Json { ignoreUnknownKeys = true }
+    private fun TestScope.repository(db: CocktailCraftDatabase): ReviewRepositoryImpl {
+        val io = StandardTestDispatcher(testScheduler)
+        return ReviewRepositoryImpl(createTestLocalDatabase(db, ioDispatcher = io), io)
+    }
 
-    private fun TestScope.repository(settings: Settings) =
-        ReviewRepositoryImpl(settings, json, AppConfigImpl(), StandardTestDispatcher(testScheduler))
-
-    private fun TestScope.viewModel(settings: Settings) =
-        SharedReviewViewModel(ManageReviewsUseCase(repository(settings)))
+    private fun TestScope.viewModel(db: CocktailCraftDatabase) =
+        SharedReviewViewModel(ManageReviewsUseCase(repository(db)))
 
     @Test
     fun submittedReviewFlowsIntoStateAndPersists() = runTest {
-        val settings = MapSettings()
-        val vm = viewModel(settings)
+        val db = createTestDatabase()
+        val vm = viewModel(db)
         advanceUntilIdle()
 
         vm.loadReviewsForCocktail("c1")
@@ -48,7 +46,7 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
         assertTrue(vm.hasReviews)
 
         // A fresh ViewModel over the same storage sees the review: it persisted
-        val reloaded = viewModel(settings)
+        val reloaded = viewModel(db)
         advanceUntilIdle()
         assertEquals(1, reloaded.getReviewCount("c1"))
     }
@@ -57,8 +55,8 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
     fun reviewObserverEmitsWhenRepositoryChanges() = runTest {
         // SH-12 (Turbine): the observed reviews flow must push repository
         // changes into uiState without a manual reload.
-        val settings = MapSettings()
-        val repo = repository(settings)
+        val db = createTestDatabase()
+        val repo = repository(db)
         val vm = SharedReviewViewModel(ManageReviewsUseCase(repo))
         advanceUntilIdle()
         vm.loadReviewsForCocktail("c1")
@@ -79,7 +77,7 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
 
     @Test
     fun invalidReviewIsRejectedWithValidationError() = runTest {
-        val vm = viewModel(MapSettings())
+        val vm = viewModel(createTestDatabase())
         advanceUntilIdle()
 
         assertFalse(vm.submitReview("c1", 0.0f, "Rating out of range here.", "Robert"))
@@ -94,13 +92,13 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
 
     @Test
     fun loadReviewsForCocktailDerivesPerCocktailSlices() = runTest {
-        val settings = MapSettings()
-        val repo = repository(settings)
+        val db = createTestDatabase()
+        val repo = repository(db)
         repo.addReview(Review(id = "r1", cocktailId = "c1", userName = "A", rating = 2.0f, comment = "Far too sweet for me.", date = "2026-07-01")).getOrThrow()
         repo.addReview(Review(id = "r2", cocktailId = "c1", userName = "B", rating = 4.0f, comment = "Really quite refreshing.", date = "2026-07-03")).getOrThrow()
         repo.addReview(Review(id = "r3", cocktailId = "c2", userName = "C", rating = 5.0f, comment = "The best drink in town.", date = "2026-07-02")).getOrThrow()
 
-        val vm = viewModel(settings)
+        val vm = viewModel(db)
         advanceUntilIdle()
 
         vm.loadReviewsForCocktail("c1")
@@ -112,8 +110,8 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
 
     @Test
     fun deleteReviewReportsMissingIdWithError() = runTest {
-        val settings = MapSettings()
-        val vm = viewModel(settings)
+        val db = createTestDatabase()
+        val vm = viewModel(db)
         advanceUntilIdle()
 
         assertFalse(vm.deleteReview("missing"))
@@ -122,11 +120,11 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
 
     @Test
     fun updateReviewChangesStateReactively() = runTest {
-        val settings = MapSettings()
-        val repo = repository(settings)
+        val db = createTestDatabase()
+        val repo = repository(db)
         repo.addReview(Review(id = "r1", cocktailId = "c1", userName = "A", rating = 2.0f, comment = "Far too sweet for me.", date = "2026-07-01")).getOrThrow()
 
-        val vm = viewModel(settings)
+        val vm = viewModel(db)
         advanceUntilIdle()
         vm.loadReviewsForCocktail("c1")
 
@@ -141,7 +139,7 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
     fun blankUserNameIsRejectedAndNothingIsStored() = runTest {
         // Neither platform requires sign-in; the name typed into the review
         // form is the only identity, so a blank one must be refused here.
-        val vm = viewModel(MapSettings())
+        val vm = viewModel(createTestDatabase())
         advanceUntilIdle()
 
         assertFalse(vm.submitReview("c1", 4.0f, "Great balance of sweet and sour.", "   "))
@@ -155,7 +153,7 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
     @Test
     fun eachValidationRuleReportsItsOwnMessage() = runTest {
         // The iOS review sheet shows these messages verbatim, so pin them.
-        val vm = viewModel(MapSettings())
+        val vm = viewModel(createTestDatabase())
         advanceUntilIdle()
 
         fun rejection(rating: Float, comment: String): String? {
@@ -176,7 +174,7 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
 
     @Test
     fun submitTrimsNameAndComment() = runTest {
-        val vm = viewModel(MapSettings())
+        val vm = viewModel(createTestDatabase())
         advanceUntilIdle()
         vm.loadReviewsForCocktail("c1")
 
@@ -191,11 +189,11 @@ class SharedReviewViewModelTest : MainDispatcherTest() {
 
     @Test
     fun selectingUnreviewedCocktailShowsEmptyState() = runTest {
-        val settings = MapSettings()
-        val repo = repository(settings)
+        val db = createTestDatabase()
+        val repo = repository(db)
         repo.addReview(Review(id = "r1", cocktailId = "c1", userName = "A", rating = 4.0f, comment = "Really quite refreshing.", date = "2026-07-01")).getOrThrow()
 
-        val vm = viewModel(settings)
+        val vm = viewModel(db)
         advanceUntilIdle()
         vm.loadReviewsForCocktail("c1")
         assertEquals(1, vm.uiState.value.reviewCount)

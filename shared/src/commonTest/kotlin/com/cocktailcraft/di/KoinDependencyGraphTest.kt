@@ -4,6 +4,7 @@ import app.cash.sqldelight.db.SqlDriver
 import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
+import com.cocktailcraft.data.local.LocalDatabase
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CartRepository
@@ -41,7 +42,7 @@ import kotlin.test.assertSame
  * Builds the full production Koin graph ([appModule] = network + data + domain
  * modules) with a test platform module standing in for the bindings each
  * platform's platformModule() supplies natively (Settings, NetworkMonitor,
- * the offline cache's SqlDriver),
+ * the app database's SqlDriver),
  * then resolves every registered ViewModel and repository. Any future DI
  * wiring break fails here instead of at app startup.
  *
@@ -86,13 +87,15 @@ class KoinDependencyGraphTest : MainDispatcherTest() {
     }
 
     @Test
-    fun offlineCacheDatabaseResolves() {
+    fun appDatabaseResolves() {
         val koin = startTestKoin()
 
-        // CocktailCache only injects the database lazily, so resolve it
-        // directly to prove the SqlDriver -> database wiring is complete.
+        // CocktailCache and LocalDatabase only inject the database lazily, so
+        // resolve it directly to prove the SqlDriver -> database wiring is
+        // complete.
         assertNotNull(koin.get<CocktailCraftDatabase>())
         assertNotNull(koin.get<CocktailCache>())
+        assertSame(koin.get<LocalDatabase>(), koin.get<LocalDatabase>())
     }
 
     @Test

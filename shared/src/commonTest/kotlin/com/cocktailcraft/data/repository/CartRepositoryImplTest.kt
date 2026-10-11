@@ -1,22 +1,24 @@
 package com.cocktailcraft.data.repository
 
+import app.cash.turbine.test
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.testutil.createTestDatabase
+import com.cocktailcraft.testutil.createTestLocalDatabase
 import com.cocktailcraft.testutil.testCocktail
-import com.russhwolf.settings.MapSettings
+import com.cocktailcraft.testutil.testJson
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CartRepositoryImplTest {
 
-    private val settings = MapSettings()
-    private val json = Json { ignoreUnknownKeys = true }
+    private val db = createTestDatabase()
+    private val localDatabase = createTestLocalDatabase(db)
 
-    private fun repository() = CartRepositoryImpl(settings, json)
+    // A new repository over the same database simulates an app relaunch.
+    private fun repository() = CartRepositoryImpl(localDatabase, testJson)
 
     @Test
     fun addToCartStoresItemAndMergesDuplicates() = runTest {
@@ -29,6 +31,19 @@ class CartRepositoryImplTest {
         assertEquals(1, items.size)
         assertEquals(3, items.single().quantity)
         assertEquals(30.0, repository.getCartTotal().getOrThrow())
+    }
+
+    @Test
+    fun mergingADuplicateKeepsTheStoredCocktailAndPosition() = runTest {
+        val repository = repository()
+        repository.addToCart(CocktailCartItem(testCocktail("1", name = "First"), quantity = 1)).getOrThrow()
+        repository.addToCart(CocktailCartItem(testCocktail("2"), quantity = 1)).getOrThrow()
+
+        repository.addToCart(CocktailCartItem(testCocktail("1", name = "Second"), quantity = 1)).getOrThrow()
+
+        val items = repository.getCartItems().getOrThrow()
+        assertEquals(listOf("1", "2"), items.map { it.cocktail.id })
+        assertEquals("First", items.first().cocktail.name)
     }
 
     @Test
@@ -64,7 +79,7 @@ class CartRepositoryImplTest {
 
         assertTrue(repository.getCartItems().getOrThrow().isEmpty())
         assertEquals(0.0, repository.getCartTotal().getOrThrow())
-        assertNull(settings.getStringOrNull("cocktail_cart_items"), "persisted cart must be removed")
+        assertTrue(repository().getCartItems().getOrThrow().isEmpty(), "persisted cart must be empty")
     }
 
     @Test
@@ -73,7 +88,6 @@ class CartRepositoryImplTest {
         first.addToCart(CocktailCartItem(testCocktail("1", price = 12.5), quantity = 2))
         first.addToCart(CocktailCartItem(testCocktail("2", price = 8.0), quantity = 1))
 
-        // A new repository over the same settings simulates an app relaunch
         val second = repository()
         val items = second.getCartItems().getOrThrow()
 
@@ -84,11 +98,29 @@ class CartRepositoryImplTest {
     }
 
     @Test
-    fun corruptedPersistedCartFallsBackToEmpty() = runTest {
-        settings.putString("cocktail_cart_items", "{not valid json")
+    fun unreadableStoredItemIsSkippedNotFatal() = runTest {
+        repository().addToCart(CocktailCartItem(testCocktail("1"), quantity = 1)).getOrThrow()
+        db.cartItemQueries.insert(cocktailId = "broken", payload = "{not valid json", quantity = 1)
 
+        assertEquals(listOf("1"), repository().getCartItems().getOrThrow().map { it.cocktail.id })
+    }
+
+    @Test
+    fun observeCartItemsEmitsAfterEveryChange() = runTest {
         val repository = repository()
 
-        assertTrue(repository.getCartItems().getOrThrow().isEmpty())
+        repository.observeCartItems().test {
+            assertEquals(emptyList(), awaitItem())
+
+            repository.addToCart(CocktailCartItem(testCocktail("1"), quantity = 1)).getOrThrow()
+            assertEquals(listOf(1), awaitItem().map { it.quantity })
+
+            repository.updateQuantity("1", 4).getOrThrow()
+            assertEquals(listOf(4), awaitItem().map { it.quantity })
+
+            repository.clearCart().getOrThrow()
+            assertEquals(emptyList(), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 }

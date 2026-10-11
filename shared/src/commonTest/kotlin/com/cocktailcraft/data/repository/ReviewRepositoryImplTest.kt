@@ -1,39 +1,56 @@
 package com.cocktailcraft.data.repository
 
-import com.cocktailcraft.data.config.AppConfigImpl
+import app.cash.turbine.test
 import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrThrow
-import com.russhwolf.settings.MapSettings
+import com.cocktailcraft.testutil.createTestLocalDatabase
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class ReviewRepositoryImplTest {
 
-    private val settings = MapSettings()
-    private val json = Json { ignoreUnknownKeys = true }
+    private val localDatabase = createTestLocalDatabase()
 
-    private fun repository() = ReviewRepositoryImpl(settings, json, AppConfigImpl())
+    // A new repository over the same database simulates an app relaunch.
+    private fun repository() = ReviewRepositoryImpl(localDatabase)
 
     private fun review(id: String, cocktailId: String = "c1", rating: Float = 4.0f) = Review(
         id = id,
         cocktailId = cocktailId,
         userName = "Robert",
         rating = rating,
-        comment = "A perfectly balanced cocktail."
+        comment = "A perfectly balanced cocktail.",
+        date = "2026-07-01"
     )
 
     @Test
     fun addedReviewSurvivesRepositoryRecreation() = runTest {
-        repository().addReview(review("r1")).getOrThrow()
+        repository().addReview(review("r1", rating = 4.5f)).getOrThrow()
 
         val reloaded = repository().getReviews().getOrThrow()
-        assertEquals(1, reloaded.size)
-        assertEquals("r1", reloaded.single().id)
-        assertEquals("c1", reloaded.single().cocktailId)
+        assertEquals(listOf(review("r1", rating = 4.5f)), reloaded)
+    }
+
+    @Test
+    fun reviewsKeepInsertionOrder() = runTest {
+        val repo = repository()
+        listOf("r3", "r1", "r2").forEach { repo.addReview(review(it)).getOrThrow() }
+
+        assertEquals(listOf("r3", "r1", "r2"), repository().getReviews().getOrThrow().map { it.id })
+    }
+
+    @Test
+    fun addingADuplicateIdFails() = runTest {
+        val repo = repository()
+        repo.addReview(review("r1")).getOrThrow()
+
+        assertIs<Result.Error>(repo.addReview(review("r1", rating = 1.0f)))
+        assertEquals(listOf(4.0f), repo.getReviews().getOrThrow().map { it.rating })
     }
 
     @Test
@@ -61,5 +78,24 @@ class ReviewRepositoryImplTest {
 
         val reloaded = repository().getReviews().getOrThrow()
         assertEquals(listOf("r2"), reloaded.map { it.id })
+    }
+
+    @Test
+    fun observeReviewsEmitsAfterEveryChange() = runTest {
+        val repo = repository()
+
+        repo.observeReviews().test {
+            assertEquals(emptyList(), awaitItem())
+
+            repo.addReview(review("r1")).getOrThrow()
+            assertEquals(listOf("r1"), awaitItem().map { it.id })
+
+            repo.updateReview("r1", 2.0f, "Changed my mind about it.", "2026-07-02").getOrThrow()
+            assertEquals(listOf(2.0f), awaitItem().map { it.rating })
+
+            repo.deleteReview("r1").getOrThrow()
+            assertEquals(emptyList(), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 }

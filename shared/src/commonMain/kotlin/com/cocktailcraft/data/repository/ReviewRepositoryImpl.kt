@@ -1,76 +1,64 @@
 package com.cocktailcraft.data.repository
 
-import com.cocktailcraft.domain.config.AppConfig
+import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
+import com.cocktailcraft.data.local.LocalDatabase
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.runCatchingResult
-import com.russhwolf.settings.Settings
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
+/**
+ * Reviews in the cocktail_review table (see CocktailReview.sq).
+ * [observeReviews] re-emits after every write.
+ */
 internal class ReviewRepositoryImpl(
-    private val settings: Settings,
-    private val json: Json,
-    private val appConfig: AppConfig,
+    private val localDatabase: LocalDatabase,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ReviewRepository {
 
-    // In-memory cache of reviews, backed by a JSON blob in Settings
-    private val _reviews = MutableStateFlow<List<Review>>(emptyList())
+    private fun toReview(
+        id: String,
+        cocktailId: String,
+        userName: String,
+        rating: Double,
+        comment: String,
+        date: String
+    ) = Review(
+        id = id,
+        cocktailId = cocktailId,
+        userName = userName,
+        rating = rating.toFloat(),
+        comment = comment,
+        date = date
+    )
 
-    private val loadMutex = Mutex()
-    private var loaded = false
-
-    // Persisted state loads lazily on first use — a Koin `single` must not
-    // do disk I/O on whichever thread first resolves it.
-    private suspend fun ensureLoaded() {
-        if (loaded) return
-        loadMutex.withLock {
-            if (!loaded) {
-                withContext(ioDispatcher) { loadReviewsFromStorage() }
-                loaded = true
-            }
-        }
-    }
-
-    private fun loadReviewsFromStorage() {
-        val reviewsJson = settings.getStringOrNull(appConfig.reviewsStorageKey) ?: "[]"
-        _reviews.value = try {
-            json.decodeFromString(reviewsJson)
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
-    private fun saveReviewsToStorage() {
-        settings.putString(appConfig.reviewsStorageKey, json.encodeToString(_reviews.value))
-    }
+    private fun CocktailCraftDatabase.exists(reviewId: String): Boolean =
+        cocktailReviewQueries.exists(reviewId).executeAsOne() > 0L
 
     override fun observeReviews(): Flow<List<Review>> =
-        _reviews.asStateFlow().onStart { ensureLoaded() }
+        localDatabase.observe(ioDispatcher, { cocktailReviewQueries.selectAll(::toReview) }) { it }
 
-    override suspend fun getReviews(): Result<List<Review>> {
-        ensureLoaded()
-        return Result.Success(_reviews.value)
+    override suspend fun getReviews(): Result<List<Review>> = withContext(ioDispatcher) {
+        runCatchingResult("Failed to load reviews") {
+            Result.Success(localDatabase.get().cocktailReviewQueries.selectAll(::toReview).executeAsList())
+        }
     }
 
     override suspend fun addReview(review: Review): Result<Unit> = withContext(ioDispatcher) {
-        ensureLoaded()
         runCatchingResult("Failed to add review") {
-            _reviews.value = _reviews.value + review
-            saveReviewsToStorage()
+            localDatabase.get().cocktailReviewQueries.insert(
+                id = review.id,
+                cocktailId = review.cocktailId,
+                userName = review.userName,
+                rating = review.rating.toDouble(),
+                comment = review.comment,
+                date = review.date
+            )
             Result.Success(Unit)
         }
     }
@@ -81,30 +69,31 @@ internal class ReviewRepositoryImpl(
         comment: String,
         date: String
     ): Result<Boolean> = withContext(ioDispatcher) {
-        ensureLoaded()
         runCatchingResult("Failed to update review") {
-            var found = false
-            _reviews.value = _reviews.value.map { review ->
-                if (review.id == reviewId) {
-                    found = true
-                    review.copy(rating = rating, comment = comment, date = date)
-                } else {
-                    review
+            val db = localDatabase.get()
+            val found = db.transactionWithResult {
+                db.exists(reviewId).also { found ->
+                    if (found) {
+                        db.cocktailReviewQueries.update(
+                            rating = rating.toDouble(),
+                            comment = comment,
+                            date = date,
+                            id = reviewId
+                        )
+                    }
                 }
             }
-            if (found) saveReviewsToStorage()
             Result.Success(found)
         }
     }
 
     override suspend fun deleteReview(reviewId: String): Result<Boolean> = withContext(ioDispatcher) {
-        ensureLoaded()
         runCatchingResult("Failed to delete review") {
-            val remaining = _reviews.value.filterNot { it.id == reviewId }
-            val removed = remaining.size != _reviews.value.size
-            if (removed) {
-                _reviews.value = remaining
-                saveReviewsToStorage()
+            val db = localDatabase.get()
+            val removed = db.transactionWithResult {
+                db.exists(reviewId).also { found ->
+                    if (found) db.cocktailReviewQueries.deleteById(reviewId)
+                }
             }
             Result.Success(removed)
         }
