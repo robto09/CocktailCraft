@@ -215,8 +215,8 @@ fun ProfileScreen(
             isReducedMotion = themeState.isReducedMotion,
             onSelectAccent = { scope.launch { themeViewModel.setAccentColor(it) } },
             onSelectFontSize = { scope.launch { themeViewModel.setFontSize(it) } },
-            onToggleHighContrast = { scope.launch { themeViewModel.toggleHighContrast() } },
-            onToggleReducedMotion = { scope.launch { themeViewModel.toggleReducedMotion() } }
+            onToggleHighContrast = { scope.launch { themeViewModel.setHighContrast(!themeState.isHighContrast) } },
+            onToggleReducedMotion = { scope.launch { themeViewModel.setReducedMotion(!themeState.isReducedMotion) } }
         )
 
         // App information

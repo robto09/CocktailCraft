@@ -20,4 +20,12 @@ data class ThemeUiState(
 ) {
     val isDarkMode: Boolean get() = themeMode == ThemeMode.DARK
     val isSystemTheme: Boolean get() = themeMode == ThemeMode.SYSTEM
+
+    /** User-facing name of the selected [themeMode] ("System", "Light", "Dark"). */
+    val themeModeDisplayName: String
+        get() = when (themeMode) {
+            ThemeMode.LIGHT -> "Light"
+            ThemeMode.DARK -> "Dark"
+            ThemeMode.SYSTEM -> "System"
+        }
 }

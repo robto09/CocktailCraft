@@ -62,18 +62,18 @@ struct SettingsView: View {
                     
                     Toggle("High Contrast", isOn: Binding(
                         get: { themeViewModel.state.isHighContrast },
-                        set: { _ in
+                        set: { enabled in
                             Task {
-                                await themeViewModel.toggleHighContrast()
+                                await themeViewModel.setHighContrast(enabled)
                             }
                         }
                     ))
                     
                     Toggle("Reduce Motion", isOn: Binding(
                         get: { themeViewModel.state.isReducedMotion },
-                        set: { _ in
+                        set: { enabled in
                             Task {
-                                await themeViewModel.toggleReducedMotion()
+                                await themeViewModel.setReducedMotion(enabled)
                             }
                         }
                     ))
@@ -103,7 +103,7 @@ struct SettingsView: View {
                     HStack {
                         Text("Current Theme")
                         Spacer()
-                        Text(themeViewModel.currentThemeName)
+                        Text(themeViewModel.state.themeModeDisplayName)
                             .foregroundColor(.secondary)
                     }
                 }

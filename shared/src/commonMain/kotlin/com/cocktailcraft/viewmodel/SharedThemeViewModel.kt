@@ -15,7 +15,9 @@ import kotlinx.coroutines.launch
 
 /**
  * Shared ViewModel for Theme functionality.
- * Uses consolidated [ThemeUiState] for atomic state updates.
+ * Uses consolidated [ThemeUiState] for atomic state updates; [uiState] is the
+ * only public state surface (the option lists below are constants, and the
+ * remaining synchronous helpers are pure formatters/validators).
  *
  * All theme mutations are value-based setters (never flip-style toggles),
  * so a re-fired UI callback can only re-assert the same state.
@@ -28,8 +30,6 @@ class SharedThemeViewModel internal constructor(
     private val _uiState = MutableStateFlow(ThemeUiState())
     val uiState: StateFlow<ThemeUiState> = _uiState.asStateFlow()
 
-    val currentThemeName: String
-        get() = getThemeModeDisplayName(themeModeToString(_uiState.value.themeMode))
     val availableThemes: List<String>
         get() = listOf("system", "light", "dark")
     val availableAccentColors: List<String>
@@ -107,21 +107,21 @@ class SharedThemeViewModel internal constructor(
         }
     }
 
-    suspend fun toggleHighContrast() {
+    suspend fun setHighContrast(enabled: Boolean) {
         try {
-            _uiState.update { it.copy(isHighContrast = !it.isHighContrast) }
+            _uiState.update { it.copy(isHighContrast = enabled) }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to toggle high contrast")
+            handleException(e, "Failed to update high contrast")
         }
     }
 
-    suspend fun toggleReducedMotion() {
+    suspend fun setReducedMotion(enabled: Boolean) {
         try {
-            _uiState.update { it.copy(isReducedMotion = !it.isReducedMotion) }
+            _uiState.update { it.copy(isReducedMotion = enabled) }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to toggle reduced motion")
+            handleException(e, "Failed to update reduced motion")
         }
     }
 
@@ -190,13 +190,6 @@ class SharedThemeViewModel internal constructor(
     }
 
     /**
-     * Check if current theme is custom.
-     */
-    fun isCustomTheme(): Boolean {
-        return !_uiState.value.isSystemTheme
-    }
-
-    /**
      * Get theme preview colors.
      */
     fun getThemePreviewColors(mode: String): Map<String, String> {
@@ -235,49 +228,7 @@ class SharedThemeViewModel internal constructor(
         }
     }
 
-    /**
-     * Export theme settings.
-     */
-    fun exportThemeSettings(): Map<String, Any> {
-        val s = _uiState.value
-        return mapOf(
-            "isDarkMode" to s.isDarkMode,
-            "themeMode" to themeModeToString(s.themeMode),
-            "isSystemTheme" to s.isSystemTheme,
-            "accentColor" to s.accentColor,
-            "fontSize" to s.fontSize,
-            "isHighContrast" to s.isHighContrast,
-            "isReducedMotion" to s.isReducedMotion
-        )
-    }
-
-    fun importThemeSettings(settings: Map<String, Any>) {
-        viewModelScope.launch {
-            try {
-                _uiState.update { state ->
-                    state.copy(
-                        themeMode = (settings["themeMode"] as? String)
-                            ?.let { ThemeMode.fromString(it) } ?: state.themeMode,
-                        accentColor = (settings["accentColor"] as? String) ?: state.accentColor,
-                        fontSize = (settings["fontSize"] as? String) ?: state.fontSize,
-                        isHighContrast = (settings["isHighContrast"] as? Boolean) ?: state.isHighContrast,
-                        isReducedMotion = (settings["isReducedMotion"] as? Boolean) ?: state.isReducedMotion
-                    )
-                }
-                savePreferences()
-            } catch (e: Exception) {
-                handleException(e, "Failed to import theme settings")
-            }
-        }
-    }
-
     // MARK: - Private Helper Methods
-
-    private fun themeModeToString(mode: ThemeMode): String = when (mode) {
-        ThemeMode.LIGHT -> "light"
-        ThemeMode.DARK -> "dark"
-        ThemeMode.SYSTEM -> "system"
-    }
 
     private suspend fun loadUserPreferences() {
         try {
