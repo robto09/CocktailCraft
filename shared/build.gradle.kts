@@ -1,25 +1,10 @@
 plugins {
     // Targets, toolchain, SDK levels, opt-ins, host tests (build-logic, AR-10)
     id("cocktailcraft.kmp.library")
-    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.skie)
-    alias(libs.plugins.sqldelight)
+    // No resources of its own: links :core:resources' strings bundle into the
+    // framework and registers copyFrameworkResourcesToApp for Xcode
     alias(libs.plugins.moko.resources)
-}
-
-// Local storage: the offline cocktail cache (see CocktailCache) and the
-// user's cart, orders, favorites and reviews (see LocalDatabase)
-sqldelight {
-    databases {
-        create("CocktailCraftDatabase") {
-            packageName.set("com.cocktailcraft.data.cache.db")
-            // Snapshots of each released schema version live here. Any change
-            // to the .sq files must ship with a matching .sqm migration, or
-            // verifySqlDelightMigration fails (it runs as part of `check`).
-            schemaOutputDirectory.set(file("src/commonMain/sqldelight/databases"))
-            verifyMigrations.set(true)
-        }
-    }
 }
 
 // Configure SKIE for enhanced Swift interop
@@ -52,10 +37,6 @@ skie {
 kotlin {
     android {
         namespace = "com.cocktailcraft"
-
-        lint {
-            disable.add("MissingPermission")
-        }
     }
     // The iOS app consumes this framework through Kotlin's direct Xcode
     // integration (no CocoaPods): the app target's "Compile Kotlin Framework"
@@ -83,54 +64,42 @@ kotlin {
             // sqlite3 (and the K/N runtime's libc++) are not linked here: the
             // app links them itself via OTHER_LDFLAGS in project.yml.
         }
+        // The test executable does link: the DI graph tests open an in-memory
+        // database (the SQLDelight plugin, now on :core:data, used to add this)
+        binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable>().configureEach {
+            linkerOpts("-lsqlite3")
+        }
     }
 
     sourceSets {
         val commonMain by getting {
             dependencies {
-                // Ktor
-                implementation(libs.ktor.client.core)
-                implementation(libs.ktor.client.content.negotiation)
-                implementation(libs.ktor.client.logging)
-                implementation(libs.ktor.serialization.kotlinx.json)
-
-                // Serialization
-                implementation(libs.kotlinx.serialization.json)
-
-                // Coroutines
-                implementation(libs.kotlinx.coroutines.core)
-
-                // DateTime
-                implementation(libs.kotlinx.datetime)
-
-                // Settings
-                implementation(libs.multiplatform.settings.core)
+                // Shared strings (MR) and design tokens: part of the API Android
+                // and Swift consume, so api() — export() requires it.
+                api(project(":core:resources"))
+                api(project(":core:designsystem"))
+                // Result/ErrorCode, ErrorHandler, NetworkMonitor — used from Swift
+                api(project(":core:common"))
+                // Models, repository interfaces, validators — used from Swift
+                api(project(":core:domain"))
+                // Repository implementations, database, network, platform
+                // drivers: wired into Koin here, invisible to both apps
+                implementation(project(":core:data"))
 
                 // DI
                 implementation(libs.koin.core)
-            implementation(libs.koin.core.viewmodel)
-            // VMs extend the multiplatform androidx ViewModel — api so Android
-            // consumers see the supertype for koinViewModel scoping
-            // Deliberately api(), not implementation() (AR-12): the shared
-            // ViewModels extend androidx ViewModel, so the type must be on the
-            // consumers' compile classpath; demoting it breaks androidApp.
-            // Export-surface trimming happens via @HiddenFromObjC on
-            // Kotlin-side helpers instead (see Result.kt, BaseNetworkMonitor).
-            api(libs.androidx.lifecycle.viewmodel)
-            // Shared strings (MR) and design tokens: part of the API Android
-            // and Swift consume, so api() — export() requires it.
-            api(project(":core:resources"))
-            api(project(":core:designsystem"))
-            // Result/ErrorCode, ErrorHandler, NetworkMonitor — used from Swift
-            api(project(":core:common"))
-            // Models, repository interfaces, validators — used from Swift
-            api(project(":core:domain"))
+                implementation(libs.koin.core.viewmodel)
+                // VMs extend the multiplatform androidx ViewModel — api so Android
+                // consumers see the supertype for koinViewModel scoping
+                // Deliberately api(), not implementation() (AR-12): the shared
+                // ViewModels extend androidx ViewModel, so the type must be on the
+                // consumers' compile classpath; demoting it breaks androidApp.
+                // Export-surface trimming happens via @HiddenFromObjC on
+                // Kotlin-side helpers instead (see Result.kt, BaseNetworkMonitor).
+                api(libs.androidx.lifecycle.viewmodel)
 
                 // Multiplatform logging
                 implementation(libs.kermit)
-
-                // Query.asFlow() for the reactive cart/orders/favorites/reviews reads
-                implementation(libs.sqldelight.coroutines.extensions)
             }
         }
 
@@ -138,18 +107,7 @@ kotlin {
             dependencies {
                 // Provides the Android Dispatchers.Main implementation for viewModelScope
                 implementation(libs.kotlinx.coroutines.android)
-                implementation(libs.ktor.client.android)
-                implementation(libs.multiplatform.settings.core)
-                // Keystore-backed EncryptedSharedPreferences for the auth store
-                implementation(libs.androidx.security.crypto)
-                implementation(libs.sqldelight.android.driver)
             }
-        }
-
-        // iosMain comes from the default Kotlin hierarchy template
-        iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
-            implementation(libs.sqldelight.native.driver)
         }
 
         val commonTest by getting {
@@ -159,10 +117,9 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.koin.test.core)
                 implementation(libs.turbine)
+                // MapSettings stand-ins for the platform Settings bindings
+                implementation(libs.multiplatform.settings.core)
                 implementation(libs.multiplatform.settings.test)
-                // MockEngine so CocktailApiImplTest exercises the real Ktor
-                // pipeline (AR-5)
-                implementation(libs.ktor.client.mock)
             }
         }
 
@@ -178,11 +135,9 @@ kotlin {
                 implementation(libs.junit.jupiter.engine)
                 implementation(libs.junit.jupiter.params)
 
-                // In-memory SQLite for the cache and repository tests
-                implementation(libs.sqldelight.sqlite.driver)
+                // SharedStringsTest maps a Ktor IOException to its copy
+                implementation(libs.ktor.client.core)
             }
         }
-
-
     }
 }

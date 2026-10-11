@@ -1,14 +1,14 @@
 package com.cocktailcraft.viewmodel
 
-import com.cocktailcraft.data.repository.AuthRepositoryImpl
 import com.cocktailcraft.domain.model.ThemeMode
+import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.usecase.ManageProfileUseCase
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.theme_mode_dark
 import com.cocktailcraft.resources.theme_mode_light
 import com.cocktailcraft.resources.theme_mode_system
-import com.cocktailcraft.testutil.MainDispatcherTest
+import com.cocktailcraft.testutil.DataLayerTest
 import com.russhwolf.settings.MapSettings
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
@@ -21,19 +21,19 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SharedThemeViewModelTest : MainDispatcherTest() {
+class SharedThemeViewModelTest : DataLayerTest() {
 
     /**
      * Real repository + use case over an in-memory Settings store, so
      * recreating the ViewModel simulates an app restart against the same
      * persisted data.
      */
-    private class Harness(ioDispatcher: CoroutineDispatcher) {
+    private inner class Harness(ioDispatcher: CoroutineDispatcher) {
         val settings = MapSettings()
-        val repository = AuthRepositoryImpl(settings, Json { ignoreUnknownKeys = true }, ioDispatcher)
+        // The real AuthRepositoryImpl (internal to :core:data), via dataModule
+        val repository: AuthRepository = dataLayer(ioDispatcher, settings).get()
 
         fun viewModel() = SharedThemeViewModel(ManageProfileUseCase(repository))
     }

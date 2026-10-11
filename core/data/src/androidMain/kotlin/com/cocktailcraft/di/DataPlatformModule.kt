@@ -19,7 +19,7 @@ import org.koin.dsl.module
 import java.io.IOException
 import java.security.GeneralSecurityException
 
-actual fun platformModule() = module {
+actual fun dataPlatformModule() = module {
     // Debug-aware config (AR-4): androidApp's BuildConfig is invisible to this
     // module, but the debuggable flag carries the same signal.
     single<AppConfig> {

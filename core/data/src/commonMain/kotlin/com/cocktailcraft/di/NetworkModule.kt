@@ -112,9 +112,10 @@ internal fun buildHttpClient(
 }
 
 /**
- * Koin module for network-related dependencies.
+ * Koin module for network-related dependencies. Public (was internal) so
+ * :shared can assemble it into appModule; its builders stay internal.
  */
-internal val networkModule = module {
+val networkModule = module {
     // HTTP Client
     single {
         buildHttpClient(json = get(), config = get())

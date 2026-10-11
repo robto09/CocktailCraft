@@ -1,12 +1,18 @@
 package com.cocktailcraft.data.config
 
 import com.cocktailcraft.domain.config.AppConfig
+import kotlin.native.HiddenFromObjC
 
 /**
  * Implementation of AppConfig that provides configuration values for the application.
  * This is an adapter in the hexagonal architecture that implements the port defined in the domain layer.
+ *
+ * Public (was internal) so the :shared DI graph tests can stand in for the
+ * platform module; :core:data is neither exported to Swift nor visible to
+ * androidApp, so this widens nothing beyond the umbrella.
  */
-internal class AppConfigImpl(
+@HiddenFromObjC // AppConfig is; K/N requires its subtypes to match
+class AppConfigImpl(
     // Injected per-platform from the DI modules (AR-4): debug builds get
     // verbose wire logging automatically; release builds stay quiet. The
     // default keeps test fixtures terse.

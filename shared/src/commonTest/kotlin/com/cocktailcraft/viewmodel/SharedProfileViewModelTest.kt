@@ -1,6 +1,5 @@
 package com.cocktailcraft.viewmodel
 
-import com.cocktailcraft.data.repository.AuthRepositoryImpl
 import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
@@ -13,7 +12,7 @@ import com.cocktailcraft.resources.error_invalid_name_title
 import com.cocktailcraft.resources.error_invalid_password_title
 import com.cocktailcraft.resources.error_sign_in_failed_title
 import com.cocktailcraft.resources.error_sign_up_failed_title
-import com.cocktailcraft.testutil.MainDispatcherTest
+import com.cocktailcraft.testutil.DataLayerTest
 import com.cocktailcraft.util.ErrorHandler
 import com.russhwolf.settings.MapSettings
 import dev.icerock.moko.resources.desc.Raw
@@ -30,7 +29,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 
 /** An auth store that is completely unavailable, for error-propagation tests. */
 private class FailingAuthRepository(
@@ -51,12 +49,13 @@ private class FailingAuthRepository(
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SharedProfileViewModelTest : MainDispatcherTest() {
+class SharedProfileViewModelTest : DataLayerTest() {
 
     /** Real repository over in-memory settings, so tests exercise VM + domain + persistence together. */
-    private class Harness(ioDispatcher: CoroutineDispatcher) {
+    private inner class Harness(ioDispatcher: CoroutineDispatcher) {
         val settings = MapSettings()
-        val repository = AuthRepositoryImpl(settings, Json { ignoreUnknownKeys = true }, ioDispatcher)
+        // The real AuthRepositoryImpl (internal to :core:data), via dataModule
+        val repository: AuthRepository = dataLayer(ioDispatcher, settings).get()
 
         fun viewModel(authRepository: AuthRepository = repository) =
             SharedProfileViewModel(ManageProfileUseCase(authRepository))

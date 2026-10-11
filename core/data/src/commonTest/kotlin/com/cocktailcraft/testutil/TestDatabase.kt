@@ -12,11 +12,11 @@ import kotlinx.coroutines.IO
 import kotlinx.serialization.json.Json
 
 /**
- * A fresh, empty in-memory SQLite driver with the schema already created:
- * the JDBC sqlite driver on the Android host, the native driver's in-memory
- * mode on iOS. Each call returns an independent database.
+ * A fresh, empty in-memory SQLite driver with the app database's schema
+ * already created (see :core:testing's createInMemorySqlDriver(schema)).
+ * Each call returns an independent database.
  */
-internal expect fun createInMemorySqlDriver(): SqlDriver
+internal fun createInMemorySqlDriver(): SqlDriver = createInMemorySqlDriver(CocktailCraftDatabase.Schema)
 
 /** A fresh in-memory [CocktailCraftDatabase] for cache and repository tests. */
 internal fun createTestDatabase(driver: SqlDriver = createInMemorySqlDriver()): CocktailCraftDatabase =

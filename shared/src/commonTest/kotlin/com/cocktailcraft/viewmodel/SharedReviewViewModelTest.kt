@@ -1,9 +1,8 @@
 package com.cocktailcraft.viewmodel
 
 import app.cash.turbine.test
-import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
-import com.cocktailcraft.data.repository.ReviewRepositoryImpl
 import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.resources.MR
@@ -13,9 +12,7 @@ import com.cocktailcraft.resources.review_error_comment_required
 import com.cocktailcraft.resources.review_error_comment_too_long
 import com.cocktailcraft.resources.review_error_comment_too_short
 import com.cocktailcraft.resources.review_error_rating_range
-import com.cocktailcraft.testutil.MainDispatcherTest
-import com.cocktailcraft.testutil.createTestDatabase
-import com.cocktailcraft.testutil.createTestLocalDatabase
+import com.cocktailcraft.testutil.DataLayerTest
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
@@ -29,16 +26,22 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.koin.core.Koin
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SharedReviewViewModelTest : MainDispatcherTest() {
+class SharedReviewViewModelTest : DataLayerTest() {
 
-    private fun TestScope.repository(db: CocktailCraftDatabase): ReviewRepositoryImpl {
-        val io = StandardTestDispatcher(testScheduler)
-        return ReviewRepositoryImpl(createTestLocalDatabase(db, ioDispatcher = io), io)
-    }
+    /**
+     * A fresh in-memory database behind the real ReviewRepositoryImpl
+     * (internal to :core:data, so resolved through dataModule); io work runs
+     * on the test scheduler. Repositories and ViewModels built from the same
+     * [Koin] share that storage.
+     */
+    private fun TestScope.createTestDatabase(): Koin = dataLayer(StandardTestDispatcher(testScheduler))
 
-    private fun TestScope.viewModel(db: CocktailCraftDatabase) =
+    private fun repository(db: Koin): ReviewRepository = db.get()
+
+    private fun viewModel(db: Koin) =
         SharedReviewViewModel(ManageReviewsUseCase(repository(db)))
 
     @Test
