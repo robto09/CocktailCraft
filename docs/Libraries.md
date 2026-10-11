@@ -15,7 +15,7 @@ All versions are managed in a single version catalog: **`libraries.toml`** at th
 | Kotlinx DateTime | 0.8.0 | Date and time handling |
 | Koin | 4.2.2 | Dependency injection (`koin-core`, `koin-core-viewmodel`; `koin-android`/`koin-androidx-compose` on Android) |
 | Multiplatform Settings | 1.3.0 | Cross-platform key-value storage |
-| SQLDelight | 2.4.1 | SQLite storage for the offline cocktail cache (`android-driver` on Android, `native-driver` on iOS; the iOS app links `sqlite3` via the podspec) |
+| SQLDelight | 2.4.1 | SQLite storage for the offline cocktail cache (`android-driver` on Android, `native-driver` on iOS; the iOS app links `sqlite3` itself via `OTHER_LDFLAGS` in `iosApp/project.yml`) |
 | Kermit | 2.1.0 | Multiplatform logging |
 | SKIE | 0.10.13 | Swift interop: Flow → AsyncSequence, suspend → async/await, enum/sealed-class bridging |
 | AndroidX Lifecycle ViewModel | 2.10.0 | Multiplatform `ViewModel` base for the shared ViewModels (exposed as `api` so consumers see the supertype) |
@@ -36,6 +36,18 @@ Compose library versions come from the **Compose BOM 2026.06.01** — the indivi
 | Glance (appwidget, material3) | 1.1.1 | Home-screen widgets |
 | WorkManager | 2.9.0 | Background work (widget updates) |
 | Koin (android, androidx-compose) | 4.2.2 | DI integration with Android and `koinViewModel()` |
+
+## iOS App (Swift Package Manager)
+
+Declared under `packages:` in `iosApp/project.yml` and pinned by the committed
+`Package.resolved`. The shared module reaches Xcode through Kotlin's direct
+integration (`:shared:embedAndSignAppleFrameworkForXcode`), not a package
+manager.
+
+| Library | Version | Purpose |
+|---------|---------|---------|
+| Kingfisher | 7.12.0 (up to next major) | Image loading with disk/memory caching |
+| DebugSwift | 1.7.13.1 (pinned by commit) | In-app QA debugging toolkit — Debug builds only (see [DebugSwift.md](DebugSwift.md)) |
 
 ## Testing
 
@@ -70,4 +82,3 @@ Compose library versions come from the **Compose BOM 2026.06.01** — the indivi
 | Android Gradle Plugin (application, library, kotlin-multiplatform-library) | 9.2.1 | Android builds; `compileSdk` (36) and `jvmTarget` (17) also live in the catalog |
 | Baseline Profile (`androidx.baselineprofile`) | 1.5.0-alpha07 | Baseline profile generation and consumption |
 | SKIE (`co.touchlab.skie`) | 0.10.13 | Swift interop for the iOS framework |
-| Kotlin CocoaPods | 2.3.21 | Publishes the shared module as a CocoaPods framework |

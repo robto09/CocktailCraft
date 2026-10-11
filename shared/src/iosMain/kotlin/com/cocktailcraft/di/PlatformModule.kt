@@ -17,7 +17,8 @@ import org.koin.dsl.module
 @OptIn(ExperimentalSettingsImplementation::class, kotlin.experimental.ExperimentalNativeApi::class)
 actual fun platformModule() = module {
     // Debug-aware config (AR-4): the K/N binary genuinely differs Debug vs
-    // Release per Xcode configuration (the podspec forwards $CONFIGURATION).
+    // Release per Xcode configuration (embedAndSignAppleFrameworkForXcode builds
+    // the framework variant matching $CONFIGURATION).
     single<AppConfig> { AppConfigImpl(verboseNetworkLogging = Platform.isDebugBinary) }
 
     single<Settings> {
@@ -48,7 +49,7 @@ actual fun platformModule() = module {
     single<NetworkMonitor> { IOSNetworkMonitor() }
 
     // SQLite driver for the offline cocktail cache. sqlite3 itself is linked
-    // into the app through the podspec (see shared/build.gradle.kts).
+    // into the app via OTHER_LDFLAGS in iosApp/project.yml (the framework is static).
     single<SqlDriver> { NativeSqliteDriver(CocktailCraftDatabase.Schema, COCKTAIL_DATABASE_NAME) }
 }
 
