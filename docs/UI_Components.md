@@ -634,7 +634,7 @@ colors only through the theme — there is no global color object (AN-5):
 | background / surface | `colorScheme.background` / `surface` |
 | textPrimary | `colorScheme.onSurface` |
 | textSecondary (high-contrast aware) | `colorScheme.onSurfaceVariant` |
-| gray | `colorScheme.outline` |
+| gray (high-contrast aware in light theme) | `colorScheme.outline` |
 | error | `colorScheme.error` |
 | success / warning | `extendedColors.success` / `warning` |
 | rating stars | `extendedColors.rating` |
