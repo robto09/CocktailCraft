@@ -39,6 +39,13 @@ skie {
             // Default arguments support for cleaner Swift APIs
             co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(true)
         }
+        // moko-resources is an external library, but since it reaches the
+        // framework through the :core:resources project module SKIE would
+        // generate default-argument overloads for its classes too — ~50
+        // unused header entries (AR-12). Keep them off, as before the split.
+        group("dev.icerock.moko") {
+            co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(false)
+        }
     }
 }
 
@@ -65,6 +72,11 @@ kotlin {
             // StringResource/StringDesc and their localized() helpers are
             // used directly from Swift (see Strings.swift in the iOS app).
             export(libs.moko.resources)
+            // Modules whose types Swift names directly. Exporting keeps their
+            // declarations unprefixed in the header (MR, DesignTokens, ...);
+            // an unexported module's types would surface module-prefixed.
+            export(project(":core:resources"))
+            export(project(":core:designsystem"))
             // The framework is static, so the SQLDelight native driver's
             // sqlite3 (and the K/N runtime's libc++) are not linked here: the
             // app links them itself via OTHER_LDFLAGS in project.yml.
@@ -103,10 +115,10 @@ kotlin {
             // Export-surface trimming happens via @HiddenFromObjC on
             // Kotlin-side helpers instead (see Result.kt, BaseNetworkMonitor).
             api(libs.androidx.lifecycle.viewmodel)
-            // Shared strings: the generated MR accessors (StringResource) and
-            // StringDesc are part of the shared API, and the framework
-            // exports them for Swift.
-            api(libs.moko.resources)
+            // Shared strings (MR) and design tokens: part of the API Android
+            // and Swift consume, so api() — export() requires it.
+            api(project(":core:resources"))
+            api(project(":core:designsystem"))
 
                 // Multiplatform logging
                 implementation(libs.kermit)
@@ -166,15 +178,4 @@ kotlin {
 
 
     }
-}
-
-// Single source for the app's user-facing strings: base (English) and
-// per-language strings.xml/plurals.xml under src/commonMain/moko-resources.
-// Generates MR.strings / MR.plurals, Android string resources in this
-// module's R class, and Localizable.strings(dict) in a resource bundle that
-// the iOS app copies in (copyFrameworkResourcesToApp, run by the "Compile
-// Kotlin Framework" phase in iosApp/project.yml). See README "Localization".
-multiplatformResources {
-    resourcesPackage.set("com.cocktailcraft.resources")
-    iosBaseLocalizationRegion.set("en")
 }
