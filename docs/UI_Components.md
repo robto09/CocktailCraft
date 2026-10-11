@@ -68,9 +68,9 @@ When developing new features or refactoring existing code, follow these guidelin
 **Usage**:
 ```kotlin
 EmptyStateComponent(
-    title = "Your cart is empty",
-    message = "Add some cocktails to your cart and they will appear here",
-    actionButtonText = "Start Shopping",
+    title = stringResource(MR.strings.cart_empty_title),
+    message = stringResource(MR.strings.cart_empty_message),
+    actionButtonText = stringResource(MR.strings.cart_start_shopping),
     onActionButtonClick = onStartShopping,
     icon = Icons.Filled.ShoppingCart
 )
@@ -412,7 +412,7 @@ ErrorBanner(
 )
 ```
 
-**When to use**: When you need to display error messages to the user, either in a modal dialog or a non-modal banner.
+**When to use**: When you need to display error messages to the user, either in a modal dialog or a non-modal banner. The error's title, message and action label are shared `StringDesc`s; the components resolve them with `resolve()` (`util/SharedStrings.kt`).
 
 ### AnimatedButtons
 
@@ -738,5 +738,6 @@ Recent refactoring in the CocktailCraft app focused on:
 5. **Accessibility**: Ensure components are accessible with proper content descriptions
 6. **Composition**: Prefer composition over inheritance for component reuse
 7. **Testing**: Write tests for components to ensure they work as expected
+8. **Strings**: Never hardcode user-facing copy (Compose literals are invisible to the `HardcodedText` lint check). Add it to the shared strings and read it with `stringResource(MR.strings.key)` / `pluralStringResource(MR.plurals.key, …)` from `util/SharedStrings.kt` — see README "Localization"
 
 By following these guidelines and using the available components, you can maintain a consistent, maintainable, and efficient UI codebase for the CocktailCraft app.

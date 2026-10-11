@@ -41,8 +41,11 @@ the active configuration, SDK and architecture into
 unit test target, for `import shared`) finds via `FRAMEWORK_SEARCH_PATHS`.
 Because the framework is static, the app links `sqlite3` (SQLDelight native
 driver) and `libc++` itself through `OTHER_LDFLAGS` in `project.yml`. The
-first build downloads the Kotlin/Native toolchain and takes a few minutes;
-later builds are incremental.
+same Gradle call runs moko-resources' `:shared:copyFrameworkResourcesToApp`,
+which copies the shared strings bundle (`CocktailCraft:shared.bundle`) into the
+app — a static framework cannot carry resources. The first build downloads
+the Kotlin/Native toolchain and takes a few minutes; later builds are
+incremental.
 
 ### 3. (Legacy reference) Create Xcode Project
 1. Open Xcode

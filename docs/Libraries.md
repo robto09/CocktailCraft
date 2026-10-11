@@ -17,6 +17,7 @@ All versions are managed in a single version catalog: **`libraries.toml`** at th
 | Multiplatform Settings | 1.3.0 | Cross-platform key-value storage (auth data, in the secure store; older versions' cart/orders/favorites/reviews are read once to import them into SQLite) |
 | SQLDelight | 2.4.1 | SQLite storage for the offline cocktail cache, cart, orders, favorites and reviews (`android-driver` on Android, `native-driver` on iOS; the iOS app links `sqlite3` itself via `OTHER_LDFLAGS` in `iosApp/project.yml`; `coroutines-extensions` for reactive `Query.asFlow()` reads) |
 | Kermit | 2.1.0 | Multiplatform logging |
+| moko-resources | 0.27.1 | Single source for the app's strings: generates `MR.strings`/`MR.plurals`, Android string resources and the iOS strings bundle from `shared/src/commonMain/moko-resources` (exported to Swift; see README "Localization") |
 | SKIE | 0.10.13 | Swift interop: Flow → AsyncSequence, suspend → async/await, enum/sealed-class bridging |
 | AndroidX Lifecycle ViewModel | 2.10.0 | Multiplatform `ViewModel` base for the shared ViewModels (exposed as `api` so consumers see the supertype) |
 | AndroidX Security Crypto | 1.1.0-alpha06 | Keystore-backed `EncryptedSharedPreferences` for the Android auth store |
@@ -82,3 +83,4 @@ manager.
 | Android Gradle Plugin (application, library, kotlin-multiplatform-library) | 9.2.1 | Android builds; `compileSdk` (36) and `jvmTarget` (17) also live in the catalog |
 | Baseline Profile (`androidx.baselineprofile`) | 1.5.0-alpha07 | Baseline profile generation and consumption |
 | SKIE (`co.touchlab.skie`) | 0.10.13 | Swift interop for the iOS framework |
+| moko-resources (`dev.icerock.mobile.multiplatform-resources`) | 0.27.1 | Generates the shared strings (`MR`) for Android and iOS; `copyFrameworkResourcesToApp` copies the iOS bundle into the app |
