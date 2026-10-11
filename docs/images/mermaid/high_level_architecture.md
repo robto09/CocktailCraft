@@ -65,7 +65,7 @@ graph TD
 
 This diagram shows the high-level architecture of the CocktailCraft application, including:
 
-1. **Android App Layer**: UI components, Navigation, Theme System for Dark Mode support, and Error Handling UI (the ViewModels themselves live in the shared module; iOS mirrors this layer in SwiftUI)
+1. **Android App Layer**: UI components, Navigation, Theme System for Dark Mode support, and Error Handling UI (the ViewModels themselves live in the shared `:presentation` KMP module; iOS mirrors this layer in SwiftUI)
 2. **Shared Module**:
    - **Domain Layer**: Models, the nine focused Repository Interfaces, and Use Cases (related-cocktail recommendations are part of `GetCocktailDetailUseCase`)
    - **Data Layer**: Repository Implementations, Remote/Local Data Sources, Caching System for Offline Mode, Network Monitor, and Error Handler

@@ -18,7 +18,7 @@ import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 
 /**
- * The shared strings (shared/src/commonMain/moko-resources) as Android
+ * The shared strings (core/resources/src/commonMain/moko-resources) as Android
  * resolves them: copy, Android escapes, positional format arguments,
  * plurals, the messages shared code produces, and the locale fallback.
  * commonTest compares StringDescs; this pins the English text behind them.

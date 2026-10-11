@@ -25,7 +25,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Offline Mode**: Browse recently viewed cocktails and favorites without internet connection
 - **Background Sync**: Automatic data synchronization when app is backgrounded for fresh content on launch
 - **Home Screen Widgets**: Android and iOS (WidgetKit) widgets with deep links into the app
-- **Localization**: One shared set of UI strings for both platforms (moko-resources in the shared module) with locale-aware prices
+- **Localization**: One shared set of UI strings for both platforms (moko-resources in `:core:resources`) with locale-aware prices
 - **Robust Error Handling**: User-friendly error messages with recovery options
 - **Polished Animations**: Enhanced user experience with smooth animations and micro-interactions
 - **Cross-Platform**: Same codebase for both Android and iOS platforms with platform-specific UI components
@@ -90,8 +90,92 @@ The application follows the **Clean Architecture** pattern with **MVVM** (Model-
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
 
+### Module Structure
+The shared Kotlin code is split into Gradle modules, one per layer, so the
+Clean Architecture dependency rules are enforced by the build: a layer can
+only use what its module depends on.
+
+```
+  androidApp (Compose)                   iosApp (SwiftUI: `import shared`)
+        │ implementation                        │ links the static framework
+        ▼                                       ▼
+  ┌────────────────────────────────────────────────────────┐
+  │ :shared — umbrella: builds the `shared` iOS framework  │
+  │ (SKIE), export()s the API modules, assembles Koin      │
+  │ (initKoin, appModule, platformModule(), KoinHelper)    │
+  └────────────────────────────────────────────────────────┘
+        │ api + export()                             │ implementation
+        │ (also :core:domain, :core:common,          │ (not exported,
+        │  :core:resources, :core:designsystem)      │  not visible to the apps)
+        ▼                                            ▼
+  ┌────────────────────┐                       ┌────────────────────┐
+  │ :presentation      │                       │ :core:data         │
+  │ shared ViewModels, │                       │ repository impls,  │
+  │ UiState            │                       │ Ktor, SQLDelight,  │
+  └────────────────────┘                       │ Settings, drivers  │
+                                               └────────────────────┘
+             │ api                                     │ api
+             └──────────────────┐   ┌──────────────────┘
+                                ▼   ▼
+                        ┌──────────────────────────┐
+                        │ :core:domain             │                      ┌────────────────────┐
+                        │ models, repository       │ ── implementation ─► │ :core:designsystem │
+                        │ interfaces, use cases,   │                      │ DesignTokens       │
+                        │ validators               │                      └────────────────────┘
+                        └──────────────────────────┘
+                                     │ api
+                                     ▼
+                        ┌──────────────────────────┐
+                        │ :core:common             │
+                        │ Result/ErrorCode,        │
+                        │ ErrorHandler,            │
+                        │ NetworkMonitor, UUID     │
+                        └──────────────────────────┘
+                                     │ api
+                                     ▼
+                        ┌──────────────────────────┐
+                        │ :core:resources          │
+                        │ moko strings (MR)        │
+                        └──────────────────────────┘
+
+  :core:testing — test-only fakes, test data, MainDispatcherTest (api :core:domain)
+```
+
+| Module | Contents | Depends on |
+|--------|----------|------------|
+| `:core:resources` | moko-resources strings/plurals → `com.cocktailcraft.resources.MR` | moko-resources (api) |
+| `:core:designsystem` | `DesignTokens` (colors, spacing, typography) | — |
+| `:core:common` | `Result`/`ErrorCode`/`DomainException`, `ErrorHandler`, the `NetworkMonitor` contract, `UUID` | resources (api); Ktor core (implementation — only for exception types) |
+| `:core:domain` | models, repository interfaces, use cases, `AppConfig`, `DeliveryPolicy`, validators, `domainModule` | common (api), designsystem (implementation) |
+| `:core:data` | repository implementations, Ktor remote + DTOs, SQLDelight database, Settings/secure storage, platform `NetworkMonitor`s and drivers, `networkModule`/`dataModule`/`dataPlatformModule()` | domain (api); Ktor, SQLDelight, Settings (implementation) |
+| `:presentation` | shared ViewModels + UiState, `presentationModule` | domain (api), androidx ViewModel (api), designsystem (implementation) |
+| `:shared` | umbrella: iOS framework, Koin assembly, `KoinHelper` | presentation/domain/common/resources/designsystem (api + `export`), data (implementation) |
+| `:core:testing` | test doubles shared across suites (only ever a test dependency) | domain (api) |
+
+**Dependency rules**
+- `:presentation` → `:core:domain` ← `:core:data`. The domain depends on
+  nothing app-specific (no Ktor, SQLDelight, Settings or platform drivers);
+  `:presentation` cannot see `:core:data` — repositories reach the ViewModels
+  through Koin as domain interfaces.
+- `api` only where a module's public API exposes the dependency's types;
+  everything else is `implementation`, so e.g. Ktor stays off the domain and
+  presentation compile classpaths.
+- Only `:shared` depends on `:core:data`, with `implementation`: androidApp
+  and Swift never see data-layer types, and the framework doesn't export them.
+  Each module exposes its own Koin module; `:shared` assembles them (see
+  [Dependency Injection](docs/DependencyInjection.md)).
+- Swift sees exactly the `export()`ed modules (`:presentation`,
+  `:core:domain`, `:core:common`, `:core:resources`, `:core:designsystem`);
+  helpers that must be public for another Kotlin module but aren't Swift API
+  are `@HiddenFromObjC` (AR-12).
+- Package names did not change with the split (e.g. `Result` is still
+  `com.cocktailcraft.domain.util.Result`, in `:core:common`).
+- The KMP setup (targets, toolchain, SDK levels, opt-ins, host tests) comes
+  from the `cocktailcraft.kmp.library` convention plugin in `build-logic/`
+  (AR-10), so each module's build file only lists its dependencies.
+
 ### Key Architecture Components:
-- **Shared Module**: Contains common business logic, models, and repositories that can be used across platforms
+- **Shared Modules**: Common business logic, models, repositories and ViewModels used by both platforms, layered into the Gradle modules above
 - **Platform-Specific Apps**: Android and iOS implementations with platform-specific UI and functionality
 - **MVVM Pattern**: Separates UI (View) from business logic (ViewModel) and data management (Model)
 - **Repository Pattern**: Abstracts data sources and provides a clean API for the domain layer
@@ -125,10 +209,11 @@ The application follows the **Clean Architecture** pattern with **MVVM** (Model-
   - **Error Handling**: Centralized error handling with ErrorUtils and recovery options
 
 - **Dependency Injection Layer**:
-  - **Network Module**: Provides HTTP client, API interfaces, and network monitoring
-  - **Data Module**: Provides repositories and caching mechanisms
-  - **Domain Module**: Provides use cases, shared ViewModels, and application configuration
-  - **Platform Module**: Provides platform-specific dependencies
+  - **Network Module** (`:core:data`): Provides the HTTP client and API
+  - **Data Module** (`:core:data`): Provides repositories and caching mechanisms
+  - **Domain Module** (`:core:domain`): Provides use cases
+  - **Presentation Module** (`:presentation`): Provides the shared ViewModels
+  - **Platform Module** (`:core:data`, exposed by `:shared`): Provides platform-specific dependencies (Settings, SqlDriver, NetworkMonitor, AppConfig)
 
 ### Cross-Cutting Concerns:
 - **Error Handling**: Standardized error handling through SharedViewModel with user-friendly messages
@@ -150,7 +235,7 @@ For detailed information about the animations implementation, see the [Animation
 
 ### Dependency Injection
 The app uses Koin for dependency injection with a modular approach:
-- **Modular Structure**: Separate modules for network, data, and domain layers
+- **Modular Structure**: Each Gradle module exposes its own Koin module (network, data, domain, presentation, platform); `:shared` assembles them into `appModule`
 - **Testability**: Easy mocking and test module setup
 - **ViewModel Integration**: Standardized pattern for ViewModel dependency injection
 
@@ -203,19 +288,19 @@ For details about the iOS migration, SKIE implementation, and native Swift async
 
 ## Package Structure
 
-### Domain Layer
+### Domain Layer (`core/domain`)
 - **Models**: Data classes representing core business entities like `Cocktail`, `User`, `Order`, etc.
 - **Repositories**: Interfaces defining data access contracts
 - **UseCases**: Business logic operations and workflows
 
-### Data Layer
+### Data Layer (`core/data`)
 - **Repository Implementations**: Concrete implementations of repository interfaces
 - **Remote Data Sources**: API clients and network-related code
 - **Local Data Sources**: SQLDelight database (`data/local/LocalDatabase`, `data/cache/CocktailCache`) and secure preference storage for auth
 
-### Presentation Layer (Android)
-- **ViewModels**: Manage UI state and handle user interactions
-- **Screens**: Compose UI components representing app screens
+### Presentation Layer
+- **Shared ViewModels** (`presentation`): Manage UI state and handle user interactions on both platforms
+- **Screens**: Compose UI components representing app screens (`androidApp`) and SwiftUI views (`iosApp`)
 - **UI Elements**: Reusable UI components
 
 ## Key Features Implementation
@@ -261,11 +346,11 @@ For details about the iOS migration, SKIE implementation, and native Swift async
 - **Localized copy**: Error titles, messages and actions are shared `StringDesc`s, resolved for the user's locale by each platform (see [Localization](#localization))
 
 ### Localization
-The app's user-facing strings have a single source in the shared module,
-managed by [moko-resources](https://github.com/icerockdev/moko-resources):
+The app's user-facing strings have a single source in the `:core:resources`
+module, managed by [moko-resources](https://github.com/icerockdev/moko-resources):
 
 ```
-shared/src/commonMain/moko-resources/
+core/resources/src/commonMain/moko-resources/
 ├── base/strings.xml    # English (base) — every UI, widget and error string
 ├── base/plurals.xml    # count-dependent copy
 └── <lang>/strings.xml  # a translation (none ship yet)
@@ -273,9 +358,11 @@ shared/src/commonMain/moko-resources/
 
 At build time moko-resources generates the `MR.strings` / `MR.plurals`
 accessors (package `com.cocktailcraft.resources`), Android string resources in
-the shared module, and an iOS `Localizable.strings`/`.stringsdict` bundle that
-the iOS app's "Compile Kotlin Framework" phase copies into the app (the shared
-framework is static, so it cannot carry the bundle itself).
+that module, and an iOS `Localizable.strings`/`.stringsdict` bundle that the
+`shared` framework build collects and the iOS app's "Compile Kotlin Framework"
+phase copies into the app (the shared framework is static, so it cannot carry
+the bundle itself). The other KMP modules apply the moko plugin without
+resources of their own, only so their iOS test executables get the bundle.
 
 | Where | How to use a string |
 |-------|---------------------|
@@ -288,7 +375,7 @@ framework is static, so it cannot carry the bundle itself).
 readable `snake_case` key grouped by screen, escaped like an Android resource
 (`\'`, `\"`, `&amp;`), with positional format arguments (`%1$s`, `%2$d`) so a
 translation can reorder them. Build once (or run `./gradlew
-:shared:generateMRcommonMain`) and use it from either platform as above. On
+:core:resources:generateMRcommonMain`) and use it from either platform as above. On
 iOS, pass Swift `Int`s/`String`s as the arguments — every specifier is
 formatted as an object, so avoid precision specifiers like `%.2f` in strings
 iOS uses (prices are formatted separately, see below). Keys ending in `_ios`
@@ -296,7 +383,7 @@ hold copy that currently differs from the Android wording of the same element;
 unifying such a pair is a visual change that needs the screenshot baselines
 re-recorded.
 
-**Adding a language**: create `shared/src/commonMain/moko-resources/<lang>/strings.xml`
+**Adding a language**: create `core/resources/src/commonMain/moko-resources/<lang>/strings.xml`
 (and `plurals.xml` with that language's plural quantities) translating the
 base keys — untranslated keys fall back to English — then add the language
 code to `CFBundleLocalizations` in `iosApp/CocktailCraft/Info.plist` so iOS
@@ -395,14 +482,15 @@ Contributions are welcome! Please follow the standard GitHub flow:
 
 The test suites live alongside the code they cover — the tests themselves are the up-to-date catalog:
 
-- **Shared (KMP)**: `shared/src/commonTest` — ViewModels, use cases, repositories, cache, DI graph
+- **Shared (KMP)**: each module's `src/commonTest` (plus `androidHostTest`/`iosTest`), next to the code it covers — `presentation` (ViewModels), `core/domain` (use cases, policies, validators), `core/data` (repositories, cache, API, database, data DI), `core/common` (`ErrorHandler`), and `shared` (full DI graph, `KoinHelper`, Android string resolution). Shared fakes live in the test-only `core/testing` module.
 - **Android**: `androidApp/src/test` (unit) and `androidApp/src/androidTest` (instrumented/UI)
 - **iOS**: `iosApp/CocktailCraftTests` (unit) and `iosApp/CocktailCraftUITests` (XCUITest)
 
 Run them with:
 
 ```bash
-./gradlew :shared:testAndroidHostTest       # Shared module tests
+./gradlew testAndroidHostTest               # Shared (KMP) tests, every module, on the JVM
+./gradlew iosSimulatorArm64Test             # the same suites on the iOS simulator
 ./gradlew :androidApp:testDebugUnitTest     # Android unit tests (incl. screenshot verify)
 # iOS (from iosApp/, after xcodegen generate):
 xcodebuild test -project CocktailCraft.xcodeproj -scheme CocktailCraft \

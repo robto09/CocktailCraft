@@ -1,6 +1,6 @@
 -- Schema changes need a migration: add src/commonMain/sqldelight/migrations/<N>.sqm
 -- (N = current version, starting at 1) and regenerate the snapshot with
--- `./gradlew :shared:generateCommonMainCocktailCraftDatabaseSchema`.
+-- `./gradlew :core:data:generateCommonMainCocktailCraftDatabaseSchema`.
 --
 -- Favorite cocktails (CocktailFavoritesRepositoryImpl).
 --

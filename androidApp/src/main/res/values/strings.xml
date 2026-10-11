@@ -3,10 +3,10 @@
     Android-only strings that the OS reads straight from the app's resources:
     the launcher label, the widget picker names/descriptions and the static
     widget preview layouts. Everything the app itself renders (screens,
-    dialogs, Glance widget content) lives in the shared module's
-    shared/src/commonMain/moko-resources and is used via MR.strings (see
-    util/SharedStrings.kt). Layouts may still reference those as @string/…,
-    since the shared module's resources are merged into the app.
+    dialogs, Glance widget content) lives in the shared :core:resources
+    module (core/resources/src/commonMain/moko-resources) and is used via
+    MR.strings (see util/SharedStrings.kt). Layouts may still reference those
+    as @string/…, since that module's resources are merged into the app.
 -->
 <resources>
     <string name="app_name">CocktailCraft</string>

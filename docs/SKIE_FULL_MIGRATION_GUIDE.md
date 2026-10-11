@@ -67,7 +67,7 @@ abstract class SharedViewModel : ViewModel() {
 }
 
 // Example: SharedHomeViewModel — use cases arrive via the constructor
-// (wired in DomainModule.kt); state is one consolidated HomeUiState flow
+// (wired in PresentationModule.kt); state is one consolidated HomeUiState flow
 // that SKIE exposes to Swift as an AsyncSequence
 class SharedHomeViewModel internal constructor(
     private val searchCocktailsUseCase: SearchCocktailsUseCase,
@@ -153,9 +153,18 @@ skie {
             co.touchlab.skie.configuration.SealedInterop.Enabled(true)
             co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(true)
         }
+        // moko-resources' own classes reach the framework through the
+        // :core:resources module; no default-argument overloads for them (AR-12)
+        group("dev.icerock.moko") {
+            co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(false)
+        }
     }
 }
 ```
+
+SKIE runs only in `:shared`, the umbrella that builds the framework; it
+processes the modules that framework `export()`s (`:presentation`,
+`:core:domain`, `:core:common`, `:core:resources`, `:core:designsystem`).
 
 The five enabled flags and what they buy:
 
@@ -170,8 +179,8 @@ For the full feature reference and configuration options beyond these flags, see
 ### 📦 **Dependency Injection (Koin)**
 
 ```kotlin
-// shared/src/commonMain/kotlin/com/cocktailcraft/di/DomainModule.kt (excerpt)
-val domainModule = module {
+// presentation/src/commonMain/kotlin/com/cocktailcraft/di/PresentationModule.kt (excerpt)
+val presentationModule = module {
     // Screen-scoped ViewModels — new instance per screen
     viewModel { SharedCocktailDetailViewModel(/* use cases */) }
     viewModel { SharedReviewViewModel(manageReviewsUseCase = get()) }
@@ -182,7 +191,7 @@ val domainModule = module {
     single { SharedFavoritesViewModel(manageFavoritesUseCase = get()) }
     single { SharedOrderViewModel(orderRepository = get(), placeOrderUseCase = get()) }
     single { SharedProfileViewModel(manageProfileUseCase = get()) }
-    single { SharedOfflineModeViewModel(manageOfflineModeUseCase = get(), networkMonitor = get()) }
+    single { SharedThemeViewModel(manageProfileUseCase = get()) }
     single { SharedThemeViewModel(manageProfileUseCase = get()) }
 }
 ```
