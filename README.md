@@ -242,7 +242,7 @@ For details about the iOS migration, SKIE implementation, and native Swift async
 
 ### Dark Mode Support
 - **SharedThemeViewModel**: Manages theme state and preferences
-- **AppTheme**: Provides theme-specific colors and typography
+- **AnimatedCocktailBarTheme** (Android) / **AppTheme** (iOS): Provide theme-specific colors and typography from the shared design tokens. On Android every color is read from `MaterialTheme.colorScheme` or `CocktailCraftTheme.extendedColors` (see [UI_Components.md](docs/UI_Components.md#theming-and-colors))
 - **ThemeAwareComponents**: UI components that adapt to the current theme
 - **Smooth Transitions**: Animated transitions between light and dark modes
 - **System Integration**: Option to follow system theme settings
