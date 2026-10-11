@@ -566,9 +566,10 @@ Debug-only DebugSwift overlay (`HIDE_DEBUG_OVERLAY`), which never ships.
 **Known exclusion — contrast.** The brand coral (`#EB6A43`, 3.2:1 on white),
 the default secondary gray (`#8E8E93`, 3.3:1) and the success green are below
 the 4.5:1 WCAG AA ratio for small text, so contrast checks are suppressed in
-the ATF and Xcode audits rather than failing on a design decision. The in-app
-**High Contrast** setting strengthens secondary text (and, on Android in light
-theme, the gray outline role); changing the brand palette itself is out of
+the ATF and Xcode audits rather than failing on a design decision. The iOS
+in-app **High Contrast** setting strengthens secondary text (Android has no
+in-app toggle; its theme still applies the shared setting, including the gray
+outline role in light theme); changing the brand palette itself is out of
 scope for these checks.
 
 Conventions for new UI:
@@ -582,7 +583,8 @@ Conventions for new UI:
   composite rows read as one element; section titles are headings.
 - Touch targets are at least 48dp / 44pt; layouts wrap or stack at large
   text sizes instead of truncating.
-- In-app Font Size multiplies the system size on both platforms (iOS steps
-  relative to the system Dynamic Type size, so accessibility sizes apply);
-  Reduce Motion follows the in-app setting or the system one.
+- On iOS the in-app Font Size steps relative to the system Dynamic Type size
+  (so accessibility sizes apply) and Reduce Motion follows the in-app setting
+  or the system one. Android has no in-app Appearance section and follows the
+  system font scale.
 

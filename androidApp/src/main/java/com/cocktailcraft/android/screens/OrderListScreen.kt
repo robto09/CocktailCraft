@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -92,7 +93,8 @@ internal fun OrderListContent(
                 title = stringResource(MR.strings.error),
                 message = error.message.resolve(),
                 actionButtonText = stringResource(MR.strings.cart_try_again),
-                onActionButtonClick = onReload
+                onActionButtonClick = onReload,
+                icon = Icons.Filled.Warning
             )
         } else if (!isLoading && state.orders.isEmpty()) {
             EmptyStateComponent(

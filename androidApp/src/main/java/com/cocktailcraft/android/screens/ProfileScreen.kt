@@ -1,11 +1,8 @@
 package com.cocktailcraft.android.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,8 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -31,9 +26,6 @@ import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -59,8 +51,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -74,19 +64,16 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocktailcraft.android.BuildConfig
 import com.cocktailcraft.android.navigation.NavigationManager
-import com.cocktailcraft.android.ui.components.AccentColorPicker
 import com.cocktailcraft.android.ui.components.AnimatedThemeToggleRow
 import com.cocktailcraft.android.ui.components.PrimaryButton
 import com.cocktailcraft.android.ui.components.SettingsItem
 import com.cocktailcraft.android.ui.components.SignInDialog
 import com.cocktailcraft.android.ui.components.SignUpDialog
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.resolve
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.accent_color
 import com.cocktailcraft.resources.cancel
 import com.cocktailcraft.resources.change_password
 import com.cocktailcraft.resources.create_account
@@ -95,9 +82,7 @@ import com.cocktailcraft.resources.edit_profile
 import com.cocktailcraft.resources.email_preferences
 import com.cocktailcraft.resources.error
 import com.cocktailcraft.resources.follow_system_theme
-import com.cocktailcraft.resources.font_size
 import com.cocktailcraft.resources.help_support
-import com.cocktailcraft.resources.high_contrast
 import com.cocktailcraft.resources.logout
 import com.cocktailcraft.resources.logout_confirm
 import com.cocktailcraft.resources.notification_settings
@@ -107,7 +92,6 @@ import com.cocktailcraft.resources.profile_about
 import com.cocktailcraft.resources.profile_about_app_name
 import com.cocktailcraft.resources.profile_account_settings
 import com.cocktailcraft.resources.profile_app_settings
-import com.cocktailcraft.resources.profile_appearance
 import com.cocktailcraft.resources.profile_controlled_by_system
 import com.cocktailcraft.resources.profile_copyright
 import com.cocktailcraft.resources.profile_guest_email
@@ -116,7 +100,6 @@ import com.cocktailcraft.resources.profile_sign_in_prompt
 import com.cocktailcraft.resources.profile_toggle_off
 import com.cocktailcraft.resources.profile_toggle_on
 import com.cocktailcraft.resources.profile_version_format
-import com.cocktailcraft.resources.reduced_motion
 import com.cocktailcraft.resources.sign_in
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedProfileViewModel
@@ -133,7 +116,6 @@ fun ProfileScreen(
     themeViewModel: SharedThemeViewModel = koinInject()
 ) {
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     // Get user data from ViewModel
     val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
@@ -146,10 +128,6 @@ fun ProfileScreen(
         profileState = profileState,
         themeState = themeState,
         error = error,
-        accentOptions = themeViewModel.availableAccentColors,
-        accentLabel = { themeViewModel.getAccentColorDisplayName(it).toString(context) },
-        fontSizeOptions = themeViewModel.availableFontSizes,
-        fontSizeLabel = { themeViewModel.getFontSizeDisplayName(it).toString(context) },
         onSignIn = { email, password -> scope.launch { profileViewModel.signIn(email, password) } },
         onSignUp = { name, email, password -> scope.launch { profileViewModel.signUp(name, email, password) } },
         onConfirmLogout = {
@@ -163,10 +141,6 @@ fun ProfileScreen(
         onOrderHistoryClick = { navigationManager.navigateToOrderList() },
         onSetFollowSystemTheme = { enabled -> scope.launch { themeViewModel.setFollowSystemTheme(enabled) } },
         onSetDarkMode = { enabled -> scope.launch { themeViewModel.setDarkMode(enabled) } },
-        onSelectAccent = { scope.launch { themeViewModel.setAccentColor(it) } },
-        onSelectFontSize = { scope.launch { themeViewModel.setFontSize(it) } },
-        onSetHighContrast = { enabled -> scope.launch { themeViewModel.setHighContrast(enabled) } },
-        onSetReducedMotion = { enabled -> scope.launch { themeViewModel.setReducedMotion(enabled) } },
         onDismissError = { profileViewModel.clearError() }
     )
 }
@@ -181,20 +155,12 @@ internal fun ProfileContent(
     profileState: ProfileUiState,
     themeState: ThemeUiState,
     error: ErrorHandler.UserFriendlyError?,
-    accentOptions: List<String>,
-    accentLabel: (String) -> String,
-    fontSizeOptions: List<String>,
-    fontSizeLabel: (String) -> String,
     onSignIn: (email: String, password: String) -> Unit,
     onSignUp: (name: String, email: String, password: String) -> Unit,
     onConfirmLogout: () -> Unit,
     onOrderHistoryClick: () -> Unit,
     onSetFollowSystemTheme: (Boolean) -> Unit,
     onSetDarkMode: (Boolean) -> Unit,
-    onSelectAccent: (String) -> Unit,
-    onSelectFontSize: (String) -> Unit,
-    onSetHighContrast: (Boolean) -> Unit,
-    onSetReducedMotion: (Boolean) -> Unit,
     onDismissError: () -> Unit
 ) {
     val isLoading = profileState.isLoading
@@ -296,23 +262,6 @@ internal fun ProfileContent(
                 if (!isSystemTheme) onSetDarkMode(!isDarkMode)
             },
             onLogoutClick = { showLogoutDialog = true }
-        )
-
-        // Appearance / accessibility settings (accent, font size, contrast,
-        // motion) — parity with the iOS Settings sheet
-        AppearanceSettingsCard(
-            accentColor = themeState.accentColor,
-            accentOptions = accentOptions,
-            accentLabel = accentLabel,
-            fontSize = themeState.fontSize,
-            fontSizeOptions = fontSizeOptions,
-            fontSizeLabel = fontSizeLabel,
-            isHighContrast = themeState.isHighContrast,
-            isReducedMotion = themeState.isReducedMotion,
-            onSelectAccent = onSelectAccent,
-            onSelectFontSize = onSelectFontSize,
-            onToggleHighContrast = { onSetHighContrast(!themeState.isHighContrast) },
-            onToggleReducedMotion = { onSetReducedMotion(!themeState.isReducedMotion) }
         )
 
         // App information
@@ -578,120 +527,6 @@ internal fun AppSettingsCard(
                     textColor = MaterialTheme.colorScheme.error
                 )
             }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-internal fun AppearanceSettingsCard(
-    accentColor: String,
-    accentOptions: List<String>,
-    accentLabel: (String) -> String,
-    fontSize: String,
-    fontSizeOptions: List<String>,
-    fontSizeLabel: (String) -> String,
-    isHighContrast: Boolean,
-    isReducedMotion: Boolean,
-    onSelectAccent: (String) -> Unit,
-    onSelectFontSize: (String) -> Unit,
-    onToggleHighContrast: () -> Unit,
-    onToggleReducedMotion: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = Spacing.lg),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(Spacing.lg)
-        ) {
-            Text(
-                text = stringResource(MR.strings.profile_appearance),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier
-                    .padding(bottom = Spacing.lg)
-                    .semantics { heading() }
-            )
-
-            // Accent color
-            Text(
-                text = stringResource(MR.strings.accent_color),
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            AccentColorPicker(
-                selected = accentColor,
-                options = accentOptions,
-                onSelect = onSelectAccent,
-                optionLabel = accentLabel
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.md))
-
-            // Font size
-            Text(
-                text = stringResource(MR.strings.font_size),
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            // A radio group for TalkBack ("Medium, selected, 2 of 4"); wraps
-            // instead of running off the card at large font sizes
-            FlowRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = Spacing.sm)
-                    .selectableGroup(),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-                verticalArrangement = Arrangement.spacedBy(Spacing.sm)
-            ) {
-                fontSizeOptions.forEach { option ->
-                    val selected = option.equals(fontSize, ignoreCase = true)
-                    Text(
-                        text = fontSizeLabel(option),
-                        fontSize = 14.sp,
-                        color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier
-                            .background(
-                                color = if (selected) MaterialTheme.colorScheme.primary else CocktailCraftTheme.extendedColors.neutralSubtle.copy(alpha = 0.4f),
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                            .selectable(
-                                selected = selected,
-                                role = Role.RadioButton,
-                                onClick = { onSelectFontSize(option) }
-                            )
-                            .padding(horizontal = Spacing.md, vertical = Spacing.sm)
-                    )
-                }
-            }
-
-            // High contrast
-            AnimatedThemeToggleRow(
-                title = stringResource(MR.strings.high_contrast),
-                subtitle = if (isHighContrast) stringResource(MR.strings.profile_toggle_on) else stringResource(MR.strings.profile_toggle_off),
-                icon = Icons.Default.Visibility,
-                isChecked = isHighContrast,
-                onToggle = onToggleHighContrast,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // Reduce motion
-            AnimatedThemeToggleRow(
-                title = stringResource(MR.strings.reduced_motion),
-                subtitle = if (isReducedMotion) stringResource(MR.strings.profile_toggle_on) else stringResource(MR.strings.profile_toggle_off),
-                icon = Icons.Default.Speed,
-                isChecked = isReducedMotion,
-                onToggle = onToggleReducedMotion,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
     }
 }

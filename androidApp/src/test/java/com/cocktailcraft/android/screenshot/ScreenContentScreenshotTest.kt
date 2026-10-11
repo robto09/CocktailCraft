@@ -7,7 +7,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.screens.AccountSettingsCard
 import com.cocktailcraft.android.screens.AppSettingsCard
-import com.cocktailcraft.android.screens.AppearanceSettingsCard
 import com.cocktailcraft.android.screens.HomeContentSection
 import com.cocktailcraft.android.screens.ProfileHeaderCard
 import com.cocktailcraft.android.screens.detail.DetailChipsSection
@@ -15,7 +14,6 @@ import com.cocktailcraft.android.screens.detail.DetailIngredientsSection
 import com.cocktailcraft.android.screens.detail.DetailMainInfoCard
 import com.cocktailcraft.android.screens.detail.DetailRecommendationsSection
 import com.cocktailcraft.android.screens.detail.DetailReviewsSection
-import com.cocktailcraft.designsystem.AccentColorTokens
 import com.cocktailcraft.domain.model.Cocktail
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -133,24 +131,6 @@ class ScreenContentScreenshotTest(variant: ThemeVariant) : ScreenshotTest(varian
                 onLogoutClick = {}
             )
         }
-    }
-
-    @Test
-    fun profileAppearance() = snapshot("Profile_appearance") {
-        AppearanceSettingsCard(
-            accentColor = AccentColorTokens.DEFAULT,
-            accentOptions = AccentColorTokens.names,
-            fontSize = "medium",
-            fontSizeOptions = listOf("small", "medium", "large", "xlarge"),
-            accentLabel = { it.replaceFirstChar(Char::uppercase) },
-            fontSizeLabel = { it.replaceFirstChar(Char::uppercase) },
-            isHighContrast = false,
-            isReducedMotion = true,
-            onSelectAccent = {},
-            onSelectFontSize = {},
-            onToggleHighContrast = {},
-            onToggleReducedMotion = {}
-        )
     }
 
     companion object {

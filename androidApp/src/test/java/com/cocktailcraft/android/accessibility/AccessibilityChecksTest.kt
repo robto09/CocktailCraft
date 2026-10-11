@@ -9,7 +9,6 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.screens.AppSettingsCard
-import com.cocktailcraft.android.screens.AppearanceSettingsCard
 import com.cocktailcraft.android.screens.CartContent
 import com.cocktailcraft.android.screens.HomeContentSection
 import com.cocktailcraft.android.screens.ProfileHeaderCard
@@ -19,7 +18,6 @@ import com.cocktailcraft.android.screens.detail.DetailReviewsSection
 import com.cocktailcraft.android.ui.components.SearchFilterChips
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.designsystem.AccentColorTokens
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.viewmodel.state.CartUiState
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
@@ -179,24 +177,6 @@ class AccessibilityChecksTest(private val fontScale: Float) {
             onToggleFollowSystemTheme = {},
             onToggleDarkMode = {},
             onLogoutClick = {}
-        )
-    }
-
-    @Test
-    fun appearanceSettings() = check {
-        AppearanceSettingsCard(
-            accentColor = AccentColorTokens.DEFAULT,
-            accentOptions = AccentColorTokens.names,
-            accentLabel = { it },
-            fontSize = "medium",
-            fontSizeOptions = listOf("small", "medium", "large", "xlarge"),
-            fontSizeLabel = { it },
-            isHighContrast = false,
-            isReducedMotion = false,
-            onSelectAccent = {},
-            onSelectFontSize = {},
-            onToggleHighContrast = {},
-            onToggleReducedMotion = {}
         )
     }
 

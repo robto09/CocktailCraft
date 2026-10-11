@@ -2,6 +2,7 @@ package com.cocktailcraft.android.screenshot
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.ShoppingCart
 import com.cocktailcraft.android.ui.components.CocktailLoadingShimmer
 import com.cocktailcraft.android.ui.components.EmptySearchResultsMessage
@@ -22,11 +23,12 @@ import org.robolectric.ParameterizedRobolectricTestRunner
 class StateScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
 
     @Test
-    fun emptyStateIllustration() = snapshot("EmptyState_illustration") {
+    fun emptyStateFavorites() = snapshot("EmptyState_favorites") {
         EmptyStateComponent(
             title = "No favorites yet",
             message = "Tap the heart on any cocktail to save it here.",
-            actionButtonText = "Browse Cocktails"
+            actionButtonText = "Browse Cocktails",
+            icon = Icons.Filled.Favorite
         )
     }
 

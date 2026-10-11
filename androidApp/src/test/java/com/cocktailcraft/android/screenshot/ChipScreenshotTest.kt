@@ -8,13 +8,11 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.ui.components.AccentColorPicker
 import com.cocktailcraft.android.ui.components.CategoryFilterRow
 import com.cocktailcraft.android.ui.components.FilterChip
 import com.cocktailcraft.android.ui.components.SearchFilterChips
 import com.cocktailcraft.android.ui.components.StatusIndicator
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
-import com.cocktailcraft.designsystem.AccentColorTokens
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
@@ -55,15 +53,6 @@ class ChipScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
             filters = ScreenshotFixtures.activeFilters,
             onClearFilter = {},
             onClearAllFilters = {}
-        )
-    }
-
-    @Test
-    fun accentColorPicker() = snapshot("AccentColorPicker") {
-        AccentColorPicker(
-            selected = AccentColorTokens.DEFAULT,
-            options = AccentColorTokens.names,
-            onSelect = {}
         )
     }
 

@@ -64,7 +64,7 @@ When developing new features or refactoring existing code, follow these guidelin
 
 ### EmptyStateComponent
 
-**Purpose**: Displays a standardized empty state with an icon/image, title, message, and optional action button.
+**Purpose**: Displays a standardized empty state with an icon/image, title, message, and optional action button. There is no default illustration: pass the screen's icon (error states use `Icons.Filled.Warning`).
 
 **Usage**:
 ```kotlin
@@ -632,8 +632,10 @@ AnimatedButton(onClick = { /* action */ }) {
 `AnimatedCocktailBarTheme` (`ui/theme/AnimatedTheme.kt`) is the app's single
 theme. Its Material 3 color scheme is built in `ui/theme/Theme.kt`
 (`cocktailColorScheme`) from the shared `ColorTokens`
-(`shared/.../designsystem/DesignTokens.kt`) and honours the user's accent
-color (primary) and high-contrast setting (stronger secondary text). Read
+(`shared/.../designsystem/DesignTokens.kt`) and honours the accent color
+(primary) and high-contrast setting (stronger secondary text) from the shared
+theme state. Android has no in-app controls for these (the Profile screen has
+no Appearance section); iOS sets them in its Settings sheet. Read
 colors only through the theme — there is no global color object (AN-5):
 
 - **`MaterialTheme.colorScheme`** for every role Material defines
@@ -664,7 +666,7 @@ pass the color in instead. Home-screen widgets are Glance and use their own
 
 Android dynamic color (Material You) is supported by the theme's
 `dynamicColor` parameter but stays **off** by default: the app has a brand
-palette and a user accent picker that a wallpaper-derived scheme would
+palette and a shared accent setting that a wallpaper-derived scheme would
 override. Extended colors stay on-brand either way.
 
 ```kotlin

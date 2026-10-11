@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -97,7 +98,8 @@ internal fun FavoritesContent(
                 title = stringResource(MR.strings.error),
                 message = error.toString(),
                 actionButtonText = stringResource(MR.strings.cart_try_again),
-                onActionButtonClick = { /* Add retry logic here */ }
+                onActionButtonClick = { /* Add retry logic here */ },
+                icon = Icons.Filled.Warning
             )
         }
         // Show empty favorites state

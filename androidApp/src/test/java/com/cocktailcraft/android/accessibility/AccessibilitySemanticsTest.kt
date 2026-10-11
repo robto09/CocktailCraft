@@ -14,10 +14,8 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
-import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -28,7 +26,6 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import com.cocktailcraft.android.screens.AppearanceSettingsCard
 import com.cocktailcraft.android.screens.HomeContentSection
 import com.cocktailcraft.android.screens.detail.DetailChipsSection
 import com.cocktailcraft.android.ui.components.ActiveFilterChip
@@ -42,7 +39,6 @@ import com.cocktailcraft.android.ui.components.RatingDisplay
 import com.cocktailcraft.android.ui.components.SectionHeader
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.designsystem.AccentColorTokens
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -160,33 +156,6 @@ class AccessibilitySemanticsTest {
         assertTrue(checked)
         // The visual switch inside the row is not a second focus stop
         composeRule.onAllNodes(isToggleable()).assertCountEquals(1)
-    }
-
-    @Test
-    fun appearanceOptions_areRadioGroupsWithDisplayNames() {
-        setContent {
-            AppearanceSettingsCard(
-                accentColor = AccentColorTokens.DEFAULT,
-                accentOptions = AccentColorTokens.names,
-                accentLabel = { it.replaceFirstChar(Char::uppercase) },
-                fontSize = "medium",
-                fontSizeOptions = listOf("small", "medium"),
-                fontSizeLabel = { it.replaceFirstChar(Char::uppercase) },
-                isHighContrast = false,
-                isReducedMotion = false,
-                onSelectAccent = {},
-                onSelectFontSize = {},
-                onToggleHighContrast = {},
-                onToggleReducedMotion = {}
-            )
-        }
-
-        composeRule.onNodeWithContentDescription("Coral")
-            .assert(hasRole(Role.RadioButton))
-            .assertIsSelected()
-        composeRule.onNodeWithContentDescription("Blue").assertIsNotSelected()
-        composeRule.onNodeWithText("Medium").assert(hasRole(Role.RadioButton)).assertIsSelected()
-        composeRule.onNodeWithText("Small").assertIsNotSelected()
     }
 
     @Test

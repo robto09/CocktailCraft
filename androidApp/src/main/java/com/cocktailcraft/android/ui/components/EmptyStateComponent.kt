@@ -26,7 +26,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.ui.theme.ThemeAssets
 
 /**
  * A reusable empty state component that can be used across different screens.
@@ -49,7 +48,7 @@ fun EmptyStateComponent(
     onActionButtonClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
-    painter: Painter? = ThemeAssets.emptyStateIllustration(),
+    painter: Painter? = null,
     iconSize: Int = 120,
     iconTint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.outline
 ) {

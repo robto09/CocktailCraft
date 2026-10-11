@@ -47,16 +47,4 @@ object ThemeAssets {
             painterResource(id = R.drawable.cocktail_placeholder_light)
         }
     }
-
-    /**
-     * Returns a theme-specific empty state illustration
-     */
-    @Composable
-    fun emptyStateIllustration(): Painter {
-        return if (CocktailCraftTheme.isDarkTheme) {
-            painterResource(id = R.drawable.empty_state_dark)
-        } else {
-            painterResource(id = R.drawable.empty_state_light)
-        }
-    }
 }

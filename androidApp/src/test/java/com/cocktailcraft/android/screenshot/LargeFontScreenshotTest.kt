@@ -4,11 +4,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.screens.AppearanceSettingsCard
 import com.cocktailcraft.android.screens.CartContent
 import com.cocktailcraft.android.screens.HomeContentSection
 import com.cocktailcraft.android.screens.detail.DetailMainInfoCard
-import com.cocktailcraft.designsystem.AccentColorTokens
 import com.cocktailcraft.viewmodel.state.CartUiState
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -77,25 +75,6 @@ class LargeFontScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
             onRemove = {},
             onToggleFavorite = {},
             onConfirmOrder = {}
-        )
-    }
-
-    @Test
-    fun profileAppearance() = snapshot("Profile_appearance") {
-        AppearanceSettingsCard(
-            accentColor = AccentColorTokens.DEFAULT,
-            accentOptions = AccentColorTokens.names,
-            accentLabel = { it.replaceFirstChar(Char::uppercase) },
-            fontSize = "xlarge",
-            fontSizeOptions = listOf("small", "medium", "large", "xlarge"),
-            // The app's real display names, incl. the longest ("Extra Large")
-            fontSizeLabel = { if (it == "xlarge") "Extra Large" else it.replaceFirstChar(Char::uppercase) },
-            isHighContrast = false,
-            isReducedMotion = false,
-            onSelectAccent = {},
-            onSelectFontSize = {},
-            onToggleHighContrast = {},
-            onToggleReducedMotion = {}
         )
     }
 
