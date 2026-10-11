@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -33,7 +34,7 @@ import com.cocktailcraft.android.ui.components.RatingBar
 import com.cocktailcraft.android.ui.components.SectionHeader
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.domain.model.Review
 
@@ -61,7 +62,7 @@ internal fun DetailReviewsSection(
                 TextButton(
                     onClick = onWriteReviewClick,
                     colors = ButtonDefaults.textButtonColors(
-                        contentColor = AppColors.Primary
+                        contentColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
                     Icon(
@@ -85,7 +86,7 @@ internal fun DetailReviewsSection(
                 ) {
                     Text(
                         text = stringResource(R.string.detail_be_first_review),
-                        color = AppColors.Gray,
+                        color = MaterialTheme.colorScheme.outline,
                         fontSize = 16.sp
                     )
                 }
@@ -96,7 +97,7 @@ internal fun DetailReviewsSection(
                     if (index < reviews.take(3).size - 1) {
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = Spacing.md),
-                            color = AppColors.LightGray.copy(alpha = 0.5f)
+                            color = CocktailCraftTheme.extendedColors.neutralSubtle.copy(alpha = 0.5f)
                         )
                     }
                 }
@@ -118,12 +119,12 @@ internal fun CocktailReviewItem(review: Review) {
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .background(AppColors.Primary.copy(alpha = 0.2f), CircleShape),
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = (review.userName.takeIf { it.isNotBlank() } ?: stringResource(R.string.detail_review_anonymous_initial)).take(1).uppercase(),
-                    color = AppColors.Primary,
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -134,7 +135,7 @@ internal fun CocktailReviewItem(review: Review) {
                 Text(
                     text = review.userName.takeIf { it.isNotBlank() } ?: stringResource(R.string.detail_review_anonymous),
                     fontWeight = FontWeight.SemiBold,
-                    color = AppColors.TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 16.sp
                 )
 
@@ -145,13 +146,13 @@ internal fun CocktailReviewItem(review: Review) {
                         rating = review.rating.coerceIn(0f, 5f),
                         modifier = Modifier.padding(end = Spacing.sm, top = Spacing.xs),
                         stars = 5,
-                        starsColor = AppColors.Secondary
+                        starsColor = CocktailCraftTheme.extendedColors.rating
                     )
 
                     Text(
                         text = review.date.takeIf { it.isNotBlank() } ?: stringResource(R.string.detail_unknown_date),
                         fontSize = 12.sp,
-                        color = AppColors.Gray
+                        color = MaterialTheme.colorScheme.outline
                     )
                 }
             }
@@ -161,7 +162,7 @@ internal fun CocktailReviewItem(review: Review) {
             Text(
                 text = review.comment,
                 modifier = Modifier.padding(start = 52.dp, top = Spacing.sm),
-                color = AppColors.TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 14.sp,
                 lineHeight = 20.sp
             )

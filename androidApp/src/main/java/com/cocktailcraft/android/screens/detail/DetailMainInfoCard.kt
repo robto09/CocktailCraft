@@ -25,6 +25,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,7 +41,7 @@ import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.DetailInfoCard
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.domain.model.Cocktail
 
@@ -61,7 +62,7 @@ internal fun DetailMainInfoCard(
             .offset(y = (-20).dp)
             .padding(horizontal = Spacing.lg),
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
@@ -77,7 +78,7 @@ internal fun DetailMainInfoCard(
                     text = stringResource(R.string.detail_price_format, cocktail.price),
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.Primary
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 // Favorite button with haptic feedback —
@@ -86,7 +87,7 @@ internal fun DetailMainInfoCard(
                     Icon(
                         imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                         contentDescription = if (isFavorite) stringResource(R.string.detail_remove_from_favorites) else stringResource(R.string.detail_add_to_favorites),
-                        tint = if (isFavorite) AppColors.Secondary else AppColors.Gray,
+                        tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -105,7 +106,7 @@ internal fun DetailMainInfoCard(
                     }
                 },
                 fontSize = 16.sp,
-                color = AppColors.TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium
             )
 
@@ -120,7 +121,7 @@ internal fun DetailMainInfoCard(
                     modifier = Modifier
                         .size(10.dp)
                         .background(
-                            if (inStock) AppColors.Success else AppColors.Error,
+                            if (inStock) CocktailCraftTheme.extendedColors.success else MaterialTheme.colorScheme.error,
                             CircleShape
                         )
                 )
@@ -130,7 +131,7 @@ internal fun DetailMainInfoCard(
                 Text(
                     text = if (inStock) stringResource(R.string.detail_in_stock, cocktail.stockCount) else stringResource(R.string.detail_out_of_stock),
                     fontSize = 14.sp,
-                    color = if (inStock) AppColors.Success else AppColors.Error,
+                    color = if (inStock) CocktailCraftTheme.extendedColors.success else MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -142,8 +143,8 @@ internal fun DetailMainInfoCard(
                 onClick = onAddToCartClick,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.Primary,
-                    disabledContainerColor = AppColors.Gray
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    disabledContainerColor = MaterialTheme.colorScheme.outline
                 ),
                 shape = RoundedCornerShape(12.dp),
                 enabled = cocktail.stockCount > 0
@@ -177,7 +178,7 @@ internal fun DetailMainInfoCard(
                         Text(
                             text = instructionsText,
                             fontSize = 15.sp,
-                            color = AppColors.TextPrimary,
+                            color = MaterialTheme.colorScheme.onSurface,
                             lineHeight = 24.sp
                         )
                     } else {
@@ -188,7 +189,7 @@ internal fun DetailMainInfoCard(
                             Text(
                                 text = stringResource(R.string.detail_no_instructions),
                                 fontSize = 15.sp,
-                                color = AppColors.TextSecondary,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                                 textAlign = TextAlign.Center
                             )
@@ -197,18 +198,18 @@ internal fun DetailMainInfoCard(
 
                             OutlinedButton(
                                 onClick = onRefreshDetails,
-                                border = BorderStroke(1.dp, AppColors.Primary),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text(
                                     text = stringResource(R.string.detail_refresh_details),
-                                    color = AppColors.Primary
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
                     }
                 },
-                backgroundColor = AppColors.Surface.copy(alpha = 0.8f)
+                backgroundColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
             )
 
             Spacer(modifier = Modifier.height(Spacing.lg))

@@ -40,6 +40,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -76,7 +77,7 @@ import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.SignInDialog
 import com.cocktailcraft.android.ui.components.SignUpDialog
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.viewmodel.SharedProfileViewModel
 import com.cocktailcraft.viewmodel.SharedThemeViewModel
@@ -152,7 +153,7 @@ fun ProfileScreen(
                         }
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = AppColors.Primary
+                        containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
                     Text(stringResource(R.string.logout))
@@ -171,7 +172,7 @@ fun ProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.Background)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(Spacing.lg)
     ) {
@@ -238,7 +239,7 @@ fun ProfileScreen(
                 Button(
                     onClick = { profileViewModel.clearError() },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = AppColors.Primary
+                        containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
                     Text(stringResource(R.string.ok))
@@ -262,7 +263,7 @@ internal fun ProfileHeaderCard(
             .padding(bottom = Spacing.lg),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -276,14 +277,14 @@ internal fun ProfileHeaderCard(
             Box(
                 modifier = Modifier
                     .size(80.dp)
-                    .background(AppColors.Primary.copy(alpha = 0.2f), CircleShape),
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = userName.take(1).uppercase(),
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.Primary
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -294,7 +295,7 @@ internal fun ProfileHeaderCard(
                 text = userName,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(Spacing.xs))
@@ -303,7 +304,7 @@ internal fun ProfileHeaderCard(
             Text(
                 text = userEmail,
                 fontSize = 14.sp,
-                color = AppColors.TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             // Show login/signup buttons if not signed in
@@ -327,7 +328,7 @@ private fun SignInPromptSection(
     Text(
         text = stringResource(R.string.profile_sign_in_prompt),
         fontSize = 16.sp,
-        color = AppColors.TextSecondary,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(bottom = Spacing.lg)
     )
 
@@ -359,7 +360,7 @@ internal fun AccountSettingsCard() {
             .padding(bottom = Spacing.lg),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -370,7 +371,7 @@ internal fun AccountSettingsCard() {
                 text = stringResource(R.string.profile_account_settings),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = Spacing.lg)
             )
 
@@ -417,7 +418,7 @@ internal fun AppSettingsCard(
             .padding(bottom = Spacing.lg),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -428,7 +429,7 @@ internal fun AppSettingsCard(
                 text = stringResource(R.string.profile_app_settings),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = Spacing.lg)
             )
 
@@ -474,7 +475,7 @@ internal fun AppSettingsCard(
                     icon = Icons.Default.ExitToApp,
                     title = stringResource(R.string.logout),
                     onClick = onLogoutClick,
-                    textColor = AppColors.Error
+                    textColor = MaterialTheme.colorScheme.error
                 )
             }
         }
@@ -501,7 +502,7 @@ internal fun AppearanceSettingsCard(
             .padding(bottom = Spacing.lg),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -512,7 +513,7 @@ internal fun AppearanceSettingsCard(
                 text = stringResource(R.string.profile_appearance),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = Spacing.lg)
             )
 
@@ -520,7 +521,7 @@ internal fun AppearanceSettingsCard(
             Text(
                 text = stringResource(R.string.accent_color),
                 fontSize = 16.sp,
-                color = AppColors.TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             AccentColorPicker(
                 selected = accentColor,
@@ -534,7 +535,7 @@ internal fun AppearanceSettingsCard(
             Text(
                 text = stringResource(R.string.font_size),
                 fontSize = 16.sp,
-                color = AppColors.TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             Row(
                 modifier = Modifier
@@ -547,10 +548,10 @@ internal fun AppearanceSettingsCard(
                     Text(
                         text = fontSizeLabel(option),
                         fontSize = 14.sp,
-                        color = if (selected) Color.White else AppColors.TextPrimary,
+                        color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier
                             .background(
-                                color = if (selected) AppColors.Primary else AppColors.LightGray.copy(alpha = 0.4f),
+                                color = if (selected) MaterialTheme.colorScheme.primary else CocktailCraftTheme.extendedColors.neutralSubtle.copy(alpha = 0.4f),
                                 shape = RoundedCornerShape(16.dp)
                             )
                             .clickable { onSelectFontSize(option) }
@@ -588,7 +589,7 @@ private fun AboutCard() {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -599,7 +600,7 @@ private fun AboutCard() {
                 text = stringResource(R.string.profile_about),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = Spacing.lg)
             )
 
@@ -607,7 +608,7 @@ private fun AboutCard() {
                 text = stringResource(R.string.profile_about_app_name),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
-                color = AppColors.TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(Spacing.xs))
@@ -615,7 +616,7 @@ private fun AboutCard() {
             Text(
                 text = stringResource(R.string.profile_version_format, BuildConfig.VERSION_NAME),
                 fontSize = 14.sp,
-                color = AppColors.TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(Spacing.lg))
@@ -623,7 +624,7 @@ private fun AboutCard() {
             Text(
                 text = stringResource(R.string.profile_copyright),
                 fontSize = 12.sp,
-                color = AppColors.TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -637,7 +638,7 @@ private fun LoadingOverlay() {
             .background(Color.Black.copy(alpha = 0.5f)),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator(color = AppColors.Primary)
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
     }
 }
 

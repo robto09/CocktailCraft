@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
@@ -25,7 +26,6 @@ import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.DetailInfoCard
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.domain.model.CocktailIngredient
 
@@ -49,7 +49,7 @@ internal fun DetailIngredientsSection(ingredients: List<CocktailIngredient>) {
                     Box(
                         modifier = Modifier
                             .size(8.dp)
-                            .background(AppColors.Primary, CircleShape)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape)
                     )
 
                     Spacer(modifier = Modifier.width(Spacing.md))
@@ -58,7 +58,7 @@ internal fun DetailIngredientsSection(ingredients: List<CocktailIngredient>) {
                     Text(
                         text = "${ingredient.name} ${ingredient.measure}",
                         fontSize = 16.sp,
-                        color = AppColors.TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -89,8 +89,8 @@ internal fun DetailChipsSection(
                             onClick = {},
                             label = { Text(stringResource(R.string.category_label, it)) },
                             colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = AppColors.ChipBackground.copy(alpha = 0.2f),
-                                labelColor = AppColors.TextPrimary
+                                containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
+                                labelColor = MaterialTheme.colorScheme.onSurface
                             )
                         )
                     }
@@ -103,8 +103,8 @@ internal fun DetailChipsSection(
                             onClick = {},
                             label = { Text(stringResource(R.string.glass_label, it)) },
                             colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = AppColors.ChipBackground.copy(alpha = 0.2f),
-                                labelColor = AppColors.TextPrimary
+                                containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
+                                labelColor = MaterialTheme.colorScheme.onSurface
                             )
                         )
                     }
@@ -116,8 +116,8 @@ internal fun DetailChipsSection(
                         onClick = {},
                         label = { Text(if (alcoholic == "Alcoholic") stringResource(R.string.alcoholic) else stringResource(R.string.non_alcoholic)) },
                         colors = SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = AppColors.ChipBackground.copy(alpha = 0.2f),
-                            labelColor = AppColors.TextPrimary
+                            containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
+                            labelColor = MaterialTheme.colorScheme.onSurface
                         )
                     )
                 }
