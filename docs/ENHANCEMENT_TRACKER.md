@@ -12,6 +12,12 @@ Re-verified against `dev` after the phase-4 merge (2ee7b44) — all items confir
 > `:androidApp:testDebugUnitTest`, `:androidApp:lintDebug`, and
 > `xcodebuild test` (CocktailCraftTests) on the iPhone 16 simulator.
 
+> **Batch status (2026-10-11, branch `feature/arch-ui-kmp-improvements`):** AN-5
+> finished, plus eight new items (AR-13, AR-14, SH-14, SH-15, IO-14, UI-1,
+> UI-2), each on its own `feature/*` branch merged into the batch branch.
+> Follow-ups surfaced along the way are listed under
+> [Follow-ups from the 2026-10 batch](#follow-ups-from-the-2026-10-batch).
+
 **Status legend:** 🔲 Not Started · 🟡 In Progress · ✅ Done
 
 ## Quick Status Board
@@ -30,6 +36,8 @@ Re-verified against `dev` after the phase-4 merge (2ee7b44) — all items confir
 | [AR-10](#ar-10-extract-shared-build-convention-plugin) | Architecture | Extract shared build convention plugin | Low/Med | ✅ |
 | [AR-11](#ar-11-repo-hygiene-committed-artifacts) | Architecture | Repo hygiene: committed artifacts | Low | ✅ |
 | [AR-12](#ar-12-trim-the-exported-objc-framework-surface) | Architecture | Trim the exported ObjC framework surface | Low | ✅ |
+| [AR-13](#ar-13-move-remaining-local-storage-to-sqldelight) | Architecture | Move remaining local storage to SQLDelight | Medium | ✅ |
+| [AR-14](#ar-14-split-shared-into-layered-modules) | Architecture | Split `:shared` into layered modules | Medium | 🟡 |
 | [SH-1](#sh-1-stop-swallowing-category-fetch-errors-into-empty-success) | Shared | Stop swallowing category-fetch errors into empty success | High | ✅ |
 | [SH-2](#sh-2-fix-networkmonitor-double-registration--shared-teardown) | Shared | Fix `NetworkMonitor` double-registration / shared teardown | High | ✅ |
 | [SH-3](#sh-3-make-clear-cache-actually-clear-the-cache) | Shared | Make "Clear Cache" actually clear the cache | Med/High | ✅ |
@@ -43,11 +51,13 @@ Re-verified against `dev` after the phase-4 merge (2ee7b44) — all items confir
 | [SH-11](#sh-11-unify-the-two-cache-layers) | Shared | Unify the two cache layers | Low | ✅ |
 | [SH-12](#sh-12-trim-errorhandler-string-matching-expand-turbine-tests) | Shared | Trim ErrorHandler string-matching; expand Turbine tests | Low | ✅ |
 | [SH-13](#sh-13-add-debounce-to-the-shared-search-flow) | Shared | Add debounce to the shared search flow | High | ✅ |
+| [SH-14](#sh-14-single-uistate-contract-for-shared-viewmodels) | Shared | Single `uiState` contract for shared ViewModels | Medium | ✅ |
+| [SH-15](#sh-15-single-source-strings-in-the-shared-module) | Shared | Single-source strings in the shared module | Medium | ✅ |
 | [AN-1](#an-1-make-domain-models-compose-stable) | Android | Make domain models Compose-stable | High | ✅ |
 | [AN-2](#an-2-schedule-or-delete-widgetupdateworker) | Android | Schedule (or delete) `WidgetUpdateWorker` | High | ✅ |
 | [AN-3](#an-3-eliminate-on²-favorites-lookup-in-lists) | Android | Eliminate O(n²) favorites lookup in lists | Med/High | ✅ |
 | [AN-4](#an-4-process-death--savedstatehandle-strategy) | Android | Process-death / SavedStateHandle strategy | Medium | ✅ |
-| [AN-5](#an-5-consolidate-theme-systems-remove-global-mutable-appcolors) | Android | Consolidate theme systems; remove global mutable `AppColors` | Medium | 🟡 |
+| [AN-5](#an-5-consolidate-theme-systems-remove-global-mutable-appcolors) | Android | Consolidate theme systems; remove global mutable `AppColors` | Medium | ✅ |
 | [AN-6](#an-6-fix-edge-to-edge-insets-on-the-app-bar) | Android | Fix edge-to-edge insets on the app bar | Medium | ✅ |
 | [AN-7](#an-7-migrate-deprecated-compose-material-apis) | Android | Migrate deprecated Compose Material APIs | Medium | ✅ |
 | [AN-8](#an-8-widget-strings-sentinel-state-and-dead-image-code) | Android | Widget strings, sentinel state, and dead image code | Medium | ✅ |
@@ -69,6 +79,9 @@ Re-verified against `dev` after the phase-4 merge (2ee7b44) — all items confir
 | [IO-11](#io-11-reset-nav-stack-on-widget-deep-link) | iOS | Reset nav stack on widget deep link | Low | ✅ |
 | [IO-12](#io-12-audit-preconcurrency-import-shared) | iOS | Audit `@preconcurrency import shared` | Low | ✅ |
 | [IO-13](#io-13-verify-state-viewmodel-churn-on-detail) | iOS | Verify `@State` ViewModel churn on detail | Low | ✅ |
+| [IO-14](#io-14-replace-cocoapods-with-direct-integration-and-spm) | iOS | Replace CocoaPods with direct integration and SPM | Medium | ✅ |
+| [UI-1](#ui-1-screenshot-tests-on-both-platforms) | Cross-platform UI | Screenshot tests on both platforms | Medium | ✅ |
+| [UI-2](#ui-2-accessibility-pass-and-automated-audits) | Cross-platform UI | Accessibility pass and automated audits | Medium | ✅ |
 
 ---
 
@@ -181,6 +194,24 @@ Re-verified against `dev` after the phase-4 merge (2ee7b44) — all items confir
 **Where to look:** `shared/build.gradle.kts:10-27,95`.
 
 **Approach:** Add `@HiddenFromObjC` to internal-but-public helpers; review whether the full SKIE feature set is required. Deliberate trade-off — low priority.
+
+### AR-13. Move remaining local storage to SQLDelight
+**Status:** ✅ Done (`feature/sqldelight-local-storage`) · **Severity:** Medium
+
+**Description:** Only the offline cache used SQLite; cart, orders, favorites and reviews were whole JSON lists rewritten into `Settings` on every change, with no migrations and manual re-emission for observers.
+
+**Where to look:** `shared/src/commonMain/sqldelight/**` (`CartItem`, `CustomerOrder`, `FavoriteCocktail`, `CocktailReview`, `migrations/1.sqm`), `data/local/LocalDatabase.kt`, `data/local/LegacySettingsImport.kt`, the four repository impls.
+
+**Approach:** Normalized tables in the existing database (schema v2), `asFlow().mapToList()` reads, multi-statement writes in transactions (`placeOrderAndClearCart`), and an idempotent one-time import of the legacy Settings keys. Auth data deliberately stays in the encrypted Settings store — the SQLite file is not encrypted (SQLCipher would be the prerequisite to move it).
+
+### AR-14. Split `:shared` into layered modules
+**Status:** 🟡 In Progress (`feature/shared-modules`) · **Severity:** Medium
+
+**Description:** All shared code lived in one module, so layer boundaries (presentation → domain ← data) were convention only and every change recompiled everything.
+
+**Where to look:** `settings.gradle.kts`, the shared convention plugin, `shared/build.gradle.kts`.
+
+**Approach:** Layered KMP modules with `:shared` kept as the umbrella that alone builds and exports the iOS `shared` framework and assembles Koin, so Swift's `import shared` is unchanged.
 
 ---
 
@@ -303,6 +334,24 @@ Re-verified against `dev` after the phase-4 merge (2ee7b44) — all items confir
 
 **Approach:** Model the query as a `MutableStateFlow<String>` inside the shared ViewModel; apply `debounce(300)` + `distinctUntilChanged()` + `flatMapLatest { search(it) }` so superseded searches are cancelled. Platforms just push query text. Handle the empty-query case by clearing results.
 
+### SH-14. Single `uiState` contract for shared ViewModels
+**Status:** ✅ Done (`feature/viewmodel-ui-state`) · **Severity:** Medium
+
+**Description:** Every VM already had a consolidated `uiState`, but also exposed snapshot getters reading `_uiState.value` (`isEmpty`, `getFinalTotal()`, `isFavorite(id)`, `currentThemeName`, …) that neither Compose nor SwiftUI Observation can track, so they could render stale values.
+
+**Where to look:** `shared/.../viewmodel/**`, `viewmodel/state/**`, `iosApp/CocktailCraft/ViewModels/*.swift`, Android `screens/**`.
+
+**Approach:** Derived values moved onto the (Compose-stable) state classes or deleted; Android screens collect `uiState` once and render stateless `*Content` composables; iOS wrappers shrank from 1,152 to 656 lines via a shared `SharedViewModelWrapper` base. Contract documented in `docs/Shared_ViewModel_Strategy.md`.
+
+### SH-15. Single-source strings in the shared module
+**Status:** ✅ Done (`feature/shared-strings`) · **Severity:** Medium
+
+**Description:** UI strings were duplicated between Android resources and the iOS string catalog, and shared error/validation messages were hardcoded English.
+
+**Where to look:** `shared/src/commonMain/moko-resources/base/{strings,plurals}.xml`, `androidApp/.../util/SharedStrings.kt`, `iosApp/CocktailCraft/Utils/Strings.swift`.
+
+**Approach:** moko-resources; shared messages are `StringDesc` resolved at the UI edge. Still native by necessity: the iOS widget extension catalog (it doesn't link the framework), Android launcher/widget-picker labels, Debug-only DebugSwift labels.
+
 ---
 
 ## Android
@@ -344,7 +393,7 @@ Re-verified against `dev` after the phase-4 merge (2ee7b44) — all items confir
 **Approach:** Either migrate to lifecycle `ViewModel`s (`koinViewModel()`) with `SavedStateHandle` persisting query/filters/selected category, or add explicit state persistence in shared. At minimum, document that process-death restoration is unsupported. (Coordinates with SH-9.)
 
 ### AN-5. Consolidate theme systems; remove global mutable `AppColors`
-**Status:** 🟡 In Progress — dead `CocktailBarTheme` (incl. deprecated `window.statusBarColor`) deleted; the ~320-call-site `AppColors.*` → `MaterialTheme.colorScheme` migration and removal of the mutable global remain a follow-up · **Severity:** Medium
+**Status:** ✅ Done (`feature/an5-theme-migration`) — all `AppColors.*` reads moved to `MaterialTheme.colorScheme` plus `CocktailCraftTheme.extendedColors` (success, warning, rating, neutralSubtle); the global is gone. Screenshot-verified pixel-identical except the deliberate `CartItemCard` dark-mode fix. Dynamic color stays off (it would override accent/high contrast) · **Severity:** Medium
 
 **Description:** Dead `CocktailBarTheme` duplicates the actually-used `AnimatedCocktailBarTheme`; `AppColors` exposes a process-global `var isDarkTheme by mutableStateOf(false)` with ~300 direct call sites bypassing `MaterialTheme.colorScheme`. Blocks dynamic color; three color definitions must be hand-synced. `CocktailBarTheme` also uses the deprecated `window.statusBarColor`.
 
@@ -545,6 +594,37 @@ Re-verified against `dev` after the phase-4 merge (2ee7b44) — all items confir
 
 **Approach:** Instrument how often throwaway instances are created; if frequent, lazily resolve the shared VM inside `.task` or use a lighter factory.
 
+### IO-14. Replace CocoaPods with direct integration and SPM
+**Status:** ✅ Done (`feature/ios-direct-integration`) · **Severity:** Medium
+
+**Description:** The shared framework, Kingfisher and DebugSwift came through CocoaPods, which is being wound down; Kotlin recommends direct integration.
+
+**Where to look:** `iosApp/project.yml` ("Compile Kotlin Framework" phase, `packages:`), `shared/build.gradle.kts`.
+
+**Approach:** `:shared:embedAndSignAppleFrameworkForXcode` build phase; Kingfisher/DebugSwift/SnapshotTesting via SPM. DebugSwift is kept out of Release by excluding `DebugSwift.o` from the link plus a post-build check that fails on any DebugSwift symbol. Also committed the Gradle wrapper jar, which `*.jar` had been ignoring.
+
+---
+
+## Cross-platform UI
+
+### UI-1. Screenshot tests on both platforms
+**Status:** ✅ Done (`feature/screenshot-tests`) · **Severity:** Medium
+
+**Description:** No visual regression safety net for the cross-platform design system ahead of AN-5, SH-15 and UI-2.
+
+**Where to look:** `androidApp/src/test/java/.../screenshot`, `androidApp/src/test/screenshots`, `iosApp/CocktailCraftTests/Snapshots`.
+
+**Approach:** Roborazzi on Robolectric (verify runs in `testDebugUnitTest`) and swift-snapshot-testing; light/dark plus high-contrast, accent and large-font variants. iOS references must be recorded on the iPhone 16 Pro / iOS 18.5 simulator (other runtimes skip).
+
+### UI-2. Accessibility pass and automated audits
+**Status:** ✅ Done (`feature/accessibility`) · **Severity:** Medium
+
+**Description:** Missing/duplicated screen-reader labels, no state announcements, sub-minimum touch targets, iOS ignoring system Dynamic Type, and layouts breaking at large font scales.
+
+**Where to look:** `*_a11y` keys in the shared strings, `FavoriteToggleButton`, `AccessibilityChecksTest` / `AccessibilitySemanticsTest` (Android), `AccessibilityAuditTests` (iOS UI tests).
+
+**Approach:** Labels, merged semantics, headings, live regions and custom actions on both platforms; large-font layout fixes; ATF checks in Robolectric and instrumented tests; `performAccessibilityAudit()` on every tab. Contrast checks are excluded — the brand palette fails 4.5:1 for small text (see follow-ups).
+
 ---
 
 ## Suggested execution order
@@ -556,3 +636,17 @@ Re-verified against `dev` after the phase-4 merge (2ee7b44) — all items confir
 5. **AN-1, AN-2, AN-3** — Android perf + broken widget refresh.
 6. **IO-2, IO-3, IO-4, IO-5** — quick iOS cleanups (scaffolding, dead code, plist).
 7. Remaining medium/low items opportunistically, alongside the area being touched.
+
+---
+
+## Follow-ups from the 2026-10 batch
+
+- **AR-1 (CI/CD) is still open.** CI should also run the screenshot suites; iOS snapshots need an iPhone 16 Pro / iOS 18.5 runtime, and Android references were recorded on macOS (Linux font rasterization may differ). The IO-6 notes above still mention `pod install`.
+- **Delivery fee differs by platform:** Android Cart hardcodes 5.99; iOS uses `DeliveryPolicy` (free at $50+). Android could render `CartUiState.finalTotal`.
+- **Raw error text:** Android Cart/Favorites show `error.toString()` instead of the message. `changePassword` reports success through the error channel.
+- **Brand contrast:** coral `#EB6A43` (3.2:1) and gray `#8E8E93` (3.3:1) fail WCAG AA for small text; `neutralSubtle` stays `#E5E5EA` in dark mode.
+- **Copy unification:** iOS-only wordings live under `*_ios` string keys; unifying them means re-recording baselines.
+- **Android Favorites cards** have an empty `onClick`.
+- **Lint:** pre-existing `LocalContextGetResourceValueCall` error at `MainScreen.kt`.
+- **Baseline profile** should be regenerated after the theme and module changes.
+- **SH-10** above describes a helper that SH-14 removed as unused.
