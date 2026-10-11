@@ -8,8 +8,35 @@ import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.usecase.ManageProfileUseCase
 import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.accent_color_blue
+import com.cocktailcraft.resources.accent_color_coral
+import com.cocktailcraft.resources.accent_color_green
+import com.cocktailcraft.resources.accent_color_orange
+import com.cocktailcraft.resources.accent_color_pink
+import com.cocktailcraft.resources.accent_color_purple
+import com.cocktailcraft.resources.accent_color_red
+import com.cocktailcraft.resources.common_unknown
+import com.cocktailcraft.resources.error_reset_theme_failed
+import com.cocktailcraft.resources.error_save_failed_title
+import com.cocktailcraft.resources.error_save_theme_failed
+import com.cocktailcraft.resources.error_update_accent_color_failed
+import com.cocktailcraft.resources.error_update_font_size_failed
+import com.cocktailcraft.resources.error_update_high_contrast_failed
+import com.cocktailcraft.resources.error_update_reduced_motion_failed
+import com.cocktailcraft.resources.error_update_theme_mode_failed
+import com.cocktailcraft.resources.font_size_large
+import com.cocktailcraft.resources.font_size_medium
+import com.cocktailcraft.resources.font_size_small
+import com.cocktailcraft.resources.font_size_xlarge
+import com.cocktailcraft.resources.theme_mode_dark
+import com.cocktailcraft.resources.theme_mode_light
+import com.cocktailcraft.resources.theme_mode_system
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.ThemeUiState
+import dev.icerock.moko.resources.desc.Raw
+import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -56,7 +83,7 @@ class SharedThemeViewModel internal constructor(
             _uiState.update { it.copy(themeMode = mode) }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to update theme mode")
+            handleException(e, MR.strings.error_update_theme_mode_failed)
         }
     }
 
@@ -94,7 +121,7 @@ class SharedThemeViewModel internal constructor(
             _uiState.update { it.copy(accentColor = color) }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to update accent color")
+            handleException(e, MR.strings.error_update_accent_color_failed)
         }
     }
 
@@ -103,7 +130,7 @@ class SharedThemeViewModel internal constructor(
             _uiState.update { it.copy(fontSize = size) }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to update font size")
+            handleException(e, MR.strings.error_update_font_size_failed)
         }
     }
 
@@ -112,7 +139,7 @@ class SharedThemeViewModel internal constructor(
             _uiState.update { it.copy(isHighContrast = enabled) }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to update high contrast")
+            handleException(e, MR.strings.error_update_high_contrast_failed)
         }
     }
 
@@ -121,7 +148,7 @@ class SharedThemeViewModel internal constructor(
             _uiState.update { it.copy(isReducedMotion = enabled) }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to update reduced motion")
+            handleException(e, MR.strings.error_update_reduced_motion_failed)
         }
     }
 
@@ -130,7 +157,7 @@ class SharedThemeViewModel internal constructor(
             _uiState.update { ThemeUiState() }
             savePreferences()
         } catch (e: Exception) {
-            handleException(e, "Failed to reset theme settings")
+            handleException(e, MR.strings.error_reset_theme_failed)
         }
     }
 
@@ -160,33 +187,42 @@ class SharedThemeViewModel internal constructor(
     /**
      * Get theme mode display name.
      */
-    fun getThemeModeDisplayName(mode: String): String {
+    fun getThemeModeDisplayName(mode: String): StringDesc {
         return when (mode.lowercase()) {
-            "light" -> "Light"
-            "dark" -> "Dark"
-            "system" -> "System"
-            else -> "Unknown"
-        }
+            "light" -> MR.strings.theme_mode_light
+            "dark" -> MR.strings.theme_mode_dark
+            "system" -> MR.strings.theme_mode_system
+            else -> MR.strings.common_unknown
+        }.desc()
     }
 
     /**
      * Get accent color display name.
      */
-    fun getAccentColorDisplayName(color: String): String {
-        return color.replaceFirstChar { it.uppercase() }
+    fun getAccentColorDisplayName(color: String): StringDesc {
+        return when (color.lowercase()) {
+            "coral" -> MR.strings.accent_color_coral.desc()
+            "blue" -> MR.strings.accent_color_blue.desc()
+            "green" -> MR.strings.accent_color_green.desc()
+            "red" -> MR.strings.accent_color_red.desc()
+            "orange" -> MR.strings.accent_color_orange.desc()
+            "purple" -> MR.strings.accent_color_purple.desc()
+            "pink" -> MR.strings.accent_color_pink.desc()
+            else -> StringDesc.Raw(color.replaceFirstChar { it.uppercase() })
+        }
     }
 
     /**
      * Get font size display name.
      */
-    fun getFontSizeDisplayName(size: String): String {
+    fun getFontSizeDisplayName(size: String): StringDesc {
         return when (size.lowercase()) {
-            "small" -> "Small"
-            "medium" -> "Medium"
-            "large" -> "Large"
-            "xlarge" -> "Extra Large"
-            else -> "Unknown"
-        }
+            "small" -> MR.strings.font_size_small
+            "medium" -> MR.strings.font_size_medium
+            "large" -> MR.strings.font_size_large
+            "xlarge" -> MR.strings.font_size_xlarge
+            else -> MR.strings.common_unknown
+        }.desc()
     }
 
     /**
@@ -273,13 +309,13 @@ class SharedThemeViewModel internal constructor(
                 _uiState.update { it.copy(userPreferences = updatedPreferences) }
             } else {
                 setError(
-                    "Save Failed",
-                    "Failed to save theme preferences",
+                    MR.strings.error_save_failed_title,
+                    MR.strings.error_save_theme_failed,
                     ErrorHandler.ErrorCategory.SERVER
                 )
             }
         } catch (e: Exception) {
-            handleException(e, "Failed to save theme preferences")
+            handleException(e, MR.strings.error_save_theme_failed)
         }
     }
 }

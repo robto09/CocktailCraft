@@ -1,11 +1,18 @@
 package com.cocktailcraft.viewmodel
 
 import androidx.lifecycle.viewModelScope
-import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.error_add_item_to_cart_failed
+import com.cocktailcraft.resources.error_cart_title
+import com.cocktailcraft.resources.error_clear_cart_failed
+import com.cocktailcraft.resources.error_refresh_cart_failed
+import com.cocktailcraft.resources.error_remove_item_from_cart_failed
+import com.cocktailcraft.resources.error_update_quantity_failed
 import com.cocktailcraft.viewmodel.state.CartUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -49,7 +56,7 @@ class SharedCartViewModel internal constructor(
             val cartItem = CocktailCartItem(cocktail, quantity)
             manageCartUseCase.addToCart(cartItem).getOrThrow()
         } catch (e: Exception) {
-            handleException(e, "Failed to add item to cart")
+            handleException(e, MR.strings.error_add_item_to_cart_failed)
         }
     }
     
@@ -65,11 +72,11 @@ class SharedCartViewModel internal constructor(
             val result = manageCartUseCase.removeFromCart(cocktailId)
             if (result is Result.Error) {
                 applyItems(previous)
-                setError("Cart Error", "Failed to remove item from cart")
+                setError(MR.strings.error_cart_title, MR.strings.error_remove_item_from_cart_failed)
             }
         } catch (e: Exception) {
             applyItems(previous)
-            handleException(e, "Failed to remove item from cart")
+            handleException(e, MR.strings.error_remove_item_from_cart_failed)
         }
     }
     
@@ -87,11 +94,11 @@ class SharedCartViewModel internal constructor(
             val result = manageCartUseCase.updateQuantity(cocktailId, quantity)
             if (result is Result.Error) {
                 applyItems(previous)
-                setError("Cart Error", "Failed to update quantity")
+                setError(MR.strings.error_cart_title, MR.strings.error_update_quantity_failed)
             }
         } catch (e: Exception) {
             applyItems(previous)
-            handleException(e, "Failed to update quantity")
+            handleException(e, MR.strings.error_update_quantity_failed)
         }
     }
     
@@ -124,7 +131,7 @@ class SharedCartViewModel internal constructor(
             manageCartUseCase.clearCart()
             _uiState.update { it.copy(cartItems = emptyList(), itemCount = 0, totalPrice = 0.0) }
         } catch (e: Exception) {
-            handleException(e, "Failed to clear cart")
+            handleException(e, MR.strings.error_clear_cart_failed)
         }
     }
 
@@ -134,7 +141,7 @@ class SharedCartViewModel internal constructor(
      */
     fun refresh() {
         viewModelScope.launch {
-            applyItems(manageCartUseCase.getCartItems().getOrReport(_uiState.value.cartItems, "Failed to refresh cart"))
+            applyItems(manageCartUseCase.getCartItems().getOrReport(_uiState.value.cartItems, MR.strings.error_refresh_cart_failed))
         }
     }
 }

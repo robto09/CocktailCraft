@@ -13,15 +13,17 @@ import com.cocktailcraft.testutil.FakeFavoritesRepository
 import com.cocktailcraft.testutil.FakeSearchRepository
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
+import dev.icerock.moko.resources.desc.Raw
+import dev.icerock.moko.resources.desc.StringDesc
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 
 /** A detail source that always fails, for error-path tests. */
 private class FailingDetailRepository(
@@ -127,7 +129,7 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         val error = assertNotNull(vm.error.value)
-        assertEquals("detail lookup failed", error.message)
+        assertEquals(StringDesc.Raw("detail lookup failed"), error.message)
         assertNull(vm.uiState.value.cocktail)
         assertFalse(vm.uiState.value.isLoading)
     }

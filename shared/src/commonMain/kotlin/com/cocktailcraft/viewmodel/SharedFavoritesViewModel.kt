@@ -4,6 +4,10 @@ import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.error_clear_favorites_failed
+import com.cocktailcraft.resources.error_load_favorites_failed
+import com.cocktailcraft.resources.error_update_favorites_failed
 import com.cocktailcraft.viewmodel.state.FavoritesUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -47,7 +51,7 @@ class SharedFavoritesViewModel internal constructor(
             manageFavoritesUseCase.loadFavorites().getOrThrow()
             _uiState.update { it.copy(isLoading = false) }
         } catch (e: Exception) {
-            handleException(e, "Failed to load favorites")
+            handleException(e, MR.strings.error_load_favorites_failed)
             _uiState.update { it.copy(isLoading = false) }
         }
     }
@@ -61,7 +65,7 @@ class SharedFavoritesViewModel internal constructor(
         try {
             manageFavoritesUseCase.toggle(cocktail)
         } catch (e: Exception) {
-            handleException(e, "Failed to update favorites")
+            handleException(e, MR.strings.error_update_favorites_failed)
         }
     }
 
@@ -77,7 +81,7 @@ class SharedFavoritesViewModel internal constructor(
                 manageFavoritesUseCase.removeFromFavorites(cocktail)
             }
         } catch (e: Exception) {
-            handleException(e, "Failed to clear favorites")
+            handleException(e, MR.strings.error_clear_favorites_failed)
         }
     }
 

@@ -133,7 +133,7 @@ struct CocktailDetailView: View {
             reviewViewModel.clearError()
         }) {
             WriteReviewView(
-                submissionError: reviewViewModel.error?.message,
+                submissionError: reviewViewModel.error?.message.localized(),
                 onDismiss: { showingWriteReview = false },
                 onSubmit: { userName, rating, comment in
                     let success = await reviewViewModel.submitReview(

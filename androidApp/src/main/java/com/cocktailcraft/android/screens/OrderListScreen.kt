@@ -28,6 +28,7 @@ import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.OrderCard
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.resolve
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.browse_cocktails
@@ -87,7 +88,7 @@ internal fun OrderListContent(
         if (!isLoading && error != null) {
             EmptyStateComponent(
                 title = stringResource(MR.strings.error),
-                message = error.message,
+                message = error.message.resolve(),
                 actionButtonText = stringResource(MR.strings.cart_try_again),
                 onActionButtonClick = onReload
             )

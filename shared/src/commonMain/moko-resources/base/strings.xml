@@ -330,6 +330,7 @@
     <string name="error_message_too_many_requests">Too many requests. Please wait a moment and try again.</string>
     <string name="error_message_server">The server encountered an error. Please try again later.</string>
     <string name="error_message_network">Unable to connect to the server. Please check your internet connection.</string>
+    <string name="error_message_network_retry">Unable to connect to the server. Please check your internet connection and try again.</string>
     <string name="error_message_invalid_payload">Received unexpected data from the server. Please try again.</string>
     <string name="error_message_authentication">You don\'t have permission to access this resource. Please log in again.</string>
     <string name="error_message_invalid_data">Invalid data received. Please try again.</string>

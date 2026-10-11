@@ -2,6 +2,37 @@ package com.cocktailcraft.util
 
 import com.cocktailcraft.domain.util.DomainException
 import com.cocktailcraft.domain.util.ErrorCode
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.common_retry
+import com.cocktailcraft.resources.dialog_try_again
+import com.cocktailcraft.resources.error
+import com.cocktailcraft.resources.error_action_log_in
+import com.cocktailcraft.resources.error_generic
+import com.cocktailcraft.resources.error_message_authentication
+import com.cocktailcraft.resources.error_message_forbidden
+import com.cocktailcraft.resources.error_message_invalid_data
+import com.cocktailcraft.resources.error_message_invalid_payload
+import com.cocktailcraft.resources.error_message_network
+import com.cocktailcraft.resources.error_message_not_found
+import com.cocktailcraft.resources.error_message_server
+import com.cocktailcraft.resources.error_message_timeout
+import com.cocktailcraft.resources.error_message_too_many_requests
+import com.cocktailcraft.resources.error_suggestion_authentication
+import com.cocktailcraft.resources.error_suggestion_client
+import com.cocktailcraft.resources.error_suggestion_data
+import com.cocktailcraft.resources.error_suggestion_network
+import com.cocktailcraft.resources.error_suggestion_server
+import com.cocktailcraft.resources.error_suggestion_unknown
+import com.cocktailcraft.resources.error_title_authentication
+import com.cocktailcraft.resources.error_title_client
+import com.cocktailcraft.resources.error_title_data
+import com.cocktailcraft.resources.error_title_network
+import com.cocktailcraft.resources.error_title_server
+import com.cocktailcraft.resources.error_title_timeout
+import com.cocktailcraft.resources.refresh
+import dev.icerock.moko.resources.desc.Raw
+import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.desc.desc
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.ClientRequestException
@@ -14,6 +45,11 @@ import kotlinx.serialization.SerializationException
 /**
  * Platform-agnostic error handling utilities for the CocktailCraft app.
  * This class provides common error handling logic that can be used across all platforms.
+ *
+ * User-facing copy is a [StringDesc] — a shared string resource (MR.strings)
+ * that each platform resolves for the current locale at the UI edge
+ * (`toString(context)` on Android, `localized()` on iOS), or raw text from the
+ * data layer (exception/repository messages, which are not translated).
  */
 object ErrorHandler {
 
@@ -33,8 +69,8 @@ object ErrorHandler {
      * Data class representing a user-friendly error with recovery options
      */
     data class UserFriendlyError(
-        val title: String,
-        val message: String,
+        val title: StringDesc,
+        val message: StringDesc,
         val category: ErrorCategory,
         val recoveryAction: RecoveryAction? = null,
         val originalException: Throwable? = null,
@@ -45,7 +81,7 @@ object ErrorHandler {
      * Recovery action that can be taken to resolve an error
      */
     data class RecoveryAction(
-        val actionLabel: String,
+        val actionLabel: StringDesc,
         val action: () -> Unit
     )
 
@@ -62,18 +98,19 @@ object ErrorHandler {
     }
 
     /**
-     * Build a user-friendly error from a typed domain error code.
+     * Build a user-friendly error from a typed domain error code. A null
+     * [message] falls back to the category's recovery suggestion.
      */
     fun errorFromCode(
         code: ErrorCode,
-        message: String,
+        message: StringDesc?,
         recoveryAction: RecoveryAction? = null,
         originalException: Throwable? = null
     ): UserFriendlyError {
         val category = categoryFor(code)
         return UserFriendlyError(
             title = getCategoryTitle(category),
-            message = message.ifBlank { getRecoverySuggestion(category) },
+            message = message ?: getRecoverySuggestion(category),
             category = category,
             recoveryAction = recoveryAction,
             originalException = originalException,
@@ -89,14 +126,16 @@ object ErrorHandler {
      */
     fun getErrorFromException(
         exception: Throwable,
-        defaultMessage: String = "Something went wrong. Please try again.",
+        defaultMessage: StringDesc = MR.strings.error_generic.desc(),
         recoveryAction: RecoveryAction? = null
     ): UserFriendlyError {
         return when {
-            // Errors that already carry a typed domain code
+            // Errors that already carry a typed domain code. Their message is
+            // raw data-layer text: missing -> the caller's default, blank ->
+            // the category's recovery suggestion.
             exception is DomainException -> errorFromCode(
                 code = exception.code,
-                message = exception.message ?: defaultMessage,
+                message = exception.message.let { if (it == null) defaultMessage else rawMessage(it) },
                 recoveryAction = recoveryAction,
                 originalException = exception
             )
@@ -106,8 +145,8 @@ object ErrorHandler {
             exception is HttpRequestTimeoutException ||
             exception is ConnectTimeoutException ||
             exception is SocketTimeoutException -> UserFriendlyError(
-                title = "Connection Timeout",
-                message = "The connection timed out. This might be due to slow internet or server issues. Please try again.",
+                title = MR.strings.error_title_timeout.desc(),
+                message = MR.strings.error_message_timeout.desc(),
                 category = ErrorCategory.NETWORK,
                 recoveryAction = recoveryAction,
                 originalException = exception,
@@ -124,9 +163,9 @@ object ErrorHandler {
                     else -> ErrorCode.CLIENT_ERROR
                 }
                 val message = when (status) {
-                    401, 403 -> "You don't have permission to access this resource."
-                    404 -> "The requested resource was not found."
-                    429 -> "Too many requests. Please wait a moment and try again."
+                    401, 403 -> MR.strings.error_message_forbidden.desc()
+                    404 -> MR.strings.error_message_not_found.desc()
+                    429 -> MR.strings.error_message_too_many_requests.desc()
                     else -> defaultMessage
                 }
                 errorFromCode(code, message, recoveryAction, exception)
@@ -134,8 +173,8 @@ object ErrorHandler {
 
             // HTTP 5xx
             exception is ServerResponseException -> UserFriendlyError(
-                title = "Server Error",
-                message = "The server encountered an error. Please try again later.",
+                title = MR.strings.error_title_server.desc(),
+                message = MR.strings.error_message_server.desc(),
                 category = ErrorCategory.SERVER,
                 recoveryAction = recoveryAction,
                 originalException = exception,
@@ -144,8 +183,8 @@ object ErrorHandler {
 
             // Connectivity failures below the HTTP layer
             exception is IOException -> UserFriendlyError(
-                title = "Network Error",
-                message = "Unable to connect to the server. Please check your internet connection.",
+                title = MR.strings.error_title_network.desc(),
+                message = MR.strings.error_message_network.desc(),
                 category = ErrorCategory.NETWORK,
                 recoveryAction = recoveryAction,
                 originalException = exception,
@@ -154,8 +193,8 @@ object ErrorHandler {
 
             // Malformed payloads
             exception is SerializationException -> UserFriendlyError(
-                title = "Data Error",
-                message = "Received unexpected data from the server. Please try again.",
+                title = MR.strings.error_title_data.desc(),
+                message = MR.strings.error_message_invalid_payload.desc(),
                 category = ErrorCategory.DATA,
                 recoveryAction = recoveryAction,
                 originalException = exception,
@@ -166,8 +205,8 @@ object ErrorHandler {
             // Note: SecurityException is JVM-specific, so we check by exception message instead
             (exception.message?.contains("security", ignoreCase = true) == true ||
             exception.message?.contains("permission", ignoreCase = true) == true) -> UserFriendlyError(
-                title = "Authentication Error",
-                message = "You don't have permission to access this resource. Please log in again.",
+                title = MR.strings.error_title_authentication.desc(),
+                message = MR.strings.error_message_authentication.desc(),
                 category = ErrorCategory.AUTHENTICATION,
                 recoveryAction = recoveryAction,
                 originalException = exception,
@@ -177,8 +216,9 @@ object ErrorHandler {
             // Data errors
             exception is IllegalArgumentException ||
             exception is IllegalStateException -> UserFriendlyError(
-                title = "Data Error",
-                message = exception.message ?: "Invalid data received. Please try again.",
+                title = MR.strings.error_title_data.desc(),
+                message = exception.message?.let { StringDesc.Raw(it) }
+                    ?: MR.strings.error_message_invalid_data.desc(),
                 category = ErrorCategory.DATA,
                 recoveryAction = recoveryAction,
                 originalException = exception,
@@ -203,29 +243,29 @@ object ErrorHandler {
     /**
      * Get a user-friendly title for an error category
      */
-    private fun getCategoryTitle(category: ErrorCategory): String {
+    private fun getCategoryTitle(category: ErrorCategory): StringDesc {
         return when (category) {
-            ErrorCategory.NETWORK -> "Network Error"
-            ErrorCategory.SERVER -> "Server Error"
-            ErrorCategory.CLIENT -> "Application Error"
-            ErrorCategory.AUTHENTICATION -> "Authentication Error"
-            ErrorCategory.DATA -> "Data Error"
-            ErrorCategory.UNKNOWN -> "Error"
-        }
+            ErrorCategory.NETWORK -> MR.strings.error_title_network
+            ErrorCategory.SERVER -> MR.strings.error_title_server
+            ErrorCategory.CLIENT -> MR.strings.error_title_client
+            ErrorCategory.AUTHENTICATION -> MR.strings.error_title_authentication
+            ErrorCategory.DATA -> MR.strings.error_title_data
+            ErrorCategory.UNKNOWN -> MR.strings.error
+        }.desc()
     }
 
     /**
      * Get a recovery suggestion based on error category
      */
-    fun getRecoverySuggestion(category: ErrorCategory): String {
+    fun getRecoverySuggestion(category: ErrorCategory): StringDesc {
         return when (category) {
-            ErrorCategory.NETWORK -> "Check your internet connection and try again."
-            ErrorCategory.SERVER -> "Our servers are experiencing issues. Please try again later."
-            ErrorCategory.CLIENT -> "Try restarting the app."
-            ErrorCategory.AUTHENTICATION -> "Please log in again."
-            ErrorCategory.DATA -> "Try refreshing the data."
-            ErrorCategory.UNKNOWN -> "Please try again or contact support if the issue persists."
-        }
+            ErrorCategory.NETWORK -> MR.strings.error_suggestion_network
+            ErrorCategory.SERVER -> MR.strings.error_suggestion_server
+            ErrorCategory.CLIENT -> MR.strings.error_suggestion_client
+            ErrorCategory.AUTHENTICATION -> MR.strings.error_suggestion_authentication
+            ErrorCategory.DATA -> MR.strings.error_suggestion_data
+            ErrorCategory.UNKNOWN -> MR.strings.error_suggestion_unknown
+        }.desc()
     }
 
     /**
@@ -233,14 +273,22 @@ object ErrorHandler {
      */
     fun getDefaultRecoveryAction(category: ErrorCategory, action: () -> Unit): RecoveryAction {
         val label = when (category) {
-            ErrorCategory.NETWORK -> "Retry"
-            ErrorCategory.SERVER -> "Try Again"
-            ErrorCategory.CLIENT -> "Refresh"
-            ErrorCategory.AUTHENTICATION -> "Log In"
-            ErrorCategory.DATA -> "Refresh"
-            ErrorCategory.UNKNOWN -> "Try Again"
+            ErrorCategory.NETWORK -> MR.strings.common_retry
+            ErrorCategory.SERVER -> MR.strings.dialog_try_again
+            ErrorCategory.CLIENT -> MR.strings.refresh
+            ErrorCategory.AUTHENTICATION -> MR.strings.error_action_log_in
+            ErrorCategory.DATA -> MR.strings.refresh
+            ErrorCategory.UNKNOWN -> MR.strings.dialog_try_again
         }
 
-        return RecoveryAction(label, action)
+        return RecoveryAction(label.desc(), action)
     }
+
+    /**
+     * Raw (untranslated) text from the data layer — a Result.Error or
+     * exception message — or null when it is blank, so callers fall back to
+     * localized copy.
+     */
+    internal fun rawMessage(text: String): StringDesc? =
+        text.takeIf { it.isNotBlank() }?.let { StringDesc.Raw(it) }
 }

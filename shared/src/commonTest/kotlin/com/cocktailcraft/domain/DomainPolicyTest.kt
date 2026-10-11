@@ -1,6 +1,13 @@
 package com.cocktailcraft.domain
 
 import com.cocktailcraft.domain.config.DeliveryPolicy
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.common_unknown
+import com.cocktailcraft.resources.delivery_estimate_minutes
+import com.cocktailcraft.resources.delivery_estimate_no_items
+import com.cocktailcraft.resources.order_status_delivered
+import dev.icerock.moko.resources.desc.desc
+import dev.icerock.moko.resources.format
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -20,17 +27,17 @@ class DeliveryPolicyTest {
 
     @Test
     fun estimatedTimeScalesWithItemCount() {
-        assertEquals("No items", DeliveryPolicy.estimatedDeliveryTime(0))
-        assertEquals("15-20 minutes", DeliveryPolicy.estimatedDeliveryTime(3))
-        assertEquals("20-25 minutes", DeliveryPolicy.estimatedDeliveryTime(6))
-        assertEquals("25-30 minutes", DeliveryPolicy.estimatedDeliveryTime(7))
+        assertEquals(MR.strings.delivery_estimate_no_items.desc(), DeliveryPolicy.estimatedDeliveryTime(0))
+        assertEquals(MR.strings.delivery_estimate_minutes.format(15, 20), DeliveryPolicy.estimatedDeliveryTime(3))
+        assertEquals(MR.strings.delivery_estimate_minutes.format(20, 25), DeliveryPolicy.estimatedDeliveryTime(6))
+        assertEquals(MR.strings.delivery_estimate_minutes.format(25, 30), DeliveryPolicy.estimatedDeliveryTime(7))
     }
 
     @Test
     fun statusBasedEstimateCoversAllStatuses() {
-        assertEquals("Delivered", DeliveryPolicy.estimatedDeliveryTimeForStatus("DELIVERED"))
-        assertEquals("15-25 minutes", DeliveryPolicy.estimatedDeliveryTimeForStatus("processing"))
-        assertEquals("Unknown", DeliveryPolicy.estimatedDeliveryTimeForStatus(null))
+        assertEquals(MR.strings.order_status_delivered.desc(), DeliveryPolicy.estimatedDeliveryTimeForStatus("DELIVERED"))
+        assertEquals(MR.strings.delivery_estimate_minutes.format(15, 25), DeliveryPolicy.estimatedDeliveryTimeForStatus("processing"))
+        assertEquals(MR.strings.common_unknown.desc(), DeliveryPolicy.estimatedDeliveryTimeForStatus(null))
     }
 }
 

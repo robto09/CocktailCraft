@@ -103,7 +103,7 @@ struct SettingsView: View {
                     HStack {
                         Text("Current Theme")
                         Spacer()
-                        Text(themeViewModel.state.themeModeDisplayName)
+                        Text(themeViewModel.state.themeModeDisplayName.localized())
                             .foregroundColor(.secondary)
                     }
                 }

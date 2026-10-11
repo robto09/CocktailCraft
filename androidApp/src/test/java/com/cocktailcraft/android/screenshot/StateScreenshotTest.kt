@@ -11,6 +11,8 @@ import com.cocktailcraft.android.ui.components.ErrorBanner
 import com.cocktailcraft.android.ui.components.NetworkErrorStateDisplay
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
 import com.cocktailcraft.util.ErrorHandler
+import dev.icerock.moko.resources.desc.Raw
+import dev.icerock.moko.resources.desc.StringDesc
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
@@ -82,8 +84,8 @@ class StateScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
             OfflineModeIndicator(isOffline = true)
             ErrorBanner(
                 error = ErrorHandler.UserFriendlyError(
-                    title = "Connection problem",
-                    message = "Showing cached cocktails.",
+                    title = StringDesc.Raw("Connection problem"),
+                    message = StringDesc.Raw("Showing cached cocktails."),
                     category = ErrorHandler.ErrorCategory.NETWORK
                 ),
                 onDismiss = {},
@@ -91,8 +93,8 @@ class StateScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
             )
             ErrorBanner(
                 error = ErrorHandler.UserFriendlyError(
-                    title = "Something went wrong",
-                    message = "Please try again later.",
+                    title = StringDesc.Raw("Something went wrong"),
+                    message = StringDesc.Raw("Please try again later."),
                     category = ErrorHandler.ErrorCategory.SERVER
                 ),
                 onDismiss = {}

@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.cocktailcraft.android.util.ErrorUtils
+import com.cocktailcraft.android.util.resolve
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.dialog_dismiss
@@ -95,7 +96,7 @@ fun ErrorDialog(
 
                 // Error title
                 Text(
-                    text = error.title,
+                    text = error.title.resolve(),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -105,7 +106,7 @@ fun ErrorDialog(
 
                 // Error message
                 Text(
-                    text = error.message,
+                    text = error.message.resolve(),
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -139,7 +140,7 @@ fun ErrorDialog(
                                     containerColor = MaterialTheme.colorScheme.primary
                                 )
                             ) {
-                                Text(recoveryAction.actionLabel)
+                                Text(recoveryAction.actionLabel.resolve())
                             }
                         } ?: run {
                             if (onRetry != null) {
@@ -209,13 +210,13 @@ fun ErrorBanner(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = it.title,
+                            text = it.title.resolve(),
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
 
                         Text(
-                            text = it.message,
+                            text = it.message.resolve(),
                             color = Color.White.copy(alpha = 0.9f),
                             fontSize = 14.sp
                         )
@@ -234,7 +235,7 @@ fun ErrorBanner(
                                 )
                             ) {
                                 Text(
-                                    text = recoveryAction.actionLabel,
+                                    text = recoveryAction.actionLabel.resolve(),
                                     fontWeight = FontWeight.Bold
                                 )
                             }

@@ -77,6 +77,7 @@ import com.cocktailcraft.android.ui.components.SignUpDialog
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.resolve
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.accent_color
@@ -126,6 +127,7 @@ fun ProfileScreen(
     themeViewModel: SharedThemeViewModel = koinInject()
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     // Get user data from ViewModel
     val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
@@ -140,7 +142,7 @@ fun ProfileScreen(
         error = error,
         accentOptions = themeViewModel.availableAccentColors,
         fontSizeOptions = themeViewModel.availableFontSizes,
-        fontSizeLabel = { themeViewModel.getFontSizeDisplayName(it) },
+        fontSizeLabel = { themeViewModel.getFontSizeDisplayName(it).toString(context) },
         onSignIn = { email, password -> scope.launch { profileViewModel.signIn(email, password) } },
         onSignUp = { name, email, password -> scope.launch { profileViewModel.signUp(name, email, password) } },
         onConfirmLogout = {
@@ -318,7 +320,7 @@ internal fun ProfileContent(
         AlertDialog(
             onDismissRequest = onDismissError,
             title = { Text(stringResource(MR.strings.error)) },
-            text = { Text(errorInfo.message) },
+            text = { Text(errorInfo.message.resolve()) },
             confirmButton = {
                 Button(
                     onClick = onDismissError,

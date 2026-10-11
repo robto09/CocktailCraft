@@ -62,7 +62,7 @@ final class ReviewViewModelSKIETests: TestSetup {
         )
         XCTAssertFalse(accepted, "an invalid review must be rejected")
         _ = await waitUntil { wrapper.error != nil }
-        let message = wrapper.error?.message
+        let message = wrapper.error?.message.localized()
         XCTAssertNil(wrapper.state.reviews[cocktailId], "a rejected review must not be stored")
         wrapper.clearError()
         _ = await waitUntil { wrapper.error == nil }
@@ -176,7 +176,7 @@ final class ReviewViewModelSKIETests: TestSetup {
         XCTAssertFalse(deleted)
         let surfaced = await waitUntil { wrapper.error != nil }
         XCTAssertTrue(surfaced)
-        XCTAssertEqual(wrapper.error?.title, "Review Not Found")
+        XCTAssertEqual(wrapper.error?.title.localized(), "Review Not Found")
         wrapper.clearError()
     }
 
