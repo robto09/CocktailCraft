@@ -16,7 +16,7 @@ final class CartViewModelSKIE: SharedViewModelWrapper<CartUiState> {
     init() {
         let viewModel = getSharedKoinHelper().getSharedCartViewModel()
         self.sharedViewModel = viewModel
-        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
+        super.init(viewModel: viewModel, uiState: viewModel.uiState)
     }
 
     // No deinit: the base class cancels observation. Wraps a Koin `single`
@@ -40,11 +40,5 @@ final class CartViewModelSKIE: SharedViewModelWrapper<CartUiState> {
 
     func removeFromCart(_ cocktailId: String) async {
         await run { try await sharedViewModel.removeFromCart(cocktailId: cocktailId) }
-    }
-
-    // MARK: - Synchronous Methods
-
-    func clearError() {
-        sharedViewModel.clearError()
     }
 }

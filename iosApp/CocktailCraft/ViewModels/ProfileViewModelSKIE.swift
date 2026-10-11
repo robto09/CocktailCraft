@@ -23,7 +23,7 @@ final class ProfileViewModelSKIE: SharedViewModelWrapper<ProfileUiState> {
     init() {
         let viewModel = getSharedKoinHelper().getSharedProfileViewModel()
         self.sharedViewModel = viewModel
-        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
+        super.init(viewModel: viewModel, uiState: viewModel.uiState)
     }
 
     // No deinit: the base class cancels observation. Wraps a Koin `single`
@@ -69,10 +69,6 @@ final class ProfileViewModelSKIE: SharedViewModelWrapper<ProfileUiState> {
 
     func getPasswordStrength(_ password: String) -> Int {
         return Int(sharedViewModel.getPasswordStrength(password: password))
-    }
-
-    func clearError() {
-        sharedViewModel.clearError()
     }
 
     func refresh() {

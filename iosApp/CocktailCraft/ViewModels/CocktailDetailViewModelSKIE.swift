@@ -16,7 +16,7 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
     init() {
         let viewModel = getSharedKoinHelper().getSharedCocktailDetailViewModel()
         self.sharedViewModel = viewModel
-        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
+        super.init(viewModel: viewModel, uiState: viewModel.uiState, ownsViewModel: true)
         #if DEBUG
         // IO-13 instrumentation: @State evaluates its initializer on every
         // parent re-render and discards the extra instances — each one spins
@@ -29,16 +29,14 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
         #endif
     }
 
+    // The wrapped Koin `factory` instance is owned (ownsViewModel), so the
+    // base deinit clears its scope; this one only feeds the IO-13 gauge.
+    #if DEBUG
     deinit {
-        // This wraps a Koin `factory` instance owned by this wrapper, so its
-        // scope is cancelled here; the base deinit cancels observation tasks.
-        // (Singleton-backed wrappers must NOT call onCleared().)
-        sharedViewModel.onCleared()
-        #if DEBUG
         Self.liveInstances -= 1
         print("CocktailDetailViewModelSKIE: torn down (live: \(Self.liveInstances))")
-        #endif
     }
+    #endif
 
     #if DEBUG
     // Rough churn gauge. nonisolated(unsafe): deinit is nonisolated and must
@@ -66,12 +64,6 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
 
     func removeFromCart() async {
         await run { try await sharedViewModel.removeFromCart() }
-    }
-
-    // MARK: - Synchronous Methods
-
-    func clearError() {
-        sharedViewModel.clearError()
     }
 
     // MARK: - Helper Methods for SwiftUI

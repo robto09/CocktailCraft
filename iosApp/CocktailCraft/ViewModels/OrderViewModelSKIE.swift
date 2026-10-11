@@ -14,7 +14,7 @@ final class OrderViewModelSKIE: SharedViewModelWrapper<OrderUiState> {
     init() {
         let viewModel = getSharedKoinHelper().getSharedOrderViewModel()
         self.sharedViewModel = viewModel
-        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
+        super.init(viewModel: viewModel, uiState: viewModel.uiState)
     }
 
     // No deinit: the base class cancels observation. Wraps a Koin `single`
@@ -30,11 +30,5 @@ final class OrderViewModelSKIE: SharedViewModelWrapper<OrderUiState> {
     /// success; failures surface on the mirrored `error`.
     func placeOrder(cartItems: [CocktailCartItem], totalPrice: Double) async -> Bool {
         return await run(fallback: false) { try await sharedViewModel.placeOrder(cartItems: cartItems, totalPrice: totalPrice).boolValue }
-    }
-
-    // MARK: - Synchronous Methods
-
-    func clearError() {
-        sharedViewModel.clearError()
     }
 }

@@ -27,15 +27,11 @@ final class ReviewViewModelSKIE: SharedViewModelWrapper<ReviewUiState> {
     init() {
         let viewModel = getSharedKoinHelper().getSharedReviewViewModel()
         self.sharedViewModel = viewModel
-        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
+        super.init(viewModel: viewModel, uiState: viewModel.uiState, ownsViewModel: true)
     }
 
-    deinit {
-        // This wraps a Koin `factory` instance owned by this wrapper, so its
-        // scope is cancelled here; the base deinit cancels observation tasks.
-        // (Singleton-backed wrappers must NOT call onCleared().)
-        sharedViewModel.onCleared()
-    }
+    // No deinit: this wraps a Koin `factory` instance it owns
+    // (ownsViewModel), so the base deinit clears its scope.
 
     // MARK: - Public Methods (using SKIE async/await)
 
@@ -59,11 +55,5 @@ final class ReviewViewModelSKIE: SharedViewModelWrapper<ReviewUiState> {
 
     func deleteReview(_ reviewId: String) async -> Bool {
         return await run(fallback: false) { try await sharedViewModel.deleteReview(reviewId: reviewId).boolValue }
-    }
-
-    // MARK: - Synchronous Methods
-
-    func clearError() {
-        sharedViewModel.clearError()
     }
 }
