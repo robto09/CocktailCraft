@@ -96,6 +96,7 @@ import com.cocktailcraft.android.util.ListOptimizations.OnScrollPastThreshold
 import com.cocktailcraft.android.util.ListOptimizations.itemKey
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
+import com.cocktailcraft.viewmodel.state.HomeUiState
 import android.util.Log
 import com.cocktailcraft.android.BuildConfig
 
@@ -106,21 +107,15 @@ fun HomeScreen(
     onAddToCart: (Cocktail) -> Unit,
     onCocktailClick: (Cocktail) -> Unit
 ) {
+    // HomeUiState carries the favorites too (same repository flow the
+    // favorites VM observes), so the screen collects one state.
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val isLoading = state.isLoading
-    val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val cocktails = state.cocktails
-    val isLoadingMore = state.isLoadingMore
-    val hasMoreData = state.hasMoreData
     val error by viewModel.error.collectAsStateWithLifecycle()
     val errorMessage = error?.message ?: ""
     val isSearchActive = state.isSearchActive
     val searchQuery = state.searchQuery
-    val favorites = favoritesState.favorites
-    val isNetworkAvailable = state.isNetworkAvailable
-    val searchFilters = state.searchFilters
-    val isAdvancedSearchActive = state.isAdvancedSearchActive
 
     // State for advanced search panel
 
@@ -186,6 +181,70 @@ fun HomeScreen(
         }
     }
 
+    // Load the shared filter-option lists (categories / ingredients)
+    // into the ViewModel state once; the sheet and category row read them.
+    LaunchedEffect(Unit) {
+        viewModel.loadFilterOptions()
+    }
+
+    HomeContent(
+        state = state,
+        errorMessage = errorMessage,
+        curatedCategories = viewModel.curatedCategories,
+        selectedCategory = selectedCategory,
+        onCategorySelected = onCategorySelected,
+        // Shared debounced pipeline (SH-13): no per-keystroke coroutines.
+        onSearchQueryChange = { viewModel.updateSearchQuery(it) },
+        onExitSearch = { viewModel.toggleSearchMode(false) },
+        onSetAdvancedSearchActive = { viewModel.toggleAdvancedSearchMode(it) },
+        onApplyFilters = { filters -> scope.launch { viewModel.applyFilters(filters) } },
+        onClearSearchFilters = { viewModel.clearSearchFilters() },
+        onRetry = { viewModel.retry() },
+        onCocktailClick = onCocktailClick,
+        onAddToCart = onAddToCart,
+        onToggleFavorite = { cocktailToToggle ->
+            scope.launch { favoritesViewModel.toggleFavorite(cocktailToToggle) }
+        },
+        onLoadMore = {
+            scope.launch { viewModel.loadMoreCocktails() }
+        }
+    )
+}
+
+/**
+ * Stateless Home content: renders [state] and reports every intent upward,
+ * so it can be previewed/screenshot-tested without a ViewModel. The
+ * selected category is screen-owned (rememberSaveable) and passed in.
+ */
+@Composable
+internal fun HomeContent(
+    state: HomeUiState,
+    errorMessage: String,
+    curatedCategories: List<String>,
+    selectedCategory: String?,
+    onCategorySelected: (String?) -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onExitSearch: () -> Unit,
+    onSetAdvancedSearchActive: (Boolean) -> Unit,
+    onApplyFilters: (SearchFilters) -> Unit,
+    onClearSearchFilters: () -> Unit,
+    onRetry: () -> Unit,
+    onCocktailClick: (Cocktail) -> Unit,
+    onAddToCart: (Cocktail) -> Unit,
+    onToggleFavorite: (Cocktail) -> Unit,
+    onLoadMore: () -> Unit
+) {
+    val isLoading = state.isLoading
+    val cocktails = state.cocktails
+    val isLoadingMore = state.isLoadingMore
+    val hasMoreData = state.hasMoreData
+    val isSearchActive = state.isSearchActive
+    val searchQuery = state.searchQuery
+    val favorites = state.favorites
+    val isNetworkAvailable = state.isNetworkAvailable
+    val searchFilters = state.searchFilters
+    val isAdvancedSearchActive = state.isAdvancedSearchActive
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -199,30 +258,20 @@ fun HomeScreen(
             searchQuery = searchQuery,
             isAdvancedSearchActive = isAdvancedSearchActive,
             hasActiveFilters = searchFilters.hasActiveFilters(),
-            // Shared debounced pipeline (SH-13): no per-keystroke coroutines.
-            onSearchQueryChange = { viewModel.updateSearchQuery(it) },
-            onClearSearch = { viewModel.toggleSearchMode(false) },
-            onToggleAdvancedSearch = { viewModel.toggleAdvancedSearchMode(!isAdvancedSearchActive) }
+            onSearchQueryChange = onSearchQueryChange,
+            onClearSearch = onExitSearch,
+            onToggleAdvancedSearch = { onSetAdvancedSearchActive(!isAdvancedSearchActive) }
         )
 
         // Active filters display
         HomeActiveFiltersSection(
             searchFilters = searchFilters,
-            onApplyFilters = { updatedFilters ->
-                scope.launch { viewModel.applyFilters(updatedFilters) }
-            },
-            onClearAllFilters = {
-                viewModel.clearSearchFilters()
-            }
+            onApplyFilters = onApplyFilters,
+            onClearAllFilters = onClearSearchFilters
         )
 
         // Advanced search panel
 
-        // Load the shared filter-option lists (categories / ingredients)
-        // into the ViewModel state once; the sheet and category row read them below.
-        LaunchedEffect(Unit) {
-            viewModel.loadFilterOptions()
-        }
         val categories = state.filterCategories
         val ingredients = state.filterIngredients
 
@@ -233,14 +282,10 @@ fun HomeScreen(
             currentFilters = searchFilters,
             categories = categories,
             ingredients = ingredients,
-            onApplyFilters = { filters ->
-                scope.launch { viewModel.applyFilters(filters) }
-            },
-            onClearFilters = {
-                viewModel.clearSearchFilters()
-            },
+            onApplyFilters = onApplyFilters,
+            onClearFilters = onClearSearchFilters,
             onDismiss = {
-                viewModel.toggleAdvancedSearchMode(false)
+                onSetAdvancedSearchActive(false)
             }
         )
 
@@ -249,7 +294,7 @@ fun HomeScreen(
         // categories); the full API list above is only for the advanced panel.
         HomeCategoryChipsRow(
             isSearchActive = isSearchActive,
-            categories = viewModel.curatedCategories,
+            categories = curatedCategories,
             selectedCategory = selectedCategory,
             onCategorySelected = onCategorySelected
         )
@@ -269,30 +314,22 @@ fun HomeScreen(
             hasMoreData = hasMoreData,
             favorites = favorites,
             isNetworkAvailable = isNetworkAvailable,
-            onRetry = { viewModel.retry() },
-            onClearSearch = {
-                viewModel.toggleSearchMode(false)
-            },
+            onRetry = onRetry,
+            onClearSearch = onExitSearch,
             onClearCategory = {
                 onCategorySelected(null)
             },
             onClearFilters = {
                 // Drop only the advanced filters; any active query re-runs
                 // on its own (empty query + no filters = default listing).
-                scope.launch {
-                    viewModel.applyFilters(
-                        searchFilters.copy(category = null, ingredient = null, alcoholic = null)
-                    )
-                }
+                onApplyFilters(
+                    searchFilters.copy(category = null, ingredient = null, alcoholic = null)
+                )
             },
             onCocktailClick = onCocktailClick,
             onAddToCart = onAddToCart,
-            onToggleFavorite = { cocktailToToggle ->
-                scope.launch { favoritesViewModel.toggleFavorite(cocktailToToggle) }
-            },
-            onLoadMore = {
-                scope.launch { viewModel.loadMoreCocktails() }
-            }
+            onToggleFavorite = onToggleFavorite,
+            onLoadMore = onLoadMore
         )
     }
 }
