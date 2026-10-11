@@ -1,3 +1,7 @@
+-- Schema changes need a migration: add src/commonMain/sqldelight/migrations/<N>.sqm
+-- (N = current version, starting at 1) and regenerate the snapshot with
+-- `./gradlew :shared:generateCommonMainCocktailCraftDatabaseSchema`.
+--
 -- Recently viewed cocktails (capped by CocktailCache). Kept apart from
 -- cached_cocktail so evicting a cocktail from the offline cache does not drop
 -- it from the recently viewed list that Home and the Android widgets read.

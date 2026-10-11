@@ -12,6 +12,11 @@ sqldelight {
     databases {
         create("CocktailCraftDatabase") {
             packageName.set("com.cocktailcraft.data.cache.db")
+            // Snapshots of each released schema version live here. Any change
+            // to the .sq files must ship with a matching .sqm migration, or
+            // verifySqlDelightMigration fails (it runs as part of `check`).
+            schemaOutputDirectory.set(file("src/commonMain/sqldelight/databases"))
+            verifyMigrations.set(true)
         }
     }
 }

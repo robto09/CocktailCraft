@@ -1,3 +1,7 @@
+-- Schema changes need a migration: add src/commonMain/sqldelight/migrations/<N>.sqm
+-- (N = current version, starting at 1) and regenerate the snapshot with
+-- `./gradlew :shared:generateCommonMainCocktailCraftDatabaseSchema`.
+--
 -- One row per cached cocktail. The full Cocktail is stored as JSON in
 -- `payload`; the other columns exist so the cache can query, expire and evict
 -- without decoding every row.
