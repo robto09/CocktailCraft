@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.android.kotlinMultiplatformLibrary)
-    kotlin("native.cocoapods")
     alias(libs.plugins.skie)
     alias(libs.plugins.sqldelight)
 }
@@ -63,26 +62,27 @@ kotlin {
             disable.add("MissingPermission")
         }
     }
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
-    
-    cocoapods {
-        version = "1.0.0"
-        summary = "CocktailCraft Shared Module"
-        homepage = "https://github.com/cocktailcraft/shared"
-        ios.deploymentTarget = "17.0"
-        podfile = project.file("../iosApp/Podfile")
-        framework {
+    // The iOS app consumes this framework through Kotlin's direct Xcode
+    // integration (no CocoaPods): the app target's "Compile Kotlin Framework"
+    // build phase runs :shared:embedAndSignAppleFrameworkForXcode, which
+    // builds the framework for the active Xcode configuration/SDK/arch and
+    // drops it in build/xcode-frameworks/ (see iosApp/project.yml). The iOS
+    // deployment target lives in project.yml.
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
             baseName = "shared"
             isStatic = true
+            // Silences the "cannot infer a bundle ID" link warning.
+            binaryOption("bundleId", "com.cocktailcraft.shared")
+            // The framework is static, so the SQLDelight native driver's
+            // sqlite3 (and the K/N runtime's libc++) are not linked here: the
+            // app links them itself via OTHER_LDFLAGS in project.yml.
         }
-        // The framework is static, so the SQLDelight native driver's sqlite3
-        // dependency has to be linked by the app that consumes the pod.
-        extraSpecAttributes["libraries"] = "'c++', 'sqlite3'"
     }
-
-
 
     sourceSets {
         val commonMain by getting {
