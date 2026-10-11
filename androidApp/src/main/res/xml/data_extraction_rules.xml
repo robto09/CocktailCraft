@@ -3,14 +3,18 @@
      cocktailcraft_prefs.xml holds credentials and PII (users, password hashes, orders
      with addresses) and must never leave the device via backup or transfer.
      cocktailcraft_secure_prefs.xml is Keystore-encrypted; its master key is not backed
-     up, so restored copies are unreadable and would only corrupt a fresh install. -->
+     up, so restored copies are unreadable and would only corrupt a fresh install.
+     cocktailcraft_cache.db is the offline cocktail cache, which used to live in
+     cocktailcraft_prefs.xml; it is refetchable and stays excluded as before. -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="sharedpref" path="cocktailcraft_prefs.xml" />
         <exclude domain="sharedpref" path="cocktailcraft_secure_prefs.xml" />
+        <exclude domain="database" path="cocktailcraft_cache.db" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="cocktailcraft_prefs.xml" />
         <exclude domain="sharedpref" path="cocktailcraft_secure_prefs.xml" />
+        <exclude domain="database" path="cocktailcraft_cache.db" />
     </device-transfer>
 </data-extraction-rules>

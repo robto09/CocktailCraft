@@ -1,5 +1,8 @@
 package com.cocktailcraft.di
 
+import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.driver.native.NativeSqliteDriver
+import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.security.migrateAuthStorage
 import com.cocktailcraft.domain.config.AppConfig
@@ -43,6 +46,10 @@ actual fun platformModule() = module {
 
     // Network monitoring
     single<NetworkMonitor> { IOSNetworkMonitor() }
+
+    // SQLite driver for the offline cocktail cache. sqlite3 itself is linked
+    // into the app through the podspec (see shared/build.gradle.kts).
+    single<SqlDriver> { NativeSqliteDriver(CocktailCraftDatabase.Schema, COCKTAIL_DATABASE_NAME) }
 }
 
 // Lives in NSUserDefaults (wiped on uninstall) — its absence detects a fresh

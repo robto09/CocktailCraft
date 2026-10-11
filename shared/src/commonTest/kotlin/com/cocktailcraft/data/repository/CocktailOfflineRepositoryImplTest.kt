@@ -5,6 +5,7 @@ import com.cocktailcraft.data.cache.OfflineModePolicy
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.testutil.FakeNetworkMonitor
+import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.testCocktail
 import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.test.runTest
@@ -25,7 +26,7 @@ class CocktailOfflineRepositoryImplTest {
 
     private fun fixture(online: Boolean = true): Fixture {
         val policy = OfflineModePolicy(FakeNetworkMonitor(online))
-        val cache = CocktailCache(MapSettings(), Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
+        val cache = CocktailCache(createTestDatabase(), MapSettings(), Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
         return Fixture(CocktailOfflineRepositoryImpl(offlineModePolicy = policy, cocktailCache = cache), cache)
     }
 
