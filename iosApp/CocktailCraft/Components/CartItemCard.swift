@@ -29,7 +29,7 @@ struct CartItemCard: View {
                             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                             .lineLimit(2)
 
-                        Text(item.cocktail.category ?? "Unknown")
+                        Text(item.cocktail.category ?? L(\.common_unknown))
                             .font(AppTheme.Typography.caption)
                             .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                     }
@@ -44,7 +44,7 @@ struct CartItemCard: View {
                                 .minimumHitTarget()
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .accessibilityLabel("Add to favorites")
+                        .accessibilityLabel(L(\.list_add_to_favorites))
                         .accessibilityIdentifier("cart.favoriteButton")
                     }
                 }
@@ -82,7 +82,7 @@ struct CartItemCard: View {
                                 .minimumHitTarget()
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .accessibilityLabel("Remove from cart")
+                        .accessibilityLabel(L(\.remove_from_cart_ios))
                         .accessibilityIdentifier("cart.removeButton")
                     }
                 }
@@ -112,7 +112,7 @@ struct QuantityControlView: View {
                     .minimumHitTarget()
             }
             .buttonStyle(PlainButtonStyle())
-            .accessibilityLabel("Decrease quantity")
+            .accessibilityLabel(L(\.cart_decrease_quantity_ios))
             .accessibilityIdentifier("cart.decrementButton")
 
             Text("\(quantity)")
@@ -120,7 +120,7 @@ struct QuantityControlView: View {
                 .fontWeight(.bold)
                 .frame(minWidth: 30)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                .accessibilityLabel("Quantity: \(quantity)")
+                .accessibilityLabel(L(\.cart_quantity_label, quantity))
                 .accessibilityIdentifier("cart.quantityValue")
 
             Button(action: onIncrement) {
@@ -133,7 +133,7 @@ struct QuantityControlView: View {
                     .minimumHitTarget()
             }
             .buttonStyle(PlainButtonStyle())
-            .accessibilityLabel("Increase quantity")
+            .accessibilityLabel(L(\.cart_increase_quantity_ios))
             .accessibilityIdentifier("cart.incrementButton")
         }
     }

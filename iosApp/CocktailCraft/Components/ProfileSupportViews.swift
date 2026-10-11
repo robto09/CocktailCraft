@@ -131,7 +131,7 @@ struct AnimatedThemeSwitch: View {
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.65), value: isChecked)
         .accessibilityAddTraits(.isButton)
-        .accessibilityValue(isChecked ? "On" : "Off")
+        .accessibilityValue(isChecked ? L(\.profile_toggle_on) : L(\.profile_toggle_off))
         .accessibilityIdentifier("profile.themeSwitch")
     }
 }

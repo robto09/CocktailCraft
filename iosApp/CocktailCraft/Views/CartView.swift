@@ -14,9 +14,9 @@ struct CartView: View {
                 EmptyStateView(
                     icon: "cart",
                     title: L(\.cart_empty_title),
-                    message: "Add some cocktails to get started"
+                    message: L(\.cart_empty_message_ios)
                 )
-                .navigationTitle("Cart")
+                .navigationTitle(L(\.cart))
                 .brandedNavigationBar()
             } else {
                 ScrollView {
@@ -57,7 +57,7 @@ struct CartView: View {
 
                         // Place Order Button
                         CheckoutButton(
-                            title: "Place Order",
+                            title: L(\.cart_place_order),
                             isEnabled: !cartViewModel.state.cartItems.isEmpty,
                             isLoading: orderViewModel.state.isLoading,
                             action: {
@@ -67,15 +67,15 @@ struct CartView: View {
                         .padding(.bottom, 20)
                     }
                 }
-                .navigationTitle("Cart")
+                .navigationTitle(L(\.cart))
                 .brandedNavigationBar()
             }
         }
         .alert(isPresented: $showCheckoutConfirmation) {
             Alert(
-                title: Text("Confirm Order"),
+                title: Text(L(\.confirm_order_title)),
                 message: Text(L(\.confirm_order_message, cartViewModel.state.finalTotal.asPrice)),
-                primaryButton: .default(Text("Confirm")) {
+                primaryButton: .default(Text(L(\.cart_confirm))) {
                     Task {
                         // Order and cart state propagate reactively from the
                         // shared flows — no notifications or delays needed.

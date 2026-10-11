@@ -61,7 +61,7 @@ extension CocktailDetailView {
 
             if let instructions = cocktail.instructions, !instructions.isEmpty {
                 VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-                    Text(String(localized: "Preparation"))
+                    Text(L(\.how_to_prepare_ios))
                         .font(.headline)
                         .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
@@ -98,10 +98,10 @@ extension CocktailDetailView {
                         .minimumHitTarget()
                 }
                 .disabled(cartActionInFlight)
-                .accessibilityLabel(viewModel.state.cartQuantity <= 1 ? "Remove from cart" : "Decrease quantity")
+                .accessibilityLabel(viewModel.state.cartQuantity <= 1 ? L(\.remove_from_cart_ios) : L(\.cart_decrease_quantity_ios))
                 .accessibilityIdentifier("detail.decrementButton")
 
-                Text("\(viewModel.state.cartQuantity) in cart")
+                Text(L(\.detail_in_cart, viewModel.state.cartQuantity))
                     .font(.headline)
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     .frame(maxWidth: .infinity)
@@ -120,22 +120,22 @@ extension CocktailDetailView {
                         .minimumHitTarget()
                 }
                 .disabled(!canIncrementQuantity || cartActionInFlight)
-                .accessibilityLabel("Increase quantity")
+                .accessibilityLabel(L(\.cart_increase_quantity_ios))
                 .accessibilityIdentifier("detail.incrementButton")
             }
             .padding(.vertical, AppTheme.Spacing.sm)
         } else {
             PrimaryButton(
                 title: viewModel.canAddToCart()
-                    ? String(localized: "Add to Cart")
-                    : String(localized: "Out of Stock"),
+                    ? L(\.add_to_cart)
+                    : L(\.detail_out_of_stock),
                 icon: "cart.badge.plus",
                 isDisabled: !viewModel.canAddToCart(),
                 action: {
                     runCartAction { await viewModel.addToCart(quantity: 1) }
                 }
             )
-            .accessibilityLabel("Add to cart")
+            .accessibilityLabel(L(\.add_to_cart_ios))
             .accessibilityIdentifier("detail.addToCartButton")
         }
     }
@@ -160,7 +160,7 @@ extension CocktailDetailView {
 
     func ingredientsSection(_ cocktail: Cocktail) -> some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-            Text(String(localized: "Ingredients"))
+            Text(L(\.ingredients))
                 .font(.headline)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
@@ -179,7 +179,7 @@ extension CocktailDetailView {
                             .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
 
                         ForEach(viewModel.getIngredientsByType(type), id: \.self) { entry in
-                            Text("• \(entry)")
+                            Text(L(\.detail_ingredient_bullet, entry))
                                 .font(.body)
                                 .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         }
@@ -195,7 +195,7 @@ extension CocktailDetailView {
     }
 
     func ingredientRow(name: String, measure: String?) -> some View {
-        Text("• \(measure.flatMap { $0.isEmpty ? nil : "\($0) " } ?? "")\(name)")
+        Text(L(\.detail_ingredient_measure_bullet, measure.flatMap { $0.isEmpty ? nil : "\($0) " } ?? "", name))
             .font(.body)
             .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
     }
@@ -204,18 +204,18 @@ extension CocktailDetailView {
 
     func nutritionSection(_ nutrition: NutritionFacts) -> some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-            Text(String(localized: "Estimated Nutrition"))
+            Text(L(\.detail_estimated_nutrition))
                 .font(.headline)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
             HStack(spacing: AppTheme.Spacing.sm) {
-                nutritionStat(value: "\(nutrition.calories)", unit: "kcal", label: "Calories")
-                nutritionStat(value: "\(nutrition.alcoholGrams)", unit: "g", label: "Alcohol")
-                nutritionStat(value: "\(nutrition.carbsGrams)", unit: "g", label: "Carbs")
-                nutritionStat(value: "\(nutrition.sugarGrams)", unit: "g", label: "Sugar")
+                nutritionStat(value: "\(nutrition.calories)", unit: L(\.detail_nutrition_unit_kcal), label: L(\.detail_nutrition_calories))
+                nutritionStat(value: "\(nutrition.alcoholGrams)", unit: L(\.detail_nutrition_unit_grams), label: L(\.detail_nutrition_alcohol))
+                nutritionStat(value: "\(nutrition.carbsGrams)", unit: L(\.detail_nutrition_unit_grams), label: L(\.detail_nutrition_carbs))
+                nutritionStat(value: "\(nutrition.sugarGrams)", unit: L(\.detail_nutrition_unit_grams), label: L(\.detail_nutrition_sugar))
             }
 
-            Text("Rough keyword-based estimates, not measured data.")
+            Text(L(\.detail_nutrition_disclaimer))
                 .font(.caption2)
                 .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
         }
@@ -251,7 +251,7 @@ extension CocktailDetailView {
         let chips: [(icon: String, text: String)] = [
             cocktail.alcoholic.map { (icon: "wineglass", text: $0) },
             cocktail.glass.map { (icon: "cup.and.saucer", text: $0) },
-            cocktail.iba.map { (icon: "rosette", text: "IBA: \($0)") }
+            cocktail.iba.map { (icon: "rosette", text: L(\.detail_iba_label, $0)) }
         ].compactMap { $0 }
 
         return ScrollView(.horizontal, showsIndicators: false) {
@@ -274,7 +274,7 @@ extension CocktailDetailView {
 
     var relatedCocktailsSection: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-            Text(String(localized: "You Might Also Like"))
+            Text(L(\.detail_you_might_also_like_ios))
                 .font(.headline)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .padding(.horizontal)
@@ -305,7 +305,7 @@ extension CocktailDetailView {
 
         return VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             HStack {
-                Text(String(localized: "Reviews (\(reviewViewModel.reviewCount))"))
+                Text(L(\.reviews_title, reviewViewModel.reviewCount))
                     .font(.headline)
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     .accessibilityIdentifier("detail.reviewsHeader")
@@ -313,7 +313,7 @@ extension CocktailDetailView {
                 Spacer()
 
                 Button(action: { showingWriteReview = true }) {
-                    Label(String(localized: "Write a Review"), systemImage: "square.and.pencil")
+                    Label(L(\.write_review), systemImage: "square.and.pencil")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
@@ -324,7 +324,7 @@ extension CocktailDetailView {
             }
 
             if latestReviews.isEmpty {
-                Text(String(localized: "Be the first to review this cocktail"))
+                Text(L(\.detail_be_first_review))
                     .font(.body)
                     .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                     .multilineTextAlignment(.center)

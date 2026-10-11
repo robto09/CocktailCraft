@@ -41,7 +41,6 @@
 		70A2D664D871ECC8DDB95D8E /* SharedErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD98A7B406A27881A66A031B /* SharedErrorAlert.swift */; };
 		73E3063D1FA4CD64012F3D01 /* ReviewComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 711196F1A4BC17AFC4F2C53E /* ReviewComponents.swift */; };
 		7666400114820764D3FF3EA7 /* CartScreenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60D905093AD2FAAC7A5105EB /* CartScreenTests.swift */; };
-		774C5DBD3198A75DCBDA9E00 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C6C990E86E946AE537EA4DE5 /* Localizable.xcstrings */; };
 		77FB1C90E4B89D410217E3DE /* ChangePasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55E0C13C21DD240AA526781 /* ChangePasswordView.swift */; };
 		79918731DB2F4754283BD25E /* DeepLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BAF0EE565B4C598167D8170 /* DeepLinkTests.swift */; };
 		7FEA1EA6B431A96104100455 /* CoreUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AC758FEB87EDF17D2FFE28E /* CoreUnitTests.swift */; };
@@ -182,7 +181,6 @@
 		B3C9824BB27230081BF0DE7E /* SignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpView.swift; sourceTree = "<group>"; };
 		BCD7B48C5A8B2B9FF154993D /* ProfileSupportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSupportViews.swift; sourceTree = "<group>"; };
 		BD98A7B406A27881A66A031B /* SharedErrorAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedErrorAlert.swift; sourceTree = "<group>"; };
-		C6C990E86E946AE537EA4DE5 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		C94AC12750658C154846E82E /* CocktailCraftUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CocktailCraftUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB5A391666FF9C78D776F64C /* AdvancedSearchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSearchSheet.swift; sourceTree = "<group>"; };
 		CECF4DDA5214AF26E0ECA37A /* CocktailCraftWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailCraftWidgetsBundle.swift; sourceTree = "<group>"; };
@@ -231,7 +229,6 @@
 				87E192F0B9BFCD6DE2579690 /* CocktailCraftApp.swift */,
 				7EBC388A838EA20284B59381 /* ContentView.swift */,
 				4231148A0AE075220A7C4774 /* Info.plist */,
-				C6C990E86E946AE537EA4DE5 /* Localizable.xcstrings */,
 				763F7D2C53916801E282D4AC /* Components */,
 				3EDD2927213CCCACEF1003CD /* Theme */,
 				2100EB78E12FFADB14DB2966 /* Utils */,
@@ -461,7 +458,6 @@
 			buildPhases = (
 				AA6F300A090B31F57716A628 /* Compile Kotlin Framework */,
 				B7BE29C2D9427FF20A890F5D /* Sources */,
-				ECFFF51618747BC6D777AB1D /* Resources */,
 				FE87D19B269F1080AEABCDAE /* Frameworks */,
 				1F6A96DF4B34587FBD0FB4A0 /* Embed Foundation Extensions */,
 				35155E678BBEEEFC7C2B87BD /* Strip DebugSwift from Release */,
@@ -533,14 +529,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				DC5534676407B394133B795E /* Localizable.xcstrings in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		ECFFF51618747BC6D777AB1D /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				774C5DBD3198A75DCBDA9E00 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

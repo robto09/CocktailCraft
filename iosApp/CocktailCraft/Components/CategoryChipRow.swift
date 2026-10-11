@@ -14,7 +14,7 @@ struct CategoryChipRow: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                chip("All", isSelected: selectedCategory == nil, action: onSelectAll)
+                chip(L(\.filter_all), isSelected: selectedCategory == nil, action: onSelectAll)
 
                 ForEach(categories, id: \.self) { category in
                     chip(category, isSelected: selectedCategory == category) {

@@ -11,7 +11,7 @@ struct OfflineBanner: View {
                     Image(systemName: "wifi.slash")
                         .foregroundColor(.white)
 
-                    Text("You're offline — showing saved cocktails.")
+                    Text(L(\.offline_you_are_offline))
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(.white)

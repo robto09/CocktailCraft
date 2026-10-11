@@ -10,7 +10,7 @@ final class ProfileViewModelSKIE: SharedViewModelWrapper<ProfileUiState> {
 
     // Presentation fallbacks over the mirrored state (Observation-tracked)
     var userName: String {
-        state.user?.name ?? "Guest"
+        state.user?.name ?? L(\.profile_guest_user_ios)
     }
 
     var userEmail: String {
