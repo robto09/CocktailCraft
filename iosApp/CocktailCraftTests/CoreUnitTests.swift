@@ -39,6 +39,21 @@ final class DeliveryPolicyBridgeTests: XCTestCase {
     }
 }
 
+/// Derived values on the shared UiState classes (the single state surface)
+/// bridge as plain Swift properties, so views can read them off `state`.
+final class UiStateDerivedValueBridgeTests: XCTestCase {
+
+    func testCartStateDerivesDeliveryPricing() {
+        let belowThreshold = CartUiState(cartItems: [], totalPrice: 10.0, itemCount: 1, isLoading: false)
+        XCTAssertEqual(belowThreshold.deliveryFee, 5.99, accuracy: 0.001)
+        XCTAssertEqual(belowThreshold.finalTotal, 15.99, accuracy: 0.001)
+
+        let free = CartUiState(cartItems: [], totalPrice: 50.0, itemCount: 5, isLoading: false)
+        XCTAssertEqual(free.deliveryFee, 0.0, accuracy: 0.001)
+        XCTAssertEqual(free.finalTotal, 50.0, accuracy: 0.001)
+    }
+}
+
 /// AppColors must build its light-mode brand colors from the cross-target
 /// BrandColorComponents tokens (WidgetBridge.swift) that the widget
 /// extension also compiles — this pins the app half of that contract so a
