@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,16 +20,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.ImageLoaderSingleton
 import com.cocktailcraft.android.util.ImageUtils
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.common_image_not_available
 
 /**
  * An optimized image component that uses our custom image loading system.
@@ -59,7 +61,7 @@ fun OptimizedImage(
     val imageLoader = ImageLoaderSingleton.getImageLoader(context)
 
     // Create placeholder and error drawables
-    val placeholderColor = AppColors.LightGray.toArgb()
+    val placeholderColor = CocktailCraftTheme.extendedColors.neutralSubtle.toArgb()
     val placeholder = ColorDrawable(placeholderColor)
 
     // Build the optimized image request
@@ -85,15 +87,18 @@ fun OptimizedImage(
         when {
             state is AsyncImagePainter.State.Loading && showLoadingIndicator ->
                 CircularProgressIndicator(
-                    color = AppColors.Primary,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
 
             state is AsyncImagePainter.State.Error ->
                 Icon(
                     imageVector = Icons.Default.LocalBar,
-                    contentDescription = stringResource(R.string.common_image_not_available),
-                    tint = AppColors.Gray,
+                    // Decorative images (null description) stay silent on failure
+                    contentDescription = contentDescription?.let {
+                        stringResource(MR.strings.common_image_not_available)
+                    },
+                    tint = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.size(48.dp)
                 )
         }
@@ -117,7 +122,7 @@ fun HeroOptimizedImage(
     val imageLoader = ImageLoaderSingleton.getImageLoader(context)
 
     // Create placeholder and error drawables
-    val placeholderColor = AppColors.LightGray.toArgb()
+    val placeholderColor = CocktailCraftTheme.extendedColors.neutralSubtle.toArgb()
     val placeholder = ColorDrawable(placeholderColor)
 
     // Build the optimized image request
@@ -140,7 +145,7 @@ fun HeroOptimizedImage(
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(
-                    color = AppColors.Primary,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -152,8 +157,11 @@ fun HeroOptimizedImage(
             ) {
                 Icon(
                     imageVector = Icons.Default.LocalBar,
-                    contentDescription = stringResource(R.string.common_image_not_available),
-                    tint = AppColors.Gray,
+                    // Decorative images (null description) stay silent on failure
+                    contentDescription = contentDescription?.let {
+                        stringResource(MR.strings.common_image_not_available)
+                    },
+                    tint = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.size(48.dp)
                 )
             }
@@ -177,7 +185,7 @@ fun LightweightOptimizedImage(
     val imageLoader = ImageLoaderSingleton.getImageLoader(context)
 
     // Create placeholder and error drawables
-    val placeholderColor = AppColors.LightGray.toArgb()
+    val placeholderColor = CocktailCraftTheme.extendedColors.neutralSubtle.toArgb()
     val placeholder = ColorDrawable(placeholderColor)
 
     // Build the optimized image request

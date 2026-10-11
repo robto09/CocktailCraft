@@ -45,11 +45,9 @@ We implemented option 3 in its simplest useful form: a single category-based "re
 
 ### Key Components
 
-1. **`GetCocktailDetailUseCase.getRelatedCocktails(cocktail, limit)`** (`shared/src/commonMain/kotlin/com/cocktailcraft/domain/usecase/GetCocktailDetailUseCase.kt`): fetches the current cocktail's category via `CocktailSearchRepository.filterByCategory(...)`, excludes the cocktail itself, and returns a small random sample (default 3). Any failure degrades to an empty list.
+1. **`GetCocktailDetailUseCase.getRelatedCocktails(cocktail, limit)`** (`core/domain/src/commonMain/kotlin/com/cocktailcraft/domain/usecase/GetCocktailDetailUseCase.kt`): fetches the current cocktail's category via `CocktailSearchRepository.filterByCategory(...)`, excludes the cocktail itself, and returns a small random sample (default 3). Any failure degrades to an empty list.
 2. **`SharedCocktailDetailViewModel`**: exposes the result as `relatedCocktails` in the shared `DetailUiState`, consumed identically by both platforms.
 3. **UI Components**: the "You might also like" section — `DetailRecommendationsSection` in the Android `CocktailDetailScreen`, `relatedCocktailsSection` in the iOS `CocktailDetailView`.
-
-The Home screen additionally offers `SharedHomeViewModel.getCocktailsByCategory(category, limit)`, a purely local pick over the already-loaded list using a stable per-id sort key, so repeated calls return the same items (SH-10 determinism).
 
 ### Recommendation Strategy
 

@@ -33,6 +33,9 @@ struct CocktailImageView: View {
         .frame(maxHeight: height)
         .clipped()
         .cornerRadius(cornerRadius)
+        // Decorative everywhere it is used: the cocktail's name is always
+        // next to it (and "photo" placeholders mean nothing when spoken)
+        .accessibilityHidden(true)
     }
 }
 

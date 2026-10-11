@@ -17,25 +17,34 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.DetailInfoCard
 import com.cocktailcraft.android.ui.components.RatingBar
 import com.cocktailcraft.android.ui.components.SectionHeader
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.detail_be_first_review
+import com.cocktailcraft.resources.detail_review_anonymous
+import com.cocktailcraft.resources.detail_review_anonymous_initial
+import com.cocktailcraft.resources.detail_unknown_date
+import com.cocktailcraft.resources.reviews_title
+import com.cocktailcraft.resources.write_review
 
 // Reviews header with write-review action and the first few reviews
 @Composable
@@ -53,7 +62,7 @@ internal fun DetailReviewsSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 SectionHeader(
-                    title = stringResource(R.string.reviews_title, reviews.size),
+                    title = stringResource(MR.strings.reviews_title, reviews.size),
                     modifier = Modifier.weight(1f),
                     fontSize = 18
                 )
@@ -61,7 +70,7 @@ internal fun DetailReviewsSection(
                 TextButton(
                     onClick = onWriteReviewClick,
                     colors = ButtonDefaults.textButtonColors(
-                        contentColor = AppColors.Primary
+                        contentColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
                     Icon(
@@ -70,7 +79,7 @@ internal fun DetailReviewsSection(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(Spacing.xs))
-                    Text(stringResource(R.string.write_review))
+                    Text(stringResource(MR.strings.write_review))
                 }
             }
 
@@ -84,8 +93,8 @@ internal fun DetailReviewsSection(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = stringResource(R.string.detail_be_first_review),
-                        color = AppColors.Gray,
+                        text = stringResource(MR.strings.detail_be_first_review),
+                        color = MaterialTheme.colorScheme.outline,
                         fontSize = 16.sp
                     )
                 }
@@ -96,7 +105,7 @@ internal fun DetailReviewsSection(
                     if (index < reviews.take(3).size - 1) {
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = Spacing.md),
-                            color = AppColors.LightGray.copy(alpha = 0.5f)
+                            color = CocktailCraftTheme.extendedColors.neutralSubtle.copy(alpha = 0.5f)
                         )
                     }
                 }
@@ -108,22 +117,27 @@ internal fun DetailReviewsSection(
 
 @Composable
 internal fun CocktailReviewItem(review: Review) {
+    // One TalkBack stop per review: name, rating, date, then the comment
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {}
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // User initial in circle - safely handle potential null/empty username
+            // (decorative: the full name follows)
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .background(AppColors.Primary.copy(alpha = 0.2f), CircleShape),
+                    .clearAndSetSemantics {}
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = (review.userName.takeIf { it.isNotBlank() } ?: stringResource(R.string.detail_review_anonymous_initial)).take(1).uppercase(),
-                    color = AppColors.Primary,
+                    text = (review.userName.takeIf { it.isNotBlank() } ?: stringResource(MR.strings.detail_review_anonymous_initial)).take(1).uppercase(),
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -132,9 +146,9 @@ internal fun CocktailReviewItem(review: Review) {
 
             Column {
                 Text(
-                    text = review.userName.takeIf { it.isNotBlank() } ?: stringResource(R.string.detail_review_anonymous),
+                    text = review.userName.takeIf { it.isNotBlank() } ?: stringResource(MR.strings.detail_review_anonymous),
                     fontWeight = FontWeight.SemiBold,
-                    color = AppColors.TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 16.sp
                 )
 
@@ -145,13 +159,13 @@ internal fun CocktailReviewItem(review: Review) {
                         rating = review.rating.coerceIn(0f, 5f),
                         modifier = Modifier.padding(end = Spacing.sm, top = Spacing.xs),
                         stars = 5,
-                        starsColor = AppColors.Secondary
+                        starsColor = CocktailCraftTheme.extendedColors.rating
                     )
 
                     Text(
-                        text = review.date.takeIf { it.isNotBlank() } ?: stringResource(R.string.detail_unknown_date),
+                        text = review.date.takeIf { it.isNotBlank() } ?: stringResource(MR.strings.detail_unknown_date),
                         fontSize = 12.sp,
-                        color = AppColors.Gray
+                        color = MaterialTheme.colorScheme.outline
                     )
                 }
             }
@@ -161,7 +175,7 @@ internal fun CocktailReviewItem(review: Review) {
             Text(
                 text = review.comment,
                 modifier = Modifier.padding(start = 52.dp, top = Spacing.sm),
-                color = AppColors.TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 14.sp,
                 lineHeight = 20.sp
             )

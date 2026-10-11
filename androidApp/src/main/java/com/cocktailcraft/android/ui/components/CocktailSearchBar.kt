@@ -15,18 +15,25 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.filters_active_a11y
+import com.cocktailcraft.resources.search_advanced_search
+import com.cocktailcraft.resources.search_clear_search
+import com.cocktailcraft.resources.search_cocktails_placeholder
 
 /**
  * A reusable search bar component with an advanced search button.
@@ -56,13 +63,13 @@ fun CocktailSearchBar(
     onClearSearch: () -> Unit,
     onToggleAdvancedSearch: () -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = stringResource(R.string.search_cocktails_placeholder),
-    searchIconTint: Color = AppColors.Gray,
-    clearIconTint: Color = AppColors.Gray,
-    activeFilterButtonColor: Color = AppColors.Primary,
-    inactiveFilterButtonColor: Color = AppColors.LightGray,
+    placeholder: String = stringResource(MR.strings.search_cocktails_placeholder),
+    searchIconTint: Color = MaterialTheme.colorScheme.outline,
+    clearIconTint: Color = MaterialTheme.colorScheme.outline,
+    activeFilterButtonColor: Color = MaterialTheme.colorScheme.primary,
+    inactiveFilterButtonColor: Color = CocktailCraftTheme.extendedColors.neutralSubtle,
     activeFilterIconTint: Color = Color.White,
-    inactiveFilterIconTint: Color = AppColors.TextSecondary
+    inactiveFilterIconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     Row(
         modifier = modifier
@@ -78,9 +85,10 @@ fun CocktailSearchBar(
                 .testTag("home_search_field"),
             placeholder = { Text(placeholder) },
             leadingIcon = {
+                // Decorative: the field's placeholder/label names it
                 Icon(
                     Icons.Filled.Search,
-                    contentDescription = stringResource(R.string.search),
+                    contentDescription = null,
                     tint = searchIconTint
                 )
             },
@@ -89,17 +97,17 @@ fun CocktailSearchBar(
                     IconButton(onClick = onClearSearch) {
                         Icon(
                             Icons.Filled.Close,
-                            contentDescription = stringResource(R.string.search_clear_search),
+                            contentDescription = stringResource(MR.strings.search_clear_search),
                             tint = clearIconTint
                         )
                     }
                 }
             },
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = AppColors.Primary,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = Color.Gray,
-                cursorColor = AppColors.Primary,
-                focusedLeadingIconColor = AppColors.Primary,
+                cursorColor = MaterialTheme.colorScheme.primary,
+                focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
                 unfocusedLeadingIconColor = Color.Gray,
                 focusedContainerColor = Color.White, unfocusedContainerColor = Color.White
             ),
@@ -109,10 +117,15 @@ fun CocktailSearchBar(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        // Advanced search button
+        // Advanced search button; the highlighted (filters active) state is
+        // also spoken
+        val filtersActiveLabel = stringResource(MR.strings.filters_active_a11y)
         IconButton(
             onClick = { onToggleAdvancedSearch() },
             modifier = Modifier
+                .semantics {
+                    if (hasActiveFilters) stateDescription = filtersActiveLabel
+                }
                 .background(
                     color = if (isAdvancedSearchActive || hasActiveFilters)
                         activeFilterButtonColor
@@ -124,7 +137,7 @@ fun CocktailSearchBar(
         ) {
             Icon(
                 imageVector = Icons.Default.FilterAlt,
-                contentDescription = stringResource(R.string.search_advanced_search),
+                contentDescription = stringResource(MR.strings.search_advanced_search),
                 tint = if (isAdvancedSearchActive || hasActiveFilters)
                     activeFilterIconTint
                 else

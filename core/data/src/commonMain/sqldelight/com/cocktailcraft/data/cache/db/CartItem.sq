@@ -1,0 +1,46 @@
+-- Schema changes need a migration: add src/commonMain/sqldelight/migrations/<N>.sqm
+-- (N = current version, starting at 1) and regenerate the snapshot with
+-- `./gradlew :core:data:generateCommonMainCocktailCraftDatabaseSchema`.
+--
+-- The shopping cart (CartRepositoryImpl), one row per cocktail.
+--
+--   payload   the Cocktail as JSON, a snapshot taken when it was added. The
+--             cart is not tied to cached_cocktail, so cache eviction never
+--             empties it.
+--   position  insertion order (1-based, increasing); the cart lists in this
+--             order, and changing a quantity keeps an item in place.
+CREATE TABLE cart_item (
+    cocktail_id TEXT NOT NULL PRIMARY KEY,
+    payload TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    position INTEGER NOT NULL
+);
+
+selectAll:
+SELECT cocktail_id, payload, quantity FROM cart_item ORDER BY position;
+
+exists:
+SELECT COUNT(*) FROM cart_item WHERE cocktail_id = ?;
+
+-- Appends a new item at the end of the cart.
+insert:
+INSERT INTO cart_item(cocktail_id, payload, quantity, position)
+VALUES (:cocktailId, :payload, :quantity, (SELECT COALESCE(MAX(position), 0) + 1 FROM cart_item));
+
+-- Used by the one-time import from Settings (LegacySettingsImport): items
+-- already in the database are newer than the legacy blob and must win.
+insertIfAbsent:
+INSERT OR IGNORE INTO cart_item(cocktail_id, payload, quantity, position)
+VALUES (:cocktailId, :payload, :quantity, (SELECT COALESCE(MAX(position), 0) + 1 FROM cart_item));
+
+addQuantity:
+UPDATE cart_item SET quantity = quantity + :delta WHERE cocktail_id = :cocktailId;
+
+setQuantity:
+UPDATE cart_item SET quantity = :quantity WHERE cocktail_id = :cocktailId;
+
+deleteById:
+DELETE FROM cart_item WHERE cocktail_id = ?;
+
+deleteAll:
+DELETE FROM cart_item;

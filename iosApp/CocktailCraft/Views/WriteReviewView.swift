@@ -44,7 +44,7 @@ struct WriteReviewView: View {
                     }
 
                     PrimaryButton(
-                        title: String(localized: "Submit Review"),
+                        title: L(\.review_submit),
                         isLoading: isSubmitting,
                         action: submit
                     )
@@ -53,11 +53,11 @@ struct WriteReviewView: View {
                 .padding()
             }
             .background(AppColors.background(isDarkMode: isDarkMode))
-            .navigationTitle(String(localized: "Write a Review"))
+            .navigationTitle(L(\.write_review))
             .brandedNavigationBar()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(String(localized: "Cancel")) {
+                    Button(L(\.cancel)) {
                         onDismiss()
                     }
                     .accessibilityIdentifier("writeReview.cancelButton")
@@ -74,24 +74,24 @@ struct WriteReviewView: View {
 
     private var nameField: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-            fieldLabel(String(localized: "Your Name"))
+            fieldLabel(L(\.review_your_name))
 
-            TextField(String(localized: "Enter your name"), text: $userName)
+            TextField(L(\.review_enter_your_name), text: $userName)
                 .textFieldStyle(CustomTextFieldStyle())
                 .textContentType(.name)
                 .autocapitalization(.words)
-                .accessibilityLabel(String(localized: "Your Name"))
+                .accessibilityLabel(L(\.review_your_name))
                 .accessibilityIdentifier("writeReview.nameField")
 
             if showFieldErrors && nameMissing {
-                errorText(String(localized: "Name is required"))
+                errorText(L(\.review_name_required))
             }
         }
     }
 
     private var ratingPicker: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-            fieldLabel(String(localized: "Your Rating"))
+            fieldLabel(L(\.review_your_rating))
 
             HStack(spacing: AppTheme.Spacing.sm) {
                 ForEach(1...5, id: \.self) { star in
@@ -106,7 +106,7 @@ struct WriteReviewView: View {
                             .minimumHitTarget()
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(String(localized: "Rate \(star)"))
+                    .accessibilityLabel(L(\.review_rate_star, star))
                     .accessibilityAddTraits(star == rating ? .isSelected : [])
                     .accessibilityIdentifier("writeReview.star\(star)")
                 }
@@ -117,14 +117,14 @@ struct WriteReviewView: View {
             .cornerRadius(AppTheme.CornerRadius.md)
 
             if showFieldErrors && ratingMissing {
-                errorText(String(localized: "Please select a rating"))
+                errorText(L(\.review_select_rating_error))
             }
         }
     }
 
     private var commentField: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-            fieldLabel(String(localized: "Your Review"))
+            fieldLabel(L(\.review_your_review))
 
             ZStack(alignment: .topLeading) {
                 TextEditor(text: $comment)
@@ -132,11 +132,11 @@ struct WriteReviewView: View {
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     .frame(height: 120)
                     .padding(AppTheme.Spacing.xs)
-                    .accessibilityLabel(String(localized: "Your Review"))
+                    .accessibilityLabel(L(\.review_your_review))
                     .accessibilityIdentifier("writeReview.commentField")
 
                 if comment.isEmpty {
-                    Text(String(localized: "Share your experience (at least 10 characters)"))
+                    Text(L(\.review_share_experience_placeholder_ios))
                         .foregroundColor(AppColors.gray)
                         .padding(.horizontal, AppTheme.Spacing.sm + AppTheme.Spacing.xs)
                         .padding(.vertical, AppTheme.Spacing.md)
@@ -157,7 +157,7 @@ struct WriteReviewView: View {
                 }
             }
 
-            Text(String(localized: "\(comment.count)/\(Self.maxCommentLength)"))
+            Text(L(\.review_character_count, comment.count, Self.maxCommentLength))
                 .font(.caption)
                 .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                 .frame(maxWidth: .infinity, alignment: .trailing)

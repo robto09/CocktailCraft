@@ -146,13 +146,21 @@ class FakeCartRepository : CartRepository {
         Result.Success(items.value.sumOf { it.cocktail.price * it.quantity })
 }
 
-class FakeOrderRepository : OrderRepository {
+class FakeOrderRepository(
+    // When given, checkout empties it like the real single-transaction checkout
+    private val cart: FakeCartRepository? = null
+) : OrderRepository {
     private val orders = MutableStateFlow<List<Order>>(emptyList())
 
     override fun observeOrders(): Flow<List<Order>> = orders
     override suspend fun getOrders(): Result<List<Order>> = Result.Success(orders.value)
     override suspend fun placeOrder(order: Order): Result<Unit> {
         orders.update { it + order }
+        return Result.Success(Unit)
+    }
+    override suspend fun placeOrderAndClearCart(order: Order): Result<Unit> {
+        placeOrder(order)
+        cart?.clearCart()
         return Result.Success(Unit)
     }
     override suspend fun getOrderById(id: String): Result<Order?> =

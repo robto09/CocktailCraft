@@ -30,6 +30,7 @@ struct Toast: View {
         HStack(spacing: 12) {
             Image(systemName: type.icon)
                 .foregroundColor(.white)
+                .accessibilityHidden(true)
             
             Text(message)
                 .font(.subheadline)
@@ -64,6 +65,8 @@ struct ToastModifier: ViewModifier {
                     Toast(message: message, type: type)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                         .onAppear {
+                            // Toasts never take focus: VoiceOver would miss them
+                            AccessibilityNotification.Announcement(message).post()
                             DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
                                 withAnimation {
                                     isShowing = false

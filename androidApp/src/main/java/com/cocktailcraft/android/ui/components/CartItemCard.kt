@@ -8,8 +8,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -18,22 +16,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.domain.model.CocktailCartItem
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.components.LightweightOptimizedImage
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.cart_decrease_quantity_a11y
+import com.cocktailcraft.resources.cart_increase_quantity_a11y
+import com.cocktailcraft.resources.cart_quantity_label
+import com.cocktailcraft.resources.cart_remove_item_a11y
 import java.text.NumberFormat
 import java.util.Locale
 
 /**
  * A reusable card component to display items in the shopping cart.
+ * At large font sizes the line total and remove button wrap below the
+ * quantity stepper instead of squeezing (and clipping) each other.
  *
  * @param item The cart item to display
  * @param onIncreaseQuantity Callback when the user increases the quantity
@@ -45,12 +52,13 @@ import java.util.Locale
  * @param showDeleteButton Whether to show the delete button (default: true)
  * @param showQuantityControls Whether to show the quantity controls (default: true)
  * @param cardElevation Elevation for the card (default: 1.dp)
- * @param backgroundColor Background color for the card (default: Color.White)
+ * @param backgroundColor Background color for the card (default: theme surface)
  * @param cornerRadius Corner radius for the card (default: 12.dp)
  * @param imageSize Size of the product image (default: 80.dp)
  * @param maxLines Maximum lines for the product name (default: 1)
  * @param onClick Optional callback when the user clicks on the card (default: null)
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CartItemCard(
     item: CocktailCartItem,
@@ -63,7 +71,7 @@ fun CartItemCard(
     showDeleteButton: Boolean = true,
     showQuantityControls: Boolean = true,
     cardElevation: Dp = 1.dp,
-    backgroundColor: Color = Color.White,
+    backgroundColor: Color = MaterialTheme.colorScheme.surface,
     cornerRadius: Dp = 12.dp,
     imageSize: Dp = 80.dp,
     maxLines: Int = 1,
@@ -87,10 +95,11 @@ fun CartItemCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Product Image - using lightweight optimized image
+            // Product Image - using lightweight optimized image (decorative:
+            // the name is read from the text beside it)
             LightweightOptimizedImage(
                 url = item.cocktail.imageUrl,
-                contentDescription = item.cocktail.name,
+                contentDescription = null,
                 modifier = Modifier
                     .size(imageSize)
                     .clip(RoundedCornerShape(8.dp)),
@@ -114,25 +123,18 @@ fun CartItemCard(
                         text = item.cocktail.name,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = AppColors.TextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f),
                         maxLines = maxLines,
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    // Favorites button (optional) — default IconButton size
-                    // keeps the 48 dp minimum touch target
+                    // Favorites toggle (optional)
                     if (showFavoriteButton) {
-                        IconButton(
-                            onClick = onToggleFavorite
-                        ) {
-                            Icon(
-                                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = if (isFavorite) stringResource(R.string.list_remove_from_favorites) else stringResource(R.string.list_add_to_favorites),
-                                tint = if (isFavorite) AppColors.Secondary else AppColors.Gray,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
+                        FavoriteToggleButton(
+                            isFavorite = isFavorite,
+                            onToggle = onToggleFavorite
+                        )
                     }
                 }
 
@@ -142,7 +144,7 @@ fun CartItemCard(
                 Text(
                     text = currencyFormatter.format(item.cocktail.price),
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.Primary,
+                    color = MaterialTheme.colorScheme.primary,
                     fontSize = 14.sp
                 )
 
@@ -152,15 +154,15 @@ fun CartItemCard(
                     Text(
                         text = alcoholicStatus,
                         fontSize = 12.sp,
-                        color = AppColors.TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Price & Quantity Controls Row
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                FlowRow(
+                    itemVerticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -175,21 +177,29 @@ fun CartItemCard(
                                 Box(
                                     modifier = Modifier
                                         .size(36.dp)
-                                        .background(AppColors.LightGray, CircleShape),
+                                        .background(CocktailCraftTheme.extendedColors.neutralSubtle, CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Remove,
-                                        contentDescription = stringResource(R.string.cart_decrease_quantity),
-                                        tint = AppColors.TextPrimary,
+                                        contentDescription = stringResource(MR.strings.cart_decrease_quantity_a11y, item.cocktail.name),
+                                        tint = MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.size(16.dp)
                                     )
                                 }
                             }
 
+                            // Live region: TalkBack announces the new quantity
+                            // after a stepper tap (focus stays on the button)
+                            val quantityLabel = stringResource(MR.strings.cart_quantity_label, item.quantity)
                             Text(
                                 text = item.quantity.toString(),
-                                modifier = Modifier.padding(horizontal = 16.dp),
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .semantics {
+                                        contentDescription = quantityLabel
+                                        liveRegion = LiveRegionMode.Polite
+                                    },
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp
                             )
@@ -198,12 +208,12 @@ fun CartItemCard(
                                 Box(
                                     modifier = Modifier
                                         .size(36.dp)
-                                        .background(AppColors.Primary, CircleShape),
+                                        .background(MaterialTheme.colorScheme.primary, CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
-                                        contentDescription = stringResource(R.string.cart_increase_quantity),
+                                        contentDescription = stringResource(MR.strings.cart_increase_quantity_a11y, item.cocktail.name),
                                         tint = Color.White,
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -213,9 +223,9 @@ fun CartItemCard(
                     } else {
                         // If quantity controls are not shown, at least show the quantity
                         Text(
-                            text = stringResource(R.string.cart_quantity_label, item.quantity),
+                            text = stringResource(MR.strings.cart_quantity_label, item.quantity),
                             fontSize = 14.sp,
-                            color = AppColors.TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -227,7 +237,8 @@ fun CartItemCard(
                             text = currencyFormatter.format(item.cocktail.price * item.quantity),
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
-                            color = AppColors.TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1
                         )
 
                         // Delete button (optional)
@@ -238,8 +249,8 @@ fun CartItemCard(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = stringResource(R.string.remove_from_cart),
-                                    tint = AppColors.Error,
+                                    contentDescription = stringResource(MR.strings.cart_remove_item_a11y, item.cocktail.name),
+                                    tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }

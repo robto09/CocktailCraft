@@ -21,7 +21,7 @@ struct HomeSearchBar: View {
                     .foregroundColor(textSecondary)
                     .accessibilityHidden(true)
 
-                TextField("Search cocktails...", text: $searchText)
+                TextField(L(\.search_cocktails_placeholder), text: $searchText)
                     .textFieldStyle(.plain)
                     .foregroundColor(.primary)
                     .onSubmit(onSubmit)
@@ -31,9 +31,12 @@ struct HomeSearchBar: View {
                     Button(action: onClear) {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(textSecondary)
+                            // ~44 pt tap area around the small glyph, without
+                            // changing the field's layout
+                            .contentShape(Rectangle().inset(by: -12))
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Clear search")
+                    .accessibilityLabel(L(\.search_clear_search))
                     .accessibilityIdentifier("home.clearSearchButton")
                 }
             }
@@ -52,9 +55,11 @@ struct HomeSearchBar: View {
                     .background(surfaceColor)
                     .cornerRadius(8)
                     .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
+                    // 44 pt tap area around the 36 pt button
+                    .contentShape(Rectangle().inset(by: -4))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Advanced search")
+            .accessibilityLabel(L(\.search_advanced_search_ios))
             .accessibilityIdentifier("home.advancedSearchButton")
         }
     }
@@ -80,23 +85,26 @@ struct ActiveFiltersCard: View {
                     .foregroundColor(primaryColor)
                     .accessibilityHidden(true)
 
-                Text("Active Filters")
+                Text(L(\.filter_active_filters))
                     .font(.caption)
                     .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .accessibilityAddTraits(.isHeader)
 
                 Spacer()
 
                 Button(action: onClearAll) {
-                    Text("Clear All")
+                    Text(L(\.filter_clear_all))
                         .font(.caption)
                         .foregroundColor(primaryColor)
+                        // 44 pt tall tap area without growing the header row
+                        .contentShape(Rectangle().inset(by: -14))
                 }
                 .buttonStyle(.plain)
             }
 
             FlowLayout(spacing: 8) {
                 if let category = filters.category {
-                    chip("Category: \(category)") {
+                    chip(L(\.category_label, category)) {
                         onApply(SearchFilters(
                             query: filters.query,
                             category: nil,
@@ -107,7 +115,7 @@ struct ActiveFiltersCard: View {
                 }
 
                 if let ingredient = filters.ingredient {
-                    chip("Ingredient: \(ingredient)") {
+                    chip(L(\.filter_ingredient_label, ingredient)) {
                         onApply(SearchFilters(
                             query: filters.query,
                             category: filters.category,
@@ -118,7 +126,7 @@ struct ActiveFiltersCard: View {
                 }
 
                 if let alcoholic = filters.alcoholic?.boolValue {
-                    chip(alcoholic ? "Alcoholic" : "Non-Alcoholic") {
+                    chip(alcoholic ? L(\.alcoholic) : L(\.non_alcoholic)) {
                         onApply(SearchFilters(
                             query: filters.query,
                             category: filters.category,
@@ -152,7 +160,7 @@ struct ActiveFiltersCard: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
-        .accessibilityHint("Removes this filter")
+        .accessibilityHint(L(\.filter_remove_hint))
     }
 }
 

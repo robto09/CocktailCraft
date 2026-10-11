@@ -16,6 +16,8 @@ struct CocktailListSkeleton: View {
                 }
             }
             .padding(16)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(L(\.loading))
         }
     }
 

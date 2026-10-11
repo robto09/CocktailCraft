@@ -14,7 +14,7 @@ struct CategoryChipRow: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                chip("All", isSelected: selectedCategory == nil, action: onSelectAll)
+                chip(L(\.filter_all), isSelected: selectedCategory == nil, action: onSelectAll)
 
                 ForEach(categories, id: \.self) { category in
                     chip(category, isSelected: selectedCategory == category) {
@@ -34,5 +34,6 @@ struct CategoryChipRow: View {
             .foregroundColor(isSelected ? .white : primaryColor)
             .cornerRadius(16)
             .shadow(color: isSelected ? Color.black.opacity(0.15) : Color.clear, radius: 2, x: 0, y: 1)
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

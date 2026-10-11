@@ -3,19 +3,82 @@ options:
   bundleIdPrefix: com.cocktailcraft
   deploymentTarget:
     iOS: "17.0"
-  
+
+# Third-party Swift packages (SPM). Package.resolved is committed under
+# CocktailCraft.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/ so every
+# checkout resolves the same versions. Keep this map alphabetical.
+packages:
+  # Debug-only QA toolkit — see the DebugSwift dependency on the app target
+  # and docs/DebugSwift.md for how it is kept out of Release builds.
+  DebugSwift:
+    url: https://github.com/DebugSwift/DebugSwift
+    # Tag 1.7.13.1 (the version previously pinned via CocoaPods). Its
+    # four-part tag is not valid SemVer, so SPM can only pin it by commit.
+    revision: 3dc1781a855f3fa91c5f7fe3868717fe62ff3c4e
+  Kingfisher:
+    url: https://github.com/onevcat/Kingfisher
+    majorVersion: 7.12.0
+  # Test-only: snapshot tests in CocktailCraftTests (see README "Screenshot tests").
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    from: "1.19.6"
+
 targets:
   CocktailCraft:
     type: application
     platform: iOS
     sources:
       - CocktailCraft
-    # The shared KMP framework is integrated via CocoaPods (pod 'shared',
-    # :path => '../shared'). After regenerating with `xcodegen generate`,
-    # run `pod install` to re-attach the Pods build phases and workspace.
+    # The shared KMP framework uses Kotlin's direct Xcode integration (no
+    # CocoaPods): this phase builds the static framework for the current
+    # configuration/SDK/arch into shared/build/xcode-frameworks/, which
+    # FRAMEWORK_SEARCH_PATHS / OTHER_LDFLAGS below pick up. It must run
+    # before Compile Sources, and Gradle needs ENABLE_USER_SCRIPT_SANDBOXING
+    # off to write outside the sandbox.
+    # A static framework cannot carry resources, so the same Gradle call also
+    # copies the shared strings bundle (moko-resources' generated
+    # Localizable.strings/.stringsdict, see Utils/Strings.swift) into the app.
+    preBuildScripts:
+      - name: Compile Kotlin Framework
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
+        script: |
+          if [ "YES" = "$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED" ]; then
+            echo "Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \"YES\""
+            exit 0
+          fi
+          cd "$SRCROOT/.."
+          ./gradlew :shared:embedAndSignAppleFrameworkForXcode :shared:copyFrameworkResourcesToApp \
+            -Pmoko.resources.PLATFORM_NAME="$PLATFORM_NAME" \
+            -Pmoko.resources.CONFIGURATION="$CONFIGURATION" \
+            -Pmoko.resources.ARCHS="$ARCHS" \
+            -Pmoko.resources.BUILT_PRODUCTS_DIR="$BUILT_PRODUCTS_DIR" \
+            -Pmoko.resources.CONTENTS_FOLDER_PATH="$CONTENTS_FOLDER_PATH"
+    # DebugSwift must never ship. SPM cannot link a package per
+    # configuration, so Release drops DebugSwift.o from the link via
+    # EXCLUDED_SOURCE_FILE_NAMES (below); this phase then removes the resource
+    # bundle Xcode still copies in, and fails the build if any DebugSwift
+    # symbol slipped into the binary (e.g. if Xcode renames the product).
+    # All app-side usage sits behind `#if DEBUG`.
+    postBuildScripts:
+      - name: Strip DebugSwift from Release
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
+        script: |
+          if [ "$CONFIGURATION" = "Debug" ]; then
+            exit 0
+          fi
+          rm -rf "$TARGET_BUILD_DIR/$WRAPPER_NAME/DebugSwift_DebugSwift.bundle"
+          if nm "$TARGET_BUILD_DIR/$EXECUTABLE_PATH" 2>/dev/null | grep -q DebugSwift; then
+            echo "error: DebugSwift is linked into the $CONFIGURATION build"
+            exit 1
+          fi
     dependencies:
       - target: CocktailCraftWidgets
         embed: true
+      - package: Kingfisher
+      # Debug-only (see the Release config below and docs/DebugSwift.md).
+      - package: DebugSwift
     # App Group shared with the widget extension (widget data snapshots).
     # DEVELOPMENT_TEAM is empty, so this signs for the simulator only;
     # device builds need a team for the App Group capability.
@@ -25,29 +88,43 @@ targets:
         com.apple.security.application-groups:
           - group.com.cocktailcraft
     settings:
-      PRODUCT_BUNDLE_IDENTIFIER: com.cocktailcraft.CocktailCraft
-      DEVELOPMENT_TEAM: ""
-      # With GENERATE_INFOPLIST_FILE, the processed Info.plist takes its
-      # version keys from these settings; leaving them unset strips
-      # CFBundleVersion/CFBundleShortVersionString from the built app and
-      # mismatches the widget extension (which ships 1 / 1.0).
-      CURRENT_PROJECT_VERSION: "1"
-      MARKETING_VERSION: "1.0"
-      SWIFT_VERSION: "5.10"
-      IPHONEOS_DEPLOYMENT_TARGET: "17.0"
-      ENABLE_PREVIEWS: true
-      GENERATE_INFOPLIST_FILE: true
-      INFOPLIST_FILE: CocktailCraft/Info.plist
-      INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
-      INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
-      INFOPLIST_KEY_UILaunchScreen_Generation: true
-      INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
-      INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
-      FRAMEWORK_SEARCH_PATHS:
-        - "$(inherited)"
-      OTHER_LDFLAGS:
-        - "$(inherited)"
-    
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cocktailcraft.CocktailCraft
+        DEVELOPMENT_TEAM: ""
+        # With GENERATE_INFOPLIST_FILE, the processed Info.plist takes its
+        # version keys from these settings; leaving them unset strips
+        # CFBundleVersion/CFBundleShortVersionString from the built app and
+        # mismatches the widget extension (which ships 1 / 1.0).
+        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "1.0"
+        SWIFT_VERSION: "5.10"
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        ENABLE_PREVIEWS: true
+        GENERATE_INFOPLIST_FILE: true
+        INFOPLIST_FILE: CocktailCraft/Info.plist
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        ENABLE_USER_SCRIPT_SANDBOXING: false
+        FRAMEWORK_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
+        # shared is a static framework, so the app also links what it needs:
+        # sqlite3 for the SQLDelight native driver and libc++ for the K/N runtime.
+        OTHER_LDFLAGS:
+          - "$(inherited)"
+          - "-framework"
+          - "shared"
+          - "-lsqlite3"
+          - "-lc++"
+      configs:
+        Release:
+          # Keeps the Debug-only DebugSwift package out of the Release link
+          # (see the "Strip DebugSwift from Release" phase above).
+          EXCLUDED_SOURCE_FILE_NAMES: DebugSwift.o
+
   CocktailCraftWidgets:
     type: app-extension
     platform: iOS
@@ -102,12 +179,23 @@ targets:
     type: bundle.unit-test
     platform: iOS
     sources:
-      - CocktailCraftTests
+      - path: CocktailCraftTests
+        # Snapshot reference images are read from the source tree at test
+        # time, not from the bundle
+        excludes:
+          - "**/__Snapshots__"
     dependencies:
       - target: CocktailCraft
+      - package: SnapshotTesting
     settings:
       TEST_HOST: "$(BUILT_PRODUCTS_DIR)/CocktailCraft.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CocktailCraft"
       BUNDLE_LOADER: "$(TEST_HOST)"
+      # The tests `import shared` directly: they only need the module on the
+      # search path — the symbols come from the host app via BUNDLE_LOADER
+      # (linking the static framework again would load a second K/N runtime).
+      FRAMEWORK_SEARCH_PATHS:
+        - "$(inherited)"
+        - "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
       SWIFT_VERSION: "5.10"
       GENERATE_INFOPLIST_FILE: true
 
@@ -132,6 +220,9 @@ schemes:
       config: Debug
     test:
       config: Debug
+      # Pinned so snapshot tests (prices, copy) don't follow the host locale
+      language: en
+      region: US
       targets:
         - CocktailCraftTests
         - CocktailCraftUITests

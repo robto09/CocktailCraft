@@ -18,8 +18,8 @@ final class SharedViewModelWrapperTests: TestSetup {
     }
 
     private func makeWrapper() -> SharedViewModelWrapper<ThemeUiState> {
-        SharedViewModelWrapper(uiState: sharedViewModel.uiState,
-                               errorFlow: sharedViewModel.error)
+        SharedViewModelWrapper(viewModel: sharedViewModel,
+                               uiState: sharedViewModel.uiState)
     }
 
     /// Polls on the main actor — each sleep suspends, so the wrapper's

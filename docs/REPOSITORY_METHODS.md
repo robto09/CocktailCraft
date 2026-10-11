@@ -2,15 +2,31 @@
 
 ## Overview
 
-The former monolithic `CocktailRepository` was split into focused, single-concern repositories. There are **nine repository interfaces**, all in `shared/src/commonMain/kotlin/com/cocktailcraft/domain/repository/`, with implementations in `shared/src/commonMain/kotlin/com/cocktailcraft/data/repository/` (plus the `CocktailCategoryFetcher` helper shared by the search and catalog implementations). All repositories are Kotlin Multiplatform and behave identically on Android and iOS.
+The former monolithic `CocktailRepository` was split into focused, single-concern repositories. There are **nine repository interfaces**, all in `core/domain/src/commonMain/kotlin/com/cocktailcraft/domain/repository/` (`:core:domain`), with `internal` implementations in `core/data/src/commonMain/kotlin/com/cocktailcraft/data/repository/` (`:core:data`) (plus the `CocktailCategoryFetcher` helper shared by the search and catalog implementations). All repositories are Kotlin Multiplatform and behave identically on Android and iOS.
 
 **The KDoc on the interfaces is the source of truth** — this page is a quick index, kept deliberately brief.
 
 ## Conventions
 
 - Operations are `suspend` functions returning `Result<T>` (`com.cocktailcraft.domain.util.Result`), not `Flow`s.
-- Mutable stores (favorites, cart, orders, reviews) additionally expose a hot `observe*(): Flow<List<T>>` stream, seeded on first collection and re-published after every mutation.
-- Implementations confine Settings I/O and JSON (de)serialization to an injected IO dispatcher.
+- Mutable stores (favorites, cart, orders, reviews) additionally expose an `observe*(): Flow<List<T>>` stream: SQLDelight `asFlow().mapToList(...)` over their tables, which emits the stored list on collection and again after every write to those tables (from any repository).
+- Implementations confine database and Settings I/O and JSON (de)serialization to an injected IO dispatcher, and multi-statement writes run in one transaction.
+
+## Storage
+
+Everything except auth lives in one SQLite database (`cocktailcraft_cache.db`, schema in `core/data/src/commonMain/sqldelight/`):
+
+| Data | Table(s) | Owner |
+|------|----------|-------|
+| Offline cocktail cache, recently viewed | `cached_cocktail`, `recently_viewed_cocktail` | `CocktailCache` |
+| Cart | `cart_item` (cocktail snapshot as JSON, quantity) | `CartRepositoryImpl` |
+| Orders | `customer_order`, `customer_order_item` | `OrderRepositoryImpl` |
+| Favorites | `favorite_cocktail` (cocktail snapshot as JSON) | `CocktailFavoritesRepositoryImpl` |
+| Reviews | `cocktail_review` | `ReviewRepositoryImpl` |
+
+- The cart, order, favorites and review repositories reach the database through `LocalDatabase` (`data/local/`), which opens it lazily on the IO dispatcher. On the first open after upgrading from a version that kept this data as JSON in `Settings`, `LegacySettingsImport` copies it into the tables (one transaction per store, `INSERT OR IGNORE`, so it is safe to re-run) and then deletes the old keys. Unreadable JSON is dropped entry by entry.
+- Every schema change needs a numbered migration in `core/data/src/commonMain/sqldelight/migrations/` and a regenerated snapshot in `databases/`; `verifySqlDelightMigration` (part of `check`) fails otherwise.
+- Auth data (accounts, password hashes, session, sign-in throttling, guest preferences) deliberately stays in the platform-secure `Settings` store: it holds credentials and PII, and the database file is not encrypted.
 
 ## Cocktail data (the split of the old monolith)
 
@@ -45,10 +61,10 @@ suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>>
 ```
 
 ### CocktailFavoritesRepository
-Favorites persistence and observation.
+Favorites persistence and observation. Each favorite stores the full cocktail, so favorites work offline regardless of cache eviction (SH-4).
 
 ```kotlin
-fun observeFavorites(): Flow<List<Cocktail>>   // hot stream, re-published after every mutation (SH-4)
+fun observeFavorites(): Flow<List<Cocktail>>   // re-emits after every add/remove/upgrade (SH-4)
 suspend fun getFavoriteCocktails(): Result<List<Cocktail>>
 suspend fun addToFavorites(cocktail: Cocktail): Result<Unit>
 suspend fun removeFromFavorites(cocktail: Cocktail): Result<Unit>
@@ -85,6 +101,7 @@ Order placement, history, and status.
 fun observeOrders(): Flow<List<Order>>
 suspend fun getOrders(): Result<List<Order>>
 suspend fun placeOrder(order: Order): Result<Unit>
+suspend fun placeOrderAndClearCart(order: Order): Result<Unit>   // checkout: order insert + cart clear in one transaction
 suspend fun getOrderById(id: String): Result<Order?>
 suspend fun updateOrderStatus(id: String, status: String): Result<Unit>
 suspend fun deleteOrder(id: String): Result<Unit>
@@ -126,5 +143,5 @@ suspend fun deleteReview(reviewId: String): Result<Boolean>                     
 
 ## Where things are wired
 
-- Koin bindings: `shared/src/commonMain/kotlin/com/cocktailcraft/di/DataModule.kt` (see [DependencyInjection.md](DependencyInjection.md))
+- Koin bindings: `core/data/src/commonMain/kotlin/com/cocktailcraft/di/DataModule.kt` (see [DependencyInjection.md](DependencyInjection.md))
 - Consumers inject the interfaces (mostly via use cases in `domain/usecase/`), never the `*Impl` classes.

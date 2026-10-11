@@ -14,13 +14,14 @@
 		11EC08719812BBF953E8CEAA /* FavoritesScreenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFC19C339408793D3B6051E8 /* FavoritesScreenTests.swift */; };
 		1ABC1FAFD32D199EF8772B5C /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96ACDD93E0EC4E181BA48B11 /* SignInView.swift */; };
 		1DF63EAF706350955BF591E9 /* PasswordStrengthMeter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00C275418C6920DC8B833762 /* PasswordStrengthMeter.swift */; };
-		1F7B30CE45F66F2C3737A744 /* Pods_CocktailCraftTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7DF81F1D2B1E6983DD23E48 /* Pods_CocktailCraftTests.framework */; };
 		1FE85FF6D334BCAFFC5CB097 /* ReviewViewModelSKIETests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1504F3D3B693833EB60B6F05 /* ReviewViewModelSKIETests.swift */; };
 		24890AC789C7126C99DEC28B /* ErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8885ACD7979C44B621ECA874 /* ErrorView.swift */; };
 		2913DC56180D592D6FC74AEE /* WidgetDataBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 158E5268B263E67FCA03C4E7 /* WidgetDataBridge.swift */; };
 		305A2B554DA3EAE2020E2E67 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63786090651668CDB0593815 /* AppRouter.swift */; };
 		32BAAF705B9E5F683CE82611 /* CocktailDetailViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFB2F5C575682386E25C6505 /* CocktailDetailViewModelSKIE.swift */; };
+		344FF8D81560B492A49A7DB0 /* AccessibilitySnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BDBA4F27E85FE7DE4280E65 /* AccessibilitySnapshotTests.swift */; };
 		372EC9C0DFB42D5401875CB0 /* HomeSearchBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BEF65B792796FEFF449A2AA /* HomeSearchBar.swift */; };
+		374B4CA29F949E0FC2C8D768 /* DebugSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 44BE4D5D3E5B44C8A653F826 /* DebugSwift */; };
 		38A2C94D0875C566231EDC2C /* LoadingStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E78CE3278A16F644AACFE37 /* LoadingStateView.swift */; };
 		3B79A65252D9DA0F963C3B1B /* WidgetBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4525CA0675F84BEE843C6C8D /* WidgetBridgeTests.swift */; };
 		3BF4E2DF43ABEAC1F129FA6B /* CocktailDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80D5D04492BF6D891CC9B192 /* CocktailDetailView.swift */; };
@@ -29,17 +30,17 @@
 		4768014BF3232DD4ADD1F33D /* CocktailListSkeleton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 756BD085AFDE4F730D398B85 /* CocktailListSkeleton.swift */; };
 		4B1843A05358F5B1489781B5 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F79C3BBEFD0B2BE551CBB4A8 /* SettingsView.swift */; };
 		4BFEB7F904D60ED73FC3E3DA /* OfflineBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5353458E21534CF1929CE2C8 /* OfflineBanner.swift */; };
+		4EAB0A65C52EA16153C6396F /* ScreenSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DBC396FDE0509CC47FD9035 /* ScreenSnapshotTests.swift */; };
 		556B8A0A0C717207D3369E23 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509CBA5BD785E60D138BA5C8 /* NetworkMonitor.swift */; };
 		5A2723FCDFFBA08B1EFBD337 /* HomeViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CE2BAB7B77BB7B44AA60E88 /* HomeViewModelSKIE.swift */; };
 		5DD5C9541804B1F02B26C2CA /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77C5D3DBDD3CA76A90859F00 /* FavoritesView.swift */; };
-		5EF94DBAF4F12379D05E8A92 /* Pods_CocktailCraft.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 304AA931A2790447FAF8F2CF /* Pods_CocktailCraft.framework */; };
 		6000E7B37198571C24F4D5EE /* CategoryChipRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 838D652D50C7E0C9D6B8F18E /* CategoryChipRow.swift */; };
 		626F24717F53ED7C42C93FE9 /* TestSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C722B2F49CF2565F2E2703B /* TestSetup.swift */; };
 		631932ECF8AC75AFB5416740 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D295EC1E30F565480A8AEB /* EmptyStateView.swift */; };
+		6A3955096E5470830FE423AF /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A479F6F6F05ADE26BEFFE2EF /* Strings.swift */; };
 		70A2D664D871ECC8DDB95D8E /* SharedErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD98A7B406A27881A66A031B /* SharedErrorAlert.swift */; };
 		73E3063D1FA4CD64012F3D01 /* ReviewComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 711196F1A4BC17AFC4F2C53E /* ReviewComponents.swift */; };
 		7666400114820764D3FF3EA7 /* CartScreenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60D905093AD2FAAC7A5105EB /* CartScreenTests.swift */; };
-		774C5DBD3198A75DCBDA9E00 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = C6C990E86E946AE537EA4DE5 /* Localizable.xcstrings */; };
 		77FB1C90E4B89D410217E3DE /* ChangePasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A55E0C13C21DD240AA526781 /* ChangePasswordView.swift */; };
 		79918731DB2F4754283BD25E /* DeepLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BAF0EE565B4C598167D8170 /* DeepLinkTests.swift */; };
 		7FEA1EA6B431A96104100455 /* CoreUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AC758FEB87EDF17D2FFE28E /* CoreUnitTests.swift */; };
@@ -54,9 +55,14 @@
 		A0FF029431994B1ECD80D88F /* SharedViewModelWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = E59065E611A6E07B1D9DCACB /* SharedViewModelWrapper.swift */; };
 		A166DB404CF006A66284D821 /* CocktailCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A00F91ED1F43F12CF3B7400 /* CocktailCard.swift */; };
 		A22D24F59CFC34A6C3643DED /* CartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BD10A6D0C4EF128674C822C /* CartView.swift */; };
+		A5480CB053FE1474CCC6EEED /* AccessibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDCCD5225B417A9F4A1E3751 /* AccessibilityTests.swift */; };
 		AFFEB2D6170F9EF4278DA398 /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AE4237810823B2857D9E427 /* PrimaryButton.swift */; };
+		B1E7ACFDA703E6E8CADB3D8C /* ComponentSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACC5C4BCB1BC017A3170765 /* ComponentSnapshotTests.swift */; };
+		B4F08B8E6727BC900E81D87D /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 00CEEB753F07B3027707B278 /* SnapshotTesting */; };
 		BABB3246B048D69A6406DAEE /* FavoritesWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00243B0F0E257ACEDF96431F /* FavoritesWidget.swift */; };
 		BF8BE75EA2A85E669160547D /* ProfileSupportViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCD7B48C5A8B2B9FF154993D /* ProfileSupportViews.swift */; };
+		C57FE7E88FFBB3EEC4F5BB96 /* SharedStringsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11117C70FE00BCB4668E6E9 /* SharedStringsTests.swift */; };
+		C7649F506F59038A4A033669 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = D8C0E71A2E86B9678C7301ED /* Kingfisher */; };
 		CC48B2BA1BDE316893EC3B2A /* OrderViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 105923BA1B2DFAA8FE9244E1 /* OrderViewModelSKIE.swift */; };
 		CEADFEC7BB2169875DD66242 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94DF7AD6512988642980335E /* WidgetBridge.swift */; };
 		D58974F73AAB59227A39CBEE /* ProfileViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 022159D9A840F5786580579C /* ProfileViewModelSKIE.swift */; };
@@ -67,6 +73,7 @@
 		DC5534676407B394133B795E /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = EF5B4E2B63A932CE57642AE3 /* Localizable.xcstrings */; };
 		DE8850F09E59ACDA9DA09D48 /* CocktailCraftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E192F0B9BFCD6DE2579690 /* CocktailCraftApp.swift */; };
 		E0D0224CA12C296EE91FE101 /* HomeScreenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29B0A6017C3D9E28B0246A96 /* HomeScreenTests.swift */; };
+		E5A53AC8D3EF0D0DD95BBAB0 /* SnapshotSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 571BD1157D49DC0BF87884F3 /* SnapshotSupport.swift */; };
 		E5EA303DF9376412C78428A3 /* UITestSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DFADB5617C594B52D575942 /* UITestSetup.swift */; };
 		EA04EA28A1FC71555578322B /* AppTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD14EE492DD75C2B42FCE09F /* AppTheme.swift */; };
 		EF018FBC5C1312DB79C5D641 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62F8C00AB4F768E2258F18A6 /* Toast.swift */; };
@@ -74,6 +81,7 @@
 		F3F82A7C15DBBBEC9EB9A896 /* CartItemCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D96106BD86624E97659C1E4 /* CartItemCard.swift */; };
 		F7AB2ADFE83988BFC7C267DA /* RandomCocktailWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6BA2A013D84D8BDD3B65C9A /* RandomCocktailWidget.swift */; };
 		FA7E31BA8D2A30728866D896 /* CocktailImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E70DFA9A4A015542687047 /* CocktailImageView.swift */; };
+		FBDECF386F67306F2E3E7447 /* AccessibilityAuditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443CF30B0AF2ABDDF8B207FD /* AccessibilityAuditTests.swift */; };
 		FC2F0E87AFB8EEA0EFC1E216 /* DetailSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = A84F408D86DAE9FBDA55F365 /* DetailSections.swift */; };
 /* End PBXBuildFile section */
 
@@ -120,21 +128,22 @@
 		00C275418C6920DC8B833762 /* PasswordStrengthMeter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordStrengthMeter.swift; sourceTree = "<group>"; };
 		022159D9A840F5786580579C /* ProfileViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileViewModelSKIE.swift; sourceTree = "<group>"; };
 		04D295EC1E30F565480A8AEB /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		0ACC5C4BCB1BC017A3170765 /* ComponentSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComponentSnapshotTests.swift; sourceTree = "<group>"; };
+		0DBC396FDE0509CC47FD9035 /* ScreenSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenSnapshotTests.swift; sourceTree = "<group>"; };
 		105923BA1B2DFAA8FE9244E1 /* OrderViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderViewModelSKIE.swift; sourceTree = "<group>"; };
 		1504F3D3B693833EB60B6F05 /* ReviewViewModelSKIETests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewViewModelSKIETests.swift; sourceTree = "<group>"; };
 		158E5268B263E67FCA03C4E7 /* WidgetDataBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataBridge.swift; sourceTree = "<group>"; };
 		19FFF3A23773BC62FC6EEA4A /* ReviewViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewViewModelSKIE.swift; sourceTree = "<group>"; };
 		29B0A6017C3D9E28B0246A96 /* HomeScreenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenTests.swift; sourceTree = "<group>"; };
 		2BD10A6D0C4EF128674C822C /* CartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartView.swift; sourceTree = "<group>"; };
-		304AA931A2790447FAF8F2CF /* Pods_CocktailCraft.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CocktailCraft.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		33279C984FEEC0E1C1403B5B /* Pods-CocktailCraft.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraft.release.xcconfig"; path = "Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft.release.xcconfig"; sourceTree = "<group>"; };
 		3AE4237810823B2857D9E427 /* PrimaryButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimaryButton.swift; sourceTree = "<group>"; };
 		4231148A0AE075220A7C4774 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		443CF30B0AF2ABDDF8B207FD /* AccessibilityAuditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityAuditTests.swift; sourceTree = "<group>"; };
 		4525CA0675F84BEE843C6C8D /* WidgetBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridgeTests.swift; sourceTree = "<group>"; };
 		4ECEB1EF12FD4A7450DEE5F3 /* CocktailCraft.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CocktailCraft.entitlements; sourceTree = "<group>"; };
 		509CBA5BD785E60D138BA5C8 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		5353458E21534CF1929CE2C8 /* OfflineBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineBanner.swift; sourceTree = "<group>"; };
-		53BD94699AB94C79E5877411 /* Pods-CocktailCraftTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraftTests.debug.xcconfig"; path = "Target Support Files/Pods-CocktailCraftTests/Pods-CocktailCraftTests.debug.xcconfig"; sourceTree = "<group>"; };
+		571BD1157D49DC0BF87884F3 /* SnapshotSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotSupport.swift; sourceTree = "<group>"; };
 		58E70DFA9A4A015542687047 /* CocktailImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailImageView.swift; sourceTree = "<group>"; };
 		5937388CC7467E67BBD68F94 /* WriteReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WriteReviewView.swift; sourceTree = "<group>"; };
 		5C55BEB921D8925895E81992 /* FavoritesViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesViewModelSKIE.swift; sourceTree = "<group>"; };
@@ -143,6 +152,7 @@
 		62F8C00AB4F768E2258F18A6 /* Toast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Toast.swift; sourceTree = "<group>"; };
 		63786090651668CDB0593815 /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRouter.swift; sourceTree = "<group>"; };
 		6B669884A0ECE3EF5F782D5F /* SharedViewModelWrapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedViewModelWrapperTests.swift; sourceTree = "<group>"; };
+		6BDBA4F27E85FE7DE4280E65 /* AccessibilitySnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilitySnapshotTests.swift; sourceTree = "<group>"; };
 		6BEF65B792796FEFF449A2AA /* HomeSearchBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSearchBar.swift; sourceTree = "<group>"; };
 		6C722B2F49CF2565F2E2703B /* TestSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSetup.swift; sourceTree = "<group>"; };
 		6F5736A8DCA291A70555FB8F /* CartSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartSummaryCard.swift; sourceTree = "<group>"; };
@@ -167,28 +177,27 @@
 		9DFADB5617C594B52D575942 /* UITestSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestSetup.swift; sourceTree = "<group>"; };
 		9F2290935721E307B997FFA6 /* ThemeViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeViewModelSKIE.swift; sourceTree = "<group>"; };
 		A3C7DC400A8E325910868C64 /* CocktailCraftTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CocktailCraftTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A479F6F6F05ADE26BEFFE2EF /* Strings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Strings.swift; sourceTree = "<group>"; };
 		A55E0C13C21DD240AA526781 /* ChangePasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordView.swift; sourceTree = "<group>"; };
 		A84F408D86DAE9FBDA55F365 /* DetailSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailSections.swift; sourceTree = "<group>"; };
 		AD14EE492DD75C2B42FCE09F /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		B3C9824BB27230081BF0DE7E /* SignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpView.swift; sourceTree = "<group>"; };
 		BCD7B48C5A8B2B9FF154993D /* ProfileSupportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSupportViews.swift; sourceTree = "<group>"; };
 		BD98A7B406A27881A66A031B /* SharedErrorAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedErrorAlert.swift; sourceTree = "<group>"; };
-		C2707FD27BCCC251301039FF /* Pods-CocktailCraftTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraftTests.release.xcconfig"; path = "Target Support Files/Pods-CocktailCraftTests/Pods-CocktailCraftTests.release.xcconfig"; sourceTree = "<group>"; };
-		C6C990E86E946AE537EA4DE5 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		C94AC12750658C154846E82E /* CocktailCraftUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CocktailCraftUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB5A391666FF9C78D776F64C /* AdvancedSearchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSearchSheet.swift; sourceTree = "<group>"; };
 		CECF4DDA5214AF26E0ECA37A /* CocktailCraftWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailCraftWidgetsBundle.swift; sourceTree = "<group>"; };
-		D0CA6F698E1A814F8FE18532 /* Pods-CocktailCraft.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CocktailCraft.debug.xcconfig"; path = "Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft.debug.xcconfig"; sourceTree = "<group>"; };
 		DF2F70830C783F8DE90EECC8 /* HomeViewSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewSKIE.swift; sourceTree = "<group>"; };
 		E2B26ED3A3ACF1E6DAEE3D49 /* OrderListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderListView.swift; sourceTree = "<group>"; };
 		E448D2FDA894B81BD197C49C /* CartViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartViewModelSKIE.swift; sourceTree = "<group>"; };
 		E59065E611A6E07B1D9DCACB /* SharedViewModelWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedViewModelWrapper.swift; sourceTree = "<group>"; };
-		E7DF81F1D2B1E6983DD23E48 /* Pods_CocktailCraftTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CocktailCraftTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		E88E12E1DD858DB8B9E22AC7 /* CocktailCraft.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CocktailCraft.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED40DA08D38951B4D2DEEFA0 /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
+		EDCCD5225B417A9F4A1E3751 /* AccessibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityTests.swift; sourceTree = "<group>"; };
 		EF5B4E2B63A932CE57642AE3 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		EFB2F5C575682386E25C6505 /* CocktailDetailViewModelSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailDetailViewModelSKIE.swift; sourceTree = "<group>"; };
 		F0C4D551F91412F5FD5C211A /* CheckoutButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckoutButton.swift; sourceTree = "<group>"; };
+		F11117C70FE00BCB4668E6E9 /* SharedStringsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedStringsTests.swift; sourceTree = "<group>"; };
 		F4EA773C39DD6E2D60B60101 /* CocktailCraftWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = CocktailCraftWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F6BA2A013D84D8BDD3B65C9A /* RandomCocktailWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomCocktailWidget.swift; sourceTree = "<group>"; };
 		F79C3BBEFD0B2BE551CBB4A8 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -197,19 +206,20 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		891AAB4F310B78B68807AF1A /* Frameworks */ = {
+		AAE2EF02229BAF75B3440134 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5EF94DBAF4F12379D05E8A92 /* Pods_CocktailCraft.framework in Frameworks */,
+				B4F08B8E6727BC900E81D87D /* SnapshotTesting in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		D5EABE862D14C15D23F17AE2 /* Frameworks */ = {
+		FE87D19B269F1080AEABCDAE /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1F7B30CE45F66F2C3737A744 /* Pods_CocktailCraftTests.framework in Frameworks */,
+				C7649F506F59038A4A033669 /* Kingfisher in Frameworks */,
+				374B4CA29F949E0FC2C8D768 /* DebugSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -223,7 +233,6 @@
 				87E192F0B9BFCD6DE2579690 /* CocktailCraftApp.swift */,
 				7EBC388A838EA20284B59381 /* ContentView.swift */,
 				4231148A0AE075220A7C4774 /* Info.plist */,
-				C6C990E86E946AE537EA4DE5 /* Localizable.xcstrings */,
 				763F7D2C53916801E282D4AC /* Components */,
 				3EDD2927213CCCACEF1003CD /* Theme */,
 				2100EB78E12FFADB14DB2966 /* Utils */,
@@ -236,6 +245,7 @@
 		0A2EEEF274517C1C933BFC49 /* CocktailCraftUITests */ = {
 			isa = PBXGroup;
 			children = (
+				443CF30B0AF2ABDDF8B207FD /* AccessibilityAuditTests.swift */,
 				60D905093AD2FAAC7A5105EB /* CartScreenTests.swift */,
 				7BAF0EE565B4C598167D8170 /* DeepLinkTests.swift */,
 				FFC19C339408793D3B6051E8 /* FavoritesScreenTests.swift */,
@@ -245,36 +255,16 @@
 			path = CocktailCraftUITests;
 			sourceTree = "<group>";
 		};
-		15127ED946DB611DE1C21B7D /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				304AA931A2790447FAF8F2CF /* Pods_CocktailCraft.framework */,
-				E7DF81F1D2B1E6983DD23E48 /* Pods_CocktailCraftTests.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		2100EB78E12FFADB14DB2966 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
 				63786090651668CDB0593815 /* AppRouter.swift */,
 				509CBA5BD785E60D138BA5C8 /* NetworkMonitor.swift */,
+				A479F6F6F05ADE26BEFFE2EF /* Strings.swift */,
 				94DF7AD6512988642980335E /* WidgetBridge.swift */,
 				158E5268B263E67FCA03C4E7 /* WidgetDataBridge.swift */,
 			);
 			path = Utils;
-			sourceTree = "<group>";
-		};
-		3787F107E2977D7BADC65034 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				D0CA6F698E1A814F8FE18532 /* Pods-CocktailCraft.debug.xcconfig */,
-				33279C984FEEC0E1C1403B5B /* Pods-CocktailCraft.release.xcconfig */,
-				53BD94699AB94C79E5877411 /* Pods-CocktailCraftTests.debug.xcconfig */,
-				C2707FD27BCCC251301039FF /* Pods-CocktailCraftTests.release.xcconfig */,
-			);
-			name = Pods;
-			path = Pods;
 			sourceTree = "<group>";
 		};
 		3AE844851B04A04D60BFD763 = {
@@ -285,8 +275,6 @@
 				0A2EEEF274517C1C933BFC49 /* CocktailCraftUITests */,
 				53F79174FA917AB3942CB389 /* CocktailCraftWidgets */,
 				3B97070C3DB6D5BF27718617 /* Products */,
-				3787F107E2977D7BADC65034 /* Pods */,
-				15127ED946DB611DE1C21B7D /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -361,11 +349,14 @@
 		6F156CDB368D01D8D246AF74 /* CocktailCraftTests */ = {
 			isa = PBXGroup;
 			children = (
+				EDCCD5225B417A9F4A1E3751 /* AccessibilityTests.swift */,
 				7AC758FEB87EDF17D2FFE28E /* CoreUnitTests.swift */,
 				1504F3D3B693833EB60B6F05 /* ReviewViewModelSKIETests.swift */,
+				F11117C70FE00BCB4668E6E9 /* SharedStringsTests.swift */,
 				6B669884A0ECE3EF5F782D5F /* SharedViewModelWrapperTests.swift */,
 				6C722B2F49CF2565F2E2703B /* TestSetup.swift */,
 				4525CA0675F84BEE843C6C8D /* WidgetBridgeTests.swift */,
+				DAF7DAB9C065F1563D835DAF /* Snapshots */,
 			);
 			path = CocktailCraftTests;
 			sourceTree = "<group>";
@@ -397,6 +388,17 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
+		DAF7DAB9C065F1563D835DAF /* Snapshots */ = {
+			isa = PBXGroup;
+			children = (
+				6BDBA4F27E85FE7DE4280E65 /* AccessibilitySnapshotTests.swift */,
+				0ACC5C4BCB1BC017A3170765 /* ComponentSnapshotTests.swift */,
+				0DBC396FDE0509CC47FD9035 /* ScreenSnapshotTests.swift */,
+				571BD1157D49DC0BF87884F3 /* SnapshotSupport.swift */,
+			);
+			path = Snapshots;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -412,6 +414,8 @@
 				4F579968522B6A9FA8AA1B0A /* PBXTargetDependency */,
 			);
 			name = CocktailCraftUITests;
+			packageProductDependencies = (
+			);
 			productName = CocktailCraftUITests;
 			productReference = C94AC12750658C154846E82E /* CocktailCraftUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -428,6 +432,8 @@
 			dependencies = (
 			);
 			name = CocktailCraftWidgets;
+			packageProductDependencies = (
+			);
 			productName = CocktailCraftWidgets;
 			productReference = F4EA773C39DD6E2D60B60101 /* CocktailCraftWidgets.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -436,9 +442,8 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5BEADB2EC0E4075E3913D51A /* Build configuration list for PBXNativeTarget "CocktailCraftTests" */;
 			buildPhases = (
-				B3BEF89D2A9BBEA4213CC20F /* [CP] Check Pods Manifest.lock */,
 				7BD30F96315688EC83520820 /* Sources */,
-				D5EABE862D14C15D23F17AE2 /* Frameworks */,
+				AAE2EF02229BAF75B3440134 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -446,6 +451,9 @@
 				AF7BD19F1C890052E5CE1ED1 /* PBXTargetDependency */,
 			);
 			name = CocktailCraftTests;
+			packageProductDependencies = (
+				00CEEB753F07B3027707B278 /* SnapshotTesting */,
+			);
 			productName = CocktailCraftTests;
 			productReference = A3C7DC400A8E325910868C64 /* CocktailCraftTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -454,12 +462,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 6B903AD635163E4B7D594652 /* Build configuration list for PBXNativeTarget "CocktailCraft" */;
 			buildPhases = (
-				A7F9A97E16DEDD9648AF593E /* [CP] Check Pods Manifest.lock */,
+				AA6F300A090B31F57716A628 /* Compile Kotlin Framework */,
 				B7BE29C2D9427FF20A890F5D /* Sources */,
-				ECFFF51618747BC6D777AB1D /* Resources */,
+				FE87D19B269F1080AEABCDAE /* Frameworks */,
 				1F6A96DF4B34587FBD0FB4A0 /* Embed Foundation Extensions */,
-				891AAB4F310B78B68807AF1A /* Frameworks */,
-				99741F850D34794901C50F08 /* [CP] Embed Pods Frameworks */,
+				35155E678BBEEEFC7C2B87BD /* Strip DebugSwift from Release */,
 			);
 			buildRules = (
 			);
@@ -467,6 +474,10 @@
 				7EA17F7E70FFE2DCF0EA87AA /* PBXTargetDependency */,
 			);
 			name = CocktailCraft;
+			packageProductDependencies = (
+				D8C0E71A2E86B9678C7301ED /* Kingfisher */,
+				44BE4D5D3E5B44C8A653F826 /* DebugSwift */,
+			);
 			productName = CocktailCraft;
 			productReference = E88E12E1DD858DB8B9E22AC7 /* CocktailCraft.app */;
 			productType = "com.apple.product-type.application";
@@ -500,6 +511,11 @@
 			);
 			mainGroup = 3AE844851B04A04D60BFD763;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				84F3E558FEE1ACA5A32A9B52 /* XCRemoteSwiftPackageReference "DebugSwift" */,
+				71D96110A742FF1E0CF1A901 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				D9170984A0430D0909C7A142 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3B97070C3DB6D5BF27718617 /* Products */;
 			projectDirPath = "";
@@ -522,76 +538,47 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		ECFFF51618747BC6D777AB1D /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				774C5DBD3198A75DCBDA9E00 /* Localizable.xcstrings in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		99741F850D34794901C50F08 /* [CP] Embed Pods Frameworks */ = {
+		35155E678BBEEEFC7C2B87BD /* Strip DebugSwift from Release */ = {
 			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CocktailCraft/Pods-CocktailCraft-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		A7F9A97E16DEDD9648AF593E /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
 			);
 			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
 			);
-			name = "[CP] Check Pods Manifest.lock";
+			name = "Strip DebugSwift from Release";
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-CocktailCraft-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			shellScript = "if [ \"$CONFIGURATION\" = \"Debug\" ]; then\n  exit 0\nfi\nrm -rf \"$TARGET_BUILD_DIR/$WRAPPER_NAME/DebugSwift_DebugSwift.bundle\"\nif nm \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\" 2>/dev/null | grep -q DebugSwift; then\n  echo \"error: DebugSwift is linked into the $CONFIGURATION build\"\n  exit 1\nfi\n";
 			showEnvVarsInLog = 0;
 		};
-		B3BEF89D2A9BBEA4213CC20F /* [CP] Check Pods Manifest.lock */ = {
+		AA6F300A090B31F57716A628 /* Compile Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
 			);
 			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
 			);
-			name = "[CP] Check Pods Manifest.lock";
+			name = "Compile Kotlin Framework";
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-CocktailCraftTests-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			shellScript = "if [ \"YES\" = \"$OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED\" ]; then\n  echo \"Skipping Gradle build task invocation due to OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED environment variable set to \\\"YES\\\"\"\n  exit 0\nfi\ncd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode :shared:copyFrameworkResourcesToApp \\\n  -Pmoko.resources.PLATFORM_NAME=\"$PLATFORM_NAME\" \\\n  -Pmoko.resources.CONFIGURATION=\"$CONFIGURATION\" \\\n  -Pmoko.resources.ARCHS=\"$ARCHS\" \\\n  -Pmoko.resources.BUILT_PRODUCTS_DIR=\"$BUILT_PRODUCTS_DIR\" \\\n  -Pmoko.resources.CONTENTS_FOLDER_PATH=\"$CONTENTS_FOLDER_PATH\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -612,6 +599,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FBDECF386F67306F2E3E7447 /* AccessibilityAuditTests.swift in Sources */,
 				7666400114820764D3FF3EA7 /* CartScreenTests.swift in Sources */,
 				79918731DB2F4754283BD25E /* DeepLinkTests.swift in Sources */,
 				11EC08719812BBF953E8CEAA /* FavoritesScreenTests.swift in Sources */,
@@ -624,9 +612,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				344FF8D81560B492A49A7DB0 /* AccessibilitySnapshotTests.swift in Sources */,
+				A5480CB053FE1474CCC6EEED /* AccessibilityTests.swift in Sources */,
+				B1E7ACFDA703E6E8CADB3D8C /* ComponentSnapshotTests.swift in Sources */,
 				7FEA1EA6B431A96104100455 /* CoreUnitTests.swift in Sources */,
 				1FE85FF6D334BCAFFC5CB097 /* ReviewViewModelSKIETests.swift in Sources */,
+				4EAB0A65C52EA16153C6396F /* ScreenSnapshotTests.swift in Sources */,
+				C57FE7E88FFBB3EEC4F5BB96 /* SharedStringsTests.swift in Sources */,
 				88022EC2C7FC54498BFCC0C2 /* SharedViewModelWrapperTests.swift in Sources */,
+				E5A53AC8D3EF0D0DD95BBAB0 /* SnapshotSupport.swift in Sources */,
 				626F24717F53ED7C42C93FE9 /* TestSetup.swift in Sources */,
 				3B79A65252D9DA0F963C3B1B /* WidgetBridgeTests.swift in Sources */,
 			);
@@ -680,6 +674,7 @@
 				A0FF029431994B1ECD80D88F /* SharedViewModelWrapper.swift in Sources */,
 				1ABC1FAFD32D199EF8772B5C /* SignInView.swift in Sources */,
 				D8812ACCBB87AF678F14A2DF /* SignUpView.swift in Sources */,
+				6A3955096E5470830FE423AF /* Strings.swift in Sources */,
 				DA5E1498FB4BC7963478C359 /* ThemeViewModelSKIE.swift in Sources */,
 				EF018FBC5C1312DB79C5D641 /* Toast.swift in Sources */,
 				CEADFEC7BB2169875DD66242 /* WidgetBridge.swift in Sources */,
@@ -751,7 +746,6 @@
 		};
 		23784922E358FB50794F0359 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = D0CA6F698E1A814F8FE18532 /* Pods-CocktailCraft.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CocktailCraft/CocktailCraft.entitlements;
@@ -759,7 +753,11 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CocktailCraft/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -773,7 +771,13 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					shared,
+					"-lsqlite3",
+					"-lc++",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.cocktailcraft.CocktailCraft;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.10;
@@ -783,9 +787,12 @@
 		};
 		477A8C0AACC4660135A925D1 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C2707FD27BCCC251301039FF /* Pods-CocktailCraftTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -842,7 +849,6 @@
 		};
 		80F24C1A2A01E524D482B026 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 33279C984FEEC0E1C1403B5B /* Pods-CocktailCraft.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CocktailCraft/CocktailCraft.entitlements;
@@ -850,7 +856,12 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				EXCLUDED_SOURCE_FILE_NAMES = DebugSwift.o;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CocktailCraft/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -864,7 +875,13 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				OTHER_LDFLAGS = "$(inherited)";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					shared,
+					"-lsqlite3",
+					"-lc++",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.cocktailcraft.CocktailCraft;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.10;
@@ -930,9 +947,12 @@
 		};
 		BCE60B0AF04D964E9EDA03E7 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 53BD94699AB94C79E5877411 /* Pods-CocktailCraftTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1059,6 +1079,51 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		71D96110A742FF1E0CF1A901 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 7.12.0;
+			};
+		};
+		84F3E558FEE1ACA5A32A9B52 /* XCRemoteSwiftPackageReference "DebugSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/DebugSwift/DebugSwift";
+			requirement = {
+				kind = revision;
+				revision = 3dc1781a855f3fa91c5f7fe3868717fe62ff3c4e;
+			};
+		};
+		D9170984A0430D0909C7A142 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.19.6;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		00CEEB753F07B3027707B278 /* SnapshotTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D9170984A0430D0909C7A142 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = SnapshotTesting;
+		};
+		44BE4D5D3E5B44C8A653F826 /* DebugSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 84F3E558FEE1ACA5A32A9B52 /* XCRemoteSwiftPackageReference "DebugSwift" */;
+			productName = DebugSwift;
+		};
+		D8C0E71A2E86B9678C7301ED /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 71D96110A742FF1E0CF1A901 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8D54CE997381E20208816DC4 /* Project object */;
 }

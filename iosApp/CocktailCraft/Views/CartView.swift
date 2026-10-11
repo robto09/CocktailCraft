@@ -13,10 +13,10 @@ struct CartView: View {
             if cartViewModel.state.cartItems.isEmpty {
                 EmptyStateView(
                     icon: "cart",
-                    title: "Your cart is empty",
-                    message: "Add some cocktails to get started"
+                    title: L(\.cart_empty_title),
+                    message: L(\.cart_empty_message_ios)
                 )
-                .navigationTitle("Cart")
+                .navigationTitle(L(\.cart))
                 .brandedNavigationBar()
             } else {
                 ScrollView {
@@ -51,13 +51,13 @@ struct CartView: View {
                         // Order Summary
                         CartSummaryCard(
                             subtotal: cartViewModel.state.totalPrice,
-                            deliveryFee: cartViewModel.deliveryFee,
-                            total: cartViewModel.finalTotal
+                            deliveryFee: cartViewModel.state.deliveryFee,
+                            total: cartViewModel.state.finalTotal
                         )
 
                         // Place Order Button
                         CheckoutButton(
-                            title: "Place Order",
+                            title: L(\.cart_place_order),
                             isEnabled: !cartViewModel.state.cartItems.isEmpty,
                             isLoading: orderViewModel.state.isLoading,
                             action: {
@@ -67,21 +67,22 @@ struct CartView: View {
                         .padding(.bottom, 20)
                     }
                 }
-                .navigationTitle("Cart")
+                .navigationTitle(L(\.cart))
                 .brandedNavigationBar()
             }
         }
         .alert(isPresented: $showCheckoutConfirmation) {
             Alert(
-                title: Text("Confirm Order"),
-                message: Text("Are you sure you want to place this order for \(cartViewModel.finalTotal.asPrice)?"),
-                primaryButton: .default(Text("Confirm")) {
+                title: Text(L(\.confirm_order_title)),
+                message: Text(L(\.confirm_order_message, cartViewModel.state.finalTotal.asPrice)),
+                primaryButton: .default(Text(L(\.cart_confirm))) {
                     Task {
-                        // Order state propagates reactively from the shared
-                        // orders flow — no notifications or delays needed.
-                        let success = await orderViewModel.placeOrder(cartItems: cartViewModel.state.cartItems, totalPrice: cartViewModel.finalTotal)
+                        // Order and cart state propagate reactively from the
+                        // shared flows — no notifications or delays needed.
+                        // placeOrder empties the cart in the same transaction
+                        // as the order insert, so there is no clearCart here.
+                        let success = await orderViewModel.placeOrder(cartItems: cartViewModel.state.cartItems, totalPrice: cartViewModel.state.finalTotal)
                         if success {
-                            await cartViewModel.clearCart()
                             router.selectedTab = .orders
                         }
                     }

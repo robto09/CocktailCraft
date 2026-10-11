@@ -19,7 +19,7 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
         // No initial load here: @State (unlike @StateObject) evaluates its
         // initial value eagerly on every parent re-render, and discarded
         // instances must not fire side effects. HomeViewSKIE's .task loads.
-        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
+        super.init(viewModel: viewModel, uiState: viewModel.uiState)
     }
 
     // No deinit: the base class cancels observation. Wraps a Koin `single`
@@ -72,39 +72,11 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
         await run { try await cartViewModel.addToCart(cocktail: cocktail, quantity: 1) }
     }
 
-    func sortByPrice(ascending: Bool) async {
-        await run { try await sharedViewModel.sortByPrice(ascending: ascending) }
-    }
-
-    func sortByRating() async {
-        await run { try await sharedViewModel.sortByRating() }
-    }
-
-    func sortByPopularity() async {
-        await run { try await sharedViewModel.sortByPopularity() }
-    }
-
-    func getCocktailById(_ id: String) async -> Cocktail? {
-        return await run(fallback: nil as Cocktail?) { try await sharedViewModel.getCocktailById(id: id) }
-    }
-
     // MARK: - Synchronous Methods
-
-    func isFavorite(_ cocktailId: String) -> Bool {
-        return sharedViewModel.isFavorite(cocktailId: cocktailId)
-    }
-
-    func getCategories() -> [String] {
-        return sharedViewModel.getCategories()
-    }
 
     /// Canonical curated category list from shared (CocktailCategories.CURATED).
     var curatedCategories: [String] {
         return sharedViewModel.curatedCategories
-    }
-
-    func getCocktailsByCategory(_ category: String, limit: Int32 = 3) -> [Cocktail] {
-        return sharedViewModel.getCocktailsByCategory(category: category, limit: limit)
     }
 
     func clearSearch() {
@@ -116,9 +88,6 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
         sharedViewModel.clearSearchFilters()
     }
 
-    func clearError() {
-        sharedViewModel.clearError()
-    }
 
     func retry() {
         sharedViewModel.retry()

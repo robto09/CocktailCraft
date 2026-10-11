@@ -1,0 +1,68 @@
+-- Schema changes need a migration: add src/commonMain/sqldelight/migrations/<N>.sqm
+-- (N = current version, starting at 1) and regenerate the snapshot with
+-- `./gradlew :core:data:generateCommonMainCocktailCraftDatabaseSchema`.
+--
+-- Placed orders (OrderRepositoryImpl): one customer_order row per Order and
+-- one customer_order_item row per OrderItem.
+--
+--   customer_order.position       placement order (1-based, increasing);
+--                                 orders list in this order
+--   customer_order_item.position  the item's index within its order
+--
+-- Foreign keys are not enforced (neither platform driver turns on
+-- PRAGMA foreign_keys), so deleting an order deletes its items explicitly in
+-- the same transaction; the REFERENCES clause documents the relationship.
+CREATE TABLE customer_order (
+    id TEXT NOT NULL PRIMARY KEY,
+    date TEXT NOT NULL,
+    total REAL NOT NULL,
+    status TEXT NOT NULL,
+    position INTEGER NOT NULL
+);
+
+CREATE TABLE customer_order_item (
+    order_id TEXT NOT NULL REFERENCES customer_order(id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    price REAL NOT NULL,
+    PRIMARY KEY (order_id, position)
+);
+
+-- One row per item (a single row with NULL item columns for an order without
+-- items). Joining both tables means observers of this query are notified
+-- when either table changes.
+selectAllWithItems:
+SELECT o.id, o.date, o.total, o.status,
+       i.name AS item_name, i.quantity AS item_quantity, i.price AS item_price
+FROM customer_order o
+LEFT JOIN customer_order_item i ON i.order_id = o.id
+ORDER BY o.position, i.position;
+
+selectByIdWithItems:
+SELECT o.id, o.date, o.total, o.status,
+       i.name AS item_name, i.quantity AS item_quantity, i.price AS item_price
+FROM customer_order o
+LEFT JOIN customer_order_item i ON i.order_id = o.id
+WHERE o.id = :id
+ORDER BY i.position;
+
+selectStatus:
+SELECT status FROM customer_order WHERE id = ?;
+
+insertOrder:
+INSERT INTO customer_order(id, date, total, status, position)
+VALUES (:id, :date, :total, :status, (SELECT COALESCE(MAX(position), 0) + 1 FROM customer_order));
+
+insertItem:
+INSERT INTO customer_order_item(order_id, position, name, quantity, price)
+VALUES (?, ?, ?, ?, ?);
+
+updateStatus:
+UPDATE customer_order SET status = :status WHERE id = :id;
+
+deleteItems:
+DELETE FROM customer_order_item WHERE order_id = ?;
+
+deleteOrder:
+DELETE FROM customer_order WHERE id = ?;

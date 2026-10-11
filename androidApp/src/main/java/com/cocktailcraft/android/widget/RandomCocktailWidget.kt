@@ -6,6 +6,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -15,8 +18,6 @@ import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
@@ -43,12 +44,21 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import com.cocktailcraft.android.MainActivity
-import com.cocktailcraft.android.R
+import com.cocktailcraft.android.util.getString
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.loading
+import com.cocktailcraft.resources.tap_to_view_details
+import com.cocktailcraft.resources.widget_cocktail_glass_icon
+import com.cocktailcraft.resources.widget_error_icon
+import com.cocktailcraft.resources.widget_random_cocktail_header
+import com.cocktailcraft.resources.widget_refresh_icon
+import com.cocktailcraft.resources.widget_tap_refresh_to_discover
+import com.cocktailcraft.resources.widget_tap_refresh_to_retry
+import com.cocktailcraft.resources.widget_tropical_drink_icon
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -105,7 +115,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = context.getString(R.string.widget_random_cocktail_header),
+                        text = context.getString(MR.strings.widget_random_cocktail_header),
                         style = TextStyle(
                             color = GlanceTheme.colors.primary,
                             fontSize = 14.sp,
@@ -124,7 +134,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = context.getString(R.string.widget_refresh_icon),
+                            text = context.getString(MR.strings.widget_refresh_icon),
                             style = TextStyle(
                                 color = GlanceTheme.colors.onPrimary,
                                 fontSize = 16.sp
@@ -164,7 +174,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = LocalContext.current.getString(R.string.loading),
+                text = LocalContext.current.getString(MR.strings.loading),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 14.sp
@@ -181,12 +191,12 @@ class RandomCocktailWidget : GlanceAppWidget() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = LocalContext.current.getString(R.string.widget_error_icon),
+                text = LocalContext.current.getString(MR.strings.widget_error_icon),
                 style = TextStyle(fontSize = 24.sp)
             )
             Spacer(modifier = GlanceModifier.height(4.dp))
             Text(
-                text = LocalContext.current.getString(R.string.widget_tap_refresh_to_retry),
+                text = LocalContext.current.getString(MR.strings.widget_tap_refresh_to_retry),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 12.sp
@@ -203,12 +213,12 @@ class RandomCocktailWidget : GlanceAppWidget() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = LocalContext.current.getString(R.string.widget_cocktail_glass_icon),
+                text = LocalContext.current.getString(MR.strings.widget_cocktail_glass_icon),
                 style = TextStyle(fontSize = 32.sp)
             )
             Spacer(modifier = GlanceModifier.height(4.dp))
             Text(
-                text = LocalContext.current.getString(R.string.widget_tap_refresh_to_discover),
+                text = LocalContext.current.getString(MR.strings.widget_tap_refresh_to_discover),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 12.sp
@@ -226,7 +236,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
         ) {
             // Cocktail emoji as placeholder
             Text(
-                text = LocalContext.current.getString(R.string.widget_tropical_drink_icon),
+                text = LocalContext.current.getString(MR.strings.widget_tropical_drink_icon),
                 style = TextStyle(fontSize = 48.sp)
             )
 
@@ -260,7 +270,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
 
             // Tap hint
             Text(
-                text = LocalContext.current.getString(R.string.tap_to_view_details),
+                text = LocalContext.current.getString(MR.strings.tap_to_view_details),
                 style = TextStyle(
                     color = WidgetColorProviders.textSecondary,
                     fontSize = 10.sp

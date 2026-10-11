@@ -13,19 +13,27 @@ import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.common_network_unavailable
+import com.cocktailcraft.resources.common_retry
+import com.cocktailcraft.resources.error_no_cached_cocktails
+import com.cocktailcraft.resources.error_unable_to_load_cocktails
 
 /**
  * A full-screen error state for load failures, shown only when there is no
@@ -50,15 +58,19 @@ fun NetworkErrorStateDisplay(
     iconSize: Int = 48,
     titleFontSize: Int = 18,
     messageFontSize: Int = 14,
-    retryButtonColor: Color = AppColors.Primary
+    retryButtonColor: Color = MaterialTheme.colorScheme.primary
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
+        // Polite live region: the error replaces the list without moving
+        // focus, so TalkBack announces it
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier
+                .padding(16.dp)
+                .semantics { liveRegion = LiveRegionMode.Polite }
         ) {
             // Error icon based on state
             val icon: ImageVector
@@ -68,19 +80,19 @@ fun NetworkErrorStateDisplay(
 
             if (!isNetworkAvailable) {
                 icon = Icons.Default.WifiOff
-                iconTint = AppColors.Primary
-                title = stringResource(R.string.common_network_unavailable)
-                message = stringResource(R.string.error_no_cached_cocktails)
+                iconTint = MaterialTheme.colorScheme.primary
+                title = stringResource(MR.strings.common_network_unavailable)
+                message = stringResource(MR.strings.error_no_cached_cocktails)
             } else {
                 icon = Icons.Default.Error
                 iconTint = Color.Red
-                title = stringResource(R.string.error_unable_to_load_cocktails)
+                title = stringResource(MR.strings.error_unable_to_load_cocktails)
                 message = errorMessage
             }
 
             Icon(
                 imageVector = icon,
-                contentDescription = stringResource(R.string.error),
+                contentDescription = null, // decorative: the title follows
                 tint = iconTint,
                 modifier = Modifier.size(iconSize.dp)
             )
@@ -92,14 +104,15 @@ fun NetworkErrorStateDisplay(
                 color = iconTint,
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold,
-                fontSize = titleFontSize.sp
+                fontSize = titleFontSize.sp,
+                modifier = Modifier.semantics { heading() }
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = message,
-                color = AppColors.TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 fontSize = messageFontSize.sp
             )
@@ -112,7 +125,7 @@ fun NetworkErrorStateDisplay(
                     containerColor = retryButtonColor
                 )
             ) {
-                Text(stringResource(R.string.common_retry))
+                Text(stringResource(MR.strings.common_retry))
             }
         }
     }

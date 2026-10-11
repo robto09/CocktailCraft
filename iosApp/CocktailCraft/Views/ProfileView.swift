@@ -43,7 +43,7 @@ struct ProfileView: View {
             .padding(.top, 8)
         }
         .background(AppColors.background(isDarkMode: isDarkMode))
-        .navigationTitle("Profile")
+        .navigationTitle(L(\.profile))
         .brandedNavigationBar()
         .onAppear {
             // Observation tracking keeps the UI current; the old
@@ -107,15 +107,15 @@ struct ProfileView: View {
                 meetsPasswordPolicy: viewModel.meetsPasswordPolicy
             )
         }
-        .alert("Logout", isPresented: $showingLogoutAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Logout", role: .destructive) {
+        .alert(L(\.logout), isPresented: $showingLogoutAlert) {
+            Button(L(\.cancel), role: .cancel) { }
+            Button(L(\.logout), role: .destructive) {
                 Task {
                     await viewModel.signOut()
                 }
             }
         } message: {
-            Text("Are you sure you want to logout?")
+            Text(L(\.logout_confirm))
         }
         .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
     }
@@ -123,44 +123,51 @@ struct ProfileView: View {
     // MARK: - Profile Header Card
     private var profileHeaderCard: some View {
         VStack(spacing: 16) {
-            // Profile Picture
-            ZStack {
-                Circle()
-                    .fill(AppColors.primary(isDarkMode: isDarkMode).opacity(0.2))
-                    .frame(width: 80, height: 80)
+            // Avatar and user info read as one element ("Guest, guest@…");
+            // the element's frame also covers the decorative initial
+            VStack(spacing: 16) {
+                // Profile Picture
+                ZStack {
+                    Circle()
+                        .fill(AppColors.primary(isDarkMode: isDarkMode).opacity(0.2))
+                        .frame(width: 80, height: 80)
 
-                Text(viewModel.userName.prefix(1).uppercased())
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                    Text(viewModel.userName.prefix(1).uppercased())
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                }
+                // Decorative initial: the name follows
+                .accessibilityHidden(true)
+
+                // User Info
+                VStack(spacing: 4) {
+                    Text(viewModel.userName)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+
+                    Text(viewModel.userEmail)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
             }
-
-            // User Info
-            VStack(spacing: 4) {
-                Text(viewModel.userName)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-
-                Text(viewModel.userEmail)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
+            .accessibilityElement(children: .combine)
 
             // Sign In/Sign Up Buttons (if not logged in)
             if !viewModel.state.isLoggedIn {
                 VStack(spacing: 12) {
-                    Text("Sign in to access your profile")
+                    Text(L(\.profile_sign_in_prompt))
                         .font(.body)
                         .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         .padding(.top, 8)
 
-                    Button("Sign In") {
+                    Button(L(\.sign_in)) {
                         showingSignIn = true
                     }
                     .buttonStyle(PrimaryButtonStyle())
 
-                    Button("Create Account") {
+                    Button(L(\.create_account)) {
                         showingSignUp = true
                     }
                     .buttonStyle(SecondaryButtonStyle())
@@ -176,9 +183,10 @@ struct ProfileView: View {
     // MARK: - Account Settings Card
     private var accountSettingsCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Account Settings")
+            Text(L(\.profile_account_settings))
                 .font(.headline)
                 .fontWeight(.bold)
+                .accessibilityAddTraits(.isHeader)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
             // Email Preferences / Notification Settings / Help & Support rows
@@ -187,7 +195,7 @@ struct ProfileView: View {
             VStack(spacing: 0) {
                 SettingsRow(
                     icon: "person",
-                    title: "Edit Profile",
+                    title: L(\.edit_profile),
                     action: { showingEditProfile = true }
                 )
 
@@ -195,7 +203,7 @@ struct ProfileView: View {
 
                 SettingsRow(
                     icon: "lock",
-                    title: "Change Password",
+                    title: L(\.change_password),
                     action: { showingChangePassword = true }
                 )
             }
@@ -207,15 +215,16 @@ struct ProfileView: View {
     // MARK: - App Settings Card
     private var appSettingsCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("App Settings")
+            Text(L(\.profile_app_settings))
                 .font(.headline)
                 .fontWeight(.bold)
+                .accessibilityAddTraits(.isHeader)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
             VStack(spacing: 0) {
                 SettingsRow(
                     icon: "gearshape",
-                    title: "Settings",
+                    title: L(\.settings),
                     action: { showingSettings = true }
                 )
 
@@ -223,7 +232,7 @@ struct ProfileView: View {
 
                 SettingsRow(
                     icon: "calendar",
-                    title: "Order History",
+                    title: L(\.order_history),
                     action: {
                         // Navigate to Orders tab
                         router.selectedTab = .orders
@@ -234,8 +243,8 @@ struct ProfileView: View {
 
                 // Follow System Theme Toggle (calendar icon matches Android)
                 ThemeToggleRow(
-                    title: "Follow System Theme",
-                    subtitle: themeViewModel.state.isSystemTheme ? "On" : "Off",
+                    title: L(\.follow_system_theme),
+                    subtitle: themeViewModel.state.isSystemTheme ? L(\.profile_toggle_on) : L(\.profile_toggle_off),
                     icon: "calendar",
                     isChecked: themeViewModel.state.isSystemTheme,
                     onToggle: { target in
@@ -249,8 +258,8 @@ struct ProfileView: View {
 
                 // Dark Mode Toggle
                 ThemeToggleRow(
-                    title: "Dark Mode",
-                    subtitle: themeViewModel.state.isSystemTheme ? "Controlled by system" : (themeViewModel.state.isDarkMode ? "On" : "Off"),
+                    title: L(\.dark_mode),
+                    subtitle: themeViewModel.state.isSystemTheme ? L(\.profile_controlled_by_system) : (themeViewModel.state.isDarkMode ? L(\.profile_toggle_on) : L(\.profile_toggle_off)),
                     icon: themeViewModel.state.isDarkMode ? "moon.fill" : "sun.max.fill",
                     isChecked: themeViewModel.state.isDarkMode,
                     onToggle: { target in
@@ -269,7 +278,7 @@ struct ProfileView: View {
 
                     SettingsRow(
                         icon: "arrow.right.square",
-                        title: "Logout",
+                        title: L(\.logout),
                         action: { showingLogoutAlert = true },
                         textColor: .red
                     )
@@ -283,22 +292,23 @@ struct ProfileView: View {
     // MARK: - About Card
     private var aboutCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("About")
+            Text(L(\.profile_about))
                 .font(.headline)
+                .accessibilityAddTraits(.isHeader)
                 .fontWeight(.bold)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
             VStack(alignment: .leading, spacing: 12) {
-                Text("CocktailCraft")
+                Text(L(\.profile_about_app_name))
                     .font(.body)
                     .fontWeight(.medium)
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
-                Text("Version 1.0.0")
+                Text(L(\.profile_version_format, "1.0.0"))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
 
-                Text("© 2026 CocktailCraft. All rights reserved.")
+                Text(L(\.profile_copyright))
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.top, 8)

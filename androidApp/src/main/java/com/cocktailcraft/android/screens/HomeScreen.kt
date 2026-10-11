@@ -1,6 +1,10 @@
 package com.cocktailcraft.android.screens
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -8,9 +12,6 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,15 +46,15 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -72,32 +73,37 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import kotlin.math.abs
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.cocktailcraft.android.BuildConfig
 import com.cocktailcraft.android.navigation.Screen
-import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.model.SearchFilters
+import com.cocktailcraft.android.ui.components.AdvancedSearchBottomSheet
 import com.cocktailcraft.android.ui.components.AnimatedCocktailList
 import com.cocktailcraft.android.ui.components.CategoryFilterRow
 import com.cocktailcraft.android.ui.components.CocktailLoadingShimmer
 import com.cocktailcraft.android.ui.components.CocktailSearchBar
 import com.cocktailcraft.android.ui.components.EmptySearchResultsMessage
-import com.cocktailcraft.android.ui.components.AdvancedSearchBottomSheet
 import com.cocktailcraft.android.ui.components.NetworkErrorStateDisplay
 import com.cocktailcraft.android.ui.components.SearchFilterChips
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.ListOptimizations.OnBottomReached
 import com.cocktailcraft.android.util.ListOptimizations.OnScrollPastThreshold
 import com.cocktailcraft.android.util.ListOptimizations.itemKey
+import com.cocktailcraft.android.util.refreshAccessibilityAction
+import com.cocktailcraft.android.util.resolve
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.SearchFilters
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.refresh
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
-import android.util.Log
-import com.cocktailcraft.android.BuildConfig
+import com.cocktailcraft.viewmodel.state.HomeUiState
+import kotlin.math.abs
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
@@ -106,21 +112,15 @@ fun HomeScreen(
     onAddToCart: (Cocktail) -> Unit,
     onCocktailClick: (Cocktail) -> Unit
 ) {
+    // HomeUiState carries the favorites too (same repository flow the
+    // favorites VM observes), so the screen collects one state.
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val isLoading = state.isLoading
-    val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val cocktails = state.cocktails
-    val isLoadingMore = state.isLoadingMore
-    val hasMoreData = state.hasMoreData
     val error by viewModel.error.collectAsStateWithLifecycle()
-    val errorMessage = error?.message ?: ""
+    val errorMessage = error?.message?.resolve() ?: ""
     val isSearchActive = state.isSearchActive
     val searchQuery = state.searchQuery
-    val favorites = favoritesState.favorites
-    val isNetworkAvailable = state.isNetworkAvailable
-    val searchFilters = state.searchFilters
-    val isAdvancedSearchActive = state.isAdvancedSearchActive
 
     // State for advanced search panel
 
@@ -186,10 +186,74 @@ fun HomeScreen(
         }
     }
 
+    // Load the shared filter-option lists (categories / ingredients)
+    // into the ViewModel state once; the sheet and category row read them.
+    LaunchedEffect(Unit) {
+        viewModel.loadFilterOptions()
+    }
+
+    HomeContent(
+        state = state,
+        errorMessage = errorMessage,
+        curatedCategories = viewModel.curatedCategories,
+        selectedCategory = selectedCategory,
+        onCategorySelected = onCategorySelected,
+        // Shared debounced pipeline (SH-13): no per-keystroke coroutines.
+        onSearchQueryChange = { viewModel.updateSearchQuery(it) },
+        onExitSearch = { viewModel.toggleSearchMode(false) },
+        onSetAdvancedSearchActive = { viewModel.toggleAdvancedSearchMode(it) },
+        onApplyFilters = { filters -> scope.launch { viewModel.applyFilters(filters) } },
+        onClearSearchFilters = { viewModel.clearSearchFilters() },
+        onRetry = { viewModel.retry() },
+        onCocktailClick = onCocktailClick,
+        onAddToCart = onAddToCart,
+        onToggleFavorite = { cocktailToToggle ->
+            scope.launch { favoritesViewModel.toggleFavorite(cocktailToToggle) }
+        },
+        onLoadMore = {
+            scope.launch { viewModel.loadMoreCocktails() }
+        }
+    )
+}
+
+/**
+ * Stateless Home content: renders [state] and reports every intent upward,
+ * so it can be previewed/screenshot-tested without a ViewModel. The
+ * selected category is screen-owned (rememberSaveable) and passed in.
+ */
+@Composable
+internal fun HomeContent(
+    state: HomeUiState,
+    errorMessage: String,
+    curatedCategories: List<String>,
+    selectedCategory: String?,
+    onCategorySelected: (String?) -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onExitSearch: () -> Unit,
+    onSetAdvancedSearchActive: (Boolean) -> Unit,
+    onApplyFilters: (SearchFilters) -> Unit,
+    onClearSearchFilters: () -> Unit,
+    onRetry: () -> Unit,
+    onCocktailClick: (Cocktail) -> Unit,
+    onAddToCart: (Cocktail) -> Unit,
+    onToggleFavorite: (Cocktail) -> Unit,
+    onLoadMore: () -> Unit
+) {
+    val isLoading = state.isLoading
+    val cocktails = state.cocktails
+    val isLoadingMore = state.isLoadingMore
+    val hasMoreData = state.hasMoreData
+    val isSearchActive = state.isSearchActive
+    val searchQuery = state.searchQuery
+    val favorites = state.favorites
+    val isNetworkAvailable = state.isNetworkAvailable
+    val searchFilters = state.searchFilters
+    val isAdvancedSearchActive = state.isAdvancedSearchActive
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.Background)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // For now, we'll skip the error banner since we're using legacy error handling
         // We'll implement it in the future when we fully migrate to the new error system
@@ -199,30 +263,20 @@ fun HomeScreen(
             searchQuery = searchQuery,
             isAdvancedSearchActive = isAdvancedSearchActive,
             hasActiveFilters = searchFilters.hasActiveFilters(),
-            // Shared debounced pipeline (SH-13): no per-keystroke coroutines.
-            onSearchQueryChange = { viewModel.updateSearchQuery(it) },
-            onClearSearch = { viewModel.toggleSearchMode(false) },
-            onToggleAdvancedSearch = { viewModel.toggleAdvancedSearchMode(!isAdvancedSearchActive) }
+            onSearchQueryChange = onSearchQueryChange,
+            onClearSearch = onExitSearch,
+            onToggleAdvancedSearch = { onSetAdvancedSearchActive(!isAdvancedSearchActive) }
         )
 
         // Active filters display
         HomeActiveFiltersSection(
             searchFilters = searchFilters,
-            onApplyFilters = { updatedFilters ->
-                scope.launch { viewModel.applyFilters(updatedFilters) }
-            },
-            onClearAllFilters = {
-                viewModel.clearSearchFilters()
-            }
+            onApplyFilters = onApplyFilters,
+            onClearAllFilters = onClearSearchFilters
         )
 
         // Advanced search panel
 
-        // Load the shared filter-option lists (categories / ingredients)
-        // into the ViewModel state once; the sheet and category row read them below.
-        LaunchedEffect(Unit) {
-            viewModel.loadFilterOptions()
-        }
         val categories = state.filterCategories
         val ingredients = state.filterIngredients
 
@@ -233,14 +287,10 @@ fun HomeScreen(
             currentFilters = searchFilters,
             categories = categories,
             ingredients = ingredients,
-            onApplyFilters = { filters ->
-                scope.launch { viewModel.applyFilters(filters) }
-            },
-            onClearFilters = {
-                viewModel.clearSearchFilters()
-            },
+            onApplyFilters = onApplyFilters,
+            onClearFilters = onClearSearchFilters,
             onDismiss = {
-                viewModel.toggleAdvancedSearchMode(false)
+                onSetAdvancedSearchActive(false)
             }
         )
 
@@ -249,7 +299,7 @@ fun HomeScreen(
         // categories); the full API list above is only for the advanced panel.
         HomeCategoryChipsRow(
             isSearchActive = isSearchActive,
-            categories = viewModel.curatedCategories,
+            categories = curatedCategories,
             selectedCategory = selectedCategory,
             onCategorySelected = onCategorySelected
         )
@@ -269,30 +319,22 @@ fun HomeScreen(
             hasMoreData = hasMoreData,
             favorites = favorites,
             isNetworkAvailable = isNetworkAvailable,
-            onRetry = { viewModel.retry() },
-            onClearSearch = {
-                viewModel.toggleSearchMode(false)
-            },
+            onRetry = onRetry,
+            onClearSearch = onExitSearch,
             onClearCategory = {
                 onCategorySelected(null)
             },
             onClearFilters = {
                 // Drop only the advanced filters; any active query re-runs
                 // on its own (empty query + no filters = default listing).
-                scope.launch {
-                    viewModel.applyFilters(
-                        searchFilters.copy(category = null, ingredient = null, alcoholic = null)
-                    )
-                }
+                onApplyFilters(
+                    searchFilters.copy(category = null, ingredient = null, alcoholic = null)
+                )
             },
             onCocktailClick = onCocktailClick,
             onAddToCart = onAddToCart,
-            onToggleFavorite = { cocktailToToggle ->
-                scope.launch { favoritesViewModel.toggleFavorite(cocktailToToggle) }
-            },
-            onLoadMore = {
-                scope.launch { viewModel.loadMoreCocktails() }
-            }
+            onToggleFavorite = onToggleFavorite,
+            onLoadMore = onLoadMore
         )
     }
 }
@@ -386,7 +428,7 @@ private fun HomeCategoryChipsRow(
 
 // Main content (loading / error / empty / list branches) wrapped in pull-to-refresh
 @Composable
-private fun HomeContentSection(
+internal fun HomeContentSection(
     isLoading: Boolean,
     errorMessage: String,
     cocktails: List<Cocktail>,
@@ -413,7 +455,9 @@ private fun HomeContentSection(
     PullToRefreshBox(
         isRefreshing = isLoading,
         onRefresh = onRetry,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .refreshAccessibilityAction(stringResource(MR.strings.refresh), onRetry),
         state = pullToRefreshState,
         indicator = {
             // Preserve the previous Material2 indicator colors
@@ -423,7 +467,7 @@ private fun HomeContentSection(
                 isRefreshing = isLoading,
                 modifier = Modifier.align(Alignment.TopCenter),
                 containerColor = Color.White,
-                color = AppColors.Primary
+                color = MaterialTheme.colorScheme.primary
             )
         }
     ) {

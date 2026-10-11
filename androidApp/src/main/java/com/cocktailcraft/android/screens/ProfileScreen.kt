@@ -34,12 +34,12 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,28 +51,61 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.cocktailcraft.android.BuildConfig
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.AnimatedThemeToggleRow
 import com.cocktailcraft.android.ui.components.PrimaryButton
 import com.cocktailcraft.android.ui.components.SettingsItem
-import com.cocktailcraft.android.BuildConfig
-import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.SignInDialog
 import com.cocktailcraft.android.ui.components.SignUpDialog
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.resolve
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.cancel
+import com.cocktailcraft.resources.change_password
+import com.cocktailcraft.resources.create_account
+import com.cocktailcraft.resources.dark_mode
+import com.cocktailcraft.resources.edit_profile
+import com.cocktailcraft.resources.email_preferences
+import com.cocktailcraft.resources.error
+import com.cocktailcraft.resources.follow_system_theme
+import com.cocktailcraft.resources.help_support
+import com.cocktailcraft.resources.logout
+import com.cocktailcraft.resources.logout_confirm
+import com.cocktailcraft.resources.notification_settings
+import com.cocktailcraft.resources.ok
+import com.cocktailcraft.resources.order_history
+import com.cocktailcraft.resources.profile_about
+import com.cocktailcraft.resources.profile_about_app_name
+import com.cocktailcraft.resources.profile_account_settings
+import com.cocktailcraft.resources.profile_app_settings
+import com.cocktailcraft.resources.profile_controlled_by_system
+import com.cocktailcraft.resources.profile_copyright
+import com.cocktailcraft.resources.profile_guest_email
+import com.cocktailcraft.resources.profile_guest_user
+import com.cocktailcraft.resources.profile_sign_in_prompt
+import com.cocktailcraft.resources.profile_toggle_off
+import com.cocktailcraft.resources.profile_toggle_on
+import com.cocktailcraft.resources.profile_version_format
+import com.cocktailcraft.resources.sign_in
+import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedProfileViewModel
 import com.cocktailcraft.viewmodel.SharedThemeViewModel
+import com.cocktailcraft.viewmodel.state.ProfileUiState
+import com.cocktailcraft.viewmodel.state.ThemeUiState
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -86,13 +119,53 @@ fun ProfileScreen(
 
     // Get user data from ViewModel
     val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
-    val isLoading = profileState.isLoading
-    val user = profileState.user
-    val isLoggedIn = profileState.isLoggedIn
     val error by profileViewModel.error.collectAsStateWithLifecycle()
 
     // Get theme data from ThemeViewModel
     val themeState by themeViewModel.uiState.collectAsStateWithLifecycle()
+
+    ProfileContent(
+        profileState = profileState,
+        themeState = themeState,
+        error = error,
+        onSignIn = { email, password -> scope.launch { profileViewModel.signIn(email, password) } },
+        onSignUp = { name, email, password -> scope.launch { profileViewModel.signUp(name, email, password) } },
+        onConfirmLogout = {
+            // Navigate only after sign-out completes — leaving the
+            // screen would cancel this composition-scoped coroutine.
+            scope.launch {
+                profileViewModel.signOut()
+                navigationManager.navigateToHome()
+            }
+        },
+        onOrderHistoryClick = { navigationManager.navigateToOrderList() },
+        onSetFollowSystemTheme = { enabled -> scope.launch { themeViewModel.setFollowSystemTheme(enabled) } },
+        onSetDarkMode = { enabled -> scope.launch { themeViewModel.setDarkMode(enabled) } },
+        onDismissError = { profileViewModel.clearError() }
+    )
+}
+
+/**
+ * Stateless profile content: renders the profile and theme state and reports
+ * every intent upward, so it can be previewed/screenshot-tested without
+ * ViewModels. Owns only UI-local state (which dialog is showing).
+ */
+@Composable
+internal fun ProfileContent(
+    profileState: ProfileUiState,
+    themeState: ThemeUiState,
+    error: ErrorHandler.UserFriendlyError?,
+    onSignIn: (email: String, password: String) -> Unit,
+    onSignUp: (name: String, email: String, password: String) -> Unit,
+    onConfirmLogout: () -> Unit,
+    onOrderHistoryClick: () -> Unit,
+    onSetFollowSystemTheme: (Boolean) -> Unit,
+    onSetDarkMode: (Boolean) -> Unit,
+    onDismissError: () -> Unit
+) {
+    val isLoading = profileState.isLoading
+    val user = profileState.user
+    val isLoggedIn = profileState.isLoggedIn
     val isDarkMode = themeState.isDarkMode
     val isSystemTheme = themeState.isSystemTheme
 
@@ -102,15 +175,15 @@ fun ProfileScreen(
     var showSignUpDialog by rememberSaveable { mutableStateOf(false) }
 
     // Sample profile data (in a real app, this would come from a ViewModel)
-    val userName = user?.name ?: stringResource(R.string.profile_guest_user)
-    val userEmail = user?.email ?: stringResource(R.string.profile_guest_email)
+    val userName = user?.name ?: stringResource(MR.strings.profile_guest_user)
+    val userEmail = user?.email ?: stringResource(MR.strings.profile_guest_email)
 
     // Sign in dialog state
     if (showSignInDialog) {
         SignInDialog(
             onDismiss = { showSignInDialog = false },
             onSignIn = { email, password ->
-                scope.launch { profileViewModel.signIn(email, password) }
+                onSignIn(email, password)
                 showSignInDialog = false
             }
         )
@@ -121,7 +194,7 @@ fun ProfileScreen(
         SignUpDialog(
             onDismiss = { showSignUpDialog = false },
             onSignUp = { name, email, password ->
-                scope.launch { profileViewModel.signUp(name, email, password) }
+                onSignUp(name, email, password)
                 showSignUpDialog = false
             }
         )
@@ -131,31 +204,26 @@ fun ProfileScreen(
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            title = { Text(stringResource(R.string.logout)) },
-            text = { Text(stringResource(R.string.logout_confirm)) },
+            title = { Text(stringResource(MR.strings.logout)) },
+            text = { Text(stringResource(MR.strings.logout_confirm)) },
             confirmButton = {
                 Button(
                     onClick = {
                         showLogoutDialog = false
-                        // Navigate only after sign-out completes — leaving the
-                        // screen would cancel this composition-scoped coroutine.
-                        scope.launch {
-                            profileViewModel.signOut()
-                            navigationManager.navigateToHome()
-                        }
+                        onConfirmLogout()
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = AppColors.Primary
+                        containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(stringResource(R.string.logout))
+                    Text(stringResource(MR.strings.logout))
                 }
             },
             dismissButton = {
                 OutlinedButton(
                     onClick = { showLogoutDialog = false }
                 ) {
-                    Text(stringResource(R.string.cancel))
+                    Text(stringResource(MR.strings.cancel))
                 }
             }
         )
@@ -164,7 +232,7 @@ fun ProfileScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.Background)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(Spacing.lg)
     ) {
@@ -188,10 +256,10 @@ fun ProfileScreen(
             isLoggedIn = isLoggedIn,
             isDarkMode = isDarkMode,
             isSystemTheme = isSystemTheme,
-            onOrderHistoryClick = { navigationManager.navigateToOrderList() },
-            onToggleFollowSystemTheme = { scope.launch { themeViewModel.setFollowSystemTheme(!isSystemTheme) } },
+            onOrderHistoryClick = onOrderHistoryClick,
+            onToggleFollowSystemTheme = { onSetFollowSystemTheme(!isSystemTheme) },
             onToggleDarkMode = {
-                if (!isSystemTheme) scope.launch { themeViewModel.setDarkMode(!isDarkMode) }
+                if (!isSystemTheme) onSetDarkMode(!isDarkMode)
             },
             onLogoutClick = { showLogoutDialog = true }
         )
@@ -208,17 +276,17 @@ fun ProfileScreen(
     // Show error message if needed
     error?.let { errorInfo ->
         AlertDialog(
-            onDismissRequest = { profileViewModel.clearError() },
-            title = { Text(stringResource(R.string.error)) },
-            text = { Text(errorInfo.message) },
+            onDismissRequest = onDismissError,
+            title = { Text(stringResource(MR.strings.error)) },
+            text = { Text(errorInfo.message.resolve()) },
             confirmButton = {
                 Button(
-                    onClick = { profileViewModel.clearError() },
+                    onClick = onDismissError,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = AppColors.Primary
+                        containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(stringResource(R.string.ok))
+                    Text(stringResource(MR.strings.ok))
                 }
             }
         )
@@ -226,7 +294,7 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun ProfileHeaderCard(
+internal fun ProfileHeaderCard(
     userName: String,
     userEmail: String,
     isLoggedIn: Boolean,
@@ -239,7 +307,7 @@ private fun ProfileHeaderCard(
             .padding(bottom = Spacing.lg),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -249,18 +317,19 @@ private fun ProfileHeaderCard(
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Profile picture
+            // Profile picture (decorative initial: the name follows)
             Box(
                 modifier = Modifier
                     .size(80.dp)
-                    .background(AppColors.Primary.copy(alpha = 0.2f), CircleShape),
+                    .clearAndSetSemantics {}
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = userName.take(1).uppercase(),
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.Primary
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -271,7 +340,7 @@ private fun ProfileHeaderCard(
                 text = userName,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(Spacing.xs))
@@ -280,7 +349,7 @@ private fun ProfileHeaderCard(
             Text(
                 text = userEmail,
                 fontSize = 14.sp,
-                color = AppColors.TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             // Show login/signup buttons if not signed in
@@ -302,14 +371,14 @@ private fun SignInPromptSection(
     Spacer(modifier = Modifier.height(Spacing.xxl))
 
     Text(
-        text = stringResource(R.string.profile_sign_in_prompt),
+        text = stringResource(MR.strings.profile_sign_in_prompt),
         fontSize = 16.sp,
-        color = AppColors.TextSecondary,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(bottom = Spacing.lg)
     )
 
     PrimaryButton(
-        text = stringResource(R.string.sign_in),
+        text = stringResource(MR.strings.sign_in),
         onClick = onSignInClick,
         modifier = Modifier
             .fillMaxWidth(0.8f)
@@ -324,19 +393,19 @@ private fun SignInPromptSection(
             .fillMaxWidth(0.8f)
             .padding(vertical = Spacing.xs)
     ) {
-        Text(stringResource(R.string.create_account))
+        Text(stringResource(MR.strings.create_account))
     }
 }
 
 @Composable
-private fun AccountSettingsCard() {
+internal fun AccountSettingsCard() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = Spacing.lg),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -344,34 +413,36 @@ private fun AccountSettingsCard() {
             modifier = Modifier.padding(Spacing.lg)
         ) {
             Text(
-                text = stringResource(R.string.profile_account_settings),
+                text = stringResource(MR.strings.profile_account_settings),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary,
-                modifier = Modifier.padding(bottom = Spacing.lg)
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .padding(bottom = Spacing.lg)
+                    .semantics { heading() }
             )
 
             SettingsItem(
                 icon = Icons.Default.Person,
-                title = stringResource(R.string.edit_profile),
+                title = stringResource(MR.strings.edit_profile),
                 onClick = { /* Handle edit profile */ }
             )
 
             SettingsItem(
                 icon = Icons.Default.Lock,
-                title = stringResource(R.string.change_password),
+                title = stringResource(MR.strings.change_password),
                 onClick = { /* Handle change password */ }
             )
 
             SettingsItem(
                 icon = Icons.Default.Email,
-                title = stringResource(R.string.email_preferences),
+                title = stringResource(MR.strings.email_preferences),
                 onClick = { /* Handle email preferences */ }
             )
 
             SettingsItem(
                 icon = Icons.Default.Notifications,
-                title = stringResource(R.string.notification_settings),
+                title = stringResource(MR.strings.notification_settings),
                 onClick = { /* Handle notification settings */ }
             )
         }
@@ -379,7 +450,7 @@ private fun AccountSettingsCard() {
 }
 
 @Composable
-private fun AppSettingsCard(
+internal fun AppSettingsCard(
     isLoggedIn: Boolean,
     isDarkMode: Boolean,
     isSystemTheme: Boolean,
@@ -394,7 +465,7 @@ private fun AppSettingsCard(
             .padding(bottom = Spacing.lg),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -402,29 +473,31 @@ private fun AppSettingsCard(
             modifier = Modifier.padding(Spacing.lg)
         ) {
             Text(
-                text = stringResource(R.string.profile_app_settings),
+                text = stringResource(MR.strings.profile_app_settings),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary,
-                modifier = Modifier.padding(bottom = Spacing.lg)
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .padding(bottom = Spacing.lg)
+                    .semantics { heading() }
             )
 
             SettingsItem(
                 icon = Icons.Default.DateRange,
-                title = stringResource(R.string.order_history),
+                title = stringResource(MR.strings.order_history),
                 onClick = onOrderHistoryClick
             )
 
             SettingsItem(
                 icon = Icons.Default.Help,
-                title = stringResource(R.string.help_support),
+                title = stringResource(MR.strings.help_support),
                 onClick = { /* Handle help & support */ }
             )
 
             // Follow System Theme Toggle with animated switch
             AnimatedThemeToggleRow(
-                title = stringResource(R.string.follow_system_theme),
-                subtitle = if (isSystemTheme) stringResource(R.string.profile_toggle_on) else stringResource(R.string.profile_toggle_off),
+                title = stringResource(MR.strings.follow_system_theme),
+                subtitle = if (isSystemTheme) stringResource(MR.strings.profile_toggle_on) else stringResource(MR.strings.profile_toggle_off),
                 icon = Icons.Default.DateRange,
                 isChecked = isSystemTheme,
                 onToggle = onToggleFollowSystemTheme,
@@ -433,11 +506,11 @@ private fun AppSettingsCard(
 
             // Dark Mode Toggle with animated switch (only enabled if not following system theme)
             AnimatedThemeToggleRow(
-                title = stringResource(R.string.dark_mode),
+                title = stringResource(MR.strings.dark_mode),
                 subtitle = if (isSystemTheme)
-                    stringResource(R.string.profile_controlled_by_system)
+                    stringResource(MR.strings.profile_controlled_by_system)
                 else
-                    if (isDarkMode) stringResource(R.string.profile_toggle_on) else stringResource(R.string.profile_toggle_off),
+                    if (isDarkMode) stringResource(MR.strings.profile_toggle_on) else stringResource(MR.strings.profile_toggle_off),
                 icon = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
                 isChecked = isDarkMode,
                 onToggle = onToggleDarkMode,
@@ -449,9 +522,9 @@ private fun AppSettingsCard(
             if (isLoggedIn) {
                 SettingsItem(
                     icon = Icons.Default.ExitToApp,
-                    title = stringResource(R.string.logout),
+                    title = stringResource(MR.strings.logout),
                     onClick = onLogoutClick,
-                    textColor = AppColors.Error
+                    textColor = MaterialTheme.colorScheme.error
                 )
             }
         }
@@ -464,7 +537,7 @@ private fun AboutCard() {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -472,34 +545,36 @@ private fun AboutCard() {
             modifier = Modifier.padding(Spacing.lg)
         ) {
             Text(
-                text = stringResource(R.string.profile_about),
+                text = stringResource(MR.strings.profile_about),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary,
-                modifier = Modifier.padding(bottom = Spacing.lg)
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .padding(bottom = Spacing.lg)
+                    .semantics { heading() }
             )
 
             Text(
-                text = stringResource(R.string.profile_about_app_name),
+                text = stringResource(MR.strings.profile_about_app_name),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
-                color = AppColors.TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(Spacing.xs))
 
             Text(
-                text = stringResource(R.string.profile_version_format, BuildConfig.VERSION_NAME),
+                text = stringResource(MR.strings.profile_version_format, BuildConfig.VERSION_NAME),
                 fontSize = 14.sp,
-                color = AppColors.TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(Spacing.lg))
 
             Text(
-                text = stringResource(R.string.profile_copyright),
+                text = stringResource(MR.strings.profile_copyright),
                 fontSize = 12.sp,
-                color = AppColors.TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -513,7 +588,7 @@ private fun LoadingOverlay() {
             .background(Color.Black.copy(alpha = 0.5f)),
         contentAlignment = Alignment.Center
     ) {
-        CircularProgressIndicator(color = AppColors.Primary)
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
     }
 }
 

@@ -12,6 +12,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -21,15 +22,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.cancel
+import com.cocktailcraft.resources.create_account
+import com.cocktailcraft.resources.email
+import com.cocktailcraft.resources.hide_password
+import com.cocktailcraft.resources.name
+import com.cocktailcraft.resources.password
+import com.cocktailcraft.resources.password_hidden
+import com.cocktailcraft.resources.password_shown
+import com.cocktailcraft.resources.show_password
+import com.cocktailcraft.resources.sign_in
 
 /**
  * Sign-in and sign-up dialogs, extracted from ProfileScreen. Form state is
@@ -46,13 +56,13 @@ fun SignInDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.sign_in)) },
+        title = { Text(stringResource(MR.strings.sign_in)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text(stringResource(R.string.email)) },
+                    label = { Text(stringResource(MR.strings.email)) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -73,15 +83,15 @@ fun SignInDialog(
                 onClick = { onSignIn(email, password) },
                 enabled = email.isNotBlank() && password.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.Primary
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
-                Text(stringResource(R.string.sign_in))
+                Text(stringResource(MR.strings.sign_in))
             }
         },
         dismissButton = {
             OutlinedButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
+                Text(stringResource(MR.strings.cancel))
             }
         }
     )
@@ -99,13 +109,13 @@ fun SignUpDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.create_account)) },
+        title = { Text(stringResource(MR.strings.create_account)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.name)) },
+                    label = { Text(stringResource(MR.strings.name)) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -115,7 +125,7 @@ fun SignUpDialog(
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text(stringResource(R.string.email)) },
+                    label = { Text(stringResource(MR.strings.email)) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -136,15 +146,15 @@ fun SignUpDialog(
                 onClick = { onSignUp(name, email, password) },
                 enabled = name.isNotBlank() && email.isNotBlank() && password.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.Primary
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
-                Text(stringResource(R.string.create_account))
+                Text(stringResource(MR.strings.create_account))
             }
         },
         dismissButton = {
             OutlinedButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
+                Text(stringResource(MR.strings.cancel))
             }
         }
     )
@@ -160,7 +170,7 @@ private fun PasswordField(
     OutlinedTextField(
         value = password,
         onValueChange = onPasswordChange,
-        label = { Text(stringResource(R.string.password)) },
+        label = { Text(stringResource(MR.strings.password)) },
         singleLine = true,
         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -171,7 +181,7 @@ private fun PasswordField(
             // Announce purpose (action) and current state to TalkBack — an
             // icon-only toggle is otherwise just "button"
             val stateDesc = stringResource(
-                if (passwordVisible) R.string.password_shown else R.string.password_hidden
+                if (passwordVisible) MR.strings.password_shown else MR.strings.password_hidden
             )
             IconButton(
                 onClick = onToggleVisibility,
@@ -180,7 +190,7 @@ private fun PasswordField(
                 Icon(
                     imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                     contentDescription = stringResource(
-                        if (passwordVisible) R.string.hide_password else R.string.show_password
+                        if (passwordVisible) MR.strings.hide_password else MR.strings.show_password
                     )
                 )
             }

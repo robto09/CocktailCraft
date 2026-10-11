@@ -20,14 +20,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.order_item_quantity_name
+import com.cocktailcraft.resources.order_number
+import com.cocktailcraft.resources.order_price_format
+import com.cocktailcraft.resources.total
 
 /**
  * Order summary card: order number + date header, line items, total, and a
@@ -43,7 +49,7 @@ fun OrderCard(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -57,16 +63,17 @@ fun OrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = stringResource(R.string.order_number, order.id.takeLast(5)),
+                    text = stringResource(MR.strings.order_number, order.id.takeLast(5)),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.semantics { heading() }
                 )
 
                 Text(
                     text = order.date,
                     fontSize = 14.sp,
-                    color = AppColors.TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -78,20 +85,21 @@ fun OrderCard(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = Spacing.xs),
+                            .padding(vertical = Spacing.xs)
+                            .semantics(mergeDescendants = true) {},
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = stringResource(R.string.order_item_quantity_name, item.quantity, item.name),
+                            text = stringResource(MR.strings.order_item_quantity_name, item.quantity, item.name),
                             fontSize = 14.sp,
-                            color = AppColors.TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
                         Text(
-                            text = stringResource(R.string.order_price_format, item.price * item.quantity),
+                            text = stringResource(MR.strings.order_price_format, item.price * item.quantity),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
-                            color = AppColors.TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -99,27 +107,29 @@ fun OrderCard(
 
             HorizontalDivider(
                 modifier = Modifier.padding(vertical = Spacing.md),
-                color = AppColors.LightGray
+                color = CocktailCraftTheme.extendedColors.neutralSubtle
             )
 
             // Total row
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics(mergeDescendants = true) {},
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = stringResource(R.string.total),
+                    text = stringResource(MR.strings.total),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
-                    text = stringResource(R.string.order_price_format, order.total),
+                    text = stringResource(MR.strings.order_price_format, order.total),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.Primary
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -130,9 +140,9 @@ fun OrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val statusColor = when (order.status) {
-                    "Completed" -> AppColors.Success
-                    "In Progress" -> AppColors.Warning
-                    else -> AppColors.Gray
+                    "Completed" -> CocktailCraftTheme.extendedColors.success
+                    "In Progress" -> CocktailCraftTheme.extendedColors.warning
+                    else -> MaterialTheme.colorScheme.outline
                 }
 
                 Box(

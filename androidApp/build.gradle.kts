@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.baselineprofile)
+    alias(libs.plugins.roborazzi)
 }
 
 // Release signing comes from an untracked keystore.properties at the repo root
@@ -113,6 +114,11 @@ android {
     }
 }
 
+// Screenshot baselines are committed next to the tests (see README → Testing).
+roborazzi {
+    outputDir.set(layout.projectDirectory.dir("src/test/screenshots"))
+}
+
 composeCompiler {
     // Shared KMP domain models can't carry @Immutable (no Compose dependency
     // in shared), so they're declared stable here — makes the list-item
@@ -185,10 +191,22 @@ dependencies {
     testImplementation(libs.koin.test.junit4)
     testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.robolectric)
+    // Robolectric is JUnit4-only; the vintage engine runs it on the JUnit Platform
+    testRuntimeOnly(libs.junit.vintage.engine)
+
+    // Screenshot tests (Roborazzi on Robolectric — no emulator needed)
+    testImplementation(composeBom)
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.roborazzi.core)
+    testImplementation(libs.roborazzi.compose)
+    // Accessibility Test Framework checks on Robolectric (Compose's own
+    // enableAccessibilityChecks is a no-op there; it runs in androidTest)
+    testImplementation(libs.roborazzi.accessibility.check)
 
     // Compose UI Testing
     androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.compose.ui.test.manifest)
+    androidTestImplementation(libs.compose.ui.test.junit4.accessibility)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.androidx.test.runner)
