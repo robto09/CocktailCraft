@@ -5,6 +5,9 @@ struct ContentView: View {
     @State private var router = AppRouter()
     @State private var cartViewModel = CartViewModelSKIE()
     private let themeViewModel = ThemeViewModelSKIE.shared
+    // System accessibility settings, read above the app's own overrides
+    @Environment(\.dynamicTypeSize) private var systemTypeSize
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     var body: some View {
         let themeState = themeViewModel.state
@@ -103,11 +106,13 @@ struct ContentView: View {
         .environment(router)
         .environment(\.isDarkMode, themeState.isDarkMode)
         .preferredColorScheme(themeState.isSystemTheme ? nil : (themeState.isDarkMode ? .dark : .light))
-        // In-app Font Size setting (Dynamic Type override; .large = default)
-        .dynamicTypeSize(Self.dynamicTypeSize(for: themeState.fontSize))
-        // Reduce Motion: strip implicit animations app-wide
+        // In-app Font Size setting, applied relative to the system Dynamic
+        // Type size so accessibility sizes keep working
+        .dynamicTypeSize(Self.dynamicTypeSize(for: themeState.fontSize, system: systemTypeSize))
+        // Reduce Motion (in-app setting or the system one): strip
+        // animations app-wide
         .transaction { transaction in
-            if themeViewModel.state.isReducedMotion {
+            if themeViewModel.state.isReducedMotion || systemReduceMotion {
                 transaction.animation = nil
             }
         }
@@ -122,14 +127,23 @@ struct ContentView: View {
         return true
     }
 
-    /// Maps the shared font-size setting onto a Dynamic Type size.
-    private static func dynamicTypeSize(for fontSize: String) -> DynamicTypeSize {
+    /// Maps the shared font-size setting onto a Dynamic Type size, as steps
+    /// from the user's system size — like Android, where the in-app setting
+    /// multiplies the system font scale. "Medium" (the default) is the system
+    /// size itself, so the system accessibility sizes (up to AX5) apply;
+    /// with the default system size (.large) the other settings land on
+    /// .small / .xLarge / .xxLarge as before.
+    static func dynamicTypeSize(for fontSize: String, system: DynamicTypeSize) -> DynamicTypeSize {
+        let steps: Int
         switch fontSize.lowercased() {
-        case "small": return .small
-        case "large": return .xLarge
-        case "xlarge": return .xxLarge
-        default: return .large
+        case "small": steps = -2
+        case "large": steps = 1
+        case "xlarge": steps = 2
+        default: steps = 0
         }
+        let sizes = DynamicTypeSize.allCases
+        guard let index = sizes.firstIndex(of: system) else { return system }
+        return sizes[min(max(index + steps, 0), sizes.count - 1)]
     }
 }
 
