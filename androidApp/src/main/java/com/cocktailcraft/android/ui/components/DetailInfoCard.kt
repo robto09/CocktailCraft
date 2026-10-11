@@ -10,6 +10,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,7 +59,10 @@ fun DetailInfoCard(
                 fontSize = titleFontSize.sp,
                 fontWeight = titleFontWeight,
                 color = titleColor,
-                modifier = Modifier.padding(bottom = 12.dp)
+                modifier = Modifier
+                    .padding(bottom = 12.dp)
+                    // A blank title (cards with their own header row) is no heading
+                    .then(if (title.isNotBlank()) Modifier.semantics { heading() } else Modifier)
             )
             
             content()

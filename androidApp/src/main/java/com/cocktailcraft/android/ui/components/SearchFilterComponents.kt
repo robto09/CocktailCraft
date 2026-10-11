@@ -6,6 +6,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -40,6 +43,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,11 +52,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
+import com.cocktailcraft.android.ui.theme.LocalReducedMotion
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.alcoholic
@@ -61,15 +70,18 @@ import com.cocktailcraft.resources.filter_any
 import com.cocktailcraft.resources.filter_any_ingredient
 import com.cocktailcraft.resources.filter_collapse
 import com.cocktailcraft.resources.filter_expand
+import com.cocktailcraft.resources.filter_section_collapsed_a11y
+import com.cocktailcraft.resources.filter_section_expanded_a11y
 import com.cocktailcraft.resources.filter_select_an_ingredient
 import com.cocktailcraft.resources.filter_select_category
 import com.cocktailcraft.resources.filter_select_ingredient_title
 import com.cocktailcraft.resources.non_alcoholic
-import com.cocktailcraft.resources.search
 import com.cocktailcraft.resources.search_ingredients_placeholder
 
 /**
- * Section component for filter categories
+ * Collapsible section for filter categories. The header is one TalkBack
+ * element: a heading with its expanded/collapsed state and a
+ * "double-tap to collapse/expand" action.
  */
 @Composable
 fun FilterSection(
@@ -77,12 +89,24 @@ fun FilterSection(
     content: @Composable () -> Unit
 ) {
     var expanded by remember { mutableStateOf(true) }
+    val reducedMotion = LocalReducedMotion.current
+    val stateLabel = stringResource(
+        if (expanded) MR.strings.filter_section_expanded_a11y else MR.strings.filter_section_collapsed_a11y
+    )
 
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { expanded = !expanded },
+                .heightIn(min = 48.dp)
+                .clickable(
+                    role = Role.Button,
+                    onClickLabel = stringResource(if (expanded) MR.strings.filter_collapse else MR.strings.filter_expand)
+                ) { expanded = !expanded }
+                .semantics {
+                    heading()
+                    stateDescription = stateLabel
+                },
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -95,15 +119,15 @@ fun FilterSection(
 
             Icon(
                 imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = if (expanded) stringResource(MR.strings.filter_collapse) else stringResource(MR.strings.filter_expand),
+                contentDescription = null, // state and action are on the header
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
         AnimatedVisibility(
             visible = expanded,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
+            enter = if (reducedMotion) fadeIn() else fadeIn() + expandVertically(),
+            exit = if (reducedMotion) fadeOut() else fadeOut() + shrinkVertically()
         ) {
             Column(
                 modifier = Modifier
@@ -288,7 +312,7 @@ fun IngredientSelectionDialog(
                     leadingIcon = {
                         Icon(
                             Icons.Default.Search,
-                            contentDescription = stringResource(MR.strings.search),
+                            contentDescription = null, // decorative
                             tint = MaterialTheme.colorScheme.outline
                         )
                     },
@@ -308,7 +332,9 @@ fun IngredientSelectionDialog(
                 }
 
                 LazyColumn(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .selectableGroup(),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
                 ) {
                     // "Any" option clears the ingredient filter
@@ -335,6 +361,8 @@ fun IngredientSelectionDialog(
 
 /**
  * A selectable ingredient row with a radio indicator; null = "Any ingredient".
+ * The whole row is the radio button for TalkBack (one focus stop with its
+ * selected state); the RadioButton itself is visual only.
  */
 @Composable
 private fun IngredientRow(
@@ -345,13 +373,15 @@ private fun IngredientRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(
             selected = selected,
-            onClick = onClick
+            onClick = null,
+            // Keep the 48dp footprint the clickable RadioButton had
+            modifier = Modifier.minimumInteractiveComponentSize()
         )
 
         Text(

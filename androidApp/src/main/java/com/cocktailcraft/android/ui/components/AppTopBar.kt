@@ -16,6 +16,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.resources.MR
@@ -47,7 +49,8 @@ fun AppTopBar(
                 Text(
                     text = title,
                     color = Color.White,
-                    style = MaterialTheme.typography.headlineMedium
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.semantics { heading() }
                 )
             },
             navigationIcon = {

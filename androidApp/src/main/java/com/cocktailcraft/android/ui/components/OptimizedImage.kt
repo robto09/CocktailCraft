@@ -94,7 +94,10 @@ fun OptimizedImage(
             state is AsyncImagePainter.State.Error ->
                 Icon(
                     imageVector = Icons.Default.LocalBar,
-                    contentDescription = stringResource(MR.strings.common_image_not_available),
+                    // Decorative images (null description) stay silent on failure
+                    contentDescription = contentDescription?.let {
+                        stringResource(MR.strings.common_image_not_available)
+                    },
                     tint = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.size(48.dp)
                 )
@@ -154,7 +157,10 @@ fun HeroOptimizedImage(
             ) {
                 Icon(
                     imageVector = Icons.Default.LocalBar,
-                    contentDescription = stringResource(MR.strings.common_image_not_available),
+                    // Decorative images (null description) stay silent on failure
+                    contentDescription = contentDescription?.let {
+                        stringResource(MR.strings.common_image_not_available)
+                    },
                     tint = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.size(48.dp)
                 )

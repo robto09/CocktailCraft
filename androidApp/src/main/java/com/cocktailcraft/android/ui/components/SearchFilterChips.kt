@@ -31,6 +31,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.util.stringResource
@@ -40,10 +44,9 @@ import com.cocktailcraft.resources.alcoholic
 import com.cocktailcraft.resources.category_label
 import com.cocktailcraft.resources.filter_active_filters
 import com.cocktailcraft.resources.filter_alcoholic_filter
-import com.cocktailcraft.resources.filter_clear
 import com.cocktailcraft.resources.filter_clear_all
-import com.cocktailcraft.resources.filter_filters
 import com.cocktailcraft.resources.filter_ingredient_label
+import com.cocktailcraft.resources.filter_remove_action_a11y
 import com.cocktailcraft.resources.non_alcoholic
 
 /**
@@ -83,7 +86,7 @@ fun SearchFilterChips(
                 ) {
                     Icon(
                         imageVector = Icons.Default.FilterAlt,
-                        contentDescription = stringResource(MR.strings.filter_filters),
+                        contentDescription = null, // decorative: the heading follows
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
@@ -93,7 +96,8 @@ fun SearchFilterChips(
                     Text(
                         text = stringResource(MR.strings.filter_active_filters),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.semantics { heading() }
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -102,7 +106,9 @@ fun SearchFilterChips(
                         text = stringResource(MR.strings.filter_clear_all),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.clickable { onClearAllFilters() }
+                        // Compose extends the touch (and accessibility) bounds of
+                        // this small clickable to the 48dp minimum
+                        modifier = Modifier.clickable(role = Role.Button) { onClearAllFilters() }
                     )
                 }
 
@@ -151,15 +157,23 @@ fun SearchFilterChips(
  * Active-filter chip built on Material 3's InputChip: tapping anywhere on
  * the chip removes the filter (the trailing X is the visual affordance),
  * with the ripple and full-size touch target the old hand-rolled chip lacked.
+ * TalkBack reads the filter and "double-tap to remove filter".
  */
 @Composable
 fun ActiveFilterChip(
     label: String,
     onClear: () -> Unit
 ) {
+    val removeLabel = stringResource(MR.strings.filter_remove_action_a11y)
     InputChip(
         selected = false,
         onClick = onClear,
+        modifier = Modifier.semantics {
+            onClick(label = removeLabel) {
+                onClear()
+                true
+            }
+        },
         label = {
             Text(
                 text = label,
@@ -178,7 +192,7 @@ fun ActiveFilterChip(
         trailingIcon = {
             Icon(
                 imageVector = Icons.Default.Clear,
-                contentDescription = stringResource(MR.strings.filter_clear),
+                contentDescription = null, // the chip's click label says "remove filter"
                 modifier = Modifier.size(16.dp)
             )
         }

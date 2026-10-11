@@ -8,6 +8,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.filter_all
 
 /**
  * A reusable component for displaying a horizontal row of category filter chips.
@@ -30,7 +33,7 @@ fun CategoryFilterRow(
     horizontalPadding: Int = 16,
     verticalPadding: Int = 8,
     chipSpacing: Int = 8,
-    allCategoryLabel: String = "All"
+    allCategoryLabel: String = stringResource(MR.strings.filter_all)
 ) {
     LazyRow(
         modifier = modifier

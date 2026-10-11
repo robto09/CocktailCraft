@@ -23,6 +23,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -115,16 +117,21 @@ internal fun DetailReviewsSection(
 
 @Composable
 internal fun CocktailReviewItem(review: Review) {
+    // One TalkBack stop per review: name, rating, date, then the comment
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {}
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // User initial in circle - safely handle potential null/empty username
+            // (decorative: the full name follows)
             Box(
                 modifier = Modifier
                     .size(40.dp)
+                    .clearAndSetSemantics {}
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {

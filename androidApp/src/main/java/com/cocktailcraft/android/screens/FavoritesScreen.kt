@@ -27,9 +27,11 @@ import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.SectionHeader
+import com.cocktailcraft.android.util.refreshAccessibilityAction
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.refresh
 import com.cocktailcraft.resources.browse_cocktails
 import com.cocktailcraft.resources.cart_try_again
 import com.cocktailcraft.resources.error
@@ -114,7 +116,9 @@ internal fun FavoritesContent(
             PullToRefreshBox(
                 isRefreshing = isLoading,
                 onRefresh = onRefresh,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .refreshAccessibilityAction(stringResource(MR.strings.refresh), onRefresh),
                 state = pullToRefreshState,
                 indicator = {
                     PullToRefreshDefaults.Indicator(
