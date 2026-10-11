@@ -37,7 +37,7 @@ Re-verified against `dev` after the phase-4 merge (2ee7b44) — all items confir
 | [AR-11](#ar-11-repo-hygiene-committed-artifacts) | Architecture | Repo hygiene: committed artifacts | Low | ✅ |
 | [AR-12](#ar-12-trim-the-exported-objc-framework-surface) | Architecture | Trim the exported ObjC framework surface | Low | ✅ |
 | [AR-13](#ar-13-move-remaining-local-storage-to-sqldelight) | Architecture | Move remaining local storage to SQLDelight | Medium | ✅ |
-| [AR-14](#ar-14-split-shared-into-layered-modules) | Architecture | Split `:shared` into layered modules | Medium | 🟡 |
+| [AR-14](#ar-14-split-shared-into-layered-modules) | Architecture | Split `:shared` into layered modules | Medium | ✅ |
 | [SH-1](#sh-1-stop-swallowing-category-fetch-errors-into-empty-success) | Shared | Stop swallowing category-fetch errors into empty success | High | ✅ |
 | [SH-2](#sh-2-fix-networkmonitor-double-registration--shared-teardown) | Shared | Fix `NetworkMonitor` double-registration / shared teardown | High | ✅ |
 | [SH-3](#sh-3-make-clear-cache-actually-clear-the-cache) | Shared | Make "Clear Cache" actually clear the cache | Med/High | ✅ |
@@ -205,13 +205,13 @@ Re-verified against `dev` after the phase-4 merge (2ee7b44) — all items confir
 **Approach:** Normalized tables in the existing database (schema v2), `asFlow().mapToList()` reads, multi-statement writes in transactions (`placeOrderAndClearCart`), and an idempotent one-time import of the legacy Settings keys. Auth data deliberately stays in the encrypted Settings store — the SQLite file is not encrypted (SQLCipher would be the prerequisite to move it).
 
 ### AR-14. Split `:shared` into layered modules
-**Status:** 🟡 In Progress (`feature/shared-modules`) · **Severity:** Medium
+**Status:** ✅ Done (`feature/shared-modules`) · **Severity:** Medium
 
 **Description:** All shared code lived in one module, so layer boundaries (presentation → domain ← data) were convention only and every change recompiled everything.
 
-**Where to look:** `settings.gradle.kts`, the shared convention plugin, `shared/build.gradle.kts`.
+**Where to look:** `settings.gradle.kts`, `build-logic/` (`cocktailcraft.kmp.library` convention plugin), `core/*`, `presentation/`, `shared/build.gradle.kts`.
 
-**Approach:** Layered KMP modules with `:shared` kept as the umbrella that alone builds and exports the iOS `shared` framework and assembles Koin, so Swift's `import shared` is unchanged.
+**Approach:** `:core:resources`, `:core:designsystem`, `:core:common`, `:core:domain`, `:core:data`, `:presentation` and a test-only `:core:testing`; presentation → domain ← data. `:shared` stays the umbrella that alone builds the iOS `shared` framework, applies SKIE, assembles Koin and exports everything except `:core:data`, so Swift's `import shared` is unchanged and androidApp can no longer see data-layer types. Package names are unchanged. The ObjC header shrank 17.7% (264 → 206 types).
 
 ---
 
