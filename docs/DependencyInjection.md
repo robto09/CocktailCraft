@@ -57,14 +57,21 @@ val dataModule = module {
     // JSON
     single { Json { ignoreUnknownKeys = true; isLenient = true; coerceInputValues = true } }
 
-    // Background dispatcher for Settings I/O and JSON (de)serialization
+    // Background dispatcher for database and Settings I/O and JSON (de)serialization
     single<CoroutineDispatcher>(named("ioDispatcher")) { Dispatchers.IO }
 
     // Offline decision — single source of truth for "is the app offline" (AR-7)
     single { OfflineModePolicy(networkMonitor = get()) }
 
+    // App database over the platform's SqlDriver (cache + user data)
+    single { CocktailCraftDatabase(get<SqlDriver>()) }
+
     // Caches
-    single { CocktailCache(/* settings, json, appConfig, ioDispatcher, offlineModePolicy */) }
+    single { CocktailCache(/* database (lazy), settings, json, appConfig, ioDispatcher, offlineModePolicy */) }
+
+    // Database access for cart/orders/favorites/reviews; the first open
+    // imports (once) what older versions kept as JSON in Settings
+    single { LocalDatabase(/* database (lazy), LegacySettingsImport(settings, json), ioDispatcher */) }
     single { CocktailCacheManager() }
 
     // Remote data source: API access, DTO mapping, rate-limit bookkeeping
@@ -82,10 +89,10 @@ val dataModule = module {
     single<CocktailDetailRepository> { CocktailDetailRepositoryImpl(/* ... */) }
     single<CocktailCatalogRepository> { CocktailCatalogRepositoryImpl(remote = get(), categoryFetcher = get()) }
 
-    single<CartRepository> { CartRepositoryImpl(get(), get(), get(named("ioDispatcher"))) }
+    single<CartRepository> { CartRepositoryImpl(/* localDatabase, json, ioDispatcher */) }
     single<AuthRepository> { AuthRepositoryImpl(get(secureSettingsQualifier), get(), get(named("ioDispatcher"))) }
-    single<OrderRepository> { OrderRepositoryImpl(/* settings, json, appConfig, ioDispatcher */) }
-    single<ReviewRepository> { ReviewRepositoryImpl(/* settings, json, appConfig, ioDispatcher */) }
+    single<OrderRepository> { OrderRepositoryImpl(/* localDatabase, ioDispatcher */) }
+    single<ReviewRepository> { ReviewRepositoryImpl(/* localDatabase, ioDispatcher */) }
 }
 ```
 
@@ -130,7 +137,7 @@ val domainModule = module {
 ### 5. Platform Module (`platformModule()`)
 
 - `expect fun platformModule(): Module` in commonMain
-- Android and iOS actuals provide platform-specific dependencies (Settings instances including the secure/encrypted one, `NetworkMonitor`, etc.)
+- Android and iOS actuals provide platform-specific dependencies (Settings instances including the secure/encrypted one, `NetworkMonitor`, the SQLDelight `SqlDriver`, etc.)
 - Located in `shared/src/androidMain/.../di/PlatformModule.kt` and `shared/src/iosMain/.../di/PlatformModule.kt`
 
 ## ViewModel Dependency Injection

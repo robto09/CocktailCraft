@@ -165,7 +165,8 @@ For detailed information about the dependency injection implementation, see:
 - **Koin**: For dependency injection
 - **Ktor**: For networking and API calls
 - **Kotlinx.Serialization**: For JSON parsing
-- **Multiplatform Settings**: For cross-platform data storage
+- **SQLDelight**: SQLite storage for the cart, orders, favorites, reviews and offline cocktail cache, with reactive `Flow` queries
+- **Multiplatform Settings**: Encrypted key-value storage for auth data (EncryptedSharedPreferences / Keychain)
 
 ### UI & Navigation
 - **Jetpack Compose**: Modern declarative UI toolkit for Android
@@ -209,7 +210,7 @@ For details about the iOS migration, SKIE implementation, and native Swift async
 ### Data Layer
 - **Repository Implementations**: Concrete implementations of repository interfaces
 - **Remote Data Sources**: API clients and network-related code
-- **Local Data Sources**: Database and preference storage
+- **Local Data Sources**: SQLDelight database (`data/local/LocalDatabase`, `data/cache/CocktailCache`) and secure preference storage for auth
 
 ### Presentation Layer (Android)
 - **ViewModels**: Manage UI state and handle user interactions
@@ -220,7 +221,7 @@ For details about the iOS migration, SKIE implementation, and native Swift async
 
 ### Cart Functionality
 - **SharedCartViewModel**: Manages cart state and operations like adding/removing items and checkout
-- **CartRepository**: Handles cart data persistence and retrieval
+- **CartRepository**: Persists the cart in SQLite and streams changes; checkout (`OrderRepository.placeOrderAndClearCart`) stores the order and empties the cart in one transaction
 - **CartScreen**: UI for displaying and managing cart items
 
 ### User Authentication
