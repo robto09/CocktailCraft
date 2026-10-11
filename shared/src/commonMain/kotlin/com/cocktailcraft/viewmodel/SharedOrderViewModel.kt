@@ -2,13 +2,7 @@ package com.cocktailcraft.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.CocktailCartItem
-import com.cocktailcraft.domain.config.DeliveryPolicy
 import com.cocktailcraft.domain.model.Order
-import com.cocktailcraft.domain.model.OrderStatistics
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Clock
 import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.util.Result
@@ -21,7 +15,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Shared ViewModel for Order functionality.
- * Uses consolidated [OrderUiState] for atomic state updates.
+ * Uses consolidated [OrderUiState] for atomic state updates; [uiState] is the
+ * only public state surface.
  */
 class SharedOrderViewModel internal constructor(
     // Direct repository dependency (AR-8): ManageOrdersUseCase was a pure
@@ -33,11 +28,6 @@ class SharedOrderViewModel internal constructor(
     // Consolidated UI State
     private val _uiState = MutableStateFlow(OrderUiState())
     val uiState: StateFlow<OrderUiState> = _uiState.asStateFlow()
-
-    val hasOrders: Boolean
-        get() = _uiState.value.orders.isNotEmpty()
-    val isEmpty: Boolean
-        get() = _uiState.value.orders.isEmpty()
 
     init {
         // The repository exposes a hot StateFlow seeded from persistence —
@@ -180,50 +170,6 @@ class SharedOrderViewModel internal constructor(
 // MARK: - Synchronous Helper Methods
     
     /**
-     * Get orders by status.
-     */
-    fun getOrdersByStatus(status: String): List<Order> =
-        _uiState.value.orders.filter { it.status.equals(status, ignoreCase = true) }
-
-    fun getTotalSpent(): Double = _uiState.value.totalSpent
-
-    fun getOrderHistory(limit: Int = 10): List<Order> =
-        _uiState.value.orders.take(limit)
-
-    fun getRecentOrders(): List<Order> =
-        _uiState.value.orders.take(5)
-
-    fun getOrdersByDateRange(startDate: String, endDate: String): List<Order> =
-        _uiState.value.orders.filter { it.date >= startDate && it.date <= endDate }
-
-    fun getAverageOrderValue(): Double {
-        val orders = _uiState.value.orders
-        return if (orders.isNotEmpty()) orders.sumOf { it.total } / orders.size else 0.0
-    }
-
-    /** Orders placed in the current calendar month (order dates are ISO yyyy-MM-dd strings). */
-    fun getOrdersThisMonth(): List<Order> {
-        val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
-        val startOfMonth = LocalDate(today.year, today.month, 1)
-        return getOrdersByDateRange(startOfMonth.toString(), today.toString())
-    }
-
-    fun getOrderStatistics(): OrderStatistics {
-        val orders = _uiState.value.orders
-        return OrderStatistics(
-            totalOrders = orders.size,
-            totalSpent = _uiState.value.totalSpent,
-            averageOrderValue = getAverageOrderValue(),
-            statusBreakdown = orders.groupBy { it.status }.mapValues { it.value.size }
-        )
-    }
-
-    fun canCancelOrder(orderId: String): Boolean {
-        val order = _uiState.value.orders.find { it.id == orderId }
-        return order?.status?.lowercase() in listOf("pending", "processing")
-    }
-    
-    /**
      * Get order status display text.
      */
     fun getOrderStatusDisplay(status: String): String {
@@ -235,14 +181,6 @@ class SharedOrderViewModel internal constructor(
             "cancelled" -> "Cancelled"
             else -> status
         }
-    }
-    
-    /**
-     * Get estimated delivery time for an order.
-     */
-    fun getEstimatedDeliveryTime(orderId: String): String {
-        val order = _uiState.value.orders.find { it.id == orderId }
-        return DeliveryPolicy.estimatedDeliveryTimeForStatus(order?.status)
     }
     
     /**

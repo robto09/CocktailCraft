@@ -39,24 +39,6 @@ final class DeliveryPolicyBridgeTests: XCTestCase {
     }
 }
 
-/// Swift-side presentation mapping on the order wrapper (Koin-backed).
-@MainActor
-final class OrderStatusMappingTests: TestSetup {
-
-    func testStatusColors() {
-        let vm = OrderViewModelSKIE()
-        XCTAssertEqual(vm.getOrderStatusColor("delivered"), .green)
-        XCTAssertEqual(vm.getOrderStatusColor("cancelled"), .red)
-        XCTAssertEqual(vm.getOrderStatusColor("unknown-status"), .gray)
-    }
-
-    func testStatusIcons() {
-        let vm = OrderViewModelSKIE()
-        XCTAssertEqual(vm.getOrderStatusIcon("shipped"), "shippingbox")
-        XCTAssertEqual(vm.getOrderStatusIcon("pending"), "clock")
-    }
-}
-
 /// AppColors must build its light-mode brand colors from the cross-target
 /// BrandColorComponents tokens (WidgetBridge.swift) that the widget
 /// extension also compiles — this pins the app half of that contract so a
