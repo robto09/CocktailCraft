@@ -93,8 +93,11 @@ internal class CocktailDetailRepositoryImpl(
     }
 
     override fun getCocktailImageUrl(cocktail: Cocktail): String {
-        if (!cocktail.imageUrl.isNullOrBlank()) {
-            return cocktail.imageUrl
+        // Local copy: Cocktail lives in :core:domain, so its properties
+        // can't be smart-cast here
+        val imageUrl = cocktail.imageUrl
+        if (!imageUrl.isNullOrBlank()) {
+            return imageUrl
         }
         return if (cocktail.id.isNotBlank()) {
             "${appConfig.imageBaseUrl}/${appConfig.cocktailsImagePath}/${cocktail.id}.jpg"

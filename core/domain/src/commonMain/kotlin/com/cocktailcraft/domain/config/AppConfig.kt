@@ -1,11 +1,14 @@
 package com.cocktailcraft.domain.config
 
+import kotlin.native.HiddenFromObjC
+
 /**
  * Application configuration interface that provides access to various configuration values.
  * This follows the hexagonal architecture by defining a port in the domain layer
  * that will be implemented by adapters in the infrastructure layer.
  */
-internal interface AppConfig {
+@HiddenFromObjC // Public for :core:data; not Swift API (AR-12)
+interface AppConfig {
     /**
      * Base URL for the API
      */

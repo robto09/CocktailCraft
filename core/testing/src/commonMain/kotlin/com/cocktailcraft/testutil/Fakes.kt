@@ -1,9 +1,5 @@
 package com.cocktailcraft.testutil
 
-import com.cocktailcraft.data.remote.CategoryDto
-import com.cocktailcraft.data.remote.CocktailApi
-import com.cocktailcraft.data.remote.CocktailDto
-import com.cocktailcraft.data.remote.IngredientDto
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.SearchFilters
@@ -204,59 +200,4 @@ class FakeOfflineRepository : CocktailOfflineRepository {
     override suspend fun getRecentlyViewedCocktails(): Result<List<Cocktail>> = Result.Success(recentlyViewed)
 
     override suspend fun isOffline(): Boolean = offline
-}
-
-internal class FakeCocktailApi(var drinks: List<CocktailDto> = emptyList()) : CocktailApi {
-    /** When set, name-search and filter.php endpoints throw it (to simulate an API failure). */
-    var endpointError: Exception? = null
-
-    override suspend fun searchCocktailsByName(name: String): List<CocktailDto> {
-        endpointError?.let { throw it }
-        return drinks.filter { it.name.contains(name, ignoreCase = true) }
-    }
-
-    override suspend fun getCocktailById(id: String): CocktailDto? = drinks.find { it.id == id }
-    override suspend fun getRandomCocktail(): CocktailDto? = drinks.firstOrNull()
-
-    override suspend fun filterByIngredient(ingredient: String): List<CocktailDto> {
-        endpointError?.let { throw it }
-        return drinks.filter { dto -> dto.getIngredients().any { it.name.contains(ingredient, ignoreCase = true) } }
-    }
-
-    override suspend fun filterByAlcoholic(alcoholic: Boolean): List<CocktailDto> {
-        endpointError?.let { throw it }
-        // The real server matches ?a=Non_Alcoholic against records whose
-        // strAlcoholic is "Non alcoholic" — replicate that tolerance here.
-        val target = if (alcoholic) "Alcoholic" else "Non alcoholic"
-        return drinks.filter { it.alcoholic?.replace('_', ' ').equals(target, ignoreCase = true) }
-    }
-
-    /** When set, only filter.php?c= throws it — kept separate from [endpointError] so intersection tests can fail a later filter while category succeeds. */
-    var categoryEndpointError: Exception? = null
-
-    /**
-     * When true, filter.php?c= strips matches down to the partial records the
-     * real endpoint serves (id, name, thumbnail — no category/instructions).
-     */
-    var categoryFilterReturnsPartialDtos = false
-
-    override suspend fun filterByCategory(category: String): List<CocktailDto> {
-        categoryEndpointError?.let { throw it }
-        val matches = drinks.filter { it.category == category }
-        return if (categoryFilterReturnsPartialDtos) {
-            matches.map { CocktailDto(id = it.id, name = it.name, imageUrl = it.imageUrl) }
-        } else {
-            matches
-        }
-    }
-
-    /** list.php?c=list payload — seeded by catalog tests, empty by default. */
-    var categories: List<CategoryDto> = emptyList()
-
-    /** list.php?i=list payload — seeded by catalog tests, empty by default. */
-    var ingredients: List<IngredientDto> = emptyList()
-
-    override suspend fun getCategories(): List<CategoryDto> = categories
-    override suspend fun getIngredients(): List<IngredientDto> = ingredients
-    override suspend fun pingApi(): Boolean = true
 }

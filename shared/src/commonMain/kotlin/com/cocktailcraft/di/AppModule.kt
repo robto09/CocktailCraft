@@ -10,6 +10,7 @@ import org.koin.dsl.module
 val appModule = listOf(
     networkModule,
     dataModule,
-    domainModule
+    domainModule,
+    presentationModule
 )
 // The platformModule function is declared in PlatformModule.kt

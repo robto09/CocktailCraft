@@ -7,8 +7,10 @@ import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 import kotlinx.coroutines.flow.Flow
+import kotlin.native.HiddenFromObjC
 
-internal class ManageCartUseCase(
+@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+class ManageCartUseCase(
     private val cartRepository: CartRepository,
     private val detailRepository: CocktailDetailRepository
 ) {

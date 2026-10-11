@@ -78,6 +78,7 @@ kotlin {
             export(project(":core:resources"))
             export(project(":core:designsystem"))
             export(project(":core:common"))
+            export(project(":core:domain"))
             // The framework is static, so the SQLDelight native driver's
             // sqlite3 (and the K/N runtime's libc++) are not linked here: the
             // app links them itself via OTHER_LDFLAGS in project.yml.
@@ -122,6 +123,8 @@ kotlin {
             api(project(":core:designsystem"))
             // Result/ErrorCode, ErrorHandler, NetworkMonitor — used from Swift
             api(project(":core:common"))
+            // Models, repository interfaces, validators — used from Swift
+            api(project(":core:domain"))
 
                 // Multiplatform logging
                 implementation(libs.kermit)
@@ -152,6 +155,7 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(project(":core:testing"))
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.koin.test.core)
                 implementation(libs.turbine)

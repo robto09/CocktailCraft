@@ -12,13 +12,15 @@ import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
+import kotlin.native.HiddenFromObjC
 
 /**
  * Checkout: turns the cart into an order. The order is stored and the cart
  * emptied in one transaction ([OrderRepository.placeOrderAndClearCart]), so
  * callers must not clear the cart themselves.
  */
-internal class PlaceOrderUseCase(
+@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+class PlaceOrderUseCase(
     private val orderRepository: OrderRepository
 ) {
     suspend operator fun invoke(cartItems: List<CocktailCartItem>, totalPrice: Double): Result<Order> {

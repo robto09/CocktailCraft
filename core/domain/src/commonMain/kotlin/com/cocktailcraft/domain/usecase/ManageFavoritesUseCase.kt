@@ -6,8 +6,10 @@ import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 import kotlinx.coroutines.flow.Flow
+import kotlin.native.HiddenFromObjC
 
-internal class ManageFavoritesUseCase(
+@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+class ManageFavoritesUseCase(
     private val favoritesRepository: CocktailFavoritesRepository,
     private val detailRepository: CocktailDetailRepository
 ) {

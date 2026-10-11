@@ -19,6 +19,7 @@ import com.cocktailcraft.android.fakes.FakeReviewRepository
 import com.cocktailcraft.android.fakes.TestCocktails
 import com.cocktailcraft.android.ui.main.MainScreen
 import com.cocktailcraft.di.domainModule
+import com.cocktailcraft.di.presentationModule
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
@@ -61,6 +62,7 @@ class MainScreenSharedVmTest {
         startKoin {
             modules(
                 domainModule,
+                presentationModule,
                 module {
                     single<CocktailSearchRepository> { cocktailRepo }
                     single<CocktailCatalogRepository> { cocktailRepo }

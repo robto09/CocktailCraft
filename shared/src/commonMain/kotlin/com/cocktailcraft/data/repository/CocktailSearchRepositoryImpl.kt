@@ -77,15 +77,10 @@ internal class CocktailSearchRepositoryImpl(
             if (filters.query.isNotBlank()) {
                 activeSets.add(searchCocktailsByName(filters.query).getOrThrow())
             }
-            if (filters.category != null) {
-                activeSets.add(filterByCategory(filters.category).getOrThrow())
-            }
-            if (filters.ingredient != null) {
-                activeSets.add(filterByIngredient(filters.ingredient).getOrThrow())
-            }
-            if (filters.alcoholic != null) {
-                activeSets.add(filterByAlcoholic(filters.alcoholic).getOrThrow())
-            }
+            // SearchFilters lives in :core:domain: no cross-module smart casts
+            filters.category?.let { activeSets.add(filterByCategory(it).getOrThrow()) }
+            filters.ingredient?.let { activeSets.add(filterByIngredient(it).getOrThrow()) }
+            filters.alcoholic?.let { activeSets.add(filterByAlcoholic(it).getOrThrow()) }
 
             // Base list = first active set; keep only ids present in every other set.
             val base = activeSets.first()

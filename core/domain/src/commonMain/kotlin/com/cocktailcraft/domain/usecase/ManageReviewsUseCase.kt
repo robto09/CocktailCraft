@@ -16,8 +16,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
+import kotlin.native.HiddenFromObjC
 
-internal class ManageReviewsUseCase(
+@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+class ManageReviewsUseCase(
     private val repository: ReviewRepository
 ) {
 

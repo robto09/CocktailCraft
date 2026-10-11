@@ -6,8 +6,10 @@ import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
+import kotlin.native.HiddenFromObjC
 
-internal class ManageProfileUseCase(
+@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+class ManageProfileUseCase(
     private val authRepository: AuthRepository
 ) {
     suspend fun signIn(email: String, password: String): Result<Boolean> {

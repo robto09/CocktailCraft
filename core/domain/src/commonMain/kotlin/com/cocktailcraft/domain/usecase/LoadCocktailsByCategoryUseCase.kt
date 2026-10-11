@@ -3,8 +3,10 @@ package com.cocktailcraft.domain.usecase
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.util.Result
+import kotlin.native.HiddenFromObjC
 
-internal class LoadCocktailsByCategoryUseCase(
+@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+class LoadCocktailsByCategoryUseCase(
     private val searchRepository: CocktailSearchRepository
 ) {
     suspend operator fun invoke(category: String): Result<List<Cocktail>> {

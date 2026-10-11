@@ -7,8 +7,10 @@ import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
+import kotlin.native.HiddenFromObjC
 
-internal class GetCocktailDetailUseCase(
+@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+class GetCocktailDetailUseCase(
     private val detailRepository: CocktailDetailRepository,
     private val favoritesRepository: CocktailFavoritesRepository,
     private val searchRepository: CocktailSearchRepository

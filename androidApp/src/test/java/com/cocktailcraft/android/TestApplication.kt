@@ -3,6 +3,7 @@ package com.cocktailcraft.android
 import android.app.Application
 import com.cocktailcraft.di.dataModule
 import com.cocktailcraft.di.domainModule
+import com.cocktailcraft.di.presentationModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import io.mockk.MockKAnnotations
@@ -17,7 +18,7 @@ class TestApplication : Application() {
         
         startKoin {
             androidContext(this@TestApplication)
-            modules(dataModule, domainModule)
+            modules(dataModule, domainModule, presentationModule)
         }
         
         MockKAnnotations.init(this)

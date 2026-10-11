@@ -1,8 +1,10 @@
 package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.Cocktail
+import kotlin.native.HiddenFromObjC
 
-internal class SortCocktailsUseCase {
+@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+class SortCocktailsUseCase {
     operator fun invoke(cocktails: List<Cocktail>, sortType: SortType): List<Cocktail> {
         return when (sortType) {
             SortType.PRICE_ASC -> cocktails.sortedBy { it.price }

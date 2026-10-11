@@ -2,13 +2,15 @@ package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.NutritionFacts
+import kotlin.native.HiddenFromObjC
 
 /**
  * Ingredient categorization and nutrition estimation for a cocktail.
  * Domain logic that previously lived in the detail presentation layer —
  * keyword-based heuristics over the ingredient list.
  */
-internal class AnalyzeCocktailUseCase {
+@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+class AnalyzeCocktailUseCase {
 
     fun categorizeIngredient(ingredientName: String): String {
         val name = ingredientName.lowercase()
