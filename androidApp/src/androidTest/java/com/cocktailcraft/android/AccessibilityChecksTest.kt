@@ -72,8 +72,10 @@ class AccessibilityChecksTest {
                     single<CocktailDetailRepository> { cocktailRepo }
                     single<CocktailFavoritesRepository> { cocktailRepo }
                     single<CocktailOfflineRepository> { cocktailRepo }
-                    single<CartRepository> { FakeCartRepository() }
-                    single<OrderRepository> { FakeOrderRepository() }
+                    single { FakeCartRepository() }
+                    single<CartRepository> { get<FakeCartRepository>() }
+                    // Checkout empties the cart in the same transaction (placeOrderAndClearCart)
+                    single<OrderRepository> { FakeOrderRepository(cart = get()) }
                     single<AuthRepository> { FakeAuthRepository() }
                     single<ReviewRepository> { FakeReviewRepository() }
                     single<NetworkMonitor> { FakeNetworkMonitor(initiallyOnline = true) }
