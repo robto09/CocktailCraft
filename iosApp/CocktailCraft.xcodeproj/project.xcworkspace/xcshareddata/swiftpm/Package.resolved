@@ -1,0 +1,23 @@
+{
+  "originHash" : "3c1fe9d58a8544af9204cc75cc61bb6f8eac4a643e6627927998d32d103df94b",
+  "pins" : [
+    {
+      "identity" : "debugswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/DebugSwift/DebugSwift",
+      "state" : {
+        "revision" : "3dc1781a855f3fa91c5f7fe3868717fe62ff3c4e"
+      }
+    },
+    {
+      "identity" : "kingfisher",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/onevcat/Kingfisher",
+      "state" : {
+        "revision" : "2ef543ee21d63734e1c004ad6c870255e8716c50",
+        "version" : "7.12.0"
+      }
+    }
+  ],
+  "version" : 3
+}
