@@ -15,8 +15,6 @@ import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
@@ -45,8 +43,22 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.cocktailcraft.android.MainActivity
-import com.cocktailcraft.android.R
+import com.cocktailcraft.android.util.getString
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.loading
+import com.cocktailcraft.resources.no_favorites
+import com.cocktailcraft.resources.tap_to_add_favorites
+import com.cocktailcraft.resources.widget_cocktail_glass_icon
+import com.cocktailcraft.resources.widget_error_icon
+import com.cocktailcraft.resources.widget_favorite_heart_icon
+import com.cocktailcraft.resources.widget_favorites_header
+import com.cocktailcraft.resources.widget_no_favorites_icon
+import com.cocktailcraft.resources.widget_refresh_icon
+import com.cocktailcraft.resources.widget_tap_refresh_to_retry
+import com.cocktailcraft.resources.widget_view_all_favorites
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -103,7 +115,7 @@ class FavoritesWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = LocalContext.current.getString(R.string.widget_favorites_header, favoritesCount),
+                        text = LocalContext.current.getString(MR.strings.widget_favorites_header, favoritesCount),
                         style = TextStyle(
                             color = GlanceTheme.colors.primary,
                             fontSize = 14.sp,
@@ -122,7 +134,7 @@ class FavoritesWidget : GlanceAppWidget() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = LocalContext.current.getString(R.string.widget_refresh_icon),
+                            text = LocalContext.current.getString(MR.strings.widget_refresh_icon),
                             style = TextStyle(
                                 color = GlanceTheme.colors.onPrimary,
                                 fontSize = 16.sp
@@ -150,7 +162,7 @@ class FavoritesWidget : GlanceAppWidget() {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = LocalContext.current.getString(R.string.loading),
+                text = LocalContext.current.getString(MR.strings.loading),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 14.sp
@@ -167,12 +179,12 @@ class FavoritesWidget : GlanceAppWidget() {
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = LocalContext.current.getString(R.string.widget_error_icon),
+                    text = LocalContext.current.getString(MR.strings.widget_error_icon),
                     style = TextStyle(fontSize = 24.sp)
                 )
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 Text(
-                    text = LocalContext.current.getString(R.string.widget_tap_refresh_to_retry),
+                    text = LocalContext.current.getString(MR.strings.widget_tap_refresh_to_retry),
                     style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 12.sp)
                 )
             }
@@ -189,12 +201,12 @@ class FavoritesWidget : GlanceAppWidget() {
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = LocalContext.current.getString(R.string.widget_no_favorites_icon),
+                    text = LocalContext.current.getString(MR.strings.widget_no_favorites_icon),
                     style = TextStyle(fontSize = 32.sp)
                 )
                 Spacer(modifier = GlanceModifier.height(8.dp))
                 Text(
-                    text = LocalContext.current.getString(R.string.no_favorites),
+                    text = LocalContext.current.getString(MR.strings.no_favorites),
                     style = TextStyle(
                         color = GlanceTheme.colors.onSurface,
                         fontSize = 14.sp,
@@ -203,7 +215,7 @@ class FavoritesWidget : GlanceAppWidget() {
                 )
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 Text(
-                    text = LocalContext.current.getString(R.string.tap_to_add_favorites),
+                    text = LocalContext.current.getString(MR.strings.tap_to_add_favorites),
                     style = TextStyle(
                         color = GlanceTheme.colors.primary,
                         fontSize = 12.sp
@@ -233,7 +245,7 @@ class FavoritesWidget : GlanceAppWidget() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = LocalContext.current.getString(R.string.widget_view_all_favorites, favorites.size),
+                            text = LocalContext.current.getString(MR.strings.widget_view_all_favorites, favorites.size),
                             style = TextStyle(
                                 color = GlanceTheme.colors.primary,
                                 fontSize = 12.sp,
@@ -263,7 +275,7 @@ class FavoritesWidget : GlanceAppWidget() {
         ) {
             // Cocktail emoji
             Text(
-                text = context.getString(R.string.widget_cocktail_glass_icon),
+                text = context.getString(MR.strings.widget_cocktail_glass_icon),
                 style = TextStyle(fontSize = 24.sp)
             )
 
@@ -294,7 +306,7 @@ class FavoritesWidget : GlanceAppWidget() {
 
             // Heart icon
             Text(
-                text = context.getString(R.string.widget_favorite_heart_icon),
+                text = context.getString(MR.strings.widget_favorite_heart_icon),
                 style = TextStyle(fontSize = 16.sp)
             )
         }

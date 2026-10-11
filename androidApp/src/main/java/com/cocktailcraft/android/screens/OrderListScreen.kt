@@ -1,9 +1,9 @@
 package com.cocktailcraft.android.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,14 +22,19 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.cocktailcraft.android.R
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.OrderCard
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.browse_cocktails
+import com.cocktailcraft.resources.cart_try_again
+import com.cocktailcraft.resources.error
+import com.cocktailcraft.resources.order_list_empty_message
+import com.cocktailcraft.resources.order_list_empty_title
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.viewmodel.state.OrderUiState
@@ -81,16 +86,16 @@ internal fun OrderListContent(
 
         if (!isLoading && error != null) {
             EmptyStateComponent(
-                title = stringResource(R.string.error),
+                title = stringResource(MR.strings.error),
                 message = error.message,
-                actionButtonText = stringResource(R.string.cart_try_again),
+                actionButtonText = stringResource(MR.strings.cart_try_again),
                 onActionButtonClick = onReload
             )
         } else if (!isLoading && state.orders.isEmpty()) {
             EmptyStateComponent(
-                title = stringResource(R.string.order_list_empty_title),
-                message = stringResource(R.string.order_list_empty_message),
-                actionButtonText = stringResource(R.string.browse_cocktails),
+                title = stringResource(MR.strings.order_list_empty_title),
+                message = stringResource(MR.strings.order_list_empty_message),
+                actionButtonText = stringResource(MR.strings.browse_cocktails),
                 onActionButtonClick = onBrowseCocktails,
                 icon = Icons.AutoMirrored.Filled.List
             )

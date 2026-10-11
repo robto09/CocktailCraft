@@ -21,13 +21,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.order_item_quantity_name
+import com.cocktailcraft.resources.order_number
+import com.cocktailcraft.resources.order_price_format
+import com.cocktailcraft.resources.total
 
 /**
  * Order summary card: order number + date header, line items, total, and a
@@ -57,7 +61,7 @@ fun OrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = stringResource(R.string.order_number, order.id.takeLast(5)),
+                    text = stringResource(MR.strings.order_number, order.id.takeLast(5)),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -82,13 +86,13 @@ fun OrderCard(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = stringResource(R.string.order_item_quantity_name, item.quantity, item.name),
+                            text = stringResource(MR.strings.order_item_quantity_name, item.quantity, item.name),
                             fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.onSurface
                         )
 
                         Text(
-                            text = stringResource(R.string.order_price_format, item.price * item.quantity),
+                            text = stringResource(MR.strings.order_price_format, item.price * item.quantity),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
@@ -109,14 +113,14 @@ fun OrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = stringResource(R.string.total),
+                    text = stringResource(MR.strings.total),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
-                    text = stringResource(R.string.order_price_format, order.total),
+                    text = stringResource(MR.strings.order_price_format, order.total),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary

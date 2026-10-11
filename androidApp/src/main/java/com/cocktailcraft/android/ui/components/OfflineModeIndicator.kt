@@ -20,10 +20,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.R
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.offline_indicator_description
+import com.cocktailcraft.resources.offline_you_are_offline
 
 /**
  * A banner shown while the device has no network connection. Cached
@@ -51,13 +53,13 @@ fun OfflineModeIndicator(isOffline: Boolean) {
             ) {
                 Icon(
                     imageVector = Icons.Default.WifiOff,
-                    contentDescription = stringResource(R.string.offline_indicator_description),
+                    contentDescription = stringResource(MR.strings.offline_indicator_description),
                     tint = Color.White,
                     modifier = Modifier.padding(end = 8.dp)
                 )
 
                 Text(
-                    text = stringResource(R.string.offline_you_are_offline),
+                    text = stringResource(MR.strings.offline_you_are_offline),
                     color = Color.White,
                     fontWeight = FontWeight.Medium
                 )

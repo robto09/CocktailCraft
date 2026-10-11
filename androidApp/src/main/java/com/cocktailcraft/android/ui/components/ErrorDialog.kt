@@ -36,16 +36,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.cocktailcraft.android.R
-import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.android.util.ErrorUtils
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.dialog_dismiss
+import com.cocktailcraft.resources.dialog_try_again
+import com.cocktailcraft.resources.error
+import com.cocktailcraft.util.ErrorHandler
 
 /**
  * A reusable error dialog component that displays user-friendly error messages
@@ -83,7 +86,7 @@ fun ErrorDialog(
                 // Error icon based on category
                 Icon(
                     imageVector = ErrorUtils.getErrorIcon(error.category),
-                    contentDescription = stringResource(R.string.error),
+                    contentDescription = stringResource(MR.strings.error),
                     tint = ErrorUtils.getErrorColor(error.category),
                     modifier = Modifier.size(48.dp)
                 )
@@ -119,7 +122,7 @@ fun ErrorDialog(
                     TextButton(
                         onClick = onDismiss
                     ) {
-                        Text(stringResource(R.string.dialog_dismiss))
+                        Text(stringResource(MR.strings.dialog_dismiss))
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -149,7 +152,7 @@ fun ErrorDialog(
                                     containerColor = MaterialTheme.colorScheme.primary
                                 )
                             ) {
-                                Text(stringResource(R.string.dialog_try_again))
+                                Text(stringResource(MR.strings.dialog_try_again))
                                 }
                             }
                         }
@@ -195,7 +198,7 @@ fun ErrorBanner(
                 ) {
                     Icon(
                         imageVector = ErrorUtils.getErrorIcon(it.category),
-                        contentDescription = stringResource(R.string.error),
+                        contentDescription = stringResource(MR.strings.error),
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
                     )

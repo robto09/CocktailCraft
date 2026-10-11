@@ -17,17 +17,21 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.search
+import com.cocktailcraft.resources.search_advanced_search
+import com.cocktailcraft.resources.search_clear_search
+import com.cocktailcraft.resources.search_cocktails_placeholder
 
 /**
  * A reusable search bar component with an advanced search button.
@@ -57,7 +61,7 @@ fun CocktailSearchBar(
     onClearSearch: () -> Unit,
     onToggleAdvancedSearch: () -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = stringResource(R.string.search_cocktails_placeholder),
+    placeholder: String = stringResource(MR.strings.search_cocktails_placeholder),
     searchIconTint: Color = MaterialTheme.colorScheme.outline,
     clearIconTint: Color = MaterialTheme.colorScheme.outline,
     activeFilterButtonColor: Color = MaterialTheme.colorScheme.primary,
@@ -81,7 +85,7 @@ fun CocktailSearchBar(
             leadingIcon = {
                 Icon(
                     Icons.Filled.Search,
-                    contentDescription = stringResource(R.string.search),
+                    contentDescription = stringResource(MR.strings.search),
                     tint = searchIconTint
                 )
             },
@@ -90,7 +94,7 @@ fun CocktailSearchBar(
                     IconButton(onClick = onClearSearch) {
                         Icon(
                             Icons.Filled.Close,
-                            contentDescription = stringResource(R.string.search_clear_search),
+                            contentDescription = stringResource(MR.strings.search_clear_search),
                             tint = clearIconTint
                         )
                     }
@@ -125,7 +129,7 @@ fun CocktailSearchBar(
         ) {
             Icon(
                 imageVector = Icons.Default.FilterAlt,
-                contentDescription = stringResource(R.string.search_advanced_search),
+                contentDescription = stringResource(MR.strings.search_advanced_search),
                 tint = if (isAdvancedSearchActive || hasActiveFilters)
                     activeFilterIconTint
                 else

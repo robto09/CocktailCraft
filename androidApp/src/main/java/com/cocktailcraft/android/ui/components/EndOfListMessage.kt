@@ -15,11 +15,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.R
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.list_end_of_list_message
 
 /**
  * A reusable component for displaying an end of list message with animation.
@@ -34,7 +35,7 @@ import com.cocktailcraft.android.R
 @Composable
 fun EndOfListMessage(
     visible: Boolean,
-    message: String = stringResource(R.string.list_end_of_list_message),
+    message: String = stringResource(MR.strings.list_end_of_list_message),
     modifier: Modifier = Modifier,
     fontSize: Int = 14,
     animationDuration: Int = 500,

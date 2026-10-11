@@ -18,22 +18,28 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.DetailInfoCard
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.CocktailIngredient
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.alcoholic
+import com.cocktailcraft.resources.category_label
+import com.cocktailcraft.resources.details
+import com.cocktailcraft.resources.glass_label
+import com.cocktailcraft.resources.ingredients
+import com.cocktailcraft.resources.non_alcoholic
 
 // Ingredients list rendered inside an info card
 @Composable
 internal fun DetailIngredientsSection(ingredients: List<CocktailIngredient>) {
     DetailInfoCard(
-        title = stringResource(R.string.ingredients),
+        title = stringResource(MR.strings.ingredients),
         modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm),
         content = {
 
@@ -76,7 +82,7 @@ internal fun DetailChipsSection(
     alcoholic: String?
 ) {
     DetailInfoCard(
-        title = stringResource(R.string.details),
+        title = stringResource(MR.strings.details),
         modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm),
         content = {
             LazyRow(
@@ -87,7 +93,7 @@ internal fun DetailChipsSection(
                     item {
                         SuggestionChip(
                             onClick = {},
-                            label = { Text(stringResource(R.string.category_label, it)) },
+                            label = { Text(stringResource(MR.strings.category_label, it)) },
                             colors = SuggestionChipDefaults.suggestionChipColors(
                                 containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
                                 labelColor = MaterialTheme.colorScheme.onSurface
@@ -101,7 +107,7 @@ internal fun DetailChipsSection(
                     item {
                         SuggestionChip(
                             onClick = {},
-                            label = { Text(stringResource(R.string.glass_label, it)) },
+                            label = { Text(stringResource(MR.strings.glass_label, it)) },
                             colors = SuggestionChipDefaults.suggestionChipColors(
                                 containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
                                 labelColor = MaterialTheme.colorScheme.onSurface
@@ -114,7 +120,7 @@ internal fun DetailChipsSection(
                 item {
                     SuggestionChip(
                         onClick = {},
-                        label = { Text(if (alcoholic == "Alcoholic") stringResource(R.string.alcoholic) else stringResource(R.string.non_alcoholic)) },
+                        label = { Text(if (alcoholic == "Alcoholic") stringResource(MR.strings.alcoholic) else stringResource(MR.strings.non_alcoholic)) },
                         colors = SuggestionChipDefaults.suggestionChipColors(
                             containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
                             labelColor = MaterialTheme.colorScheme.onSurface

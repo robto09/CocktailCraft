@@ -16,23 +16,29 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.android.R
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.SectionHeader
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.browse_cocktails
+import com.cocktailcraft.resources.cart_try_again
+import com.cocktailcraft.resources.error
+import com.cocktailcraft.resources.favorites_empty_message
+import com.cocktailcraft.resources.favorites_section_title
+import com.cocktailcraft.resources.no_favorites
+import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
-import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.FavoritesUiState
 import kotlinx.coroutines.launch
 
@@ -86,18 +92,18 @@ internal fun FavoritesContent(
         // Show error state
         if (!isLoading && error != null) {
             EmptyStateComponent(
-                title = stringResource(R.string.error),
+                title = stringResource(MR.strings.error),
                 message = error.toString(),
-                actionButtonText = stringResource(R.string.cart_try_again),
+                actionButtonText = stringResource(MR.strings.cart_try_again),
                 onActionButtonClick = { /* Add retry logic here */ }
             )
         }
         // Show empty favorites state
         else if (!isLoading && favorites.isEmpty()) {
             EmptyStateComponent(
-                title = stringResource(R.string.no_favorites),
-                message = stringResource(R.string.favorites_empty_message),
-                actionButtonText = stringResource(R.string.browse_cocktails),
+                title = stringResource(MR.strings.no_favorites),
+                message = stringResource(MR.strings.favorites_empty_message),
+                actionButtonText = stringResource(MR.strings.browse_cocktails),
                 onActionButtonClick = onBrowseProducts,
                 icon = Icons.Filled.Favorite
             )
@@ -129,7 +135,7 @@ internal fun FavoritesContent(
             ) {
                 item {
                     SectionHeader(
-                        title = stringResource(R.string.favorites_section_title),
+                        title = stringResource(MR.strings.favorites_section_title),
                         fontSize = 20,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )

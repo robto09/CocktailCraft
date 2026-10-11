@@ -28,13 +28,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.OptimizedImage
 import com.cocktailcraft.android.ui.components.rememberShimmerTranslate
 import com.cocktailcraft.android.ui.components.shimmerEffect
@@ -42,7 +40,13 @@ import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.detail_loading_recommendations
+import com.cocktailcraft.resources.detail_more_category_cocktails
+import com.cocktailcraft.resources.detail_price_format
+import com.cocktailcraft.resources.detail_you_might_also_like
 
 // Recommendations card with shimmer loading, empty and loaded states
 @Composable
@@ -70,9 +74,9 @@ internal fun DetailRecommendationsSection(
         ) {
             // Section title with category if available
             val titleText = if (category != null) {
-                stringResource(R.string.detail_more_category_cocktails, category)
+                stringResource(MR.strings.detail_more_category_cocktails, category)
             } else {
-                stringResource(R.string.detail_you_might_also_like)
+                stringResource(MR.strings.detail_you_might_also_like)
             }
 
             Text(
@@ -92,7 +96,7 @@ internal fun DetailRecommendationsSection(
             } else if (similarCocktails.isEmpty()) {
                 // Show a message if no recommendations
                 Text(
-                    text = stringResource(R.string.detail_loading_recommendations),
+                    text = stringResource(MR.strings.detail_loading_recommendations),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = Spacing.lg)
@@ -206,7 +210,7 @@ internal fun RecommendationCard(
 
                 // Price
                 Text(
-                    text = stringResource(R.string.detail_price_format, recommendation.price),
+                    text = stringResource(MR.strings.detail_price_format, recommendation.price),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Bold
                     ),

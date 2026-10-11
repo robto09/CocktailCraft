@@ -136,6 +136,7 @@
     <string name="accent_color_pink">Pink</string>
 
     <!-- Home / search -->
+    <string name="search">Search</string>
     <string name="browse_cocktails">Browse Cocktails</string>
     <string name="home_no_connection_title">No internet connection</string>
     <string name="home_no_connection_message">Check your connection and try again.</string>

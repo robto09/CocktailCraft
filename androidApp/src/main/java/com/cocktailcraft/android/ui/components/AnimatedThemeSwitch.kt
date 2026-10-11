@@ -41,9 +41,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.R
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.dark_mode
+import com.cocktailcraft.resources.profile_light_mode
 
 /**
  * A custom animated switch for toggling between light and dark themes.
@@ -126,7 +128,7 @@ fun AnimatedThemeSwitch(
         ) {
             Icon(
                 imageVector = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
-                contentDescription = if (isDarkMode) stringResource(R.string.dark_mode) else stringResource(R.string.profile_light_mode),
+                contentDescription = if (isDarkMode) stringResource(MR.strings.dark_mode) else stringResource(MR.strings.profile_light_mode),
                 tint = Color.White,
                 modifier = Modifier
                     .size(16.dp)
