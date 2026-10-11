@@ -75,7 +75,10 @@ class SharedOrderViewModel internal constructor(
     }
     
     /**
-     * Place a new order.
+     * Check out: place an order for [cartItems] and empty the cart, atomically.
+     * On success the cart is already empty (SharedCartViewModel picks that up
+     * from its observed flow); on failure it is untouched. Callers must not
+     * clear the cart themselves.
      * SKIE will convert this to Swift async function.
      */
     suspend fun placeOrder(cartItems: List<CocktailCartItem>, totalPrice: Double): Boolean {

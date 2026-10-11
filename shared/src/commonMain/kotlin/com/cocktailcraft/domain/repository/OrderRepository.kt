@@ -8,6 +8,14 @@ interface OrderRepository {
     fun observeOrders(): Flow<List<Order>>
     suspend fun getOrders(): Result<List<Order>>
     suspend fun placeOrder(order: Order): Result<Unit>
+
+    /**
+     * Checkout: stores [order] and empties the cart atomically — either both
+     * happen or neither does, so a failed placement never loses the cart and
+     * a placed order never leaves it behind.
+     */
+    suspend fun placeOrderAndClearCart(order: Order): Result<Unit>
+
     suspend fun getOrderById(id: String): Result<Order?>
     suspend fun updateOrderStatus(id: String, status: String): Result<Unit>
     suspend fun deleteOrder(id: String): Result<Unit>

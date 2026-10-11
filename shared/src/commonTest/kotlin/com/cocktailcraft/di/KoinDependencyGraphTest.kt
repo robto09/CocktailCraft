@@ -6,6 +6,9 @@ import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.local.LocalDatabase
 import com.cocktailcraft.domain.config.AppConfig
+import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
@@ -15,9 +18,11 @@ import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.repository.ReviewRepository
+import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.createInMemorySqlDriver
+import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
@@ -29,14 +34,17 @@ import com.cocktailcraft.viewmodel.SharedReviewViewModel
 import com.cocktailcraft.viewmodel.SharedThemeViewModel
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.test.runTest
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 import kotlin.test.AfterTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 
 /**
  * Builds the full production Koin graph ([appModule] = network + data + domain
@@ -96,6 +104,23 @@ class KoinDependencyGraphTest : MainDispatcherTest() {
         assertNotNull(koin.get<CocktailCraftDatabase>())
         assertNotNull(koin.get<CocktailCache>())
         assertSame(koin.get<LocalDatabase>(), koin.get<LocalDatabase>())
+    }
+
+    @Test
+    fun checkoutThroughTheGraphEmptiesTheCartRepositorysCart() = runTest {
+        // Cart and orders must share one database for placeOrderAndClearCart
+        // to clear the cart the cart repository reads.
+        val koin = startTestKoin()
+        val cart = koin.get<CartRepository>()
+        val orders = koin.get<OrderRepository>()
+        cart.addToCart(CocktailCartItem(testCocktail("1"), quantity = 2)).getOrThrow()
+
+        orders.placeOrderAndClearCart(
+            Order(id = "ORD-1", date = "2026-07-07", items = listOf(OrderItem("Cocktail 1", 2, 10.0)), total = 20.0, status = "Processing")
+        ).getOrThrow()
+
+        assertTrue(cart.getCartItems().getOrThrow().isEmpty())
+        assertEquals(listOf("ORD-1"), orders.getOrders().getOrThrow().map { it.id })
     }
 
     @Test

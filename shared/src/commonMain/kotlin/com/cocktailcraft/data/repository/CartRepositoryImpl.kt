@@ -18,7 +18,9 @@ import com.cocktailcraft.data.cache.db.cartItem.SelectAll as CartItemRow
 
 /**
  * The cart in the cart_item table (see CartItem.sq), one row per cocktail.
- * [observeCartItems] re-emits after every write.
+ * [observeCartItems] re-emits after every write, including the clear that
+ * [com.cocktailcraft.domain.repository.OrderRepository.placeOrderAndClearCart]
+ * does in the same transaction as the order insert.
  */
 internal class CartRepositoryImpl(
     private val localDatabase: LocalDatabase,

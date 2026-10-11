@@ -79,6 +79,20 @@ internal class OrderRepositoryImpl(
         }
     }
 
+    override suspend fun placeOrderAndClearCart(order: Order): Result<Unit> = withContext(ioDispatcher) {
+        runCatchingResult("Failed to place order") {
+            val db = localDatabase.get()
+            // One transaction: either the order exists and the cart is empty,
+            // or neither changed — a failure can't lose the cart or leave it
+            // behind to be ordered twice.
+            db.transaction {
+                db.insertOrderWithItems(withId(order))
+                db.cartItemQueries.deleteAll()
+            }
+            Result.Success(Unit)
+        }
+    }
+
     override suspend fun getOrderById(id: String): Result<Order?> = withContext(ioDispatcher) {
         runCatchingResult("Failed to get order by ID") {
             val rows = localDatabase.get().customerOrderQueries.selectByIdWithItems(id, ::OrderRow).executeAsList()

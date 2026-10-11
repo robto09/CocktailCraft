@@ -77,11 +77,12 @@ struct CartView: View {
                 message: Text("Are you sure you want to place this order for \(cartViewModel.finalTotal.asPrice)?"),
                 primaryButton: .default(Text("Confirm")) {
                     Task {
-                        // Order state propagates reactively from the shared
-                        // orders flow — no notifications or delays needed.
+                        // Order and cart state propagate reactively from the
+                        // shared flows — no notifications or delays needed.
+                        // placeOrder empties the cart in the same transaction
+                        // as the order insert, so there is no clearCart here.
                         let success = await orderViewModel.placeOrder(cartItems: cartViewModel.state.cartItems, totalPrice: cartViewModel.finalTotal)
                         if success {
-                            await cartViewModel.clearCart()
                             router.selectedTab = .orders
                         }
                     }

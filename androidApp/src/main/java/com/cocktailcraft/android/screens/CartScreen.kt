@@ -168,14 +168,15 @@ fun CartScreen(
         dismissButtonText = stringResource(R.string.cancel),
         onConfirm = {
             showPlaceOrderDialog = false
-            // Navigate only after the order is persisted and the cart cleared —
-            // this scope dies with the screen, so leaving early would cancel the work.
+            // Navigate only after the order is persisted — this scope dies with
+            // the screen, so leaving early would cancel the work. placeOrder
+            // empties the cart in the same transaction (and leaves it alone if
+            // the order fails); a failure surfaces on the order list.
             scope.launch {
                 orderViewModel.placeOrder(
                     cartItems = cartItems,
                     totalPrice = totalPrice + 5.99 // Include delivery fee
                 )
-                viewModel.clearCart()
                 navigationManager.navigateToOrderList()
             }
         },

@@ -2,6 +2,7 @@ package com.cocktailcraft.data.repository
 
 import app.cash.sqldelight.db.QueryResult
 import app.cash.turbine.test
+import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.util.Result
@@ -9,6 +10,8 @@ import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.createTestLocalDatabase
+import com.cocktailcraft.testutil.testCocktail
+import com.cocktailcraft.testutil.testJson
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -24,6 +27,8 @@ class OrderRepositoryImplTest {
 
     // A new repository over the same database simulates an app relaunch.
     private fun repository() = OrderRepositoryImpl(localDatabase)
+
+    private fun cart() = CartRepositoryImpl(localDatabase, testJson)
 
     private fun order(
         id: String,
@@ -87,6 +92,33 @@ class OrderRepositoryImplTest {
         assertIs<Result.Error>(repo.placeOrder(duplicate))
 
         assertEquals(listOf(order(id = "ORD-1")), repo.getOrders().getOrThrow())
+    }
+
+    @Test
+    fun placeOrderAndClearCartStoresTheOrderAndEmptiesTheCart() = runTest {
+        val cart = cart()
+        cart.addToCart(CocktailCartItem(testCocktail("1"), quantity = 2)).getOrThrow()
+        cart.addToCart(CocktailCartItem(testCocktail("2"), quantity = 1)).getOrThrow()
+
+        repository().placeOrderAndClearCart(order(id = "ORD-1")).getOrThrow()
+
+        assertEquals(listOf("ORD-1"), repository().getOrders().getOrThrow().map { it.id })
+        assertTrue(cart.getCartItems().getOrThrow().isEmpty())
+    }
+
+    @Test
+    fun failedCheckoutLeavesTheCartAndOrdersUntouched() = runTest {
+        // The order insert and the cart clear share one transaction, so a
+        // failed checkout (here: a duplicate order id) changes nothing.
+        val repo = repository()
+        repo.placeOrder(order(id = "ORD-1")).getOrThrow()
+        val cart = cart()
+        cart.addToCart(CocktailCartItem(testCocktail("1"), quantity = 2)).getOrThrow()
+
+        assertIs<Result.Error>(repo.placeOrderAndClearCart(order(id = "ORD-1")))
+
+        assertEquals(listOf(2), cart.getCartItems().getOrThrow().map { it.quantity })
+        assertEquals(listOf("ORD-1"), repo.getOrders().getOrThrow().map { it.id })
     }
 
     @Test
