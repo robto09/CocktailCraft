@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -24,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.util.toFavoriteIdSet
 import com.cocktailcraft.android.util.ListOptimizations.OnBottomReached
 
@@ -110,7 +110,7 @@ fun AnimatedCocktailList(
                 },
                 fontSize = headerFontSize.sp,
                 fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
         }
@@ -159,7 +159,7 @@ fun AnimatedCocktailList(
                 ) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(loadingIndicatorSize.dp),
-                        color = AppColors.Primary
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -175,7 +175,7 @@ fun AnimatedCocktailList(
                         .fillMaxWidth()
                         .padding(16.dp),
                     textAlign = TextAlign.Center,
-                    color = AppColors.TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = endOfListMessageFontSize.sp
                 )
             }

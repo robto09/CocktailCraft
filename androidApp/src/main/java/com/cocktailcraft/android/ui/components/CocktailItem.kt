@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.components.OptimizedImage
 import com.cocktailcraft.android.util.rememberHapticHandler
 
@@ -48,7 +48,7 @@ fun CocktailItem(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -63,7 +63,7 @@ fun CocktailItem(
                 modifier = Modifier
                     .size(100.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(AppColors.LightGray)
+                    .background(CocktailCraftTheme.extendedColors.neutralSubtle)
             ) {
                 // Use our optimized image component
                 OptimizedImage(
@@ -104,7 +104,7 @@ fun CocktailItem(
                     text = cocktail.name,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = AppColors.TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -121,7 +121,7 @@ fun CocktailItem(
                         }
                     },
                     fontSize = 14.sp,
-                    color = AppColors.TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -144,7 +144,7 @@ fun CocktailItem(
                         stringResource(R.string.list_tap_to_view_ingredients)
                     },
                     fontSize = 12.sp,
-                    color = AppColors.TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontStyle = FontStyle.Italic,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -161,7 +161,7 @@ fun CocktailItem(
                         text = stringResource(R.string.list_price_format, cocktail.price),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = AppColors.Primary
+                        color = MaterialTheme.colorScheme.primary
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -177,7 +177,7 @@ fun CocktailItem(
                         Icon(
                             imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                             contentDescription = if (isFavorite) stringResource(R.string.list_remove_from_favorites) else stringResource(R.string.list_add_to_favorites),
-                            tint = if (isFavorite) AppColors.Secondary else AppColors.Gray,
+                            tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -190,7 +190,7 @@ fun CocktailItem(
                         Icon(
                             imageVector = Icons.Default.ShoppingCart,
                             contentDescription = stringResource(R.string.add_to_cart),
-                            tint = if (cocktail.stockCount > 0) AppColors.Primary else AppColors.Gray,
+                            tint = if (cocktail.stockCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                             modifier = Modifier.size(20.dp)
                         )
                     }

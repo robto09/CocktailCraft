@@ -25,7 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.domain.model.Order
 
@@ -43,7 +43,7 @@ fun OrderCard(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -60,13 +60,13 @@ fun OrderCard(
                     text = stringResource(R.string.order_number, order.id.takeLast(5)),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
                     text = order.date,
                     fontSize = 14.sp,
-                    color = AppColors.TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -84,14 +84,14 @@ fun OrderCard(
                         Text(
                             text = stringResource(R.string.order_item_quantity_name, item.quantity, item.name),
                             fontSize = 14.sp,
-                            color = AppColors.TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
                         Text(
                             text = stringResource(R.string.order_price_format, item.price * item.quantity),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
-                            color = AppColors.TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -99,7 +99,7 @@ fun OrderCard(
 
             HorizontalDivider(
                 modifier = Modifier.padding(vertical = Spacing.md),
-                color = AppColors.LightGray
+                color = CocktailCraftTheme.extendedColors.neutralSubtle
             )
 
             // Total row
@@ -112,14 +112,14 @@ fun OrderCard(
                     text = stringResource(R.string.total),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
                     text = stringResource(R.string.order_price_format, order.total),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.Primary
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -130,9 +130,9 @@ fun OrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val statusColor = when (order.status) {
-                    "Completed" -> AppColors.Success
-                    "In Progress" -> AppColors.Warning
-                    else -> AppColors.Gray
+                    "Completed" -> CocktailCraftTheme.extendedColors.success
+                    "In Progress" -> CocktailCraftTheme.extendedColors.warning
+                    else -> MaterialTheme.colorScheme.outline
                 }
 
                 Box(

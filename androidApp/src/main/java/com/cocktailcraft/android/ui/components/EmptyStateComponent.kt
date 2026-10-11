@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -22,7 +23,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.theme.ThemeAssets
 
 /**
@@ -48,7 +48,7 @@ fun EmptyStateComponent(
     icon: ImageVector? = null,
     painter: Painter? = ThemeAssets.emptyStateIllustration(),
     iconSize: Int = 120,
-    iconTint: androidx.compose.ui.graphics.Color = AppColors.Gray
+    iconTint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.outline
 ) {
     Column(
         modifier = modifier
@@ -79,7 +79,7 @@ fun EmptyStateComponent(
             text = title,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            color = AppColors.TextPrimary,
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
 
@@ -88,7 +88,7 @@ fun EmptyStateComponent(
         Text(
             text = message,
             fontSize = 16.sp,
-            color = AppColors.TextSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
@@ -98,7 +98,7 @@ fun EmptyStateComponent(
             Button(
                 onClick = onActionButtonClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.Primary
+                    containerColor = MaterialTheme.colorScheme.primary
                 ),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.height(48.dp)

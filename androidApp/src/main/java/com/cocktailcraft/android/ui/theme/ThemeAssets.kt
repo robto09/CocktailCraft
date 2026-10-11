@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * Provides access to theme-specific assets throughout the app.
@@ -18,7 +17,7 @@ object ThemeAssets {
      */
     @Composable
     fun logo(): Painter {
-        return if (AppColors.isDarkTheme) {
+        return if (CocktailCraftTheme.isDarkTheme) {
             painterResource(id = R.drawable.logo_dark)
         } else {
             painterResource(id = R.drawable.logo_light)
@@ -30,7 +29,7 @@ object ThemeAssets {
      */
     @Composable
     fun backgroundPattern(): Painter {
-        return if (AppColors.isDarkTheme) {
+        return if (CocktailCraftTheme.isDarkTheme) {
             painterResource(id = R.drawable.bg_pattern_dark)
         } else {
             painterResource(id = R.drawable.bg_pattern_light)
@@ -42,7 +41,7 @@ object ThemeAssets {
      */
     @Composable
     fun cocktailPlaceholder(): Painter {
-        return if (AppColors.isDarkTheme) {
+        return if (CocktailCraftTheme.isDarkTheme) {
             painterResource(id = R.drawable.cocktail_placeholder_dark)
         } else {
             painterResource(id = R.drawable.cocktail_placeholder_light)
@@ -54,7 +53,7 @@ object ThemeAssets {
      */
     @Composable
     fun emptyStateIllustration(): Painter {
-        return if (AppColors.isDarkTheme) {
+        return if (CocktailCraftTheme.isDarkTheme) {
             painterResource(id = R.drawable.empty_state_dark)
         } else {
             painterResource(id = R.drawable.empty_state_light)

@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -19,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -48,7 +49,7 @@ fun OrderSummaryCard(
     
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -61,7 +62,7 @@ fun OrderSummaryCard(
                 text = stringResource(R.string.order_summary_title),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -92,7 +93,7 @@ fun OrderSummaryCard(
 
             Spacer(modifier = Modifier.height(12.dp))
             
-            HorizontalDivider(color = AppColors.LightGray)
+            HorizontalDivider(color = CocktailCraftTheme.extendedColors.neutralSubtle)
             
             Spacer(modifier = Modifier.height(12.dp))
             
@@ -105,13 +106,13 @@ fun OrderSummaryCard(
                     text = stringResource(R.string.total),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = currencyFormatter.format(calculatedTotal),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = AppColors.Primary
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -130,13 +131,13 @@ private fun SummaryRow(
         Text(
             text = label,
             fontSize = 15.sp,
-            color = AppColors.TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = value,
             fontWeight = FontWeight.Medium,
             fontSize = 15.sp,
-            color = AppColors.TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }

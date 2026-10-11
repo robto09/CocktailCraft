@@ -8,11 +8,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * A reusable loading state component that displays a circular progress indicator.
@@ -30,7 +30,7 @@ fun LoadingStateComponent(
     modifier: Modifier = Modifier,
     contentAlignment: Alignment = Alignment.Center,
     indicatorSize: Int = 40,
-    indicatorColor: androidx.compose.ui.graphics.Color = AppColors.Primary,
+    indicatorColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary,
     paddingValues: androidx.compose.foundation.layout.PaddingValues? = null
 ) {
     AnimatedVisibility(

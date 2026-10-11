@@ -29,7 +29,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.domain.model.SearchFilters
 import kotlinx.coroutines.launch
 
@@ -66,7 +65,7 @@ fun AdvancedSearchBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = AppColors.Surface
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         var filters by remember { mutableStateOf(currentFilters) }
 
@@ -96,7 +95,7 @@ fun AdvancedSearchBottomSheet(
                     text = stringResource(R.string.search_advanced_search),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -106,7 +105,7 @@ fun AdvancedSearchBottomSheet(
                         onApplyFilters(filters)
                         animateClose()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text(stringResource(R.string.filter_apply))
                 }

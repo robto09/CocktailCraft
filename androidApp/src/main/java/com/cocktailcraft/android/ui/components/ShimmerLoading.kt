@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import com.cocktailcraft.android.ui.theme.AppColors
+import androidx.compose.material3.MaterialTheme
 import com.cocktailcraft.android.ui.theme.LocalReducedMotion
 
 /**
@@ -67,9 +67,9 @@ fun rememberShimmerTranslate(): State<Float> {
  */
 fun Modifier.shimmerEffect(translate: State<Float>) = composed {
     val shimmerColors = listOf(
-        AppColors.Surface.copy(alpha = 0.6f),
-        AppColors.Surface.copy(alpha = 0.2f),
-        AppColors.Surface.copy(alpha = 0.6f)
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.2f),
+        MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
     )
 
     drawBehind {

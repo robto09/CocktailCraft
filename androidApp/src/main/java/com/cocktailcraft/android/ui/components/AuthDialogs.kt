@@ -12,6 +12,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -29,7 +30,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * Sign-in and sign-up dialogs, extracted from ProfileScreen. Form state is
@@ -73,7 +73,7 @@ fun SignInDialog(
                 onClick = { onSignIn(email, password) },
                 enabled = email.isNotBlank() && password.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.Primary
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text(stringResource(R.string.sign_in))
@@ -136,7 +136,7 @@ fun SignUpDialog(
                 onClick = { onSignUp(name, email, password) },
                 enabled = name.isNotBlank() && email.isNotBlank() && password.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AppColors.Primary
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Text(stringResource(R.string.create_account))

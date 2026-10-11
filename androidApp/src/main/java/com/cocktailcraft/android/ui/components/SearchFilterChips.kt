@@ -36,7 +36,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * Component to display active search filters as chips
@@ -60,7 +59,7 @@ fun SearchFilterChips(
                 // 4dp + the neighbors' own 8dp = a 12dp gap above and below,
                 // matching the iOS header's 12pt rhythm
                 .padding(horizontal = 16.dp, vertical = 4.dp),
-            color = AppColors.Surface,
+            color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(8.dp)
         ) {
             Column(
@@ -76,7 +75,7 @@ fun SearchFilterChips(
                     Icon(
                         imageVector = Icons.Default.FilterAlt,
                         contentDescription = stringResource(R.string.filter_filters),
-                        tint = AppColors.Primary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
 
@@ -85,7 +84,7 @@ fun SearchFilterChips(
                     Text(
                         text = stringResource(R.string.filter_active_filters),
                         style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -93,7 +92,7 @@ fun SearchFilterChips(
                     Text(
                         text = stringResource(R.string.filter_clear_all),
                         style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.Primary,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.clickable { onClearAllFilters() }
                     )
                 }
@@ -163,9 +162,9 @@ fun ActiveFilterChip(
         shape = RoundedCornerShape(16.dp),
         border = null,
         colors = InputChipDefaults.inputChipColors(
-            containerColor = AppColors.Primary.copy(alpha = 0.1f),
-            labelColor = AppColors.Primary,
-            trailingIconColor = AppColors.Primary
+            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+            labelColor = MaterialTheme.colorScheme.primary,
+            trailingIconColor = MaterialTheme.colorScheme.primary
         ),
         trailingIcon = {
             Icon(

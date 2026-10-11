@@ -46,7 +46,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * A visually appealing message displayed when search results are empty
@@ -122,7 +121,7 @@ fun EmptySearchResultsMessage(
                     },
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
 
@@ -143,7 +142,7 @@ fun EmptySearchResultsMessage(
                             stringResource(R.string.search_suggestion_none_found)
                     },
                     fontSize = 16.sp,
-                    color = AppColors.TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
 
@@ -156,7 +155,7 @@ fun EmptySearchResultsMessage(
                         Button(
                             onClick = onClearSearch,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Primary
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
                             Text(stringResource(R.string.search_clear_search_button))
@@ -167,7 +166,7 @@ fun EmptySearchResultsMessage(
                         OutlinedButton(
                             onClick = onClearFilters,
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = AppColors.Primary
+                                contentColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
                             Text(stringResource(R.string.search_clear_filters_button))
@@ -178,7 +177,7 @@ fun EmptySearchResultsMessage(
                         Button(
                             onClick = onClearFilters,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Primary
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
                             Text(stringResource(R.string.search_clear_filters_button))
@@ -189,7 +188,7 @@ fun EmptySearchResultsMessage(
                         Button(
                             onClick = onClearSearch,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Primary
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
                             Text(stringResource(R.string.search_clear_search_button))
@@ -200,7 +199,7 @@ fun EmptySearchResultsMessage(
                         OutlinedButton(
                             onClick = { onClearCategory?.invoke() },
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = AppColors.Primary
+                                contentColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
                             Text(stringResource(R.string.filter_clear_category))
@@ -211,7 +210,7 @@ fun EmptySearchResultsMessage(
                         Button(
                             onClick = { onClearCategory?.invoke() },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Primary
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
                             Text(stringResource(R.string.search_browse_all_cocktails))
@@ -222,7 +221,7 @@ fun EmptySearchResultsMessage(
                         Button(
                             onClick = onClearSearch,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Primary
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
                             Text(stringResource(R.string.search_clear_search_button))
@@ -233,7 +232,7 @@ fun EmptySearchResultsMessage(
                         Button(
                             onClick = onClearSearch, // This will refresh the list
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Primary
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
                             Text(stringResource(R.string.refresh))
@@ -258,14 +257,14 @@ private fun EmptyStateIcon(icon: ImageVector) {
         Icon(
             imageVector = icon,
             contentDescription = stringResource(R.string.search_no_results_icon),
-            tint = AppColors.Primary.copy(alpha = 0.2f),
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
             modifier = Modifier.size(80.dp)
         )
 
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = AppColors.Primary,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(40.dp)
         )
     }

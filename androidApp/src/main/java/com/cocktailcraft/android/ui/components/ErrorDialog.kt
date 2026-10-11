@@ -44,7 +44,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.android.util.ErrorUtils
 
@@ -96,7 +95,7 @@ fun ErrorDialog(
                     text = error.title,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -105,7 +104,7 @@ fun ErrorDialog(
                 Text(
                     text = error.message,
                     fontSize = 16.sp,
-                    color = AppColors.TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
 
@@ -134,7 +133,7 @@ fun ErrorDialog(
                                     onDismiss()
                                 },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = AppColors.Primary
+                                    containerColor = MaterialTheme.colorScheme.primary
                                 )
                             ) {
                                 Text(recoveryAction.actionLabel)
@@ -147,7 +146,7 @@ fun ErrorDialog(
                                     onDismiss()
                                 },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = AppColors.Primary
+                                    containerColor = MaterialTheme.colorScheme.primary
                                 )
                             ) {
                                 Text(stringResource(R.string.dialog_try_again))

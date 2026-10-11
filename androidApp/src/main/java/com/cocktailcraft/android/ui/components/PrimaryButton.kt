@@ -11,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * The app's standard primary call-to-action button: brand-color container,
@@ -30,9 +29,9 @@ fun PrimaryButton(
         onClick = onClick,
         enabled = enabled && !isLoading,
         colors = ButtonDefaults.buttonColors(
-            containerColor = AppColors.Primary,
+            containerColor = MaterialTheme.colorScheme.primary,
             contentColor = Color.White,
-            disabledContainerColor = AppColors.Primary.copy(alpha = 0.5f),
+            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
             disabledContentColor = Color.White.copy(alpha = 0.8f)
         ),
         shape = MaterialTheme.shapes.medium,
