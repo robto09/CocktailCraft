@@ -237,6 +237,7 @@
     <string name="how_to_prepare_ios">Preparation</string>
     <string name="detail_title_fallback">Cocktail Detail</string>
     <string name="detail_price_format">$%1$.2f</string>
+    <string name="detail_price_a11y">Price, %1$s</string>
     <string name="detail_alcoholic_unknown">Unknown</string>
     <string name="detail_in_stock">In Stock (%1$d available)</string>
     <string name="detail_out_of_stock">Out of Stock</string>

@@ -42,6 +42,9 @@ extension CocktailDetailView {
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(L(\.review_stars_a11y, viewModel.formatRating(), 5))
+                // Informational, not a control: without the trait the
+                // accessibility audit treats it as an undersized tap target
+                .accessibilityAddTraits(.isStaticText)
             }
 
             HStack {
@@ -49,6 +52,9 @@ extension CocktailDetailView {
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                    // A bare "$7.46" reads without context (and fails the
+                    // audit's human-readable label check)
+                    .accessibilityLabel(L(\.detail_price_a11y, viewModel.formatPrice()))
 
                 Spacer()
 
