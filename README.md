@@ -412,8 +412,9 @@ xcodebuild test -project CocktailCraft.xcodeproj -scheme CocktailCraft \
 ### Screenshot tests
 
 Both platforms snapshot the design-system components and the stateless parts
-of the main screens in light and dark mode, plus high-contrast, large-font and
-accent-color variants of a few key components. Reference images are committed;
+of the main screens in light and dark mode, plus high-contrast, large-font
+(including Android's 2x maximum and iOS's largest accessibility size, AX5) and
+accent-color variants of a few key components and screens. Reference images are committed;
 a visual change fails the test until the references are re-recorded and the
 new images reviewed in the diff. Sample data never carries image URLs, so no
 test touches the network.
@@ -454,4 +455,46 @@ TEST_RUNNER_SNAPSHOT_TESTING_RECORD=all xcodebuild test -project CocktailCraft.x
   -scheme CocktailCraft -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' \
   -only-testing:CocktailCraftTests
 ```
+
+### Accessibility
+
+Screen-reader semantics (labels, toggle/selected state, headings, grouping,
+live regions/announcements, custom actions), touch targets, contrast,
+Dynamic Type / font scale and reduced motion are checked automatically:
+
+| Check | Where | Runs in |
+|-------|-------|---------|
+| Google's Accessibility Test Framework over Home, filters, detail, cart and profile content at 1x and 2x font scale (via Roborazzi's ATF integration; fails on warnings and errors) | `androidApp/src/test/.../accessibility/AccessibilityChecksTest.kt` | `./gradlew :androidApp:testDebugUnitTest` |
+| Semantics assertions for the labels, states, headings, live regions and custom actions | `androidApp/src/test/.../accessibility/AccessibilitySemanticsTest.kt` | `./gradlew :androidApp:testDebugUnitTest` |
+| Compose `enableAccessibilityChecks()` on the real `MainScreen`, walking every tab | `androidApp/src/androidTest/.../AccessibilityChecksTest.kt` | `./gradlew :androidApp:connectedDebugAndroidTest` (device/emulator) |
+| Xcode accessibility audit (`performAccessibilityAudit`) on every tab and the detail screen, plus Home/Cart/Profile at AX5 | `iosApp/CocktailCraftUITests/AccessibilityAuditTests.swift` | the full iOS scheme (`xcodebuild test ...`) |
+| Font-setting / Dynamic Type mapping and spoken ratings | `iosApp/CocktailCraftTests/AccessibilityTests.swift` | the full iOS scheme |
+| Large-font and high-contrast screenshots (see above) | `LargeFontScreenshotTest`, `AccessibilityScreenshotTest` (both platforms) | the screenshot runs above |
+
+The iOS audit is network-tolerant: it audits whatever state renders (content,
+loading, offline, error), dismissing an error alert first, and hides the
+Debug-only DebugSwift overlay (`HIDE_DEBUG_OVERLAY`), which never ships.
+
+**Known exclusion — contrast.** The brand coral (`#EB6A43`, 3.2:1 on white),
+the default secondary gray (`#8E8E93`, 3.3:1) and the success green are below
+the 4.5:1 WCAG AA ratio for small text, so contrast checks are suppressed in
+the ATF and Xcode audits rather than failing on a design decision. The in-app
+**High Contrast** setting strengthens secondary text (and, on Android in light
+theme, the gray outline role); changing the brand palette itself is out of
+scope for these checks.
+
+Conventions for new UI:
+- Every user-facing label, hint, value and announcement is a shared string
+  (see [Localization](#localization)); accessibility-only copy uses an `_a11y`
+  key suffix.
+- Toggles keep one stable label and expose their state (Compose
+  `IconToggleButton`/`toggleable`, SwiftUI `.isSelected`/`.isToggle` traits)
+  instead of a label that flips between "Add" and "Remove".
+- Decorative images and icons next to text are hidden from screen readers;
+  composite rows read as one element; section titles are headings.
+- Touch targets are at least 48dp / 44pt; layouts wrap or stack at large
+  text sizes instead of truncating.
+- In-app Font Size multiplies the system size on both platforms (iOS steps
+  relative to the system Dynamic Type size, so accessibility sizes apply);
+  Reduce Motion follows the in-app setting or the system one.
 

@@ -1,6 +1,6 @@
 package com.cocktailcraft.android.ui.components
 
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -10,6 +10,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 /**
@@ -35,13 +37,19 @@ fun PrimaryButton(
             disabledContentColor = Color.White.copy(alpha = 0.8f)
         ),
         shape = MaterialTheme.shapes.medium,
-        modifier = modifier.height(54.dp)
+        // Minimum, not fixed: a large font grows the button instead of
+        // clipping its label
+        modifier = modifier.heightIn(min = 54.dp)
     ) {
         if (isLoading) {
+            // The spinner replaces the label; TalkBack still hears what the
+            // (busy, disabled) button is
             CircularProgressIndicator(
                 color = Color.White,
                 strokeWidth = 2.dp,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier
+                    .size(24.dp)
+                    .semantics { contentDescription = text }
             )
         } else {
             Text(text = text, style = MaterialTheme.typography.labelLarge)

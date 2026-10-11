@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.ui.animation.AnimationUtils
+import com.cocktailcraft.android.ui.theme.LocalReducedMotion
 import com.cocktailcraft.android.util.HapticHandler
 import com.cocktailcraft.android.util.rememberHapticHandler
 
@@ -42,7 +43,7 @@ fun AnimatedButton(
     val isPressed by interactionSource.collectIsPressedAsState()
     
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
+        targetValue = if (isPressed && !LocalReducedMotion.current) 0.95f else 1f,
         animationSpec = spring(
             dampingRatio = AnimationUtils.SPRING_DAMPENING_MEDIUM_BOUNCY,
             stiffness = AnimationUtils.SPRING_STIFFNESS_MEDIUM
@@ -109,7 +110,7 @@ fun AnimatedIconButton(
     val defaultHapticHandler = if (enableHapticFeedback) rememberHapticHandler() else null
 
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.85f else 1f,
+        targetValue = if (isPressed && !LocalReducedMotion.current) 0.85f else 1f,
         animationSpec = spring(
             dampingRatio = AnimationUtils.SPRING_DAMPENING_MEDIUM_BOUNCY,
             stiffness = AnimationUtils.SPRING_STIFFNESS_MEDIUM
@@ -152,7 +153,7 @@ fun AnimatedFloatingActionButton(
     val isPressed by interactionSource.collectIsPressedAsState()
     
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.92f else 1f,
+        targetValue = if (isPressed && !LocalReducedMotion.current) 0.92f else 1f,
         animationSpec = spring(
             dampingRatio = AnimationUtils.SPRING_DAMPENING_MEDIUM_BOUNCY,
             stiffness = AnimationUtils.SPRING_STIFFNESS_MEDIUM

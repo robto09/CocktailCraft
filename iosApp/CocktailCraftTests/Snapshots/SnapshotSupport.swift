@@ -14,16 +14,32 @@ enum SnapshotAppearance: String {
     case darkHighContrast
     /// The app's "Extra Large" font setting (.xxLarge Dynamic Type)
     case largeFont
+    /// The largest system accessibility text size (AX5)
+    case largestFont
     /// A non-default accent color (blue) in light mode
     case accentBlue
 
     static let lightAndDark: [SnapshotAppearance] = [.light, .dark]
-    static let accessibility: [SnapshotAppearance] = [.darkHighContrast, .largeFont, .accentBlue]
+    static let accessibility: [SnapshotAppearance] = [.darkHighContrast, .largeFont, .largestFont, .accentBlue]
 
     var isDarkMode: Bool { self == .dark || self == .darkHighContrast }
     var isHighContrast: Bool { self == .darkHighContrast }
     var accentName: String { self == .accentBlue ? "blue" : AccentColorTokens.shared.DEFAULT }
-    var dynamicTypeSize: DynamicTypeSize { self == .largeFont ? .xxLarge : .large }
+    var dynamicTypeSize: DynamicTypeSize {
+        switch self {
+        case .largeFont: return .xxLarge
+        case .largestFont: return .accessibility5
+        default: return .large
+        }
+    }
+
+    var contentSizeCategory: UIContentSizeCategory {
+        switch self {
+        case .largeFont: return .extraExtraLarge
+        case .largestFont: return .accessibilityExtraExtraExtraLarge
+        default: return .large
+        }
+    }
 }
 
 /// Base class for SwiftUI snapshot tests (pointfreeco/swift-snapshot-testing).
@@ -131,7 +147,7 @@ class SnapshotTestCase: XCTestCase {
             traits.horizontalSizeClass = .compact
             traits.verticalSizeClass = .regular
             traits.layoutDirection = .leftToRight
-            traits.preferredContentSizeCategory = appearance == .largeFont ? .extraExtraLarge : .large
+            traits.preferredContentSizeCategory = appearance.contentSizeCategory
         }
     }
 }

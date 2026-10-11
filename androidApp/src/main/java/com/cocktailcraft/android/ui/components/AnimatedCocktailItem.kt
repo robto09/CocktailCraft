@@ -55,12 +55,10 @@ import com.cocktailcraft.android.util.rememberHapticHandler
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.add_to_cart
-import com.cocktailcraft.resources.list_add_to_favorites
+import com.cocktailcraft.resources.add_to_cart_item_a11y
 import com.cocktailcraft.resources.list_alcoholic_unknown
 import com.cocktailcraft.resources.list_out_of_stock
 import com.cocktailcraft.resources.list_price_format
-import com.cocktailcraft.resources.list_remove_from_favorites
 import com.cocktailcraft.resources.list_tap_to_view_ingredients
 import com.cocktailcraft.resources.list_view_details_label
 
@@ -142,10 +140,11 @@ fun CocktailItemContent(
                 .clip(RoundedCornerShape(8.dp))
                 .background(CocktailCraftTheme.extendedColors.neutralSubtle)
         ) {
-            // Use our optimized image component
+            // Use our optimized image component (decorative: the name is
+            // read from the text beside it)
             OptimizedImage(
                 url = cocktail.imageUrl,
-                contentDescription = cocktail.name,
+                contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
                 targetSize = 200, // Target size for better memory usage
@@ -183,7 +182,7 @@ fun CocktailItemContent(
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 
@@ -200,7 +199,7 @@ fun CocktailItemContent(
                 },
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 
@@ -244,22 +243,21 @@ fun CocktailItemContent(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Favorite button with animation and haptic feedback
-                AnimatedIconButton(
-                    onClick = {
+                // Favorite toggle with haptic feedback
+                FavoriteToggleButton(
+                    isFavorite = isFavorite,
+                    onToggle = {
                         hapticHandler.performToggleFavorite(isFavorite)
                         onToggleFavorite(cocktail)
                     },
-                    icon = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = if (isFavorite) stringResource(MR.strings.list_remove_from_favorites) else stringResource(MR.strings.list_add_to_favorites),
-                    tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline
+                    iconSize = 24.dp
                 )
 
                 // Add to cart button with animation
                 AnimatedIconButton(
                     onClick = { onAddToCart(cocktail) },
                     icon = Icons.Default.ShoppingCart,
-                    contentDescription = stringResource(MR.strings.add_to_cart),
+                    contentDescription = stringResource(MR.strings.add_to_cart_item_a11y, cocktail.name),
                     tint = if (cocktail.stockCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                     enabled = cocktail.stockCount > 0
                 )

@@ -24,11 +24,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.search
+import com.cocktailcraft.resources.filters_active_a11y
 import com.cocktailcraft.resources.search_advanced_search
 import com.cocktailcraft.resources.search_clear_search
 import com.cocktailcraft.resources.search_cocktails_placeholder
@@ -83,9 +85,10 @@ fun CocktailSearchBar(
                 .testTag("home_search_field"),
             placeholder = { Text(placeholder) },
             leadingIcon = {
+                // Decorative: the field's placeholder/label names it
                 Icon(
                     Icons.Filled.Search,
-                    contentDescription = stringResource(MR.strings.search),
+                    contentDescription = null,
                     tint = searchIconTint
                 )
             },
@@ -114,10 +117,15 @@ fun CocktailSearchBar(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        // Advanced search button
+        // Advanced search button; the highlighted (filters active) state is
+        // also spoken
+        val filtersActiveLabel = stringResource(MR.strings.filters_active_a11y)
         IconButton(
             onClick = { onToggleAdvancedSearch() },
             modifier = Modifier
+                .semantics {
+                    if (hasActiveFilters) stateDescription = filtersActiveLabel
+                }
                 .background(
                     color = if (isAdvancedSearchActive || hasActiveFilters)
                         activeFilterButtonColor

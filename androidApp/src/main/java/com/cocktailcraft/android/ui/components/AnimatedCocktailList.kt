@@ -13,15 +13,23 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocktailcraft.android.ui.theme.LocalReducedMotion
 import com.cocktailcraft.android.util.ListOptimizations.OnBottomReached
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.android.util.toFavoriteIdSet
@@ -80,6 +88,15 @@ fun AnimatedCocktailList(
     // Remember scroll state for optimizations
     val listState = rememberLazyListState()
 
+    // animateItem()'s default springs, or none under Reduce Motion
+    val reducedMotion = LocalReducedMotion.current
+    val fadeSpec: FiniteAnimationSpec<Float>? =
+        if (reducedMotion) null else spring(stiffness = Spring.StiffnessMediumLow)
+    val placementSpec: FiniteAnimationSpec<IntOffset>? = if (reducedMotion) null else spring(
+        stiffness = Spring.StiffnessMediumLow,
+        visibilityThreshold = IntOffset.VisibilityThreshold
+    )
+
     // Identity-keyed items require unique ids; guard the unique-key contract
     // against overlapping pages from the API
     val distinctCocktails = remember(cocktails) { cocktails.distinctBy { it.id } }
@@ -115,7 +132,9 @@ fun AnimatedCocktailList(
                 fontSize = headerFontSize.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier
+                    .padding(bottom = 8.dp)
+                    .semantics { heading() }
             )
         }
 
@@ -130,7 +149,7 @@ fun AnimatedCocktailList(
         ) { _, cocktail ->
             Box(
                 modifier = Modifier
-                    .animateItem()
+                    .animateItem(fadeInSpec = fadeSpec, placementSpec = placementSpec, fadeOutSpec = fadeSpec)
                     // Shared tag on every row: UiAutomator By.res matching only
                     // needs "a" list item, not a specific one.
                     .testTag("cocktail_list_item")
@@ -156,7 +175,7 @@ fun AnimatedCocktailList(
             item(key = "loading_more") {
                 Box(
                     modifier = Modifier
-                        .animateItem()
+                        .animateItem(fadeInSpec = fadeSpec, placementSpec = placementSpec, fadeOutSpec = fadeSpec)
                         .fillMaxWidth()
                         .padding(16.dp),
                     contentAlignment = Alignment.Center
@@ -175,7 +194,7 @@ fun AnimatedCocktailList(
                 Text(
                     text = stringResource(MR.strings.list_end_of_list_message),
                     modifier = Modifier
-                        .animateItem()
+                        .animateItem(fadeInSpec = fadeSpec, placementSpec = placementSpec, fadeOutSpec = fadeSpec)
                         .fillMaxWidth()
                         .padding(16.dp),
                     textAlign = TextAlign.Center,

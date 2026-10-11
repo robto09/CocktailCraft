@@ -18,6 +18,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -91,45 +93,40 @@ internal fun DetailChipsSection(
                 // Category chip
                 category?.let {
                     item {
-                        SuggestionChip(
-                            onClick = {},
-                            label = { Text(stringResource(MR.strings.category_label, it)) },
-                            colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
-                                labelColor = MaterialTheme.colorScheme.onSurface
-                            )
-                        )
+                        DetailChip(label = stringResource(MR.strings.category_label, it))
                     }
                 }
 
                 // Glass type chip
                 glass?.let {
                     item {
-                        SuggestionChip(
-                            onClick = {},
-                            label = { Text(stringResource(MR.strings.glass_label, it)) },
-                            colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
-                                labelColor = MaterialTheme.colorScheme.onSurface
-                            )
-                        )
+                        DetailChip(label = stringResource(MR.strings.glass_label, it))
                     }
                 }
 
                 // Alcoholic chip
                 item {
-                    SuggestionChip(
-                        onClick = {},
-                        label = { Text(if (alcoholic == "Alcoholic") stringResource(MR.strings.alcoholic) else stringResource(MR.strings.non_alcoholic)) },
-                        colors = SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
-                            labelColor = MaterialTheme.colorScheme.onSurface
-                        )
-                    )
+                    DetailChip(label = if (alcoholic == "Alcoholic") stringResource(MR.strings.alcoholic) else stringResource(MR.strings.non_alcoholic))
                 }
             }
         },
         elevation = 0
+    )
+}
+
+// Read-only attribute chip. SuggestionChip is always clickable, so its
+// semantics are replaced with plain text — TalkBack would otherwise announce
+// a button that does nothing.
+@Composable
+private fun DetailChip(label: String) {
+    SuggestionChip(
+        onClick = {},
+        label = { Text(label) },
+        modifier = Modifier.clearAndSetSemantics { contentDescription = label },
+        colors = SuggestionChipDefaults.suggestionChipColors(
+            containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
+            labelColor = MaterialTheme.colorScheme.onSurface
+        )
     )
 }
 

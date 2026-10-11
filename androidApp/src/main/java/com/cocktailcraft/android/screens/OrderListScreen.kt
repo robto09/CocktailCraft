@@ -28,9 +28,11 @@ import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.OrderCard
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.refreshAccessibilityAction
 import com.cocktailcraft.android.util.resolve
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.refresh
 import com.cocktailcraft.resources.browse_cocktails
 import com.cocktailcraft.resources.cart_try_again
 import com.cocktailcraft.resources.error
@@ -106,7 +108,9 @@ internal fun OrderListContent(
             PullToRefreshBox(
                 isRefreshing = isLoading,
                 onRefresh = onReload,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .refreshAccessibilityAction(stringResource(MR.strings.refresh), onReload),
                 state = pullToRefreshState,
                 indicator = {
                     PullToRefreshDefaults.Indicator(

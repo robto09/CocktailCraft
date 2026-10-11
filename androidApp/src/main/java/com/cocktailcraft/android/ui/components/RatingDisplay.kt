@@ -9,6 +9,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,6 +23,7 @@ import com.cocktailcraft.resources.review_rating_value
 
 /**
  * A reusable rating display component that shows a rating with stars and review count.
+ * TalkBack reads it as one element: "4.5 out of 5 stars, (12 reviews)".
  *
  * @param rating The rating value to display
  * @param reviewCount The number of reviews
@@ -46,8 +49,10 @@ fun RatingDisplay(
     textColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
     useHalfStars: Boolean = true
 ) {
+    // One merged element: the stars carry the spoken rating, so the
+    // duplicate numeric label is hidden
     Row(
-        modifier = modifier,
+        modifier = modifier.semantics(mergeDescendants = true) {},
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start
     ) {
@@ -56,7 +61,8 @@ fun RatingDisplay(
             text = stringResource(MR.strings.review_rating_value, rating),
             fontSize = ratingTextSize.sp,
             fontWeight = FontWeight.Bold,
-            color = textColor
+            color = textColor,
+            modifier = Modifier.clearAndSetSemantics {}
         )
         
         Spacer(modifier = Modifier.width(4.dp))

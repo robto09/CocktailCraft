@@ -34,5 +34,6 @@ struct CategoryChipRow: View {
             .foregroundColor(isSelected ? .white : primaryColor)
             .cornerRadius(16)
             .shadow(color: isSelected ? Color.black.opacity(0.15) : Color.clear, radius: 2, x: 0, y: 1)
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

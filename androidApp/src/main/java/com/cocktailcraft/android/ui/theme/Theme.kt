@@ -28,7 +28,7 @@ import com.cocktailcraft.designsystem.ColorTokens
 //   background/surface  → colorScheme.background / surface
 //   textPrimary         → colorScheme.onSurface (== onBackground)
 //   textSecondary       → colorScheme.onSurfaceVariant (high-contrast aware)
-//   gray                → colorScheme.outline
+//   gray                → colorScheme.outline (high-contrast aware, light)
 //   lightGray           → extendedColors.neutralSubtle
 //   error               → colorScheme.error
 //   success / warning   → extendedColors.success / warning
@@ -40,8 +40,10 @@ import com.cocktailcraft.designsystem.ColorTokens
 /**
  * Builds the brand Material 3 color scheme from the shared tokens, honouring
  * the user's accent color (primary) and high-contrast setting (secondary text
- * pushed further from the background). AnimatedCocktailBarTheme animates the
- * theme-dependent roles of this scheme.
+ * pushed further from the background; in light theme also the gray outline
+ * role, which de-emphasized labels, inactive icons and borders use — gray
+ * already clears 4.5:1 on the dark surfaces). AnimatedCocktailBarTheme
+ * animates the theme-dependent roles of this scheme.
  */
 internal fun cocktailColorScheme(
     darkTheme: Boolean,
@@ -68,7 +70,7 @@ internal fun cocktailColorScheme(
             onBackground = Color(ColorTokens.textPrimaryDark),
             onSurface = Color(ColorTokens.textPrimaryDark),
             onSurfaceVariant = if (highContrast) lightGray else Color(ColorTokens.textSecondaryDark),
-            outline = gray,
+            outline = gray, // already >= 4.5:1 on the dark surfaces
             onError = Color.White
         )
     } else {
@@ -86,7 +88,7 @@ internal fun cocktailColorScheme(
             onBackground = Color(ColorTokens.textPrimaryLight),
             onSurface = Color(ColorTokens.textPrimaryLight),
             onSurfaceVariant = if (highContrast) darkGray else Color(ColorTokens.textSecondaryLight),
-            outline = gray,
+            outline = if (highContrast) darkGray else gray,
             onError = Color.White
         )
     }

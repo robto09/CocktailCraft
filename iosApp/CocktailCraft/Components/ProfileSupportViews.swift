@@ -7,6 +7,8 @@ struct SettingsRow: View {
     let title: String
     let action: () -> Void
     let textColor: Color
+    /// Icon box grows with Dynamic Type so large symbols don't overflow it
+    @ScaledMetric(relativeTo: .body) private var iconSize: CGFloat = 24
 
     init(icon: String, title: String, action: @escaping () -> Void, textColor: Color = .primary) {
         self.icon = icon
@@ -20,7 +22,7 @@ struct SettingsRow: View {
             HStack(spacing: 16) {
                 Image(systemName: icon)
                     .foregroundColor(textColor)
-                    .frame(width: 24, height: 24)
+                    .frame(width: iconSize, height: iconSize)
 
                 Text(title)
                     .font(.body)
@@ -53,6 +55,7 @@ struct ThemeToggleRow: View {
     // idempotent (a computed-at-tap flip can flip twice and undo itself).
     let onToggle: (Bool) -> Void
     let enabled: Bool
+    @ScaledMetric(relativeTo: .body) private var iconSize: CGFloat = 24
 
     init(title: String, subtitle: String, icon: String, isChecked: Bool, onToggle: @escaping (Bool) -> Void, enabled: Bool = true) {
         self.title = title
@@ -67,7 +70,7 @@ struct ThemeToggleRow: View {
         HStack(spacing: 16) {
             Image(systemName: icon)
                 .foregroundColor(enabled ? .primary : .gray)
-                .frame(width: 24, height: 24)
+                .frame(width: iconSize, height: iconSize)
                 .scaleEffect(enabled ? 1.0 : 0.8)
                 .animation(AppTheme.Animation.quick, value: enabled)
 
@@ -93,6 +96,18 @@ struct ThemeToggleRow: View {
             .opacity(enabled ? 1.0 : 0.5)
         }
         .padding(.vertical, 12)
+        // VoiceOver: one switch per row — "Dark Mode, Off, Switch button,
+        // Controlled by system" — instead of three separate stops and an
+        // unlabeled switch
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityValue(isChecked ? L(\.profile_toggle_on) : L(\.profile_toggle_off))
+        .accessibilityHint(subtitle == L(\.profile_toggle_on) || subtitle == L(\.profile_toggle_off) ? "" : subtitle)
+        .accessibilityAddTraits(.isToggle)
+        .accessibilityAction {
+            if enabled { onToggle(!isChecked) }
+        }
+        .disabled(!enabled)
     }
 }
 
@@ -118,6 +133,9 @@ struct AnimatedThemeSwitch: View {
                 .overlay(
                     Image(systemName: isChecked ? "moon.fill" : "sun.max.fill")
                         .font(.caption)
+                        // The switch is fixed-size artwork: keep the glyph
+                        // inside its 24 pt thumb at large text sizes
+                        .dynamicTypeSize(...DynamicTypeSize.large)
                         .foregroundColor(.white)
                         .accessibilityHidden(true)
                 )

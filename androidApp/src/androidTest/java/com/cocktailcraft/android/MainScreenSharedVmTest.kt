@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -110,10 +111,10 @@ class MainScreenSharedVmTest {
     fun addToCartFromHome_showsItemInCartTab() {
         launchApp()
 
-        // The first "Add to Cart" button belongs to the first list item.
+        // Add-to-cart buttons are labeled per item ("Add <name> to cart").
         // Add-to-cart keeps the user on Home with a snackbar confirmation
         // (parity with iOS), so the Cart tab is opened explicitly.
-        composeTestRule.onAllNodesWithContentDescription("Add to Cart").onFirst().performClick()
+        composeTestRule.onNodeWithContentDescription("Add ${TestCocktails.mojito.name} to cart").performClick()
         // The snackbar confirmation only shows after the async add-to-cart
         // landed in shared state — without this sync the tab switch can race
         // the write and Cart renders empty.
@@ -140,7 +141,7 @@ class MainScreenSharedVmTest {
     fun favoriteFromHome_showsInFavoritesTab() {
         launchApp()
 
-        composeTestRule.onAllNodesWithContentDescription("Add to favorites").onFirst().performClick()
+        composeTestRule.onAllNodesWithContentDescription("Favorite").onFirst().performClick()
         composeTestRule.onNodeWithText("Favorites").performClick()
 
         waitForText("Test Mojito")
@@ -184,7 +185,7 @@ class MainScreenSharedVmTest {
     fun homeTab_afterAddToCart_returnsToHome() {
         launchApp()
 
-        composeTestRule.onAllNodesWithContentDescription("Add to Cart").onFirst().performClick()
+        composeTestRule.onNodeWithContentDescription("Add ${TestCocktails.mojito.name} to cart").performClick()
         // The snackbar confirmation only shows after the async add-to-cart
         // landed in shared state — without this sync the tab switch can race
         // the write and Cart renders empty.
@@ -203,7 +204,7 @@ class MainScreenSharedVmTest {
     fun startShopping_afterPlacingOrder_returnsToHome() {
         launchApp()
 
-        composeTestRule.onAllNodesWithContentDescription("Add to Cart").onFirst().performClick()
+        composeTestRule.onNodeWithContentDescription("Add ${TestCocktails.mojito.name} to cart").performClick()
         // The snackbar confirmation only shows after the async add-to-cart
         // landed in shared state — without this sync the tab switch can race
         // the write and Cart renders empty.

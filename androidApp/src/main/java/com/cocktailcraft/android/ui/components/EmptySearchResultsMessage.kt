@@ -40,10 +40,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocktailcraft.android.ui.theme.LocalReducedMotion
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.filter_clear_category
@@ -54,7 +57,6 @@ import com.cocktailcraft.resources.search_clear_search_button
 import com.cocktailcraft.resources.search_no_results
 import com.cocktailcraft.resources.search_no_results_category
 import com.cocktailcraft.resources.search_no_results_filters
-import com.cocktailcraft.resources.search_no_results_icon
 import com.cocktailcraft.resources.search_no_results_query
 import com.cocktailcraft.resources.search_no_results_query_category
 import com.cocktailcraft.resources.search_no_results_query_filters
@@ -77,8 +79,9 @@ fun EmptySearchResultsMessage(
     onClearFilters: () -> Unit = onClearSearch,
     modifier: Modifier = Modifier
 ) {
-    // Animation states
-    val visibleState = remember { MutableTransitionState(false) }
+    // Animation states (Reduce Motion: start visible, no bouncy slide-in)
+    val reducedMotion = LocalReducedMotion.current
+    val visibleState = remember { MutableTransitionState(reducedMotion) }
 
     // Set visible to trigger the animation
     LaunchedEffect(Unit) {
@@ -139,7 +142,8 @@ fun EmptySearchResultsMessage(
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.semantics { heading() }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -263,6 +267,7 @@ fun EmptySearchResultsMessage(
     }
 }
 
+// Decorative: the message below explains the empty state
 @Composable
 private fun EmptyStateIcon(icon: ImageVector) {
     Box(
@@ -273,7 +278,7 @@ private fun EmptyStateIcon(icon: ImageVector) {
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = stringResource(MR.strings.search_no_results_icon),
+            contentDescription = null,
             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
             modifier = Modifier.size(80.dp)
         )

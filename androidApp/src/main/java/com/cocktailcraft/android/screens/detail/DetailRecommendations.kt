@@ -28,6 +28,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -47,6 +49,7 @@ import com.cocktailcraft.resources.detail_loading_recommendations
 import com.cocktailcraft.resources.detail_more_category_cocktails
 import com.cocktailcraft.resources.detail_price_format
 import com.cocktailcraft.resources.detail_you_might_also_like
+import com.cocktailcraft.resources.list_view_details_label
 
 // Recommendations card with shimmer loading, empty and loaded states
 @Composable
@@ -85,7 +88,8 @@ internal fun DetailRecommendationsSection(
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.semantics { heading() }
             )
 
             Spacer(modifier = Modifier.height(Spacing.lg))
@@ -151,7 +155,10 @@ internal fun RecommendationCard(
     Card(
         modifier = Modifier
             .width(140.dp)
-            .clickable { onClick() },
+            .clickable(
+                onClickLabel = stringResource(MR.strings.list_view_details_label, recommendation.name),
+                onClick = onClick
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -179,10 +186,11 @@ internal fun RecommendationCard(
                         tint = MaterialTheme.colorScheme.outline
                     )
                 } else {
-                    // Use our optimized image component
+                    // Use our optimized image component (decorative: the
+                    // name is read from the text below it)
                     OptimizedImage(
                         url = recommendation.imageUrl,
-                        contentDescription = recommendation.name,
+                        contentDescription = null,
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                         targetSize = 200,

@@ -199,10 +199,14 @@ dependencies {
     testImplementation(libs.compose.ui.test.junit4)
     testImplementation(libs.roborazzi.core)
     testImplementation(libs.roborazzi.compose)
+    // Accessibility Test Framework checks on Robolectric (Compose's own
+    // enableAccessibilityChecks is a no-op there; it runs in androidTest)
+    testImplementation(libs.roborazzi.accessibility.check)
 
     // Compose UI Testing
     androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.compose.ui.test.manifest)
+    androidTestImplementation(libs.compose.ui.test.junit4.accessibility)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.androidx.test.runner)

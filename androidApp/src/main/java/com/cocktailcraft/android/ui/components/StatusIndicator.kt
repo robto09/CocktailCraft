@@ -49,9 +49,10 @@ fun StatusIndicator(
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null) {
+            // Decorative: the status text beside it carries the meaning
             Icon(
                 imageVector = icon,
-                contentDescription = status,
+                contentDescription = null,
                 tint = color,
                 modifier = Modifier.size(indicatorSize.dp)
             )

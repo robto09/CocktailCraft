@@ -20,6 +20,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -28,7 +32,6 @@ import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.common_network_unavailable
 import com.cocktailcraft.resources.common_retry
-import com.cocktailcraft.resources.error
 import com.cocktailcraft.resources.error_no_cached_cocktails
 import com.cocktailcraft.resources.error_unable_to_load_cocktails
 
@@ -61,9 +64,13 @@ fun NetworkErrorStateDisplay(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
+        // Polite live region: the error replaces the list without moving
+        // focus, so TalkBack announces it
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier
+                .padding(16.dp)
+                .semantics { liveRegion = LiveRegionMode.Polite }
         ) {
             // Error icon based on state
             val icon: ImageVector
@@ -85,7 +92,7 @@ fun NetworkErrorStateDisplay(
 
             Icon(
                 imageVector = icon,
-                contentDescription = stringResource(MR.strings.error),
+                contentDescription = null, // decorative: the title follows
                 tint = iconTint,
                 modifier = Modifier.size(iconSize.dp)
             )
@@ -97,7 +104,8 @@ fun NetworkErrorStateDisplay(
                 color = iconTint,
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold,
-                fontSize = titleFontSize.sp
+                fontSize = titleFontSize.sp,
+                modifier = Modifier.semantics { heading() }
             )
 
             Spacer(modifier = Modifier.height(8.dp))

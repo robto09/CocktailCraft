@@ -4,7 +4,8 @@ import SwiftUI
 import shared
 
 /// Key components under the in-app appearance settings: High Contrast
-/// (dark), the "Extra Large" font size, and a non-default accent color.
+/// (dark), the "Extra Large" font size, the largest system accessibility
+/// text size (AX5), and a non-default accent color.
 final class AccessibilitySnapshotTests: SnapshotTestCase {
 
     func testCocktailCard() {
@@ -25,6 +26,13 @@ final class AccessibilitySnapshotTests: SnapshotTestCase {
             )
             CheckoutButton(action: {})
         }, in: SnapshotAppearance.accessibility)
+    }
+
+    func testCartSummaryCard() {
+        assertSnapshots(
+            of: CartSummaryCard(subtotal: 34, deliveryFee: 5.99, total: 39.99),
+            in: SnapshotAppearance.accessibility
+        )
     }
 
     func testCategoryChipRow() {

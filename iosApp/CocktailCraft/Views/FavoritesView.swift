@@ -10,6 +10,7 @@ struct FavoritesView: View {
     @State private var removingIds: Set<String> = []
     @State private var showingToast = false
     @State private var toastMessage = ""
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Group {
@@ -61,8 +62,12 @@ struct FavoritesView: View {
         .animation(.default, value: viewModel.state.favorites.map(\.id))
     }
     
+    // One column at accessibility text sizes, where two cards per row
+    // leave too little width for the text
     private var gridColumns: [GridItem] {
-        [GridItem(.flexible()), GridItem(.flexible())]
+        dynamicTypeSize.isAccessibilitySize
+            ? [GridItem(.flexible())]
+            : [GridItem(.flexible()), GridItem(.flexible())]
     }
     
     private func cocktailGridItem(_ cocktail: Cocktail) -> some View {

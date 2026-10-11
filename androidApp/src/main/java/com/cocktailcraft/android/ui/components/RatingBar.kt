@@ -10,15 +10,25 @@ import androidx.compose.material.icons.filled.StarHalf
 import androidx.compose.material.icons.filled.StarOutline
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.review_stars_a11y
+import java.text.NumberFormat
 
 /**
  * A reusable rating bar component that displays a row of stars representing a rating.
- * 
+ * TalkBack reads it as one element ("4.5 out of 5 stars"), not as five
+ * unlabeled icons.
+ *
  * @param rating The rating value to display (0.0 to max number of stars)
  * @param modifier Optional Modifier for the component
  * @param stars Number of total stars to display
@@ -37,7 +47,8 @@ fun RatingBar(
     spaceBetween: Dp = 2.dp,
     useHalfStars: Boolean = false
 ) {
-    Row(modifier = modifier) {
+    val description = ratingContentDescription(rating, stars)
+    Row(modifier = modifier.clearAndSetSemantics { contentDescription = description }) {
         if (useHalfStars) {
             // Implementation with half stars for more precise display
             repeat(stars) { index ->
@@ -81,4 +92,14 @@ fun RatingBar(
             }
         }
     }
-} 
+}
+
+/** Spoken form of a star rating, e.g. "4.5 out of 5 stars" (shared copy). */
+@Composable
+@ReadOnlyComposable
+internal fun ratingContentDescription(rating: Float, stars: Int = 5): String {
+    val number = NumberFormat.getNumberInstance(LocalConfiguration.current.locales[0]).apply {
+        maximumFractionDigits = 1
+    }
+    return stringResource(MR.strings.review_stars_a11y, number.format(rating), stars)
+}

@@ -142,6 +142,7 @@ class ScreenContentScreenshotTest(variant: ThemeVariant) : ScreenshotTest(varian
             accentOptions = AccentColorTokens.names,
             fontSize = "medium",
             fontSizeOptions = listOf("small", "medium", "large", "xlarge"),
+            accentLabel = { it.replaceFirstChar(Char::uppercase) },
             fontSizeLabel = { it.replaceFirstChar(Char::uppercase) },
             isHighContrast = false,
             isReducedMotion = true,

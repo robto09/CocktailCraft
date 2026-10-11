@@ -16,15 +16,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -37,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.ui.components.DetailInfoCard
+import com.cocktailcraft.android.ui.components.FavoriteToggleButton
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
@@ -45,14 +43,12 @@ import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.add_to_cart
-import com.cocktailcraft.resources.detail_add_to_favorites
 import com.cocktailcraft.resources.detail_alcoholic_unknown
 import com.cocktailcraft.resources.detail_in_stock
 import com.cocktailcraft.resources.detail_no_instructions
 import com.cocktailcraft.resources.detail_out_of_stock
 import com.cocktailcraft.resources.detail_price_format
 import com.cocktailcraft.resources.detail_refresh_details
-import com.cocktailcraft.resources.detail_remove_from_favorites
 import com.cocktailcraft.resources.detail_update_cart
 import com.cocktailcraft.resources.how_to_prepare
 
@@ -92,16 +88,12 @@ internal fun DetailMainInfoCard(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                // Favorite button with haptic feedback —
-                // default size keeps the 48 dp touch target
-                IconButton(onClick = onToggleFavorite) {
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = if (isFavorite) stringResource(MR.strings.detail_remove_from_favorites) else stringResource(MR.strings.detail_add_to_favorites),
-                        tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                // Favorite toggle (the caller adds haptic feedback)
+                FavoriteToggleButton(
+                    isFavorite = isFavorite,
+                    onToggle = onToggleFavorite,
+                    iconSize = 24.dp
+                )
             }
 
             Spacer(modifier = Modifier.height(Spacing.xs))

@@ -65,7 +65,6 @@
 
     <!-- Product -->
     <string name="add_to_cart">Add to Cart</string>
-    <string name="remove_from_cart">Remove</string>
     <string name="total">Total</string>
     <string name="alcoholic">Alcoholic</string>
     <string name="non_alcoholic">Non-Alcoholic</string>
@@ -96,7 +95,6 @@
     <string name="profile_toggle_on">On</string>
     <string name="profile_toggle_off">Off</string>
     <string name="profile_controlled_by_system">Controlled by system</string>
-    <string name="profile_light_mode">Light Mode</string>
     <string name="profile_about">About</string>
     <string name="profile_about_app_name">CocktailCraft</string>
     <string name="profile_version_format">Version %1$s</string>
@@ -161,7 +159,6 @@
     <string name="search_clear_search_button">Clear Search</string>
     <string name="search_clear_filters_button">Clear Filters</string>
     <string name="search_browse_all_cocktails">Browse All Cocktails</string>
-    <string name="search_no_results_icon">No results</string>
 
     <!-- Filters -->
     <string name="filter_collapse">Collapse</string>
@@ -172,7 +169,6 @@
     <string name="filter_select_ingredient_title">Select Ingredient</string>
     <string name="filter_any_ingredient">Any ingredient</string>
     <string name="filter_select_an_ingredient">Select an ingredient</string>
-    <string name="filter_filters">Filters</string>
     <string name="filter_active_filters">Active Filters</string>
     <string name="filter_clear_all">Clear All</string>
     <string name="filter_ingredient_label">Ingredient: %1$s</string>
@@ -184,10 +180,13 @@
     <string name="filter_clear_category">Clear Category Filter</string>
     <string name="filter_all">All</string>
     <string name="filter_remove_hint">Removes this filter</string>
+    <string name="filter_remove_action_a11y">Remove filter</string>
+    <string name="filter_section_expanded_a11y">Expanded</string>
+    <string name="filter_section_collapsed_a11y">Collapsed</string>
+    <string name="filters_active_a11y">Filters active</string>
 
     <!-- Lists & cards -->
-    <string name="list_add_to_favorites">Add to favorites</string>
-    <string name="list_remove_from_favorites">Remove from favorites</string>
+    <string name="favorite_toggle_a11y">Favorite</string>
     <string name="list_out_of_stock">Out of Stock</string>
     <string name="list_alcoholic_unknown">Unknown</string>
     <string name="list_tap_to_view_ingredients">Tap to view ingredients</string>
@@ -217,13 +216,14 @@
     <string name="cart_start_shopping">Start Shopping</string>
     <string name="cart_place_order">Place Order</string>
     <string name="cart_confirm">Confirm</string>
-    <string name="cart_increase_quantity">Increase</string>
-    <string name="cart_decrease_quantity">Decrease</string>
     <string name="cart_quantity_label">Quantity: %1$d</string>
     <string name="cart_increase_quantity_ios">Increase quantity</string>
     <string name="cart_decrease_quantity_ios">Decrease quantity</string>
     <string name="remove_from_cart_ios">Remove from cart</string>
-    <string name="add_to_cart_ios">Add to cart</string>
+    <string name="cart_increase_quantity_a11y">Increase quantity of %1$s</string>
+    <string name="cart_decrease_quantity_a11y">Decrease quantity of %1$s</string>
+    <string name="cart_remove_item_a11y">Remove %1$s from cart</string>
+    <string name="add_to_cart_item_a11y">Add %1$s to cart</string>
     <string name="checkout_processing">Processing...</string>
 
     <!-- Cocktail detail -->
@@ -237,8 +237,6 @@
     <string name="how_to_prepare_ios">Preparation</string>
     <string name="detail_title_fallback">Cocktail Detail</string>
     <string name="detail_price_format">$%1$.2f</string>
-    <string name="detail_remove_from_favorites">Remove from favorites</string>
-    <string name="detail_add_to_favorites">Add to favorites</string>
     <string name="detail_alcoholic_unknown">Unknown</string>
     <string name="detail_in_stock">In Stock (%1$d available)</string>
     <string name="detail_out_of_stock">Out of Stock</string>
@@ -275,7 +273,6 @@
     <!-- Offline -->
     <string name="error_no_cached_cocktails">No cached cocktails available. Connect to the internet to download cocktails.</string>
     <string name="error_unable_to_load_cocktails">Unable to load cocktails</string>
-    <string name="offline_indicator_description">Offline</string>
     <string name="offline_you_are_offline">You\'re offline — showing saved cocktails.</string>
 
     <!-- Orders -->
@@ -311,7 +308,7 @@
     <string name="review_character_count">%1$d/%2$d</string>
     <string name="review_submit">Submit Review</string>
     <string name="review_rating_value">%1$.1f</string>
-    <string name="review_stars_a11y">%1$d out of %2$d stars</string>
+    <string name="review_stars_a11y">%1$s out of %2$d stars</string>
     <string name="review_error_rating_range">Rating must be between 1 and 5 stars</string>
     <string name="review_error_comment_required">Please provide a comment for your review</string>
     <string name="review_error_comment_too_short">Review comment must be at least %1$d characters long</string>

@@ -3,6 +3,7 @@ package com.cocktailcraft.android.ui.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -11,6 +12,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -106,17 +111,22 @@ fun WriteReviewDialog(
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
 
+                        // A single-choice group: TalkBack reads "Rate 4, selected"
+                        // for the chosen star
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-                                .padding(8.dp),
+                                .padding(8.dp)
+                                .selectableGroup(),
                             horizontalArrangement = Arrangement.Center
                         ) {
                             repeat(5) { index ->
                                 IconButton(
                                     onClick = { userRating = index + 1f },
-                                    modifier = Modifier.size(48.dp)
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .semantics { selected = userRating.toInt() == index + 1 }
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.Star,
@@ -133,7 +143,10 @@ fun WriteReviewDialog(
                                 text = stringResource(MR.strings.review_select_rating_error),
                                 color = MaterialTheme.colorScheme.error,
                                 fontSize = 12.sp,
-                                modifier = Modifier.padding(top = 4.dp)
+                                modifier = Modifier
+                                    .padding(top = 4.dp)
+                                    // Announced when validation fails on submit
+                                    .semantics { liveRegion = LiveRegionMode.Polite }
                             )
                         }
                     }

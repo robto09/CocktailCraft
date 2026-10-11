@@ -39,6 +39,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import androidx.core.util.Consumer
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -68,12 +70,14 @@ import com.cocktailcraft.android.screens.ProfileScreen
 import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
 import com.cocktailcraft.android.util.getString
+import com.cocktailcraft.android.util.pluralStringResource
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.added_to_cart
 import com.cocktailcraft.resources.app_title
 import com.cocktailcraft.resources.cart
+import com.cocktailcraft.resources.cart_badge_a11y
 import com.cocktailcraft.resources.favorites
 import com.cocktailcraft.resources.orders
 import com.cocktailcraft.resources.profile
@@ -198,15 +202,26 @@ fun MainScreen() {
                         NavigationBarItem(
                             modifier = Modifier.testTag(screen.tag),
                             icon = {
-                                // Cart shows an item-count badge, same as iOS
+                                // Icons are decorative: the visible label names
+                                // the tab. Cart shows an item-count badge, same
+                                // as iOS, spoken as "2 items in cart".
                                 if (screen == Screen.Cart && cartUiState.itemCount > 0) {
+                                    val badgeDescription = pluralStringResource(
+                                        MR.plurals.cart_badge_a11y,
+                                        cartUiState.itemCount,
+                                        cartUiState.itemCount
+                                    )
                                     BadgedBox(badge = {
-                                        Badge { Text(cartUiState.itemCount.toString()) }
+                                        Badge(
+                                            modifier = Modifier.clearAndSetSemantics {
+                                                contentDescription = badgeDescription
+                                            }
+                                        ) { Text(cartUiState.itemCount.toString()) }
                                     }) {
-                                        Icon(screen.icon, contentDescription = stringResource(screen.title))
+                                        Icon(screen.icon, contentDescription = null)
                                     }
                                 } else {
-                                    Icon(screen.icon, contentDescription = stringResource(screen.title))
+                                    Icon(screen.icon, contentDescription = null)
                                 }
                             },
                             label = {

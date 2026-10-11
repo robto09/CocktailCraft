@@ -20,6 +20,7 @@ extension CocktailDetailView {
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                .accessibilityAddTraits(.isHeader)
 
             HStack(spacing: AppTheme.Spacing.sm) {
                 if let category = cocktail.category {
@@ -30,12 +31,17 @@ extension CocktailDetailView {
 
                 Spacer()
 
-                Image(systemName: "star.fill")
-                    .font(.caption)
-                    .foregroundColor(.yellow)
-                Text(viewModel.formatRating())
-                    .font(.subheadline)
-                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                // One element: "4.5 out of 5 stars"
+                HStack(spacing: AppTheme.Spacing.sm) {
+                    Image(systemName: "star.fill")
+                        .font(.caption)
+                        .foregroundColor(.yellow)
+                    Text(viewModel.formatRating())
+                        .font(.subheadline)
+                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(L(\.review_stars_a11y, viewModel.formatRating(), 5))
             }
 
             HStack {
@@ -64,6 +70,7 @@ extension CocktailDetailView {
                     Text(L(\.how_to_prepare_ios))
                         .font(.headline)
                         .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                        .accessibilityAddTraits(.isHeader)
 
                     Text(instructions)
                         .font(.body)
@@ -106,6 +113,10 @@ extension CocktailDetailView {
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     .frame(maxWidth: .infinity)
                     .accessibilityIdentifier("detail.cartQuantityValue")
+                    // Focus stays on the +/- button, so speak the new count
+                    .onChange(of: viewModel.state.cartQuantity) { _, newValue in
+                        AccessibilityNotification.Announcement(L(\.detail_in_cart, newValue)).post()
+                    }
 
                 Button(action: {
                     runCartAction {
@@ -135,7 +146,7 @@ extension CocktailDetailView {
                     runCartAction { await viewModel.addToCart(quantity: 1) }
                 }
             )
-            .accessibilityLabel(L(\.add_to_cart_ios))
+            // Label comes from the title, so out of stock reads as such
             .accessibilityIdentifier("detail.addToCartButton")
         }
     }
@@ -163,6 +174,7 @@ extension CocktailDetailView {
             Text(L(\.ingredients))
                 .font(.headline)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                .accessibilityAddTraits(.isHeader)
 
             let types = viewModel.getAllIngredientTypes()
             if types.isEmpty {
@@ -207,12 +219,24 @@ extension CocktailDetailView {
             Text(L(\.detail_estimated_nutrition))
                 .font(.headline)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                .accessibilityAddTraits(.isHeader)
 
-            HStack(spacing: AppTheme.Spacing.sm) {
-                nutritionStat(value: "\(nutrition.calories)", unit: L(\.detail_nutrition_unit_kcal), label: L(\.detail_nutrition_calories))
-                nutritionStat(value: "\(nutrition.alcoholGrams)", unit: L(\.detail_nutrition_unit_grams), label: L(\.detail_nutrition_alcohol))
-                nutritionStat(value: "\(nutrition.carbsGrams)", unit: L(\.detail_nutrition_unit_grams), label: L(\.detail_nutrition_carbs))
+            // Four across, or a 2x2 grid at accessibility text sizes
+            let stats = [
+                nutritionStat(value: "\(nutrition.calories)", unit: L(\.detail_nutrition_unit_kcal), label: L(\.detail_nutrition_calories)),
+                nutritionStat(value: "\(nutrition.alcoholGrams)", unit: L(\.detail_nutrition_unit_grams), label: L(\.detail_nutrition_alcohol)),
+                nutritionStat(value: "\(nutrition.carbsGrams)", unit: L(\.detail_nutrition_unit_grams), label: L(\.detail_nutrition_carbs)),
                 nutritionStat(value: "\(nutrition.sugarGrams)", unit: L(\.detail_nutrition_unit_grams), label: L(\.detail_nutrition_sugar))
+            ]
+            if dynamicTypeSize.isAccessibilitySize {
+                Grid(horizontalSpacing: AppTheme.Spacing.sm, verticalSpacing: AppTheme.Spacing.sm) {
+                    GridRow { stats[0]; stats[1] }
+                    GridRow { stats[2]; stats[3] }
+                }
+            } else {
+                HStack(spacing: AppTheme.Spacing.sm) {
+                    ForEach(stats.indices, id: \.self) { stats[$0] }
+                }
             }
 
             Text(L(\.detail_nutrition_disclaimer))
@@ -242,6 +266,10 @@ extension CocktailDetailView {
         .padding(.vertical, AppTheme.Spacing.sm)
         .background(AppColors.primary(isDarkMode: isDarkMode).opacity(0.08))
         .cornerRadius(AppTheme.CornerRadius.sm)
+        // "Calories, 150 kcal" as one element
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityValue("\(value) \(unit)")
     }
 
     // MARK: - Chips
@@ -260,6 +288,7 @@ extension CocktailDetailView {
                     HStack(spacing: AppTheme.Spacing.xs) {
                         Image(systemName: chip.icon)
                             .font(.caption)
+                            .accessibilityHidden(true)
                         Text(chip.text)
                             .font(.subheadline)
                     }
@@ -277,6 +306,7 @@ extension CocktailDetailView {
             Text(L(\.detail_you_might_also_like_ios))
                 .font(.headline)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                .accessibilityAddTraits(.isHeader)
                 .padding(.horizontal)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -308,6 +338,7 @@ extension CocktailDetailView {
                 Text(L(\.reviews_title, reviewViewModel.reviewCount))
                     .font(.headline)
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                    .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("detail.reviewsHeader")
 
                 Spacer()

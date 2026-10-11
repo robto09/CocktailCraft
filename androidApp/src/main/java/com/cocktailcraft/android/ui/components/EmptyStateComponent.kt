@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -57,17 +60,18 @@ fun EmptyStateComponent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Display either the painter or the icon
+        // Display either the painter or the icon (decorative: the title
+        // below says the same)
         if (painter != null) {
             Image(
                 painter = painter,
-                contentDescription = title,
+                contentDescription = null,
                 modifier = Modifier.size(iconSize.dp)
             )
         } else if (icon != null) {
             Icon(
                 imageVector = icon,
-                contentDescription = title,
+                contentDescription = null,
                 tint = iconTint,
                 modifier = Modifier.size(iconSize.dp)
             )
@@ -80,7 +84,8 @@ fun EmptyStateComponent(
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { heading() }
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -101,7 +106,8 @@ fun EmptyStateComponent(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
                 shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.height(48.dp)
+                // Grows with large fonts instead of clipping the label
+                modifier = Modifier.heightIn(min = 48.dp)
             ) {
                 Text(
                     text = actionButtonText,

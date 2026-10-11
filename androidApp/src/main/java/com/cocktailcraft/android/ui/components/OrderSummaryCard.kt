@@ -15,6 +15,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,7 +68,8 @@ fun OrderSummaryCard(
                 text = stringResource(MR.strings.order_summary_title),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.semantics { heading() }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -103,7 +106,9 @@ fun OrderSummaryCard(
             
             // Total row
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics(mergeDescendants = true) {},
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
@@ -128,8 +133,11 @@ private fun SummaryRow(
     label: String,
     value: String
 ) {
+    // One TalkBack stop per line: "Subtotal, $25.00"
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {},
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(

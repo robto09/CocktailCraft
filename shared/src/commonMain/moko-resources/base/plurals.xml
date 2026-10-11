@@ -9,4 +9,8 @@
         <item quantity="one">(%1$d review)</item>
         <item quantity="other">(%1$d reviews)</item>
     </plural>
+    <plural name="cart_badge_a11y">
+        <item quantity="one">%1$d item in cart</item>
+        <item quantity="other">%1$d items in cart</item>
+    </plural>
 </resources>

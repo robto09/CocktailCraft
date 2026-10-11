@@ -16,7 +16,7 @@ import org.robolectric.ParameterizedRobolectricTestRunner
 
 /**
  * Key components under the in-app accessibility/appearance settings: high
- * contrast (dark), 1.5x font scale, and a non-default accent color.
+ * contrast (dark), 1.5x and 2x font scale, and a non-default accent color.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 class AccessibilityScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
@@ -81,6 +81,7 @@ class AccessibilityScreenshotTest(variant: ThemeVariant) : ScreenshotTest(varian
         fun variants() = listOf(
             ThemeVariant.HighContrastDark,
             ThemeVariant.LargeFont,
+            ThemeVariant.LargestFont,
             ThemeVariant.AccentBlue
         ).map { arrayOf<Any>(it) }
     }

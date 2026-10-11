@@ -22,7 +22,12 @@ struct StarRatingView: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(L(\.review_stars_a11y, Int(clamped.rounded()), maxRating))
+        .accessibilityLabel(L(\.review_stars_a11y, Self.spokenRating(clamped), maxRating))
+    }
+
+    /// "4.5", "3" — at most one decimal, in the user's locale.
+    static func spokenRating(_ rating: Float) -> String {
+        rating.formatted(.number.precision(.fractionLength(0...1)))
     }
 
     static func starOpacity(index: Int, rating: Float) -> Double {

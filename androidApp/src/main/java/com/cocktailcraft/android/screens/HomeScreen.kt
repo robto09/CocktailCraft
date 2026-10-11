@@ -91,9 +91,13 @@ import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.ListOptimizations.OnBottomReached
 import com.cocktailcraft.android.util.ListOptimizations.OnScrollPastThreshold
 import com.cocktailcraft.android.util.ListOptimizations.itemKey
+import com.cocktailcraft.android.util.refreshAccessibilityAction
 import com.cocktailcraft.android.util.resolve
+import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.SearchFilters
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.refresh
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import com.cocktailcraft.viewmodel.state.HomeUiState
@@ -451,7 +455,9 @@ internal fun HomeContentSection(
     PullToRefreshBox(
         isRefreshing = isLoading,
         onRefresh = onRetry,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .refreshAccessibilityAction(stringResource(MR.strings.refresh), onRetry),
         state = pullToRefreshState,
         indicator = {
             // Preserve the previous Material2 indicator colors
