@@ -2,7 +2,6 @@ package com.cocktailcraft.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.model.NutritionFacts
 import com.cocktailcraft.domain.usecase.AnalyzeCocktailUseCase
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
@@ -15,7 +14,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Shared ViewModel for Cocktail Detail functionality.
- * Uses consolidated [DetailUiState] for atomic state updates.
+ * Uses consolidated [DetailUiState] for atomic state updates; [uiState] is the
+ * only public state surface (share text and nutrition facts live on it too).
  */
 class SharedCocktailDetailViewModel internal constructor(
     private val getCocktailDetailUseCase: GetCocktailDetailUseCase,
@@ -38,7 +38,7 @@ class SharedCocktailDetailViewModel internal constructor(
 
         try {
             val loadedCocktail = getCocktailDetailUseCase(cocktailId).getOrThrow()
-            _uiState.update { it.copy(cocktail = loadedCocktail) }
+            publishCocktail(loadedCocktail)
             if (loadedCocktail != null) {
                 viewModelScope.launch {
                     try {
@@ -135,39 +135,16 @@ class SharedCocktailDetailViewModel internal constructor(
     private fun processIngredients(cocktail: Cocktail) {
         _uiState.update { it.copy(ingredientsByType = analyzeCocktailUseCase.ingredientsByType(cocktail)) }
     }
-    
-    // MARK: - Synchronous Helper Methods
-    
+
     /**
-     * Get shareable text representation of the cocktail.
+     * Publish [cocktail] together with its nutrition estimate, so the two can
+     * never disagree (the estimate is cheap and purely derived from it).
      */
-    fun getShareableText(): String {
-        val cocktail = _uiState.value.cocktail ?: return ""
-        
-        val ingredients = cocktail.ingredients.joinToString("\n") {
-            "• ${it.measure} ${it.name}".trim()
-        }
-        
-        return """
-            🍹 ${cocktail.name}
-            
-            Ingredients:
-            $ingredients
-            
-            Instructions:
-            ${cocktail.instructions}
-            
-            Glass: ${cocktail.glass}
-            Category: ${cocktail.category}
-        """.trimIndent()
-    }
-    
-    /**
-     * Get estimated nutrition facts (typed; heuristic estimation in domain).
-     */
-    fun getNutritionFacts(): NutritionFacts? {
-        val cocktail = _uiState.value.cocktail ?: return null
-        return analyzeCocktailUseCase.nutritionFacts(cocktail)
+    private fun publishCocktail(cocktail: Cocktail?) {
+        _uiState.update { it.copy(
+            cocktail = cocktail,
+            nutritionFacts = cocktail?.let(analyzeCocktailUseCase::nutritionFacts)
+        ) }
     }
     
     /**
@@ -194,7 +171,7 @@ class SharedCocktailDetailViewModel internal constructor(
         try {
             val refreshed = getCocktailDetailUseCase.refresh(cocktailId).getOrThrow()
             if (refreshed != null) {
-                _uiState.update { it.copy(cocktail = refreshed) }
+                publishCocktail(refreshed)
                 processIngredients(refreshed)
             }
             _uiState.update { it.copy(isLoading = false) }

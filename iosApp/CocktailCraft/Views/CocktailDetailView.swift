@@ -51,13 +51,13 @@ struct CocktailDetailView: View {
 
                         ingredientsSection(cocktail)
 
-                        if let nutrition = viewModel.nutritionFacts {
+                        if let nutrition = viewModel.state.nutritionFacts {
                             nutritionSection(nutrition)
                         }
 
                         chipsSection(cocktail)
 
-                        if viewModel.hasRelatedCocktails {
+                        if !viewModel.state.relatedCocktails.isEmpty {
                             relatedCocktailsSection
                         }
 
@@ -67,7 +67,7 @@ struct CocktailDetailView: View {
                 }
                 .toolbar {
                     ToolbarItemGroup(placement: .navigationBarTrailing) {
-                        ShareLink(item: viewModel.shareContent()) {
+                        ShareLink(item: viewModel.state.shareableText) {
                             Image(systemName: "square.and.arrow.up")
                         }
                         .accessibilityLabel("Share cocktail")

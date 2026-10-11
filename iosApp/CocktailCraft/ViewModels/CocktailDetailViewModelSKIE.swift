@@ -4,22 +4,11 @@ import shared
 /**
  * iOS ViewModel wrapper for SharedCocktailDetailViewModel using pure SKIE integration.
  * State/error mirroring and observation-task lifecycle live in
- * SharedViewModelWrapper.
+ * SharedViewModelWrapper; views read `state.<field>` (including the derived
+ * `state.nutritionFacts` / `state.shareableText`). The helpers below are
+ * Swift-only presentation formatting over that state.
  */
 final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
-
-    // Computed properties
-    var hasRelatedCocktails: Bool {
-        !state.relatedCocktails.isEmpty
-    }
-
-    var shareableText: String {
-        sharedViewModel.getShareableText()
-    }
-
-    var nutritionFacts: NutritionFacts? {
-        sharedViewModel.getNutritionFacts()
-    }
 
     // Shared ViewModel instance
     private let sharedViewModel: SharedCocktailDetailViewModel
@@ -85,20 +74,7 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
         sharedViewModel.clearError()
     }
 
-    func refresh() {
-        sharedViewModel.refresh()
-    }
-
     // MARK: - Helper Methods for SwiftUI
-
-    func formatIngredients() -> String {
-        guard let cocktail = state.cocktail else { return "" }
-
-        return cocktail.ingredients.map { ingredient in
-            let measure = ingredient.measure.isEmpty ? "" : "\(ingredient.measure) "
-            return "• \(measure)\(ingredient.name)"
-        }.joined(separator: "\n")
-    }
 
     func getIngredientsByType(_ type: String) -> [String] {
         return state.ingredientsByType[type] ?? []
@@ -145,9 +121,5 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
     func canAddToCart() -> Bool {
         guard let cocktail = state.cocktail else { return false }
         return cocktail.inStock && cocktail.stockCount > 0
-    }
-
-    func shareContent() -> String {
-        return shareableText
     }
 }

@@ -68,6 +68,26 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
     }
 
     @Test
+    fun loadedStateCarriesNutritionFactsAndShareText() = runTest {
+        // Formerly snapshot getters on the VM; now derived into uiState so
+        // both platforms observe them reactively.
+        val harness = Harness()
+        harness.detail.byId["1"] = testCocktail("1", name = "Martini")
+        val vm = harness.viewModel()
+        assertNull(vm.uiState.value.nutritionFacts)
+        assertEquals("", vm.uiState.value.shareableText)
+
+        vm.loadCocktail("1")
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertEquals(AnalyzeCocktailUseCase().nutritionFacts(state.cocktail!!), state.nutritionFacts)
+        assertTrue(state.shareableText.startsWith("🍹 Martini"))
+        assertTrue(state.shareableText.contains("• 50 ml Gin"))
+        assertTrue(state.shareableText.endsWith("Category: Cocktail"))
+    }
+
+    @Test
     fun loadCocktailMarksExistingFavorite() = runTest {
         val harness = Harness()
         harness.detail.byId["1"] = testCocktail("1")
