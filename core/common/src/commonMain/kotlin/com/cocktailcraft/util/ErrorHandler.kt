@@ -41,6 +41,7 @@ import io.ktor.client.plugins.ServerResponseException
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.serialization.SerializationException
+import kotlin.native.HiddenFromObjC
 
 /**
  * Platform-agnostic error handling utilities for the CocktailCraft app.
@@ -288,7 +289,11 @@ object ErrorHandler {
      * Raw (untranslated) text from the data layer — a Result.Error or
      * exception message — or null when it is blank, so callers fall back to
      * localized copy.
+     *
+     * Public (was internal) only because the shared ViewModels now live in
+     * :presentation; hidden from ObjC so Swift's surface is unchanged (AR-12).
      */
-    internal fun rawMessage(text: String): StringDesc? =
+    @HiddenFromObjC
+    fun rawMessage(text: String): StringDesc? =
         text.takeIf { it.isNotBlank() }?.let { StringDesc.Raw(it) }
 }

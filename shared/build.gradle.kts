@@ -77,6 +77,7 @@ kotlin {
             // an unexported module's types would surface module-prefixed.
             export(project(":core:resources"))
             export(project(":core:designsystem"))
+            export(project(":core:common"))
             // The framework is static, so the SQLDelight native driver's
             // sqlite3 (and the K/N runtime's libc++) are not linked here: the
             // app links them itself via OTHER_LDFLAGS in project.yml.
@@ -119,6 +120,8 @@ kotlin {
             // and Swift consume, so api() — export() requires it.
             api(project(":core:resources"))
             api(project(":core:designsystem"))
+            // Result/ErrorCode, ErrorHandler, NetworkMonitor — used from Swift
+            api(project(":core:common"))
 
                 // Multiplatform logging
                 implementation(libs.kermit)
