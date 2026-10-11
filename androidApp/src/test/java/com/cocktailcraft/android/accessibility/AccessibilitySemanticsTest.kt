@@ -1,0 +1,267 @@
+package com.cocktailcraft.android.accessibility
+
+import android.app.Application
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isHeading
+import androidx.compose.ui.test.isToggleable
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import com.cocktailcraft.android.screens.AppearanceSettingsCard
+import com.cocktailcraft.android.screens.HomeContentSection
+import com.cocktailcraft.android.screens.detail.DetailChipsSection
+import com.cocktailcraft.android.ui.components.ActiveFilterChip
+import com.cocktailcraft.android.ui.components.AnimatedThemeToggleRow
+import com.cocktailcraft.android.ui.components.AppTopBar
+import com.cocktailcraft.android.ui.components.CartItemCard
+import com.cocktailcraft.android.ui.components.CocktailItem
+import com.cocktailcraft.android.ui.components.FilterSection
+import com.cocktailcraft.android.ui.components.OfflineModeIndicator
+import com.cocktailcraft.android.ui.components.RatingDisplay
+import com.cocktailcraft.android.ui.components.SectionHeader
+import com.cocktailcraft.android.ui.preview.PreviewData
+import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
+import com.cocktailcraft.designsystem.AccentColorTokens
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+/**
+ * Pins the screen-reader semantics added in the accessibility pass: labels,
+ * toggle/selection state, headings, live regions and custom actions. These
+ * are invisible in screenshots, so they need their own assertions.
+ */
+@RunWith(RobolectricTestRunner::class)
+// Plain Application: the real one starts Koin, network monitoring and WorkManager
+@Config(application = Application::class)
+class AccessibilitySemanticsTest {
+
+    @get:Rule
+    val composeRule = createComposeRule()
+
+    private fun setContent(content: @Composable () -> Unit) {
+        composeRule.setContent {
+            AnimatedCocktailBarTheme(darkTheme = false) { content() }
+        }
+    }
+
+    private fun hasRole(role: Role) = SemanticsMatcher.expectValue(SemanticsProperties.Role, role)
+
+    private fun hasStateDescription(state: String) =
+        SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, state)
+
+    private val isPoliteLiveRegion =
+        SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite)
+
+    private fun hasClickLabel(label: String) = SemanticsMatcher("onClick label = $label") {
+        it.config.getOrNull(SemanticsActions.OnClick)?.label == label
+    }
+
+    @Test
+    fun cocktailCard_favoriteIsAToggleWithAStableLabel() {
+        setContent {
+            CocktailItem(cocktail = PreviewData.cocktail, onClick = {}, onAddToCart = {}, isFavorite = true)
+        }
+
+        composeRule.onNodeWithContentDescription("Favorite")
+            .assert(isToggleable())
+            .assertIsOn()
+        composeRule.onNodeWithContentDescription("Add Margarita to cart").assert(hasClickAction())
+        composeRule.onNode(hasClickLabel("View Margarita details")).assert(hasClickAction())
+    }
+
+    @Test
+    fun cartItem_stepperIsLabeledPerItemAndQuantityIsAnnounced() {
+        var favorite = false
+        setContent {
+            CartItemCard(
+                item = PreviewData.cartItem,
+                onIncreaseQuantity = {},
+                onDecreaseQuantity = {},
+                onRemove = {},
+                isFavorite = favorite,
+                onToggleFavorite = { favorite = !favorite }
+            )
+        }
+
+        composeRule.onNodeWithContentDescription("Increase quantity of Margarita").assert(hasClickAction())
+        composeRule.onNodeWithContentDescription("Decrease quantity of Margarita").assert(hasClickAction())
+        composeRule.onNodeWithContentDescription("Remove Margarita from cart").assert(hasClickAction())
+        composeRule.onNodeWithContentDescription("Quantity: 2").assert(isPoliteLiveRegion)
+        composeRule.onNodeWithContentDescription("Favorite").assertIsOff()
+    }
+
+    @Test
+    fun ratingDisplay_readsAsOneElement() {
+        setContent { RatingDisplay(rating = 4.5f, reviewCount = 12) }
+
+        // The stars carry the spoken rating; the duplicate "4.5" is hidden
+        composeRule.onNodeWithContentDescription("4.5 out of 5 stars").assertExists()
+        composeRule.onNodeWithText("(12 reviews)").assertExists()
+        composeRule.onAllNodesWithContentDescription("4.5", substring = false).assertCountEquals(0)
+    }
+
+    @Test
+    fun titles_areHeadings() {
+        setContent {
+            Column {
+                AppTopBar(title = "Cart")
+                SectionHeader(title = "Your Cart")
+            }
+        }
+
+        composeRule.onNodeWithText("Cart").assert(isHeading())
+        composeRule.onNodeWithText("Your Cart").assert(isHeading())
+    }
+
+    @Test
+    fun toggleRow_isASingleSwitch() {
+        var checked = false
+        setContent {
+            AnimatedThemeToggleRow(
+                title = "High Contrast",
+                subtitle = "Off",
+                icon = Icons.Default.Visibility,
+                isChecked = checked,
+                onToggle = { checked = !checked }
+            )
+        }
+
+        composeRule.onNode(hasText("High Contrast"))
+            .assert(isToggleable())
+            .assert(hasRole(Role.Switch))
+            .assertIsOff()
+            .performClick()
+        assertTrue(checked)
+        // The visual switch inside the row is not a second focus stop
+        composeRule.onAllNodes(isToggleable()).assertCountEquals(1)
+    }
+
+    @Test
+    fun appearanceOptions_areRadioGroupsWithDisplayNames() {
+        setContent {
+            AppearanceSettingsCard(
+                accentColor = AccentColorTokens.DEFAULT,
+                accentOptions = AccentColorTokens.names,
+                accentLabel = { it.replaceFirstChar(Char::uppercase) },
+                fontSize = "medium",
+                fontSizeOptions = listOf("small", "medium"),
+                fontSizeLabel = { it.replaceFirstChar(Char::uppercase) },
+                isHighContrast = false,
+                isReducedMotion = false,
+                onSelectAccent = {},
+                onSelectFontSize = {},
+                onToggleHighContrast = {},
+                onToggleReducedMotion = {}
+            )
+        }
+
+        composeRule.onNodeWithContentDescription("Coral")
+            .assert(hasRole(Role.RadioButton))
+            .assertIsSelected()
+        composeRule.onNodeWithContentDescription("Blue").assertIsNotSelected()
+        composeRule.onNodeWithText("Medium").assert(hasRole(Role.RadioButton)).assertIsSelected()
+        composeRule.onNodeWithText("Small").assertIsNotSelected()
+    }
+
+    @Test
+    fun detailChips_areNotButtons() {
+        setContent {
+            DetailChipsSection(category = "Cocktail", glass = "Highball glass", alcoholic = "Alcoholic")
+        }
+
+        composeRule.onNode(hasContentDescription("Category: Cocktail"))
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Role))
+    }
+
+    @Test
+    fun activeFilterChip_announcesItsRemoveAction() {
+        var cleared = false
+        setContent { ActiveFilterChip(label = "Ingredient: Tequila", onClear = { cleared = true }) }
+
+        composeRule.onNode(hasClickLabel("Remove filter"))
+            .assert(hasText("Ingredient: Tequila"))
+            .performClick()
+        assertTrue(cleared)
+    }
+
+    @Test
+    fun filterSection_headerIsAHeadingWithExpandedState() {
+        setContent { FilterSection(title = "Category") { Text("Options") } }
+
+        composeRule.onNode(hasText("Category"))
+            .assert(isHeading())
+            .assert(hasStateDescription("Expanded"))
+            .assert(hasClickLabel("Collapse"))
+            .performClick()
+        composeRule.onNode(hasText("Category")).assert(hasStateDescription("Collapsed"))
+    }
+
+    @Test
+    fun homeList_exposesPullToRefreshAsACustomAction() {
+        var refreshed = 0
+        setContent {
+            HomeContentSection(
+                isLoading = false,
+                errorMessage = "",
+                cocktails = PreviewData.cocktails,
+                searchQuery = "",
+                selectedCategory = null,
+                hasActiveFilters = false,
+                isSearchActive = false,
+                isLoadingMore = false,
+                hasMoreData = false,
+                favorites = emptyList(),
+                isNetworkAvailable = true,
+                onRetry = { refreshed++ },
+                onClearSearch = {},
+                onClearCategory = {},
+                onCocktailClick = {},
+                onAddToCart = {},
+                onToggleFavorite = {},
+                onLoadMore = {}
+            )
+        }
+
+        val hasRefreshAction = SemanticsMatcher("has Refresh custom action") { node ->
+            node.config.getOrNull(SemanticsActions.CustomActions).orEmpty().any { it.label == "Refresh" }
+        }
+        val node = composeRule.onNode(hasRefreshAction).fetchSemanticsNode()
+        node.config[SemanticsActions.CustomActions].first { it.label == "Refresh" }.action()
+        assertEquals(1, refreshed)
+    }
+
+    @Test
+    fun offlineBanner_isALiveRegion() {
+        setContent { OfflineModeIndicator(isOffline = true) }
+
+        composeRule.onNode(hasText("You're offline — showing saved cocktails.", substring = true))
+            .assert(isPoliteLiveRegion)
+    }
+}
