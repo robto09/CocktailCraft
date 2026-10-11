@@ -47,8 +47,10 @@ actual fun platformModule() = module {
     // Network monitoring
     single<NetworkMonitor> { IOSNetworkMonitor() }
 
-    // SQLite driver for the offline cocktail cache. sqlite3 itself is linked
-    // into the app through the podspec (see shared/build.gradle.kts).
+    // SQLite driver for the app database (offline cocktail cache, cart,
+    // orders, favorites, reviews); it runs the .sqm migrations when an older
+    // schema version is opened. sqlite3 itself is linked into the app through
+    // the podspec (see shared/build.gradle.kts).
     single<SqlDriver> { NativeSqliteDriver(CocktailCraftDatabase.Schema, COCKTAIL_DATABASE_NAME) }
 }
 
