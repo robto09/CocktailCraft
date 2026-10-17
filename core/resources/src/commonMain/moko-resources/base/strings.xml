@@ -282,7 +282,6 @@
     <string name="order_subtotal">Subtotal</string>
     <string name="order_delivery_fee">Delivery Fee</string>
     <string name="order_list_loading">Loading orders...</string>
-    <string name="order_total_label">Total: %1$s</string>
     <string name="order_status_pending">Order Pending</string>
     <string name="order_status_processing">Being Prepared</string>
     <string name="order_status_shipped">On the Way</string>
