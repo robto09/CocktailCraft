@@ -95,6 +95,13 @@ struct AppColors {
         isDarkMode ? subtleDark : lightGray
     }
 
+    /// Fill of the detail-screen attribute chips: the shared chip color at
+    /// 20%, as Android's tertiary.copy(alpha = 0.2f).
+    static func chipFill(isDarkMode: Bool) -> Color {
+        Color(token: isDarkMode ? ColorTokens.shared.chipBackgroundDark : ColorTokens.shared.chipBackground)
+            .opacity(0.2)
+    }
+
     static func textPrimary(isDarkMode: Bool) -> Color {
         isDarkMode ? textPrimaryDark : textPrimaryLight
     }

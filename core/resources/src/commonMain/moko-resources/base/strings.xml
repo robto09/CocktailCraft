@@ -223,32 +223,27 @@
     <string name="checkout_processing">Processing...</string>
 
     <!-- Cocktail detail -->
-    <string name="how_to_prepare">How to Prepare</string>
+    <string name="how_to_prepare">Preparation</string>
     <string name="ingredients">Ingredients</string>
     <string name="details">Details</string>
     <string name="category_label">Category: %1$s</string>
     <string name="glass_label">Glass: %1$s</string>
     <string name="reviews_title">Reviews (%1$d)</string>
     <string name="write_review">Write a Review</string>
-    <string name="how_to_prepare_ios">Preparation</string>
     <string name="detail_title_fallback">Cocktail Detail</string>
     <string name="detail_price_format">$%1$.2f</string>
     <string name="detail_price_a11y">Price, %1$s</string>
-    <string name="detail_alcoholic_unknown">Unknown</string>
     <string name="detail_out_of_stock">Out of Stock</string>
     <string name="detail_update_cart">Update Cart</string>
     <string name="detail_no_instructions">No instructions available for this cocktail.</string>
     <string name="detail_refresh_details">Refresh Details</string>
-    <string name="detail_more_category_cocktails">More %1$s Cocktails</string>
-    <string name="detail_you_might_also_like">You might also like</string>
-    <string name="detail_you_might_also_like_ios">You Might Also Like</string>
+    <string name="detail_you_might_also_like">You Might Also Like</string>
     <string name="detail_loading_recommendations">Loading recommendations...</string>
     <string name="detail_be_first_review">Be the first to review this cocktail</string>
     <string name="detail_review_anonymous_initial">A</string>
     <string name="detail_review_anonymous">Anonymous</string>
     <string name="detail_unknown_date">Unknown date</string>
     <string name="detail_in_cart">%1$d in cart</string>
-    <string name="detail_ingredient_measure_bullet">• %1$s%2$s</string>
     <string name="detail_iba_label">IBA: %1$s</string>
     <string name="detail_share_cocktail">Share cocktail</string>
     <string name="detail_loading">Loading cocktail details...</string>

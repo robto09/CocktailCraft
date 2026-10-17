@@ -46,7 +46,6 @@ import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.detail_loading_recommendations
-import com.cocktailcraft.resources.detail_more_category_cocktails
 import com.cocktailcraft.resources.detail_price_format
 import com.cocktailcraft.resources.detail_you_might_also_like
 import com.cocktailcraft.resources.list_view_details_label
@@ -54,36 +53,24 @@ import com.cocktailcraft.resources.list_view_details_label
 // Recommendations card with shimmer loading, empty and loaded states
 @Composable
 internal fun DetailRecommendationsSection(
-    category: String?,
     similarCocktails: List<Cocktail>,
     isLoadingRecommendations: Boolean,
     onRecommendationClick: (Cocktail) -> Unit
 ) {
-    // Always show the recommendations section - we'll have fallback data if needed
-    // Add a spacer before recommendations
-    Spacer(modifier = Modifier.height(Spacing.lg))
-
-    // Display recommendations with a Card wrapper for consistent styling
+    // Same card, spacing and title as the other sections and as iOS
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
-            modifier = Modifier.padding(Spacing.xl)
+            modifier = Modifier.padding(Spacing.lg)
         ) {
-            // Section title with category if available
-            val titleText = if (category != null) {
-                stringResource(MR.strings.detail_more_category_cocktails, category)
-            } else {
-                stringResource(MR.strings.detail_you_might_also_like)
-            }
-
             Text(
-                text = titleText,
+                text = stringResource(MR.strings.detail_you_might_also_like),
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp
@@ -92,7 +79,7 @@ internal fun DetailRecommendationsSection(
                 modifier = Modifier.semantics { heading() }
             )
 
-            Spacer(modifier = Modifier.height(Spacing.lg))
+            Spacer(modifier = Modifier.height(Spacing.md))
 
             // Show loading state or recommendations
             if (isLoadingRecommendations) {

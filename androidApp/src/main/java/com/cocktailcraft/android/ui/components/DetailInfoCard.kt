@@ -54,17 +54,21 @@ fun DetailInfoCard(
                 .fillMaxWidth()
                 .padding(contentPadding.dp)
         ) {
-            Text(
-                text = title,
-                fontSize = titleFontSize.sp,
-                fontWeight = titleFontWeight,
-                color = titleColor,
-                modifier = Modifier
-                    .padding(bottom = 12.dp)
-                    // A blank title (cards with their own header row) is no heading
-                    .then(if (title.isNotBlank()) Modifier.semantics { heading() } else Modifier)
-            )
-            
+            // Cards with their own header row pass a blank title: draw
+            // nothing, so it leaves no empty gap above their content
+            if (title.isNotBlank()) {
+                Text(
+                    text = title,
+                    fontSize = titleFontSize.sp,
+                    fontWeight = titleFontWeight,
+                    color = titleColor,
+                    modifier = Modifier
+                        .padding(bottom = 12.dp)
+                        .semantics { heading() }
+                )
+            }
+
+
             content()
         }
     }

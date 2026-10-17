@@ -84,7 +84,6 @@ class ScreenContentScreenshotTest(variant: ThemeVariant) : ScreenshotTest(varian
     @Test
     fun detailRecommendations() = snapshot("Detail_recommendations") {
         DetailRecommendationsSection(
-            category = ScreenshotFixtures.cocktail.category,
             similarCocktails = ScreenshotFixtures.cocktails,
             isLoadingRecommendations = false,
             onRecommendationClick = {}

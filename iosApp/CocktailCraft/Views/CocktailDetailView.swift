@@ -45,10 +45,12 @@ struct CocktailDetailView: View {
                     VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
                         CocktailImageView(
                             imageUrl: cocktail.imageUrl,
-                            height: 300
+                            height: 250
                         )
 
+                        // Rounded top overlaps the image by 20pt, as on Android
                         mainInfoCard(cocktail)
+                            .padding(.top, -(AppTheme.Spacing.lg + 20))
 
                         ingredientsSection(cocktail)
 

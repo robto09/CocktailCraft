@@ -263,7 +263,8 @@ internal fun CocktailDetailContent(
                         DetailChipsSection(
                             category = cocktailData.category,
                             glass = cocktailData.glass,
-                            alcoholic = cocktailData.alcoholic
+                            alcoholic = cocktailData.knownAlcoholic,
+                            iba = cocktailData.iba
                         )
                     }
 
@@ -273,7 +274,6 @@ internal fun CocktailDetailContent(
                         val isLoadingRecommendations = detailState.isLoading && similarCocktails.isEmpty()
 
                         DetailRecommendationsSection(
-                            category = cocktailData.category,
                             similarCocktails = similarCocktails,
                             isLoadingRecommendations = isLoadingRecommendations,
                             onRecommendationClick = onRecommendationClick
