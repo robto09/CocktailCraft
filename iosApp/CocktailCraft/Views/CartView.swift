@@ -8,6 +8,7 @@ struct CartView: View {
     @Environment(AppRouter.self) private var router
     @State private var showCheckoutConfirmation = false
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     
     var body: some View {
         Group {
@@ -49,23 +50,22 @@ struct CartView: View {
                         }
                         .padding(.top, AppTheme.Spacing.sm)
 
-                        // Order Summary
-                        CartSummaryCard(
-                            subtotal: cartViewModel.state.totalPrice,
-                            deliveryFee: cartViewModel.state.deliveryFee,
-                            total: cartViewModel.state.finalTotal
-                        )
-
-                        // Place Order Button
-                        CheckoutButton(
-                            title: L(\.cart_place_order),
-                            isEnabled: !cartViewModel.state.cartItems.isEmpty,
-                            isLoading: orderViewModel.state.isLoading,
-                            action: {
-                                showCheckoutConfirmation = true
-                            }
-                        )
-                        .padding(.bottom, 20)
+                        if scrollCheckoutWithItems {
+                            checkoutSection
+                                .padding(.bottom, 20)
+                        }
+                    }
+                    .padding(.bottom, AppTheme.Spacing.lg)
+                }
+                // Summary + Place Order pinned above the tab bar (as on
+                // Android), except at accessibility sizes, where pinning
+                // would leave almost no room for the items.
+                .safeAreaInset(edge: .bottom) {
+                    if !scrollCheckoutWithItems {
+                        checkoutSection
+                            .padding(.top, AppTheme.Spacing.md)
+                            .padding(.bottom, AppTheme.Spacing.sm)
+                            .background(AppColors.background(isDarkMode: isDarkMode))
                     }
                 }
                 .navigationTitle(L(\.cart))
@@ -95,6 +95,31 @@ struct CartView: View {
         }
         .sharedErrorAlert(cartViewModel.error, clear: { cartViewModel.clearError() })
         .sharedErrorAlert(orderViewModel.error, clear: { orderViewModel.clearError() })
+    }
+
+    private var scrollCheckoutWithItems: Bool {
+        dynamicTypeSize.isAccessibilitySize
+    }
+
+    private var checkoutSection: some View {
+        VStack(spacing: AppTheme.Spacing.lg) {
+            // Order Summary
+            CartSummaryCard(
+                subtotal: cartViewModel.state.totalPrice,
+                deliveryFee: cartViewModel.state.deliveryFee,
+                total: cartViewModel.state.finalTotal
+            )
+
+            // Place Order Button
+            CheckoutButton(
+                title: L(\.cart_place_order),
+                isEnabled: !cartViewModel.state.cartItems.isEmpty,
+                isLoading: orderViewModel.state.isLoading,
+                action: {
+                    showCheckoutConfirmation = true
+                }
+            )
+        }
     }
 }
 
