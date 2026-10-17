@@ -25,6 +25,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -247,7 +248,12 @@ fun MainScreen() {
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        // The detail screen has no outer bars and runs its own Scaffold +
+        // AppTopBar, which own the system-bar insets. Without this, the outer
+        // Scaffold pads the NavHost by the status bar AND the detail top bar
+        // adds it again, doubling the header height (AN-6).
+        contentWindowInsets = if (isDetailScreen) WindowInsets(0) else ScaffoldDefaults.contentWindowInsets
     ) { innerPadding ->
         NavHost(
             navController = navController,
