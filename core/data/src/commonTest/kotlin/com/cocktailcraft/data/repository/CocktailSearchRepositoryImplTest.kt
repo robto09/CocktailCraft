@@ -245,6 +245,20 @@ class CocktailSearchRepositoryImplTest {
     }
 
     @Test
+    fun filterByCategoryKeepsApiOrderWhateverIsAlreadyCached() = runTest {
+        val api = FakeCocktailApi(drinks = sampleDrinks())
+        api.categoryFilterReturnsPartialDtos = true
+        val fixture = fixture(api = api)
+        // A full record cached earlier (older dateAdded) used to sink below
+        // the fresh placeholders, so each device listed a different order.
+        fixture.cache.cacheCocktail(testCocktail("2", name = "Mojito", category = "Cocktail", dateAdded = 1L))
+
+        val result = fixture.search.filterByCategory("Cocktail")
+
+        assertEquals(listOf("2", "3"), (result as Result.Success).data.map { it.id })
+    }
+
+    @Test
     fun filterByCategoryOfflineServesLegacyCacheEntriesWithoutCategory() = runTest {
         val fixture = fixture(api = FakeCocktailApi())
 

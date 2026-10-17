@@ -35,6 +35,11 @@ internal class CocktailCategoryFetcher(
      * data to fall back on PROPAGATES as an exception — callers wrap it in
      * Result.Error so the UI can show an error/retry instead of silently
      * rendering an empty list. An empty return means the category is empty.
+     *
+     * Results keep the API's (alphabetical) order. They used to be sorted by
+     * [Cocktail.dateAdded], but that is construction time, not API data: fresh
+     * placeholders sorted above cached records, so the same category listed
+     * in a different order on every device.
      */
     suspend fun fetchCocktailsByCategory(category: String): List<Cocktail> {
         // First check category-specific cache
@@ -44,7 +49,7 @@ internal class CocktailCategoryFetcher(
 
         // Return cached data if available and fresh
         if (categoryCachedCocktails.isNotEmpty() && categoryCacheAge < CocktailCacheManager.CACHE_VALIDITY_MS) {
-            return categoryCachedCocktails.sortedByDescending { it.dateAdded }
+            return categoryCachedCocktails
         }
 
         // Offline per the network monitor: serve cached data when any exists.
@@ -54,7 +59,7 @@ internal class CocktailCategoryFetcher(
         // genuinely offline it fails fast into the cache/error path below.
         if (offlineRepository.isOffline()) {
             if (categoryCachedCocktails.isNotEmpty()) {
-                return categoryCachedCocktails.sortedByDescending { it.dateAdded }
+                return categoryCachedCocktails
             }
             val generalCache = generalCacheForCategory(category)
             if (generalCache.isNotEmpty()) {
@@ -70,7 +75,7 @@ internal class CocktailCategoryFetcher(
         if (!remote.ping()) {
             Logger.w { "API unreachable" }
             if (categoryCachedCocktails.isNotEmpty()) {
-                return categoryCachedCocktails.sortedByDescending { it.dateAdded }
+                return categoryCachedCocktails
             }
             throw Exception("API is not reachable")
         }
@@ -96,13 +101,13 @@ internal class CocktailCategoryFetcher(
             cacheManager.setCategoryCache(category, enrichedCocktails)
             cocktailCache.cacheCocktails(enrichedCocktails)
 
-            return enrichedCocktails.sortedByDescending { it.dateAdded }
+            return enrichedCocktails
         } catch (e: Exception) {
             Logger.e { "API call failed: ${e.message}" }
 
             // If we have cached data, use it
             if (categoryCachedCocktails.isNotEmpty()) {
-                return categoryCachedCocktails.sortedByDescending { it.dateAdded }
+                return categoryCachedCocktails
             }
 
             // Try general cache as last resort
@@ -124,5 +129,5 @@ internal class CocktailCategoryFetcher(
         cocktailCache.getCachedCocktailsByCategory(
             category = category,
             includeUncategorized = category == CocktailCategories.DEFAULT
-        ).sortedByDescending { it.dateAdded }
+        ).sortedBy { it.name }
 }
