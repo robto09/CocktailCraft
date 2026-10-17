@@ -1,6 +1,7 @@
 package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.usecase.AnalyzeCocktailUseCase
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
@@ -87,6 +88,41 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
         assertTrue(state.shareableText.startsWith("🍹 Martini"))
         assertTrue(state.shareableText.contains("• 50 ml Gin"))
         assertTrue(state.shareableText.endsWith("Category: Cocktail"))
+    }
+
+    @Test
+    fun shareableTextHasNoStrayIndentWithSeveralIngredients() = runTest {
+        val harness = Harness()
+        harness.detail.byId["1"] = testCocktail("1", name = "Margarita").copy(
+            ingredients = listOf(
+                CocktailIngredient("Tequila", "1 1/2 oz"),
+                CocktailIngredient("Triple sec", "1/2 oz"),
+                CocktailIngredient("Salt", "")
+            ),
+            instructions = "Shake with ice."
+        )
+        val vm = harness.viewModel()
+
+        vm.loadCocktail("1")
+        advanceUntilIdle()
+
+        assertEquals(
+            """
+            🍹 Margarita
+
+            Ingredients:
+            • 1 1/2 oz Tequila
+            • 1/2 oz Triple sec
+            • Salt
+
+            Instructions:
+            Shake with ice.
+
+            Glass: Cocktail glass
+            Category: Cocktail
+            """.trimIndent(),
+            vm.uiState.value.shareableText
+        )
     }
 
     @Test

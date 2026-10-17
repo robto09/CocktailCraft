@@ -17,24 +17,32 @@ data class DetailUiState(
     val nutritionFacts: NutritionFacts? = null,
     val isLoading: Boolean = false
 ) {
-    /** Plain-text share payload for the loaded cocktail ("" until loaded). */
+    /**
+     * Plain-text share payload for the loaded cocktail ("" until loaded).
+     * Built line by line: a trimIndent() template can't trim once the
+     * multi-line ingredient list is interpolated (those lines have no
+     * indent), which left every template line indented in shared text.
+     */
     val shareableText: String
         get() {
             val cocktail = cocktail ?: return ""
-            val ingredients = cocktail.ingredients.joinToString("\n") {
-                "• ${it.measure} ${it.name}".trim()
-            }
-            return """
-            🍹 ${cocktail.name}
-
-            Ingredients:
-            $ingredients
-
-            Instructions:
-            ${cocktail.instructions}
-
-            Glass: ${cocktail.glass}
-            Category: ${cocktail.category}
-            """.trimIndent()
+            return buildString {
+                appendLine("🍹 ${cocktail.name}")
+                appendLine()
+                appendLine("Ingredients:")
+                cocktail.ingredients.forEach { ingredient ->
+                    // "• 1 oz Gin", or "• Salt" when there is no measure
+                    val parts = listOf(ingredient.measure, ingredient.name).filter { it.isNotBlank() }
+                    appendLine("• " + parts.joinToString(" "))
+                }
+                cocktail.instructions?.let {
+                    appendLine()
+                    appendLine("Instructions:")
+                    appendLine(it)
+                }
+                appendLine()
+                cocktail.glass?.let { appendLine("Glass: $it") }
+                cocktail.category?.let { appendLine("Category: $it") }
+            }.trimEnd()
         }
 }
