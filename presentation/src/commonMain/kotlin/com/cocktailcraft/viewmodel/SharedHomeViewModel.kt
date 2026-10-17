@@ -126,7 +126,7 @@ class SharedHomeViewModel internal constructor(
      * for explicit submit/retry, which must not be debounced.
      */
     fun updateSearchQuery(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
+        _uiState.update { it.copy(searchQuery = query, isSearchActive = query.isNotBlank()) }
         searchQueryFlow.value = query
     }
     
@@ -206,7 +206,7 @@ class SharedHomeViewModel internal constructor(
      */
     suspend fun searchCocktails(query: String) {
         val filters = _uiState.value.searchFilters.copy(query = query)
-        _uiState.update { it.copy(searchQuery = query) }
+        _uiState.update { it.copy(searchQuery = query, isSearchActive = query.isNotBlank()) }
 
         if (query.isBlank() && !filters.hasActiveFilters()) {
             // Nothing left to search — fall back to the current category listing.
