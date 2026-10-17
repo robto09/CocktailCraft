@@ -333,7 +333,9 @@ private fun TabScaffold(
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.primary,
                             selectedTextColor = MaterialTheme.colorScheme.primary,
-                            indicatorColor = CocktailCraftTheme.extendedColors.surfaceRaised,
+                            // Neutral pill like the iOS tab bar; surfaceRaised
+                            // is white in light and vanishes on the untinted bar
+                            indicatorColor = CocktailCraftTheme.extendedColors.neutralSubtle,
                             unselectedIconColor = MaterialTheme.colorScheme.outline,
                             unselectedTextColor = MaterialTheme.colorScheme.outline
                         )
