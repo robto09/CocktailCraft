@@ -38,20 +38,22 @@ struct CocktailCard: View {
             // At accessibility text sizes the image stacks above the text,
             // which then gets the full card width
             if dynamicTypeSize.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 12) {
                     horizontalImage
                     horizontalContent
                 }
             } else {
-                HStack(spacing: 16) {
+                HStack(spacing: 12) {
                     horizontalImage
                     horizontalContent
                 }
             }
         }
-        .padding(16)
+        // Same metrics as Android's CocktailItem: 12 padding and gap,
+        // 12 corners, 100 image with 8 corners
+        .padding(12)
         .background(AppColors.surface(isDarkMode: isDarkMode))
-        .cornerRadius(16)
+        .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
         .if(onCardTap != nil) { view in
             view.onTapGesture {
@@ -67,21 +69,26 @@ struct CocktailCard: View {
         ZStack(alignment: .center) {
             CocktailImageView(
                 imageUrl: cocktail.imageUrl,
-                height: 120,
-                cornerRadius: 12,
-                width: 120
+                height: 100,
+                cornerRadius: 8,
+                width: 100
             )
 
             // Stock overlay for out of stock items
             if isOutOfStock {
                 Rectangle()
                     .fill(Color.black.opacity(0.6))
-                    .cornerRadius(12)
+                    .cornerRadius(8)
                     .overlay(
+                        // Shrinks rather than truncating on the 100 pt image
+                        // at large text sizes
                         Text(L(\.list_out_of_stock))
                             .font(.caption)
                             .foregroundColor(.white)
                             .fontWeight(.medium)
+                            .multilineTextAlignment(.center)
+                            .minimumScaleFactor(0.5)
+                            .padding(4)
                     )
                     // Read as part of the card summary
                     .accessibilityHidden(true)
@@ -90,16 +97,16 @@ struct CocktailCard: View {
         // Stacked, keep the out-of-stock overlay on the image instead of
         // stretching across the card
         .frame(
-            width: dynamicTypeSize.isAccessibilitySize ? 120 : nil,
-            height: dynamicTypeSize.isAccessibilitySize ? 120 : nil
+            width: dynamicTypeSize.isAccessibilitySize ? 100 : nil,
+            height: dynamicTypeSize.isAccessibilitySize ? 100 : nil
         )
     }
 
     @ViewBuilder
     private var horizontalContent: some View {
         // Content Section
-        VStack(alignment: .leading, spacing: 6) {
-            // Cocktail Name - Larger font. VoiceOver reads the whole card
+        VStack(alignment: .leading, spacing: 4) {
+            // Cocktail Name. VoiceOver reads the whole card
             // summary here, in one stop (the lines below are hidden);
             // the heart and cart buttons stay separate elements.
             Text(cocktail.name)
@@ -111,7 +118,7 @@ struct CocktailCard: View {
 
             // Category Info (Alcoholic • Category)
             Text(subtitleText)
-                .font(.subheadline.weight(.medium))
+                .font(.subheadline)
                 .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                 .fixedSize(horizontal: false, vertical: true)
@@ -119,10 +126,10 @@ struct CocktailCard: View {
 
             // Ingredients (first 2 or placeholder)
             Text(getIngredientsText())
-                .font(.footnote.weight(.regular))
+                .font(.caption)
                 .italic()
                 .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-                .lineLimit(2)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                 .multilineTextAlignment(.leading)
                 .accessibilityHidden(true)
 
@@ -131,14 +138,13 @@ struct CocktailCard: View {
             if dynamicTypeSize.isAccessibilitySize {
                 Color.clear.frame(height: 2)
             } else {
-                Spacer(minLength: 8)
+                Spacer(minLength: 4)
             }
 
             // Price and Actions Row
             HStack(alignment: .center) {
-                // Price - Larger and more prominent
                 Text((cocktail.price ?? 12.99).asPrice)
-                    .font(.title3.weight(.bold))
+                    .font(.headline.weight(.bold))
                     .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
                     .lineLimit(1)
                     .fixedSize()
@@ -146,8 +152,9 @@ struct CocktailCard: View {
 
                 Spacer()
                 
-                // Action Buttons - Larger and more spaced
-                HStack(spacing: 12) {
+                // Action Buttons: 44pt hit targets 4pt apart put the icons
+                // 48 apart, as Android's adjacent 48dp IconButtons do
+                HStack(spacing: 4) {
                     // Favorite Button
                     if let onToggle = onFavoriteToggle {
                         Button(action: {
@@ -158,7 +165,7 @@ struct CocktailCard: View {
                             onToggle()
                         }) {
                             Image(systemName: isFavorite ? "heart.fill" : "heart")
-                                .font(.title2)
+                                .font(.title3)
                                 .foregroundColor(isFavorite ? AppColors.secondary(isDarkMode: isDarkMode) : AppColors.gray)
                                 .contentTransition(.symbolEffect(.replace))
                                 .animation(.easeInOut(duration: 0.2), value: isFavorite)
@@ -174,8 +181,9 @@ struct CocktailCard: View {
                     // Add to Cart Button
                     if let onAddToCart = onAddToCart {
                         Button(action: onAddToCart) {
-                            Image(systemName: "cart.badge.plus")
-                                .font(.title2)
+                            // Plain filled cart, Android's icon
+                            Image(systemName: "cart.fill")
+                                .font(.title3)
                                 .foregroundColor(isOutOfStock ? AppColors.gray : AppColors.primary(isDarkMode: isDarkMode))
                                 .minimumHitTarget()
                         }
@@ -187,7 +195,6 @@ struct CocktailCard: View {
                 }
             }
         }
-        .padding(.vertical, 8)
     }
 
     @ViewBuilder
@@ -289,7 +296,7 @@ struct CocktailCard: View {
                         // Add to Cart Button
                         if let onAddToCart = onAddToCart {
                             Button(action: onAddToCart) {
-                                Image(systemName: "cart.badge.plus")
+                                Image(systemName: "cart.fill")
                                     .font(.title3)
                                     .foregroundColor(isOutOfStock ? AppColors.gray : AppColors.primary(isDarkMode: isDarkMode))
                                     .minimumHitTarget()
@@ -318,7 +325,10 @@ struct CocktailCard: View {
     /// Name, category, ingredients, price — and out-of-stock — as one
     /// VoiceOver phrase (each part is shared, localized copy).
     private var accessibilitySummary: String {
-        var parts = [cocktail.name, subtitleText]
+        var parts = [cocktail.name]
+        if !subtitleText.isEmpty {
+            parts.append(subtitleText)
+        }
         parts.append(getIngredientsText())
         parts.append((cocktail.price ?? 12.99).asPrice)
         if isOutOfStock {
@@ -330,9 +340,14 @@ struct CocktailCard: View {
     /// "Alcoholic • Shot" from the cocktail's own data, matching Android's
     /// list item; list endpoints leave `alcoholic` unknown until enriched.
     private var subtitleText: String {
-        let alcoholic = cocktail.alcoholic ?? L(\.list_alcoholic_unknown)
-        guard let category = cocktail.category else { return alcoholic }
-        return L(\.list_alcoholic_category, alcoholic, category)
+        // An alcoholic value the list endpoint didn't supply is left out
+        // rather than shown as "Unknown" (same as Android)
+        switch (cocktail.knownAlcoholic, cocktail.category) {
+        case let (alcoholic?, category?): return L(\.list_alcoholic_category, alcoholic, category)
+        case let (alcoholic?, nil): return alcoholic
+        case let (nil, category?): return category
+        case (nil, nil): return ""
+        }
     }
 
     private func getIngredientsText() -> String {
@@ -340,7 +355,9 @@ struct CocktailCard: View {
         if let ingredients = cocktail.ingredients as? [CocktailIngredient], !ingredients.isEmpty {
             let firstTwo = Array(ingredients.prefix(2))
             let ingredientNames = firstTwo.compactMap { $0.name }
-            return ingredientNames.joined(separator: ", ")
+            // "..." marks that there are more, as on Android
+            let more = ingredients.count > 2 ? "..." : ""
+            return ingredientNames.joined(separator: ", ") + more
         }
         return L(\.list_premium_ingredients)
     }

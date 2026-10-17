@@ -188,7 +188,6 @@
     <!-- Lists & cards -->
     <string name="favorite_toggle_a11y">Favorite</string>
     <string name="list_out_of_stock">Out of Stock</string>
-    <string name="list_alcoholic_unknown">Unknown</string>
     <string name="list_tap_to_view_ingredients">Tap to view ingredients</string>
     <string name="list_price_format">$%1$.2f</string>
     <string name="list_view_details_label">View %1$s details</string>
