@@ -196,7 +196,7 @@
     <string name="list_category_cocktails">%1$s Cocktails</string>
     <string name="list_all_cocktails">All Cocktails</string>
     <string name="list_end_of_list_message">You\'ve reached the end of the list</string>
-    <string name="list_alcoholic_category">Alcoholic • %1$s</string>
+    <string name="list_alcoholic_category">%1$s • %2$s</string>
     <string name="list_premium_ingredients">Premium ingredients</string>
 
     <!-- Favorites -->

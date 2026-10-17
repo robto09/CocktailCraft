@@ -110,14 +110,12 @@ struct CocktailCard: View {
                 .modifier(CardSummaryAccessibility(summary: accessibilitySummary, onTap: onCardTap))
 
             // Category Info (Alcoholic • Category)
-            if let category = cocktail.category {
-                Text(L(\.list_alcoholic_category, category))
-                    .font(.subheadline.weight(.medium))
-                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityHidden(true)
-            }
+            Text(subtitleText)
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityHidden(true)
 
             // Ingredients (first 2 or placeholder)
             Text(getIngredientsText())
@@ -232,14 +230,12 @@ struct CocktailCard: View {
                     .modifier(CardSummaryAccessibility(summary: accessibilitySummary, onTap: onCardTap))
 
                 // Category Info (Alcoholic • Category)
-                if let category = cocktail.category {
-                    Text(L(\.list_alcoholic_category, category))
-                        .font(.footnote.weight(.medium))
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-                        .lineLimit(2)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .accessibilityHidden(true)
-                }
+                Text(subtitleText)
+                    .font(.footnote.weight(.medium))
+                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityHidden(true)
 
                 // Ingredients (first 2 or placeholder)
                 Text(getIngredientsText())
@@ -257,12 +253,18 @@ struct CocktailCard: View {
                     Text((cocktail.price ?? 12.99).asPrice)
                         .font(.headline.weight(.bold))
                         .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                        // Never break a price mid-number in the narrow grid
+                        // column; shrink it instead
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                        .layoutPriority(1)
                         .accessibilityHidden(true)
 
-                    Spacer()
-                    
-                    // Action Buttons - Compact
-                    HStack(spacing: 8) {
+                    Spacer(minLength: 4)
+
+                    // Action Buttons - Compact; the 44pt hit targets
+                    // already space the icons apart
+                    HStack(spacing: 0) {
                         // Favorite Button
                         if let onToggle = onFavoriteToggle {
                             Button(action: {
@@ -316,16 +318,21 @@ struct CocktailCard: View {
     /// Name, category, ingredients, price — and out-of-stock — as one
     /// VoiceOver phrase (each part is shared, localized copy).
     private var accessibilitySummary: String {
-        var parts = [cocktail.name]
-        if let category = cocktail.category {
-            parts.append(L(\.list_alcoholic_category, category))
-        }
+        var parts = [cocktail.name, subtitleText]
         parts.append(getIngredientsText())
         parts.append((cocktail.price ?? 12.99).asPrice)
         if isOutOfStock {
             parts.append(L(\.list_out_of_stock))
         }
         return parts.joined(separator: ", ")
+    }
+
+    /// "Alcoholic • Shot" from the cocktail's own data, matching Android's
+    /// list item; list endpoints leave `alcoholic` unknown until enriched.
+    private var subtitleText: String {
+        let alcoholic = cocktail.alcoholic ?? L(\.list_alcoholic_unknown)
+        guard let category = cocktail.category else { return alcoholic }
+        return L(\.list_alcoholic_category, alcoholic, category)
     }
 
     private func getIngredientsText() -> String {
