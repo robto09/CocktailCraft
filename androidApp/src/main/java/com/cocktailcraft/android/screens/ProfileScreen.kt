@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -387,13 +388,22 @@ private fun SignInPromptSection(
 
     Spacer(modifier = Modifier.height(Spacing.sm))
 
+    // Same shape and height as Sign In (PrimaryButton), not the
+    // OutlinedButton default pill
     OutlinedButton(
         onClick = onSignUpClick,
+        shape = MaterialTheme.shapes.medium,
         modifier = Modifier
             .fillMaxWidth(0.8f)
             .padding(vertical = Spacing.xs)
+            .heightIn(min = 54.dp)
     ) {
-        Text(stringResource(MR.strings.create_account))
+        // Primary-colored bold label like iOS, same type as Sign In
+        Text(
+            text = stringResource(MR.strings.create_account),
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 }
 
