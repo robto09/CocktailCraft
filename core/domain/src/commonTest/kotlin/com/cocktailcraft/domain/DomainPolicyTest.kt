@@ -40,7 +40,3 @@ class DeliveryPolicyTest {
         assertEquals(MR.strings.common_unknown.desc(), DeliveryPolicy.estimatedDeliveryTimeForStatus(null))
     }
 }
-
-// AnalyzeCocktailUseCase coverage moved to
-// domain/usecase/AnalyzeCocktailUseCaseTest.kt alongside the other use-case
-// tests (AR-5), which supersedes the class that used to live here.

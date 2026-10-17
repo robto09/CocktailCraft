@@ -1,5 +1,6 @@
 package com.cocktailcraft.android.screens
 
+import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -8,7 +9,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -21,7 +28,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.screens.detail.DetailChipsSection
@@ -41,7 +52,9 @@ import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.added_to_cart
+import com.cocktailcraft.resources.detail_share_cocktail
 import com.cocktailcraft.resources.detail_title_fallback
+import com.cocktailcraft.resources.favorite_toggle_a11y
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
@@ -175,7 +188,16 @@ internal fun CocktailDetailContent(
         topBar = {
             CocktailDetailTopBar(
                 cocktailName = cocktail?.name,
-                onBackClick = onBackClick
+                shareText = detailState.shareableText,
+                isFavorite = isFavorite,
+                onBackClick = onBackClick,
+                // Null until the cocktail loads: no actions on the spinner
+                onToggleFavorite = cocktail?.let { cocktailData ->
+                    {
+                        hapticHandler.performToggleFavorite(isFavorite)
+                        onToggleFavorite(cocktailData)
+                    }
+                }
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -216,12 +238,7 @@ internal fun CocktailDetailContent(
                         val addedToCartMessage = stringResource(MR.strings.added_to_cart, cocktailData.name)
                         DetailMainInfoCard(
                             cocktail = cocktailData,
-                            isFavorite = isFavorite,
                             isInCart = isInCart,
-                            onToggleFavorite = {
-                                hapticHandler.performToggleFavorite(isFavorite)
-                                onToggleFavorite(cocktailData)
-                            },
                             onAddToCartClick = {
                                 onAddToCart(cocktailData)
                                 // Show snackbar confirmation
@@ -281,15 +298,47 @@ internal fun CocktailDetailContent(
     }
 }
 
-// Branded top bar with back navigation (shared AppTopBar chrome)
+// Branded top bar with back navigation and, once the cocktail has loaded,
+// Share and Favorite actions in white, matching the iOS detail toolbar
 @Composable
 private fun CocktailDetailTopBar(
     cocktailName: String?,
-    onBackClick: () -> Unit
+    shareText: String,
+    isFavorite: Boolean,
+    onBackClick: () -> Unit,
+    onToggleFavorite: (() -> Unit)?
 ) {
+    val context = LocalContext.current
     AppTopBar(
         title = cocktailName ?: stringResource(MR.strings.detail_title_fallback),
         showBackButton = true,
-        onBackClick = onBackClick
+        onBackClick = onBackClick,
+        actions = {
+            if (onToggleFavorite != null) {
+                IconButton(onClick = {
+                    val send = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, shareText)
+                    }
+                    context.startActivity(Intent.createChooser(send, null))
+                }) {
+                    Icon(
+                        imageVector = Icons.Filled.Share,
+                        contentDescription = stringResource(MR.strings.detail_share_cocktail),
+                        tint = Color.White
+                    )
+                }
+                IconButton(
+                    onClick = onToggleFavorite,
+                    modifier = Modifier.semantics { selected = isFavorite }
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = stringResource(MR.strings.favorite_toggle_a11y),
+                        tint = Color.White
+                    )
+                }
+            }
+        }
     )
 }

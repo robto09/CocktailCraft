@@ -68,46 +68,9 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
 
     // MARK: - Helper Methods for SwiftUI
 
-    func getIngredientsByType(_ type: String) -> [String] {
-        return state.ingredientsByType[type] ?? []
-    }
-
-    func getAllIngredientTypes() -> [String] {
-        return Array(state.ingredientsByType.keys).sorted()
-    }
-
     func formatPrice() -> String {
         guard let cocktail = state.cocktail else { return "$0.00" }
         return cocktail.price.asPrice
-    }
-
-    func formatRating() -> String {
-        guard let cocktail = state.cocktail else { return "0.0" }
-        return String(format: "%.1f", cocktail.rating)
-    }
-
-    func getStockStatus() -> String {
-        guard let cocktail = state.cocktail else { return L(\.common_unknown) }
-
-        if !cocktail.inStock {
-            return L(\.detail_out_of_stock)
-        } else if cocktail.stockCount <= 5 {
-            return L(\.detail_low_stock, cocktail.stockCount)
-        } else {
-            return L(\.detail_in_stock_ios)
-        }
-    }
-
-    func getStockStatusColor() -> Color {
-        guard let cocktail = state.cocktail else { return .gray }
-
-        if !cocktail.inStock {
-            return .red
-        } else if cocktail.stockCount <= 5 {
-            return .orange
-        } else {
-            return .green
-        }
     }
 
     func canAddToCart() -> Bool {

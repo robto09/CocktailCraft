@@ -3,7 +3,6 @@ package com.cocktailcraft.viewmodel
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
-import com.cocktailcraft.domain.usecase.AnalyzeCocktailUseCase
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
@@ -49,8 +48,7 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
         fun viewModel(detailRepository: CocktailDetailRepository = detail) = SharedCocktailDetailViewModel(
             getCocktailDetailUseCase = GetCocktailDetailUseCase(detailRepository, favorites, search),
             manageFavoritesUseCase = ManageFavoritesUseCase(favorites, detailRepository),
-            manageCartUseCase = ManageCartUseCase(cart, detailRepository),
-            analyzeCocktailUseCase = AnalyzeCocktailUseCase()
+            manageCartUseCase = ManageCartUseCase(cart, detailRepository)
         )
     }
 
@@ -66,25 +64,21 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
         assertEquals("Martini", vm.uiState.value.cocktail?.name)
         assertFalse(vm.uiState.value.isLoading)
         assertFalse(vm.uiState.value.isFavorite)
-        assertEquals(mapOf("Spirits" to listOf("Gin")), vm.uiState.value.ingredientsByType)
         assertNull(vm.error.value)
     }
 
     @Test
-    fun loadedStateCarriesNutritionFactsAndShareText() = runTest {
-        // Formerly snapshot getters on the VM; now derived into uiState so
-        // both platforms observe them reactively.
+    fun loadedStateCarriesShareText() = runTest {
+        // Derived into uiState so both platforms observe it reactively
         val harness = Harness()
         harness.detail.byId["1"] = testCocktail("1", name = "Martini")
         val vm = harness.viewModel()
-        assertNull(vm.uiState.value.nutritionFacts)
         assertEquals("", vm.uiState.value.shareableText)
 
         vm.loadCocktail("1")
         advanceUntilIdle()
 
         val state = vm.uiState.value
-        assertEquals(AnalyzeCocktailUseCase().nutritionFacts(state.cocktail!!), state.nutritionFacts)
         assertTrue(state.shareableText.startsWith("🍹 Martini"))
         assertTrue(state.shareableText.contains("• 50 ml Gin"))
         assertTrue(state.shareableText.endsWith("Category: Cocktail"))

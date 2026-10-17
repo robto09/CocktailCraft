@@ -2,7 +2,6 @@ package com.cocktailcraft.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.usecase.AnalyzeCocktailUseCase
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
@@ -22,13 +21,12 @@ import kotlinx.coroutines.launch
 /**
  * Shared ViewModel for Cocktail Detail functionality.
  * Uses consolidated [DetailUiState] for atomic state updates; [uiState] is the
- * only public state surface (share text and nutrition facts live on it too).
+ * only public state surface (the share text lives on it too).
  */
 class SharedCocktailDetailViewModel internal constructor(
     private val getCocktailDetailUseCase: GetCocktailDetailUseCase,
     private val manageFavoritesUseCase: ManageFavoritesUseCase,
-    private val manageCartUseCase: ManageCartUseCase,
-    private val analyzeCocktailUseCase: AnalyzeCocktailUseCase
+    private val manageCartUseCase: ManageCartUseCase
 ) : SharedViewModel() {
 
     // Consolidated UI State
@@ -55,7 +53,6 @@ class SharedCocktailDetailViewModel internal constructor(
                 }
                 updateCartStatus(cocktailId)
                 loadRelatedCocktails(loadedCocktail)
-                processIngredients(loadedCocktail)
             }
             _uiState.update { it.copy(isLoading = false) }
         } catch (e: Exception) {
@@ -139,19 +136,8 @@ class SharedCocktailDetailViewModel internal constructor(
         }
     }
 
-    private fun processIngredients(cocktail: Cocktail) {
-        _uiState.update { it.copy(ingredientsByType = analyzeCocktailUseCase.ingredientsByType(cocktail)) }
-    }
-
-    /**
-     * Publish [cocktail] together with its nutrition estimate, so the two can
-     * never disagree (the estimate is cheap and purely derived from it).
-     */
     private fun publishCocktail(cocktail: Cocktail?) {
-        _uiState.update { it.copy(
-            cocktail = cocktail,
-            nutritionFacts = cocktail?.let(analyzeCocktailUseCase::nutritionFacts)
-        ) }
+        _uiState.update { it.copy(cocktail = cocktail) }
     }
     
     /**
@@ -179,7 +165,6 @@ class SharedCocktailDetailViewModel internal constructor(
             val refreshed = getCocktailDetailUseCase.refresh(cocktailId).getOrThrow()
             if (refreshed != null) {
                 publishCocktail(refreshed)
-                processIngredients(refreshed)
             }
             _uiState.update { it.copy(isLoading = false) }
         } catch (e: Exception) {

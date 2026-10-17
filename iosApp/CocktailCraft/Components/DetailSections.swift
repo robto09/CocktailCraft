@@ -22,52 +22,20 @@ extension CocktailDetailView {
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .accessibilityAddTraits(.isHeader)
 
-            HStack(spacing: AppTheme.Spacing.sm) {
-                if let category = cocktail.category {
-                    Text(category)
-                        .font(.subheadline)
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-                }
-
-                Spacer()
-
-                // One element: "4.5 out of 5 stars"
-                HStack(spacing: AppTheme.Spacing.sm) {
-                    Image(systemName: "star.fill")
-                        .font(.caption)
-                        .foregroundColor(.yellow)
-                    Text(viewModel.formatRating())
-                        .font(.subheadline)
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(L(\.review_stars_a11y, viewModel.formatRating(), 5))
-                // Informational, not a control: without the trait the
-                // accessibility audit treats it as an undersized tap target
-                .accessibilityAddTraits(.isStaticText)
+            // Only API data here: no rating or stock (the API has neither)
+            if let category = cocktail.category {
+                Text(category)
+                    .font(.subheadline)
+                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
             }
 
-            HStack {
-                Text(viewModel.formatPrice())
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
-                    // A bare "$7.46" reads without context (and fails the
-                    // audit's human-readable label check)
-                    .accessibilityLabel(L(\.detail_price_a11y, viewModel.formatPrice()))
-
-                Spacer()
-
-                // Stock badge colored by the ViewModel's shared stock rule
-                Text(viewModel.getStockStatus())
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .padding(.horizontal, AppTheme.Spacing.md)
-                    .padding(.vertical, AppTheme.Spacing.xs)
-                    .background(viewModel.getStockStatusColor().opacity(0.15))
-                    .foregroundColor(viewModel.getStockStatusColor())
-                    .cornerRadius(AppTheme.CornerRadius.chip)
-            }
+            Text(viewModel.formatPrice())
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                // A bare "$7.46" reads without context (and fails the
+                // audit's human-readable label check)
+                .accessibilityLabel(L(\.detail_price_a11y, viewModel.formatPrice()))
 
             cartControls
 
@@ -182,31 +150,9 @@ extension CocktailDetailView {
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .accessibilityAddTraits(.isHeader)
 
-            let types = viewModel.getAllIngredientTypes()
-            if types.isEmpty {
-                // No grouping available: flat list straight off the model
-                ForEach(Array(cocktail.ingredients.enumerated()), id: \.offset) { _, ingredient in
-                    ingredientRow(name: ingredient.name, measure: ingredient.measure)
-                }
-            } else {
-                ForEach(types, id: \.self) { type in
-                    VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-                        Text(type)
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
-
-                        // The grouping holds names only; keep the measure
-                        // from the cocktail, as the flat list (and Android) do
-                        ForEach(viewModel.getIngredientsByType(type), id: \.self) { entry in
-                            ingredientRow(
-                                name: entry,
-                                measure: cocktail.ingredients.first { $0.name == entry }?.measure
-                            )
-                        }
-                    }
-                    .padding(.bottom, AppTheme.Spacing.xs)
-                }
+            // The API's order with measures, like Android's list
+            ForEach(Array(cocktail.ingredients.enumerated()), id: \.offset) { _, ingredient in
+                ingredientRow(name: ingredient.name, measure: ingredient.measure)
             }
         }
         .padding()
@@ -219,66 +165,6 @@ extension CocktailDetailView {
         Text(L(\.detail_ingredient_measure_bullet, measure.flatMap { $0.isEmpty ? nil : "\($0) " } ?? "", name))
             .font(.body)
             .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-    }
-
-    // MARK: - Nutrition
-
-    func nutritionSection(_ nutrition: NutritionFacts) -> some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-            Text(L(\.detail_estimated_nutrition))
-                .font(.headline)
-                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                .accessibilityAddTraits(.isHeader)
-
-            // Four across, or a 2x2 grid at accessibility text sizes
-            let stats = [
-                nutritionStat(value: "\(nutrition.calories)", unit: L(\.detail_nutrition_unit_kcal), label: L(\.detail_nutrition_calories)),
-                nutritionStat(value: "\(nutrition.alcoholGrams)", unit: L(\.detail_nutrition_unit_grams), label: L(\.detail_nutrition_alcohol)),
-                nutritionStat(value: "\(nutrition.carbsGrams)", unit: L(\.detail_nutrition_unit_grams), label: L(\.detail_nutrition_carbs)),
-                nutritionStat(value: "\(nutrition.sugarGrams)", unit: L(\.detail_nutrition_unit_grams), label: L(\.detail_nutrition_sugar))
-            ]
-            if dynamicTypeSize.isAccessibilitySize {
-                Grid(horizontalSpacing: AppTheme.Spacing.sm, verticalSpacing: AppTheme.Spacing.sm) {
-                    GridRow { stats[0]; stats[1] }
-                    GridRow { stats[2]; stats[3] }
-                }
-            } else {
-                HStack(spacing: AppTheme.Spacing.sm) {
-                    ForEach(stats.indices, id: \.self) { stats[$0] }
-                }
-            }
-
-            Text(L(\.detail_nutrition_disclaimer))
-                .font(.caption2)
-                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .cardStyle()
-        .padding(.horizontal)
-    }
-
-    func nutritionStat(value: String, unit: String, label: String) -> some View {
-        VStack(spacing: AppTheme.Spacing.xs) {
-            Text(value)
-                .font(.title3)
-                .fontWeight(.bold)
-                .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
-            Text(unit)
-                .font(.caption2)
-                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-            Text(label)
-                .font(.caption)
-                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, AppTheme.Spacing.sm)
-        .background(AppColors.primary(isDarkMode: isDarkMode).opacity(0.08))
-        .cornerRadius(AppTheme.CornerRadius.sm)
-        // "Calories, 150 kcal" as one element
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(label)
-        .accessibilityValue("\(value) \(unit)")
     }
 
     // MARK: - Chips

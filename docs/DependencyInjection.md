@@ -120,7 +120,6 @@ val domainModule = module {
     factory { ManageCartUseCase(cartRepository = get(), detailRepository = get()) }
     factory { ManageProfileUseCase(authRepository = get()) }
     factory { ManageReviewsUseCase(repository = get()) }
-    factory { AnalyzeCocktailUseCase() }
     factory { PlaceOrderUseCase(orderRepository = get()) }
 }
 ```

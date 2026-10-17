@@ -1,9 +1,7 @@
 package com.cocktailcraft.android.screens.detail
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,7 +11,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -34,32 +31,27 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.ui.components.DetailInfoCard
-import com.cocktailcraft.android.ui.components.FavoriteToggleButton
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.add_to_cart
 import com.cocktailcraft.resources.detail_alcoholic_unknown
-import com.cocktailcraft.resources.detail_in_stock
 import com.cocktailcraft.resources.detail_no_instructions
-import com.cocktailcraft.resources.detail_out_of_stock
 import com.cocktailcraft.resources.detail_price_format
 import com.cocktailcraft.resources.detail_refresh_details
 import com.cocktailcraft.resources.detail_update_cart
 import com.cocktailcraft.resources.how_to_prepare
 
-// Main info card: price and favorite row, subtitle, stock status,
-// add-to-cart button and preparation instructions
+// Main info card: price, subtitle, add-to-cart button and preparation
+// instructions (favorite and share live in the top bar, as on iOS; no stock
+// line, since the API has no stock data)
 @Composable
 internal fun DetailMainInfoCard(
     cocktail: Cocktail,
-    isFavorite: Boolean,
     isInCart: Boolean,
-    onToggleFavorite: () -> Unit,
     onAddToCartClick: () -> Unit,
     onRefreshDetails: () -> Unit
 ) {
@@ -87,13 +79,6 @@ internal fun DetailMainInfoCard(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-
-                // Favorite toggle (the caller adds haptic feedback)
-                FavoriteToggleButton(
-                    isFavorite = isFavorite,
-                    onToggle = onToggleFavorite,
-                    iconSize = 24.dp
-                )
             }
 
             Spacer(modifier = Modifier.height(Spacing.xs))
@@ -112,32 +97,6 @@ internal fun DetailMainInfoCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium
             )
-
-            Spacer(modifier = Modifier.height(Spacing.sm))
-
-            // Stock status
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val inStock = cocktail.stockCount > 0
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .background(
-                            if (inStock) CocktailCraftTheme.extendedColors.success else MaterialTheme.colorScheme.error,
-                            CircleShape
-                        )
-                )
-
-                Spacer(modifier = Modifier.width(Spacing.sm))
-
-                Text(
-                    text = if (inStock) stringResource(MR.strings.detail_in_stock, cocktail.stockCount) else stringResource(MR.strings.detail_out_of_stock),
-                    fontSize = 14.sp,
-                    color = if (inStock) CocktailCraftTheme.extendedColors.success else MaterialTheme.colorScheme.error,
-                    fontWeight = FontWeight.Medium
-                )
-            }
 
             Spacer(modifier = Modifier.height(Spacing.xxl))
 
@@ -228,9 +187,7 @@ private fun DetailMainInfoCardPreview() {
     AnimatedCocktailBarTheme(darkTheme = false) {
         DetailMainInfoCard(
             cocktail = PreviewData.cocktail,
-            isFavorite = true,
             isInCart = false,
-            onToggleFavorite = {},
             onAddToCartClick = {},
             onRefreshDetails = {}
         )
@@ -243,9 +200,7 @@ private fun DetailMainInfoCardDarkPreview() {
     AnimatedCocktailBarTheme(darkTheme = true) {
         DetailMainInfoCard(
             cocktail = PreviewData.cocktail,
-            isFavorite = true,
             isInCart = false,
-            onToggleFavorite = {},
             onAddToCartClick = {},
             onRefreshDetails = {}
         )
@@ -258,9 +213,7 @@ private fun DetailMainInfoCardLargeFontPreview() {
     AnimatedCocktailBarTheme(darkTheme = false) {
         DetailMainInfoCard(
             cocktail = PreviewData.cocktail,
-            isFavorite = true,
             isInCart = false,
-            onToggleFavorite = {},
             onAddToCartClick = {},
             onRefreshDetails = {}
         )

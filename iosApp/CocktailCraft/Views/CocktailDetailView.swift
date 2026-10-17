@@ -52,10 +52,6 @@ struct CocktailDetailView: View {
 
                         ingredientsSection(cocktail)
 
-                        if let nutrition = viewModel.state.nutritionFacts {
-                            nutritionSection(nutrition)
-                        }
-
                         chipsSection(cocktail)
 
                         if !viewModel.state.relatedCocktails.isEmpty {
