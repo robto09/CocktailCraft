@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.exclude
@@ -25,7 +26,6 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -45,11 +45,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import androidx.core.util.Consumer
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
@@ -129,11 +126,6 @@ fun MainScreen() {
     val sharedFavoritesViewModel: SharedFavoritesViewModel = koinInject()
     val scope = rememberCoroutineScope()
 
-    // Current destination for conditional rendering (type-safe checks)
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
-    val isDetailScreen = currentDestination?.hasRoute<CocktailDetailRoute>() == true
-
     // Connectivity drives the offline banner directly — "offline" is purely
     // "the network is down"; there is no user-facing offline toggle.
     val networkMonitor: NetworkMonitor = koinInject()
@@ -157,110 +149,31 @@ fun MainScreen() {
         }
     }
 
-    Scaffold(
-        topBar = {
-            // Only show the main top bar if we're NOT on the detail screen
-            if (!isDetailScreen) {
-                // Edge-to-edge inset ownership (AN-6): this Column owns the
-                // status-bar inset exactly once — background first so the
-                // app-bar color still paints behind the transparent status
-                // bar, then padding so the indicator/title start below it.
-                Column(
-                    modifier = Modifier
-                        .background(MaterialTheme.colorScheme.primary)
-                        .statusBarsPadding()
-                ) {
-                    // Banner shown while the device has no connection
-                    OfflineModeIndicator(isOffline = !isOnline)
+    // Each tab draws its own bars through TabScaffold instead of one outer
+    // Scaffold wrapping the NavHost. With shared outer bars, opening the
+    // detail screen dropped the bars (and their padding) the moment the route
+    // changed, so the outgoing tab was re-laid out without its chrome and
+    // flashed behind the incoming detail screen. Now the detail destination
+    // simply has no bars and the outgoing tab keeps its own until it is gone.
+    val tabScaffold: @Composable (Screen, @Composable () -> Unit) -> Unit = { tab, content ->
+        TabScaffold(
+            tab = tab,
+            tabs = items,
+            isOnline = isOnline,
+            cartItemCount = cartUiState.itemCount,
+            snackbarHostState = snackbarHostState,
+            onTabClick = { navigationManager.navigateToBottomNavDestination(it) },
+            content = content
+        )
+    }
 
-                    AppTopBar(
-                        title = when {
-                            // Home leads with the brand, same as iOS
-                            currentDestination?.hasRoute<HomeRoute>() == true -> stringResource(MR.strings.app_title)
-                            currentDestination?.hasRoute<CartRoute>() == true -> stringResource(MR.strings.cart)
-                            currentDestination?.hasRoute<FavoritesRoute>() == true -> stringResource(MR.strings.favorites)
-                            currentDestination?.hasRoute<OrderListRoute>() == true -> stringResource(MR.strings.orders)
-                            currentDestination?.hasRoute<ProfileRoute>() == true -> stringResource(MR.strings.profile)
-                            else -> stringResource(MR.strings.app_title)
-                        },
-                        // The wrapping Column already consumed the status-bar
-                        // inset; keep only the horizontal/cutout parts here so
-                        // the top inset isn't applied twice (AN-6).
-                        windowInsets = TopAppBarDefaults.windowInsets.exclude(WindowInsets.statusBars)
-                    )
-                }
-            }
-        },
-        bottomBar = {
-            // Only show the bottom navigation bar if we're NOT on the detail screen
-            if (!isDetailScreen) {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    tonalElevation = 8.dp
-                ) {
-                    items.forEach { screen ->
-                        NavigationBarItem(
-                            modifier = Modifier.testTag(screen.tag),
-                            icon = {
-                                // Icons are decorative: the visible label names
-                                // the tab. Cart shows an item-count badge, same
-                                // as iOS, spoken as "2 items in cart".
-                                if (screen == Screen.Cart && cartUiState.itemCount > 0) {
-                                    val badgeDescription = pluralStringResource(
-                                        MR.plurals.cart_badge_a11y,
-                                        cartUiState.itemCount,
-                                        cartUiState.itemCount
-                                    )
-                                    BadgedBox(badge = {
-                                        Badge(
-                                            modifier = Modifier.clearAndSetSemantics {
-                                                contentDescription = badgeDescription
-                                            }
-                                        ) { Text(cartUiState.itemCount.toString()) }
-                                    }) {
-                                        Icon(screen.icon, contentDescription = null)
-                                    }
-                                } else {
-                                    Icon(screen.icon, contentDescription = null)
-                                }
-                            },
-                            label = {
-                                Text(
-                                    stringResource(screen.title),
-                                    style = MaterialTheme.typography.labelMedium
-                                )
-                            },
-                            selected = currentDestination?.hierarchy?.any { it.hasRoute(screen.route::class) } == true,
-                            onClick = {
-                                navigationManager.navigateToBottomNavDestination(screen)
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                indicatorColor = MaterialTheme.colorScheme.surface,
-                                unselectedIconColor = MaterialTheme.colorScheme.outline,
-                                unselectedTextColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
-                    }
-                }
-            }
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background,
-        // The detail screen has no outer bars and runs its own Scaffold +
-        // AppTopBar, which own the system-bar insets. Without this, the outer
-        // Scaffold pads the NavHost by the status bar AND the detail top bar
-        // adds it again, doubling the header height (AN-6).
-        contentWindowInsets = if (isDetailScreen) WindowInsets(0) else ScaffoldDefaults.contentWindowInsets
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = HomeRoute,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable<HomeRoute> {
+    NavHost(
+        navController = navController,
+        startDestination = HomeRoute,
+        modifier = Modifier.background(MaterialTheme.colorScheme.background)
+    ) {
+        composable<HomeRoute> {
+            tabScaffold(Screen.Home) {
                 HomeScreen(
                     viewModel = sharedHomeViewModel,
                     favoritesViewModel = sharedFavoritesViewModel,
@@ -271,7 +184,9 @@ fun MainScreen() {
                     }
                 )
             }
-            composable<CartRoute> {
+        }
+        composable<CartRoute> {
+            tabScaffold(Screen.Cart) {
                 CartScreen(
                     viewModel = sharedCartViewModel,
                     onStartShopping = {
@@ -282,12 +197,16 @@ fun MainScreen() {
                     favoritesViewModel = sharedFavoritesViewModel
                 )
             }
-            composable<ProfileRoute> {
+        }
+        composable<ProfileRoute> {
+            tabScaffold(Screen.Profile) {
                 ProfileScreen(
                     navigationManager = navigationManager
                 )
             }
-            composable<FavoritesRoute> {
+        }
+        composable<FavoritesRoute> {
+            tabScaffold(Screen.Favorites) {
                 FavoritesScreen(
                     cartViewModel = sharedCartViewModel,
                     favoritesViewModel = sharedFavoritesViewModel,
@@ -297,31 +216,135 @@ fun MainScreen() {
                     onAddToCart = addToCartAndConfirm
                 )
             }
-            composable<OrderListRoute> {
+        }
+        composable<OrderListRoute> {
+            tabScaffold(Screen.OrderList) {
                 OrderListScreen(
                     orderViewModel = sharedOrderViewModel,
                     navigationManager = navigationManager
                 )
             }
-            composable<CocktailDetailRoute>(
-                deepLinks = listOf(
-                    navDeepLink<CocktailDetailRoute>(basePath = COCKTAIL_DEEP_LINK_BASE_PATH)
-                )
-            ) { backStackEntry ->
-                val route = backStackEntry.toRoute<CocktailDetailRoute>()
-                CocktailDetailScreen(
-                    cocktailId = route.cocktailId,
-                    cartViewModel = sharedCartViewModel,
-                    favoritesViewModel = sharedFavoritesViewModel,
-                    navigationManager = navigationManager,
-                    onBackClick = { navigationManager.navigateBack() },
-                    // The detail screen shows its own snackbar confirmation,
-                    // so only the cart mutation happens here.
-                    onAddToCart = { cocktailToAdd ->
-                        scope.launch { sharedCartViewModel.addToCart(cocktailToAdd) }
-                    }
+        }
+        // No TabScaffold: the detail screen runs its own Scaffold + AppTopBar,
+        // which own the system-bar insets (AN-6).
+        composable<CocktailDetailRoute>(
+            deepLinks = listOf(
+                navDeepLink<CocktailDetailRoute>(basePath = COCKTAIL_DEEP_LINK_BASE_PATH)
+            )
+        ) { backStackEntry ->
+            val route = backStackEntry.toRoute<CocktailDetailRoute>()
+            CocktailDetailScreen(
+                cocktailId = route.cocktailId,
+                cartViewModel = sharedCartViewModel,
+                favoritesViewModel = sharedFavoritesViewModel,
+                navigationManager = navigationManager,
+                onBackClick = { navigationManager.navigateBack() },
+                // The detail screen shows its own snackbar confirmation,
+                // so only the cart mutation happens here.
+                onAddToCart = { cocktailToAdd ->
+                    scope.launch { sharedCartViewModel.addToCart(cocktailToAdd) }
+                }
+            )
+        }
+    }
+}
+
+/**
+ * Top bar, bottom navigation and snackbar host shared by the bottom-nav tabs.
+ * [tab] is the destination this scaffold belongs to, not the current route,
+ * so a tab that is animating out keeps its own title and selected item.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TabScaffold(
+    tab: Screen,
+    tabs: List<Screen>,
+    isOnline: Boolean,
+    cartItemCount: Int,
+    snackbarHostState: SnackbarHostState,
+    onTabClick: (Screen) -> Unit,
+    content: @Composable () -> Unit
+) {
+    Scaffold(
+        topBar = {
+            // Edge-to-edge inset ownership (AN-6): this Column owns the
+            // status-bar inset exactly once — background first so the
+            // app-bar color still paints behind the transparent status
+            // bar, then padding so the indicator/title start below it.
+            Column(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.primary)
+                    .statusBarsPadding()
+            ) {
+                // Banner shown while the device has no connection
+                OfflineModeIndicator(isOffline = !isOnline)
+
+                AppTopBar(
+                    // Home leads with the brand, same as iOS
+                    title = stringResource(if (tab == Screen.Home) MR.strings.app_title else tab.title),
+                    // The wrapping Column already consumed the status-bar
+                    // inset; keep only the horizontal/cutout parts here so
+                    // the top inset isn't applied twice (AN-6).
+                    windowInsets = TopAppBarDefaults.windowInsets.exclude(WindowInsets.statusBars)
                 )
             }
+        },
+        bottomBar = {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary,
+                tonalElevation = 8.dp
+            ) {
+                tabs.forEach { screen ->
+                    NavigationBarItem(
+                        modifier = Modifier.testTag(screen.tag),
+                        icon = {
+                            // Icons are decorative: the visible label names
+                            // the tab. Cart shows an item-count badge, same
+                            // as iOS, spoken as "2 items in cart".
+                            if (screen == Screen.Cart && cartItemCount > 0) {
+                                val badgeDescription = pluralStringResource(
+                                    MR.plurals.cart_badge_a11y,
+                                    cartItemCount,
+                                    cartItemCount
+                                )
+                                BadgedBox(badge = {
+                                    Badge(
+                                        modifier = Modifier.clearAndSetSemantics {
+                                            contentDescription = badgeDescription
+                                        }
+                                    ) { Text(cartItemCount.toString()) }
+                                }) {
+                                    Icon(screen.icon, contentDescription = null)
+                                }
+                            } else {
+                                Icon(screen.icon, contentDescription = null)
+                            }
+                        },
+                        label = {
+                            Text(
+                                stringResource(screen.title),
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        },
+                        selected = screen == tab,
+                        onClick = { onTabClick(screen) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.surface,
+                            unselectedIconColor = MaterialTheme.colorScheme.outline,
+                            unselectedTextColor = MaterialTheme.colorScheme.outline
+                        )
+                    )
+                }
+            }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding)) {
+            content()
         }
     }
 }
