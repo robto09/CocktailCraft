@@ -43,9 +43,10 @@ import com.cocktailcraft.android.screens.detail.DetailReviewsSection
 import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.DetailHeaderImage
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
-import com.cocktailcraft.android.ui.components.WriteReviewDialog
+import com.cocktailcraft.android.ui.components.WriteReviewSheet
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.rememberHapticHandler
+import com.cocktailcraft.android.util.resolve
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.android.util.toFavoriteIdSet
 import com.cocktailcraft.domain.model.Cocktail
@@ -89,6 +90,8 @@ fun CocktailDetailScreen(
 
     // Properly collect reviews as a state
     val reviewState by reviewViewModel.uiState.collectAsStateWithLifecycle()
+    // Review rejections (comment rules, save failures) shown in the sheet
+    val reviewError by reviewViewModel.error.collectAsStateWithLifecycle()
     val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
     val favorites = favoritesState.favorites
     // O(1) membership instead of a scan on every screen recomposition (AN-3)
@@ -124,15 +127,15 @@ fun CocktailDetailScreen(
         onRecommendationClick = { recommendation ->
             navigationManager.navigateToCocktailDetail(recommendation.id)
         },
+        reviewError = reviewError?.message?.resolve(),
+        onClearReviewError = { reviewViewModel.clearError() },
         onSubmitReview = { userName, rating, comment ->
-            coroutineScope.launch {
-                reviewViewModel.submitReview(
-                    cocktailId = cocktailId,
-                    rating = rating,
-                    comment = comment,
-                    userName = userName
-                )
-            }
+            reviewViewModel.submitReview(
+                cocktailId = cocktailId,
+                rating = rating,
+                comment = comment,
+                userName = userName
+            )
         }
     )
 }
@@ -154,7 +157,10 @@ internal fun CocktailDetailContent(
     onAddToCart: (Cocktail) -> Unit,
     onRefreshDetails: () -> Unit,
     onRecommendationClick: (Cocktail) -> Unit,
-    onSubmitReview: (userName: String, rating: Float, comment: String) -> Unit
+    reviewError: String?,
+    onClearReviewError: () -> Unit,
+    // Returns whether the review was saved; the sheet stays open otherwise
+    onSubmitReview: suspend (userName: String, rating: Float, comment: String) -> Boolean
 ) {
     // Single source of truth for the cocktail. The full-screen spinner is
     // driven only by its absence: loadCocktail() publishes the cocktail before
@@ -174,14 +180,17 @@ internal fun CocktailDetailContent(
 
     var showReviewDialog by remember { mutableStateOf(false) }
 
-    WriteReviewDialog(
-        showDialog = showReviewDialog,
-        onDismiss = { showReviewDialog = false },
-        onSubmit = { userName, rating, comment ->
-            onSubmitReview(userName, rating, comment)
-            showReviewDialog = false
-        }
-    )
+    if (showReviewDialog) {
+        WriteReviewSheet(
+            submissionError = reviewError,
+            onDismiss = {
+                showReviewDialog = false
+                onClearReviewError()
+            },
+            onClearError = onClearReviewError,
+            onSubmit = onSubmitReview
+        )
+    }
 
     Scaffold(
         modifier = Modifier.testTag("cocktail_detail_screen"),

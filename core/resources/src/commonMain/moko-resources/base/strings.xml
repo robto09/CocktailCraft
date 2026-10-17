@@ -282,8 +282,7 @@
     <string name="review_rate_star">Rate %1$d</string>
     <string name="review_select_rating_error">Please select a rating</string>
     <string name="review_your_review">Your Review</string>
-    <string name="review_share_experience_placeholder">Share your experience (Optional)</string>
-    <string name="review_share_experience_placeholder_ios">Share your experience (at least 10 characters)</string>
+    <string name="review_share_experience_placeholder">Share your experience (at least 10 characters)</string>
     <string name="review_character_count">%1$d/%2$d</string>
     <string name="review_submit">Submit Review</string>
     <string name="review_rating_value">%1$.1f</string>
