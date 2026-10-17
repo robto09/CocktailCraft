@@ -53,8 +53,7 @@ struct WriteReviewView: View {
                 .padding()
             }
             .background(AppColors.background(isDarkMode: isDarkMode))
-            .navigationTitle(L(\.write_review))
-            .brandedNavigationBar()
+            .brandedNavigationBar(title: L(\.write_review))
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(L(\.cancel)) {

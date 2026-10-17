@@ -98,8 +98,7 @@ struct SignInView: View {
                 Spacer()
             }
             .background(AppColors.background(isDarkMode: isDarkMode))
-            .navigationTitle(L(\.sign_in))
-            .brandedNavigationBar()
+            .brandedNavigationBar(title: L(\.sign_in))
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(L(\.cancel)) {

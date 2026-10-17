@@ -22,8 +22,7 @@ struct FavoritesView: View {
         }
         // App background (not the system black/white) behind every state
         .background(AppColors.background(isDarkMode: isDarkMode).ignoresSafeArea())
-        .navigationTitle(L(\.favorites))
-        .brandedNavigationBar()
+        .brandedNavigationBar(title: L(\.favorites))
         .navigationDestination(for: String.self) { cocktailId in
             CocktailDetailView(cocktailId: cocktailId)
         }

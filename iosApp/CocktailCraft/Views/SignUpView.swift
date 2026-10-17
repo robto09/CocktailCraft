@@ -121,8 +121,7 @@ struct SignUpView: View {
                 Spacer()
             }
             .background(AppColors.background(isDarkMode: isDarkMode))
-            .navigationTitle(L(\.create_account))
-            .brandedNavigationBar()
+            .brandedNavigationBar(title: L(\.create_account))
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(L(\.cancel)) {

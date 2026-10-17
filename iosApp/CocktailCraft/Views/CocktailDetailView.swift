@@ -116,8 +116,7 @@ struct CocktailDetailView: View {
         // asserting navigation doesn't depend on live network data.
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("detail.screen")
-        .navigationTitle(viewModel.state.cocktail?.name ?? "")
-        .brandedNavigationBar()
+        .brandedNavigationBar(title: viewModel.state.cocktail?.name ?? "")
         .task {
             // .task re-fires whenever the view re-appears — including on
             // pop-back from a related cocktail. @State survives while the

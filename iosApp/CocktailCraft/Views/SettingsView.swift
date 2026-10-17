@@ -108,8 +108,7 @@ struct SettingsView: View {
                     }
                 }
             }
-            .navigationTitle(L(\.settings))
-            .brandedNavigationBar()
+            .brandedNavigationBar(title: L(\.settings))
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(L(\.common_done)) {

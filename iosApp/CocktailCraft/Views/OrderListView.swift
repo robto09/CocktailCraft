@@ -15,8 +15,7 @@ struct OrderListView: View {
         contentView
             // App background (not the system black/white) behind every state
             .background(AppColors.background(isDarkMode: isDarkMode).ignoresSafeArea())
-            .navigationTitle(L(\.orders))
-            .brandedNavigationBar()
+            .brandedNavigationBar(title: L(\.orders))
             // Seed load once; afterwards the observed orders flow keeps the
             // list fresh. A load cancelled mid-flight (user leaves the tab)
             // leaves hasLoaded false, so the next visit retries.

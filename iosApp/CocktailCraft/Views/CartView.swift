@@ -20,8 +20,7 @@ struct CartView: View {
                     title: L(\.cart_empty_title),
                     message: L(\.cart_empty_message_ios)
                 )
-                .navigationTitle(L(\.cart))
-                .brandedNavigationBar()
+                .brandedNavigationBar(title: L(\.cart))
             } else {
                 let favoriteIds = Set(favoritesViewModel.state.favorites.map(\.id))
                 ScrollView {
@@ -76,8 +75,7 @@ struct CartView: View {
                             .background(AppColors.background(isDarkMode: isDarkMode))
                     }
                 }
-                .navigationTitle(L(\.cart))
-                .brandedNavigationBar()
+                .brandedNavigationBar(title: L(\.cart))
             }
         }
         // App background (not the system black/white) behind every state

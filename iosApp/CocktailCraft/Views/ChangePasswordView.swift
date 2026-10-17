@@ -121,8 +121,7 @@ struct ChangePasswordView: View {
                 Spacer()
             }
             .background(AppColors.background(isDarkMode: isDarkMode))
-            .navigationTitle(L(\.change_password))
-            .brandedNavigationBar()
+            .brandedNavigationBar(title: L(\.change_password))
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(L(\.cancel)) {
