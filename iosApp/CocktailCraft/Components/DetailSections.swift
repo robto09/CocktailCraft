@@ -196,10 +196,13 @@ extension CocktailDetailView {
                             .fontWeight(.semibold)
                             .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
 
+                        // The grouping holds names only; keep the measure
+                        // from the cocktail, as the flat list (and Android) do
                         ForEach(viewModel.getIngredientsByType(type), id: \.self) { entry in
-                            Text(L(\.detail_ingredient_bullet, entry))
-                                .font(.body)
-                                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                            ingredientRow(
+                                name: entry,
+                                measure: cocktail.ingredients.first { $0.name == entry }?.measure
+                            )
                         }
                     }
                     .padding(.bottom, AppTheme.Spacing.xs)
