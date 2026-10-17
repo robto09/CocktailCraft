@@ -38,7 +38,6 @@ import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.OrderSummaryCard
 import com.cocktailcraft.android.ui.components.PrimaryButton
-import com.cocktailcraft.android.ui.components.SectionHeader
 import com.cocktailcraft.android.util.rememberHapticHandler
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.android.util.toFavoriteIdSet
@@ -49,7 +48,6 @@ import com.cocktailcraft.resources.cart_confirm
 import com.cocktailcraft.resources.cart_empty_message
 import com.cocktailcraft.resources.cart_empty_title
 import com.cocktailcraft.resources.cart_place_order
-import com.cocktailcraft.resources.cart_section_title
 import com.cocktailcraft.resources.cart_start_shopping
 import com.cocktailcraft.resources.cart_try_again
 import com.cocktailcraft.resources.confirm_order_message
@@ -105,7 +103,7 @@ fun CartScreen(
             scope.launch {
                 orderViewModel.placeOrder(
                     cartItems = state.cartItems,
-                    totalPrice = state.totalPrice + 5.99 // Include delivery fee
+                    totalPrice = state.finalTotal // subtotal + DeliveryPolicy fee
                 )
                 navigationManager.navigateToOrderList()
             }
@@ -176,12 +174,6 @@ internal fun CartContent(
         }
         // Show cart items
         else if (!isLoading) {
-            SectionHeader(
-                title = stringResource(MR.strings.cart_section_title),
-                fontSize = 20,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
             // Order summary + checkout button: pinned below the list, except
             // at large font scales, where pinning them would leave almost no
             // room for the items — there they scroll with the list instead.
@@ -192,7 +184,7 @@ internal fun CartContent(
                     // Order Summary
                     OrderSummaryCard(
                         subtotal = totalPrice,
-                        deliveryFee = 5.99,
+                        deliveryFee = state.deliveryFee,
                         modifier = Modifier.padding(vertical = 8.dp),
                         currencyFormatter = currencyFormatter
                     )
@@ -245,7 +237,7 @@ internal fun CartContent(
     ConfirmationDialog(
         showDialog = showPlaceOrderDialog,
         title = stringResource(MR.strings.confirm_order_title),
-        message = stringResource(MR.strings.confirm_order_message, currencyFormatter.format(totalPrice + 5.99)),
+        message = stringResource(MR.strings.confirm_order_message, currencyFormatter.format(state.finalTotal)),
         confirmButtonText = stringResource(MR.strings.cart_confirm),
         dismissButtonText = stringResource(MR.strings.cancel),
         onConfirm = {
