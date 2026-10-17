@@ -111,7 +111,7 @@ struct ChipStyle: ViewModifier {
             .padding(.horizontal, AppTheme.Spacing.lg)
             .padding(.vertical, AppTheme.Spacing.xs)
             .background(isSelected ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.surface(isDarkMode: isDarkMode))
-            .foregroundColor(isSelected ? .white : AppColors.primary(isDarkMode: isDarkMode))
+            .foregroundColor(isSelected ? AppColors.onPrimary(isDarkMode: isDarkMode) : AppColors.primary(isDarkMode: isDarkMode))
             .cornerRadius(AppTheme.CornerRadius.chip)
             .shadow(
                 color: isSelected ? AppTheme.Shadow.button.color : Color.clear,
@@ -124,19 +124,20 @@ struct ChipStyle: ViewModifier {
 
 // MARK: - Branded Navigation Chrome
 
-/// Branded navigation bar: coral background, white title and bar content,
-/// inline (fixed-height) layout — matching Android's AppTopBar so both
-/// platforms share the same chrome. Apply to the root content of every
-/// NavigationStack (tab roots, pushed screens, and sheets).
+/// Branded navigation bar: coral background (dark surface in dark theme),
+/// white title and bar content, inline (fixed-height) layout — matching
+/// Android's AppTopBar so both platforms share the same chrome. Apply to the
+/// root content of every NavigationStack (tab roots, pushed screens, and
+/// sheets).
 struct BrandedNavigationBarStyle: ViewModifier {
     @Environment(\.isDarkMode) var isDarkMode
 
     func body(content: Content) -> some View {
         content
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(AppColors.primary(isDarkMode: isDarkMode), for: .navigationBar)
+            .toolbarBackground(AppColors.topBar(isDarkMode: isDarkMode), for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
-            // Dark scheme = white title/status bar over the coral background
+            // Dark scheme = white title/status bar over either background
             .toolbarColorScheme(.dark, for: .navigationBar)
     }
 }

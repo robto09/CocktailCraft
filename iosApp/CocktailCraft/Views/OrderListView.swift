@@ -13,6 +13,8 @@ struct OrderListView: View {
         // No nav container here: ContentView already wraps this tab in a
         // NavigationStack (the old inner NavigationView double-nested it).
         contentView
+            // App background (not the system black/white) behind every state
+            .background(AppColors.background(isDarkMode: isDarkMode).ignoresSafeArea())
             .navigationTitle(L(\.orders))
             .brandedNavigationBar()
             // Seed load once; afterwards the observed orders flow keeps the

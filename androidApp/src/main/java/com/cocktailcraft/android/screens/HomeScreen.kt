@@ -66,7 +66,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -466,7 +465,7 @@ internal fun HomeContentSection(
                 state = pullToRefreshState,
                 isRefreshing = isLoading,
                 modifier = Modifier.align(Alignment.TopCenter),
-                containerColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.surface,
                 color = MaterialTheme.colorScheme.primary
             )
         }

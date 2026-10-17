@@ -39,7 +39,10 @@ struct AppColors {
     static let gray = Color(token: ColorTokens.shared.gray)         // Secondary text
     static let darkGray = Color(token: ColorTokens.shared.darkGray) // Stronger secondary text
     static let lightGray = Color(token: ColorTokens.shared.lightGray) // Backgrounds
+    static let subtleDark = Color(token: ColorTokens.shared.subtleDark) // lightGray's role on dark
     static let chipBackground = Color(token: ColorTokens.shared.chipBackground) // Brown for category chips
+    static let surfaceRaisedLight = Color(token: ColorTokens.shared.surfaceRaisedLight)
+    static let surfaceRaisedDark = Color(token: ColorTokens.shared.surfaceRaisedDark)
 
     // MARK: - User appearance settings (accent + high contrast)
     // Written only by ContentView from the shared theme state, mirroring
@@ -66,6 +69,30 @@ struct AppColors {
 
     static func surface(isDarkMode: Bool) -> Color {
         isDarkMode ? surfaceDark : surfaceLight
+    }
+
+    /// Content on a primary fill: white on the light coral, black on the
+    /// lighter dark-theme coral (white there is ~2.3:1), matching Android's
+    /// onPrimary.
+    static func onPrimary(isDarkMode: Bool) -> Color {
+        isDarkMode ? .black : .white
+    }
+
+    /// Navigation bar background: brand primary in light, surface in dark,
+    /// matching Android's extendedColors.topBar.
+    static func topBar(isDarkMode: Bool) -> Color {
+        isDarkMode ? surfaceDark : primary(isDarkMode: false)
+    }
+
+    /// Controls raised on a surface (fields, unselected chips).
+    static func surfaceRaised(isDarkMode: Bool) -> Color {
+        isDarkMode ? surfaceRaisedDark : surfaceRaisedLight
+    }
+
+    /// Dividers, unfocused borders, empty segments: lightGray, or its dark
+    /// counterpart so it doesn't glare on dark surfaces.
+    static func neutralSubtle(isDarkMode: Bool) -> Color {
+        isDarkMode ? subtleDark : lightGray
     }
 
     static func textPrimary(isDarkMode: Bool) -> Color {

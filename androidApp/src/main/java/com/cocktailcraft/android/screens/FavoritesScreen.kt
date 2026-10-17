@@ -21,7 +21,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocktailcraft.android.ui.components.CocktailItem
@@ -127,7 +126,7 @@ internal fun FavoritesContent(
                         state = pullToRefreshState,
                         isRefreshing = isLoading,
                         modifier = Modifier.align(Alignment.TopCenter),
-                        containerColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.surface,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }

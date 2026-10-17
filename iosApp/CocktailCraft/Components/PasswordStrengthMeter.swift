@@ -6,13 +6,15 @@ import SwiftUI
 struct PasswordStrengthMeter: View {
     let strength: Int
 
+    @Environment(\.isDarkMode) private var isDarkMode
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 ForEach(0..<5, id: \.self) { index in
                     Rectangle()
                         .frame(height: 4)
-                        .foregroundColor(index < strength ? color : AppColors.lightGray)
+                        .foregroundColor(index < strength ? color : AppColors.neutralSubtle(isDarkMode: isDarkMode))
                         .cornerRadius(2)
                 }
             }

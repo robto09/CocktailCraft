@@ -119,10 +119,15 @@ struct AnimatedThemeSwitch: View {
     let enabled: Bool
     let onToggle: () -> Void
 
+    @Environment(\.isDarkMode) private var isDarkMode
+
     var body: some View {
         ZStack(alignment: .leading) {
             Capsule()
-                .fill(isChecked ? Color(hex: "3C4043") : Color(hex: "E4E4E4"))
+                // The off track stays subtle on dark surfaces
+                .fill(isChecked
+                    ? Color(hex: "3C4043")
+                    : isDarkMode ? AppColors.neutralSubtle(isDarkMode: true) : Color(hex: "E4E4E4"))
                 .frame(width: 72, height: 40)
 
             Circle()
@@ -163,7 +168,7 @@ struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
-            .foregroundColor(.white)
+            .foregroundColor(AppColors.onPrimary(isDarkMode: isDarkMode))
             .frame(maxWidth: .infinity)
             .padding()
             .background(AppColors.primary(isDarkMode: isDarkMode))

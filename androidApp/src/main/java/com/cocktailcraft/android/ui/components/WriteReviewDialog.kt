@@ -234,7 +234,7 @@ fun WriteReviewDialog(
                     Text(stringResource(MR.strings.cancel))
                 }
             },
-            containerColor = Color.White,
+            containerColor = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(24.dp),
             tonalElevation = 8.dp
         )

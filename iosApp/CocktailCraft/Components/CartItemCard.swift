@@ -133,7 +133,7 @@ struct QuantityControlView: View {
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .foregroundColor(.white)
                     .frame(width: 32, height: 32)
-                    .background(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .background(isDarkMode ? AppColors.neutralSubtle(isDarkMode: true) : AppColors.textSecondary(isDarkMode: false))
                     .clipShape(Circle())
                     .minimumHitTarget()
             }
@@ -159,7 +159,7 @@ struct QuantityControlView: View {
                     // Fixed 32 pt circle: keep the glyph inside it at large
                     // text sizes
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                    .foregroundColor(.white)
+                    .foregroundColor(AppColors.onPrimary(isDarkMode: isDarkMode))
                     .frame(width: 32, height: 32)
                     .background(AppColors.primary(isDarkMode: isDarkMode))
                     .clipShape(Circle())

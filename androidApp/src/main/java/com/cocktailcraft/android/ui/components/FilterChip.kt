@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.FilterChip as Material3FilterChip
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 
 /**
  * App-styled wrapper around Material 3's FilterChip: pill shape, no outline,
@@ -27,11 +28,11 @@ fun FilterChip(
     onClick: () -> Unit,
     label: String,
     selectedColor: Color = MaterialTheme.colorScheme.primary,
-    unselectedColor: Color = Color.White,
-    selectedTextColor: Color = Color.White,
+    unselectedColor: Color = CocktailCraftTheme.extendedColors.surfaceRaised,
+    selectedTextColor: Color = MaterialTheme.colorScheme.onPrimary,
     unselectedTextColor: Color = MaterialTheme.colorScheme.primary,
     trailingIcon: ImageVector? = null,
-    selectedIconColor: Color = Color.White
+    selectedIconColor: Color = MaterialTheme.colorScheme.onPrimary
 ) {
     Material3FilterChip(
         selected = selected,

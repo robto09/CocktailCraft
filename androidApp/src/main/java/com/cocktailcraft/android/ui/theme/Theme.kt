@@ -26,16 +26,19 @@ import com.cocktailcraft.designsystem.ColorTokens
 //   secondary (gold)    → colorScheme.secondary
 //   chipBackground      → colorScheme.tertiary
 //   background/surface  → colorScheme.background / surface
+//   surfaceRaised       → extendedColors.surfaceRaised
 //   textPrimary         → colorScheme.onSurface (== onBackground)
 //   textSecondary       → colorScheme.onSurfaceVariant (high-contrast aware)
 //   gray                → colorScheme.outline (high-contrast aware, light)
-//   lightGray           → extendedColors.neutralSubtle
+//   lightGray / subtleDark → extendedColors.neutralSubtle
 //   error               → colorScheme.error
 //   success / warning   → extendedColors.success / warning
 //   rating stars        → extendedColors.rating
-// lightGray is NOT outlineVariant: that role feeds Material defaults (chip and
-// outlined-button borders, default dividers), and lightGray is the same light
-// value in both themes, so remapping it would restyle those components.
+//   top bar             → extendedColors.topBar (coral light, surface dark)
+// neutralSubtle is NOT outlineVariant and surfaceRaised is NOT
+// surfaceContainerHigh: those roles feed Material defaults (chip and
+// outlined-button borders, default dividers, dialogs), so remapping them would
+// restyle those components.
 
 /**
  * Builds the brand Material 3 color scheme from the shared tokens, honouring
@@ -59,14 +62,17 @@ internal fun cocktailColorScheme(
         darkColorScheme(
             primary = Color(AccentColorTokens.dark(accentColor)),
             secondary = Color(ColorTokens.secondaryDark),
-            tertiary = chip,
+            tertiary = Color(ColorTokens.chipBackgroundDark),
             background = Color(ColorTokens.backgroundDark),
             surface = Color(ColorTokens.surfaceDark),
+            // Neutral elevation: the default primary tint turns elevated
+            // dark surfaces (nav bar, dialogs) brown
+            surfaceTint = Color(ColorTokens.surfaceDark),
             surfaceVariant = darkGray,
             error = error,
             onPrimary = Color.Black,
             onSecondary = Color.Black,
-            onTertiary = Color.White,
+            onTertiary = Color.Black,
             onBackground = Color(ColorTokens.textPrimaryDark),
             onSurface = Color(ColorTokens.textPrimaryDark),
             onSurfaceVariant = if (highContrast) lightGray else Color(ColorTokens.textSecondaryDark),
@@ -109,17 +115,26 @@ data class ExtendedColors(
     /** Filled rating stars (brand gold, lighter in dark theme). */
     val rating: Color,
     /**
-     * Light neutral for dividers, unfocused borders, empty stars, and image
-     * placeholder fills. Same value in both themes (brand lightGray).
+     * Subtle neutral for dividers, unfocused borders, empty stars, and image
+     * placeholder fills (brand lightGray; subtleDark in dark theme).
      */
-    val neutralSubtle: Color
+    val neutralSubtle: Color,
+    /** Fill for controls raised on a surface: search field, unselected chips. */
+    val surfaceRaised: Color,
+    /** Top bar and the status-bar strip behind it: brand coral, surface in dark. */
+    val topBar: Color
 )
 
-internal fun cocktailExtendedColors(darkTheme: Boolean): ExtendedColors = ExtendedColors(
+internal fun cocktailExtendedColors(
+    darkTheme: Boolean,
+    accentColor: String = AccentColorTokens.DEFAULT
+): ExtendedColors = ExtendedColors(
     success = Color(ColorTokens.success),
     warning = Color(ColorTokens.warning),
     rating = Color(if (darkTheme) ColorTokens.secondaryDark else ColorTokens.secondaryLight),
-    neutralSubtle = Color(ColorTokens.lightGray)
+    neutralSubtle = Color(if (darkTheme) ColorTokens.subtleDark else ColorTokens.lightGray),
+    surfaceRaised = Color(if (darkTheme) ColorTokens.surfaceRaisedDark else ColorTokens.surfaceRaisedLight),
+    topBar = Color(if (darkTheme) ColorTokens.surfaceDark else AccentColorTokens.light(accentColor))
 )
 
 internal val LocalExtendedColors = staticCompositionLocalOf { cocktailExtendedColors(darkTheme = false) }
