@@ -100,8 +100,9 @@ struct HomeViewSKIE: View {
                         }
                     },
                     onClearAll: {
+                        // Keep the chip: the shared clear reloads the
+                        // selected category, as on Android
                         searchText = ""
-                        selectedCategory = nil
                         viewModel.clearSearchFilters()
                     }
                 )
@@ -115,7 +116,9 @@ struct HomeViewSKIE: View {
                     onSelectAll: {
                         selectedCategory = nil
                         Task {
-                            await viewModel.loadCocktails()
+                            // nil = the default list; loadCocktails() would
+                            // reload the previously selected category
+                            await viewModel.loadCocktailsByCategory(nil)
                         }
                     },
                     onSelect: { category in
