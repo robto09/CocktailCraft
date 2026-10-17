@@ -94,7 +94,7 @@ internal class CocktailRemoteDataSource(
             rating = demoRating(seed),
             category = dto.category,
             glass = dto.glass,
-            alcoholic = dto.alcoholic ?: "Unknown",
+            alcoholic = dto.alcoholic ?: Cocktail.ALCOHOLIC_UNKNOWN,
             popularity = demoPopularity(seed)
         )
     }
