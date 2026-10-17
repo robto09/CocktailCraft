@@ -4,22 +4,11 @@ import shared
 /**
  * iOS ViewModel wrapper for SharedCocktailDetailViewModel using pure SKIE integration.
  * State/error mirroring and observation-task lifecycle live in
- * SharedViewModelWrapper.
+ * SharedViewModelWrapper; views read `state.<field>` (including the derived
+ * `state.nutritionFacts` / `state.shareableText`). The helpers below are
+ * Swift-only presentation formatting over that state.
  */
 final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
-
-    // Computed properties
-    var hasRelatedCocktails: Bool {
-        !state.relatedCocktails.isEmpty
-    }
-
-    var shareableText: String {
-        sharedViewModel.getShareableText()
-    }
-
-    var nutritionFacts: NutritionFacts? {
-        sharedViewModel.getNutritionFacts()
-    }
 
     // Shared ViewModel instance
     private let sharedViewModel: SharedCocktailDetailViewModel
@@ -27,7 +16,7 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
     init() {
         let viewModel = getSharedKoinHelper().getSharedCocktailDetailViewModel()
         self.sharedViewModel = viewModel
-        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
+        super.init(viewModel: viewModel, uiState: viewModel.uiState, ownsViewModel: true)
         #if DEBUG
         // IO-13 instrumentation: @State evaluates its initializer on every
         // parent re-render and discards the extra instances — each one spins
@@ -40,16 +29,14 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
         #endif
     }
 
+    // The wrapped Koin `factory` instance is owned (ownsViewModel), so the
+    // base deinit clears its scope; this one only feeds the IO-13 gauge.
+    #if DEBUG
     deinit {
-        // This wraps a Koin `factory` instance owned by this wrapper, so its
-        // scope is cancelled here; the base deinit cancels observation tasks.
-        // (Singleton-backed wrappers must NOT call onCleared().)
-        sharedViewModel.onCleared()
-        #if DEBUG
         Self.liveInstances -= 1
         print("CocktailDetailViewModelSKIE: torn down (live: \(Self.liveInstances))")
-        #endif
     }
+    #endif
 
     #if DEBUG
     // Rough churn gauge. nonisolated(unsafe): deinit is nonisolated and must
@@ -79,26 +66,7 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
         await run { try await sharedViewModel.removeFromCart() }
     }
 
-    // MARK: - Synchronous Methods
-
-    func clearError() {
-        sharedViewModel.clearError()
-    }
-
-    func refresh() {
-        sharedViewModel.refresh()
-    }
-
     // MARK: - Helper Methods for SwiftUI
-
-    func formatIngredients() -> String {
-        guard let cocktail = state.cocktail else { return "" }
-
-        return cocktail.ingredients.map { ingredient in
-            let measure = ingredient.measure.isEmpty ? "" : "\(ingredient.measure) "
-            return "• \(measure)\(ingredient.name)"
-        }.joined(separator: "\n")
-    }
 
     func getIngredientsByType(_ type: String) -> [String] {
         return state.ingredientsByType[type] ?? []
@@ -119,14 +87,14 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
     }
 
     func getStockStatus() -> String {
-        guard let cocktail = state.cocktail else { return "Unknown" }
+        guard let cocktail = state.cocktail else { return L(\.common_unknown) }
 
         if !cocktail.inStock {
-            return "Out of Stock"
+            return L(\.detail_out_of_stock)
         } else if cocktail.stockCount <= 5 {
-            return "Low Stock (\(cocktail.stockCount) left)"
+            return L(\.detail_low_stock, cocktail.stockCount)
         } else {
-            return "In Stock"
+            return L(\.detail_in_stock_ios)
         }
     }
 
@@ -145,9 +113,5 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
     func canAddToCart() -> Bool {
         guard let cocktail = state.cocktail else { return false }
         return cocktail.inStock && cocktail.stockCount > 0
-    }
-
-    func shareContent() -> String {
-        return shareableText
     }
 }

@@ -12,27 +12,37 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.android.R
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.SectionHeader
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.util.refreshAccessibilityAction
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.refresh
+import com.cocktailcraft.resources.browse_cocktails
+import com.cocktailcraft.resources.cart_try_again
+import com.cocktailcraft.resources.error
+import com.cocktailcraft.resources.favorites_empty_message
+import com.cocktailcraft.resources.favorites_section_title
+import com.cocktailcraft.resources.no_favorites
+import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
+import com.cocktailcraft.viewmodel.state.FavoritesUiState
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,15 +54,40 @@ fun FavoritesScreen(
     onAddToCart: (Cocktail) -> Unit
 ) {
     val state by favoritesViewModel.uiState.collectAsStateWithLifecycle()
-    val isLoading = state.isLoading
-    val favorites = state.favorites
     val error by favoritesViewModel.error.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+
+    FavoritesContent(
+        state = state,
+        error = error,
+        onRefresh = { favoritesViewModel.refresh() },
+        onBrowseProducts = onBrowseProducts,
+        onAddToCart = onAddToCart,
+        onToggleFavorite = { cocktail -> scope.launch { favoritesViewModel.toggleFavorite(cocktail) } }
+    )
+}
+
+/**
+ * Stateless favorites content: renders [state] and reports every intent
+ * upward, so it can be previewed/screenshot-tested without a ViewModel.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun FavoritesContent(
+    state: FavoritesUiState,
+    error: ErrorHandler.UserFriendlyError?,
+    onRefresh: () -> Unit,
+    onBrowseProducts: () -> Unit,
+    onAddToCart: (Cocktail) -> Unit,
+    onToggleFavorite: (Cocktail) -> Unit
+) {
+    val isLoading = state.isLoading
+    val favorites = state.favorites
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.Background)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Show loading state
         LoadingStateComponent(isLoading = isLoading)
@@ -60,9 +95,9 @@ fun FavoritesScreen(
         // Show error state
         if (!isLoading && error != null) {
             EmptyStateComponent(
-                title = stringResource(R.string.error),
-                message = error?.toString() ?: stringResource(R.string.cart_unknown_error),
-                actionButtonText = stringResource(R.string.cart_try_again),
+                title = stringResource(MR.strings.error),
+                message = error.toString(),
+                actionButtonText = stringResource(MR.strings.cart_try_again),
                 onActionButtonClick = { /* Add retry logic here */ },
                 icon = Icons.Filled.Warning
             )
@@ -70,9 +105,9 @@ fun FavoritesScreen(
         // Show empty favorites state
         else if (!isLoading && favorites.isEmpty()) {
             EmptyStateComponent(
-                title = stringResource(R.string.no_favorites),
-                message = stringResource(R.string.favorites_empty_message),
-                actionButtonText = stringResource(R.string.browse_cocktails),
+                title = stringResource(MR.strings.no_favorites),
+                message = stringResource(MR.strings.favorites_empty_message),
+                actionButtonText = stringResource(MR.strings.browse_cocktails),
                 onActionButtonClick = onBrowseProducts,
                 icon = Icons.Filled.Favorite
             )
@@ -82,8 +117,10 @@ fun FavoritesScreen(
             val pullToRefreshState = rememberPullToRefreshState()
             PullToRefreshBox(
                 isRefreshing = isLoading,
-                onRefresh = { favoritesViewModel.refresh() },
-                modifier = Modifier.fillMaxSize(),
+                onRefresh = onRefresh,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .refreshAccessibilityAction(stringResource(MR.strings.refresh), onRefresh),
                 state = pullToRefreshState,
                 indicator = {
                     PullToRefreshDefaults.Indicator(
@@ -91,7 +128,7 @@ fun FavoritesScreen(
                         isRefreshing = isLoading,
                         modifier = Modifier.align(Alignment.TopCenter),
                         containerColor = Color.White,
-                        color = AppColors.Primary
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             ) {
@@ -104,7 +141,7 @@ fun FavoritesScreen(
             ) {
                 item {
                     SectionHeader(
-                        title = stringResource(R.string.favorites_section_title),
+                        title = stringResource(MR.strings.favorites_section_title),
                         fontSize = 20,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
@@ -122,7 +159,7 @@ fun FavoritesScreen(
                         },
                         isFavorite = true,
                         onToggleFavorite = { _ ->
-                            scope.launch { favoritesViewModel.toggleFavorite(cocktail) }
+                            onToggleFavorite(cocktail)
                         }
                     )
                 }

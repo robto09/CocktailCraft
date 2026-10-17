@@ -7,8 +7,7 @@
 # Updates the canonical values in gradle.properties (consumed by
 # androidApp/build.gradle.kts) and mirrors them into both iOS targets in
 # iosApp/project.yml (app + widget extension). Re-run
-# `xcodegen generate && pod install` in iosApp/ afterwards to regenerate the
-# Xcode project.
+# `xcodegen generate` in iosApp/ afterwards to regenerate the Xcode project.
 set -euo pipefail
 
 if [ $# -ne 2 ]; then
@@ -31,4 +30,4 @@ sed -i '' \
   "$ROOT/iosApp/project.yml"
 
 echo "Version set to ${NAME} (${CODE}) in gradle.properties and iosApp/project.yml."
-echo "Now run: cd iosApp && xcodegen generate && pod install"
+echo "Now run: cd iosApp && xcodegen generate"

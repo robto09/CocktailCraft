@@ -40,13 +40,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.LocalReducedMotion
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.filter_clear_category
+import com.cocktailcraft.resources.refresh
+import com.cocktailcraft.resources.search_browse_all_cocktails
+import com.cocktailcraft.resources.search_clear_filters_button
+import com.cocktailcraft.resources.search_clear_search_button
+import com.cocktailcraft.resources.search_no_results
+import com.cocktailcraft.resources.search_no_results_category
+import com.cocktailcraft.resources.search_no_results_filters
+import com.cocktailcraft.resources.search_no_results_query
+import com.cocktailcraft.resources.search_no_results_query_category
+import com.cocktailcraft.resources.search_no_results_query_filters
+import com.cocktailcraft.resources.search_suggestion_adjust_filters
+import com.cocktailcraft.resources.search_suggestion_check_spelling
+import com.cocktailcraft.resources.search_suggestion_different_term_or_category
+import com.cocktailcraft.resources.search_suggestion_empty_category
+import com.cocktailcraft.resources.search_suggestion_none_found
 
 /**
  * A visually appealing message displayed when search results are empty
@@ -61,8 +79,9 @@ fun EmptySearchResultsMessage(
     onClearFilters: () -> Unit = onClearSearch,
     modifier: Modifier = Modifier
 ) {
-    // Animation states
-    val visibleState = remember { MutableTransitionState(false) }
+    // Animation states (Reduce Motion: start visible, no bouncy slide-in)
+    val reducedMotion = LocalReducedMotion.current
+    val visibleState = remember { MutableTransitionState(reducedMotion) }
 
     // Set visible to trigger the animation
     LaunchedEffect(Unit) {
@@ -108,22 +127,23 @@ fun EmptySearchResultsMessage(
                 Text(
                     text = when {
                         hasActiveFilters && searchQuery.isNotBlank() ->
-                            stringResource(R.string.search_no_results_query_filters, searchQuery)
+                            stringResource(MR.strings.search_no_results_query_filters, searchQuery)
                         hasActiveFilters ->
-                            stringResource(R.string.search_no_results_filters)
+                            stringResource(MR.strings.search_no_results_filters)
                         selectedCategory != null && searchQuery.isNotBlank() ->
-                            stringResource(R.string.search_no_results_query_category, searchQuery, selectedCategory)
+                            stringResource(MR.strings.search_no_results_query_category, searchQuery, selectedCategory)
                         selectedCategory != null ->
-                            stringResource(R.string.search_no_results_category, selectedCategory)
+                            stringResource(MR.strings.search_no_results_category, selectedCategory)
                         searchQuery.isNotBlank() ->
-                            stringResource(R.string.search_no_results_query, searchQuery)
+                            stringResource(MR.strings.search_no_results_query, searchQuery)
                         else ->
-                            stringResource(R.string.search_no_results)
+                            stringResource(MR.strings.search_no_results)
                     },
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary,
-                    textAlign = TextAlign.Center
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.semantics { heading() }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -132,18 +152,18 @@ fun EmptySearchResultsMessage(
                 Text(
                     text = when {
                         hasActiveFilters ->
-                            stringResource(R.string.search_suggestion_adjust_filters)
+                            stringResource(MR.strings.search_suggestion_adjust_filters)
                         selectedCategory != null && searchQuery.isNotBlank() ->
-                            stringResource(R.string.search_suggestion_different_term_or_category)
+                            stringResource(MR.strings.search_suggestion_different_term_or_category)
                         selectedCategory != null ->
-                            stringResource(R.string.search_suggestion_empty_category)
+                            stringResource(MR.strings.search_suggestion_empty_category)
                         searchQuery.isNotBlank() ->
-                            stringResource(R.string.search_suggestion_check_spelling)
+                            stringResource(MR.strings.search_suggestion_check_spelling)
                         else ->
-                            stringResource(R.string.search_suggestion_none_found)
+                            stringResource(MR.strings.search_suggestion_none_found)
                     },
                     fontSize = 16.sp,
-                    color = AppColors.TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
 
@@ -156,10 +176,10 @@ fun EmptySearchResultsMessage(
                         Button(
                             onClick = onClearSearch,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Primary
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
-                            Text(stringResource(R.string.search_clear_search_button))
+                            Text(stringResource(MR.strings.search_clear_search_button))
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -167,10 +187,10 @@ fun EmptySearchResultsMessage(
                         OutlinedButton(
                             onClick = onClearFilters,
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = AppColors.Primary
+                                contentColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
-                            Text(stringResource(R.string.search_clear_filters_button))
+                            Text(stringResource(MR.strings.search_clear_filters_button))
                         }
                     }
                     hasActiveFilters -> {
@@ -178,10 +198,10 @@ fun EmptySearchResultsMessage(
                         Button(
                             onClick = onClearFilters,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Primary
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
-                            Text(stringResource(R.string.search_clear_filters_button))
+                            Text(stringResource(MR.strings.search_clear_filters_button))
                         }
                     }
                     selectedCategory != null && searchQuery.isNotBlank() -> {
@@ -189,10 +209,10 @@ fun EmptySearchResultsMessage(
                         Button(
                             onClick = onClearSearch,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Primary
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
-                            Text(stringResource(R.string.search_clear_search_button))
+                            Text(stringResource(MR.strings.search_clear_search_button))
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -200,10 +220,10 @@ fun EmptySearchResultsMessage(
                         OutlinedButton(
                             onClick = { onClearCategory?.invoke() },
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = AppColors.Primary
+                                contentColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
-                            Text(stringResource(R.string.filter_clear_category))
+                            Text(stringResource(MR.strings.filter_clear_category))
                         }
                     }
                     selectedCategory != null -> {
@@ -211,10 +231,10 @@ fun EmptySearchResultsMessage(
                         Button(
                             onClick = { onClearCategory?.invoke() },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Primary
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
-                            Text(stringResource(R.string.search_browse_all_cocktails))
+                            Text(stringResource(MR.strings.search_browse_all_cocktails))
                         }
                     }
                     searchQuery.isNotBlank() -> {
@@ -222,10 +242,10 @@ fun EmptySearchResultsMessage(
                         Button(
                             onClick = onClearSearch,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Primary
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
-                            Text(stringResource(R.string.search_clear_search_button))
+                            Text(stringResource(MR.strings.search_clear_search_button))
                         }
                     }
                     else -> {
@@ -233,10 +253,10 @@ fun EmptySearchResultsMessage(
                         Button(
                             onClick = onClearSearch, // This will refresh the list
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = AppColors.Primary
+                                containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
-                            Text(stringResource(R.string.refresh))
+                            Text(stringResource(MR.strings.refresh))
                         }
                     }
                 }
@@ -247,6 +267,7 @@ fun EmptySearchResultsMessage(
     }
 }
 
+// Decorative: the message below explains the empty state
 @Composable
 private fun EmptyStateIcon(icon: ImageVector) {
     Box(
@@ -257,15 +278,15 @@ private fun EmptyStateIcon(icon: ImageVector) {
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = stringResource(R.string.search_no_results_icon),
-            tint = AppColors.Primary.copy(alpha = 0.2f),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
             modifier = Modifier.size(80.dp)
         )
 
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = AppColors.Primary,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(40.dp)
         )
     }

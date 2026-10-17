@@ -10,6 +10,7 @@ struct FavoritesView: View {
     @State private var removingIds: Set<String> = []
     @State private var showingToast = false
     @State private var toastMessage = ""
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Group {
@@ -19,7 +20,7 @@ struct FavoritesView: View {
                 favoritesGridView
             }
         }
-        .navigationTitle("Favorites")
+        .navigationTitle(L(\.favorites))
         .brandedNavigationBar()
         .navigationDestination(for: String.self) { cocktailId in
             CocktailDetailView(cocktailId: cocktailId)
@@ -34,8 +35,8 @@ struct FavoritesView: View {
     private var emptyStateView: some View {
         EmptyStateView(
             icon: "heart",
-            title: "No favorites yet",
-            message: "Start adding cocktails to your favorites"
+            title: L(\.no_favorites),
+            message: L(\.favorites_empty_message_ios)
         )
     }
     
@@ -61,8 +62,12 @@ struct FavoritesView: View {
         .animation(.default, value: viewModel.state.favorites.map(\.id))
     }
     
+    // One column at accessibility text sizes, where two cards per row
+    // leave too little width for the text
     private var gridColumns: [GridItem] {
-        [GridItem(.flexible()), GridItem(.flexible())]
+        dynamicTypeSize.isAccessibilitySize
+            ? [GridItem(.flexible())]
+            : [GridItem(.flexible()), GridItem(.flexible())]
     }
     
     private func cocktailGridItem(_ cocktail: Cocktail) -> some View {
@@ -80,7 +85,7 @@ struct FavoritesView: View {
                 onAddToCart: {
                     Task { @MainActor in
                         await cartViewModel.addToCart(cocktail)
-                        toastMessage = String(localized: "Added \(cocktail.name) to cart")
+                        toastMessage = L(\.added_to_cart, cocktail.name)
                         withAnimation {
                             showingToast = true
                         }

@@ -13,7 +13,7 @@ struct OrderListView: View {
         // No nav container here: ContentView already wraps this tab in a
         // NavigationStack (the old inner NavigationView double-nested it).
         contentView
-            .navigationTitle("Orders")
+            .navigationTitle(L(\.orders))
             .brandedNavigationBar()
             // Seed load once; afterwards the observed orders flow keeps the
             // list fresh. A load cancelled mid-flight (user leaves the tab)
@@ -38,7 +38,7 @@ struct OrderListView: View {
     }
 
     private var loadingView: some View {
-        LoadingStateView(message: "Loading orders...")
+        LoadingStateView(message: L(\.order_list_loading))
     }
 
     // Mirrors Android's Orders empty state: icon/title/message plus a
@@ -46,9 +46,9 @@ struct OrderListView: View {
     private var emptyView: some View {
         EmptyStateView(
             icon: "list.bullet",
-            title: String(localized: "No orders yet"),
-            message: String(localized: "Your order history will appear here"),
-            actionTitle: String(localized: "Browse Cocktails"),
+            title: L(\.order_list_empty_title),
+            message: L(\.order_list_empty_message),
+            actionTitle: L(\.browse_cocktails),
             action: {
                 router.selectedTab = .home
             }
@@ -69,9 +69,10 @@ struct OrderListView: View {
 
     private func orderRow(order: Order) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Order #\(order.id)")
+            Text(L(\.order_number, order.id))
                 .font(.headline)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                .accessibilityAddTraits(.isHeader)
             // Colored status indicator matching Android's OrderCard
             HStack(spacing: 6) {
                 Circle()
@@ -81,11 +82,12 @@ struct OrderListView: View {
                     .font(.subheadline)
                     .foregroundColor(statusColor(order.status))
             }
-            Text("Total: " + order.total.asPrice)
+            Text(L(\.order_total_label, order.total.asPrice))
                 .font(.body)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
     }
 
     private func statusColor(_ status: String) -> Color {

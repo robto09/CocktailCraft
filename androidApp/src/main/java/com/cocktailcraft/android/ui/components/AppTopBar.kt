@@ -16,10 +16,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.common_back
 
 /**
  * The app's single branded top bar: coral background, centered white bold
@@ -47,7 +49,8 @@ fun AppTopBar(
                 Text(
                     text = title,
                     color = Color.White,
-                    style = MaterialTheme.typography.headlineMedium
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.semantics { heading() }
                 )
             },
             navigationIcon = {
@@ -55,7 +58,7 @@ fun AppTopBar(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.common_back),
+                            contentDescription = stringResource(MR.strings.common_back),
                             tint = Color.White
                         )
                     }
@@ -63,7 +66,7 @@ fun AppTopBar(
             },
             actions = actions,
             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = AppColors.Primary,
+                containerColor = MaterialTheme.colorScheme.primary,
                 titleContentColor = Color.White,
                 navigationIconContentColor = Color.White,
                 actionIconContentColor = Color.White

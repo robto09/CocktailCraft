@@ -8,16 +8,17 @@ struct CartSummaryCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
-            Text("Order Summary")
+            Text(L(\.order_summary_title))
                 .font(AppTheme.Typography.title2)
                 .fontWeight(.bold)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                .accessibilityAddTraits(.isHeader)
                 .padding(.horizontal, AppTheme.Spacing.lg)
 
             VStack(spacing: 0) {
                 // Subtotal
                 SummaryRow(
-                    label: "Subtotal",
+                    label: L(\.order_subtotal),
                     value: subtotal,
                     isTotal: false
                 )
@@ -27,7 +28,7 @@ struct CartSummaryCard: View {
 
                 // Delivery Fee
                 SummaryRow(
-                    label: "Delivery Fee",
+                    label: L(\.order_delivery_fee),
                     value: deliveryFee,
                     isTotal: false
                 )
@@ -37,7 +38,7 @@ struct CartSummaryCard: View {
 
                 // Total
                 SummaryRow(
-                    label: "Total",
+                    label: L(\.total),
                     value: total,
                     isTotal: true
                 )
@@ -55,21 +56,40 @@ struct SummaryRow: View {
     @Environment(\.isDarkMode) var isDarkMode
     
     var body: some View {
-        HStack {
-            Text(label)
-                .font(isTotal ? AppTheme.Typography.headline : AppTheme.Typography.body)
-                .fontWeight(isTotal ? .bold : .medium)
-                .foregroundColor(isTotal ? AppColors.textPrimary(isDarkMode: isDarkMode) : AppColors.textSecondary(isDarkMode: isDarkMode))
-            
-            Spacer()
-            
-            Text(value.asPrice)
-                .font(isTotal ? AppTheme.Typography.headline : AppTheme.Typography.body)
-                .fontWeight(isTotal ? .bold : .medium)
-                .foregroundColor(isTotal ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.textPrimary(isDarkMode: isDarkMode))
+        // Label and amount side by side; stacked when they don't fit
+        // (large Dynamic Type) rather than breaking words and prices
+        ViewThatFits(in: .horizontal) {
+            HStack {
+                labelText
+                Spacer()
+                valueText
+            }
+
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                labelText
+                valueText
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, AppTheme.Spacing.lg)
         .padding(.vertical, AppTheme.Spacing.md)
+        // "Subtotal, $25.00" as one element
+        .accessibilityElement(children: .combine)
+    }
+
+    private var labelText: some View {
+        Text(label)
+            .font(isTotal ? AppTheme.Typography.headline : AppTheme.Typography.body)
+            .fontWeight(isTotal ? .bold : .medium)
+            .foregroundColor(isTotal ? AppColors.textPrimary(isDarkMode: isDarkMode) : AppColors.textSecondary(isDarkMode: isDarkMode))
+    }
+
+    private var valueText: some View {
+        Text(value.asPrice)
+            .font(isTotal ? AppTheme.Typography.headline : AppTheme.Typography.body)
+            .fontWeight(isTotal ? .bold : .medium)
+            .foregroundColor(isTotal ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.textPrimary(isDarkMode: isDarkMode))
+            .fixedSize()
     }
 }
 

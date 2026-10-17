@@ -1,24 +1,10 @@
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.android.kotlinMultiplatformLibrary)
-    kotlin("native.cocoapods")
+    // Targets, toolchain, SDK levels, opt-ins, host tests (build-logic, AR-10)
+    id("cocktailcraft.kmp.library")
     alias(libs.plugins.skie)
-    alias(libs.plugins.sqldelight)
-}
-
-// Offline cocktail cache storage (see CocktailCache)
-sqldelight {
-    databases {
-        create("CocktailCraftDatabase") {
-            packageName.set("com.cocktailcraft.data.cache.db")
-            // Snapshots of each released schema version live here. Any change
-            // to the .sq files must ship with a matching .sqm migration, or
-            // verifySqlDelightMigration fails (it runs as part of `check`).
-            schemaOutputDirectory.set(file("src/commonMain/sqldelight/databases"))
-            verifyMigrations.set(true)
-        }
-    }
+    // No resources of its own: links :core:resources' strings bundle into the
+    // framework and registers copyFrameworkResourcesToApp for Xcode
+    alias(libs.plugins.moko.resources)
 }
 
 // Configure SKIE for enhanced Swift interop
@@ -38,118 +24,86 @@ skie {
             // Default arguments support for cleaner Swift APIs
             co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(true)
         }
+        // moko-resources is an external library, but since it reaches the
+        // framework through the :core:resources project module SKIE would
+        // generate default-argument overloads for its classes too — ~50
+        // unused header entries (AR-12). Keep them off, as before the split.
+        group("dev.icerock.moko") {
+            co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(false)
+        }
     }
 }
 
 kotlin {
-    jvmToolchain(libs.versions.jvmTarget.get().toInt())
-
-    sourceSets.all {
-        // For @HiddenFromObjC on serializer companions
-        languageSettings.optIn("kotlin.experimental.ExperimentalObjCRefinement")
-        // kotlin.time.Clock/Instant (kotlinx-datetime 0.7+) — stable in Kotlin 2.3
-        languageSettings.optIn("kotlin.time.ExperimentalTime")
-    }
-
     android {
         namespace = "com.cocktailcraft"
-        compileSdk = libs.versions.compileSdk.get().toInt()
-        minSdk = 24
-
-        // Host-side (JVM) unit tests, equivalent of the old androidUnitTest
-        withHostTestBuilder {}
-
-        lint {
-            disable.add("MissingPermission")
-        }
     }
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
-    
-    cocoapods {
-        version = "1.0.0"
-        summary = "CocktailCraft Shared Module"
-        homepage = "https://github.com/cocktailcraft/shared"
-        ios.deploymentTarget = "17.0"
-        podfile = project.file("../iosApp/Podfile")
-        framework {
+    // The iOS app consumes this framework through Kotlin's direct Xcode
+    // integration (no CocoaPods): the app target's "Compile Kotlin Framework"
+    // build phase runs :shared:embedAndSignAppleFrameworkForXcode, which
+    // builds the framework for the active Xcode configuration/SDK/arch and
+    // drops it in build/xcode-frameworks/ (see iosApp/project.yml). The iOS
+    // deployment target lives in project.yml.
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
+        binaries.framework {
             baseName = "shared"
             isStatic = true
+            // Silences the "cannot infer a bundle ID" link warning.
+            binaryOption("bundleId", "com.cocktailcraft.shared")
+            // StringResource/StringDesc and their localized() helpers are
+            // used directly from Swift (see Strings.swift in the iOS app).
+            export(libs.moko.resources)
+            // Modules whose types Swift names directly. Exporting keeps their
+            // declarations unprefixed in the header (MR, DesignTokens, ...);
+            // an unexported module's types would surface module-prefixed.
+            export(project(":core:resources"))
+            export(project(":core:designsystem"))
+            export(project(":core:common"))
+            export(project(":core:domain"))
+            export(project(":presentation"))
+            // The framework is static, so the SQLDelight native driver's
+            // sqlite3 (and the K/N runtime's libc++) are not linked here: the
+            // app links them itself via OTHER_LDFLAGS in project.yml.
         }
-        // The framework is static, so the SQLDelight native driver's sqlite3
-        // dependency has to be linked by the app that consumes the pod.
-        extraSpecAttributes["libraries"] = "'c++', 'sqlite3'"
+        // The test executable does link: the DI graph tests open an in-memory
+        // database (the SQLDelight plugin, now on :core:data, used to add this)
+        binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable>().configureEach {
+            linkerOpts("-lsqlite3")
+        }
     }
-
-
 
     sourceSets {
         val commonMain by getting {
             dependencies {
-                // Ktor
-                implementation(libs.ktor.client.core)
-                implementation(libs.ktor.client.content.negotiation)
-                implementation(libs.ktor.client.logging)
-                implementation(libs.ktor.serialization.kotlinx.json)
+                // Everything Android and Swift consume — api(), which export()
+                // also requires: the shared ViewModels and UiState
+                // (:presentation), models/repository interfaces/validators
+                // (:core:domain), Result/ErrorHandler/NetworkMonitor
+                // (:core:common), strings (MR) and design tokens
+                api(project(":presentation"))
+                api(project(":core:domain"))
+                api(project(":core:common"))
+                api(project(":core:resources"))
+                api(project(":core:designsystem"))
+                // Repository implementations, database, network, platform
+                // drivers: wired into Koin here, invisible to both apps
+                implementation(project(":core:data"))
 
-                // Serialization
-                implementation(libs.kotlinx.serialization.json)
-
-                // Coroutines
-                implementation(libs.kotlinx.coroutines.core)
-
-                // DateTime
-                implementation(libs.kotlinx.datetime)
-
-                // Settings
-                implementation(libs.multiplatform.settings.core)
-
-                // DI
+                // initKoin/KoinHelper assemble the per-layer Koin modules
                 implementation(libs.koin.core)
-            implementation(libs.koin.core.viewmodel)
-            // VMs extend the multiplatform androidx ViewModel — api so Android
-            // consumers see the supertype for koinViewModel scoping
-            // Deliberately api(), not implementation() (AR-12): the shared
-            // ViewModels extend androidx ViewModel, so the type must be on the
-            // consumers' compile classpath; demoting it breaks androidApp.
-            // Export-surface trimming happens via @HiddenFromObjC on
-            // Kotlin-side helpers instead (see Result.kt, BaseNetworkMonitor).
-            api(libs.androidx.lifecycle.viewmodel)
-
-                // Multiplatform logging
-                implementation(libs.kermit)
             }
-        }
-
-        val androidMain by getting {
-            dependencies {
-                // Provides the Android Dispatchers.Main implementation for viewModelScope
-                implementation(libs.kotlinx.coroutines.android)
-                implementation(libs.ktor.client.android)
-                implementation(libs.multiplatform.settings.core)
-                // Keystore-backed EncryptedSharedPreferences for the auth store
-                implementation(libs.androidx.security.crypto)
-                implementation(libs.sqldelight.android.driver)
-            }
-        }
-
-        // iosMain comes from the default Kotlin hierarchy template
-        iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
-            implementation(libs.sqldelight.native.driver)
         }
 
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(project(":core:testing"))
                 implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.koin.test.core)
                 implementation(libs.turbine)
+                // MapSettings stand-ins for the platform Settings bindings
+                implementation(libs.multiplatform.settings.core)
                 implementation(libs.multiplatform.settings.test)
-                // MockEngine so CocktailApiImplTest exercises the real Ktor
-                // pipeline (AR-5)
-                implementation(libs.ktor.client.mock)
             }
         }
 
@@ -165,11 +119,9 @@ kotlin {
                 implementation(libs.junit.jupiter.engine)
                 implementation(libs.junit.jupiter.params)
 
-                // In-memory SQLite for the offline cache tests
-                implementation(libs.sqldelight.sqlite.driver)
+                // SharedStringsTest maps a Ktor IOException to its copy
+                implementation(libs.ktor.client.core)
             }
         }
-
-
     }
 }

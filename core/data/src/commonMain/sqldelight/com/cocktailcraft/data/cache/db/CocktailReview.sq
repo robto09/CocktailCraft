@@ -1,0 +1,40 @@
+-- Schema changes need a migration: add src/commonMain/sqldelight/migrations/<N>.sqm
+-- (N = current version, starting at 1) and regenerate the snapshot with
+-- `./gradlew :core:data:generateCommonMainCocktailCraftDatabaseSchema`.
+--
+-- User reviews (ReviewRepositoryImpl), one row per Review.
+--
+--   date      the review's yyyy-MM-dd display date (Review.date)
+--   position  insertion order (1-based, increasing); reviews list in this
+--             order, and editing a review keeps it in place.
+CREATE TABLE cocktail_review (
+    id TEXT NOT NULL PRIMARY KEY,
+    cocktail_id TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    rating REAL NOT NULL,
+    comment TEXT NOT NULL,
+    date TEXT NOT NULL,
+    position INTEGER NOT NULL
+);
+
+selectAll:
+SELECT id, cocktail_id, user_name, rating, comment, date FROM cocktail_review ORDER BY position;
+
+exists:
+SELECT COUNT(*) FROM cocktail_review WHERE id = ?;
+
+insert:
+INSERT INTO cocktail_review(id, cocktail_id, user_name, rating, comment, date, position)
+VALUES (:id, :cocktailId, :userName, :rating, :comment, :date, (SELECT COALESCE(MAX(position), 0) + 1 FROM cocktail_review));
+
+-- Used by the one-time import from Settings (LegacySettingsImport): reviews
+-- already in the database must win.
+insertIfAbsent:
+INSERT OR IGNORE INTO cocktail_review(id, cocktail_id, user_name, rating, comment, date, position)
+VALUES (:id, :cocktailId, :userName, :rating, :comment, :date, (SELECT COALESCE(MAX(position), 0) + 1 FROM cocktail_review));
+
+update:
+UPDATE cocktail_review SET rating = :rating, comment = :comment, date = :date WHERE id = :id;
+
+deleteById:
+DELETE FROM cocktail_review WHERE id = ?;

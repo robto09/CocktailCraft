@@ -15,7 +15,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,28 +22,33 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
-import com.cocktailcraft.android.util.toFavoriteIdSet
-import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.android.R
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.screens.detail.DetailChipsSection
 import com.cocktailcraft.android.screens.detail.DetailIngredientsSection
 import com.cocktailcraft.android.screens.detail.DetailMainInfoCard
 import com.cocktailcraft.android.screens.detail.DetailRecommendationsSection
 import com.cocktailcraft.android.screens.detail.DetailReviewsSection
-import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.DetailHeaderImage
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.WriteReviewDialog
+import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.rememberHapticHandler
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.android.util.toFavoriteIdSet
+import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.added_to_cart
+import com.cocktailcraft.resources.detail_title_fallback
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedReviewViewModel
-import com.cocktailcraft.android.navigation.NavigationManager
+import com.cocktailcraft.viewmodel.state.DetailUiState
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
-import com.cocktailcraft.android.util.rememberHapticHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +69,80 @@ fun CocktailDetailScreen(
         detailViewModel.loadCocktail(cocktailId)
     }
 
+    // Load reviews for this cocktail
+    LaunchedEffect(cocktailId) {
+        reviewViewModel.loadReviewsForCocktail(cocktailId)
+    }
+
+    // Properly collect reviews as a state
+    val reviewState by reviewViewModel.uiState.collectAsStateWithLifecycle()
+    val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
+    val favorites = favoritesState.favorites
+    // O(1) membership instead of a scan on every screen recomposition (AN-3)
+    val favoriteIds = remember(favorites) { favorites.toFavoriteIdSet() }
+    val isFavorite = detailState.cocktail?.let { it.id in favoriteIds } ?: false
+
+    // Check if the cocktail is in cart
+    val cartState by cartViewModel.uiState.collectAsStateWithLifecycle()
+    val cartItems = cartState.cartItems
+    val isInCart = detailState.cocktail?.let { c -> cartItems.any { it.cocktail.id == c.id } } ?: false
+
+    val coroutineScope = rememberCoroutineScope()
+
+    CocktailDetailContent(
+        detailState = detailState,
+        reviews = reviewState.currentCocktailReviews,
+        isFavorite = isFavorite,
+        isInCart = isInCart,
+        onBackClick = onBackClick,
+        onToggleFavorite = { cocktailData ->
+            coroutineScope.launch {
+                favoritesViewModel.toggleFavorite(cocktailData)
+            }
+        },
+        // Only call onAddToCart, which will handle adding to cart
+        onAddToCart = onAddToCart,
+        onRefreshDetails = {
+            // Force-refresh from the network and update the UI
+            coroutineScope.launch {
+                detailViewModel.refreshCocktail()
+            }
+        },
+        onRecommendationClick = { recommendation ->
+            navigationManager.navigateToCocktailDetail(recommendation.id)
+        },
+        onSubmitReview = { userName, rating, comment ->
+            coroutineScope.launch {
+                reviewViewModel.submitReview(
+                    cocktailId = cocktailId,
+                    rating = rating,
+                    comment = comment,
+                    userName = userName
+                )
+            }
+        }
+    )
+}
+
+/**
+ * Stateless detail content: renders the detail/review state and reports
+ * every intent upward, so it can be previewed/screenshot-tested without
+ * ViewModels. Owns only UI-local state (review dialog, snackbar, haptics).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun CocktailDetailContent(
+    detailState: DetailUiState,
+    reviews: List<Review>,
+    isFavorite: Boolean,
+    isInCart: Boolean,
+    onBackClick: () -> Unit,
+    onToggleFavorite: (Cocktail) -> Unit,
+    onAddToCart: (Cocktail) -> Unit,
+    onRefreshDetails: () -> Unit,
+    onRecommendationClick: (Cocktail) -> Unit,
+    onSubmitReview: (userName: String, rating: Float, comment: String) -> Unit
+) {
     // Single source of truth for the cocktail. The full-screen spinner is
     // driven only by its absence: loadCocktail() publishes the cocktail before
     // its slow, network-bound related-cocktails fetch completes, so gating on
@@ -74,27 +152,8 @@ fun CocktailDetailScreen(
     val cocktail = detailState.cocktail
     val isLoading = cocktail == null
 
-    // Load reviews for this cocktail
-    LaunchedEffect(cocktailId) {
-        reviewViewModel.loadReviewsForCocktail(cocktailId)
-    }
-
-    // Properly collect reviews as a state
-    val reviewState by reviewViewModel.uiState.collectAsStateWithLifecycle()
-    val reviews = reviewState.currentCocktailReviews
-    val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
-    val favorites = favoritesState.favorites
-    // O(1) membership instead of a scan on every screen recomposition (AN-3)
-    val favoriteIds = remember(favorites) { favorites.toFavoriteIdSet() }
-    val isFavorite = cocktail?.let { it.id in favoriteIds } ?: false
-
     // Haptic feedback handler
     val hapticHandler = rememberHapticHandler()
-
-    // Check if the cocktail is in cart
-    val cartState by cartViewModel.uiState.collectAsStateWithLifecycle()
-    val cartItems = cartState.cartItems
-    val isInCart = cocktail?.let { c -> cartItems.any { it.cocktail.id == c.id } } ?: false
 
     // Add snackbar state
     val snackbarHostState = remember { SnackbarHostState() }
@@ -106,19 +165,8 @@ fun CocktailDetailScreen(
         showDialog = showReviewDialog,
         onDismiss = { showReviewDialog = false },
         onSubmit = { userName, rating, comment ->
-            try {
-                coroutineScope.launch {
-                    reviewViewModel.submitReview(
-                        cocktailId = cocktailId,
-                        rating = rating,
-                        comment = comment,
-                        userName = userName
-                    )
-                }
-                showReviewDialog = false
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            onSubmitReview(userName, rating, comment)
+            showReviewDialog = false
         }
     )
 
@@ -165,19 +213,16 @@ fun CocktailDetailScreen(
 
                     // Cocktail details
                     item {
-                        val addedToCartMessage = stringResource(R.string.added_to_cart, cocktailData.name)
+                        val addedToCartMessage = stringResource(MR.strings.added_to_cart, cocktailData.name)
                         DetailMainInfoCard(
                             cocktail = cocktailData,
                             isFavorite = isFavorite,
                             isInCart = isInCart,
                             onToggleFavorite = {
                                 hapticHandler.performToggleFavorite(isFavorite)
-                                coroutineScope.launch {
-                                    favoritesViewModel.toggleFavorite(cocktailData)
-                                }
+                                onToggleFavorite(cocktailData)
                             },
                             onAddToCartClick = {
-                                // Only call onAddToCart, which will handle adding to cart
                                 onAddToCart(cocktailData)
                                 // Show snackbar confirmation
                                 coroutineScope.launch {
@@ -187,12 +232,7 @@ fun CocktailDetailScreen(
                                     )
                                 }
                             },
-                            onRefreshDetails = {
-                                // Force-refresh from the network and update the UI
-                                coroutineScope.launch {
-                                    detailViewModel.refreshCocktail()
-                                }
-                            }
+                            onRefreshDetails = onRefreshDetails
                         )
                     }
 
@@ -219,9 +259,7 @@ fun CocktailDetailScreen(
                             category = cocktailData.category,
                             similarCocktails = similarCocktails,
                             isLoadingRecommendations = isLoadingRecommendations,
-                            onRecommendationClick = { recommendation ->
-                                navigationManager.navigateToCocktailDetail(recommendation.id)
-                            }
+                            onRecommendationClick = onRecommendationClick
                         )
                     }
 
@@ -250,7 +288,7 @@ private fun CocktailDetailTopBar(
     onBackClick: () -> Unit
 ) {
     AppTopBar(
-        title = cocktailName ?: stringResource(R.string.detail_title_fallback),
+        title = cocktailName ?: stringResource(MR.strings.detail_title_fallback),
         showBackButton = true,
         onBackClick = onBackClick
     )

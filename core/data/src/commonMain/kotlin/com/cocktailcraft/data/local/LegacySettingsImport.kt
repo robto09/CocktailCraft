@@ -1,0 +1,148 @@
+package com.cocktailcraft.data.local
+
+import co.touchlab.kermit.Logger
+import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
+import com.cocktailcraft.data.repository.insertOrderWithItems
+import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.Review
+import com.russhwolf.settings.Settings
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+
+/**
+ * One-time import of the user data older app versions kept in [Settings]: the
+ * cart, orders and reviews as JSON lists, and favorites as a comma-separated
+ * id list. [LocalDatabase] runs it on the first database access after an
+ * upgrade; once every key is gone it is a no-op.
+ *
+ * Each store is imported in its own transaction, and its key is removed only
+ * after that transaction commits:
+ * - an import interrupted part-way rolls back and is retried next launch;
+ * - one that dies between the commit and the key removal re-runs with
+ *   INSERT OR IGNORE, which never duplicates or overwrites rows (anything
+ *   already in the database is newer than the legacy blob and wins);
+ * - a store whose import throws keeps its key without blocking the others.
+ *
+ * Unreadable data is tolerated rather than retried forever: entries that still
+ * decode are imported and the rest dropped, and a blob that isn't a JSON list
+ * at all imports nothing. Older versions already treated such data as empty.
+ */
+internal class LegacySettingsImport(
+    private val settings: Settings,
+    private val json: Json
+) {
+    companion object {
+        // Settings keys of the legacy stores. internal (not private) so tests
+        // can seed fixtures under the real keys.
+        internal const val CART_KEY = "cocktail_cart_items"
+        internal const val ORDERS_KEY = "orders_data"
+        internal const val REVIEWS_KEY = "user_reviews"
+        internal const val FAVORITES_KEY = "favorite_cocktails"
+    }
+
+    fun run(db: CocktailCraftDatabase) {
+        importKey(CART_KEY, "cart items") { importCart(db, it) }
+        importKey(ORDERS_KEY, "orders") { importOrders(db, it) }
+        importKey(REVIEWS_KEY, "reviews") { importReviews(db, it) }
+        importKey(FAVORITES_KEY, "favorites") { importFavorites(db, it) }
+    }
+
+    /** Imports the value under [key], if any, and removes the key once [import] succeeds. */
+    private fun importKey(key: String, label: String, import: (String) -> Int) {
+        val raw = settings.getStringOrNull(key) ?: return
+        try {
+            val count = import(raw)
+            settings.remove(key)
+            Logger.i { "Imported $count $label from Settings" }
+        } catch (e: Exception) {
+            Logger.e(e) { "Failed to import $label from Settings, will retry next launch: ${e.message}" }
+        }
+    }
+
+    private fun importCart(db: CocktailCraftDatabase, raw: String): Int {
+        val items = decodeList(raw, CocktailCartItem.serializer(), "cart")
+        db.transaction {
+            // Legacy lists are in display order; positions follow insertion.
+            items.forEach { item ->
+                db.cartItemQueries.insertIfAbsent(
+                    cocktailId = item.cocktail.id,
+                    payload = json.encodeToString(Cocktail.serializer(), item.cocktail),
+                    quantity = item.quantity.toLong()
+                )
+            }
+        }
+        return items.size
+    }
+
+    private fun importOrders(db: CocktailCraftDatabase, raw: String): Int {
+        val orders = decodeList(raw, Order.serializer(), "orders")
+        db.transaction {
+            orders.forEach { order ->
+                // The INSERT OR IGNORE equivalent for an order and its items:
+                // an order already in the database (or a duplicate id in the
+                // legacy list) keeps exactly the items it has.
+                if (db.customerOrderQueries.selectStatus(order.id).executeAsOneOrNull() == null) {
+                    db.insertOrderWithItems(order)
+                }
+            }
+        }
+        return orders.size
+    }
+
+    private fun importReviews(db: CocktailCraftDatabase, raw: String): Int {
+        val reviews = decodeList(raw, Review.serializer(), "reviews")
+        db.transaction {
+            reviews.forEach { review ->
+                db.cocktailReviewQueries.insertIfAbsent(
+                    id = review.id,
+                    cocktailId = review.cocktailId,
+                    userName = review.userName,
+                    rating = review.rating.toDouble(),
+                    comment = review.comment,
+                    date = review.date
+                )
+            }
+        }
+        return reviews.size
+    }
+
+    /**
+     * Favorites were stored as ids only; the full cocktails were looked up in
+     * the offline cache or the API on every read. They are imported without a
+     * payload, which CocktailFavoritesRepositoryImpl fills in the same way.
+     */
+    private fun importFavorites(db: CocktailCraftDatabase, raw: String): Int {
+        val ids = raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        db.transaction {
+            ids.forEach { id -> db.favoriteCocktailQueries.insertIfAbsent(id = id, payload = null) }
+        }
+        return ids.size
+    }
+
+    /**
+     * Decodes a JSON list entry by entry, so one unreadable entry costs only
+     * itself rather than the whole list.
+     */
+    private fun <T> decodeList(raw: String, serializer: KSerializer<T>, label: String): List<T> {
+        val array = try {
+            json.parseToJsonElement(raw) as? JsonArray
+        } catch (e: Exception) {
+            null
+        }
+        if (array == null) {
+            Logger.w { "Discarding unreadable legacy $label data" }
+            return emptyList()
+        }
+        return array.mapNotNull { element ->
+            try {
+                json.decodeFromJsonElement(serializer, element)
+            } catch (e: Exception) {
+                Logger.w(e) { "Discarding an unreadable legacy $label entry" }
+                null
+            }
+        }
+    }
+}

@@ -21,7 +21,7 @@ struct SignInView: View {
                         .font(.system(size: 60))
                         .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
 
-                    Text("Welcome back! Please sign in to your account.")
+                    Text(L(\.sign_in_subtitle))
                         .font(.body)
                         .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         .multilineTextAlignment(.center)
@@ -32,33 +32,33 @@ struct SignInView: View {
                 VStack(spacing: 16) {
                     // Email Field
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Email")
+                        Text(L(\.email))
                             .font(.headline)
                             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                         
-                        TextField("Enter your email", text: $email)
+                        TextField(L(\.auth_enter_email), text: $email)
                             .textFieldStyle(CustomTextFieldStyle())
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
-                            .accessibilityLabel("Email")
+                            .accessibilityLabel(L(\.email))
                             .accessibilityIdentifier("signin.emailField")
                     }
                     
                     // Password Field
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Password")
+                        Text(L(\.password))
                             .font(.headline)
                             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                         
                         HStack {
                             if isPasswordVisible {
-                                TextField("Enter your password", text: $password)
-                                    .accessibilityLabel("Password")
+                                TextField(L(\.auth_enter_password), text: $password)
+                                    .accessibilityLabel(L(\.password))
                                     .accessibilityIdentifier("signin.passwordField")
                             } else {
-                                SecureField("Enter your password", text: $password)
-                                    .accessibilityLabel("Password")
+                                SecureField(L(\.auth_enter_password), text: $password)
+                                    .accessibilityLabel(L(\.password))
                                     .accessibilityIdentifier("signin.passwordField")
                             }
 
@@ -69,7 +69,7 @@ struct SignInView: View {
                                     .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                                     .minimumHitTarget()
                             }
-                            .accessibilityLabel(isPasswordVisible ? "Hide password" : "Show password")
+                            .accessibilityLabel(isPasswordVisible ? L(\.hide_password) : L(\.show_password))
                             .accessibilityIdentifier("signin.togglePasswordVisibility")
                         }
                         .textFieldStyle(CustomTextFieldStyle())
@@ -79,7 +79,7 @@ struct SignInView: View {
                 
                 // Sign In Button
                 PrimaryButton(
-                    title: String(localized: "Sign In"),
+                    title: L(\.sign_in),
                     isLoading: isLoading,
                     isDisabled: !isFormValid,
                     action: {
@@ -92,20 +92,20 @@ struct SignInView: View {
                     }
                 )
                 .padding(.horizontal)
-                .accessibilityLabel("Sign In")
+                .accessibilityLabel(L(\.sign_in))
                 .accessibilityIdentifier("signin.submitButton")
                 
                 Spacer()
             }
             .background(AppColors.background(isDarkMode: isDarkMode))
-            .navigationTitle("Sign In")
+            .navigationTitle(L(\.sign_in))
             .brandedNavigationBar()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button(L(\.cancel)) {
                         onDismiss()
                     }
-                    .accessibilityLabel("Cancel")
+                    .accessibilityLabel(L(\.cancel))
                     .accessibilityIdentifier("signin.cancelButton")
                     .tint(.white)
                 }

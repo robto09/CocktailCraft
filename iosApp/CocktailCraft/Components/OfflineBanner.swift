@@ -10,8 +10,9 @@ struct OfflineBanner: View {
                 HStack {
                     Image(systemName: "wifi.slash")
                         .foregroundColor(.white)
+                        .accessibilityHidden(true)
 
-                    Text("You're offline — showing saved cocktails.")
+                    Text(L(\.offline_you_are_offline))
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(.white)
@@ -31,6 +32,10 @@ struct OfflineBanner: View {
         .onChange(of: networkMonitor.isConnected) {
             withAnimation {
                 showBanner = !networkMonitor.isConnected
+            }
+            // The banner doesn't take focus, so speak it when it appears
+            if !networkMonitor.isConnected {
+                AccessibilityNotification.Announcement(L(\.offline_you_are_offline)).post()
             }
         }
     }

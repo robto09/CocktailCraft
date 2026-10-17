@@ -8,7 +8,7 @@ struct CheckoutButton: View {
     @Environment(\.isDarkMode) var isDarkMode
     
     init(
-        title: String = "Place Order",
+        title: String = L(\.cart_place_order),
         isEnabled: Bool = true,
         isLoading: Bool = false,
         action: @escaping () -> Void
@@ -47,6 +47,8 @@ struct CheckoutButton: View {
             .cornerRadius(AppTheme.CornerRadius.md)
         }
         .disabled(!isEnabled || isLoading)
+        // Keeps its name while the spinner replaces the title
+        .accessibilityLabel(title)
         .accessibilityIdentifier("cart.placeOrderButton")
         .padding(.horizontal, AppTheme.Spacing.lg)
         .animation(AppTheme.Animation.quick, value: isLoading)
@@ -56,21 +58,21 @@ struct CheckoutButton: View {
 #Preview {
     VStack(spacing: 20) {
         CheckoutButton(
-            title: "Place Order",
+            title: L(\.cart_place_order),
             isEnabled: true,
             isLoading: false,
             action: {}
         )
         
         CheckoutButton(
-            title: "Processing...",
+            title: L(\.checkout_processing),
             isEnabled: false,
             isLoading: true,
             action: {}
         )
         
         CheckoutButton(
-            title: "Place Order",
+            title: L(\.cart_place_order),
             isEnabled: false,
             isLoading: false,
             action: {}

@@ -6,16 +6,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.cancel
+import com.cocktailcraft.resources.dialog_confirm
 
 /**
  * A reusable confirmation dialog component.
@@ -37,14 +39,14 @@ fun ConfirmationDialog(
     showDialog: Boolean,
     title: String,
     message: String,
-    confirmButtonText: String = stringResource(R.string.dialog_confirm),
-    dismissButtonText: String = stringResource(R.string.cancel),
+    confirmButtonText: String = stringResource(MR.strings.dialog_confirm),
+    dismissButtonText: String = stringResource(MR.strings.cancel),
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     titleFontSize: Int = 18,
     messageFontSize: Int = 16,
-    confirmButtonColor: androidx.compose.ui.graphics.Color = AppColors.Primary,
-    dismissButtonColor: androidx.compose.ui.graphics.Color = AppColors.Primary
+    confirmButtonColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary,
+    dismissButtonColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary
 ) {
     if (showDialog) {
         AlertDialog(
@@ -90,7 +92,7 @@ fun ConfirmationDialog(
                     )
                 }
             },
-            containerColor = AppColors.Surface,
+            containerColor = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(16.dp)
         )
     }

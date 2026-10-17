@@ -326,4 +326,4 @@ This diagram shows the key domain models and their relationships in the Cocktail
 4. **Utility Classes**: NetworkMonitor for connectivity tracking, CocktailCache for offline mode, and ErrorHandler for error classification
 5. **Shared ViewModels**: `SharedViewModel` base class (error channel) with constructor-injected use cases; each screen has a consolidated `UiState` flow
 
-The diagram shows the relationships between these classes, including inheritance, composition, and dependencies. The interface KDoc in `shared/src/commonMain/kotlin/com/cocktailcraft/domain/repository/` is the source of truth for exact signatures.
+The diagram shows the relationships between these classes, including inheritance, composition, and dependencies. The interface KDoc in `core/domain/src/commonMain/kotlin/com/cocktailcraft/domain/repository/` is the source of truth for exact signatures.

@@ -1,6 +1,7 @@
 package com.cocktailcraft
 
 import app.cash.sqldelight.db.SqlDriver
+import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.di.appModule
 import com.cocktailcraft.domain.config.AppConfig
@@ -36,7 +37,7 @@ class KoinHelperTest : MainDispatcherTest() {
         single<Settings> { MapSettings() }
         single<Settings>(secureSettingsQualifier) { MapSettings() }
         single<NetworkMonitor> { FakeNetworkMonitor() }
-        single<SqlDriver> { createInMemorySqlDriver() }
+        single<SqlDriver> { createInMemorySqlDriver(CocktailCraftDatabase.Schema) }
     }
 
     @AfterTest

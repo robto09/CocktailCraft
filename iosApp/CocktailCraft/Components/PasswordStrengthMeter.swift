@@ -35,10 +35,10 @@ struct PasswordStrengthMeter: View {
 
     private var label: String {
         switch strength {
-        case 0...1: return "Weak password"
-        case 2: return "Fair password"
-        case 3: return "Good password"
-        case 4...5: return "Strong password"
+        case 0...1: return L(\.password_strength_weak)
+        case 2: return L(\.password_strength_fair)
+        case 3: return L(\.password_strength_good)
+        case 4...5: return L(\.password_strength_strong)
         default: return ""
         }
     }

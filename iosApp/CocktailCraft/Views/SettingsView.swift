@@ -9,8 +9,8 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section(header: Text("Appearance")) {
-                    Toggle("Dark Mode", isOn: Binding(
+                Section(header: Text(L(\.profile_appearance))) {
+                    Toggle(L(\.dark_mode), isOn: Binding(
                         get: { themeViewModel.state.isDarkMode },
                         set: { enabled in
                             Task {
@@ -19,7 +19,7 @@ struct SettingsView: View {
                         }
                     ))
                     
-                    Toggle("Follow System Theme", isOn: Binding(
+                    Toggle(L(\.follow_system_theme), isOn: Binding(
                         get: { themeViewModel.state.isSystemTheme },
                         set: { enabled in
                             Task {
@@ -29,7 +29,7 @@ struct SettingsView: View {
                     ))
                     
                     if !themeViewModel.availableAccentColors.isEmpty {
-                        Picker("Accent Color", selection: Binding(
+                        Picker(L(\.accent_color), selection: Binding(
                             get: { themeViewModel.state.accentColor },
                             set: { newColor in
                                 Task {
@@ -45,7 +45,7 @@ struct SettingsView: View {
                     }
                     
                     if !themeViewModel.availableFontSizes.isEmpty {
-                        Picker("Font Size", selection: Binding(
+                        Picker(L(\.font_size), selection: Binding(
                             get: { themeViewModel.state.fontSize },
                             set: { newSize in
                                 Task {
@@ -60,31 +60,31 @@ struct SettingsView: View {
                         }
                     }
                     
-                    Toggle("High Contrast", isOn: Binding(
+                    Toggle(L(\.high_contrast), isOn: Binding(
                         get: { themeViewModel.state.isHighContrast },
-                        set: { _ in
+                        set: { enabled in
                             Task {
-                                await themeViewModel.toggleHighContrast()
+                                await themeViewModel.setHighContrast(enabled)
                             }
                         }
                     ))
                     
-                    Toggle("Reduce Motion", isOn: Binding(
+                    Toggle(L(\.reduced_motion), isOn: Binding(
                         get: { themeViewModel.state.isReducedMotion },
-                        set: { _ in
+                        set: { enabled in
                             Task {
-                                await themeViewModel.toggleReducedMotion()
+                                await themeViewModel.setReducedMotion(enabled)
                             }
                         }
                     ))
                 }
                 
-                Section(header: Text("Notifications")) {
-                    Toggle("Enable Notifications", isOn: $notificationsEnabled)
+                Section(header: Text(L(\.notifications))) {
+                    Toggle(L(\.settings_enable_notifications), isOn: $notificationsEnabled)
                 }
                 
-                Section(header: Text("Theme Actions")) {
-                    Button("Reset to Defaults") {
+                Section(header: Text(L(\.settings_theme_actions))) {
+                    Button(L(\.settings_reset_to_defaults)) {
                         Task {
                             await themeViewModel.resetToDefaults()
                         }
@@ -92,27 +92,27 @@ struct SettingsView: View {
                     .foregroundColor(.red)
                 }
                 
-                Section(header: Text("About")) {
+                Section(header: Text(L(\.profile_about))) {
                     HStack {
-                        Text("Version")
+                        Text(L(\.settings_version))
                         Spacer()
                         Text("1.0.0")
                             .foregroundColor(.secondary)
                     }
                     
                     HStack {
-                        Text("Current Theme")
+                        Text(L(\.settings_current_theme))
                         Spacer()
-                        Text(themeViewModel.currentThemeName)
+                        Text(themeViewModel.state.themeModeDisplayName.localized())
                             .foregroundColor(.secondary)
                     }
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle(L(\.settings))
             .brandedNavigationBar()
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button(L(\.common_done)) {
                         dismiss()
                     }
                     .tint(.white)

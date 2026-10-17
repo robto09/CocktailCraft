@@ -11,29 +11,37 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.DetailInfoCard
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.CocktailIngredient
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.alcoholic
+import com.cocktailcraft.resources.category_label
+import com.cocktailcraft.resources.details
+import com.cocktailcraft.resources.glass_label
+import com.cocktailcraft.resources.ingredients
+import com.cocktailcraft.resources.non_alcoholic
 
 // Ingredients list rendered inside an info card
 @Composable
 internal fun DetailIngredientsSection(ingredients: List<CocktailIngredient>) {
     DetailInfoCard(
-        title = stringResource(R.string.ingredients),
+        title = stringResource(MR.strings.ingredients),
         modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm),
         content = {
 
@@ -49,7 +57,7 @@ internal fun DetailIngredientsSection(ingredients: List<CocktailIngredient>) {
                     Box(
                         modifier = Modifier
                             .size(8.dp)
-                            .background(AppColors.Primary, CircleShape)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape)
                     )
 
                     Spacer(modifier = Modifier.width(Spacing.md))
@@ -58,7 +66,7 @@ internal fun DetailIngredientsSection(ingredients: List<CocktailIngredient>) {
                     Text(
                         text = "${ingredient.name} ${ingredient.measure}",
                         fontSize = 16.sp,
-                        color = AppColors.TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -76,7 +84,7 @@ internal fun DetailChipsSection(
     alcoholic: String?
 ) {
     DetailInfoCard(
-        title = stringResource(R.string.details),
+        title = stringResource(MR.strings.details),
         modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm),
         content = {
             LazyRow(
@@ -85,45 +93,40 @@ internal fun DetailChipsSection(
                 // Category chip
                 category?.let {
                     item {
-                        SuggestionChip(
-                            onClick = {},
-                            label = { Text(stringResource(R.string.category_label, it)) },
-                            colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = AppColors.ChipBackground.copy(alpha = 0.2f),
-                                labelColor = AppColors.TextPrimary
-                            )
-                        )
+                        DetailChip(label = stringResource(MR.strings.category_label, it))
                     }
                 }
 
                 // Glass type chip
                 glass?.let {
                     item {
-                        SuggestionChip(
-                            onClick = {},
-                            label = { Text(stringResource(R.string.glass_label, it)) },
-                            colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = AppColors.ChipBackground.copy(alpha = 0.2f),
-                                labelColor = AppColors.TextPrimary
-                            )
-                        )
+                        DetailChip(label = stringResource(MR.strings.glass_label, it))
                     }
                 }
 
                 // Alcoholic chip
                 item {
-                    SuggestionChip(
-                        onClick = {},
-                        label = { Text(if (alcoholic == "Alcoholic") stringResource(R.string.alcoholic) else stringResource(R.string.non_alcoholic)) },
-                        colors = SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = AppColors.ChipBackground.copy(alpha = 0.2f),
-                            labelColor = AppColors.TextPrimary
-                        )
-                    )
+                    DetailChip(label = if (alcoholic == "Alcoholic") stringResource(MR.strings.alcoholic) else stringResource(MR.strings.non_alcoholic))
                 }
             }
         },
         elevation = 0
+    )
+}
+
+// Read-only attribute chip. SuggestionChip is always clickable, so its
+// semantics are replaced with plain text — TalkBack would otherwise announce
+// a button that does nothing.
+@Composable
+private fun DetailChip(label: String) {
+    SuggestionChip(
+        onClick = {},
+        label = { Text(label) },
+        modifier = Modifier.clearAndSetSemantics { contentDescription = label },
+        colors = SuggestionChipDefaults.suggestionChipColors(
+            containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f),
+            labelColor = MaterialTheme.colorScheme.onSurface
+        )
     )
 }
 

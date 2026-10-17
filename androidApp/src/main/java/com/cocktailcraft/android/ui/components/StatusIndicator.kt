@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,7 +18,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * A reusable status indicator component that displays a colored dot or icon with status text.
@@ -36,7 +36,7 @@ fun StatusIndicator(
     status: String,
     isActive: Boolean,
     activeColor: Color,
-    inactiveColor: Color = AppColors.Gray,
+    inactiveColor: Color = MaterialTheme.colorScheme.outline,
     icon: ImageVector? = null,
     modifier: Modifier = Modifier,
     textSize: Int = 14,
@@ -49,9 +49,10 @@ fun StatusIndicator(
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null) {
+            // Decorative: the status text beside it carries the meaning
             Icon(
                 imageVector = icon,
-                contentDescription = status,
+                contentDescription = null,
                 tint = color,
                 modifier = Modifier.size(indicatorSize.dp)
             )

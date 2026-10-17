@@ -22,7 +22,12 @@ struct StarRatingView: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(String(localized: "\(Int(clamped.rounded())) out of \(maxRating) stars"))
+        .accessibilityLabel(L(\.review_stars_a11y, Self.spokenRating(clamped), maxRating))
+    }
+
+    /// "4.5", "3" — at most one decimal, in the user's locale.
+    static func spokenRating(_ rating: Float) -> String {
+        rating.formatted(.number.precision(.fractionLength(0...1)))
     }
 
     static func starOpacity(index: Int, rating: Float) -> Double {
@@ -49,13 +54,13 @@ struct ReviewRow: View {
     /// Blank names fall back to "Anonymous", like Android's review item.
     static func displayName(for userName: String) -> String {
         let name = userName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return name.isEmpty ? String(localized: "Anonymous") : name
+        return name.isEmpty ? L(\.detail_review_anonymous) : name
     }
 
     /// Missing dates fall back to "Unknown date", like Android's review item.
     static func displayDate(for date: String) -> String {
         date.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? String(localized: "Unknown date")
+            ? L(\.detail_unknown_date)
             : date
     }
 

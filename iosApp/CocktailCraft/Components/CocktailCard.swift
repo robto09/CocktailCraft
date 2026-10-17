@@ -21,7 +21,8 @@ struct CocktailCard: View {
     }
     
     @Environment(\.isDarkMode) var isDarkMode
-    
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         switch layout {
         case .horizontal:
@@ -33,107 +34,20 @@ struct CocktailCard: View {
     
     @ViewBuilder
     private var horizontalLayout: some View {
-        HStack(spacing: 16) {
-            // Cocktail Image - Larger size (Kingfisher-backed: disk+memory
-            // cache and retry, instead of AsyncImage refetching on recycle)
-            ZStack(alignment: .center) {
-                CocktailImageView(
-                    imageUrl: cocktail.imageUrl,
-                    height: 120,
-                    cornerRadius: 12,
-                    width: 120
-                )
-
-                // Stock overlay for out of stock items
-                if isOutOfStock {
-                    Rectangle()
-                        .fill(Color.black.opacity(0.6))
-                        .cornerRadius(12)
-                        .overlay(
-                            Text("Out of Stock")
-                                .font(.caption)
-                                .foregroundColor(.white)
-                                .fontWeight(.medium)
-                        )
+        Group {
+            // At accessibility text sizes the image stacks above the text,
+            // which then gets the full card width
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 16) {
+                    horizontalImage
+                    horizontalContent
+                }
+            } else {
+                HStack(spacing: 16) {
+                    horizontalImage
+                    horizontalContent
                 }
             }
-            
-            // Content Section
-            VStack(alignment: .leading, spacing: 6) {
-                // Cocktail Name - Larger font
-                Text(cocktail.name)
-                    .font(.headline.weight(.bold))
-                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                
-                // Category Info (Alcoholic • Category)
-                if let category = cocktail.category {
-                    Text("Alcoholic • \(category)")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-                        .lineLimit(1)
-                }
-                
-                // Ingredients (first 2 or placeholder)
-                Text(getIngredientsText())
-                    .font(.footnote.weight(.regular))
-                    .italic()
-                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                
-                Spacer(minLength: 8)
-                
-                // Price and Actions Row
-                HStack(alignment: .center) {
-                    // Price - Larger and more prominent
-                    Text((cocktail.price ?? 12.99).asPrice)
-                        .font(.title3.weight(.bold))
-                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
-                    
-                    Spacer()
-                    
-                    // Action Buttons - Larger and more spaced
-                    HStack(spacing: 12) {
-                        // Favorite Button
-                        if let onToggle = onFavoriteToggle {
-                            Button(action: {
-                                // Immediate tactile ack on tap, before any async
-                                // state round trip — parity with Android's
-                                // performToggleFavorite haptic.
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                onToggle()
-                            }) {
-                                Image(systemName: isFavorite ? "heart.fill" : "heart")
-                                    .font(.title2)
-                                    .foregroundColor(isFavorite ? AppColors.secondary(isDarkMode: isDarkMode) : AppColors.gray)
-                                    .contentTransition(.symbolEffect(.replace))
-                                    .animation(.easeInOut(duration: 0.2), value: isFavorite)
-                                    .minimumHitTarget()
-                            }
-                            .buttonStyle(.borderless)
-                            .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
-                            .accessibilityIdentifier("card.favoriteButton")
-                        }
-
-                        // Add to Cart Button
-                        if let onAddToCart = onAddToCart {
-                            Button(action: onAddToCart) {
-                                Image(systemName: "cart.badge.plus")
-                                    .font(.title2)
-                                    .foregroundColor(isOutOfStock ? AppColors.gray : AppColors.primary(isDarkMode: isDarkMode))
-                                    .minimumHitTarget()
-                            }
-                            .disabled(isOutOfStock)
-                            .buttonStyle(.borderless)
-                            .accessibilityLabel("Add to cart")
-                            .accessibilityIdentifier("card.addToCartButton")
-                        }
-                    }
-                }
-            }
-            .padding(.vertical, 8)
         }
         .padding(16)
         .background(AppColors.surface(isDarkMode: isDarkMode))
@@ -146,6 +60,138 @@ struct CocktailCard: View {
         }
     }
     
+    @ViewBuilder
+    private var horizontalImage: some View {
+        // Cocktail Image - Larger size (Kingfisher-backed: disk+memory
+        // cache and retry, instead of AsyncImage refetching on recycle)
+        ZStack(alignment: .center) {
+            CocktailImageView(
+                imageUrl: cocktail.imageUrl,
+                height: 120,
+                cornerRadius: 12,
+                width: 120
+            )
+
+            // Stock overlay for out of stock items
+            if isOutOfStock {
+                Rectangle()
+                    .fill(Color.black.opacity(0.6))
+                    .cornerRadius(12)
+                    .overlay(
+                        Text(L(\.list_out_of_stock))
+                            .font(.caption)
+                            .foregroundColor(.white)
+                            .fontWeight(.medium)
+                    )
+                    // Read as part of the card summary
+                    .accessibilityHidden(true)
+            }
+        }
+        // Stacked, keep the out-of-stock overlay on the image instead of
+        // stretching across the card
+        .frame(
+            width: dynamicTypeSize.isAccessibilitySize ? 120 : nil,
+            height: dynamicTypeSize.isAccessibilitySize ? 120 : nil
+        )
+    }
+
+    @ViewBuilder
+    private var horizontalContent: some View {
+        // Content Section
+        VStack(alignment: .leading, spacing: 6) {
+            // Cocktail Name - Larger font. VoiceOver reads the whole card
+            // summary here, in one stop (the lines below are hidden);
+            // the heart and cart buttons stay separate elements.
+            Text(cocktail.name)
+                .font(.headline.weight(.bold))
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .modifier(CardSummaryAccessibility(summary: accessibilitySummary, onTap: onCardTap))
+
+            // Category Info (Alcoholic • Category)
+            if let category = cocktail.category {
+                Text(L(\.list_alcoholic_category, category))
+                    .font(.subheadline.weight(.medium))
+                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityHidden(true)
+            }
+
+            // Ingredients (first 2 or placeholder)
+            Text(getIngredientsText())
+                .font(.footnote.weight(.regular))
+                .italic()
+                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .accessibilityHidden(true)
+
+            // Pushes the price row to the bottom beside the image; in the
+            // stacked (accessibility size) layout there is nothing to align
+            if dynamicTypeSize.isAccessibilitySize {
+                Color.clear.frame(height: 2)
+            } else {
+                Spacer(minLength: 8)
+            }
+
+            // Price and Actions Row
+            HStack(alignment: .center) {
+                // Price - Larger and more prominent
+                Text((cocktail.price ?? 12.99).asPrice)
+                    .font(.title3.weight(.bold))
+                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                    .lineLimit(1)
+                    .fixedSize()
+                    .accessibilityHidden(true)
+
+                Spacer()
+                
+                // Action Buttons - Larger and more spaced
+                HStack(spacing: 12) {
+                    // Favorite Button
+                    if let onToggle = onFavoriteToggle {
+                        Button(action: {
+                            // Immediate tactile ack on tap, before any async
+                            // state round trip — parity with Android's
+                            // performToggleFavorite haptic.
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            onToggle()
+                        }) {
+                            Image(systemName: isFavorite ? "heart.fill" : "heart")
+                                .font(.title2)
+                                .foregroundColor(isFavorite ? AppColors.secondary(isDarkMode: isDarkMode) : AppColors.gray)
+                                .contentTransition(.symbolEffect(.replace))
+                                .animation(.easeInOut(duration: 0.2), value: isFavorite)
+                                .minimumHitTarget()
+                        }
+                        .buttonStyle(.borderless)
+                        // One stable label; the on/off state is the trait
+                        .accessibilityLabel(L(\.favorite_toggle_a11y))
+                        .accessibilityAddTraits(isFavorite ? .isSelected : [])
+                        .accessibilityIdentifier("card.favoriteButton")
+                    }
+
+                    // Add to Cart Button
+                    if let onAddToCart = onAddToCart {
+                        Button(action: onAddToCart) {
+                            Image(systemName: "cart.badge.plus")
+                                .font(.title2)
+                                .foregroundColor(isOutOfStock ? AppColors.gray : AppColors.primary(isDarkMode: isDarkMode))
+                                .minimumHitTarget()
+                        }
+                        .disabled(isOutOfStock)
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel(L(\.add_to_cart_item_a11y, cocktail.name))
+                        .accessibilityIdentifier("card.addToCartButton")
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 8)
+    }
+
     @ViewBuilder
     private var verticalLayout: some View {
         VStack(spacing: 12) {
@@ -163,33 +209,38 @@ struct CocktailCard: View {
                         .fill(Color.black.opacity(0.6))
                         .cornerRadius(12)
                         .overlay(
-                            Text("Out of Stock")
+                            Text(L(\.list_out_of_stock))
                                 .font(.caption)
                                 .foregroundColor(.white)
                                 .fontWeight(.medium)
                         )
+                        // Read as part of the card summary
+                        .accessibilityHidden(true)
                 }
             }
             
             // Content Section
             VStack(alignment: .leading, spacing: 8) {
-                // Cocktail Name - Allow more lines
+                // Cocktail Name - Allow more lines (carries the card summary
+                // for VoiceOver, see the horizontal layout)
                 Text(cocktail.name)
                     .font(AppTheme.Typography.cardTitle)
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     .lineLimit(3)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                
+                    .modifier(CardSummaryAccessibility(summary: accessibilitySummary, onTap: onCardTap))
+
                 // Category Info (Alcoholic • Category)
                 if let category = cocktail.category {
-                    Text("Alcoholic • \(category)")
+                    Text(L(\.list_alcoholic_category, category))
                         .font(.footnote.weight(.medium))
                         .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         .lineLimit(2)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityHidden(true)
                 }
-                
+
                 // Ingredients (first 2 or placeholder)
                 Text(getIngredientsText())
                     .font(AppTheme.Typography.cardCaption)
@@ -198,14 +249,16 @@ struct CocktailCard: View {
                     .lineLimit(3)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                
+                    .accessibilityHidden(true)
+
                 // Price and Actions Row
                 HStack(alignment: .center) {
                     // Price - Prominent
                     Text((cocktail.price ?? 12.99).asPrice)
                         .font(.headline.weight(.bold))
                         .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
-                    
+                        .accessibilityHidden(true)
+
                     Spacer()
                     
                     // Action Buttons - Compact
@@ -225,7 +278,9 @@ struct CocktailCard: View {
                                     .minimumHitTarget()
                             }
                             .buttonStyle(.borderless)
-                            .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
+                            // One stable label; the on/off state is the trait
+                            .accessibilityLabel(L(\.favorite_toggle_a11y))
+                            .accessibilityAddTraits(isFavorite ? .isSelected : [])
                             .accessibilityIdentifier("card.favoriteButton")
                         }
 
@@ -239,7 +294,7 @@ struct CocktailCard: View {
                             }
                             .disabled(isOutOfStock)
                             .buttonStyle(.borderless)
-                            .accessibilityLabel("Add to cart")
+                            .accessibilityLabel(L(\.add_to_cart_item_a11y, cocktail.name))
                             .accessibilityIdentifier("card.addToCartButton")
                         }
                     }
@@ -258,6 +313,21 @@ struct CocktailCard: View {
         }
     }
     
+    /// Name, category, ingredients, price — and out-of-stock — as one
+    /// VoiceOver phrase (each part is shared, localized copy).
+    private var accessibilitySummary: String {
+        var parts = [cocktail.name]
+        if let category = cocktail.category {
+            parts.append(L(\.list_alcoholic_category, category))
+        }
+        parts.append(getIngredientsText())
+        parts.append((cocktail.price ?? 12.99).asPrice)
+        if isOutOfStock {
+            parts.append(L(\.list_out_of_stock))
+        }
+        return parts.joined(separator: ", ")
+    }
+
     private func getIngredientsText() -> String {
         // Try to get first 2 ingredients if available
         if let ingredients = cocktail.ingredients as? [CocktailIngredient], !ingredients.isEmpty {
@@ -265,7 +335,27 @@ struct CocktailCard: View {
             let ingredientNames = firstTwo.compactMap { $0.name }
             return ingredientNames.joined(separator: ", ")
         }
-        return "Premium ingredients"
+        return L(\.list_premium_ingredients)
+    }
+}
+
+// MARK: - Card summary for VoiceOver
+
+/// Gives the card's title the whole card summary as its label; when the
+/// card itself is tappable, the title also becomes the card's button.
+private struct CardSummaryAccessibility: ViewModifier {
+    let summary: String
+    let onTap: (() -> Void)?
+
+    func body(content: Content) -> some View {
+        if let onTap {
+            content
+                .accessibilityLabel(summary)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { onTap() }
+        } else {
+            content.accessibilityLabel(summary)
+        }
     }
 }
 

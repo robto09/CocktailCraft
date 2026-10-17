@@ -13,7 +13,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.loading
 
 /**
  * A reusable component for displaying a shimmer loading effect for cocktails.
@@ -36,11 +41,14 @@ fun CocktailLoadingShimmer(
 ) {
     // One transition shared by the header and every item placeholder
     val translate = rememberShimmerTranslate()
+    val loadingLabel = stringResource(MR.strings.loading)
 
+    // The placeholders mean nothing to TalkBack: read "Loading…" instead
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp)
+            .clearAndSetSemantics { contentDescription = loadingLabel },
         verticalArrangement = Arrangement.spacedBy(itemSpacing.dp),
         contentPadding = contentPadding
     ) {

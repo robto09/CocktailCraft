@@ -7,7 +7,8 @@ import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.cocktailcraft.android.ui.theme.AppColors
+import androidx.compose.material3.MaterialTheme
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.util.ErrorHandler
 
 /**
@@ -38,10 +39,10 @@ object ErrorUtils {
     @Composable
     fun getErrorColor(category: ErrorHandler.ErrorCategory): Color {
         return when (category) {
-            ErrorHandler.ErrorCategory.NETWORK -> AppColors.Primary
-            ErrorHandler.ErrorCategory.SERVER -> AppColors.Warning
-            ErrorHandler.ErrorCategory.AUTHENTICATION -> AppColors.Error
-            else -> AppColors.Error
+            ErrorHandler.ErrorCategory.NETWORK -> MaterialTheme.colorScheme.primary
+            ErrorHandler.ErrorCategory.SERVER -> CocktailCraftTheme.extendedColors.warning
+            ErrorHandler.ErrorCategory.AUTHENTICATION -> MaterialTheme.colorScheme.error
+            else -> MaterialTheme.colorScheme.error
         }
     }
 }

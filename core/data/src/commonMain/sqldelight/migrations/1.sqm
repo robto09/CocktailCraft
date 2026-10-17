@@ -1,0 +1,44 @@
+-- Version 1 -> 2: the cart, orders, favorites and reviews move from JSON
+-- blobs in Settings into their own tables (see the matching .sq files).
+-- Existing data is copied over by LegacySettingsImport on first use, not
+-- here: SQL migrations can't read Settings.
+
+CREATE TABLE cart_item (
+    cocktail_id TEXT NOT NULL PRIMARY KEY,
+    payload TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    position INTEGER NOT NULL
+);
+
+CREATE TABLE favorite_cocktail (
+    id TEXT NOT NULL PRIMARY KEY,
+    payload TEXT,
+    position INTEGER NOT NULL
+);
+
+CREATE TABLE customer_order (
+    id TEXT NOT NULL PRIMARY KEY,
+    date TEXT NOT NULL,
+    total REAL NOT NULL,
+    status TEXT NOT NULL,
+    position INTEGER NOT NULL
+);
+
+CREATE TABLE customer_order_item (
+    order_id TEXT NOT NULL REFERENCES customer_order(id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    price REAL NOT NULL,
+    PRIMARY KEY (order_id, position)
+);
+
+CREATE TABLE cocktail_review (
+    id TEXT NOT NULL PRIMARY KEY,
+    cocktail_id TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    rating REAL NOT NULL,
+    comment TEXT NOT NULL,
+    date TEXT NOT NULL,
+    position INTEGER NOT NULL
+);

@@ -26,7 +26,7 @@ struct ChangePasswordView: View {
                         .font(.system(size: 60))
                         .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
 
-                    Text("Enter your current password and choose a new one.")
+                    Text(L(\.change_password_subtitle))
                         .font(.body)
                         .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                         .multilineTextAlignment(.center)
@@ -36,18 +36,18 @@ struct ChangePasswordView: View {
                 // Form
                 VStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Current Password")
+                        Text(L(\.change_password_current_label))
                             .font(.headline)
                             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                         HStack {
                             if isCurrentPasswordVisible {
-                                TextField("Enter your current password", text: $currentPassword)
-                                    .accessibilityLabel("Current password")
+                                TextField(L(\.change_password_current_placeholder), text: $currentPassword)
+                                    .accessibilityLabel(L(\.change_password_current_a11y))
                                     .accessibilityIdentifier("changePassword.currentField")
                             } else {
-                                SecureField("Enter your current password", text: $currentPassword)
-                                    .accessibilityLabel("Current password")
+                                SecureField(L(\.change_password_current_placeholder), text: $currentPassword)
+                                    .accessibilityLabel(L(\.change_password_current_a11y))
                                     .accessibilityIdentifier("changePassword.currentField")
                             }
 
@@ -58,25 +58,25 @@ struct ChangePasswordView: View {
                                     .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                                     .minimumHitTarget()
                             }
-                            .accessibilityLabel(isCurrentPasswordVisible ? "Hide password" : "Show password")
+                            .accessibilityLabel(isCurrentPasswordVisible ? L(\.hide_password) : L(\.show_password))
                             .accessibilityIdentifier("changePassword.toggleCurrentVisibility")
                         }
                         .textFieldStyle(CustomTextFieldStyle())
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("New Password")
+                        Text(L(\.change_password_new_label))
                             .font(.headline)
                             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
                         HStack {
                             if isNewPasswordVisible {
-                                TextField("Enter your new password", text: $newPassword)
-                                    .accessibilityLabel("New password")
+                                TextField(L(\.change_password_new_placeholder), text: $newPassword)
+                                    .accessibilityLabel(L(\.change_password_new_a11y))
                                     .accessibilityIdentifier("changePassword.newField")
                             } else {
-                                SecureField("Enter your new password", text: $newPassword)
-                                    .accessibilityLabel("New password")
+                                SecureField(L(\.change_password_new_placeholder), text: $newPassword)
+                                    .accessibilityLabel(L(\.change_password_new_a11y))
                                     .accessibilityIdentifier("changePassword.newField")
                             }
 
@@ -87,7 +87,7 @@ struct ChangePasswordView: View {
                                     .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                                     .minimumHitTarget()
                             }
-                            .accessibilityLabel(isNewPasswordVisible ? "Hide password" : "Show password")
+                            .accessibilityLabel(isNewPasswordVisible ? L(\.hide_password) : L(\.show_password))
                             .accessibilityIdentifier("changePassword.toggleNewVisibility")
                         }
                         .textFieldStyle(CustomTextFieldStyle())
@@ -102,7 +102,7 @@ struct ChangePasswordView: View {
 
                 // Change Password Button
                 PrimaryButton(
-                    title: String(localized: "Change Password"),
+                    title: L(\.change_password),
                     isLoading: isLoading,
                     isDisabled: !isFormValid,
                     action: {
@@ -115,20 +115,20 @@ struct ChangePasswordView: View {
                     }
                 )
                 .padding(.horizontal)
-                .accessibilityLabel("Change password")
+                .accessibilityLabel(L(\.change_password_a11y))
                 .accessibilityIdentifier("changePassword.submitButton")
 
                 Spacer()
             }
             .background(AppColors.background(isDarkMode: isDarkMode))
-            .navigationTitle("Change Password")
+            .navigationTitle(L(\.change_password))
             .brandedNavigationBar()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button(L(\.cancel)) {
                         onDismiss()
                     }
-                    .accessibilityLabel("Cancel")
+                    .accessibilityLabel(L(\.cancel))
                     .accessibilityIdentifier("changePassword.cancelButton")
                     .tint(.white)
                 }

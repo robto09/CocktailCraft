@@ -3,7 +3,7 @@
     Pre-Compose window styling only: the runtime look is
     AnimatedCocktailBarTheme (ui/theme/AnimatedTheme.kt), which runs
     edge-to-edge with a transparent status bar over the app background.
-    Keep window background / status bar in step with AppColors so the
+    Keep window background / status bar in step with the theme colors so the
     cold-start frame matches the composed UI. Dark values live in
     values-night/themes.xml.
 -->

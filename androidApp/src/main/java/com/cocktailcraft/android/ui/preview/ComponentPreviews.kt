@@ -1,9 +1,7 @@
 package com.cocktailcraft.android.ui.preview
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import com.cocktailcraft.android.R
 import com.cocktailcraft.android.ui.components.CartItemCard
 import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.components.CocktailLoadingShimmer
@@ -12,6 +10,11 @@ import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.SignInDialog
 import com.cocktailcraft.android.ui.components.SignUpDialog
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.browse_cocktails
+import com.cocktailcraft.resources.favorites_empty_message
+import com.cocktailcraft.resources.no_favorites
 
 /**
  * Design-time previews for the most-reused components, in light and dark.
@@ -53,9 +56,9 @@ private fun CocktailSearchBarActiveDarkPreview() {
 private fun EmptyStatePreview() {
     AnimatedCocktailBarTheme(darkTheme = false) {
         EmptyStateComponent(
-            title = stringResource(R.string.no_favorites),
-            message = stringResource(R.string.favorites_empty_message),
-            actionButtonText = stringResource(R.string.browse_cocktails)
+            title = stringResource(MR.strings.no_favorites),
+            message = stringResource(MR.strings.favorites_empty_message),
+            actionButtonText = stringResource(MR.strings.browse_cocktails)
         )
     }
 }

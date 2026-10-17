@@ -23,6 +23,7 @@ This document provides an overview of the reusable UI components in the Cocktail
    - [AnimatedCocktailItem](#animatedcocktailitem)
    - [CartItemCard](#cartitemcard)
    - [FilterChip](#filterchip)
+   - [FavoriteToggleButton](#favoritetogglebutton)
    - [RatingBar](#ratingbar)
    - [OptimizedImage](#optimizedimage)
    - [ErrorDialog and ErrorBanner](#errordialog-and-errorbanner)
@@ -63,14 +64,14 @@ When developing new features or refactoring existing code, follow these guidelin
 
 ### EmptyStateComponent
 
-**Purpose**: Displays a standardized empty state with an icon/image, title, message, and optional action button.
+**Purpose**: Displays a standardized empty state with an icon/image, title, message, and optional action button. There is no default illustration: pass the screen's icon (error states use `Icons.Filled.Warning`).
 
 **Usage**:
 ```kotlin
 EmptyStateComponent(
-    title = "Your cart is empty",
-    message = "Add some cocktails to your cart and they will appear here",
-    actionButtonText = "Start Shopping",
+    title = stringResource(MR.strings.cart_empty_title),
+    message = stringResource(MR.strings.cart_empty_message),
+    actionButtonText = stringResource(MR.strings.cart_start_shopping),
     onActionButtonClick = onStartShopping,
     icon = Icons.Filled.ShoppingCart
 )
@@ -169,13 +170,13 @@ ConfirmationDialog(
 DetailInfoCard(
     title = "How to Prepare",
     modifier = Modifier.padding(vertical = 8.dp),
-    backgroundColor = AppColors.Surface.copy(alpha = 0.8f)
+    backgroundColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
 ) {
     // Content goes here
     Text(
         text = instructionsText,
         fontSize = 15.sp,
-        color = AppColors.TextPrimary,
+        color = MaterialTheme.colorScheme.onSurface,
         lineHeight = 24.sp
     )
 }
@@ -360,6 +361,21 @@ FilterChip(
 
 **When to use**: For filtering options in search or browse screens.
 
+### FavoriteToggleButton
+
+**Purpose**: The heart toggle on cocktail cards, cart rows and the detail screen. An `IconToggleButton` with one stable "Favorite" label, so TalkBack reads (and announces changes to) its on/off state instead of a label that flips between "Add to" and "Remove from" favorites. Keeps the 48dp touch target.
+
+**Usage**:
+```kotlin
+FavoriteToggleButton(
+    isFavorite = isFavorite,
+    onToggle = { onToggleFavorite(cocktail) },
+    iconSize = 24.dp
+)
+```
+
+**When to use**: Any favorite on/off control — don't build a heart from a plain `IconButton`.
+
 ### RatingBar
 
 **Purpose**: Displays a row of stars representing a rating.
@@ -369,7 +385,7 @@ FilterChip(
 RatingBar(
     rating = 4.5f,
     stars = 5,
-    starsColor = AppColors.Secondary,
+    starsColor = CocktailCraftTheme.extendedColors.rating,
     useHalfStars = true
 )
 ```
@@ -412,7 +428,7 @@ ErrorBanner(
 )
 ```
 
-**When to use**: When you need to display error messages to the user, either in a modal dialog or a non-modal banner.
+**When to use**: When you need to display error messages to the user, either in a modal dialog or a non-modal banner. The error's title, message and action label are shared `StringDesc`s; the components resolve them with `resolve()` (`util/SharedStrings.kt`).
 
 ### AnimatedButtons
 
@@ -611,9 +627,56 @@ AnimatedButton(onClick = { /* action */ }) {
 - **`AnimatedIconButton`**: icon button with press-scale and optional haptic feedback
 - **`AnimatedFloatingActionButton`**: FAB with press-scale
 
+### Theming and Colors
+
+`AnimatedCocktailBarTheme` (`ui/theme/AnimatedTheme.kt`) is the app's single
+theme. Its Material 3 color scheme is built in `ui/theme/Theme.kt`
+(`cocktailColorScheme`) from the shared `ColorTokens`
+(`shared/.../designsystem/DesignTokens.kt`) and honours the accent color
+(primary) and high-contrast setting (stronger secondary text) from the shared
+theme state. Android has no in-app controls for these (the Profile screen has
+no Appearance section); iOS sets them in its Settings sheet. Read
+colors only through the theme — there is no global color object (AN-5):
+
+- **`MaterialTheme.colorScheme`** for every role Material defines
+- **`CocktailCraftTheme.extendedColors`** for brand/semantic colors Material
+  has no role for
+- **`CocktailCraftTheme.isDarkTheme`** for theme-specific assets
+  (`ThemeAssets`)
+
+| Design token | Read it as |
+|---|---|
+| primary (follows accent) | `colorScheme.primary` |
+| secondary (gold) | `colorScheme.secondary` |
+| chipBackground (brown) | `colorScheme.tertiary` |
+| background / surface | `colorScheme.background` / `surface` |
+| textPrimary | `colorScheme.onSurface` |
+| textSecondary (high-contrast aware) | `colorScheme.onSurfaceVariant` |
+| gray (high-contrast aware in light theme) | `colorScheme.outline` |
+| error | `colorScheme.error` |
+| success / warning | `extendedColors.success` / `warning` |
+| rating stars | `extendedColors.rating` |
+| lightGray (dividers, unfocused borders, placeholders) | `extendedColors.neutralSubtle` |
+
+`lightGray` is deliberately not `outlineVariant`: that role feeds Material
+defaults (chip and outlined-button borders, default dividers) and remapping
+it would restyle them. Code outside composition must not read theme colors —
+pass the color in instead. Home-screen widgets are Glance and use their own
+`GlanceTheme` color providers (`widget/WidgetTheme.kt`).
+
+Android dynamic color (Material You) is supported by the theme's
+`dynamicColor` parameter but stays **off** by default: the app has a brand
+palette and a shared accent setting that a wallpaper-derived scheme would
+override. Extended colors stay on-brand either way.
+
+```kotlin
+Text("In stock", color = CocktailCraftTheme.extendedColors.success)
+Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) { /* ... */ }
+```
+
 ### Theme Transitions
 
-- **`AnimatedCocktailBarTheme(darkTheme, content)`** (`ui/theme/AnimatedTheme.kt`): the app's single theme; animates every palette color when switching between light and dark modes
+- **`AnimatedCocktailBarTheme(darkTheme, accentColor, highContrast, ...)`**: animates the theme-dependent palette roles (and the rating gold) when switching between light and dark modes or accents; Reduce Motion makes the switch instant
 - **`AnimatedThemeSwitch(isDarkMode, onToggle)`**: custom switch with animated track/thumb colors, spring-based thumb position, and an animated light/dark icon
 
 ```kotlin
@@ -689,9 +752,10 @@ Recent refactoring in the CocktailCraft app focused on:
 1. **Component Naming**: Use clear, descriptive names that indicate the component's purpose
 2. **Documentation**: Add KDoc comments to explain parameters and usage
 3. **Default Values**: Provide sensible defaults for optional parameters
-4. **Theming**: Use app theme colors and dimensions for consistency
-5. **Accessibility**: Ensure components are accessible with proper content descriptions
+4. **Theming**: Read colors from `MaterialTheme.colorScheme` / `CocktailCraftTheme.extendedColors` (never hardcode `Color.White` for surfaces) and use `Spacing` for dimensions
+5. **Accessibility**: Ensure components are accessible with proper content descriptions — see README "Accessibility" for the conventions and the automated checks
 6. **Composition**: Prefer composition over inheritance for component reuse
 7. **Testing**: Write tests for components to ensure they work as expected
+8. **Strings**: Never hardcode user-facing copy (Compose literals are invisible to the `HardcodedText` lint check). Add it to the shared strings and read it with `stringResource(MR.strings.key)` / `pluralStringResource(MR.plurals.key, …)` from `util/SharedStrings.kt` — see README "Localization"
 
 By following these guidelines and using the available components, you can maintain a consistent, maintainable, and efficient UI codebase for the CocktailCraft app.

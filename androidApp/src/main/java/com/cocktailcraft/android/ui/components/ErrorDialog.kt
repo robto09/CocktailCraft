@@ -36,17 +36,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
-import com.cocktailcraft.util.ErrorHandler
+import com.cocktailcraft.android.ui.theme.LocalReducedMotion
 import com.cocktailcraft.android.util.ErrorUtils
+import com.cocktailcraft.android.util.resolve
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.dialog_dismiss
+import com.cocktailcraft.resources.dialog_try_again
+import com.cocktailcraft.resources.error
+import com.cocktailcraft.util.ErrorHandler
 
 /**
  * A reusable error dialog component that displays user-friendly error messages
@@ -84,7 +91,7 @@ fun ErrorDialog(
                 // Error icon based on category
                 Icon(
                     imageVector = ErrorUtils.getErrorIcon(error.category),
-                    contentDescription = stringResource(R.string.error),
+                    contentDescription = stringResource(MR.strings.error),
                     tint = ErrorUtils.getErrorColor(error.category),
                     modifier = Modifier.size(48.dp)
                 )
@@ -93,19 +100,19 @@ fun ErrorDialog(
 
                 // Error title
                 Text(
-                    text = error.title,
+                    text = error.title.resolve(),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Error message
                 Text(
-                    text = error.message,
+                    text = error.message.resolve(),
                     fontSize = 16.sp,
-                    color = AppColors.TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
 
@@ -120,7 +127,7 @@ fun ErrorDialog(
                     TextButton(
                         onClick = onDismiss
                     ) {
-                        Text(stringResource(R.string.dialog_dismiss))
+                        Text(stringResource(MR.strings.dialog_dismiss))
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -134,10 +141,10 @@ fun ErrorDialog(
                                     onDismiss()
                                 },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = AppColors.Primary
+                                    containerColor = MaterialTheme.colorScheme.primary
                                 )
                             ) {
-                                Text(recoveryAction.actionLabel)
+                                Text(recoveryAction.actionLabel.resolve())
                             }
                         } ?: run {
                             if (onRetry != null) {
@@ -147,10 +154,10 @@ fun ErrorDialog(
                                     onDismiss()
                                 },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = AppColors.Primary
+                                    containerColor = MaterialTheme.colorScheme.primary
                                 )
                             ) {
-                                Text(stringResource(R.string.dialog_try_again))
+                                Text(stringResource(MR.strings.dialog_try_again))
                                 }
                             }
                         }
@@ -171,16 +178,27 @@ fun ErrorBanner(
     onAction: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val reducedMotion = LocalReducedMotion.current
     AnimatedVisibility(
         visible = error != null,
-        enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(animationSpec = tween(300)),
-        exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(animationSpec = tween(300))
+        enter = if (reducedMotion) {
+            fadeIn(animationSpec = tween(300))
+        } else {
+            slideInVertically(initialOffsetY = { -it }) + fadeIn(animationSpec = tween(300))
+        },
+        exit = if (reducedMotion) {
+            fadeOut(animationSpec = tween(300))
+        } else {
+            slideOutVertically(targetOffsetY = { -it }) + fadeOut(animationSpec = tween(300))
+        }
     ) {
         error?.let {
             Card(
                 modifier = modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(16.dp)
+                    // Polite live region: TalkBack reads the error when it appears
+                    .semantics { liveRegion = LiveRegionMode.Polite },
                 colors = CardDefaults.cardColors(
                     containerColor = getErrorBackgroundColor(it.category)
                 ),
@@ -196,7 +214,7 @@ fun ErrorBanner(
                 ) {
                     Icon(
                         imageVector = ErrorUtils.getErrorIcon(it.category),
-                        contentDescription = stringResource(R.string.error),
+                        contentDescription = null, // decorative: the title follows
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
                     )
@@ -207,13 +225,13 @@ fun ErrorBanner(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = it.title,
+                            text = it.title.resolve(),
                             color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
 
                         Text(
-                            text = it.message,
+                            text = it.message.resolve(),
                             color = Color.White.copy(alpha = 0.9f),
                             fontSize = 14.sp
                         )
@@ -232,7 +250,7 @@ fun ErrorBanner(
                                 )
                             ) {
                                 Text(
-                                    text = recoveryAction.actionLabel,
+                                    text = recoveryAction.actionLabel.resolve(),
                                     fontWeight = FontWeight.Bold
                                 )
                             }

@@ -33,6 +33,9 @@ Thumbs.db
 *.dex
 *.class
 *.jar
+# The Gradle wrapper must be committed so fresh clones (and Xcode's Kotlin
+# build phase) can run ./gradlew.
+!gradle/wrapper/gradle-wrapper.jar
 *.war
 *.ear
 *.keystore
@@ -59,13 +62,16 @@ output.json
 **/build/kotlin/compile*/
 
 # iOS specific
-# We commit Podfile and Podfile.lock, but never the Pods directory
-iosApp/Pods/
+# The generated project and its SPM Package.resolved are committed (IO-8);
+# the Kotlin framework (shared/build/xcode-frameworks/) is a build artifact.
 iosApp/DerivedData/
-iosApp/*.xcworkspace/xcuserdata/
 iosApp/*.xcodeproj/xcuserdata/
 iosApp/*.xcodeproj/project.xcworkspace/xcuserdata/
+# Includes build/DerivedData from `xcodebuild -derivedDataPath build/DerivedData`
 iosApp/build/
+# Leftovers from the CocoaPods setup in older checkouts — never commit
+iosApp/Pods/
+iosApp/CocktailCraft.xcworkspace/
 *.ipa
 *.dSYM.zip
 *.dSYM
