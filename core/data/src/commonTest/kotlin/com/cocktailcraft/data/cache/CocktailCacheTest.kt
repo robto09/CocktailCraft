@@ -5,6 +5,7 @@ import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCategories
+import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.testCocktail
@@ -90,6 +91,34 @@ class CocktailCacheTest {
 
         assertEquals(20, cache.getCachedCocktailCount())
         cocktails.forEach { assertEquals(it, cache.getCachedCocktail(it.id)) }
+    }
+
+    @Test
+    fun listPlaceholderNeverReplacesACachedFullRecord() = runTest {
+        val cache = cache(createTestDatabase())
+        val full = testCocktail("11007", name = "Margarita")
+        // What a filter.php listing maps to: no ingredients, alcoholic unknown
+        val placeholder = full.copy(
+            alcoholic = "Unknown",
+            ingredients = listOf(CocktailIngredient(Cocktail.PLACEHOLDER_INGREDIENT_NAME, ""))
+        )
+
+        cache.cacheCocktail(full)
+        cache.cacheCocktails(listOf(placeholder))
+
+        assertEquals(full, cache.getCachedCocktail("11007"))
+    }
+
+    @Test
+    fun placeholderIsCachedWhenNothingBetterIsStored() = runTest {
+        val cache = cache(createTestDatabase())
+        val placeholder = testCocktail("1").copy(
+            ingredients = listOf(CocktailIngredient(Cocktail.PLACEHOLDER_INGREDIENT_NAME, ""))
+        )
+
+        cache.cacheCocktail(placeholder)
+
+        assertEquals(placeholder, cache.getCachedCocktail("1"))
     }
 
     @Test
