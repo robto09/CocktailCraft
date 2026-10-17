@@ -21,3 +21,17 @@ class CocktailTest {
         assertNull(cocktail(Cocktail.ALCOHOLIC_UNKNOWN).knownAlcoholic)
     }
 }
+
+class CocktailIngredientTest {
+
+    @Test
+    fun displayTextPutsTheMeasureFirst() {
+        assertEquals("1 1/2 oz Tequila", CocktailIngredient("Tequila", "1 1/2 oz").displayText)
+    }
+
+    @Test
+    fun displayTextIsJustTheNameWithoutAMeasure() {
+        assertEquals("Salt", CocktailIngredient("Salt", "").displayText)
+        assertEquals("Salt", CocktailIngredient("Salt", "  ").displayText)
+    }
+}

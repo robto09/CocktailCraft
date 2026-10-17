@@ -26,11 +26,7 @@ data class DetailUiState(
                 appendLine("🍹 ${cocktail.name}")
                 appendLine()
                 appendLine("Ingredients:")
-                cocktail.ingredients.forEach { ingredient ->
-                    // "• 1 oz Gin", or "• Salt" when there is no measure
-                    val parts = listOf(ingredient.measure, ingredient.name).filter { it.isNotBlank() }
-                    appendLine("• " + parts.joinToString(" "))
-                }
+                cocktail.ingredients.forEach { appendLine("• ${it.displayText}") }
                 cocktail.instructions?.let {
                     appendLine()
                     appendLine("Instructions:")
