@@ -5,6 +5,8 @@ struct CartView: View {
     // Injected via .environment(cartViewModel) at the ContentView root
     @Environment(CartViewModelSKIE.self) private var cartViewModel
     @State private var orderViewModel = OrderViewModelSKIE()
+    // Cart rows carry a favorite heart, as on Android
+    @State private var favoritesViewModel = FavoritesViewModelSKIE()
     @Environment(AppRouter.self) private var router
     @State private var showCheckoutConfirmation = false
     @Environment(\.isDarkMode) private var isDarkMode
@@ -21,6 +23,7 @@ struct CartView: View {
                 .navigationTitle(L(\.cart))
                 .brandedNavigationBar()
             } else {
+                let favoriteIds = Set(favoritesViewModel.state.favorites.map(\.id))
                 ScrollView {
                     VStack(spacing: AppTheme.Spacing.xl) {
                         // Cart Items
@@ -28,6 +31,7 @@ struct CartView: View {
                             ForEach(cartViewModel.state.cartItems, id: \.cocktail.id) { item in
                                 CartItemCard(
                                     item: item,
+                                    isFavorite: favoriteIds.contains(item.cocktail.id),
                                     onIncrementQuantity: {
                                         Task {
                                             await cartViewModel.incrementQuantity(item.cocktail.id)
@@ -43,7 +47,11 @@ struct CartView: View {
                                             await cartViewModel.removeFromCart(item.cocktail.id)
                                         }
                                     },
-                                    onToggleFavorite: nil
+                                    onToggleFavorite: {
+                                        Task {
+                                            await favoritesViewModel.toggleFavorite(item.cocktail)
+                                        }
+                                    }
                                 )
                                 .padding(.horizontal, AppTheme.Spacing.lg)
                             }

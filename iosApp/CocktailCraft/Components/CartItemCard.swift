@@ -1,8 +1,12 @@
 import SwiftUI
 import shared
 
+/// Laid out like Android's CartItemCard: image on the left; name and
+/// favorite heart, unit price, alcoholic label, then one row with the
+/// stepper on the left and the line total and remove button on the right.
 struct CartItemCard: View {
     let item: CocktailCartItem
+    var isFavorite: Bool = false
     let onIncrementQuantity: () -> Void
     let onDecrementQuantity: () -> Void
     let onRemoveFromCart: () -> Void
@@ -10,61 +14,58 @@ struct CartItemCard: View {
     @Environment(\.isDarkMode) var isDarkMode
 
     var body: some View {
-        HStack(spacing: AppTheme.Spacing.lg) {
-            // Cocktail Image
+        HStack(alignment: .center, spacing: AppTheme.Spacing.md) {
             CocktailImageView(
                 imageUrl: item.cocktail.imageUrl,
                 height: 80,
-                cornerRadius: AppTheme.CornerRadius.md
+                cornerRadius: AppTheme.CornerRadius.sm
             )
             .frame(width: 80, height: 80)
 
-            // Content
-            VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-                // Name and Favorite
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(item.cocktail.name)
-                            .font(AppTheme.Typography.headline)
-                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                            .lineLimit(2)
+            VStack(alignment: .leading, spacing: 0) {
+                // Name and favorite
+                HStack(spacing: AppTheme.Spacing.xs) {
+                    Text(item.cocktail.name)
+                        .font(.headline.weight(.bold))
+                        .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                        .lineLimit(1)
 
-                        Text(item.cocktail.category ?? L(\.common_unknown))
-                            .font(AppTheme.Typography.caption)
-                            .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-                    }
-
-                    Spacer()
+                    Spacer(minLength: 0)
 
                     if let onToggleFavorite = onToggleFavorite {
                         Button(action: onToggleFavorite) {
-                            Image(systemName: "heart")
+                            Image(systemName: isFavorite ? "heart.fill" : "heart")
                                 .font(.title3)
-                                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                                .foregroundColor(isFavorite ? AppColors.secondary(isDarkMode: isDarkMode) : AppColors.gray)
+                                .contentTransition(.symbolEffect(.replace))
                                 .minimumHitTarget()
                         }
                         .buttonStyle(PlainButtonStyle())
                         .accessibilityLabel(L(\.favorite_toggle_a11y))
+                        .accessibilityAddTraits(isFavorite ? .isSelected : [])
                         .accessibilityIdentifier("cart.favoriteButton")
                     }
                 }
 
-                // Price
+                // Unit price
                 Text(item.cocktail.price.asPrice)
-                    .font(AppTheme.Typography.headline)
-                    .fontWeight(.bold)
+                    .font(.subheadline.weight(.bold))
                     .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
 
-                Spacer()
+                if let alcoholic = item.cocktail.knownAlcoholic {
+                    Text(alcoholic)
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                        .padding(.top, AppTheme.Spacing.xs)
+                }
 
-                // Quantity Controls and Total: one row when it fits; otherwise
-                // (narrow phones, large Dynamic Type) the line total and
-                // remove button wrap below the stepper instead of the total
-                // breaking across lines
+                // Stepper and line total on one row when it fits; otherwise
+                // (large Dynamic Type) the total and remove button wrap below
+                // the stepper instead of breaking across lines
                 ViewThatFits(in: .horizontal) {
-                    HStack {
+                    HStack(spacing: 0) {
                         quantityControls
-                        Spacer()
+                        Spacer(minLength: AppTheme.Spacing.xs)
                         totalAndRemove
                     }
 
@@ -73,10 +74,11 @@ struct CartItemCard: View {
                         totalAndRemove
                     }
                 }
+                .padding(.top, AppTheme.Spacing.sm)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(AppTheme.Spacing.lg)
+        .padding(AppTheme.Spacing.md)
         .cardStyle()
     }
 
@@ -90,17 +92,18 @@ struct CartItemCard: View {
     }
 
     private var totalAndRemove: some View {
-        HStack(spacing: AppTheme.Spacing.sm) {
+        HStack(spacing: AppTheme.Spacing.xs) {
+            // 16 pt like Android's line total, so stepper, total and
+            // remove still fit one row with longer prices ("US$13.65")
             Text((item.cocktail.price * Double(item.quantity)).asPrice)
-                .font(AppTheme.Typography.headline)
-                .fontWeight(.bold)
+                .font(.callout.weight(.bold))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .lineLimit(1)
                 .fixedSize()
 
             Button(action: onRemoveFromCart) {
-                Image(systemName: "trash")
-                    .font(.callout)
+                Image(systemName: "trash.fill")
+                    .font(.body)
                     .foregroundColor(AppColors.error)
                     .minimumHitTarget()
             }
@@ -121,19 +124,19 @@ struct QuantityControlView: View {
     @Environment(\.isDarkMode) var isDarkMode
 
     var body: some View {
-        // The 44 pt hit targets already pad the 32 pt circles by 6 pt, so a
-        // small gap keeps the row (stepper + line total + remove) on one
-        // line at phone width
+        // The 44 pt hit targets pad the 36 pt circles by 4 pt; with the gap
+        // and the count's min width it sits about as far from each circle as
+        // on Android
         HStack(spacing: AppTheme.Spacing.xs) {
             Button(action: onDecrement) {
                 Image(systemName: "minus")
                     .font(.callout.weight(.bold))
-                    // Fixed 32 pt circle: keep the glyph inside it at large
-                    // text sizes
+                    // Fixed 36 pt circle (Android's size): keep the glyph
+                    // inside it at large text sizes
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                    .foregroundColor(.white)
-                    .frame(width: 32, height: 32)
-                    .background(isDarkMode ? AppColors.neutralSubtle(isDarkMode: true) : AppColors.textSecondary(isDarkMode: false))
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                    .frame(width: 36, height: 36)
+                    .background(AppColors.neutralSubtle(isDarkMode: isDarkMode))
                     .clipShape(Circle())
                     .minimumHitTarget()
             }
@@ -144,7 +147,7 @@ struct QuantityControlView: View {
             Text("\(quantity)")
                 .font(AppTheme.Typography.headline)
                 .fontWeight(.bold)
-                .frame(minWidth: 30)
+                .frame(minWidth: 28)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .accessibilityLabel(L(\.cart_quantity_label, quantity))
                 .accessibilityIdentifier("cart.quantityValue")
@@ -156,11 +159,11 @@ struct QuantityControlView: View {
             Button(action: onIncrement) {
                 Image(systemName: "plus")
                     .font(.callout.weight(.bold))
-                    // Fixed 32 pt circle: keep the glyph inside it at large
-                    // text sizes
+                    // Fixed 36 pt circle (Android's size): keep the glyph
+                    // inside it at large text sizes
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .foregroundColor(AppColors.onPrimary(isDarkMode: isDarkMode))
-                    .frame(width: 32, height: 32)
+                    .frame(width: 36, height: 36)
                     .background(AppColors.primary(isDarkMode: isDarkMode))
                     .clipShape(Circle())
                     .minimumHitTarget()
