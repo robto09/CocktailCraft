@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.stringResource
@@ -47,10 +48,13 @@ fun AppTopBar(
     Column(modifier = modifier) {
         CenterAlignedTopAppBar(
             title = {
+                // One line with "..." for long cocktail names, as on iOS
                 Text(
                     text = title,
                     color = Color.White,
                     style = MaterialTheme.typography.headlineMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.semantics { heading() }
                 )
             },

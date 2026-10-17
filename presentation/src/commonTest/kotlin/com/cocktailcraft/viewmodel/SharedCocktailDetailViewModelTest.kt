@@ -1,13 +1,11 @@
 package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
-import com.cocktailcraft.domain.usecase.AnalyzeCocktailUseCase
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
-import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.domain.util.Result
-import com.cocktailcraft.testutil.FakeCartRepository
 import com.cocktailcraft.testutil.FakeDetailRepository
 import com.cocktailcraft.testutil.FakeFavoritesRepository
 import com.cocktailcraft.testutil.FakeSearchRepository
@@ -43,13 +41,10 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
         val detail = FakeDetailRepository()
         val favorites = FakeFavoritesRepository()
         val search = FakeSearchRepository()
-        val cart = FakeCartRepository()
 
         fun viewModel(detailRepository: CocktailDetailRepository = detail) = SharedCocktailDetailViewModel(
             getCocktailDetailUseCase = GetCocktailDetailUseCase(detailRepository, favorites, search),
-            manageFavoritesUseCase = ManageFavoritesUseCase(favorites, detailRepository),
-            manageCartUseCase = ManageCartUseCase(cart, detailRepository),
-            analyzeCocktailUseCase = AnalyzeCocktailUseCase()
+            manageFavoritesUseCase = ManageFavoritesUseCase(favorites, detailRepository)
         )
     }
 
@@ -65,28 +60,59 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
         assertEquals("Martini", vm.uiState.value.cocktail?.name)
         assertFalse(vm.uiState.value.isLoading)
         assertFalse(vm.uiState.value.isFavorite)
-        assertEquals(mapOf("Spirits" to listOf("Gin")), vm.uiState.value.ingredientsByType)
         assertNull(vm.error.value)
     }
 
     @Test
-    fun loadedStateCarriesNutritionFactsAndShareText() = runTest {
-        // Formerly snapshot getters on the VM; now derived into uiState so
-        // both platforms observe them reactively.
+    fun loadedStateCarriesShareText() = runTest {
+        // Derived into uiState so both platforms observe it reactively
         val harness = Harness()
         harness.detail.byId["1"] = testCocktail("1", name = "Martini")
         val vm = harness.viewModel()
-        assertNull(vm.uiState.value.nutritionFacts)
         assertEquals("", vm.uiState.value.shareableText)
 
         vm.loadCocktail("1")
         advanceUntilIdle()
 
         val state = vm.uiState.value
-        assertEquals(AnalyzeCocktailUseCase().nutritionFacts(state.cocktail!!), state.nutritionFacts)
         assertTrue(state.shareableText.startsWith("🍹 Martini"))
         assertTrue(state.shareableText.contains("• 50 ml Gin"))
         assertTrue(state.shareableText.endsWith("Category: Cocktail"))
+    }
+
+    @Test
+    fun shareableTextHasNoStrayIndentWithSeveralIngredients() = runTest {
+        val harness = Harness()
+        harness.detail.byId["1"] = testCocktail("1", name = "Margarita").copy(
+            ingredients = listOf(
+                CocktailIngredient("Tequila", "1 1/2 oz"),
+                CocktailIngredient("Triple sec", "1/2 oz"),
+                CocktailIngredient("Salt", "")
+            ),
+            instructions = "Shake with ice."
+        )
+        val vm = harness.viewModel()
+
+        vm.loadCocktail("1")
+        advanceUntilIdle()
+
+        assertEquals(
+            """
+            🍹 Margarita
+
+            Ingredients:
+            • 1 1/2 oz Tequila
+            • 1/2 oz Triple sec
+            • Salt
+
+            Instructions:
+            Shake with ice.
+
+            Glass: Cocktail glass
+            Category: Cocktail
+            """.trimIndent(),
+            vm.uiState.value.shareableText
+        )
     }
 
     @Test
@@ -174,37 +200,5 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
 
         assertFalse(vm.uiState.value.isFavorite)
         assertTrue(harness.favorites.stored.isEmpty())
-    }
-
-    @Test
-    fun addToCartReflectsQuantityInState() = runTest {
-        val harness = Harness()
-        harness.detail.byId["1"] = testCocktail("1")
-        val vm = harness.viewModel()
-        vm.loadCocktail("1")
-        advanceUntilIdle()
-        assertFalse(vm.uiState.value.isInCart)
-
-        vm.addToCart(quantity = 2)
-
-        assertTrue(vm.uiState.value.isInCart)
-        assertEquals(2, vm.uiState.value.cartQuantity)
-    }
-
-    @Test
-    fun updateCartQuantityToZeroRemovesFromCart() = runTest {
-        val harness = Harness()
-        harness.detail.byId["1"] = testCocktail("1")
-        val vm = harness.viewModel()
-        vm.loadCocktail("1")
-        advanceUntilIdle()
-        vm.addToCart(quantity = 2)
-
-        vm.updateCartQuantity(5)
-        assertEquals(5, vm.uiState.value.cartQuantity)
-
-        vm.updateCartQuantity(0)
-        assertFalse(vm.uiState.value.isInCart)
-        assertEquals(0, vm.uiState.value.cartQuantity)
     }
 }

@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Write-a-review sheet, mirroring Android's WriteReviewDialog: name, a
-/// 1-5 star picker and a comment capped at 500 characters. Name and rating
+/// Write-a-review bottom sheet, laid out like Android's WriteReviewSheet (and
+/// like the Advanced Search sheets): a Cancel / title header, name, a 1-5
+/// star picker, a comment capped at 500 characters, then Submit Review. Name and rating
 /// are checked here (same as Android); comment rules are enforced by the
 /// shared ReviewViewModel and its rejection message is shown inline via
 /// `submissionError`, keeping the sheet open so nothing typed is lost.
@@ -12,6 +13,9 @@ struct WriteReviewView: View {
     @State private var comment = ""
     @State private var showFieldErrors = false
     @State private var isSubmitting = false
+    /// Measured form height: the sheet is only as tall as its content, like
+    /// Android's bottom sheet (the system default would fill the screen)
+    @State private var contentHeight: CGFloat = 600
 
     /// Latest rejection from the shared ViewModel (validation or save failure).
     let submissionError: String?
@@ -31,43 +35,72 @@ struct WriteReviewView: View {
     private var ratingMissing: Bool { rating == 0 }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: AppTheme.Spacing.xl) {
-                    nameField
-                    ratingPicker
-                    commentField
+        ScrollView {
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.xl) {
+                header
+                nameField
+                ratingPicker
+                commentField
 
-                    if let submissionError {
-                        errorText(submissionError)
-                            .accessibilityIdentifier("writeReview.errorMessage")
-                    }
+                if let submissionError {
+                    errorText(submissionError)
+                        .accessibilityIdentifier("writeReview.errorMessage")
+                }
 
-                    PrimaryButton(
-                        title: L(\.review_submit),
-                        isLoading: isSubmitting,
-                        action: submit
-                    )
-                    .accessibilityIdentifier("writeReview.submitButton")
-                }
-                .padding()
+                PrimaryButton(
+                    title: L(\.review_submit),
+                    isLoading: isSubmitting,
+                    action: submit
+                )
+                .accessibilityIdentifier("writeReview.submitButton")
             }
-            .background(AppColors.background(isDarkMode: isDarkMode))
-            .navigationTitle(L(\.write_review))
-            .brandedNavigationBar()
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(L(\.cancel)) {
-                        onDismiss()
-                    }
-                    .accessibilityIdentifier("writeReview.cancelButton")
-                    .tint(.white)
+            .padding(.horizontal)
+            // Clear the drag indicator, as Android's sheet header does
+            .padding(.top, AppTheme.Spacing.xl)
+            .padding(.bottom, AppTheme.Spacing.xl)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear { contentHeight = proxy.size.height }
+                        .onChange(of: proxy.size.height) { _, newHeight in contentHeight = newHeight }
                 }
-            }
+            )
         }
+        .background(AppColors.surface(isDarkMode: isDarkMode))
+        .presentationBackground(AppColors.surface(isDarkMode: isDarkMode))
+        .presentationDragIndicator(.visible)
+        .presentationDetents([.height(contentHeight)])
         .onChange(of: userName) { onClearError() }
         .onChange(of: rating) { onClearError() }
         .onChange(of: comment) { onClearError() }
+    }
+
+    // MARK: - Header
+
+    /// Cancel | title, with an invisible Cancel on the right so the title
+    /// stays centered (as on Android)
+    private var header: some View {
+        HStack {
+            cancelButton
+            Spacer()
+            Text(L(\.write_review))
+                .font(.headline.weight(.bold))
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                .accessibilityAddTraits(.isHeader)
+            Spacer()
+            cancelButton
+                .hidden()
+                .accessibilityHidden(true)
+        }
+    }
+
+    private var cancelButton: some View {
+        Button(L(\.cancel)) {
+            onDismiss()
+        }
+        .font(.subheadline.weight(.medium))
+        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+        .accessibilityIdentifier("writeReview.cancelButton")
     }
 
     // MARK: - Fields
@@ -93,17 +126,18 @@ struct WriteReviewView: View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
             fieldLabel(L(\.review_your_rating))
 
-            HStack(spacing: AppTheme.Spacing.sm) {
+            // 36pt stars in 48pt targets, centered, as on Android
+            HStack(spacing: 0) {
                 ForEach(1...5, id: \.self) { star in
                     Button {
                         rating = star
                     } label: {
                         Image(systemName: star <= rating ? "star.fill" : "star")
-                            .font(.system(size: 32))
+                            .font(.system(size: 30))
                             .foregroundColor(star <= rating
                                 ? AppColors.secondary(isDarkMode: isDarkMode)
-                                : AppColors.gray.opacity(0.5))
-                            .minimumHitTarget()
+                                : AppColors.gray)
+                            .frame(width: 48, height: 48)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(L(\.review_rate_star, star))
@@ -112,9 +146,6 @@ struct WriteReviewView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding(AppTheme.Spacing.sm)
-            .background(AppColors.surface(isDarkMode: isDarkMode))
-            .cornerRadius(AppTheme.CornerRadius.md)
 
             if showFieldErrors && ratingMissing {
                 errorText(L(\.review_select_rating_error))
@@ -136,7 +167,7 @@ struct WriteReviewView: View {
                     .accessibilityIdentifier("writeReview.commentField")
 
                 if comment.isEmpty {
-                    Text(L(\.review_share_experience_placeholder_ios))
+                    Text(L(\.review_share_experience_placeholder))
                         .foregroundColor(AppColors.gray)
                         .padding(.horizontal, AppTheme.Spacing.sm + AppTheme.Spacing.xs)
                         .padding(.vertical, AppTheme.Spacing.md)
@@ -169,7 +200,7 @@ struct WriteReviewView: View {
 
     private func fieldLabel(_ text: String) -> some View {
         Text(text)
-            .font(.headline)
+            .font(.subheadline.weight(.semibold))
             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
     }
 

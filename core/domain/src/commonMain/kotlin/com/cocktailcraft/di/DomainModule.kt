@@ -37,6 +37,5 @@ val domainModule = module {
     factory { ManageCartUseCase(cartRepository = get(), detailRepository = get()) }
     factory { ManageProfileUseCase(authRepository = get()) }
     factory { ManageReviewsUseCase(repository = get()) }
-    factory { com.cocktailcraft.domain.usecase.AnalyzeCocktailUseCase() }
     factory { PlaceOrderUseCase(orderRepository = get()) }
 }

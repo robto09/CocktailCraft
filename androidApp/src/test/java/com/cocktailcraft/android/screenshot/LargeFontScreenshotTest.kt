@@ -49,10 +49,6 @@ class LargeFontScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
         Column(modifier = Modifier.padding(top = 20.dp)) {
             DetailMainInfoCard(
                 cocktail = ScreenshotFixtures.cocktail,
-                isFavorite = true,
-                isInCart = false,
-                onToggleFavorite = {},
-                onAddToCartClick = {},
                 onRefreshDetails = {}
             )
         }

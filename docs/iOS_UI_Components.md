@@ -52,7 +52,7 @@ VStack { ... }.cardStyle()
 ## Cocktail & Home Components
 
 ### CocktailCard
-**Purpose**: The main cocktail card, with `.horizontal` (Home list) and `.vertical` (Favorites grid) layouts. Its out-of-stock rule intentionally mirrors `CocktailDetailViewModelSKIE.canAddToCart()`. VoiceOver reads the whole card (name, category, ingredients, price, stock) in one stop on the title; the heart ("Favorite", selected when on) and "Add <name> to cart" buttons stay separate elements. At accessibility text sizes the horizontal layout stacks the image above the text.
+**Purpose**: The cocktail row for the Home and Favorites lists, laid out with the same metrics as Android's `CocktailItem` (12 padding, 100 pt image, heart and filled cart 48 pt apart). Its out-of-stock rule intentionally mirrors `CocktailDetailViewModelSKIE.canAddToCart()`. VoiceOver reads the whole card (name, category, ingredients, price, stock) in one stop on the title; the heart ("Favorite", selected when on) and "Add <name> to cart" buttons stay separate elements. At accessibility text sizes the image stacks above the text.
 
 ```swift
 CocktailCard(
@@ -60,8 +60,7 @@ CocktailCard(
     isFavorite: isFavorite,
     onFavoriteToggle: { ... },
     onAddToCart: { ... },
-    onCardTap: { ... },
-    layout: .horizontal
+    onCardTap: { ... }
 )
 ```
 

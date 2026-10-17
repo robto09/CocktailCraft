@@ -41,10 +41,12 @@ struct ProfileView: View {
             }
             .padding(.horizontal)
             .padding(.top, 8)
+            // Space between the last card and the tab bar, as Android's
+            // 16dp scroll padding leaves
+            .padding(.bottom, AppTheme.Spacing.lg)
         }
         .background(AppColors.background(isDarkMode: isDarkMode))
-        .navigationTitle(L(\.profile))
-        .brandedNavigationBar()
+        .brandedNavigationBar(title: L(\.profile))
         .onAppear {
             // Observation tracking keeps the UI current; the old
             // .id(UUID())-on-appear force-rebuild hack is gone.

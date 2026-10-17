@@ -10,7 +10,6 @@ struct FavoritesView: View {
     @State private var removingIds: Set<String> = []
     @State private var showingToast = false
     @State private var toastMessage = ""
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.isDarkMode) private var isDarkMode
 
     var body: some View {
@@ -18,13 +17,12 @@ struct FavoritesView: View {
             if viewModel.state.favorites.isEmpty {
                 emptyStateView
             } else {
-                favoritesGridView
+                favoritesList
             }
         }
         // App background (not the system black/white) behind every state
         .background(AppColors.background(isDarkMode: isDarkMode).ignoresSafeArea())
-        .navigationTitle(L(\.favorites))
-        .brandedNavigationBar()
+        .brandedNavigationBar(title: L(\.favorites))
         .navigationDestination(for: String.self) { cocktailId in
             CocktailDetailView(cocktailId: cocktailId)
         }
@@ -43,39 +41,29 @@ struct FavoritesView: View {
         )
     }
     
-    private var favoritesGridView: some View {
+    /// One full-width card per row, the same card as Home and Android's
+    /// Favorites list (16 between cards, 16 around the list).
+    private var favoritesList: some View {
         ScrollView {
-            gridContent
-                .padding()
+            LazyVStack(spacing: 16) {
+                ForEach(viewModel.state.favorites, id: \.id) { cocktail in
+                    favoriteRow(cocktail)
+                }
+            }
+            // The favorites list changes via the shared flow (outside any
+            // SwiftUI animation transaction), so animate insert/remove off
+            // the id list — the counterpart of Android's .animateItem().
+            .animation(.default, value: viewModel.state.favorites.map(\.id))
+            .padding(16)
         }
         .refreshable {
             await viewModel.refreshFavorites()
         }
     }
-    
-    private var gridContent: some View {
-        LazyVGrid(columns: gridColumns, spacing: 16) {
-            ForEach(viewModel.state.favorites, id: \.id) { cocktail in
-                cocktailGridItem(cocktail)
-            }
-        }
-        // The favorites list changes via the shared flow (outside any SwiftUI
-        // animation transaction), so animate insert/remove off the id list —
-        // the counterpart of Android's .animateItem().
-        .animation(.default, value: viewModel.state.favorites.map(\.id))
-    }
-    
-    // One column at accessibility text sizes, where two cards per row
-    // leave too little width for the text
-    private var gridColumns: [GridItem] {
-        dynamicTypeSize.isAccessibilitySize
-            ? [GridItem(.flexible())]
-            : [GridItem(.flexible()), GridItem(.flexible())]
-    }
-    
-    private func cocktailGridItem(_ cocktail: Cocktail) -> some View {
+
+    private func favoriteRow(_ cocktail: Cocktail) -> some View {
         // Value-based link: the destination (and its factory-scoped detail
-        // ViewModel) is only built on push, not eagerly per grid item.
+        // ViewModel) is only built on push, not eagerly per row.
         NavigationLink(value: cocktail.id) {
             CocktailCard(
                 cocktail: cocktail,
@@ -93,8 +81,7 @@ struct FavoritesView: View {
                             showingToast = true
                         }
                     }
-                },
-                layout: .vertical
+                }
             )
         }
         .buttonStyle(PlainButtonStyle())

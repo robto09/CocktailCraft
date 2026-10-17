@@ -15,8 +15,7 @@ struct OrderListView: View {
         contentView
             // App background (not the system black/white) behind every state
             .background(AppColors.background(isDarkMode: isDarkMode).ignoresSafeArea())
-            .navigationTitle(L(\.orders))
-            .brandedNavigationBar()
+            .brandedNavigationBar(title: L(\.orders))
             // Seed load once; afterwards the observed orders flow keeps the
             // list fresh. A load cancelled mid-flight (user leaves the tab)
             // leaves hasLoaded false, so the next visit retries.
@@ -57,11 +56,16 @@ struct OrderListView: View {
         )
     }
 
+    // Cards on the app background, spaced like Android's LazyColumn
+    // (16 around the list and between cards)
     private var ordersList: some View {
-        List {
-            ForEach(Array(viewModel.state.orders), id: \.id) { order in
-                orderRow(order: order)
+        ScrollView {
+            LazyVStack(spacing: AppTheme.Spacing.lg) {
+                ForEach(Array(viewModel.state.orders), id: \.id) { order in
+                    orderCard(order: order)
+                }
             }
+            .padding(AppTheme.Spacing.lg)
         }
         // Pull-to-refresh, parity with Android Orders
         .refreshable {
@@ -69,27 +73,64 @@ struct OrderListView: View {
         }
     }
 
-    private func orderRow(order: Order) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(L(\.order_number, order.id))
-                .font(.headline)
+    /// Laid out like Android's OrderCard: order number and date, one row per
+    /// item, a divider, the total, then the colored status.
+    private func orderCard(order: Order) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                // Short number, as on Android ("Order #42052")
+                Text(L(\.order_number, String(order.id.suffix(5))))
+                    .font(.callout.weight(.bold))
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Text(order.date)
+                    .font(.subheadline)
+                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+            }
+            .padding(.bottom, AppTheme.Spacing.md)
+
+            ForEach(Array(order.items.enumerated()), id: \.offset) { _, item in
+                HStack {
+                    Text(L(\.order_item_quantity_name, item.quantity, item.name))
+                        .font(.subheadline)
+                    Spacer()
+                    Text((item.price * Double(item.quantity)).asPrice)
+                        .font(.subheadline.weight(.medium))
+                }
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                .accessibilityAddTraits(.isHeader)
-            // Colored status indicator matching Android's OrderCard
-            HStack(spacing: 6) {
+                .padding(.vertical, AppTheme.Spacing.xs)
+                .accessibilityElement(children: .combine)
+            }
+
+            Divider()
+                .overlay(AppColors.neutralSubtle(isDarkMode: isDarkMode))
+                .padding(.vertical, AppTheme.Spacing.md)
+
+            HStack {
+                Text(L(\.total))
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                Spacer()
+                Text(order.total.asPrice)
+                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+            }
+            .font(.callout.weight(.bold))
+            .accessibilityElement(children: .combine)
+
+            HStack(spacing: AppTheme.Spacing.sm) {
                 Circle()
                     .fill(statusColor(order.status))
-                    .frame(width: 8, height: 8)
+                    .frame(width: 10, height: 10)
                 Text(order.status)
                     .font(.subheadline)
                     .foregroundColor(statusColor(order.status))
             }
-            Text(L(\.order_total_label, order.total.asPrice))
-                .font(.body)
-                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+            .padding(.top, AppTheme.Spacing.md)
+            .accessibilityElement(children: .combine)
         }
-        .padding(.vertical, 4)
-        .accessibilityElement(children: .combine)
+        .padding(AppTheme.Spacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardStyle()
     }
 
     private func statusColor(_ status: String) -> Color {

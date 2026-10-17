@@ -104,6 +104,9 @@ extension Double {
         formatter.numberStyle = .currency
         formatter.currencyCode = "USD"
         formatter.locale = Locale.current
+        // Plain "$" in every region, as on Android: outside the US the
+        // locale would otherwise write "US$8.24"
+        formatter.currencySymbol = "$"
         return formatter
     }()
 }

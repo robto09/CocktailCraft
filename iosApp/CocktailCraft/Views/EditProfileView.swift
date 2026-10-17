@@ -95,8 +95,7 @@ struct EditProfileView: View {
                 Spacer()
             }
             .background(AppColors.background(isDarkMode: isDarkMode))
-            .navigationTitle(L(\.edit_profile))
-            .brandedNavigationBar()
+            .brandedNavigationBar(title: L(\.edit_profile))
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(L(\.cancel)) {

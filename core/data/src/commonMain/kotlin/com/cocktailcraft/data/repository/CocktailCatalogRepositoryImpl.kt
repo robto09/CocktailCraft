@@ -32,7 +32,10 @@ internal class CocktailCatalogRepositoryImpl(
 
     override suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>> {
         return runCatchingResult("Failed to get cocktails sorted by newest") {
-            Result.Success(categoryFetcher.fetchCocktailsByCategory(CocktailCategories.DEFAULT))
+            Result.Success(
+                categoryFetcher.fetchCocktailsByCategory(CocktailCategories.DEFAULT)
+                    .sortedByDescending { it.dateAdded }
+            )
         }
     }
 }

@@ -6,46 +6,44 @@ struct CartSummaryCard: View {
     let total: Double
     @Environment(\.isDarkMode) var isDarkMode
     
+    /// Laid out like Android's OrderSummaryCard: the title inside the card,
+    /// subtotal and delivery rows, one divider, then the total.
     var body: some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
+        VStack(alignment: .leading, spacing: 0) {
             Text(L(\.order_summary_title))
-                .font(AppTheme.Typography.title2)
-                .fontWeight(.bold)
+                .font(.title3.weight(.bold))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .accessibilityAddTraits(.isHeader)
-                .padding(.horizontal, AppTheme.Spacing.lg)
+                .padding(.bottom, AppTheme.Spacing.md)
 
-            VStack(spacing: 0) {
-                // Subtotal
+            VStack(spacing: AppTheme.Spacing.sm) {
                 SummaryRow(
                     label: L(\.order_subtotal),
                     value: subtotal,
                     isTotal: false
                 )
-                
-                Divider()
-                    .padding(.horizontal, AppTheme.Spacing.lg)
 
-                // Delivery Fee
                 SummaryRow(
                     label: L(\.order_delivery_fee),
                     value: deliveryFee,
                     isTotal: false
                 )
-                
-                Divider()
-                    .padding(.horizontal, AppTheme.Spacing.lg)
-
-                // Total
-                SummaryRow(
-                    label: L(\.total),
-                    value: total,
-                    isTotal: true
-                )
             }
-            .cardStyle()
-            .padding(.horizontal, AppTheme.Spacing.lg)
+
+            Divider()
+                .overlay(AppColors.neutralSubtle(isDarkMode: isDarkMode))
+                .padding(.vertical, AppTheme.Spacing.md)
+
+            SummaryRow(
+                label: L(\.total),
+                value: total,
+                isTotal: true
+            )
         }
+        .padding(AppTheme.Spacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardStyle()
+        .padding(.horizontal, AppTheme.Spacing.lg)
     }
 }
 
@@ -71,23 +69,21 @@ struct SummaryRow: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, AppTheme.Spacing.lg)
-        .padding(.vertical, AppTheme.Spacing.md)
         // "Subtotal, $25.00" as one element
         .accessibilityElement(children: .combine)
     }
 
     private var labelText: some View {
         Text(label)
-            .font(isTotal ? AppTheme.Typography.headline : AppTheme.Typography.body)
-            .fontWeight(isTotal ? .bold : .medium)
+            .font(isTotal ? AppTheme.Typography.headline : AppTheme.Typography.callout)
+            .fontWeight(isTotal ? .bold : .regular)
             .foregroundColor(isTotal ? AppColors.textPrimary(isDarkMode: isDarkMode) : AppColors.textSecondary(isDarkMode: isDarkMode))
     }
 
     private var valueText: some View {
         Text(value.asPrice)
-            .font(isTotal ? AppTheme.Typography.headline : AppTheme.Typography.body)
-            .fontWeight(isTotal ? .bold : .medium)
+            .font(isTotal ? AppTheme.Typography.headline : AppTheme.Typography.callout)
+            .fontWeight(isTotal ? .bold : .regular)
             .foregroundColor(isTotal ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.textPrimary(isDarkMode: isDarkMode))
             .fixedSize()
     }

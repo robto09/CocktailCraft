@@ -86,6 +86,9 @@ internal fun cocktailColorScheme(
             tertiary = chip,
             background = Color(ColorTokens.backgroundLight),
             surface = Color(ColorTokens.surfaceLight),
+            // Neutral elevation, as in dark: the default primary tint turns
+            // the nav bar peach and cards coral-tinged (iOS stays white)
+            surfaceTint = Color(ColorTokens.surfaceLight),
             surfaceVariant = lightGray,
             error = error,
             onPrimary = Color.White,

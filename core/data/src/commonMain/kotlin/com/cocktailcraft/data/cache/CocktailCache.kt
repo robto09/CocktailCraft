@@ -267,10 +267,21 @@ internal class CocktailCache(
         }
     }
 
-    /** Upserts [cocktails] in order and applies the LRU cap. Call inside a transaction. */
+    /**
+     * Upserts [cocktails] in order and applies the LRU cap. A list-endpoint
+     * placeholder never replaces a cached full record (it would put "Tap to
+     * view ingredients" back on cards); the full record is kept and refreshed.
+     * Call inside a transaction.
+     */
     private fun CocktailCraftDatabase.upsertCocktails(cocktails: List<Cocktail>) {
         val now = nowMs()
-        cocktails.forEach { cocktail ->
+        cocktails.forEach { incoming ->
+            val cocktail = if (incoming.hasFullDetails) incoming else {
+                cachedCocktailQueries.selectById(incoming.id).executeAsOneOrNull()
+                    ?.let { decodeOrNull(it.payload) }
+                    ?.takeIf { it.hasFullDetails }
+                    ?: incoming
+            }
             cachedCocktailQueries.upsert(
                 id = cocktail.id,
                 category = normalizedCategory(cocktail),

@@ -57,10 +57,6 @@ class ScreenContentScreenshotTest(variant: ThemeVariant) : ScreenshotTest(varian
         Column(modifier = Modifier.padding(top = 20.dp)) {
             DetailMainInfoCard(
                 cocktail = ScreenshotFixtures.cocktail,
-                isFavorite = true,
-                isInCart = false,
-                onToggleFavorite = {},
-                onAddToCartClick = {},
                 onRefreshDetails = {}
             )
         }
@@ -86,7 +82,6 @@ class ScreenContentScreenshotTest(variant: ThemeVariant) : ScreenshotTest(varian
     @Test
     fun detailRecommendations() = snapshot("Detail_recommendations") {
         DetailRecommendationsSection(
-            category = ScreenshotFixtures.cocktail.category,
             similarCocktails = ScreenshotFixtures.cocktails,
             isLoadingRecommendations = false,
             onRecommendationClick = {}

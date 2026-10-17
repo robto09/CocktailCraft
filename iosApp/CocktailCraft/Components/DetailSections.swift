@@ -15,306 +15,147 @@ extension CocktailDetailView {
     // MARK: - Main Info
 
     func mainInfoCard(_ cocktail: Cocktail) -> some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+        // Laid out like Android's DetailMainInfoCard: name, alcoholic/category
+        // line, price, preparation. Only API data (no rating or stock, which the
+        // API doesn't have); adding to cart happens from the Home and Favorites
+        // cards. Its rounded top overlaps the header image; see
+        // CocktailDetailView.
+        VStack(alignment: .leading, spacing: 0) {
             Text(cocktail.name)
-                .font(.largeTitle)
-                .fontWeight(.bold)
+                .font(.title.weight(.bold))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .accessibilityAddTraits(.isHeader)
 
-            HStack(spacing: AppTheme.Spacing.sm) {
-                if let category = cocktail.category {
-                    Text(category)
-                        .font(.subheadline)
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-                }
-
-                Spacer()
-
-                // One element: "4.5 out of 5 stars"
-                HStack(spacing: AppTheme.Spacing.sm) {
-                    Image(systemName: "star.fill")
-                        .font(.caption)
-                        .foregroundColor(.yellow)
-                    Text(viewModel.formatRating())
-                        .font(.subheadline)
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-                }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(L(\.review_stars_a11y, viewModel.formatRating(), 5))
-                // Informational, not a control: without the trait the
-                // accessibility audit treats it as an undersized tap target
-                .accessibilityAddTraits(.isStaticText)
+            let subtitle = [cocktail.knownAlcoholic, cocktail.category].compactMap { $0 }.joined(separator: " • ")
+            if !subtitle.isEmpty {
+                Text(subtitle)
+                    .font(.callout.weight(.medium))
+                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .padding(.top, AppTheme.Spacing.xs)
             }
 
-            HStack {
-                Text(viewModel.formatPrice())
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
-                    // A bare "$7.46" reads without context (and fails the
-                    // audit's human-readable label check)
-                    .accessibilityLabel(L(\.detail_price_a11y, viewModel.formatPrice()))
-
-                Spacer()
-
-                // Stock badge colored by the ViewModel's shared stock rule
-                Text(viewModel.getStockStatus())
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .padding(.horizontal, AppTheme.Spacing.md)
-                    .padding(.vertical, AppTheme.Spacing.xs)
-                    .background(viewModel.getStockStatusColor().opacity(0.15))
-                    .foregroundColor(viewModel.getStockStatusColor())
-                    .cornerRadius(AppTheme.CornerRadius.chip)
-            }
-
-            cartControls
+            Text(viewModel.formatPrice())
+                .font(.title2.weight(.bold))
+                .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                // A bare "$7.46" reads without context (and fails the
+                // audit's human-readable label check)
+                .accessibilityLabel(L(\.detail_price_a11y, viewModel.formatPrice()))
+                .padding(.top, AppTheme.Spacing.sm)
 
             if let instructions = cocktail.instructions, !instructions.isEmpty {
-                VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-                    Text(L(\.how_to_prepare_ios))
-                        .font(.headline)
-                        .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                        .accessibilityAddTraits(.isHeader)
+                Text(L(\.how_to_prepare))
+                    .font(.headline.weight(.bold))
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                    .accessibilityAddTraits(.isHeader)
+                    .padding(.top, AppTheme.Spacing.lg)
 
-                    Text(instructions)
-                        .font(.body)
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-                }
-                .padding(.top, AppTheme.Spacing.sm)
+                Text(instructions)
+                    .font(.callout)
+                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .lineSpacing(4)
+                    .padding(.top, AppTheme.Spacing.sm)
             }
         }
-        .padding()
+        .padding(AppTheme.Spacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .cardStyle()
+        .background(
+            UnevenRoundedRectangle(
+                topLeadingRadius: 24,
+                bottomLeadingRadius: AppTheme.CornerRadius.card,
+                bottomTrailingRadius: AppTheme.CornerRadius.card,
+                topTrailingRadius: 24
+            )
+            .fill(AppColors.surface(isDarkMode: isDarkMode))
+            .shadow(
+                color: AppTheme.Shadow.card.color,
+                radius: AppTheme.Shadow.card.radius,
+                x: AppTheme.Shadow.card.x,
+                y: AppTheme.Shadow.card.y
+            )
+        )
         .padding(.horizontal)
     }
 
-    @ViewBuilder
-    var cartControls: some View {
-        if viewModel.state.isInCart {
-            // Already in cart: quantity stepper; minus at 1 removes the line
-            HStack(spacing: AppTheme.Spacing.lg) {
-                Button(action: {
-                    runCartAction {
-                        if viewModel.state.cartQuantity <= 1 {
-                            await viewModel.removeFromCart()
-                        } else {
-                            await viewModel.updateCartQuantity(Int(viewModel.state.cartQuantity) - 1)
-                        }
-                    }
-                }) {
-                    Image(systemName: viewModel.state.cartQuantity <= 1 ? "trash" : "minus.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
-                        .minimumHitTarget()
-                }
-                .disabled(cartActionInFlight)
-                .accessibilityLabel(viewModel.state.cartQuantity <= 1 ? L(\.remove_from_cart_ios) : L(\.cart_decrease_quantity_ios))
-                .accessibilityIdentifier("detail.decrementButton")
+    // MARK: - Section card
 
-                Text(L(\.detail_in_cart, viewModel.state.cartQuantity))
-                    .font(.headline)
-                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                    .frame(maxWidth: .infinity)
-                    .accessibilityIdentifier("detail.cartQuantityValue")
-                    // Focus stays on the +/- button, so speak the new count
-                    .onChange(of: viewModel.state.cartQuantity) { _, newValue in
-                        AccessibilityNotification.Announcement(L(\.detail_in_cart, newValue)).post()
-                    }
+    /// The card every detail section uses, as Android's DetailInfoCard: a bold
+    /// title, then the content, with 16pt padding.
+    func sectionCard<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+            Text(title)
+                .font(.headline.weight(.bold))
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                .accessibilityAddTraits(.isHeader)
 
-                Button(action: {
-                    runCartAction {
-                        await viewModel.updateCartQuantity(Int(viewModel.state.cartQuantity) + 1)
-                    }
-                }) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(canIncrementQuantity
-                            ? AppColors.primary(isDarkMode: isDarkMode)
-                            : AppColors.gray)
-                        .minimumHitTarget()
-                }
-                .disabled(!canIncrementQuantity || cartActionInFlight)
-                .accessibilityLabel(L(\.cart_increase_quantity_ios))
-                .accessibilityIdentifier("detail.incrementButton")
-            }
-            .padding(.vertical, AppTheme.Spacing.sm)
-        } else {
-            PrimaryButton(
-                title: viewModel.canAddToCart()
-                    ? L(\.add_to_cart)
-                    : L(\.detail_out_of_stock),
-                icon: "cart.badge.plus",
-                isDisabled: !viewModel.canAddToCart(),
-                action: {
-                    runCartAction { await viewModel.addToCart(quantity: 1) }
-                }
-            )
-            // Label comes from the title, so out of stock reads as such
-            .accessibilityIdentifier("detail.addToCartButton")
+            content()
         }
-    }
-
-    var canIncrementQuantity: Bool {
-        guard let cocktail = viewModel.state.cocktail else { return false }
-        return viewModel.state.cartQuantity < cocktail.stockCount
-    }
-
-    /// One cart mutation at a time: quantities are computed from the
-    /// async-mirrored state, so overlapping mutations would read stale values.
-    func runCartAction(_ operation: @escaping () async -> Void) {
-        guard !cartActionInFlight else { return }
-        cartActionInFlight = true
-        Task {
-            await operation()
-            cartActionInFlight = false
-        }
+        .padding(AppTheme.Spacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardStyle()
+        .padding(.horizontal)
     }
 
     // MARK: - Ingredients
 
     func ingredientsSection(_ cocktail: Cocktail) -> some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-            Text(L(\.ingredients))
-                .font(.headline)
-                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                .accessibilityAddTraits(.isHeader)
-
-            let types = viewModel.getAllIngredientTypes()
-            if types.isEmpty {
-                // No grouping available: flat list straight off the model
+        sectionCard(title: L(\.ingredients)) {
+            // API order, "1 oz Vodka" (shared format), orange dot bullets as
+            // on Android
+            VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(cocktail.ingredients.enumerated()), id: \.offset) { _, ingredient in
-                    ingredientRow(name: ingredient.name, measure: ingredient.measure)
-                }
-            } else {
-                ForEach(types, id: \.self) { type in
-                    VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-                        Text(type)
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
-
-                        ForEach(viewModel.getIngredientsByType(type), id: \.self) { entry in
-                            Text(L(\.detail_ingredient_bullet, entry))
-                                .font(.body)
-                                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-                        }
+                    HStack(spacing: AppTheme.Spacing.md) {
+                        Circle()
+                            .fill(AppColors.primary(isDarkMode: isDarkMode))
+                            .frame(width: 8, height: 8)
+                            .accessibilityHidden(true)
+                        Text(ingredient.displayText)
+                            .font(.callout)
+                            .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
                     }
-                    .padding(.bottom, AppTheme.Spacing.xs)
+                    .padding(.vertical, 6)
                 }
             }
         }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .cardStyle()
-        .padding(.horizontal)
     }
 
-    func ingredientRow(name: String, measure: String?) -> some View {
-        Text(L(\.detail_ingredient_measure_bullet, measure.flatMap { $0.isEmpty ? nil : "\($0) " } ?? "", name))
-            .font(.body)
-            .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-    }
-
-    // MARK: - Nutrition
-
-    func nutritionSection(_ nutrition: NutritionFacts) -> some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-            Text(L(\.detail_estimated_nutrition))
-                .font(.headline)
-                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                .accessibilityAddTraits(.isHeader)
-
-            // Four across, or a 2x2 grid at accessibility text sizes
-            let stats = [
-                nutritionStat(value: "\(nutrition.calories)", unit: L(\.detail_nutrition_unit_kcal), label: L(\.detail_nutrition_calories)),
-                nutritionStat(value: "\(nutrition.alcoholGrams)", unit: L(\.detail_nutrition_unit_grams), label: L(\.detail_nutrition_alcohol)),
-                nutritionStat(value: "\(nutrition.carbsGrams)", unit: L(\.detail_nutrition_unit_grams), label: L(\.detail_nutrition_carbs)),
-                nutritionStat(value: "\(nutrition.sugarGrams)", unit: L(\.detail_nutrition_unit_grams), label: L(\.detail_nutrition_sugar))
-            ]
-            if dynamicTypeSize.isAccessibilitySize {
-                Grid(horizontalSpacing: AppTheme.Spacing.sm, verticalSpacing: AppTheme.Spacing.sm) {
-                    GridRow { stats[0]; stats[1] }
-                    GridRow { stats[2]; stats[3] }
-                }
-            } else {
-                HStack(spacing: AppTheme.Spacing.sm) {
-                    ForEach(stats.indices, id: \.self) { stats[$0] }
-                }
-            }
-
-            Text(L(\.detail_nutrition_disclaimer))
-                .font(.caption2)
-                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-        }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .cardStyle()
-        .padding(.horizontal)
-    }
-
-    func nutritionStat(value: String, unit: String, label: String) -> some View {
-        VStack(spacing: AppTheme.Spacing.xs) {
-            Text(value)
-                .font(.title3)
-                .fontWeight(.bold)
-                .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
-            Text(unit)
-                .font(.caption2)
-                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-            Text(label)
-                .font(.caption)
-                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, AppTheme.Spacing.sm)
-        .background(AppColors.primary(isDarkMode: isDarkMode).opacity(0.08))
-        .cornerRadius(AppTheme.CornerRadius.sm)
-        // "Calories, 150 kcal" as one element
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(label)
-        .accessibilityValue("\(value) \(unit)")
-    }
-
-    // MARK: - Chips
+    // MARK: - Details chips
 
     func chipsSection(_ cocktail: Cocktail) -> some View {
-        // Attribute chips mirroring Android's DetailChipsSection
-        let chips: [(icon: String, text: String)] = [
-            cocktail.alcoholic.map { (icon: "wineglass", text: $0) },
-            cocktail.glass.map { (icon: "cup.and.saucer", text: $0) },
-            cocktail.iba.map { (icon: "rosette", text: L(\.detail_iba_label, $0)) }
+        // Same chips as Android's DetailChipsSection, each only when the API
+        // has the value
+        let chips: [String] = [
+            cocktail.category.map { L(\.category_label, $0) },
+            cocktail.glass.map { L(\.glass_label, $0) },
+            cocktail.knownAlcoholic,
+            cocktail.iba.map { L(\.detail_iba_label, $0) }
         ].compactMap { $0 }
 
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: AppTheme.Spacing.sm) {
-                ForEach(chips, id: \.text) { chip in
-                    HStack(spacing: AppTheme.Spacing.xs) {
-                        Image(systemName: chip.icon)
-                            .font(.caption)
-                            .accessibilityHidden(true)
-                        Text(chip.text)
-                            .font(.subheadline)
-                    }
-                    .chipStyle(isSelected: false)
+        return sectionCard(title: L(\.details)) {
+            // Wraps onto new lines instead of scrolling, so no chip is cut off
+            WrappingHStack(spacing: AppTheme.Spacing.sm) {
+                ForEach(chips, id: \.self) { chip in
+                    Text(chip)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                        .padding(.horizontal, AppTheme.Spacing.lg)
+                        .frame(minHeight: 32)
+                        .background(
+                            RoundedRectangle(cornerRadius: AppTheme.CornerRadius.sm)
+                                .fill(AppColors.chipFill(isDarkMode: isDarkMode))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: AppTheme.CornerRadius.sm)
+                                .stroke(AppColors.neutralSubtle(isDarkMode: isDarkMode), lineWidth: 1)
+                        )
                 }
             }
-            .padding(.horizontal)
         }
     }
 
     // MARK: - Related Cocktails
 
     var relatedCocktailsSection: some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
-            Text(L(\.detail_you_might_also_like_ios))
-                .font(.headline)
-                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                .accessibilityAddTraits(.isHeader)
-                .padding(.horizontal)
-
+        sectionCard(title: L(\.detail_you_might_also_like)) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppTheme.Spacing.md) {
                     ForEach(viewModel.state.relatedCocktails, id: \.id) { related in
@@ -326,7 +167,8 @@ extension CocktailDetailView {
                         .buttonStyle(PlainButtonStyle())
                     }
                 }
-                .padding(.horizontal)
+                // Room for the cards' shadows inside the scroll view
+                .padding(.vertical, AppTheme.Spacing.xs)
             }
         }
     }
@@ -342,7 +184,7 @@ extension CocktailDetailView {
         return VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             HStack {
                 Text(L(\.reviews_title, reviewViewModel.reviewCount))
-                    .font(.headline)
+                    .font(.headline.weight(.bold))
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("detail.reviewsHeader")
@@ -391,33 +233,81 @@ extension CocktailDetailView {
 
 // MARK: - Related Cocktail Card
 
+/// As Android's RecommendationCard: 140 wide, a square image flush with the
+/// card's top, then the name and price.
 struct RelatedCocktailCard: View {
     let cocktail: Cocktail
     @Environment(\.isDarkMode) var isDarkMode
 
     var body: some View {
-        VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+        VStack(alignment: .leading, spacing: 0) {
             CocktailImageView(
                 imageUrl: cocktail.imageUrl,
-                height: 100,
-                cornerRadius: AppTheme.CornerRadius.sm
+                height: 140,
+                cornerRadius: 0,
+                width: 140
             )
-            .frame(width: 140)
 
-            Text(cocktail.name)
-                .font(.subheadline)
-                .fontWeight(.medium)
-                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
+                Text(cocktail.name)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                    .lineLimit(1)
 
-            Text(cocktail.price.asPrice)
-                .font(.subheadline)
-                .fontWeight(.bold)
-                .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                Text(cocktail.price.asPrice)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+            }
+            .padding(AppTheme.Spacing.sm)
         }
         .frame(width: 140, alignment: .leading)
-        .padding(AppTheme.Spacing.sm)
-        .cardStyle()
+        .background(AppColors.surface(isDarkMode: isDarkMode))
+        .clipShape(RoundedRectangle(cornerRadius: AppTheme.CornerRadius.card))
+        .shadow(
+            color: AppTheme.Shadow.card.color,
+            radius: AppTheme.Shadow.card.radius,
+            x: AppTheme.Shadow.card.x,
+            y: AppTheme.Shadow.card.y
+        )
+    }
+}
+
+// MARK: - Wrapping layout
+
+/// Lays its children out left to right, starting a new row when the next one
+/// doesn't fit (the counterpart of Compose's FlowRow).
+struct WrappingHStack: Layout {
+    var spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0, y: CGFloat = 0, rowHeight: CGFloat = 0, widest: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > 0 && x + size.width > maxWidth {
+                y += rowHeight + spacing
+                x = 0
+                rowHeight = 0
+            }
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+            widest = max(widest, x - spacing)
+        }
+        return CGSize(width: min(widest, maxWidth), height: y + rowHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX, y = bounds.minY, rowHeight: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x > bounds.minX && x + size.width > bounds.maxX {
+                y += rowHeight + spacing
+                x = bounds.minX
+                rowHeight = 0
+            }
+            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
     }
 }

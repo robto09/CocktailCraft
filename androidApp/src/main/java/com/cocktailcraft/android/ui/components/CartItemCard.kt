@@ -148,8 +148,8 @@ fun CartItemCard(
                     fontSize = 14.sp
                 )
 
-                // Optional alcoholic status
-                item.cocktail.alcoholic?.let { alcoholicStatus ->
+                // Optional alcoholic status (left out when the API didn't supply it)
+                item.cocktail.knownAlcoholic?.let { alcoholicStatus ->
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = alcoholicStatus,

@@ -27,10 +27,6 @@ struct CocktailDetailView: View {
 
     // Distinguishes "load not started yet" from "loaded but not found"
     @State private var hasLoaded = false
-    // Serializes cart mutations: the stepper reads the async-mirrored
-    // cartQuantity, so a second tap before the first round-trip lands would
-    // compute from stale state (lost or duplicated increments).
-    @State var cartActionInFlight = false
 
     var body: some View {
         VStack {
@@ -45,16 +41,14 @@ struct CocktailDetailView: View {
                     VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
                         CocktailImageView(
                             imageUrl: cocktail.imageUrl,
-                            height: 300
+                            height: 250
                         )
 
+                        // Rounded top overlaps the image by 20pt, as on Android
                         mainInfoCard(cocktail)
+                            .padding(.top, -(AppTheme.Spacing.lg + 20))
 
                         ingredientsSection(cocktail)
-
-                        if let nutrition = viewModel.state.nutritionFacts {
-                            nutritionSection(nutrition)
-                        }
 
                         chipsSection(cocktail)
 
@@ -116,8 +110,7 @@ struct CocktailDetailView: View {
         // asserting navigation doesn't depend on live network data.
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("detail.screen")
-        .navigationTitle(viewModel.state.cocktail?.name ?? "")
-        .brandedNavigationBar()
+        .brandedNavigationBar(title: viewModel.state.cocktail?.name ?? "")
         .task {
             // .task re-fires whenever the view re-appears — including on
             // pop-back from a related cocktail. @State survives while the

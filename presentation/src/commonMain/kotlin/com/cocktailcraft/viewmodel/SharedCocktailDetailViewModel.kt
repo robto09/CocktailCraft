@@ -2,18 +2,12 @@ package com.cocktailcraft.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.usecase.AnalyzeCocktailUseCase
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
-import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
-import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.error_add_to_cart_failed
 import com.cocktailcraft.resources.error_load_cocktail_details_failed
 import com.cocktailcraft.resources.error_refresh_cocktail_details_failed
-import com.cocktailcraft.resources.error_remove_from_cart_failed
-import com.cocktailcraft.resources.error_update_cart_quantity_failed
 import com.cocktailcraft.resources.error_update_favorites_failed
 import com.cocktailcraft.viewmodel.state.DetailUiState
 import kotlinx.coroutines.flow.*
@@ -22,13 +16,11 @@ import kotlinx.coroutines.launch
 /**
  * Shared ViewModel for Cocktail Detail functionality.
  * Uses consolidated [DetailUiState] for atomic state updates; [uiState] is the
- * only public state surface (share text and nutrition facts live on it too).
+ * only public state surface (the share text lives on it too).
  */
 class SharedCocktailDetailViewModel internal constructor(
     private val getCocktailDetailUseCase: GetCocktailDetailUseCase,
-    private val manageFavoritesUseCase: ManageFavoritesUseCase,
-    private val manageCartUseCase: ManageCartUseCase,
-    private val analyzeCocktailUseCase: AnalyzeCocktailUseCase
+    private val manageFavoritesUseCase: ManageFavoritesUseCase
 ) : SharedViewModel() {
 
     // Consolidated UI State
@@ -53,9 +45,7 @@ class SharedCocktailDetailViewModel internal constructor(
                         _uiState.update { it.copy(isFavorite = fav) }
                     } catch (e: Exception) { /* Silent fail */ }
                 }
-                updateCartStatus(cocktailId)
                 loadRelatedCocktails(loadedCocktail)
-                processIngredients(loadedCocktail)
             }
             _uiState.update { it.copy(isLoading = false) }
         } catch (e: Exception) {
@@ -80,55 +70,7 @@ class SharedCocktailDetailViewModel internal constructor(
         _uiState.update { it.copy(isFavorite = reconciled) }
     }
 
-    /**
-     * Add to cart or update quantity.
-     * SKIE will convert this to Swift async function.
-     */
-    suspend fun addToCart(quantity: Int = 1) {
-        val currentCocktail = _uiState.value.cocktail ?: return
-        try {
-            manageCartUseCase.addToCart(currentCocktail, quantity)
-            updateCartStatus(currentCocktail.id)
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_add_to_cart_failed)
-        }
-    }
-
-    suspend fun updateCartQuantity(quantity: Int) {
-        val currentCocktail = _uiState.value.cocktail ?: return
-        try {
-            if (quantity > 0) {
-                manageCartUseCase.updateQuantity(currentCocktail.id, quantity)
-            } else {
-                manageCartUseCase.removeFromCart(currentCocktail.id)
-            }
-            updateCartStatus(currentCocktail.id)
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_update_cart_quantity_failed)
-        }
-    }
-
-    suspend fun removeFromCart() {
-        val currentCocktail = _uiState.value.cocktail ?: return
-        try {
-            manageCartUseCase.removeFromCart(currentCocktail.id)
-            updateCartStatus(currentCocktail.id)
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_remove_from_cart_failed)
-        }
-    }
-    
     // MARK: - Private Helper Methods
-    
-    private suspend fun updateCartStatus(cocktailId: String) {
-        try {
-            val cartItems = manageCartUseCase.getCartItems().getOrDefault(emptyList())
-            val cartItem = cartItems.find { it.cocktail.id == cocktailId }
-            _uiState.update { it.copy(isInCart = cartItem != null, cartQuantity = cartItem?.quantity ?: 0) }
-        } catch (e: Exception) {
-            // Silent fail for cart status
-        }
-    }
 
     private suspend fun loadRelatedCocktails(cocktail: Cocktail) {
         try {
@@ -139,19 +81,8 @@ class SharedCocktailDetailViewModel internal constructor(
         }
     }
 
-    private fun processIngredients(cocktail: Cocktail) {
-        _uiState.update { it.copy(ingredientsByType = analyzeCocktailUseCase.ingredientsByType(cocktail)) }
-    }
-
-    /**
-     * Publish [cocktail] together with its nutrition estimate, so the two can
-     * never disagree (the estimate is cheap and purely derived from it).
-     */
     private fun publishCocktail(cocktail: Cocktail?) {
-        _uiState.update { it.copy(
-            cocktail = cocktail,
-            nutritionFacts = cocktail?.let(analyzeCocktailUseCase::nutritionFacts)
-        ) }
+        _uiState.update { it.copy(cocktail = cocktail) }
     }
     
     /**
@@ -179,7 +110,6 @@ class SharedCocktailDetailViewModel internal constructor(
             val refreshed = getCocktailDetailUseCase.refresh(cocktailId).getOrThrow()
             if (refreshed != null) {
                 publishCocktail(refreshed)
-                processIngredients(refreshed)
             }
             _uiState.update { it.copy(isLoading = false) }
         } catch (e: Exception) {

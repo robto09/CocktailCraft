@@ -309,8 +309,7 @@ private struct IngredientPickerSheet: View {
                 placement: .navigationBarDrawer(displayMode: .always),
                 prompt: L(\.search_ingredients_placeholder)
             )
-            .navigationTitle(L(\.filter_select_ingredient_title))
-            .brandedNavigationBar()
+            .brandedNavigationBar(title: L(\.filter_select_ingredient_title))
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(L(\.cancel)) { dismiss() }

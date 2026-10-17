@@ -37,11 +37,21 @@ data class Cocktail(
         get() = ingredients.isNotEmpty() &&
             ingredients.first().name != PLACEHOLDER_INGREDIENT_NAME
 
+    /**
+     * The alcoholic label ("Alcoholic", "Non alcoholic", ...) when the API
+     * supplied one, or null. List endpoints omit it and the mapper fills in
+     * [ALCOHOLIC_UNKNOWN]; cards leave that out instead of repeating
+     * "Unknown" on every row.
+     */
+    val knownAlcoholic: String?
+        get() = alcoholic?.takeIf { it.isNotBlank() && it != ALCOHOLIC_UNKNOWN }
+
     // Hidden so the generated serializer does not drag the
     // kotlinx-serialization type tree into the Obj-C header.
     @HiddenFromObjC
     companion object {
         const val PLACEHOLDER_INGREDIENT_NAME = "Tap to view ingredients"
         const val PLACEHOLDER_INSTRUCTIONS = "Tap to view recipe"
+        const val ALCOHOLIC_UNKNOWN = "Unknown"
     }
 }

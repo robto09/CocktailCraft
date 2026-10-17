@@ -161,7 +161,8 @@ struct AnimatedThemeSwitch: View {
 
 
 
-// Capsule shapes matching Material 3's default button shape on Android.
+// Rounded rectangles (12 corners), the shape of every other main button in
+// the app (Place Order, Add to Cart) and of Android's Profile buttons.
 struct PrimaryButtonStyle: ButtonStyle {
     @Environment(\.isDarkMode) var isDarkMode
 
@@ -172,7 +173,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             .frame(maxWidth: .infinity)
             .padding()
             .background(AppColors.primary(isDarkMode: isDarkMode))
-            .clipShape(Capsule())
+            .clipShape(RoundedRectangle(cornerRadius: AppTheme.CornerRadius.md))
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
     }
 }
@@ -189,7 +190,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             .background(Color.clear)
             // Gray outline like Android's Material 3 OutlinedButton
             .overlay(
-                Capsule()
+                RoundedRectangle(cornerRadius: AppTheme.CornerRadius.md)
                     .stroke(Color.gray.opacity(0.5), lineWidth: 1)
             )
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)

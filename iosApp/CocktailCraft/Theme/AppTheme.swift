@@ -30,9 +30,7 @@ struct AppTheme {
         
         // Custom sizes matching Android, each anchored to a text
         // style so they scale with the user's Dynamic Type setting
-        static let cardTitle = Font.callout.weight(.bold)
         static let cardSubtitle = Font.subheadline
-        static let cardCaption = Font.caption
         static let price = Font.callout.weight(.bold)
     }
     
@@ -130,11 +128,32 @@ struct ChipStyle: ViewModifier {
 /// root content of every NavigationStack (tab roots, pushed screens, and
 /// sheets).
 struct BrandedNavigationBarStyle: ViewModifier {
+    let title: String
     @Environment(\.isDarkMode) var isDarkMode
 
     func body(content: Content) -> some View {
         content
+            // Still the screen's title for the back button and VoiceOver
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
+            // Drawn in the title slot so it can match Android's AppTopBar
+            // title (bold, top-bar title size 24, white); the system inline
+            // title is 17pt semibold and ignores appearance overrides here
+            .toolbar {
+                // .title is the bar's own title slot on iOS 26+ (centered
+                // with a back button and actions); .principal before that
+                ToolbarItem(placement: .title) {
+                    Text(title)
+                        .font(.system(size: CGFloat(TypographyTokens.shared.title), weight: .bold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        // Centered like Android's CenterAlignedTopAppBar even
+                        // when a back button and trailing actions are present
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .accessibilityAddTraits(.isHeader)
+                }
+            }
             .toolbarBackground(AppColors.topBar(isDarkMode: isDarkMode), for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             // Dark scheme = white title/status bar over either background
@@ -161,8 +180,8 @@ extension View {
     }
 
     /// Coral navigation bar with white title — the app's shared chrome.
-    func brandedNavigationBar() -> some View {
-        modifier(BrandedNavigationBarStyle())
+    func brandedNavigationBar(title: String) -> some View {
+        modifier(BrandedNavigationBarStyle(title: title))
     }
 
     /// Opaque surface tab bar matching Android's bottom navigation.

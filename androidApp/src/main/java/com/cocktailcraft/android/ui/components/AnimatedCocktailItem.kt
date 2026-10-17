@@ -56,7 +56,6 @@ import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.add_to_cart_item_a11y
-import com.cocktailcraft.resources.list_alcoholic_unknown
 import com.cocktailcraft.resources.list_out_of_stock
 import com.cocktailcraft.resources.list_price_format
 import com.cocktailcraft.resources.list_tap_to_view_ingredients
@@ -188,15 +187,10 @@ fun CocktailItemContent(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Display alcoholic info with category info
+            // "Alcoholic • Cocktail"; an alcoholic value the list endpoint
+            // didn't supply is left out rather than shown as "Unknown"
             Text(
-                text = buildString {
-                    append(cocktail.alcoholic ?: stringResource(MR.strings.list_alcoholic_unknown))
-                    cocktail.category?.let {
-                        append(" • ")
-                        append(it)
-                    }
-                },
+                text = listOfNotNull(cocktail.knownAlcoholic, cocktail.category).joinToString(" • "),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
