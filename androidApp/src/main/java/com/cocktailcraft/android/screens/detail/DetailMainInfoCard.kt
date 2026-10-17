@@ -5,18 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -36,22 +28,18 @@ import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.add_to_cart
 import com.cocktailcraft.resources.detail_no_instructions
 import com.cocktailcraft.resources.detail_price_format
 import com.cocktailcraft.resources.detail_refresh_details
-import com.cocktailcraft.resources.detail_update_cart
 import com.cocktailcraft.resources.how_to_prepare
 
 // Main info card, laid out like the iOS one: name, alcoholic/category line,
-// price, add-to-cart button and preparation. Its rounded top overlaps the
-// header image by 20dp. Favorite and share live in the top bar; no stock or
-// rating, which the API doesn't provide.
+// price and preparation. Its rounded top overlaps the header image by 20dp.
+// Favorite and share live in the top bar; adding to cart happens from the
+// Home and Favorites cards. No stock or rating, which the API doesn't provide.
 @Composable
 internal fun DetailMainInfoCard(
     cocktail: Cocktail,
-    isInCart: Boolean,
-    onAddToCartClick: () -> Unit,
     onRefreshDetails: () -> Unit
 ) {
     val overlap = 20.dp
@@ -102,35 +90,6 @@ internal fun DetailMainInfoCard(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
-
-            Spacer(modifier = Modifier.height(Spacing.lg))
-
-            // Add to cart button, same height as the app's other main buttons
-            Button(
-                onClick = onAddToCartClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 54.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    disabledContainerColor = MaterialTheme.colorScheme.outline
-                ),
-                shape = RoundedCornerShape(12.dp),
-                enabled = cocktail.stockCount > 0
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ShoppingCart,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-
-                Spacer(modifier = Modifier.width(Spacing.sm))
-
-                Text(
-                    text = if (isInCart) stringResource(MR.strings.detail_update_cart) else stringResource(MR.strings.add_to_cart),
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-                )
-            }
 
             Spacer(modifier = Modifier.height(Spacing.lg))
 
@@ -185,8 +144,6 @@ private fun DetailMainInfoCardPreview() {
     AnimatedCocktailBarTheme(darkTheme = false) {
         DetailMainInfoCard(
             cocktail = PreviewData.cocktail,
-            isInCart = false,
-            onAddToCartClick = {},
             onRefreshDetails = {}
         )
     }
@@ -198,8 +155,6 @@ private fun DetailMainInfoCardDarkPreview() {
     AnimatedCocktailBarTheme(darkTheme = true) {
         DetailMainInfoCard(
             cocktail = PreviewData.cocktail,
-            isInCart = false,
-            onAddToCartClick = {},
             onRefreshDetails = {}
         )
     }
@@ -211,8 +166,6 @@ private fun DetailMainInfoCardLargeFontPreview() {
     AnimatedCocktailBarTheme(darkTheme = false) {
         DetailMainInfoCard(
             cocktail = PreviewData.cocktail,
-            isInCart = false,
-            onAddToCartClick = {},
             onRefreshDetails = {}
         )
     }

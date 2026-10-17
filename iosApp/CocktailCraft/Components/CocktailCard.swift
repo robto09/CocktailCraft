@@ -10,8 +10,8 @@ struct CocktailCard: View {
     var onAddToCart: (() -> Void)? = nil
     var onCardTap: (() -> Void)? = nil
     
-    // Inverse of CocktailDetailViewModelSKIE.canAddToCart() — the card and
-    // the detail screen must agree on when Add to Cart is available.
+    // Add to Cart is disabled for drinks marked out of stock (never the case
+    // with API data, which carries no stock).
     private var isOutOfStock: Bool {
         !cocktail.inStock || cocktail.stockCount <= 0
     }

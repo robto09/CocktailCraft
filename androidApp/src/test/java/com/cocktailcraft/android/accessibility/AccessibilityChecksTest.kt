@@ -119,8 +119,6 @@ class AccessibilityChecksTest(private val fontScale: Float) {
         Column(modifier = Modifier.padding(top = 20.dp)) {
             DetailMainInfoCard(
                 cocktail = PreviewData.cocktail,
-                isInCart = false,
-                onAddToCartClick = {},
                 onRefreshDetails = {}
             )
             DetailChipsSection(

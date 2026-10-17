@@ -67,6 +67,7 @@ import com.cocktailcraft.android.screens.OrderListScreen
 import com.cocktailcraft.android.screens.ProfileScreen
 import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
+import com.cocktailcraft.android.ui.components.SuccessToast
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.getString
 import com.cocktailcraft.android.util.pluralStringResource
@@ -86,6 +87,7 @@ import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -135,18 +137,21 @@ fun MainScreen() {
     // Cart state drives the bottom-nav badge (parity with the iOS tab badge)
     val cartUiState by sharedCartViewModel.uiState.collectAsStateWithLifecycle()
 
-    // Add-to-cart keeps the user in place and confirms with a snackbar,
-    // matching the iOS toast behavior (previously Android yanked the user to
-    // the Cart tab on every add).
+    // Add-to-cart keeps the user in place and confirms with the green success
+    // toast, shown for 2 seconds like the iOS toast (previously Android yanked
+    // the user to the Cart tab on every add).
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val addToCartAndConfirm: (Cocktail) -> Unit = { cocktail ->
         scope.launch {
             sharedCartViewModel.addToCart(cocktail)
-            snackbarHostState.showSnackbar(
-                message = context.getString(MR.strings.added_to_cart, cocktail.name),
-                duration = SnackbarDuration.Short
-            )
+            // Cancelling an indefinite snackbar dismisses it: a 2s toast
+            withTimeoutOrNull(TOAST_DURATION_MS) {
+                snackbarHostState.showSnackbar(
+                    message = context.getString(MR.strings.added_to_cart, cocktail.name),
+                    duration = SnackbarDuration.Indefinite
+                )
+            }
         }
     }
 
@@ -236,15 +241,9 @@ fun MainScreen() {
             val route = backStackEntry.toRoute<CocktailDetailRoute>()
             CocktailDetailScreen(
                 cocktailId = route.cocktailId,
-                cartViewModel = sharedCartViewModel,
                 favoritesViewModel = sharedFavoritesViewModel,
                 navigationManager = navigationManager,
-                onBackClick = { navigationManager.navigateBack() },
-                // The detail screen shows its own snackbar confirmation,
-                // so only the cart mutation happens here.
-                onAddToCart = { cocktailToAdd ->
-                    scope.launch { sharedCartViewModel.addToCart(cocktailToAdd) }
-                }
+                onBackClick = { navigationManager.navigateBack() }
             )
         }
     }
@@ -343,7 +342,9 @@ private fun TabScaffold(
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data -> SuccessToast(data.visuals.message) }
+        },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
@@ -351,3 +352,6 @@ private fun TabScaffold(
         }
     }
 }
+
+// Matches the iOS toast duration
+private const val TOAST_DURATION_MS = 2_000L

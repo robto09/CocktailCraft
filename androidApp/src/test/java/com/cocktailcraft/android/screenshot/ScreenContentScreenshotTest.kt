@@ -57,8 +57,6 @@ class ScreenContentScreenshotTest(variant: ThemeVariant) : ScreenshotTest(varian
         Column(modifier = Modifier.padding(top = 20.dp)) {
             DetailMainInfoCard(
                 cocktail = ScreenshotFixtures.cocktail,
-                isInCart = false,
-                onAddToCartClick = {},
                 onRefreshDetails = {}
             )
         }

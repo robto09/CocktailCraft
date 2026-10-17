@@ -4,10 +4,8 @@ import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
-import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.domain.util.Result
-import com.cocktailcraft.testutil.FakeCartRepository
 import com.cocktailcraft.testutil.FakeDetailRepository
 import com.cocktailcraft.testutil.FakeFavoritesRepository
 import com.cocktailcraft.testutil.FakeSearchRepository
@@ -43,12 +41,10 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
         val detail = FakeDetailRepository()
         val favorites = FakeFavoritesRepository()
         val search = FakeSearchRepository()
-        val cart = FakeCartRepository()
 
         fun viewModel(detailRepository: CocktailDetailRepository = detail) = SharedCocktailDetailViewModel(
             getCocktailDetailUseCase = GetCocktailDetailUseCase(detailRepository, favorites, search),
-            manageFavoritesUseCase = ManageFavoritesUseCase(favorites, detailRepository),
-            manageCartUseCase = ManageCartUseCase(cart, detailRepository)
+            manageFavoritesUseCase = ManageFavoritesUseCase(favorites, detailRepository)
         )
     }
 
@@ -204,37 +200,5 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
 
         assertFalse(vm.uiState.value.isFavorite)
         assertTrue(harness.favorites.stored.isEmpty())
-    }
-
-    @Test
-    fun addToCartReflectsQuantityInState() = runTest {
-        val harness = Harness()
-        harness.detail.byId["1"] = testCocktail("1")
-        val vm = harness.viewModel()
-        vm.loadCocktail("1")
-        advanceUntilIdle()
-        assertFalse(vm.uiState.value.isInCart)
-
-        vm.addToCart(quantity = 2)
-
-        assertTrue(vm.uiState.value.isInCart)
-        assertEquals(2, vm.uiState.value.cartQuantity)
-    }
-
-    @Test
-    fun updateCartQuantityToZeroRemovesFromCart() = runTest {
-        val harness = Harness()
-        harness.detail.byId["1"] = testCocktail("1")
-        val vm = harness.viewModel()
-        vm.loadCocktail("1")
-        advanceUntilIdle()
-        vm.addToCart(quantity = 2)
-
-        vm.updateCartQuantity(5)
-        assertEquals(5, vm.uiState.value.cartQuantity)
-
-        vm.updateCartQuantity(0)
-        assertFalse(vm.uiState.value.isInCart)
-        assertEquals(0, vm.uiState.value.cartQuantity)
     }
 }

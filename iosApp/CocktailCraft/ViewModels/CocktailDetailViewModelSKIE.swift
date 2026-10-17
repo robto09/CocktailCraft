@@ -54,27 +54,10 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
         await run { try await sharedViewModel.toggleFavorite() }
     }
 
-    func addToCart(quantity: Int = 1) async {
-        await run { try await sharedViewModel.addToCart(quantity: Int32(quantity)) }
-    }
-
-    func updateCartQuantity(_ quantity: Int) async {
-        await run { try await sharedViewModel.updateCartQuantity(quantity: Int32(quantity)) }
-    }
-
-    func removeFromCart() async {
-        await run { try await sharedViewModel.removeFromCart() }
-    }
-
     // MARK: - Helper Methods for SwiftUI
 
     func formatPrice() -> String {
         guard let cocktail = state.cocktail else { return "$0.00" }
         return cocktail.price.asPrice
-    }
-
-    func canAddToCart() -> Bool {
-        guard let cocktail = state.cocktail else { return false }
-        return cocktail.inStock && cocktail.stockCount > 0
     }
 }

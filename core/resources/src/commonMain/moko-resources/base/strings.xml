@@ -64,7 +64,6 @@
     <string name="password_strength_strong">Strong password</string>
 
     <!-- Product -->
-    <string name="add_to_cart">Add to Cart</string>
     <string name="total">Total</string>
     <string name="alcoholic">Alcoholic</string>
     <string name="non_alcoholic">Non-Alcoholic</string>
@@ -213,9 +212,6 @@
     <string name="cart_place_order">Place Order</string>
     <string name="cart_confirm">Confirm</string>
     <string name="cart_quantity_label">Quantity: %1$d</string>
-    <string name="cart_increase_quantity_ios">Increase quantity</string>
-    <string name="cart_decrease_quantity_ios">Decrease quantity</string>
-    <string name="remove_from_cart_ios">Remove from cart</string>
     <string name="cart_increase_quantity_a11y">Increase quantity of %1$s</string>
     <string name="cart_decrease_quantity_a11y">Decrease quantity of %1$s</string>
     <string name="cart_remove_item_a11y">Remove %1$s from cart</string>
@@ -233,8 +229,6 @@
     <string name="detail_title_fallback">Cocktail Detail</string>
     <string name="detail_price_format">$%1$.2f</string>
     <string name="detail_price_a11y">Price, %1$s</string>
-    <string name="detail_out_of_stock">Out of Stock</string>
-    <string name="detail_update_cart">Update Cart</string>
     <string name="detail_no_instructions">No instructions available for this cocktail.</string>
     <string name="detail_refresh_details">Refresh Details</string>
     <string name="detail_you_might_also_like">You Might Also Like</string>
@@ -243,7 +237,6 @@
     <string name="detail_review_anonymous_initial">A</string>
     <string name="detail_review_anonymous">Anonymous</string>
     <string name="detail_unknown_date">Unknown date</string>
-    <string name="detail_in_cart">%1$d in cart</string>
     <string name="detail_iba_label">IBA: %1$s</string>
     <string name="detail_share_cocktail">Share cocktail</string>
     <string name="detail_loading">Loading cocktail details...</string>
@@ -361,11 +354,8 @@
     <string name="error_load_favorites_failed">Failed to load favorites</string>
     <string name="error_update_favorites_failed">Failed to update favorites</string>
     <string name="error_clear_favorites_failed">Failed to clear favorites</string>
-    <string name="error_add_to_cart_failed">Failed to add to cart</string>
     <string name="error_add_item_to_cart_failed">Failed to add item to cart</string>
-    <string name="error_update_cart_quantity_failed">Failed to update cart quantity</string>
     <string name="error_update_quantity_failed">Failed to update quantity</string>
-    <string name="error_remove_from_cart_failed">Failed to remove from cart</string>
     <string name="error_remove_item_from_cart_failed">Failed to remove item from cart</string>
     <string name="error_clear_cart_failed">Failed to clear cart</string>
     <string name="error_refresh_cart_failed">Failed to refresh cart</string>

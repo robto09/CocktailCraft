@@ -8,8 +8,6 @@ import com.cocktailcraft.domain.model.Cocktail
 data class DetailUiState(
     val cocktail: Cocktail? = null,
     val isFavorite: Boolean = false,
-    val isInCart: Boolean = false,
-    val cartQuantity: Int = 0,
     val relatedCocktails: List<Cocktail> = emptyList(),
     val isLoading: Boolean = false
 ) {

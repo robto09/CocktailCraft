@@ -16,9 +16,10 @@ extension CocktailDetailView {
 
     func mainInfoCard(_ cocktail: Cocktail) -> some View {
         // Laid out like Android's DetailMainInfoCard: name, alcoholic/category
-        // line, price, cart controls, preparation. Only API data (no rating or
-        // stock, which the API doesn't have). Its rounded top overlaps the
-        // header image; see CocktailDetailView.
+        // line, price, preparation. Only API data (no rating or stock, which the
+        // API doesn't have); adding to cart happens from the Home and Favorites
+        // cards. Its rounded top overlaps the header image; see
+        // CocktailDetailView.
         VStack(alignment: .leading, spacing: 0) {
             Text(cocktail.name)
                 .font(.title.weight(.bold))
@@ -40,9 +41,6 @@ extension CocktailDetailView {
                 // audit's human-readable label check)
                 .accessibilityLabel(L(\.detail_price_a11y, viewModel.formatPrice()))
                 .padding(.top, AppTheme.Spacing.sm)
-
-            cartControls
-                .padding(.top, AppTheme.Spacing.lg)
 
             if let instructions = cocktail.instructions, !instructions.isEmpty {
                 Text(L(\.how_to_prepare))
@@ -76,88 +74,6 @@ extension CocktailDetailView {
             )
         )
         .padding(.horizontal)
-    }
-
-    @ViewBuilder
-    var cartControls: some View {
-        if viewModel.state.isInCart {
-            // Already in cart: quantity stepper; minus at 1 removes the line
-            HStack(spacing: AppTheme.Spacing.lg) {
-                Button(action: {
-                    runCartAction {
-                        if viewModel.state.cartQuantity <= 1 {
-                            await viewModel.removeFromCart()
-                        } else {
-                            await viewModel.updateCartQuantity(Int(viewModel.state.cartQuantity) - 1)
-                        }
-                    }
-                }) {
-                    Image(systemName: viewModel.state.cartQuantity <= 1 ? "trash" : "minus.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
-                        .minimumHitTarget()
-                }
-                .disabled(cartActionInFlight)
-                .accessibilityLabel(viewModel.state.cartQuantity <= 1 ? L(\.remove_from_cart_ios) : L(\.cart_decrease_quantity_ios))
-                .accessibilityIdentifier("detail.decrementButton")
-
-                Text(L(\.detail_in_cart, viewModel.state.cartQuantity))
-                    .font(.headline)
-                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                    .frame(maxWidth: .infinity)
-                    .accessibilityIdentifier("detail.cartQuantityValue")
-                    // Focus stays on the +/- button, so speak the new count
-                    .onChange(of: viewModel.state.cartQuantity) { _, newValue in
-                        AccessibilityNotification.Announcement(L(\.detail_in_cart, newValue)).post()
-                    }
-
-                Button(action: {
-                    runCartAction {
-                        await viewModel.updateCartQuantity(Int(viewModel.state.cartQuantity) + 1)
-                    }
-                }) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(canIncrementQuantity
-                            ? AppColors.primary(isDarkMode: isDarkMode)
-                            : AppColors.gray)
-                        .minimumHitTarget()
-                }
-                .disabled(!canIncrementQuantity || cartActionInFlight)
-                .accessibilityLabel(L(\.cart_increase_quantity_ios))
-                .accessibilityIdentifier("detail.incrementButton")
-            }
-            .padding(.vertical, AppTheme.Spacing.sm)
-        } else {
-            PrimaryButton(
-                title: viewModel.canAddToCart()
-                    ? L(\.add_to_cart)
-                    : L(\.detail_out_of_stock),
-                icon: "cart.badge.plus",
-                isDisabled: !viewModel.canAddToCart(),
-                action: {
-                    runCartAction { await viewModel.addToCart(quantity: 1) }
-                }
-            )
-            // Label comes from the title, so out of stock reads as such
-            .accessibilityIdentifier("detail.addToCartButton")
-        }
-    }
-
-    var canIncrementQuantity: Bool {
-        guard let cocktail = viewModel.state.cocktail else { return false }
-        return viewModel.state.cartQuantity < cocktail.stockCount
-    }
-
-    /// One cart mutation at a time: quantities are computed from the
-    /// async-mirrored state, so overlapping mutations would read stale values.
-    func runCartAction(_ operation: @escaping () async -> Void) {
-        guard !cartActionInFlight else { return }
-        cartActionInFlight = true
-        Task {
-            await operation()
-            cartActionInFlight = false
-        }
     }
 
     // MARK: - Section card
