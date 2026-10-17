@@ -85,7 +85,8 @@ struct HomeViewSKIE: View {
                     searchText = ""
                     viewModel.clearSearch()
                 },
-                onAdvancedSearch: { showingAdvancedSearch.toggle() }
+                onAdvancedSearch: { showingAdvancedSearch.toggle() },
+                isFilterActive: showingAdvancedSearch || viewModel.state.searchFilters.hasActiveFilters()
             )
 
             // Active Filters card (driven by the shared searchFilters state);

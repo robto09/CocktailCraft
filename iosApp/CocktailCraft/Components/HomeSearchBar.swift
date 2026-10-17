@@ -7,10 +7,13 @@ struct HomeSearchBar: View {
     let onSubmit: () -> Void
     let onClear: () -> Void
     let onAdvancedSearch: () -> Void
+    /// Filters applied or the filter sheet open: the button turns solid
+    /// orange, as on Android
+    var isFilterActive: Bool = false
     @Environment(\.isDarkMode) private var isDarkMode
+    @FocusState private var isFieldFocused: Bool
 
     private var primaryColor: Color { AppColors.primary(isDarkMode: isDarkMode) }
-    private var surfaceColor: Color { AppColors.surface(isDarkMode: isDarkMode) }
     private var textSecondary: Color { AppColors.textSecondary(isDarkMode: isDarkMode) }
 
     var body: some View {
@@ -18,12 +21,14 @@ struct HomeSearchBar: View {
             // Main Search Bar
             HStack {
                 Image(systemName: "magnifyingglass")
-                    .foregroundColor(textSecondary)
+                    .foregroundColor(isFieldFocused ? primaryColor : textSecondary)
                     .accessibilityHidden(true)
 
                 TextField(L(\.search_cocktails_placeholder), text: $searchText)
                     .textFieldStyle(.plain)
                     .foregroundColor(.primary)
+                    .tint(primaryColor)
+                    .focused($isFieldFocused)
                     .onSubmit(onSubmit)
                     .accessibilityIdentifier("home.searchField")
 
@@ -42,24 +47,38 @@ struct HomeSearchBar: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(surfaceColor)
-            .cornerRadius(10)
-            .shadow(color: Color.black.opacity(0.05), radius: 1, x: 0, y: 1)
+            // Same height and look as the 48pt filter button beside it, and as
+            // Android's field: white, thin light border, orange while typing
+            .frame(minHeight: 48)
+            .background(
+                RoundedRectangle(cornerRadius: AppTheme.CornerRadius.sm)
+                    .fill(AppColors.surfaceRaised(isDarkMode: isDarkMode))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: AppTheme.CornerRadius.sm)
+                    .stroke(isFieldFocused ? primaryColor : AppColors.neutralSubtle(isDarkMode: isDarkMode), lineWidth: 1)
+            )
 
-            // Advanced Search Button
+            // Advanced Search Button, as Android's: a 48pt square with the
+            // funnel; white with an orange funnel at rest, solid orange with
+            // a white funnel while filters are active
             Button(action: onAdvancedSearch) {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.headline)
-                    .foregroundColor(primaryColor)
-                    .padding(8)
-                    .background(surfaceColor)
-                    .cornerRadius(8)
-                    .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
-                    // 44 pt tap area around the 36 pt button
-                    .contentShape(Rectangle().inset(by: -4))
+                FunnelIcon()
+                    .fill(isFilterActive ? AppColors.onPrimary(isDarkMode: isDarkMode) : primaryColor)
+                    .frame(width: 24, height: 24)
+                    .frame(width: 48, height: 48)
+                    .background(
+                        RoundedRectangle(cornerRadius: AppTheme.CornerRadius.sm)
+                            .fill(isFilterActive ? primaryColor : AppColors.surfaceRaised(isDarkMode: isDarkMode))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AppTheme.CornerRadius.sm)
+                            .stroke(isFilterActive ? Color.clear : AppColors.neutralSubtle(isDarkMode: isDarkMode), lineWidth: 1)
+                    )
             }
             .buttonStyle(.plain)
             .accessibilityLabel(L(\.search_advanced_search_ios))
+            .accessibilityValue(isFilterActive ? L(\.filters_active_a11y) : "")
             .accessibilityIdentifier("home.advancedSearchButton")
         }
     }
@@ -80,9 +99,9 @@ struct ActiveFiltersCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 4) {
-                Image(systemName: "line.3.horizontal.decrease")
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(primaryColor)
+                FunnelIcon()
+                    .fill(primaryColor)
+                    .frame(width: 16, height: 16)
                     .accessibilityHidden(true)
 
                 Text(L(\.filter_active_filters))
@@ -202,5 +221,29 @@ struct FlowLayout: Layout {
             x += size.width + spacing
             rowHeight = max(rowHeight, size.height)
         }
+    }
+}
+
+/// The filter funnel, drawn from Material's FilterAlt path (24x24 viewport) so
+/// both platforms show the same glyph; SF Symbols has no funnel.
+struct FunnelIcon: Shape {
+    func path(in rect: CGRect) -> Path {
+        let scale = min(rect.width, rect.height) / 24
+        var path = Path()
+        path.move(to: CGPoint(x: 4.25, y: 5.61))
+        path.addCurve(to: CGPoint(x: 10, y: 13), control1: CGPoint(x: 6.27, y: 8.2), control2: CGPoint(x: 10, y: 13))
+        path.addLine(to: CGPoint(x: 10, y: 19))
+        path.addCurve(to: CGPoint(x: 11, y: 20), control1: CGPoint(x: 10, y: 19.55), control2: CGPoint(x: 10.45, y: 20))
+        path.addLine(to: CGPoint(x: 13, y: 20))
+        path.addCurve(to: CGPoint(x: 14, y: 19), control1: CGPoint(x: 13.55, y: 20), control2: CGPoint(x: 14, y: 19.55))
+        path.addLine(to: CGPoint(x: 14, y: 13))
+        path.addCurve(to: CGPoint(x: 19.74, y: 5.61), control1: CGPoint(x: 14, y: 13), control2: CGPoint(x: 17.72, y: 8.2))
+        path.addCurve(to: CGPoint(x: 18.95, y: 4), control1: CGPoint(x: 20.25, y: 4.95), control2: CGPoint(x: 19.78, y: 4))
+        path.addLine(to: CGPoint(x: 5.04, y: 4))
+        path.addCurve(to: CGPoint(x: 4.25, y: 5.61), control1: CGPoint(x: 4.21, y: 4), control2: CGPoint(x: 3.74, y: 4.95))
+        path.closeSubpath()
+        return path
+            .applying(CGAffineTransform(scaleX: scale, y: scale))
+            .offsetBy(dx: rect.minX + (rect.width - 24 * scale) / 2, dy: rect.minY + (rect.height - 24 * scale) / 2)
     }
 }
