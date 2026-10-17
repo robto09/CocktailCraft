@@ -202,6 +202,9 @@ struct HomeViewSKIE: View {
         // re-render the moment state.favorites changes — including the
         // optimistic publish on toggle.
         let favoriteIds = Set(viewModel.state.favorites.map(\.id))
+        // Reaching any of the last 5 rows loads the next page, like
+        // Android's OnBottomReached(buffer = 5); no Load More button
+        let nearEndIds = Set(viewModel.state.cocktails.suffix(5).map(\.id))
         return ScrollView {
             LazyVStack(spacing: 12) {
                 ForEach(viewModel.state.cocktails, id: \.id) { cocktail in
@@ -233,9 +236,14 @@ struct HomeViewSKIE: View {
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .onAppear {
+                        if nearEndIds.contains(cocktail.id) {
+                            loadMoreIfNeeded()
+                        }
+                    }
                 }
 
-                loadMoreSection
+                listFooter
             }
             .padding(16)
         }
@@ -252,37 +260,30 @@ struct HomeViewSKIE: View {
         !searchText.isEmpty || viewModel.state.searchFilters.hasActiveFilters()
     }
 
+    private func loadMoreIfNeeded() {
+        let state = viewModel.state
+        guard !isSearchInProgress, state.hasMoreData, !state.isLoadingMore else { return }
+        Task {
+            await viewModel.loadMoreCocktails()
+        }
+    }
+
+    /// Spinner while the next page loads, then Android's end-of-list line
+    /// once the category is exhausted.
     @ViewBuilder
-    private var loadMoreSection: some View {
-        if isSearchInProgress {
-            EmptyView()
-        } else if viewModel.state.hasMoreData && !viewModel.state.isLoadingMore {
-            Button(action: {
-                Task {
-                    await viewModel.loadMoreCocktails()
-                }
-            }) {
-                Text(L(\.home_load_more))
-                    .font(.callout)
-                    .fontWeight(.medium)
-                    .foregroundColor(primaryColor)
-                    .padding(.vertical, 12)
-                    .padding(.horizontal, 20)
-                    .background(surfaceColor)
-                    .cornerRadius(8)
-                    .shadow(color: Color.black.opacity(0.15), radius: 2, x: 0, y: 1)
-            }
-            .buttonStyle(.plain)
-            .padding(.bottom, 32)
-        } else if viewModel.state.isLoadingMore {
-            HStack {
-                ProgressView()
-                    .foregroundColor(primaryColor)
-                Text(L(\.home_loading_more))
-                    .font(.callout)
-                    .foregroundColor(textSecondary)
-            }
-            .padding(.bottom, 32)
+    private var listFooter: some View {
+        if viewModel.state.isLoadingMore {
+            ProgressView()
+                .tint(primaryColor)
+                .frame(maxWidth: .infinity)
+                .padding(16)
+        } else if !isSearchInProgress && !viewModel.state.hasMoreData && !viewModel.state.cocktails.isEmpty {
+            Text(L(\.list_end_of_list_message))
+                .font(.subheadline)
+                .foregroundColor(textSecondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(16)
         }
     }
 
