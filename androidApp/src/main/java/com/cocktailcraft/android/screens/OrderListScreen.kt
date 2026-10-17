@@ -22,7 +22,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
@@ -119,7 +118,7 @@ internal fun OrderListContent(
                         state = pullToRefreshState,
                         isRefreshing = isLoading,
                         modifier = Modifier.align(Alignment.TopCenter),
-                        containerColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.surface,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }

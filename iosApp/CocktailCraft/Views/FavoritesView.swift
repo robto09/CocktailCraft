@@ -11,6 +11,7 @@ struct FavoritesView: View {
     @State private var showingToast = false
     @State private var toastMessage = ""
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.isDarkMode) private var isDarkMode
 
     var body: some View {
         Group {
@@ -20,6 +21,8 @@ struct FavoritesView: View {
                 favoritesGridView
             }
         }
+        // App background (not the system black/white) behind every state
+        .background(AppColors.background(isDarkMode: isDarkMode).ignoresSafeArea())
         .navigationTitle(L(\.favorites))
         .brandedNavigationBar()
         .navigationDestination(for: String.self) { cocktailId in

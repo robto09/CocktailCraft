@@ -33,7 +33,7 @@ struct ErrorView: View {
                 }) {
                     Text(recoveryAction.actionLabel.localized())
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(AppColors.onPrimary(isDarkMode: isDarkMode))
                         .padding(.horizontal, 24)
                         .padding(.vertical, 12)
                         .background(AppColors.primary(isDarkMode: isDarkMode), in: RoundedRectangle(cornerRadius: 8))
@@ -43,7 +43,7 @@ struct ErrorView: View {
                 Button(action: onRetry) {
                     Text(L(\.dialog_try_again))
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(AppColors.onPrimary(isDarkMode: isDarkMode))
                         .padding(.horizontal, 24)
                         .padding(.vertical, 12)
                         .background(AppColors.primary(isDarkMode: isDarkMode), in: RoundedRectangle(cornerRadius: 8))

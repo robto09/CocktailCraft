@@ -31,7 +31,7 @@ struct CategoryChipRow: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 6)
             .background(isSelected ? primaryColor : surfaceColor)
-            .foregroundColor(isSelected ? .white : primaryColor)
+            .foregroundColor(isSelected ? AppColors.onPrimary(isDarkMode: isDarkMode) : primaryColor)
             .cornerRadius(16)
             .shadow(color: isSelected ? Color.black.opacity(0.15) : Color.clear, radius: 2, x: 0, y: 1)
             .accessibilityAddTraits(isSelected ? .isSelected : [])

@@ -68,7 +68,7 @@ fun CocktailSearchBar(
     clearIconTint: Color = MaterialTheme.colorScheme.outline,
     activeFilterButtonColor: Color = MaterialTheme.colorScheme.primary,
     inactiveFilterButtonColor: Color = CocktailCraftTheme.extendedColors.neutralSubtle,
-    activeFilterIconTint: Color = Color.White,
+    activeFilterIconTint: Color = MaterialTheme.colorScheme.onPrimary,
     inactiveFilterIconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     Row(
@@ -109,7 +109,8 @@ fun CocktailSearchBar(
                 cursorColor = MaterialTheme.colorScheme.primary,
                 focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
                 unfocusedLeadingIconColor = Color.Gray,
-                focusedContainerColor = Color.White, unfocusedContainerColor = Color.White
+                focusedContainerColor = CocktailCraftTheme.extendedColors.surfaceRaised,
+                unfocusedContainerColor = CocktailCraftTheme.extendedColors.surfaceRaised
             ),
             shape = RoundedCornerShape(8.dp),
             singleLine = true

@@ -323,7 +323,8 @@ fun IngredientSelectionDialog(
                         cursorColor = MaterialTheme.colorScheme.primary,
                         focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
                         unfocusedLeadingIconColor = Color.Gray,
-                        focusedContainerColor = Color.White, unfocusedContainerColor = Color.White
+                        focusedContainerColor = CocktailCraftTheme.extendedColors.surfaceRaised,
+                        unfocusedContainerColor = CocktailCraftTheme.extendedColors.surfaceRaised
                     )
                 )
 

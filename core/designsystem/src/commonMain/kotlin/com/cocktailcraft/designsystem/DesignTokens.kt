@@ -36,6 +36,10 @@ object ColorTokens {
     val backgroundDark: Long = 0xFF121212
     val surfaceLight: Long = 0xFFFFFFFF
     val surfaceDark: Long = 0xFF1E1E1E
+    // Raised controls on a surface (search field, filter button, unselected
+    // chips). Light uses plain white; dark needs a third, lighter level.
+    val surfaceRaisedLight: Long = 0xFFFFFFFF
+    val surfaceRaisedDark: Long = 0xFF2C2C2E
 
     // Text
     val textPrimaryLight: Long = 0xFF000000
@@ -52,9 +56,11 @@ object ColorTokens {
     val gray: Long = 0xFF8E8E93
     val darkGray: Long = 0xFF636366
     val lightGray: Long = 0xFFE5E5EA
+    val subtleDark: Long = 0xFF3A3A3C     // lightGray's role on dark surfaces
 
     // Component accents
-    val chipBackground: Long = 0xFF9C5C38 // Brown category chips ("Vodka")
+    val chipBackground: Long = 0xFF9C5C38     // Brown category chips ("Vodka")
+    val chipBackgroundDark: Long = 0xFFC79A7E // Softer tan, reads on dark
 
     /** "#RRGGBB" form for callers that need CSS-style hex (theme previews). */
     fun hexString(argb: Long): String {

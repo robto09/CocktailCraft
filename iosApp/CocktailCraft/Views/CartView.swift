@@ -7,6 +7,7 @@ struct CartView: View {
     @State private var orderViewModel = OrderViewModelSKIE()
     @Environment(AppRouter.self) private var router
     @State private var showCheckoutConfirmation = false
+    @Environment(\.isDarkMode) private var isDarkMode
     
     var body: some View {
         Group {
@@ -71,6 +72,8 @@ struct CartView: View {
                 .brandedNavigationBar()
             }
         }
+        // App background (not the system black/white) behind every state
+        .background(AppColors.background(isDarkMode: isDarkMode).ignoresSafeArea())
         .alert(isPresented: $showCheckoutConfirmation) {
             Alert(
                 title: Text(L(\.confirm_order_title)),

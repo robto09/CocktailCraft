@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.LocalReducedMotion
 
 /**
@@ -66,9 +67,14 @@ fun AnimatedThemeSwitch(
     val transition = updateTransition(targetState = isDarkMode, label = "theme_switch_transition")
     val reducedMotion = LocalReducedMotion.current
 
-    // Animate the track color
+    // Animate the track color; the off track stays subtle on dark surfaces
+    val offTrackColor = if (CocktailCraftTheme.isDarkTheme) {
+        CocktailCraftTheme.extendedColors.neutralSubtle
+    } else {
+        Color(0xFFE4E4E4)
+    }
     val trackColor by animateColorAsState(
-        targetValue = if (isDarkMode) Color(0xFF3C4043) else Color(0xFFE4E4E4),
+        targetValue = if (isDarkMode) Color(0xFF3C4043) else offTrackColor,
         animationSpec = if (reducedMotion) snap() else tween(durationMillis = 300, easing = LinearOutSlowInEasing),
         label = "track_color"
     )

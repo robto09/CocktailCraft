@@ -176,7 +176,7 @@ struct SearchEmptyStateView: View {
         Button(action: action) {
             Text(title)
                 .font(.subheadline.weight(.medium))
-                .foregroundColor(.white)
+                .foregroundColor(AppColors.onPrimary(isDarkMode: isDarkMode))
                 .padding(.horizontal, 24)
                 .padding(.vertical, 10)
                 .frame(minHeight: 44)

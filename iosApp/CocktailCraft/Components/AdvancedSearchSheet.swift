@@ -135,7 +135,7 @@ struct AdvancedSearchSheet: View {
             } label: {
                 Text(L(\.filter_apply))
                     .font(.subheadline.weight(.medium))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppColors.onPrimary(isDarkMode: isDarkMode))
                     .padding(.horizontal, 20)
                     .padding(.vertical, 8)
                     .background(Capsule().fill(primaryColor))
@@ -181,7 +181,7 @@ struct AdvancedSearchSheet: View {
                 Button(action: { alcoholic = option }) {
                     Text(option.label)
                         .font(.subheadline.weight(alcoholic == option ? .bold : .medium))
-                        .foregroundColor(alcoholic == option ? .white : primaryColor)
+                        .foregroundColor(alcoholic == option ? AppColors.onPrimary(isDarkMode: isDarkMode) : primaryColor)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 6)
                         .background(alcoholic == option ? primaryColor : surfaceColor)
@@ -271,7 +271,7 @@ private struct SelectorRow: View {
         .contentShape(Rectangle())
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(AppColors.lightGray, lineWidth: 1)
+                .stroke(AppColors.neutralSubtle(isDarkMode: isDarkMode), lineWidth: 1)
         )
     }
 }

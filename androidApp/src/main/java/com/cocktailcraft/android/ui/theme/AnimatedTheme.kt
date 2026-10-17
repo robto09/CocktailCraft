@@ -94,13 +94,23 @@ fun AnimatedCocktailBarTheme(
         )
     }
 
-    // Rating stars cross-fade with the brand gold (secondary) palette
-    val extendedColors = cocktailExtendedColors(darkTheme).copy(rating = secondary)
+    // Theme-dependent extended colors cross-fade with the scheme; rating
+    // stars follow the brand gold (secondary) palette
+    val targetExtended = cocktailExtendedColors(darkTheme, accentColor)
+    val neutralSubtle by animateColorAsState(targetExtended.neutralSubtle, colorSpec, label = "neutralSubtle")
+    val surfaceRaised by animateColorAsState(targetExtended.surfaceRaised, colorSpec, label = "surfaceRaised")
+    val topBar by animateColorAsState(targetExtended.topBar, colorSpec, label = "topBar")
+    val extendedColors = targetExtended.copy(
+        rating = secondary,
+        neutralSubtle = neutralSubtle,
+        surfaceRaised = surfaceRaised,
+        topBar = topBar
+    )
 
     // Under edge-to-edge the status bar is transparent over the app's own
-    // background. Every screen paints the branded coral top bar behind it
-    // (AppTopBar), so status icons are always white for contrast — in light
-    // AND dark theme, matching the iOS branded navigation bar.
+    // background. Every screen paints the top bar behind it (AppTopBar):
+    // brand coral in light theme, dark surface in dark theme. Both need white
+    // status icons, matching the iOS branded navigation bar.
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {

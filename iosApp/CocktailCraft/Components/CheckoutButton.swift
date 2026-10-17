@@ -29,14 +29,14 @@ struct CheckoutButton: View {
                 if isLoading {
                     ProgressView()
                         .scaleEffect(0.8)
-                        .tint(.white)
+                        .tint(AppColors.onPrimary(isDarkMode: isDarkMode))
                 } else {
                     Text(title)
                         .font(AppTheme.Typography.headline)
                         .fontWeight(.semibold)
                 }
             }
-            .foregroundColor(.white)
+            .foregroundColor(AppColors.onPrimary(isDarkMode: isDarkMode))
             .frame(maxWidth: .infinity)
             .padding(.vertical, AppTheme.Spacing.lg)
             .background(

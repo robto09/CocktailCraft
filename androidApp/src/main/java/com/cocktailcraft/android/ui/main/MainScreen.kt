@@ -67,6 +67,7 @@ import com.cocktailcraft.android.screens.OrderListScreen
 import com.cocktailcraft.android.screens.ProfileScreen
 import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.getString
 import com.cocktailcraft.android.util.pluralStringResource
 import com.cocktailcraft.android.util.stringResource
@@ -273,7 +274,7 @@ private fun TabScaffold(
             // bar, then padding so the indicator/title start below it.
             Column(
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.primary)
+                    .background(CocktailCraftTheme.extendedColors.topBar)
                     .statusBarsPadding()
             ) {
                 // Banner shown while the device has no connection
@@ -332,7 +333,7 @@ private fun TabScaffold(
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.primary,
                             selectedTextColor = MaterialTheme.colorScheme.primary,
-                            indicatorColor = MaterialTheme.colorScheme.surface,
+                            indicatorColor = CocktailCraftTheme.extendedColors.surfaceRaised,
                             unselectedIconColor = MaterialTheme.colorScheme.outline,
                             unselectedTextColor = MaterialTheme.colorScheme.outline
                         )
