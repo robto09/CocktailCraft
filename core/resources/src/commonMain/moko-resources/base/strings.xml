@@ -198,7 +198,6 @@
 
     <!-- Favorites -->
     <string name="favorites_empty_message">Add cocktails to your favorites to see them here</string>
-    <string name="favorites_section_title">Your Favorite Cocktails</string>
     <string name="no_favorites">No favorites yet</string>
     <string name="favorites_empty_message_ios">Start adding cocktails to your favorites</string>
 

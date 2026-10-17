@@ -1,18 +1,14 @@
 import SwiftUI
 import shared
 
-enum CocktailCardLayout {
-    case horizontal // For Home tab list
-    case vertical   // For Favorites grid
-}
-
+/// The cocktail row used by the Home and Favorites lists, laid out like
+/// Android's CocktailItem.
 struct CocktailCard: View {
     let cocktail: Cocktail
     var isFavorite: Bool = false
     var onFavoriteToggle: (() -> Void)? = nil
     var onAddToCart: (() -> Void)? = nil
     var onCardTap: (() -> Void)? = nil
-    var layout: CocktailCardLayout = .horizontal
     
     // Inverse of CocktailDetailViewModelSKIE.canAddToCart() — the card and
     // the detail screen must agree on when Add to Cart is available.
@@ -24,16 +20,6 @@ struct CocktailCard: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        switch layout {
-        case .horizontal:
-            horizontalLayout
-        case .vertical:
-            verticalLayout
-        }
-    }
-    
-    @ViewBuilder
-    private var horizontalLayout: some View {
         Group {
             // At accessibility text sizes the image stacks above the text,
             // which then gets the full card width
@@ -197,131 +183,6 @@ struct CocktailCard: View {
         }
     }
 
-    @ViewBuilder
-    private var verticalLayout: some View {
-        VStack(spacing: 12) {
-            // Cocktail Image - Full width (Kingfisher-backed, see above)
-            ZStack(alignment: .center) {
-                CocktailImageView(
-                    imageUrl: cocktail.imageUrl,
-                    height: 140,
-                    cornerRadius: 12
-                )
-
-                // Stock overlay for out of stock items
-                if isOutOfStock {
-                    Rectangle()
-                        .fill(Color.black.opacity(0.6))
-                        .cornerRadius(12)
-                        .overlay(
-                            Text(L(\.list_out_of_stock))
-                                .font(.caption)
-                                .foregroundColor(.white)
-                                .fontWeight(.medium)
-                        )
-                        // Read as part of the card summary
-                        .accessibilityHidden(true)
-                }
-            }
-            
-            // Content Section
-            VStack(alignment: .leading, spacing: 8) {
-                // Cocktail Name - Allow more lines (carries the card summary
-                // for VoiceOver, see the horizontal layout)
-                Text(cocktail.name)
-                    .font(AppTheme.Typography.cardTitle)
-                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                    .lineLimit(3)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .modifier(CardSummaryAccessibility(summary: accessibilitySummary, onTap: onCardTap))
-
-                // Category Info (Alcoholic • Category)
-                Text(subtitleText)
-                    .font(.footnote.weight(.medium))
-                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityHidden(true)
-
-                // Ingredients (first 2 or placeholder)
-                Text(getIngredientsText())
-                    .font(AppTheme.Typography.cardCaption)
-                    .italic()
-                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-                    .lineLimit(3)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityHidden(true)
-
-                // Price and Actions Row
-                HStack(alignment: .center) {
-                    // Price - Prominent
-                    Text((cocktail.price ?? 12.99).asPrice)
-                        .font(.headline.weight(.bold))
-                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
-                        // Never break a price mid-number in the narrow grid
-                        // column; shrink it instead
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                        .layoutPriority(1)
-                        .accessibilityHidden(true)
-
-                    Spacer(minLength: 4)
-
-                    // Action Buttons - Compact; the 44pt hit targets
-                    // already space the icons apart
-                    HStack(spacing: 0) {
-                        // Favorite Button
-                        if let onToggle = onFavoriteToggle {
-                            Button(action: {
-                                // Immediate tactile ack on tap (see horizontal layout).
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                onToggle()
-                            }) {
-                                Image(systemName: isFavorite ? "heart.fill" : "heart")
-                                    .font(.title3)
-                                    .foregroundColor(isFavorite ? AppColors.secondary(isDarkMode: isDarkMode) : AppColors.gray)
-                                    .contentTransition(.symbolEffect(.replace))
-                                    .animation(.easeInOut(duration: 0.2), value: isFavorite)
-                                    .minimumHitTarget()
-                            }
-                            .buttonStyle(.borderless)
-                            // One stable label; the on/off state is the trait
-                            .accessibilityLabel(L(\.favorite_toggle_a11y))
-                            .accessibilityAddTraits(isFavorite ? .isSelected : [])
-                            .accessibilityIdentifier("card.favoriteButton")
-                        }
-
-                        // Add to Cart Button
-                        if let onAddToCart = onAddToCart {
-                            Button(action: onAddToCart) {
-                                Image(systemName: "cart.fill")
-                                    .font(.title3)
-                                    .foregroundColor(isOutOfStock ? AppColors.gray : AppColors.primary(isDarkMode: isDarkMode))
-                                    .minimumHitTarget()
-                            }
-                            .disabled(isOutOfStock)
-                            .buttonStyle(.borderless)
-                            .accessibilityLabel(L(\.add_to_cart_item_a11y, cocktail.name))
-                            .accessibilityIdentifier("card.addToCartButton")
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 12)
-        }
-        .background(AppColors.surface(isDarkMode: isDarkMode))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
-        .if(onCardTap != nil) { view in
-            view.onTapGesture {
-                onCardTap?()
-            }
-        }
-    }
-    
     /// Name, category, ingredients, price — and out-of-stock — as one
     /// VoiceOver phrase (each part is shared, localized copy).
     private var accessibilitySummary: String {

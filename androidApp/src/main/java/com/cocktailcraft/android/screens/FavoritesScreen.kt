@@ -26,7 +26,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.LoadingStateComponent
-import com.cocktailcraft.android.ui.components.SectionHeader
 import com.cocktailcraft.android.util.refreshAccessibilityAction
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
@@ -36,7 +35,6 @@ import com.cocktailcraft.resources.browse_cocktails
 import com.cocktailcraft.resources.cart_try_again
 import com.cocktailcraft.resources.error
 import com.cocktailcraft.resources.favorites_empty_message
-import com.cocktailcraft.resources.favorites_section_title
 import com.cocktailcraft.resources.no_favorites
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedCartViewModel
@@ -138,14 +136,6 @@ internal fun FavoritesContent(
                 contentPadding = PaddingValues(vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item {
-                    SectionHeader(
-                        title = stringResource(MR.strings.favorites_section_title),
-                        fontSize = 20,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
-
                 itemsIndexed(favorites) { _, cocktail ->
                     CocktailItem(
                         cocktail = cocktail,

@@ -30,9 +30,7 @@ struct AppTheme {
         
         // Custom sizes matching Android, each anchored to a text
         // style so they scale with the user's Dynamic Type setting
-        static let cardTitle = Font.callout.weight(.bold)
         static let cardSubtitle = Font.subheadline
-        static let cardCaption = Font.caption
         static let price = Font.callout.weight(.bold)
     }
     

@@ -8,28 +8,10 @@ final class ComponentSnapshotTests: SnapshotTestCase {
 
     // MARK: - Cards
 
-    func testCocktailCardHorizontal() {
+    func testCocktailCard() {
         assertSnapshots(of: VStack(spacing: 12) {
             CocktailCard(cocktail: SnapshotFixtures.margarita, isFavorite: true, onFavoriteToggle: {}, onAddToCart: {})
             CocktailCard(cocktail: SnapshotFixtures.outOfStock, onFavoriteToggle: {}, onAddToCart: {})
-        })
-    }
-
-    func testCocktailCardVertical() {
-        assertSnapshots(of: HStack(alignment: .top, spacing: 12) {
-            CocktailCard(
-                cocktail: SnapshotFixtures.margarita,
-                isFavorite: true,
-                onFavoriteToggle: {},
-                onAddToCart: {},
-                layout: .vertical
-            )
-            CocktailCard(
-                cocktail: SnapshotFixtures.outOfStock,
-                onFavoriteToggle: {},
-                onAddToCart: {},
-                layout: .vertical
-            )
         })
     }
 
