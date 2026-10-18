@@ -77,7 +77,7 @@ kotlin {
     }
 
     sourceSets {
-        val commonMain by getting {
+        commonMain {
             dependencies {
                 // Everything Android and Swift consume — api(), which export()
                 // also requires: the shared ViewModels and UiState
@@ -119,7 +119,7 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
         }
 
-        val commonTest by getting {
+        commonTest {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(project(":core:testing"))
@@ -132,7 +132,7 @@ kotlin {
             }
         }
 
-        val androidHostTest by getting {
+        named("androidHostTest") {
             dependencies {
                 implementation(libs.mockk.core)
                 implementation(libs.robolectric)
