@@ -27,8 +27,10 @@ import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.repository.ReviewRepository
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -60,6 +62,13 @@ val dataModule = module {
 
     // CPU work off the main thread: decoding and mapping API responses
     single<CoroutineDispatcher>(named("defaultDispatcher")) { Dispatchers.Default }
+
+    // Lives as long as the process. Work that must not die with the screen
+    // that started it runs here: shared fetches (InFlightRequests) and the
+    // shared favorites stream. SupervisorJob: one failure never cancels it.
+    single<CoroutineScope>(named("appScope")) {
+        CoroutineScope(SupervisorJob() + get<CoroutineDispatcher>(named("defaultDispatcher")))
+    }
 
     // Offline decision — single source of truth for "is the app offline" (AR-7)
     single { com.cocktailcraft.data.cache.OfflineModePolicy(networkMonitor = get()) }
@@ -127,7 +136,8 @@ val dataModule = module {
         CocktailCategoryFetcher(
             remote = get(),
             cocktailCache = get(),
-            offlineRepository = get()
+            offlineRepository = get(),
+            appScope = get(named("appScope"))
         )
     }
 
@@ -144,7 +154,8 @@ val dataModule = module {
         CocktailDetailRepositoryImpl(
             remote = get(),
             cocktailCache = get(),
-            offlineRepository = get()
+            offlineRepository = get(),
+            appScope = get(named("appScope"))
         )
     }
 

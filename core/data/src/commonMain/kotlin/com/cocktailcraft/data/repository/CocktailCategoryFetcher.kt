@@ -10,6 +10,7 @@ import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.onError
 import com.cocktailcraft.util.runCatchingResult
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlin.time.Clock
@@ -35,12 +36,15 @@ internal class CocktailCategoryFetcher(
     private val remote: CocktailRemoteDataSource,
     private val cocktailCache: CocktailCache,
     private val offlineRepository: CocktailOfflineRepository,
+    // App-wide scope the fetches run in, so they finish even if the caller
+    // goes away (see InFlightRequests)
+    appScope: CoroutineScope,
     // Injectable for tests: coroutine virtual time does not move Clock.System.
     private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() }
 ) {
 
     // Concurrent refreshes of one category share one request.
-    private val inFlight = InFlightRequests<String, Result<Unit>>()
+    private val inFlight = InFlightRequests<String, Result<Unit>>(appScope)
 
     /**
      * The cocktails of [category] as stored in the database, emitted right
@@ -73,7 +77,8 @@ internal class CocktailCategoryFetcher(
      * request fails fast.
      *
      * Concurrent calls for the same category share one request; different
-     * categories fetch in parallel.
+     * categories fetch in parallel. A fetch that started completes into the
+     * database even if the caller is cancelled.
      */
     suspend fun refresh(category: String, force: Boolean = false): Result<Unit> {
         if (!force && isFresh(category)) return Result.Success(Unit)

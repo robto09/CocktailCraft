@@ -22,6 +22,7 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -42,7 +43,7 @@ class CocktailSearchRepositoryImplTest {
     // the shared category fetcher backing the search impl.
     // [dispatcher] (the test scheduler's, for tests that measure virtual
     // time) runs the cache's and the remote source's work
-    private fun fixture(
+    private fun TestScope.fixture(
         api: FakeCocktailApi = FakeCocktailApi(),
         settings: Settings = MapSettings(),
         online: Boolean = true,
@@ -70,7 +71,8 @@ class CocktailSearchRepositoryImplTest {
         val fetcher = CocktailCategoryFetcher(
             remote = remote,
             cocktailCache = cache,
-            offlineRepository = offline
+            offlineRepository = offline,
+            appScope = backgroundScope
         )
         val search = CocktailSearchRepositoryImpl(
             remote = remote,
@@ -81,7 +83,7 @@ class CocktailSearchRepositoryImplTest {
         return Fixture(search, networkMonitor, cache)
     }
 
-    private fun repository(
+    private fun TestScope.repository(
         api: FakeCocktailApi = FakeCocktailApi(),
         settings: Settings = MapSettings(),
         online: Boolean = true
