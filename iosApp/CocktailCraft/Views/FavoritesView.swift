@@ -10,6 +10,7 @@ struct FavoritesView: View {
     @State private var removingIds: Set<String> = []
     @State private var showingToast = false
     @State private var toastMessage = ""
+    @State private var toastType: Toast.ToastType = .success
     @Environment(\.isDarkMode) private var isDarkMode
 
     var body: some View {
@@ -29,7 +30,7 @@ struct FavoritesView: View {
         .task {
             await viewModel.loadFavorites()
         }
-        .toast(isShowing: $showingToast, message: toastMessage, type: .success, duration: 2)
+        .toast(isShowing: $showingToast, message: toastMessage, type: toastType, duration: 2)
         .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
     }
     
@@ -74,9 +75,13 @@ struct FavoritesView: View {
                 // Add-to-cart with toast confirmation, matching Home and the
                 // Android Favorites list (which had this button all along)
                 onAddToCart: {
+                    // Only a real add is confirmed; a failed one says so instead
                     Task { @MainActor in
-                        await cartViewModel.addToCart(cocktail)
-                        toastMessage = L(\.added_to_cart, cocktail.name)
+                        let added = await cartViewModel.addToCart(cocktail)
+                        toastMessage = added
+                            ? L(\.added_to_cart, cocktail.name)
+                            : L(\.error_add_item_to_cart_failed)
+                        toastType = added ? .success : .error
                         withAnimation {
                             showingToast = true
                         }

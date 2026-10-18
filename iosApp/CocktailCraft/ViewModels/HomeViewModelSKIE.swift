@@ -68,8 +68,11 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
         await run { try await sharedViewModel.toggleFavorite(cocktail: cocktail) }
     }
 
-    func addToCart(_ cocktail: Cocktail) async {
-        await run { try await cartViewModel.addToCart(cocktail: cocktail, quantity: 1) }
+    /// Returns whether the cocktail was added, so the view confirms only a
+    /// real add.
+    @discardableResult
+    func addToCart(_ cocktail: Cocktail) async -> Bool {
+        await run(fallback: false) { try await cartViewModel.addToCart(cocktail: cocktail, quantity: 1).boolValue }
     }
 
     // MARK: - Synchronous Methods
