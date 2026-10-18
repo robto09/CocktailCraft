@@ -4,5 +4,7 @@
   <CurrentIssues>
     <ID>MultiLineIfElse:Fakes.kt$FakeSearchRepository$value.equals("Alcoholic", ignoreCase = true)</ID>
     <ID>MultiLineIfElse:Fakes.kt$FakeSearchRepository$value.equals("Non alcoholic", ignoreCase = true)</ID>
+    <ID>ReturnCount:FakeOrderRepository.kt$FakeOrderRepository$override suspend fun cancelOrder(orderId: String): Result&lt;Boolean&gt;</ID>
+    <ID>ReturnCount:FakeOrderRepository.kt$FakeOrderRepository$override suspend fun placeOrder(order: Order): Result&lt;Unit&gt;</ID>
   </CurrentIssues>
 </SmellBaseline>
