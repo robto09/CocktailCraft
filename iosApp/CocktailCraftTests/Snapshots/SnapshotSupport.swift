@@ -47,8 +47,11 @@ enum SnapshotAppearance: String {
 /// Every snapshot is rendered at a fixed width, @3x scale, phone idiom and a
 /// pinned Dynamic Type size, so output only depends on the iOS runtime's
 /// text rendering. Reference images were recorded on the iPhone 16 Pro
-/// simulator running iOS 18.5; on any other runtime the tests are skipped
-/// rather than failing on font-rasterization noise.
+/// simulator running iOS 18.5; on any other runtime the tests are reported
+/// as skipped (XCTSkip, with the runtime mismatch as the reason) rather than
+/// failing on font-rasterization noise — or, with
+/// `TEST_RUNNER_SNAPSHOT_REQUIRE_REFERENCE_RUNTIME=1`, fail, for runs that
+/// must verify the snapshots (CI).
 ///
 /// Record new/changed references with
 /// `TEST_RUNNER_SNAPSHOT_TESTING_RECORD=all xcodebuild test ...` (see README →
@@ -67,11 +70,21 @@ class SnapshotTestCase: XCTestCase {
         try super.setUpWithError()
         let os = ProcessInfo.processInfo.operatingSystemVersion
         let reference = Self.referenceOSVersion
-        try XCTSkipUnless(
-            os.majorVersion == reference.major && os.minorVersion == reference.minor,
-            "Snapshot references were recorded on iOS \(reference.major).\(reference.minor) "
-                + "(iPhone 16 Pro simulator); this runtime is \(os.majorVersion).\(os.minorVersion)."
-        )
+        guard os.majorVersion != reference.major || os.minorVersion != reference.minor else { return }
+
+        let reason = "Snapshot test NOT run: references were recorded on iOS "
+            + "\(reference.major).\(reference.minor) (iPhone 16 Pro simulator), this runtime is "
+            + "iOS \(os.majorVersion).\(os.minorVersion). Run on an iOS \(reference.major).\(reference.minor) "
+            + "simulator to verify snapshots."
+        if ProcessInfo.processInfo.environment["SNAPSHOT_REQUIRE_REFERENCE_RUNTIME"] != nil {
+            throw SnapshotRuntimeMismatch(description: reason)
+        }
+        throw XCTSkip(reason)
+    }
+
+    /// Fails the test (instead of skipping it) under SNAPSHOT_REQUIRE_REFERENCE_RUNTIME.
+    private struct SnapshotRuntimeMismatch: Error, CustomStringConvertible {
+        let description: String
     }
 
     /// Snapshots `content` once per appearance, sized to fit at `width`.
