@@ -66,8 +66,10 @@ class KoinHelper : KoinComponent {
      * random pick when online (best-effort — a failed fetch is skipped),
      * followed by the recently viewed cocktails, which keep the widget
      * populated offline, like Android's WidgetDataProvider fallback.
-     * At most [limit], without duplicates.
+     * At most [limit], without duplicates. @Throws: Swift calls it, and an
+     * undeclared exception reaching Swift terminates the app.
      */
+    @Throws(Exception::class)
     suspend fun getRandomCocktailWidgetPool(limit: Int): List<Cocktail> {
         val offline = get<CocktailOfflineRepository>()
         val random = if (offline.isOffline()) {
