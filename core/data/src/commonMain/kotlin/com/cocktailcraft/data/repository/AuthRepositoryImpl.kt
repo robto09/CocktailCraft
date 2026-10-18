@@ -90,6 +90,7 @@ internal class AuthRepositoryImpl(
             lockoutError(throttleEmail)?.let { return@locked it }
 
             if (user == null || !verifyCredentials(user.email, password)) {
+                if (user == null) makeRoomToThrottleUnknownEmail(throttleEmail)
                 recordFailedSignIn(throttleEmail)
                 return@locked Result.Success(false)
             }
@@ -292,6 +293,39 @@ internal class AuthRepositoryImpl(
         settings.remove(lockoutUntilKey(email))
     }
 
+    /**
+     * Emails with no account are throttled too — skipping them would let a
+     * caller tell accounts apart by which addresses ever lock — but each one
+     * costs secure-store entries (a Keychain item apiece on iOS), so made-up
+     * addresses must not grow the store without bound. Before [email] gets
+     * its first entry, at most MAX_UNKNOWN_THROTTLED_EMAILS - 1 other unknown
+     * emails keep theirs: the least protective go first (no or expired
+     * lockout, then the soonest deadline). Accounts' entries are never
+     * evicted, so flooding made-up addresses cannot reset a real lockout.
+     */
+    private fun makeRoomToThrottleUnknownEmail(email: String) {
+        if (settings.hasKey(attemptsKey(email))) return
+        val accountEmails = getCurrentUsers().mapTo(HashSet()) { it.email }
+        val unknown = throttledEmails() - accountEmails
+        val excess = unknown.size - (MAX_UNKNOWN_THROTTLED_EMAILS - 1)
+        if (excess <= 0) return
+        unknown.sortedBy { settings.getLongOrNull(lockoutUntilKey(it)) ?: 0L }
+            .take(excess)
+            .forEach(::clearFailedSignIns)
+    }
+
+    /** Every email that currently has throttle state, account or not. */
+    private fun throttledEmails(): Set<String> =
+        settings.keys.mapNotNullTo(HashSet()) { key ->
+            when {
+                key.startsWith(AuthStorageKeys.SIGN_IN_ATTEMPTS_PREFIX) ->
+                    key.removePrefix(AuthStorageKeys.SIGN_IN_ATTEMPTS_PREFIX)
+                key.startsWith(AuthStorageKeys.SIGN_IN_LOCKOUT_PREFIX) ->
+                    key.removePrefix(AuthStorageKeys.SIGN_IN_LOCKOUT_PREFIX)
+                else -> null
+            }
+        }
+
     private fun attemptsKey(email: String) = "${AuthStorageKeys.SIGN_IN_ATTEMPTS_PREFIX}$email"
 
     private fun lockoutUntilKey(email: String) = "${AuthStorageKeys.SIGN_IN_LOCKOUT_PREFIX}$email"
@@ -306,6 +340,9 @@ internal class AuthRepositoryImpl(
         private const val FREE_SIGN_IN_ATTEMPTS = 5
         private const val BASE_LOCKOUT_MS = 30_000L
         private const val MAX_LOCKOUT_DOUBLINGS = 6 // caps at 32 minutes
+
+        /** Most emails without an account that keep throttle state at once. */
+        internal const val MAX_UNKNOWN_THROTTLED_EMAILS = 20
 
         /** Canonical form for matching and storing emails: trimmed, lowercase. */
         internal fun normalizeEmail(email: String): String = email.trim().lowercase()

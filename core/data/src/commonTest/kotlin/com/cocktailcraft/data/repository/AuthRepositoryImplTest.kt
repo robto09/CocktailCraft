@@ -251,6 +251,63 @@ class AuthRepositoryImplTest {
         }
     }
 
+    // --- Throttle state for emails without an account ---
+
+    private fun MapSettings.throttleKeyCount() =
+        keys.count { it.startsWith("signin_attempts_") || it.startsWith("signin_lockout_until_") }
+
+    @Test
+    fun failedSignInsForMadeUpEmailsKeepABoundedNumberOfKeys() = runTest {
+        val settings = MapSettings()
+        val repository = AuthRepositoryImpl(settings, Json { ignoreUnknownKeys = true }, nowMs = { 0L })
+        val cap = AuthRepositoryImpl.MAX_UNKNOWN_THROTTLED_EMAILS
+
+        repeat(cap * 5) { i ->
+            repeat(5) { assertFalse(repository.signIn("nobody$i@b.com", "wrong-pass").getOrThrow()) }
+        }
+
+        // Two keys (attempts + lockout deadline) per throttled email
+        assertTrue(settings.throttleKeyCount() <= cap * 2, "got ${settings.throttleKeyCount()} throttle keys")
+    }
+
+    @Test
+    fun unknownEmailsStillLockOutLikeAccounts() = runTest {
+        // Locking only real accounts would reveal which addresses exist
+        val repository = AuthRepositoryImpl(MapSettings(), Json { ignoreUnknownKeys = true }, nowMs = { 0L })
+
+        repeat(5) { assertFalse(repository.signIn("nobody@b.com", "wrong-pass").getOrThrow()) }
+
+        assertIs<Result.Error>(repository.signIn("nobody@b.com", "wrong-pass"))
+    }
+
+    @Test
+    fun floodingMadeUpEmailsDoesNotResetAnAccountLockout() = runTest {
+        val repository = AuthRepositoryImpl(MapSettings(), Json { ignoreUnknownKeys = true }, nowMs = { 0L })
+        repository.signUp("a@b.com", "secret123")
+        repeat(5) { assertFalse(repository.signIn("a@b.com", "wrong-pass").getOrThrow()) }
+
+        repeat(AuthRepositoryImpl.MAX_UNKNOWN_THROTTLED_EMAILS * 3) { i ->
+            assertFalse(repository.signIn("nobody$i@b.com", "wrong-pass").getOrThrow())
+        }
+
+        assertIs<Result.Error>(repository.signIn("a@b.com", "secret123"), "the account must still be locked")
+    }
+
+    @Test
+    fun evictionDropsTheLeastProtectiveUnknownEmailFirst() = runTest {
+        val repository = AuthRepositoryImpl(MapSettings(), Json { ignoreUnknownKeys = true }, nowMs = { 0L })
+        val cap = AuthRepositoryImpl.MAX_UNKNOWN_THROTTLED_EMAILS
+
+        // One locked-out unknown email, then enough single failures to fill the cap and more
+        repeat(5) { repository.signIn("locked@b.com", "wrong-pass") }
+        repeat(cap * 2) { i -> repository.signIn("nobody$i@b.com", "wrong-pass") }
+
+        assertIs<Result.Error>(
+            repository.signIn("locked@b.com", "wrong-pass"),
+            "an active lockout outlives one-off failures"
+        )
+    }
+
     @Test
     fun signInThrottleIsPerEmail() = runTest {
         var now = 0L
