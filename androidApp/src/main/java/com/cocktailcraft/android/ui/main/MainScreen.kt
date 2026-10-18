@@ -33,7 +33,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -86,8 +85,6 @@ import com.cocktailcraft.resources.profile
 import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
-import com.cocktailcraft.viewmodel.SharedHomeViewModel
-import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -124,17 +121,19 @@ fun MainScreen() {
     )
 
     // Shared KMP ViewModels (Koin singles — app-scoped by design; screen-scoped
-    // VMs are resolved with koinViewModel inside their destinations)
-    val sharedOrderViewModel: SharedOrderViewModel = koinInject()
+    // VMs are resolved with koinViewModel inside their destinations). Only
+    // the ones the chrome needs on every tab are resolved here: cart (badge,
+    // add-to-cart, toasts) and favorites (toasts). Home and Orders are
+    // resolved by the destinations that use them — the same singles, just
+    // not created before the first screen that needs them.
     val sharedCartViewModel: SharedCartViewModel = koinInject()
-    val sharedHomeViewModel: SharedHomeViewModel = koinInject()
     val sharedFavoritesViewModel: SharedFavoritesViewModel = koinInject()
     val scope = rememberCoroutineScope()
 
     // Connectivity drives the offline banner directly — "offline" is purely
     // "the network is down"; there is no user-facing offline toggle.
     val networkMonitor: NetworkMonitor = koinInject()
-    val isOnline by networkMonitor.isOnline.collectAsState()
+    val isOnline by networkMonitor.isOnline.collectAsStateWithLifecycle()
 
     // Cart state drives the bottom-nav badge (parity with the iOS tab badge)
     val cartUiState by sharedCartViewModel.uiState.collectAsStateWithLifecycle()
@@ -184,7 +183,7 @@ fun MainScreen() {
             composable<HomeRoute> {
                 tabScaffold(Screen.Home) {
                     HomeScreen(
-                        viewModel = sharedHomeViewModel,
+                        viewModel = koinInject(),
                         onAddToCart = addToCart,
                         onCocktailClick = { cocktail ->
                             // Navigate to cocktail detail screen
@@ -201,7 +200,7 @@ fun MainScreen() {
                             navigationManager.navigateToHome()
                         },
                         navigationManager = navigationManager,
-                        orderViewModel = sharedOrderViewModel,
+                        orderViewModel = koinInject(),
                         favoritesViewModel = sharedFavoritesViewModel
                     )
                 }
@@ -230,7 +229,7 @@ fun MainScreen() {
             composable<OrderListRoute> {
                 tabScaffold(Screen.OrderList) {
                     OrderListScreen(
-                        orderViewModel = sharedOrderViewModel,
+                        orderViewModel = koinInject(),
                         navigationManager = navigationManager
                     )
                 }
@@ -240,7 +239,7 @@ fun MainScreen() {
                 val route = backStackEntry.toRoute<OrderDetailRoute>()
                 OrderDetailScreen(
                     orderId = route.orderId,
-                    orderViewModel = sharedOrderViewModel,
+                    orderViewModel = koinInject(),
                     onBackClick = { navigationManager.navigateBack() }
                 )
             }

@@ -98,7 +98,7 @@ internal fun DetailRecommendationsSection(
                     contentPadding = PaddingValues(horizontal = 0.dp),
                     horizontalArrangement = Arrangement.spacedBy(Spacing.md)
                 ) {
-                    items(similarCocktails) { recommendation ->
+                    items(similarCocktails, key = { it.id }) { recommendation ->
                         // Simple recommendation card
                         RecommendationCard(
                             recommendation = recommendation,

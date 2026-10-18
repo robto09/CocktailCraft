@@ -45,9 +45,10 @@ import com.revenuecat.placeholder.placeholder
  * @param modifier Modifier for the image
  * @param contentScale Content scaling mode
  * @param showLoadingIndicator Whether to shimmer the image area while it loads
- * @param targetSize Target size in px for image resizing (null for no
- *   resizing); up to 350 also loads TheCocktailDB's /medium thumbnail
- *   instead of the full-size photo (see [cocktailThumbnailUrl])
+ * @param targetSize Rough slot size in px, used only to pick the source: up
+ *   to 350 loads TheCocktailDB's /medium thumbnail instead of the full-size
+ *   photo (see [cocktailThumbnailUrl]). The decode size always comes from
+ *   the layout.
  */
 @Composable
 fun OptimizedImage(
@@ -197,13 +198,16 @@ private fun rememberCocktailImageRequest(
         val data = if (useThumbnail) cocktailThumbnailUrl(url, targetSize) else url
         // Placeholder and error share one drawable
         val placeholder = ColorDrawable(placeholderColor)
+        // No explicit size or cache keys: AsyncImage then decodes at the
+        // slot's laid-out size (a fixed pixel size was upscaled on dense
+        // screens), and Coil's default memory key includes that size, so the
+        // cart thumbnail and the list image of the same photo get their own
+        // bitmaps instead of sharing whichever was decoded first.
+        // The disk cache is keyed by URL by default.
         ImageRequest.Builder(context)
             .data(data)
-            .apply { targetSize?.let { size(it) } }
             .placeholder(placeholder)
             .error(placeholder)
-            .memoryCacheKey(data)
-            .diskCacheKey(data)
             .allowHardware(true)
             .crossfade(true)
             .build()

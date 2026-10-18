@@ -328,8 +328,11 @@ fun IngredientSelectionDialog(
                     )
                 )
 
-                val filteredIngredients = ingredients.filter {
-                    it.contains(searchQuery, ignoreCase = true)
+                // ~500 ingredients: filter only when the list or the query
+                // changes, not on every recomposition. Distinct, since each
+                // one is its row's key.
+                val filteredIngredients = remember(ingredients, searchQuery) {
+                    ingredients.filter { it.contains(searchQuery, ignoreCase = true) }.distinct()
                 }
 
                 LazyColumn(
@@ -347,7 +350,7 @@ fun IngredientSelectionDialog(
                         )
                     }
 
-                    items(filteredIngredients) { ingredient ->
+                    items(filteredIngredients, key = { it }) { ingredient ->
                         IngredientRow(
                             label = ingredient,
                             selected = selectedIngredient == ingredient,
