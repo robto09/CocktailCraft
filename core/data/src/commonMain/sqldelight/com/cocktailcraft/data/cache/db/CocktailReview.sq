@@ -4,6 +4,11 @@
 --
 -- User reviews (ReviewRepositoryImpl), one row per Review.
 --
+--   owner_id  who wrote it: the signed-in user's id, or "guest" while signed
+--             out (see UserDataOwnership.kt; "" for rows not assigned yet
+--             after an upgrade). Only its owner sees, edits or deletes a
+--             review. Added in version 7 (migrations/6.sqm), as the last
+--             column, since SQLite appends added columns.
 --   date      the review's yyyy-MM-dd display date (Review.date)
 --   position  insertion order (1-based, increasing); reviews list in this
 --             order, and editing a review keeps it in place.
@@ -14,27 +19,37 @@ CREATE TABLE cocktail_review (
     rating REAL NOT NULL,
     comment TEXT NOT NULL,
     date TEXT NOT NULL,
-    position INTEGER NOT NULL
+    position INTEGER NOT NULL,
+    owner_id TEXT NOT NULL DEFAULT ''
 );
 
+CREATE INDEX cocktail_review_owner ON cocktail_review(owner_id, position);
+
 selectAll:
-SELECT id, cocktail_id, user_name, rating, comment, date FROM cocktail_review ORDER BY position;
+SELECT id, cocktail_id, user_name, rating, comment, date FROM cocktail_review
+WHERE owner_id = :ownerId
+ORDER BY position;
 
 exists:
-SELECT COUNT(*) FROM cocktail_review WHERE id = ?;
+SELECT COUNT(*) FROM cocktail_review WHERE owner_id = :ownerId AND id = :id;
 
 insert:
-INSERT INTO cocktail_review(id, cocktail_id, user_name, rating, comment, date, position)
-VALUES (:id, :cocktailId, :userName, :rating, :comment, :date, (SELECT COALESCE(MAX(position), 0) + 1 FROM cocktail_review));
+INSERT INTO cocktail_review(id, cocktail_id, user_name, rating, comment, date, position, owner_id)
+VALUES (:id, :cocktailId, :userName, :rating, :comment, :date, (SELECT COALESCE(MAX(position), 0) + 1 FROM cocktail_review), :ownerId);
 
 -- Used by the one-time import from Settings (LegacySettingsImport): reviews
 -- already in the database must win.
 insertIfAbsent:
-INSERT OR IGNORE INTO cocktail_review(id, cocktail_id, user_name, rating, comment, date, position)
-VALUES (:id, :cocktailId, :userName, :rating, :comment, :date, (SELECT COALESCE(MAX(position), 0) + 1 FROM cocktail_review));
+INSERT OR IGNORE INTO cocktail_review(id, cocktail_id, user_name, rating, comment, date, position, owner_id)
+VALUES (:id, :cocktailId, :userName, :rating, :comment, :date, (SELECT COALESCE(MAX(position), 0) + 1 FROM cocktail_review), :ownerId);
 
 update:
-UPDATE cocktail_review SET rating = :rating, comment = :comment, date = :date WHERE id = :id;
+UPDATE cocktail_review SET rating = :rating, comment = :comment, date = :date
+WHERE owner_id = :ownerId AND id = :id;
 
 deleteById:
-DELETE FROM cocktail_review WHERE id = ?;
+DELETE FROM cocktail_review WHERE owner_id = :ownerId AND id = :id;
+
+-- Assigns reviews left unassigned by an upgrade (see UserDataOwnership.kt)
+reassign:
+UPDATE cocktail_review SET owner_id = :toOwnerId WHERE owner_id = :fromOwnerId;

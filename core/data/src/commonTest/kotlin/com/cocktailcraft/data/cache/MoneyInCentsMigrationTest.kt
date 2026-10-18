@@ -4,6 +4,7 @@ import app.cash.sqldelight.db.SqlDriver
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.local.CocktailCodec
+import com.cocktailcraft.data.local.OwnerIds
 import com.cocktailcraft.data.repository.OrderRepositoryImpl
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
@@ -200,7 +201,9 @@ class MoneyInCentsMigrationTest {
 
     @Test
     fun legacyFavoritePayloadsReadTheirPricesAsCents() {
-        val payload = migratedDatabase().favoriteCocktailQueries.selectAll().executeAsList().single().payload
+        // Read straight from the migrated tables, before an open assigns owners
+        val favorites = migratedDatabase().favoriteCocktailQueries.selectAll(OwnerIds.UNASSIGNED).executeAsList()
+        val payload = favorites.single().payload
 
         // The migration leaves payloads in their old shape; reads convert them
         assertFalse(payload!!.contains("priceCents"))

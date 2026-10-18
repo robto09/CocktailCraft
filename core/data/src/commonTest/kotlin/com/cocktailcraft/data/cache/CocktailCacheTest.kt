@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.local.CocktailCodec
+import com.cocktailcraft.data.local.FixedOwner
 import com.cocktailcraft.data.local.toEntity
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
@@ -265,7 +266,7 @@ class CocktailCacheTest {
             opened = true
             createTestDatabase()
         }
-        val cache = CocktailCache(database, MapSettings(), json, config)
+        val cache = CocktailCache(database, MapSettings(), json, config, FixedOwner())
 
         assertFalse(opened, "constructing the cache must not touch the database")
 

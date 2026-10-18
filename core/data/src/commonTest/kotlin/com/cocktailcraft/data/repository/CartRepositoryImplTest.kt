@@ -1,6 +1,7 @@
 package com.cocktailcraft.data.repository
 
 import app.cash.turbine.test
+import com.cocktailcraft.data.local.OwnerIds
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.sumOfMoney
@@ -120,7 +121,7 @@ class CartRepositoryImplTest {
     fun unreadableStoredItemIsSkippedNotFatal() = runTest {
         repository().addToCart(CocktailCartItem(testCocktail("1"), quantity = 1)).getOrThrow()
         db.cachedCocktailQueries.upsert("broken", null, "{not valid json", full_details = 1, cached_at = 0)
-        db.cartItemQueries.insert(cocktailId = "broken", quantity = 1, priceCents = null)
+        db.cartItemQueries.insert(ownerId = OwnerIds.GUEST, cocktailId = "broken", quantity = 1, priceCents = null)
 
         assertEquals(listOf("1"), repository().getCartItems().getOrThrow().map { it.cocktail.id })
     }

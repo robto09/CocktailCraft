@@ -5,6 +5,7 @@ import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.local.LegacySettingsImport
 import com.cocktailcraft.data.local.LocalDatabase
+import com.cocktailcraft.data.local.UserSession
 import com.cocktailcraft.data.remote.ApiRateLimiter
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.data.repository.AuthRepositoryImpl
@@ -17,6 +18,7 @@ import com.cocktailcraft.data.repository.CocktailOfflineRepositoryImpl
 import com.cocktailcraft.data.repository.CocktailSearchRepositoryImpl
 import com.cocktailcraft.data.repository.OrderRepositoryImpl
 import com.cocktailcraft.data.repository.ReviewRepositoryImpl
+import com.cocktailcraft.data.repository.SessionAwareAuthRepository
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
@@ -81,14 +83,17 @@ val dataModule = module {
     // touches disk; the cache opens it on first use, on the io dispatcher.
     // Settings is still needed to import (once) the cache older versions
     // kept there.
-    single { CocktailCache(
-        database = inject<CocktailCraftDatabase>(),
-        settings = get(),
-        json = get(),
-        appConfig = get(),
-        ioDispatcher = get(named("ioDispatcher")),
-        offlineModePolicy = get()
-    ) }
+    single {
+        CocktailCache(
+            database = inject<CocktailCraftDatabase>(),
+            settings = get(),
+            json = get(),
+            appConfig = get(),
+            currentOwner = get<UserSession>(),
+            ioDispatcher = get(named("ioDispatcher")),
+            offlineModePolicy = get()
+        )
+    }
 
     // Database access for the cart, orders, favorites and reviews
     // repositories. Like the cache, it opens the database lazily on the io
@@ -98,6 +103,7 @@ val dataModule = module {
         LocalDatabase(
             database = inject<CocktailCraftDatabase>(),
             legacyImport = LegacySettingsImport(settings = get(), json = get()),
+            owner = get<UserSession>(),
             ioDispatcher = get(named("ioDispatcher"))
         )
     }
@@ -172,8 +178,15 @@ val dataModule = module {
         )
     }
 
+    // The account store, and who owns the user's data: the signed-in user,
+    // else the guest (UserSession). The app's AuthRepository wraps the store
+    // to switch that owner on sign-in/out (SessionAwareAuthRepository).
+    single { AuthRepositoryImpl(get(secureSettingsQualifier), get(), get(named("ioDispatcher"))) }
+
+    single { UserSession(authRepository = get<AuthRepositoryImpl>()) }
+
     single<AuthRepository> {
-        AuthRepositoryImpl(get(secureSettingsQualifier), get(), get(named("ioDispatcher")))
+        SessionAwareAuthRepository(delegate = get<AuthRepositoryImpl>(), session = get(), localDatabase = get())
     }
 
     single<OrderRepository> {

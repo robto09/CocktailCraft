@@ -8,7 +8,11 @@ import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.local.CocktailCodec
 import com.cocktailcraft.data.local.CocktailDecodeMemo
 import com.cocktailcraft.data.local.CocktailEntity
+import com.cocktailcraft.data.local.CurrentOwner
+import com.cocktailcraft.data.local.FixedOwner
 import com.cocktailcraft.data.local.LegacyCocktailSerializer
+import com.cocktailcraft.data.local.OwnerIds
+import com.cocktailcraft.data.local.claimUnassignedUserData
 import com.cocktailcraft.data.local.toDomain
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
@@ -87,6 +91,9 @@ private class StoredState(val category: String?, val payload: String, val hasFul
  * viewed list (see CachedCocktail.sq). So a browsed category stays whole
  * offline, and caching search results can't push it out.
  *
+ * The cocktails are shared by everyone using the device; the recently viewed
+ * list belongs to [currentOwner] (see UserDataOwnership.kt).
+ *
  * The database is opened lazily on first access, on [ioDispatcher] — a Koin
  * `single` must not block whichever thread first resolves it. That first
  * access also imports (once) any cache written by older app versions into
@@ -97,6 +104,7 @@ internal class CocktailCache(
     private val settings: Settings,
     private val json: Json,
     private val appConfig: AppConfig,
+    private val currentOwner: CurrentOwner,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val offlineModePolicy: OfflineModePolicy? = null
 ) {
@@ -106,8 +114,9 @@ internal class CocktailCache(
         json: Json,
         appConfig: AppConfig,
         ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-        offlineModePolicy: OfflineModePolicy? = null
-    ) : this(lazyOf(database), settings, json, appConfig, ioDispatcher, offlineModePolicy)
+        offlineModePolicy: OfflineModePolicy? = null,
+        currentOwner: CurrentOwner = FixedOwner()
+    ) : this(lazyOf(database), settings, json, appConfig, currentOwner, ioDispatcher, offlineModePolicy)
 
     companion object {
         // Settings keys of the legacy JSON-blob cache. internal (not private)
@@ -203,6 +212,7 @@ internal class CocktailCache(
     private suspend fun load(): Unit = withContext(ioDispatcher) {
         try {
             val applyExpiry = shouldApplyExpiry()
+            val ownerId = currentOwner.ownerId()
             dbMutex.withLock {
                 val db = database.value
                 lastStamp = maxOf(
@@ -210,6 +220,9 @@ internal class CocktailCache(
                     db.recentlyViewedCocktailQueries.maxViewedAt().executeAsOne().value_ ?: 0L
                 )
                 importLegacySettingsCache(db)
+                // Recently viewed entries from that import or an upgrade
+                // belong to whoever is signed in (LocalDatabase does the same)
+                db.claimUnassignedUserData(ownerId)
                 if (applyExpiry) {
                     db.cachedCocktailQueries.deleteCachedBefore(expiryCutoff())
                 }
@@ -258,9 +271,16 @@ internal class CocktailCache(
             recent.forEach { cocktail ->
                 // The cocktail itself, if the legacy cache had lost it
                 db.insertLegacyCocktail(cocktail, cachedAtMs = now)
-                db.recentlyViewedCocktailQueries.insertIfAbsent(cocktail_id = cocktail.id, viewed_at = nextStamp())
+                db.recentlyViewedCocktailQueries.insertIfAbsent(
+                    owner_id = OwnerIds.UNASSIGNED,
+                    cocktail_id = cocktail.id,
+                    viewed_at = nextStamp()
+                )
             }
-            db.recentlyViewedCocktailQueries.trimToCapacity(MAX_RECENTLY_VIEWED.toLong())
+            db.recentlyViewedCocktailQueries.trimToCapacity(
+                ownerId = OwnerIds.UNASSIGNED,
+                capacity = MAX_RECENTLY_VIEWED.toLong()
+            )
             db.trim()
         }
 
@@ -605,28 +625,34 @@ internal class CocktailCache(
     }
 
     /**
-     * Add a cocktail to the recently viewed list (capped at
+     * Add a cocktail to the current owner's recently viewed list (capped at
      * [MAX_RECENTLY_VIEWED]); it is also cached for offline access if it
      * isn't already.
      */
     suspend fun addToRecentlyViewed(cocktail: Cocktail) {
+        val ownerId = currentOwner.ownerId()
         withDatabase(Unit) {
             transaction {
                 storeCocktails(listOf(cocktail), fetched = false)
-                recentlyViewedCocktailQueries.upsert(cocktail_id = cocktail.id, viewed_at = nextStamp())
-                recentlyViewedCocktailQueries.trimToCapacity(MAX_RECENTLY_VIEWED.toLong())
+                recentlyViewedCocktailQueries.upsert(
+                    owner_id = ownerId,
+                    cocktail_id = cocktail.id,
+                    viewed_at = nextStamp()
+                )
+                recentlyViewedCocktailQueries.trimToCapacity(ownerId = ownerId, capacity = MAX_RECENTLY_VIEWED.toLong())
                 trim()
             }
         }
     }
 
     /**
-     * Get the list of recently viewed cocktails, most recent first.
+     * Get the current owner's recently viewed cocktails, most recent first.
      */
     suspend fun getRecentlyViewedCocktails(): List<Cocktail> {
+        val ownerId = currentOwner.ownerId()
         val recent = withDatabase(emptyList()) {
-            val rows = recentlyViewedCocktailQueries.selectMostRecentFirst(storedCocktail).executeAsList()
-            decodeRows(rows) { recentlyViewedCocktailQueries.deleteById(it) }
+            val rows = recentlyViewedCocktailQueries.selectMostRecentFirst(ownerId, storedCocktail).executeAsList()
+            decodeRows(rows) { recentlyViewedCocktailQueries.deleteById(ownerId, it) }
         }
         Logger.d { "CocktailCache.getRecentlyViewedCocktails() returning ${recent.size} items" }
         return recent

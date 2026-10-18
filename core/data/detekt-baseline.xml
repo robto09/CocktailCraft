@@ -129,7 +129,6 @@
     <ID>Wrapping:CocktailOfflineRepositoryImplTest.kt$CocktailOfflineRepositoryImplTest$ignoreUnknownKeys = true</ID>
     <ID>Wrapping:CocktailSearchRepositoryImplTest.kt$CocktailSearchRepositoryImplTest$(</ID>
     <ID>Wrapping:CocktailSearchRepositoryImplTest.kt$CocktailSearchRepositoryImplTest$ignoreUnknownKeys = true</ID>
-    <ID>Wrapping:DataModule.kt$CocktailCache( database = inject&lt;CocktailCraftDatabase&gt;(), settings = get(), json = get(), appConfig = get(), ioDispatcher = get(named("ioDispatcher")), offlineModePolicy = get() )</ID>
     <ID>Wrapping:LazySettingsTest.kt$LazySettingsTest$;</ID>
   </CurrentIssues>
 </SmellBaseline>

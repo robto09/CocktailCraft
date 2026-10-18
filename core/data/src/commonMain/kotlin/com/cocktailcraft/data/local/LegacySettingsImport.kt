@@ -24,6 +24,10 @@ import kotlinx.serialization.json.JsonArray
  *   already in the database is newer than the legacy blob and wins);
  * - a store whose import throws keeps its key without blocking the others.
  *
+ * Rows are imported without an owner ([OwnerIds.UNASSIGNED]); [LocalDatabase]
+ * assigns them to whoever is signed in right after (see
+ * UserDataOwnership.kt).
+ *
  * Unreadable data is tolerated rather than retried forever: entries that still
  * decode are imported and the rest dropped, and a blob that isn't a JSON list
  * at all imports nothing. Older versions already treated such data as empty.
@@ -74,6 +78,7 @@ internal class LegacySettingsImport(
                 val cocktail = item.cocktail.toDomain()
                 db.storeLegacyCocktail(cocktail)
                 db.cartItemQueries.insertIfAbsent(
+                    ownerId = OwnerIds.UNASSIGNED,
                     cocktailId = cocktail.id,
                     quantity = item.quantity.toLong(),
                     priceCents = cocktail.price.cents
@@ -105,8 +110,8 @@ internal class LegacySettingsImport(
                 // The INSERT OR IGNORE equivalent for an order and its items:
                 // an order already in the database (or a duplicate id in the
                 // legacy list) keeps exactly the items it has.
-                if (db.customerOrderQueries.selectStatus(order.id).executeAsOneOrNull() == null) {
-                    db.insertOrderWithItems(order)
+                if (db.customerOrderQueries.exists(order.id).executeAsOne() == 0L) {
+                    db.insertOrderWithItems(order, ownerId = OwnerIds.UNASSIGNED)
                 }
             }
         }
@@ -118,6 +123,7 @@ internal class LegacySettingsImport(
         db.transaction {
             reviews.forEach { review ->
                 db.cocktailReviewQueries.insertIfAbsent(
+                    ownerId = OwnerIds.UNASSIGNED,
                     id = review.id,
                     cocktailId = review.cocktailId,
                     userName = review.userName,
@@ -139,7 +145,9 @@ internal class LegacySettingsImport(
     private fun importFavorites(db: CocktailCraftDatabase, raw: String): Int {
         val ids = raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }.distinct()
         db.transaction {
-            ids.forEach { id -> db.favoriteCocktailQueries.insertIfAbsent(cocktailId = id) }
+            ids.forEach { id ->
+                db.favoriteCocktailQueries.insertIfAbsent(ownerId = OwnerIds.UNASSIGNED, cocktailId = id)
+            }
         }
         return ids.size
     }

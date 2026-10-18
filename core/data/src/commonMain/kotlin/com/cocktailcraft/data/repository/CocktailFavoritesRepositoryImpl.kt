@@ -34,6 +34,9 @@ import com.cocktailcraft.data.cache.db.favoriteCocktail.SelectAll as FavoriteRow
  * after every add or remove from any screen, and whenever a favorite's
  * cocktail is refreshed.
  *
+ * Each owner (user, or the guest) has favorites of their own; everything
+ * here works on the current owner's (see UserDataOwnership.kt).
+ *
  * Favorites imported from the old id-only Settings list may have no stored
  * cocktail yet; they are resolved (offline cache first, then the API while
  * online) when favorites are first observed or loaded, and stay hidden until
@@ -72,7 +75,7 @@ internal class CocktailFavoritesRepositoryImpl(
                 Logger.e(e) { "Failed to resolve favorites: ${e.message}" }
             }
         }
-        localDatabase.observeStateful(ioDispatcher, { favoriteCocktailQueries.selectAll() }) {
+        localDatabase.observeStateful(ioDispatcher, { ownerId -> favoriteCocktailQueries.selectAll(ownerId) }) {
             val memo = CocktailDecodeMemo(codec)
             return@observeStateful { rows ->
                 memo.emission {
@@ -89,8 +92,9 @@ internal class CocktailFavoritesRepositoryImpl(
      */
     private suspend fun resolveMissingFavorites() = resolveMutex.withLock {
         val db = localDatabase.get()
+        val ownerId = localDatabase.ownerId()
         val missing = withContext(ioDispatcher) {
-            db.favoriteCocktailQueries.selectAll().executeAsList()
+            db.favoriteCocktailQueries.selectAll(ownerId).executeAsList()
                 .filter { decodeOrNull(it) == null }
                 .map { it.cocktail_id }
         }
@@ -115,7 +119,7 @@ internal class CocktailFavoritesRepositoryImpl(
     override suspend fun getFavoriteCocktails(): Result<List<Cocktail>> = withContext(ioDispatcher) {
         runCatchingResult("Failed to get favorite cocktails") {
             resolveMissingFavorites()
-            val rows = localDatabase.get().favoriteCocktailQueries.selectAll().executeAsList()
+            val rows = localDatabase.get().favoriteCocktailQueries.selectAll(localDatabase.ownerId()).executeAsList()
             Result.Success(rows.mapNotNull(::decodeOrNull))
         }
     }
@@ -129,8 +133,9 @@ internal class CocktailFavoritesRepositoryImpl(
     override suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> = withContext(ioDispatcher) {
         runCatchingResult("Failed to add to favorites") {
             localDatabase.get()
+            val ownerId = localDatabase.ownerId()
             cocktailCache.storeAndReference(listOf(cocktail)) {
-                favoriteCocktailQueries.insertIfAbsent(cocktailId = cocktail.id)
+                favoriteCocktailQueries.insertIfAbsent(ownerId = ownerId, cocktailId = cocktail.id)
             }
             Result.Success(Unit)
         }
@@ -138,14 +143,15 @@ internal class CocktailFavoritesRepositoryImpl(
 
     override suspend fun removeFromFavorites(cocktail: Cocktail): Result<Unit> = withContext(ioDispatcher) {
         runCatchingResult("Failed to remove from favorites") {
-            localDatabase.get().favoriteCocktailQueries.deleteById(cocktail.id)
+            localDatabase.get().favoriteCocktailQueries.deleteById(localDatabase.ownerId(), cocktail.id)
             Result.Success(Unit)
         }
     }
 
     override suspend fun isCocktailFavorite(id: String): Result<Boolean> = withContext(ioDispatcher) {
         runCatchingResult("Failed to check if cocktail is favorite") {
-            Result.Success(localDatabase.get().favoriteCocktailQueries.exists(id).executeAsOne() > 0L)
+            val ownerId = localDatabase.ownerId()
+            Result.Success(localDatabase.get().favoriteCocktailQueries.exists(ownerId, id).executeAsOne() > 0L)
         }
     }
 }

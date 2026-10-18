@@ -85,7 +85,7 @@ class LegacySettingsImportTest {
     }
 
     private fun favoriteIds(db: CocktailCraftDatabase) =
-        db.favoriteCocktailQueries.selectAll().executeAsList().map { it.cocktail_id }
+        db.favoriteCocktailQueries.selectAll(OwnerIds.GUEST).executeAsList().map { it.cocktail_id }
 
     @Test
     fun firstAccessImportsEveryStoreAndRemovesTheLegacyKeys() = runTest {
@@ -100,7 +100,7 @@ class LegacySettingsImportTest {
         assertEquals(listOf("2", "1"), favoriteIds(db))
         // Favorites were ids only; they refer to the cocktails the imported
         // cart stored (others are resolved by the favorites repository later)
-        assertTrue(db.favoriteCocktailQueries.selectAll().executeAsList().all { it.payload != null })
+        assertTrue(db.favoriteCocktailQueries.selectAll(OwnerIds.GUEST).executeAsList().all { it.payload != null })
 
         legacyKeys.forEach { assertNull(settings.getStringOrNull(it), "$it must be removed after import") }
     }
@@ -143,7 +143,8 @@ class LegacySettingsImportTest {
 
         LegacySettingsImport(settings, testJson).run(db)
 
-        val cart = testCartRepository(local).getCartItems().getOrThrow()
+        // Read on the next launch, whose first open assigns the imported rows
+        val cart = testCartRepository(createTestLocalDatabase(db)).getCartItems().getOrThrow()
         assertEquals(listOf("9", "1"), cart.map { it.cocktail.id })
     }
 

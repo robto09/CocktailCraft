@@ -2,20 +2,26 @@
 -- (N = current version, starting at 1) and regenerate the snapshot with
 -- `./gradlew :core:data:generateCommonMainCocktailCraftDatabaseSchema`.
 --
--- Favorite cocktails (CocktailFavoritesRepositoryImpl), by id. The cocktail
--- itself is the cached_cocktail row, which a favorite pins: the offline
--- cache never evicts or expires it, so a favorite stays available offline
--- (SH-4). Until version 6 (migrations/5.sqm) each favorite kept its own copy
--- of the cocktail as JSON, which detail refreshes never updated.
+-- Favorite cocktails (CocktailFavoritesRepositoryImpl), by owner and id.
+-- The cocktail itself is the cached_cocktail row, which a favorite pins:
+-- the offline cache never evicts or expires it, so a favorite stays
+-- available offline (SH-4). Until version 6 (migrations/5.sqm) each favorite
+-- kept its own copy of the cocktail as JSON, which detail refreshes never
+-- updated.
 --
 -- A favorite whose cocktail isn't stored (imported from the old id-only
 -- Settings list) is resolved by the repository: cache first, then the API.
 --
+--   owner_id  whose favorite: the signed-in user's id, or "guest" while
+--             signed out (see UserDataOwnership.kt; "" for rows not assigned
+--             yet after an upgrade). Added in version 7 (migrations/6.sqm).
 --   position  insertion order (1-based, increasing); favorites list in this
 --             order
 CREATE TABLE favorite_cocktail (
-    cocktail_id TEXT NOT NULL PRIMARY KEY,
-    position INTEGER NOT NULL
+    owner_id TEXT NOT NULL,
+    cocktail_id TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    PRIMARY KEY (owner_id, cocktail_id)
 );
 
 -- Every favorite in order, with its stored cocktail (NULL columns when not
@@ -24,16 +30,25 @@ selectAll:
 SELECT favorite_cocktail.cocktail_id, cached_cocktail.payload, cached_cocktail.full_details
 FROM favorite_cocktail
 LEFT JOIN cached_cocktail ON cached_cocktail.id = favorite_cocktail.cocktail_id
+WHERE favorite_cocktail.owner_id = :ownerId
 ORDER BY favorite_cocktail.position;
 
 exists:
-SELECT COUNT(*) FROM favorite_cocktail WHERE cocktail_id = ?;
+SELECT COUNT(*) FROM favorite_cocktail WHERE owner_id = :ownerId AND cocktail_id = :cocktailId;
 
 -- Appends a favorite; a no-op when the id is already a favorite. Also used
 -- by the one-time import from Settings, where existing rows must win.
 insertIfAbsent:
-INSERT OR IGNORE INTO favorite_cocktail(cocktail_id, position)
-VALUES (:cocktailId, (SELECT COALESCE(MAX(position), 0) + 1 FROM favorite_cocktail));
+INSERT OR IGNORE INTO favorite_cocktail(owner_id, cocktail_id, position)
+VALUES (:ownerId, :cocktailId, (SELECT COALESCE(MAX(position), 0) + 1 FROM favorite_cocktail));
 
 deleteById:
-DELETE FROM favorite_cocktail WHERE cocktail_id = ?;
+DELETE FROM favorite_cocktail WHERE owner_id = :ownerId AND cocktail_id = :cocktailId;
+
+deleteAll:
+DELETE FROM favorite_cocktail WHERE owner_id = :ownerId;
+
+-- Moves one owner's favorites to another; ones the target already has stay
+-- with the source (see UserDataOwnership.kt).
+reassign:
+UPDATE OR IGNORE favorite_cocktail SET owner_id = :toOwnerId WHERE owner_id = :fromOwnerId;

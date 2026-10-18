@@ -5,6 +5,8 @@ import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.local.CocktailEntity
+import com.cocktailcraft.data.local.CurrentOwner
+import com.cocktailcraft.data.local.FixedOwner
 import com.cocktailcraft.data.local.LegacyCartItem
 import com.cocktailcraft.data.local.LegacyOrder
 import com.cocktailcraft.data.local.LegacyOrderItem
@@ -44,12 +46,13 @@ internal val testJson = Json { ignoreUnknownKeys = true }
 internal fun createTestLocalDatabase(
     database: CocktailCraftDatabase = createTestDatabase(),
     settings: Settings = MapSettings(),
-    ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-): LocalDatabase = LocalDatabase(database, LegacySettingsImport(settings, testJson), ioDispatcher)
+    ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    owner: CurrentOwner = FixedOwner()
+): LocalDatabase = LocalDatabase(database, LegacySettingsImport(settings, testJson), ioDispatcher, owner)
 
 /** A [CocktailCache] over the same database as this [LocalDatabase]. */
 internal fun LocalDatabase.testCache(): CocktailCache =
-    CocktailCache(database, MapSettings(), testJson, AppConfigImpl())
+    CocktailCache(database, MapSettings(), testJson, AppConfigImpl(), FixedOwner())
 
 /** The cart over [local], with the cocktail cache its lines refer to. */
 internal fun testCartRepository(local: LocalDatabase): CartRepositoryImpl =

@@ -2,6 +2,7 @@ package com.cocktailcraft.data.repository
 
 import app.cash.sqldelight.db.QueryResult
 import app.cash.turbine.test
+import com.cocktailcraft.data.local.OwnerIds
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
@@ -167,17 +168,18 @@ class OrderRepositoryImplTest {
         // they must read back as the matching enum, and writes must keep
         // storing those same strings.
         val queries = localDatabase.get().customerOrderQueries
-        queries.insertOrder(id = "old", date = "2026-01-01", totalCents = 950, status = "Processing")
-        queries.insertOrder(id = "odd-case", date = "2026-01-01", totalCents = 950, status = "pending")
+        val guest = OwnerIds.GUEST
+        queries.insertOrder(id = "old", date = "2026-01-01", totalCents = 950, status = "Processing", ownerId = guest)
+        queries.insertOrder(id = "odd-case", date = "2026-01-01", totalCents = 950, status = "pending", ownerId = guest)
 
         val repo = repository()
         assertEquals(OrderStatus.PROCESSING, repo.getOrderById("old").getOrThrow()?.status)
         assertEquals(OrderStatus.PENDING, repo.getOrderById("odd-case").getOrThrow()?.status)
 
         assertTrue(repo.cancelOrder("old").getOrThrow())
-        assertEquals("Cancelled", queries.selectStatus("old").executeAsOne())
+        assertEquals("Cancelled", queries.selectStatus(OwnerIds.GUEST, "old").executeAsOne())
         assertTrue(repo.cancelOrder("odd-case").getOrThrow())
-        assertEquals("Cancelled", queries.selectStatus("odd-case").executeAsOne())
+        assertEquals("Cancelled", queries.selectStatus(OwnerIds.GUEST, "odd-case").executeAsOne())
     }
 
     @Test

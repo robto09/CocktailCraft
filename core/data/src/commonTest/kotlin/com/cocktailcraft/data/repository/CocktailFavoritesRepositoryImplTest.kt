@@ -6,6 +6,7 @@ import com.cocktailcraft.data.cache.OfflineModePolicy
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.local.LegacySettingsImport
+import com.cocktailcraft.data.local.OwnerIds
 import com.cocktailcraft.data.remote.ApiRateLimiter
 import com.cocktailcraft.data.remote.CocktailDto
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
@@ -83,7 +84,8 @@ class CocktailFavoritesRepositoryImplTest {
 
         // Adding twice must not duplicate the entry
         repo.addToFavorites(cocktail)
-        assertEquals(listOf("11007"), db.favoriteCocktailQueries.selectAll().executeAsList().map { it.cocktail_id })
+        val stored = db.favoriteCocktailQueries.selectAll(OwnerIds.GUEST).executeAsList()
+        assertEquals(listOf("11007"), stored.map { it.cocktail_id })
 
         // A fresh repository over the same database (an app relaunch) sees it
         assertEquals(listOf(cocktail), repository(db = db).getFavoriteCocktails().getOrThrow())
@@ -111,7 +113,7 @@ class CocktailFavoritesRepositoryImplTest {
 
         assertEquals(listOf("Margarita"), names(repo.getFavoriteCocktails()))
         assertTrue(
-            db.favoriteCocktailQueries.selectAll().executeAsOne().payload != null,
+            db.favoriteCocktailQueries.selectAll(OwnerIds.GUEST).executeAsOne().payload != null,
             "the resolved cocktail must be stored with the favorite"
         )
     }
@@ -157,7 +159,7 @@ class CocktailFavoritesRepositoryImplTest {
         repo.addToFavorites(testCocktail("11007", name = "Full Margarita"))
 
         assertEquals(listOf("Full Margarita", "Mojito"), names(repo.getFavoriteCocktails()))
-        assertEquals(2, db.favoriteCocktailQueries.selectAll().executeAsList().size)
+        assertEquals(2, db.favoriteCocktailQueries.selectAll(OwnerIds.GUEST).executeAsList().size)
     }
 
     @Test
