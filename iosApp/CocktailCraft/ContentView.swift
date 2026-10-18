@@ -3,7 +3,9 @@ import shared
 
 struct ContentView: View {
     @State private var router = AppRouter()
-    @State private var cartViewModel = CartViewModelSKIE()
+    // Built once via ViewModelHolder, not on every re-render (IO-13)
+    @State private var cartModel = ViewModelHolder(CartViewModelSKIE.init)
+    private var cartViewModel: CartViewModelSKIE { cartModel.wrapper }
     private let themeViewModel = ThemeViewModelSKIE.shared
     // System accessibility settings, read above the app's own overrides
     @Environment(\.dynamicTypeSize) private var systemTypeSize

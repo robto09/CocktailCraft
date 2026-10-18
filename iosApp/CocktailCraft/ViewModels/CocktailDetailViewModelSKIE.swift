@@ -18,12 +18,11 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
         self.sharedViewModel = viewModel
         super.init(viewModel: viewModel, uiState: viewModel.uiState, ownsViewModel: true)
         #if DEBUG
-        // IO-13 instrumentation: @State evaluates its initializer on every
-        // parent re-render and discards the extra instances — each one spins
-        // up (and deinit immediately tears down) a fresh Koin factory VM with
-        // its own coroutine scope. Watch these logs on the detail flow; if
-        // create/teardown pairs are frequent, move to lazy resolution in
-        // .task or a lighter factory.
+        // IO-13 gauge: a plain `@State var viewModel = ...()` re-ran this
+        // initializer on every parent re-render, each time building (and
+        // immediately tearing down) a fresh Koin factory VM. Views now hold
+        // the wrapper through ViewModelHolder, so this should log exactly
+        // one "created" per pushed detail screen; more means a regression.
         Self.liveInstances += 1
         print("CocktailDetailViewModelSKIE: created (live: \(Self.liveInstances))")
         #endif

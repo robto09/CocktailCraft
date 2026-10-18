@@ -2,7 +2,9 @@ import SwiftUI
 import shared
 
 struct OrderListView: View {
-    @State private var viewModel = OrderViewModelSKIE()
+    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    @State private var model = ViewModelHolder(OrderViewModelSKIE.init)
+    private var viewModel: OrderViewModelSKIE { model.wrapper }
     @State private var hasLoaded = false
     // Tab switches route through the app-level router (same pattern as
     // CartView/ProfileView) so "Browse Cocktails" can land on Home.

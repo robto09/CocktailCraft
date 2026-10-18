@@ -3,7 +3,9 @@ import SwiftUI
 import shared
 
 struct FavoritesView: View {
-    @State private var viewModel = FavoritesViewModelSKIE()
+    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    @State private var model = ViewModelHolder(FavoritesViewModelSKIE.init)
+    private var viewModel: FavoritesViewModelSKIE { model.wrapper }
     @Environment(CartViewModelSKIE.self) private var cartViewModel
     /// Ids mid-unfavorite: their heart renders deselected for a beat before
     /// the card animates out, instead of the card vanishing on tap.

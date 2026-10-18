@@ -29,18 +29,20 @@ class SharedViewModelWrapper<UiState: AnyObject> {
     var error: ErrorHandler.UserFriendlyError? = nil
 
     @ObservationIgnored private let baseViewModel: SharedViewModel
-    @ObservationIgnored private let ownsViewModel: Bool
+    // Set only for a Koin `factory` instance this wrapper owns
+    @ObservationIgnored private let ownedViewModel: SharedViewModel?
     @ObservationIgnored private var observationTasks: [Task<Void, Never>] = []
 
     /// - Parameter ownsViewModel: true only for Koin `factory` instances the
-    ///   wrapper owns (CocktailDetail, Review) — their scope is cleared in
-    ///   deinit. Koin-`single`-backed wrappers must never clear the shared
-    ///   instance, whose scope has to survive any one wrapper.
+    ///   wrapper owns (CocktailDetail, Review) — they are cleared (scope
+    ///   cancelled, onCleared run) after deinit. Koin-`single`-backed
+    ///   wrappers must never clear the shared instance, whose scope has to
+    ///   survive any one wrapper.
     init(viewModel: SharedViewModel,
          uiState: SkieSwiftStateFlow<UiState>,
          ownsViewModel: Bool = false) {
         self.baseViewModel = viewModel
-        self.ownsViewModel = ownsViewModel
+        self.ownedViewModel = ownsViewModel ? viewModel : nil
         // Seed synchronously so the first frame renders the current state
         self.state = uiState.value
 
@@ -62,10 +64,18 @@ class SharedViewModelWrapper<UiState: AnyObject> {
         })
     }
 
+    // deinit is nonisolated even on a @MainActor class (an isolated deinit
+    // needs iOS 18.4), and the last release isn't guaranteed to happen on
+    // the main thread. So it calls nothing main-actor-isolated: it cancels
+    // the task handles (Sendable, cancellable from any thread) and sends
+    // the owned ViewModel to the main actor to be cleared there — Kotlin's
+    // ViewModel clearing is main-thread-only.
     deinit {
         observationTasks.forEach { $0.cancel() }
-        if ownsViewModel {
-            baseViewModel.onCleared()
+        if let ownedViewModel {
+            Task { @MainActor in
+                getSharedKoinHelper().clearScreenViewModel(viewModel: ownedViewModel)
+            }
         }
     }
 
@@ -102,5 +112,36 @@ class SharedViewModelWrapper<UiState: AnyObject> {
         #if DEBUG
         print("\(type(of: self)): forwarded shared call failed: \(error)")
         #endif
+    }
+}
+
+/**
+ * Builds a view's ViewModel wrapper exactly once per view identity (IO-13).
+ *
+ * `@State var viewModel = SomeViewModelSKIE()` evaluates the initializer
+ * every time a parent re-renders and re-creates the view struct. SwiftUI
+ * keeps the first instance and discards the rest, but each discarded
+ * wrapper has already resolved a shared ViewModel from Koin (a fresh
+ * factory instance for the screen-scoped ones) and started its observation
+ * tasks. Holding this box in @State instead makes those throwaway copies
+ * free: only the box SwiftUI keeps ever runs `make`, on first access.
+ *
+ *     @State private var model = ViewModelHolder(FavoritesViewModelSKIE.init)
+ *     private var viewModel: FavoritesViewModelSKIE { model.wrapper }
+ */
+@MainActor
+final class ViewModelHolder<Wrapper: AnyObject> {
+    private let make: @MainActor () -> Wrapper
+    private var instance: Wrapper?
+
+    init(_ make: @escaping @MainActor () -> Wrapper) {
+        self.make = make
+    }
+
+    var wrapper: Wrapper {
+        if let instance { return instance }
+        let created = make()
+        instance = created
+        return created
     }
 }

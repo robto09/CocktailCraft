@@ -6,7 +6,9 @@ import shared
 /// sheet live in Components/; this view owns the state wiring and the
 /// loading/empty/content branching.
 struct HomeViewSKIE: View {
-    @State private var viewModel = HomeViewModelSKIE()
+    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    @State private var model = ViewModelHolder(HomeViewModelSKIE.init)
+    private var viewModel: HomeViewModelSKIE { model.wrapper }
     @State private var searchText = ""
     @State private var showingAdvancedSearch = false
     @State private var selectedCategory: String? = nil
