@@ -41,6 +41,8 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/LICENSE.md"
+            excludes += "/META-INF/LICENSE-notice.md"
         }
     }
     signingConfigs {
@@ -98,14 +100,6 @@ android {
         }
     }
 
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            excludes += "/META-INF/LICENSE.md"
-            excludes += "/META-INF/LICENSE-notice.md"
-        }
-    }
-
     lint {
         // Localization guard: user-facing text belongs in strings.xml.
         // (Covers XML layouts — the widget previews; Compose literals are
@@ -141,7 +135,8 @@ dependencies {
 
     // Compose UI
     implementation(libs.compose.ui.core)
-    implementation(libs.compose.ui.tooling)
+    // @Preview annotations only; the preview renderer (ui-tooling) is
+    // debugImplementation below so it stays out of release builds
     implementation(libs.compose.ui.toolingPreview)
     implementation(libs.compose.foundation)
     implementation(libs.compose.material3)
