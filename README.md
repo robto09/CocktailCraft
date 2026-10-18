@@ -17,12 +17,15 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Advanced Search & Filtering**: Combine a name query with category, ingredient, and alcoholic/non-alcoholic filters
 - **Shopping Cart**: Add cocktails to cart, update quantities, and checkout
 - **User Authentication**: Register, login, and manage user profiles
-- **Order Management**: Place orders and track order history
+- **Order Management**: Place orders, track order history, open an order's details, cancel an order and reorder a past one
 - **Favorites**: Save and manage favorite cocktails
 - **Reviews**: Read and submit reviews for cocktails
+- **Home Sort**: Order the Home list by name, price, rating or popularity
+- **Recently Viewed**: A row of the cocktails you opened last, at the top of Home
+- **Undo**: Removing a cart item or a favorite shows a toast with an Undo action
 - **Related Cocktails**: "You might also like" picks on the detail screen — a random selection from the same category
 - **Dark Mode Support**: Adaptive UI that supports both light and dark themes with smooth transitions
-- **Offline Mode**: Browse recently viewed cocktails and favorites without internet connection
+- **Offline Mode**: The whole cached catalog stays browsable without a connection — every category page and cocktail already stored in the database (`cached_cocktail` + `category_page`), plus favorites and recently viewed
 - **Home Screen Widgets**: Android and iOS (WidgetKit) widgets with deep links into the app; on Android, WorkManager refreshes them periodically (there is no other background sync on either platform)
 - **Localization**: One shared set of UI strings for both platforms (moko-resources in `:core:resources`); prices are US dollars only for now
 - **Robust Error Handling**: User-friendly error messages with recovery options
@@ -31,63 +34,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Native iOS UI**: SwiftUI screens and reusable components; SKIE exposes the shared Flows and suspend functions to Swift as AsyncSequence and async
 
 ## Architecture
-The application follows the **Clean Architecture** pattern with **MVVM** (Model-View-ViewModel) for presentation, reactive state management, and a modular **Dependency Injection** system:
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              Presentation Layer                                  │
-│                                                                                  │
-│  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐          │
-│  │   Screens   │◄─────►│    ViewModels   │◄─────►│    UI Elements    │          │
-│  │  (Compose)  │       │(SharedViewModel)│       │ (Compose/Material)│          │
-│  └─────────────┘       └─────────────────┘       └───────────────────┘          │
-│         ▲                       ▲                         ▲                      │
-│         │                       │                         │                      │
-│         ▼                       ▼                         ▼                      │
-│  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐          │
-│  │  Navigation │       │  State Handling │       │   Theme Manager   │          │
-│  │  (Compose)  │       │  (StateFlow)    │       │   (Dark Mode)     │          │
-│  └─────────────┘       └─────────────────┘       └───────────────────┘          │
-└─────────────────────────────────┬─────────────────────────────────────────────┘
-                                  │
-┌─────────────────────────────────▼─────────────────────────────────────────────┐
-│                               Domain Layer                                     │
-│                                                                                │
-│  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐        │
-│  │   Models    │       │    Use Cases    │       │    Repositories   │        │
-│  │             │       │                 │       │    (Interfaces)   │        │
-│  └─────────────┘       └─────────────────┘       └───────────────────┘        │
-└─────────────────────────────────┬─────────────────────────────────────────────┘
-                                  │
-┌─────────────────────────────────▼─────────────────────────────────────────────┐
-│                               Data Layer                                       │
-│                                                                                │
-│  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐        │
-│  │ Repository  │       │   Data Sources  │       │      Mappers      │        │
-│  │    Impl     │◄─────►│ Remote / Local  │       │                   │        │
-│  └─────────────┘       └─────────────────┘       └───────────────────┘        │
-│         ▲                       ▲                                              │
-│         │                       │                                              │
-│         ▼                       ▼                                              │
-│  ┌─────────────┐       ┌─────────────────┐                                    │
-│  │   Offline   │       │  Error Handling │                                    │
-│  │   Support   │       │  (ErrorUtils)   │                                    │
-│  └─────────────┘       └─────────────────┘                                    │
-└─────────────────────────────────┬─────────────────────────────────────────────┘
-                                  │
-┌─────────────────────────────────▼─────────────────────────────────────────────┐
-│                         Dependency Injection                                   │
-│                                                                                │
-│  ┌─────────────┐       ┌─────────────────┐       ┌───────────────────┐        │
-│  │  Network    │       │      Data       │       │      Domain       │        │
-│  │   Module    │       │     Module      │       │      Module       │        │
-│  └─────────────┘       └─────────────────┘       └───────────────────┘        │
-│                                                                                │
-│  ┌─────────────────────────────────────────────────────────────────────┐      │
-│  │                          Platform Module                             │      │
-│  └─────────────────────────────────────────────────────────────────────┘      │
-└────────────────────────────────────────────────────────────────────────────────┘
-```
+The application follows the **Clean Architecture** pattern with **MVVM** (Model-View-ViewModel) for presentation, reactive state management, and a modular **Dependency Injection** system.
 
 ### Module Structure
 The shared Kotlin code is split into Gradle modules, one per layer, so the
@@ -166,61 +113,15 @@ only use what its module depends on.
 - Swift sees exactly the `export()`ed modules (`:presentation`,
   `:core:domain`, `:core:common`, `:core:resources`, `:core:designsystem`);
   helpers that must be public for another Kotlin module but aren't Swift API
-  are `@HiddenFromObjC` (AR-12).
+  are `@HiddenFromObjC`.
 - Package names did not change with the split (e.g. `Result` is still
   `com.cocktailcraft.domain.util.Result`, in `:core:common`).
 - The KMP setup (targets, toolchain, SDK levels, opt-ins, host tests) comes
-  from the `cocktailcraft.kmp.library` convention plugin in `build-logic/`
-  (AR-10), so each module's build file only lists its dependencies.
+  from the `cocktailcraft.kmp.library` convention plugin in `build-logic/`,
+  so each module's build file only lists its dependencies.
 
-### Key Architecture Components:
-- **Shared Modules**: Common business logic, models, repositories and ViewModels used by both platforms, layered into the Gradle modules above
-- **Platform-Specific Apps**: Android and iOS implementations with platform-specific UI and functionality
-- **MVVM Pattern**: Separates UI (View) from business logic (ViewModel) and data management (Model)
-- **Repository Pattern**: Abstracts data sources and provides a clean API for the domain layer
-- **Use Case Pattern**: Encapsulates business logic in single-responsibility classes
-- **Dependency Injection**: Modular Koin setup for better testability and separation of concerns
-
-### Architecture Layers:
-- **Presentation Layer**:
-  - **Screens**: Platform-specific UI components that display data and handle user interactions
-    - **Android**: Jetpack Compose UI components (see [Android UI Components Documentation](docs/UI_Components.md))
-    - **iOS**: SwiftUI views and components (see [iOS UI Components Documentation](docs/iOS_UI_Components.md))
-  - **ViewModels**: Manage UI state, process user actions, and communicate with the domain layer
-  - **UI Elements**: Reusable components for consistent UI across platforms
-  - **SharedViewModel**: Multiplatform base class (on androidx `ViewModel`) with the shared error channel; ViewModels are constructor-injected and registered in Koin
-  - **Navigation**: Compose Navigation for handling screen transitions and deep linking
-  - **State Handling**: Kotlin StateFlow and SharedFlow for reactive UI updates
-  - **Theme Manager**: Manages light/dark mode and theme preferences with smooth transitions
-
-- **Domain Layer**:
-  - **Models**: Core business entities that represent the application's data structures
-  - **Use Cases**: Business logic operations that orchestrate data flow between UI and data layers
-  - **Repository Interfaces**: Define contracts for data access without implementation details
-  - **Business Rules**: Encapsulate application-specific business logic and validation
-
-- **Data Layer**:
-  - **Repository Implementations**: Concrete implementations of repository interfaces
-  - **Data Sources**: Remote (API) and local (cache/database) data access
-  - **Mappers**: Convert between data models and domain models
-  - **Network Utilities**: Handle API communication, caching, and offline support
-  - **Offline Support**: CocktailCache and NetworkMonitor for offline functionality
-  - **Error Handling**: Centralized error handling with ErrorUtils and recovery options
-
-- **Dependency Injection Layer**:
-  - **Network Module** (`:core:data`): Provides the HTTP client and API
-  - **Data Module** (`:core:data`): Provides repositories and caching mechanisms
-  - **Domain Module** (`:core:domain`): Provides use cases
-  - **Presentation Module** (`:presentation`): Provides the shared ViewModels
-  - **Platform Module** (`:core:data`, exposed by `:shared`): Provides platform-specific dependencies (Settings, SqlDriver, NetworkMonitor, AppConfig)
-
-### Cross-Cutting Concerns:
-- **Error Handling**: Standardized error handling through SharedViewModel with user-friendly messages
-- **Offline Mode**: Network state monitoring and data caching for offline access
-- **Reactive Programming**: Kotlin Flow for asynchronous data streams and UI updates
-- **Dependency Injection**: Modular Koin setup for better testability and separation of concerns
-- **Dark Mode**: System-integrated and user-configurable theme preferences
-
+Each platform renders native UI over the same shared ViewModels: Jetpack Compose on Android ([UI Components](docs/UI_Components.md)) and SwiftUI on iOS ([iOS UI Components](docs/iOS_UI_Components.md)).
+ViewModels expose one `StateFlow` of UI state plus an error channel; failures are classified by `ErrorHandler` (`:core:common`) into user-friendly, localized messages.
 For diagrams of the catalog flow and order placement, see the [Documentation Index](docs/README.md).
 
 ### Animations and Transitions
@@ -235,52 +136,15 @@ For detailed information about the animations implementation, see the [Animation
 ### Dependency Injection
 The app uses Koin for dependency injection with a modular approach:
 - **Modular Structure**: Each Gradle module exposes its own Koin module (network, data, domain, presentation, platform); `:shared` assembles them into `appModule`
-- **Testability**: Easy mocking and test module setup
+- **Testability**: Constructor injection throughout, so tests pass fakes directly (no mock Koin module)
 - **ViewModel Integration**: Standardized pattern for ViewModel dependency injection
 
 For detailed information about the dependency injection implementation, see:
 - [Dependency Injection Documentation](docs/DependencyInjection.md) - Overview, module structure, and best practices
 
-## Libraries Used
+## Libraries
 
-### Core & Architecture
-- **Kotlin Multiplatform**: For sharing code between Android and iOS
-- **Coroutines + Flow**: For asynchronous programming and reactive streams
-- **Koin**: For dependency injection
-- **Ktor**: For networking and API calls
-- **Kotlinx.Serialization**: For JSON parsing
-- **SQLDelight**: SQLite storage for the cart, orders, favorites, reviews and offline cocktail cache, with reactive `Flow` queries
-- **Multiplatform Settings**: Encrypted key-value storage for auth data (EncryptedSharedPreferences / Keychain)
-
-### UI & Navigation
-- **Jetpack Compose**: Modern declarative UI toolkit for Android
-- **Material3**: For consistent Material Design implementation
-- **Navigation Compose**: For handling navigation between screens
-- **Coil**: For image loading and caching on Android
-- **Kingfisher**: For image loading with disk/memory caching on iOS
-- **Animation Utilities**: Custom animation components and utilities for enhanced UX
-- **placeholder-compose** (RevenueCat): Shimmering skeleton placeholders while Android screens and images load; iOS draws matching skeletons with its own SwiftUI `.shimmering()` modifier
-
-### Testing
-- **JUnit Jupiter**: Modern unit testing framework
-- **kotlin-test**: Multiplatform testing support
-- **Jetpack Compose UI Testing**: UI testing for Compose
-- **Mockk**: Kotlin-friendly mocking library
-- **Turbine**: For testing Flow emissions
-- **XCUITest**: iOS UI testing framework
-- **Koin Test**: Dependency injection testing utilities
-- **Robolectric**: Android unit testing framework
-- **Roborazzi** / **swift-snapshot-testing**: Screenshot tests on Android / iOS
-
-See the [Testing](#testing) section below for where the test suites live and how to run them.
-
-For a detailed list of all libraries with versions and purposes, see the [Libraries Documentation](docs/Libraries.md).
-
-For information about the reusable UI components in the app, see:
-- [Android UI Components Documentation](docs/UI_Components.md) - Jetpack Compose components and design system
-- [iOS UI Components Documentation](docs/iOS_UI_Components.md) - SwiftUI components and design system
-
-For how the iOS app consumes the shared ViewModels through SKIE (and the SKIE configuration), see the [Shared ViewModel Strategy](docs/Shared_ViewModel_Strategy.md).
+Every dependency, with its version and purpose, is listed in [docs/Libraries.md](docs/Libraries.md); versions live in the `libraries.toml` version catalog.
 
 ## Package Structure
 
@@ -324,18 +188,19 @@ For how the iOS app consumes the shared ViewModels through SKIE (and the SKIE co
 ### Dark Mode Support
 - **SharedThemeViewModel**: Manages theme state and preferences
 - **AnimatedCocktailBarTheme** (Android) / **AppTheme** (iOS): Provide theme-specific colors and typography from the shared design tokens. On Android every color is read from `MaterialTheme.colorScheme` or `CocktailCraftTheme.extendedColors` (see [UI_Components.md](docs/UI_Components.md#theming-and-colors))
-- **ThemeAwareComponents**: UI components that adapt to the current theme
 - **Smooth Transitions**: Animated transitions between light and dark modes
 - **System Integration**: Option to follow system theme settings
 
 ### Offline Mode
 - **NetworkMonitor**: Detects and monitors network connectivity
-- **CocktailOfflineRepository**: Owns offline mode, connectivity checks, recently viewed, and cache clearing
-- **OfflineModePolicy + CocktailCache**: Single source of truth for "is the app offline" and the cached-data fallback used by the other cocktail repositories
+- **CocktailOfflineRepository**: Recently viewed cocktails (`getRecentlyViewedCocktails()`) and the connectivity check (`isOffline()`)
+- **CocktailCache**: The local catalog (`cached_cocktail` + `category_page`) — the single source of truth the catalog, search and detail repositories read and refresh into, so stored data simply keeps showing when offline
+- **OfflineModePolicy**: Answers only "is the app offline" (`isOffline()`), for the cache and the offline repository
 - **UI Indicators**: Clear indicators of offline status and available actions
 
 ### Error Handling
-- **ErrorUtils**: Centralized error handling and categorization
+- **ErrorHandler** (`:core:common`): Centralized error classification into user-friendly errors with recovery actions
+- **ErrorUtils** (Android): Maps error categories to Android UI resources (icons, colors)
 - **SharedViewModel**: Common error handling for all ViewModels
 - **ErrorDialog**: User-friendly error display component
 - **Recovery Actions**: Actionable error messages with recovery options
@@ -407,15 +272,6 @@ No string hard-codes `$` or a number format: copy that shows a price takes the
 formatted amount as a `%1$s` argument. The iOS widget extension, which doesn't
 link the framework, gets prices already formatted in its snapshot.
 
-## Test Coverage
-The application includes comprehensive test coverage:
-
-- **Unit Tests**: Testing individual components in isolation
-- **Integration Tests**: Testing component interactions
-- **ViewModel Tests**: Verifying ViewModel behavior and state management
-- **Repository Tests**: Testing data access and manipulation
-- **UI Tests**: Verifying screen workflows and user interactions
-
 ## Setup & Running the Project
 1. **Clone the Repository**:
    ```bash
@@ -453,23 +309,11 @@ The application includes comprehensive test coverage:
 - **Build Issues**: Try cleaning and rebuilding the project
 - **KMP Plugin Issues**: Make sure the Kotlin Multiplatform plugin is up to date
 - **iOS Builds**: See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) and the [SKIE configuration](docs/Shared_ViewModel_Strategy.md#skie-configuration) for details
-- **iOS Build Warnings**: Non-blocking warnings exist (see iOS documentation for details)
 - **Dependency Resolution**: Check Gradle settings and the `libraries.toml` version catalog
 
 ## Documentation
 
-### 📚 **Core Documentation**
-- [Documentation Index](docs/README.md) - Index of all project documentation
-- [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) - Complete iOS development setup
-- [Shared ViewModel Strategy](docs/Shared_ViewModel_Strategy.md) - iOS SKIE wrappers and the SKIE configuration
-
-### 🐛 **QA & Debugging Tools**
-- [DebugSwift Guide](docs/DebugSwift.md) - iOS debugging tool integration and usage for QA testing
-
-### 🔧 **Technical Guides**
-- **SKIE Integration**: Shared Flows and suspend functions consumed from Swift as AsyncSequence and async
-- **Architecture**: Clean Architecture with MVVM pattern and dependency injection
-- **Cross-Platform**: Shared business logic with platform-specific UI implementations
+See the [Documentation Index](docs/README.md) for the architecture, feature, UI component, library, debugging and iOS setup docs.
 
 ## Static analysis
 
@@ -593,7 +437,7 @@ Dynamic Type / font scale and reduced motion are checked automatically:
 | Compose `enableAccessibilityChecks()` on the real `MainScreen`, walking every tab | `androidApp/src/androidTest/.../AccessibilityChecksTest.kt` | `./gradlew :androidApp:connectedDebugAndroidTest` (device/emulator) |
 | Xcode accessibility audit (`performAccessibilityAudit`) on every tab and the detail screen, plus Home/Cart/Profile at AX5 | `iosApp/CocktailCraftUITests/AccessibilityAuditTests.swift` | the full iOS scheme (`xcodebuild test ...`) |
 | Font-setting / Dynamic Type mapping and spoken ratings | `iosApp/CocktailCraftTests/AccessibilityTests.swift` | the full iOS scheme |
-| Large-font and high-contrast screenshots (see above) | `LargeFontScreenshotTest`, `AccessibilityScreenshotTest` (both platforms) | the screenshot runs above |
+| Large-font and high-contrast screenshots (see above) | Android: `LargeFontScreenshotTest`, `AccessibilityScreenshotTest`; iOS: `AccessibilitySnapshotTests.swift`, `ScreenSnapshotTests.swift` | the screenshot runs above |
 
 The iOS audit is network-tolerant: it audits whatever state renders (content,
 loading, offline, error), dismissing an error alert first, and hides the
