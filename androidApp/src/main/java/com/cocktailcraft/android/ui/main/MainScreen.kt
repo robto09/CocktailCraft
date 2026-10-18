@@ -26,19 +26,17 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -66,15 +64,15 @@ import com.cocktailcraft.android.screens.HomeScreen
 import com.cocktailcraft.android.screens.OrderListScreen
 import com.cocktailcraft.android.screens.ProfileScreen
 import com.cocktailcraft.android.ui.components.AppTopBar
+import com.cocktailcraft.android.ui.components.LocalToastHostState
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
-import com.cocktailcraft.android.ui.components.SuccessToast
+import com.cocktailcraft.android.ui.components.ToastSnackbarHost
+import com.cocktailcraft.android.ui.components.UiEventToasts
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
-import com.cocktailcraft.android.util.getString
 import com.cocktailcraft.android.util.pluralStringResource
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.added_to_cart
 import com.cocktailcraft.resources.app_title
 import com.cocktailcraft.resources.cart
 import com.cocktailcraft.resources.cart_badge_a11y
@@ -87,7 +85,6 @@ import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -137,22 +134,15 @@ fun MainScreen() {
     // Cart state drives the bottom-nav badge (parity with the iOS tab badge)
     val cartUiState by sharedCartViewModel.uiState.collectAsStateWithLifecycle()
 
-    // Add-to-cart keeps the user in place and confirms with the green success
-    // toast, shown for 2 seconds like the iOS toast (previously Android yanked
-    // the user to the Cart tab on every add).
+    // Toasts from every tab land in this host (LocalToastHostState below).
     val snackbarHostState = remember { SnackbarHostState() }
-    val context = LocalContext.current
-    val addToCartAndConfirm: (Cocktail) -> Unit = { cocktail ->
-        scope.launch {
-            sharedCartViewModel.addToCart(cocktail)
-            // Cancelling an indefinite snackbar dismisses it: a 2s toast
-            withTimeoutOrNull(TOAST_DURATION_MS) {
-                snackbarHostState.showSnackbar(
-                    message = context.getString(MR.strings.added_to_cart, cocktail.name),
-                    duration = SnackbarDuration.Indefinite
-                )
-            }
-        }
+
+    // Add-to-cart keeps the user in place. Its outcome arrives on the cart's
+    // events — "<name> added to cart", or the failure — and is shown here,
+    // whichever tab it came from (previously Android yanked the user to the
+    // Cart tab on every add, and then confirmed even a failed add).
+    val addToCart: (Cocktail) -> Unit = { cocktail ->
+        scope.launch { sharedCartViewModel.addToCart(cocktail) }
     }
 
     // Each tab draws its own bars through TabScaffold instead of one outer
@@ -173,78 +163,84 @@ fun MainScreen() {
         )
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = HomeRoute,
-        modifier = Modifier.background(MaterialTheme.colorScheme.background)
-    ) {
-        composable<HomeRoute> {
-            tabScaffold(Screen.Home) {
-                HomeScreen(
-                    viewModel = sharedHomeViewModel,
-                    favoritesViewModel = sharedFavoritesViewModel,
-                    onAddToCart = addToCartAndConfirm,
-                    onCocktailClick = { cocktail ->
-                        // Navigate to cocktail detail screen
-                        navigationManager.navigateToCocktailDetail(cocktail)
-                    }
-                )
+    CompositionLocalProvider(LocalToastHostState provides snackbarHostState) {
+        // The one collector of the cart's events (add-to-cart outcomes)
+        UiEventToasts(sharedCartViewModel.events)
+
+        NavHost(
+            navController = navController,
+            startDestination = HomeRoute,
+            modifier = Modifier.background(MaterialTheme.colorScheme.background)
+        ) {
+            composable<HomeRoute> {
+                tabScaffold(Screen.Home) {
+                    HomeScreen(
+                        viewModel = sharedHomeViewModel,
+                        onAddToCart = addToCart,
+                        onCocktailClick = { cocktail ->
+                            // Navigate to cocktail detail screen
+                            navigationManager.navigateToCocktailDetail(cocktail)
+                        }
+                    )
+                }
             }
-        }
-        composable<CartRoute> {
-            tabScaffold(Screen.Cart) {
-                CartScreen(
-                    viewModel = sharedCartViewModel,
-                    onStartShopping = {
-                        navigationManager.navigateToHome()
-                    },
+            composable<CartRoute> {
+                tabScaffold(Screen.Cart) {
+                    CartScreen(
+                        viewModel = sharedCartViewModel,
+                        onStartShopping = {
+                            navigationManager.navigateToHome()
+                        },
+                        navigationManager = navigationManager,
+                        orderViewModel = sharedOrderViewModel,
+                        favoritesViewModel = sharedFavoritesViewModel
+                    )
+                }
+            }
+            composable<ProfileRoute> {
+                tabScaffold(Screen.Profile) {
+                    ProfileScreen(
+                        navigationManager = navigationManager
+                    )
+                }
+            }
+            composable<FavoritesRoute> {
+                tabScaffold(Screen.Favorites) {
+                    FavoritesScreen(
+                        favoritesViewModel = sharedFavoritesViewModel,
+                        onBrowseProducts = {
+                            navigationManager.navigateToHome()
+                        },
+                        onAddToCart = addToCart,
+                        onCocktailClick = { cocktail ->
+                            navigationManager.navigateToCocktailDetail(cocktail)
+                        }
+                    )
+                }
+            }
+            composable<OrderListRoute> {
+                tabScaffold(Screen.OrderList) {
+                    OrderListScreen(
+                        orderViewModel = sharedOrderViewModel,
+                        navigationManager = navigationManager
+                    )
+                }
+            }
+            // No TabScaffold: the detail screen runs its own Scaffold + AppTopBar,
+            // which own the system-bar insets (AN-6).
+            composable<CocktailDetailRoute>(
+                deepLinks = listOf(
+                    navDeepLink<CocktailDetailRoute>(basePath = COCKTAIL_DEEP_LINK_BASE_PATH)
+                )
+            ) { backStackEntry ->
+                val route = backStackEntry.toRoute<CocktailDetailRoute>()
+                CocktailDetailScreen(
+                    cocktailId = route.cocktailId,
+                    favoritesViewModel = sharedFavoritesViewModel,
                     navigationManager = navigationManager,
-                    orderViewModel = sharedOrderViewModel,
-                    favoritesViewModel = sharedFavoritesViewModel
+                    onBackClick = { navigationManager.navigateBack() }
                 )
             }
-        }
-        composable<ProfileRoute> {
-            tabScaffold(Screen.Profile) {
-                ProfileScreen(
-                    navigationManager = navigationManager
-                )
-            }
-        }
-        composable<FavoritesRoute> {
-            tabScaffold(Screen.Favorites) {
-                FavoritesScreen(
-                    cartViewModel = sharedCartViewModel,
-                    favoritesViewModel = sharedFavoritesViewModel,
-                    onBrowseProducts = {
-                        navigationManager.navigateToHome()
-                    },
-                    onAddToCart = addToCartAndConfirm
-                )
-            }
-        }
-        composable<OrderListRoute> {
-            tabScaffold(Screen.OrderList) {
-                OrderListScreen(
-                    orderViewModel = sharedOrderViewModel,
-                    navigationManager = navigationManager
-                )
-            }
-        }
-        // No TabScaffold: the detail screen runs its own Scaffold + AppTopBar,
-        // which own the system-bar insets (AN-6).
-        composable<CocktailDetailRoute>(
-            deepLinks = listOf(
-                navDeepLink<CocktailDetailRoute>(basePath = COCKTAIL_DEEP_LINK_BASE_PATH)
-            )
-        ) { backStackEntry ->
-            val route = backStackEntry.toRoute<CocktailDetailRoute>()
-            CocktailDetailScreen(
-                cocktailId = route.cocktailId,
-                favoritesViewModel = sharedFavoritesViewModel,
-                navigationManager = navigationManager,
-                onBackClick = { navigationManager.navigateBack() }
-            )
         }
     }
 }
@@ -342,9 +338,7 @@ private fun TabScaffold(
                 }
             }
         },
-        snackbarHost = {
-            SnackbarHost(snackbarHostState) { data -> SuccessToast(data.visuals.message) }
-        },
+        snackbarHost = { ToastSnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
@@ -352,6 +346,3 @@ private fun TabScaffold(
         }
     }
 }
-
-// Matches the iOS toast duration
-private const val TOAST_DURATION_MS = 2_000L

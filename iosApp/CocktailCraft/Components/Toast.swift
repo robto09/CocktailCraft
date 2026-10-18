@@ -1,4 +1,5 @@
 import SwiftUI
+import shared
 
 struct Toast: View {
     let message: String
@@ -81,8 +82,38 @@ struct ToastModifier: ViewModifier {
     }
 }
 
+/// Shows a shared ViewModel's mirrored one-shot event (`UiEvent`) as a toast
+/// — green for a success, red for a failure — and marks it shown. The
+/// message is captured when the event arrives, so it doesn't blank out while
+/// the toast animates away.
+struct SharedEventToast: ViewModifier {
+    let event: UiEvent?
+    let clearEvent: () -> Void
+
+    @State private var isShowing = false
+    @State private var message = ""
+    @State private var type: Toast.ToastType = .success
+
+    func body(content: Content) -> some View {
+        content
+            .toast(isShowing: $isShowing, message: message, type: type, duration: 2)
+            .onChange(of: event) { _, newEvent in
+                guard let newEvent else { return }
+                message = newEvent.message.localized()
+                type = newEvent is UiEvent.Failure ? .error : .success
+                withAnimation { isShowing = true }
+                clearEvent()
+            }
+    }
+}
+
 extension View {
     func toast(isShowing: Binding<Bool>, message: String, type: Toast.ToastType = .info, duration: TimeInterval = 3) -> some View {
         modifier(ToastModifier(isShowing: isShowing, message: message, type: type, duration: duration))
+    }
+
+    /// Attach to a screen to toast its shared ViewModel's one-shot events.
+    func sharedEventToast(_ event: UiEvent?, clear: @escaping () -> Void) -> some View {
+        modifier(SharedEventToast(event: event, clearEvent: clear))
     }
 }

@@ -62,6 +62,7 @@ class SharedCocktailDetailViewModel internal constructor(
      */
     suspend fun toggleFavorite() {
         val currentCocktail = _uiState.value.cocktail ?: return
+        clearError()
         val wasFavorite = _uiState.value.isFavorite
         _uiState.update { it.copy(isFavorite = !wasFavorite) }
 
@@ -104,6 +105,7 @@ class SharedCocktailDetailViewModel internal constructor(
      */
     suspend fun refreshCocktail() {
         val cocktailId = _uiState.value.cocktail?.id ?: return
+        clearError()
         _uiState.update { it.copy(isLoading = true) }
 
         try {
