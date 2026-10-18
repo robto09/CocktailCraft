@@ -6,30 +6,30 @@ import com.cocktailcraft.domain.model.CocktailCategories
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
-import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
 import com.cocktailcraft.domain.usecase.LoadCocktailsByCategoryUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
 import com.cocktailcraft.domain.usecase.SearchCocktailsUseCase
 import com.cocktailcraft.domain.usecase.SortCocktailsUseCase
+import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
-import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.common_retry
 import com.cocktailcraft.resources.error_apply_filters_failed
-import com.cocktailcraft.resources.error_load_cocktail_details_failed
 import com.cocktailcraft.resources.error_load_cocktails_failed
-import com.cocktailcraft.resources.error_load_more_cocktails_failed
 import com.cocktailcraft.resources.error_update_favorites_failed
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.util.runCatchingNonCancellation
+import com.cocktailcraft.util.runCatchingResult
 import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
 import com.cocktailcraft.viewmodel.state.HomeSortOption
 import com.cocktailcraft.viewmodel.state.HomeUiState
 import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -41,6 +41,12 @@ import kotlinx.coroutines.launch
  * only public state surface — both the iOS SKIE wrapper and the Android
  * screen render from it (favorites included); there are no per-field flows
  * or snapshot getters.
+ *
+ * Every request that replaces the listing — a category, a search, filters,
+ * a retry — runs as the one tracked listing load: starting another cancels
+ * it, so the listing always shows the latest request, however the earlier
+ * one's network calls finish. The initial load starts here, at init;
+ * screens only report what the user selects.
  */
 @OptIn(FlowPreview::class)
 // Home aggregates the catalog, search, favorites, reviews, recently viewed
@@ -52,7 +58,6 @@ class SharedHomeViewModel internal constructor(
     private val sortCocktailsUseCase: SortCocktailsUseCase,
     private val manageFavoritesUseCase: ManageFavoritesUseCase,
     private val offlineRepository: CocktailOfflineRepository,
-    private val getCocktailDetailUseCase: GetCocktailDetailUseCase,
     private val catalogRepository: CocktailCatalogRepository,
     private val networkMonitor: NetworkMonitor,
     private val manageReviewsUseCase: ManageReviewsUseCase
@@ -68,8 +73,8 @@ class SharedHomeViewModel internal constructor(
     // Debounced search pipeline (SH-13): platforms push raw query text via
     // [updateSearchQuery]; a null value cancels any pending search (used by
     // the clear paths). StateFlow's value-equality conflation provides
-    // distinctUntilChanged for free, and collectLatest cancels a superseded
-    // in-flight search so stale results can never win the race.
+    // distinctUntilChanged for free; a superseded search is cancelled as the
+    // listing load it started is replaced.
     private val searchQueryFlow = MutableStateFlow<String?>(null)
 
     // True when the currently shown list was produced while the network was
@@ -77,14 +82,28 @@ class SharedHomeViewModel internal constructor(
     // normal reconnect would otherwise leave stale.
     private var lastLoadWasOffline = false
 
+    // The listing load in flight (see the class notes): a category load or
+    // a search. Replaced, and cancelled, by the next one.
+    private var listingJob: Job? = null
+
     // Observes the selected category's stored page while the category
     // listing is on screen (not search results), so a refresh — or a
     // detail lookup upgrading a placeholder — reaches the list through the
     // database flow. Restarted per load; stopped while search/filters show.
     private var categoryJob: Job? = null
 
+    // The selected category's whole stored page, as last loaded or
+    // observed. The listing shows its first currentPage * PAGE_SIZE
+    // cocktails; paging further just shows more of it.
+    private var categoryPage: List<Cocktail> = emptyList()
+
+    // Whether the listing is the selected category's (loaded or loading) —
+    // not search results, and not a failed load with nothing to show. A
+    // screen re-selecting the same category then has nothing to reload.
+    private var showsCategory = false
+
     // The listing on screen in its source order — the stored category page
-    // (plus loaded pages), search results as returned, or the offline
+    // (up to the current page), search results as returned, or the offline
     // fallback — before [HomeUiState.sortOption] is applied. Every listing
     // change goes through [publishListing], so the selected sort holds
     // across category changes, searches and database re-emissions, and
@@ -93,10 +112,14 @@ class SharedHomeViewModel internal constructor(
 
     private var recentlyViewedJob: Job? = null
 
+    // The filter option lists, once both have loaded
+    private var filterOptionsLoaded = false
+    private var filterOptionsJob: Job? = null
+
     init {
         initialize()
     }
-    
+
     private fun initialize() {
         // Observe network connectivity. Monitoring itself is started once at
         // app init (initKoin / Application.onCreate), not per-ViewModel (SH-2).
@@ -117,7 +140,7 @@ class SharedHomeViewModel internal constructor(
         viewModelScope.launch {
             searchQueryFlow
                 .debounce(SEARCH_DEBOUNCE_MS)
-                .collectLatest { query ->
+                .collect { query ->
                     if (query != null) searchCocktails(query)
                 }
         }
@@ -153,13 +176,10 @@ class SharedHomeViewModel internal constructor(
 
         refreshRecentlyViewed()
 
-        // Initial load. No arbitrary delay: the cache suspends inside its own
-        // ensureLoaded() when first touched (SH-7).
-        viewModelScope.launch {
-            if (_uiState.value.cocktails.isEmpty()) {
-                loadCocktailsByCategory(CocktailCategories.DEFAULT)
-            }
-        }
+        // The one initial load: the default listing ("All"). No arbitrary
+        // delay: the cache suspends inside its own ensureLoaded() when first
+        // touched (SH-7).
+        loadCategory(category = null, forceRefresh = false)
     }
 
     /**
@@ -175,21 +195,54 @@ class SharedHomeViewModel internal constructor(
         _uiState.update { it.copy(searchQuery = query, isSearchActive = query.isNotBlank()) }
         searchQueryFlow.value = query
     }
-    
+
     /**
-     * Load cocktails for the currently selected category.
-     * SKIE will convert this to Swift async function.
+     * Show [category]'s cocktails (null = "All", the default list). Platforms
+     * call this whenever their category selection is (re)applied — a chip
+     * tap, a screen coming back, a restored selection — so re-selecting the
+     * category already shown (or loading), or the one under an active
+     * search, does nothing: no spinner, no list reset, no refetch.
      */
-    suspend fun loadCocktails(category: String? = null) {
-        loadCocktailsByCategory(category ?: _uiState.value.selectedCategory ?: CocktailCategories.DEFAULT)
-    }
-    
-    /**
-     * Load cocktails by category.
-     * SKIE will convert this to Swift async function.
-     */
-    suspend fun loadCocktailsByCategory(category: String?) {
+    fun selectCategory(category: String?) {
+        val state = _uiState.value
+        val searching = state.searchQuery.isNotBlank() || state.searchFilters.hasActiveFilters()
+        if (category == state.selectedCategory && (showsCategory || searching)) return
         loadCategory(category, forceRefresh = false)
+    }
+
+    /**
+     * Refetch what the listing shows — the search or the category, even a
+     * page that is still fresh — and return once it is on screen, so a
+     * pull-to-refresh spinner lasts exactly as long.
+     * SKIE will convert this to Swift async function.
+     */
+    @Throws(Exception::class)
+    suspend fun refresh() {
+        reload().join()
+    }
+
+    /** [refresh] without waiting: the Retry buttons and network restore. */
+    fun retry() {
+        reload()
+    }
+
+    private fun reload(): Job {
+        val state = _uiState.value
+        return if (state.searchQuery.isNotBlank() || state.searchFilters.hasActiveFilters()) {
+            runSearch(state.searchFilters.copy(query = state.searchQuery))
+        } else {
+            loadCategory(state.selectedCategory, forceRefresh = true)
+        }
+    }
+
+    /**
+     * Start [load] as the listing load, cancelling the one it replaces (and
+     * its error reporting) so a slower earlier request can never overwrite
+     * a later one.
+     */
+    private fun launchListing(load: suspend () -> Unit): Job {
+        listingJob?.cancel()
+        return viewModelScope.launch { load() }.also { listingJob = it }
     }
 
     /**
@@ -198,7 +251,7 @@ class SharedHomeViewModel internal constructor(
      * restore). A failed refresh keeps the stored page; the error only
      * surfaces when there is nothing to show.
      */
-    private suspend fun loadCategory(category: String?, forceRefresh: Boolean) {
+    private fun loadCategory(category: String?, forceRefresh: Boolean): Job {
         val targetCategory = category ?: CocktailCategories.DEFAULT
 
         // Offline-ness of this load is decided when the fetch STARTS — the
@@ -207,6 +260,8 @@ class SharedHomeViewModel internal constructor(
         // may lag behind the actual network state.
         val startedOffline = !networkMonitor.isOnline.value
 
+        showsCategory = true
+        categoryPage = emptyList()
         _uiState.update { it.copy(
             selectedCategory = category,
             isLoading = true,
@@ -216,30 +271,24 @@ class SharedHomeViewModel internal constructor(
         clearError()
         observeCategory(targetCategory)
 
-        try {
-            val cocktailList = loadCocktailsByCategoryUseCase(targetCategory, forceRefresh).getOrThrow()
-            val paginatedList = cocktailList.take(PAGE_SIZE)
-            publishListing(paginatedList) {
-                it.copy(
-                    hasMoreData = paginatedList.size < cocktailList.size,
-                    isLoading = false
-                )
+        return launchListing {
+            val result = runCatchingResult("Failed to load category") {
+                loadCocktailsByCategoryUseCase(targetCategory, forceRefresh)
             }
-            clearError()
-            settleOfflineLoad(startedOffline)
-        } catch (e: Exception) {
-            val isOffline = !_uiState.value.isNetworkAvailable
-            if (!isOffline) {
-                handleException(
-                    e,
-                    MR.strings.error_load_cocktails_failed,
-                    recoveryAction = ErrorHandler.RecoveryAction(MR.strings.common_retry.desc()) {
-                        viewModelScope.launch { loadCategory(category, forceRefresh = true) }
+            // A load replaced while its request was out never publishes
+            currentCoroutineContext().ensureActive()
+            when (result) {
+                is Result.Success -> {
+                    categoryPage = result.data
+                    val firstPage = result.data.take(PAGE_SIZE)
+                    publishListing(firstPage) {
+                        it.copy(hasMoreData = firstPage.size < result.data.size, isLoading = false)
                     }
-                )
+                    clearError()
+                    settleOfflineLoad(startedOffline)
+                }
+                is Result.Error -> showCachedOrReport(targetCategory, result, startedOffline)
             }
-            // Try cached data before showing error
-            tryLoadCachedData(targetCategory, e, startedOffline)
         }
     }
 
@@ -256,7 +305,10 @@ class SharedHomeViewModel internal constructor(
         categoryJob?.cancel()
         categoryJob = viewModelScope.launch {
             loadCocktailsByCategoryUseCase.observe(category).collect { stored ->
-                if (stored.isNotEmpty()) publishCategoryPage(stored)
+                if (stored.isNotEmpty()) {
+                    categoryPage = stored
+                    publishCategoryPage()
+                }
             }
         }
     }
@@ -266,15 +318,16 @@ class SharedHomeViewModel internal constructor(
         categoryJob = null
     }
 
-    private fun publishCategoryPage(stored: List<Cocktail>) {
-        val visible = stored.take(_uiState.value.currentPage * PAGE_SIZE)
+    /** The first currentPage pages of [categoryPage] as the listing. */
+    private fun publishCategoryPage() {
+        val visible = categoryPage.take(_uiState.value.currentPage * PAGE_SIZE)
         val source = if (listingSource.mapTo(HashSet()) { it.id } == visible.mapTo(HashSet()) { it.id }) {
             val latest = visible.associateBy { it.id }
             listingSource.map { latest.getValue(it.id) }
         } else {
             visible
         }
-        publishListing(source) { it.copy(hasMoreData = visible.size < stored.size) }
+        publishListing(source) { it.copy(hasMoreData = visible.size < categoryPage.size) }
     }
 
     /**
@@ -323,138 +376,106 @@ class SharedHomeViewModel internal constructor(
             lastLoadWasOffline = startedOffline
         }
     }
-    
+
     /**
-     * Search cocktails by name, composed with any active advanced-search filters.
-     * SKIE will convert this to Swift async function.
+     * Search cocktails by name, composed with any active advanced-search
+     * filters: the explicit submit, never debounced.
      */
-    suspend fun searchCocktails(query: String) {
+    fun searchCocktails(query: String) {
         val filters = _uiState.value.searchFilters.copy(query = query)
         _uiState.update { it.copy(searchQuery = query, isSearchActive = query.isNotBlank()) }
 
         if (query.isBlank() && !filters.hasActiveFilters()) {
             // Nothing left to search — fall back to the current category listing.
             _uiState.update { it.copy(searchFilters = filters) }
-            loadCocktails()
+            selectCategory(_uiState.value.selectedCategory)
         } else {
             applyFilters(filters)
         }
     }
-    
+
     /**
-     * Load more cocktails for pagination.
-     * SKIE will convert this to Swift async function.
+     * Show the next page of the selected category. The whole category is
+     * already stored (and observed), so this only shows more of it — no
+     * request, offline too. Search results are complete and don't page.
      */
-    suspend fun loadMoreCocktails() {
+    fun loadMoreCocktails() {
         val state = _uiState.value
-        if (state.isLoadingMore || !state.hasMoreData) return
-        // Pagination pages the category listing. While a search or filters
-        // are active the list holds complete search results — there is no
-        // next page, and paging would splice category items into them.
+        if (!state.hasMoreData || !showsCategory || categoryPage.isEmpty()) return
+        // While a search or filters are active the list holds complete
+        // search results — paging would splice category items into them.
         if (state.searchQuery.isNotBlank() || state.searchFilters.hasActiveFilters()) return
-        // Offline: the next page can't be fetched — the list simply ends at
-        // the cached data. hasMoreData stays true so pagination resumes once
-        // connectivity returns.
-        if (!state.isNetworkAvailable) return
 
-        clearError()
-        _uiState.update { it.copy(isLoadingMore = true) }
-
-        try {
-            val nextPage = state.currentPage + 1
-            val category = state.selectedCategory ?: CocktailCategories.DEFAULT
-            val newItems = loadCocktailsByCategoryUseCase
-                .loadMore(category, state.currentPage, PAGE_SIZE)
-                .getOrThrow()
-
-            if (newItems.isNotEmpty()) {
-                // The new page joins the listing and the whole of it is
-                // re-sorted, so a sorted list stays in order as it grows
-                publishListing(listingSource + newItems) { cur ->
-                    cur.copy(
-                        currentPage = nextPage,
-                        hasMoreData = newItems.size >= PAGE_SIZE,
-                        isLoadingMore = false
-                    )
-                }
-            } else {
-                _uiState.update { it.copy(hasMoreData = false, isLoadingMore = false) }
-            }
-        } catch (e: Exception) {
-            // hasMoreData stays true: a failed page fetch must surface as a
-            // retryable error, never masquerade as the end of the list.
-            handleException(
-                e,
-                MR.strings.error_load_more_cocktails_failed,
-                recoveryAction = ErrorHandler.RecoveryAction(MR.strings.common_retry.desc()) {
-                    viewModelScope.launch { loadMoreCocktails() }
-                }
-            )
-            _uiState.update { it.copy(isLoadingMore = false) }
-        }
+        _uiState.update { it.copy(currentPage = it.currentPage + 1) }
+        publishCategoryPage()
     }
-    
+
     /**
      * Apply the advanced-search [filters] and refresh the cocktail list.
      * Stores [filters] into state so the active-filter chips reflect them.
-     * SKIE will convert this to Swift async function.
      */
-    suspend fun applyFilters(filters: SearchFilters) {
+    fun applyFilters(filters: SearchFilters) {
+        _uiState.update { it.copy(searchFilters = filters) }
+        runSearch(filters)
+    }
+
+    private fun runSearch(filters: SearchFilters): Job {
         // Search results replace the category listing; its stored page must
         // no longer write into the list.
         stopObservingCategory()
-        _uiState.update { it.copy(searchFilters = filters, isLoading = true) }
+        showsCategory = false
+        _uiState.update { it.copy(isLoading = true) }
         clearError()
 
-        try {
-            val filtered = searchCocktailsUseCase.search(filters).getOrThrow()
-            // Search results are a complete, unpaginated set: clear the flag
-            // left over from category pagination so clients don't offer
-            // "load more" on top of search results.
-            publishListing(filtered) {
-                it.copy(
-                    isLoading = false,
-                    hasMoreData = false,
-                    currentPage = 1
-                )
+        return launchListing {
+            val result = runCatchingResult("Failed to search") { searchCocktailsUseCase.search(filters) }
+            currentCoroutineContext().ensureActive()
+            when (result) {
+                // Search results are a complete, unpaginated set: clear the
+                // flag left over from category pagination so clients don't
+                // offer "load more" on top of search results.
+                is Result.Success -> publishListing(result.data) {
+                    it.copy(isLoading = false, hasMoreData = false, currentPage = 1)
+                }
+                is Result.Error -> {
+                    result.getOrReport(Unit, MR.strings.error_apply_filters_failed)
+                    _uiState.update { it.copy(isLoading = false) }
+                }
             }
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_apply_filters_failed)
-            _uiState.update { it.copy(isLoading = false) }
         }
     }
 
     /**
      * Load the option lists (categories / ingredients) that back the
      * advanced-search filter UI on both platforms, via [CocktailCatalogRepository]'s
-     * list.php endpoints. Failures leave the current options untouched.
-     * SKIE will convert this to Swift async function.
+     * list.php endpoints — once: platforms call this whenever the filter
+     * UI opens, and only a failed load is tried again.
      */
-    suspend fun loadFilterOptions() {
-        try {
-            val categories = catalogRepository.getCategories().getOrDefault(emptyList())
-            val ingredients = catalogRepository.getIngredients().getOrDefault(emptyList())
-            _uiState.update { it.copy(
-                filterCategories = categories,
-                filterIngredients = ingredients
-            ) }
-        } catch (e: Exception) {
-            // Non-fatal: the filter UI simply has no options to offer.
+    fun loadFilterOptions() {
+        if (filterOptionsLoaded || filterOptionsJob?.isActive == true) return
+        filterOptionsJob = viewModelScope.launch {
+            val categories = runCatchingResult("Failed to load categories") { catalogRepository.getCategories() }
+            val ingredients = runCatchingResult("Failed to load ingredients") { catalogRepository.getIngredients() }
+            filterOptionsLoaded = categories is Result.Success && ingredients is Result.Success
+            // Non-fatal: a failed list keeps the options it would replace
+            _uiState.update {
+                it.copy(
+                    filterCategories = categories.getOrDefault(it.filterCategories),
+                    filterIngredients = ingredients.getOrDefault(it.filterIngredients)
+                )
+            }
         }
     }
-    
+
     /**
      * Toggle favorite status for a cocktail. State updates arrive via the
      * observed favorites flow (SH-4); a failed toggle is reported.
-     * SKIE will convert this to Swift async function.
      */
-    suspend fun toggleFavorite(cocktail: Cocktail) {
+    fun toggleFavorite(cocktail: Cocktail) {
         clearError()
-        try {
-            manageFavoritesUseCase.toggle(cocktail)
+        viewModelScope.launch {
+            runCatchingResult("Failed to toggle favorite") { manageFavoritesUseCase.toggle(cocktail) }
                 .getOrReport(false, MR.strings.error_update_favorites_failed)
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_update_favorites_failed)
         }
     }
 
@@ -490,19 +511,6 @@ class SharedHomeViewModel internal constructor(
         }
     }
 
-    /**
-     * Get cocktail by ID.
-     * SKIE will convert this to Swift async function returning optional.
-     */
-    suspend fun getCocktailById(id: String): Cocktail? {
-        return try {
-            getCocktailDetailUseCase(id).getOrNull()
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_load_cocktail_details_failed)
-            null
-        }
-    }
-
     /** Canonical curated category list — single source of truth for category chips on both platforms. */
     val curatedCategories: List<String>
         get() = CocktailCategories.CURATED
@@ -511,7 +519,7 @@ class SharedHomeViewModel internal constructor(
     fun clearSearch() {
         searchQueryFlow.value = null // cancel any pending debounced search
         _uiState.update { it.copy(isSearchActive = false) }
-        viewModelScope.launch { searchCocktails("") }
+        searchCocktails("")
     }
 
     fun toggleSearchMode(active: Boolean) {
@@ -519,51 +527,43 @@ class SharedHomeViewModel internal constructor(
         if (!active) {
             searchQueryFlow.value = null // cancel any pending debounced search
             _uiState.update { it.copy(searchQuery = "", searchFilters = SearchFilters()) }
-            viewModelScope.launch { loadCocktails() }
+            selectCategory(_uiState.value.selectedCategory)
         }
     }
 
+    /** Open or close the advanced-search sheet; opening loads its option lists. */
     fun toggleAdvancedSearchMode(active: Boolean) {
         _uiState.update { it.copy(isAdvancedSearchActive = active) }
+        if (active) loadFilterOptions()
     }
 
     /** Reset all advanced-search filters (and the query) and reload the default list. */
     fun clearSearchFilters() {
         searchQueryFlow.value = null // cancel any pending debounced search
         _uiState.update { it.copy(searchQuery = "", searchFilters = SearchFilters()) }
-        viewModelScope.launch { loadCocktails() }
+        selectCategory(_uiState.value.selectedCategory)
     }
 
-    fun retry() {
-        viewModelScope.launch {
-            val state = _uiState.value
-            if (state.isSearchActive && state.searchQuery.isNotEmpty()) {
-                searchCocktails(state.searchQuery)
-            } else {
-                // An explicit retry (or network restore) refetches even a
-                // page that is still fresh.
-                loadCategory(state.selectedCategory ?: CocktailCategories.DEFAULT, forceRefresh = true)
-            }
-        }
-    }
-    
     // Private helper functions
 
-    private suspend fun tryLoadCachedData(category: String, originalError: Exception, startedOffline: Boolean) {
-        try {
-            val cachedCocktails = offlineRepository.getRecentlyViewedCocktails().getOrDefault(emptyList())
-                .filter { category == CocktailCategories.DEFAULT || it.category == category }
+    /**
+     * After a failed category load: the offline fallback (recently viewed
+     * cocktails of [category]) when there is one, else the error, with Retry.
+     */
+    private suspend fun showCachedOrReport(category: String, failure: Result.Error, startedOffline: Boolean) {
+        val cachedCocktails = runCatchingNonCancellation(onFailure = { emptyList() }) {
+            offlineRepository.getRecentlyViewedCocktails().getOrDefault(emptyList())
+        }.filter { category == CocktailCategories.DEFAULT || it.category == category }
+        currentCoroutineContext().ensureActive()
 
-            if (cachedCocktails.isNotEmpty()) {
-                publishListing(cachedCocktails) { it.copy(isLoading = false) }
-                clearError()
-                settleOfflineLoad(startedOffline)
-            } else {
-                throw originalError
-            }
-        } catch (e: Exception) {
-            handleException(
-                originalError,
+        if (cachedCocktails.isNotEmpty()) {
+            publishListing(cachedCocktails) { it.copy(isLoading = false) }
+            clearError()
+            settleOfflineLoad(startedOffline)
+        } else {
+            showsCategory = false
+            failure.getOrReport(
+                Unit,
                 MR.strings.error_load_cocktails_failed,
                 recoveryAction = ErrorHandler.RecoveryAction(MR.strings.common_retry.desc()) { retry() }
             )

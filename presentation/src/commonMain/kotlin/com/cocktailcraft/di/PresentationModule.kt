@@ -42,7 +42,6 @@ val presentationModule = module {
             sortCocktailsUseCase = get(),
             manageFavoritesUseCase = get(),
             offlineRepository = get(),
-            getCocktailDetailUseCase = get(),
             catalogRepository = get(),
             networkMonitor = get(),
             manageReviewsUseCase = get()

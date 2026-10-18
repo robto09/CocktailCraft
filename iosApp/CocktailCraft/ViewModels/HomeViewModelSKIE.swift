@@ -16,27 +16,28 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
         let viewModel = getSharedKoinHelper().getSharedHomeViewModel()
         self.sharedViewModel = viewModel
         self.cartViewModel = getSharedKoinHelper().getSharedCartViewModel()
-        // No initial load here: @State (unlike @StateObject) evaluates its
-        // initial value eagerly on every parent re-render, and discarded
-        // instances must not fire side effects. HomeViewSKIE's .task loads.
+        // No initial load here or in the view: the shared ViewModel (a
+        // Koin single) starts the one initial load itself.
         super.init(viewModel: viewModel, uiState: viewModel.uiState)
     }
 
     // No deinit: the base class cancels observation. Wraps a Koin `single`
     // whose coroutine scope must survive any one wrapper — never onCleared().
 
-    // MARK: - Public Methods (using SKIE async/await)
+    // MARK: - Intents
+    // Fire-and-forget: the shared ViewModel runs each on its own scope and
+    // reports back through `state`/`error`, so views call them without a Task.
 
-    func loadCocktails() async {
-        await run { try await sharedViewModel.loadCocktails() }
+    /// Shows a category (nil = "All"). Re-selecting the category already
+    /// shown does nothing, and a later selection always replaces a slower
+    /// earlier one in shared code, so chip taps can't race.
+    func selectCategory(_ category: String?) {
+        sharedViewModel.selectCategory(category: category)
     }
 
-    func loadCocktailsByCategory(_ category: String?) async {
-        await run { try await sharedViewModel.loadCocktailsByCategory(category: category) }
-    }
-
-    func searchCocktails(query: String) async {
-        await run { try await sharedViewModel.searchCocktails(query: query) }
+    /// Explicit submit: searches right away, without the debounce.
+    func searchCocktails(query: String) {
+        sharedViewModel.searchCocktails(query: query)
     }
 
     /// Per-keystroke entry point: pushes the query into the shared debounced
@@ -50,22 +51,23 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
     /// Apply the advanced-search filters. The shared ViewModel stores them in
     /// `state.searchFilters` (driving the active-filter chips) and loads the
     /// intersected results.
-    func applyFilters(_ filters: SearchFilters) async {
-        await run { try await sharedViewModel.applyFilters(filters: filters) }
+    func applyFilters(_ filters: SearchFilters) {
+        sharedViewModel.applyFilters(filters: filters)
     }
 
     /// Load the API-backed option lists (categories / ingredients)
-    /// that back the advanced-search filter sheet.
-    func loadFilterOptions() async {
-        await run { try await sharedViewModel.loadFilterOptions() }
+    /// that back the advanced-search filter sheet — once per app run.
+    func loadFilterOptions() {
+        sharedViewModel.loadFilterOptions()
     }
 
-    func loadMoreCocktails() async {
-        await run { try await sharedViewModel.loadMoreCocktails() }
+    /// Shows the next page of the stored category (no request).
+    func loadMoreCocktails() {
+        sharedViewModel.loadMoreCocktails()
     }
 
-    func toggleFavorite(_ cocktail: Cocktail) async {
-        await run { try await sharedViewModel.toggleFavorite(cocktail: cocktail) }
+    func toggleFavorite(_ cocktail: Cocktail) {
+        sharedViewModel.toggleFavorite(cocktail: cocktail)
     }
 
     /// Returns whether the cocktail was added, so the view confirms only a
@@ -110,9 +112,10 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
 
     // MARK: - Helper Methods for SwiftUI
 
+    /// Pull-to-refresh: refetches what the list shows and returns when it
+    /// is on screen. No artificial delay: the spinner should last exactly as
+    /// long as the reload does (IO-2).
     func refreshCocktails() async {
-        // No artificial delay: the spinner should last exactly as long as the
-        // reload does (IO-2).
-        await loadCocktails()
+        await run { try await sharedViewModel.refresh() }
     }
 }

@@ -245,7 +245,6 @@ class AccessibilitySemanticsTest {
                 selectedCategory = null,
                 hasActiveFilters = false,
                 isSearchActive = false,
-                isLoadingMore = false,
                 hasMoreData = false,
                 favorites = emptyList(),
                 isNetworkAvailable = true,

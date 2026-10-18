@@ -95,9 +95,10 @@ struct AdvancedSearchSheet: View {
                 }
             )
         }
-        .task {
-            // Populate the option lists from the shared API-backed state.
-            await viewModel.loadFilterOptions()
+        .onAppear {
+            // Populate the option lists from the shared API-backed state
+            // (fetched once; reopening the sheet reuses them).
+            viewModel.loadFilterOptions()
         }
     }
 
@@ -130,9 +131,7 @@ struct AdvancedSearchSheet: View {
                 // Close immediately; the rate-limited search runs in
                 // the background and the list updates via shared state.
                 dismiss()
-                Task {
-                    await viewModel.applyFilters(filters)
-                }
+                viewModel.applyFilters(filters)
             } label: {
                 Text(L(\.filter_apply))
                     .font(.subheadline.weight(.medium))

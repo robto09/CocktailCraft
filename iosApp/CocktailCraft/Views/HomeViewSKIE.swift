@@ -20,7 +20,6 @@ struct HomeViewSKIE: View {
 
     // Theme-derived colors (the old hardcoded hex values bypassed AppTheme,
     // so Home ignored dark mode)
-    private var primaryColor: Color { AppColors.primary(appearance) }
     private var backgroundColor: Color { AppColors.background(isDarkMode: isDarkMode) }
     private var surfaceColor: Color { AppColors.surface(isDarkMode: isDarkMode) }
     private var textSecondary: Color { AppColors.textSecondary(appearance) }
@@ -74,14 +73,9 @@ struct HomeViewSKIE: View {
         }
         .onAppear {
             // Also on the way back from a detail page, which may have added
-            // to Recently viewed
+            // to Recently viewed. (No initial load here: the shared
+            // ViewModel starts it itself.)
             viewModel.refreshRecentlyViewed()
-        }
-        .task {
-            // Initial load when view appears
-            if viewModel.state.cocktails.isEmpty {
-                await viewModel.loadCocktails()
-            }
         }
         .toast(isShowing: $showingToast, message: toastMessage, type: toastType, duration: 2)
     }
@@ -93,9 +87,7 @@ struct HomeViewSKIE: View {
             HomeSearchBar(
                 searchText: $searchText,
                 onSubmit: {
-                    Task {
-                        await viewModel.searchCocktails(query: searchText)
-                    }
+                    viewModel.searchCocktails(query: searchText)
                 },
                 onClear: {
                     searchText = ""
@@ -111,9 +103,7 @@ struct HomeViewSKIE: View {
                 ActiveFiltersCard(
                     filters: viewModel.state.searchFilters,
                     onApply: { reduced in
-                        Task {
-                            await viewModel.applyFilters(reduced)
-                        }
+                        viewModel.applyFilters(reduced)
                     },
                     onClearAll: {
                         // Keep the chip: the shared clear reloads the
@@ -129,19 +119,16 @@ struct HomeViewSKIE: View {
                 CategoryChipRow(
                     categories: availableCategories,
                     selectedCategory: selectedCategory,
+                    // No Task per tap: the shared ViewModel tracks one
+                    // listing load, so a slow earlier category can never
+                    // replace the one tapped last
                     onSelectAll: {
                         selectedCategory = nil
-                        Task {
-                            // nil = the default list; loadCocktails() would
-                            // reload the previously selected category
-                            await viewModel.loadCocktailsByCategory(nil)
-                        }
+                        viewModel.selectCategory(nil)
                     },
                     onSelect: { category in
                         selectedCategory = category
-                        Task {
-                            await viewModel.loadCocktailsByCategory(category)
-                        }
+                        viewModel.selectCategory(category)
                     }
                 )
             }
@@ -180,28 +167,22 @@ struct HomeViewSKIE: View {
                         },
                         onClearCategory: {
                             selectedCategory = nil
-                            Task {
-                                await viewModel.loadCocktails()
-                            }
+                            viewModel.selectCategory(nil)
                         },
                         onClearFilters: {
                             // Drop only the advanced filters; any active query
                             // re-runs on its own (empty query + no filters =
                             // default listing).
                             let filters = viewModel.state.searchFilters
-                            Task {
-                                await viewModel.applyFilters(SearchFilters(
-                                    query: filters.query,
-                                    category: nil,
-                                    ingredient: nil,
-                                    alcoholic: nil
-                                ))
-                            }
+                            viewModel.applyFilters(SearchFilters(
+                                query: filters.query,
+                                category: nil,
+                                ingredient: nil,
+                                alcoholic: nil
+                            ))
                         },
                         onRefresh: {
-                            Task {
-                                await viewModel.loadCocktails()
-                            }
+                            viewModel.retry()
                         }
                     )
                     Spacer()
@@ -243,9 +224,7 @@ struct HomeViewSKIE: View {
                             isFavorite: favoriteIds.contains(cocktail.id),
                             reviewRating: viewModel.state.ratingSummaries[cocktail.id],
                             onFavoriteToggle: {
-                                Task {
-                                    await viewModel.toggleFavorite(cocktail)
-                                }
+                                viewModel.toggleFavorite(cocktail)
                             },
                             onAddToCart: {
                                 // Main-actor Task: the whole flow (VM call +
@@ -293,23 +272,15 @@ struct HomeViewSKIE: View {
     }
 
     private func loadMoreIfNeeded() {
-        let state = viewModel.state
-        guard !isSearchInProgress, state.hasMoreData, !state.isLoadingMore else { return }
-        Task {
-            await viewModel.loadMoreCocktails()
-        }
+        guard !isSearchInProgress, viewModel.state.hasMoreData else { return }
+        viewModel.loadMoreCocktails()
     }
 
-    /// Spinner while the next page loads, then Android's end-of-list line
-    /// once the category is exhausted.
+    /// Android's end-of-list line once the category is exhausted. (The next
+    /// page is already stored, so there is no loading spinner.)
     @ViewBuilder
     private var listFooter: some View {
-        if viewModel.state.isLoadingMore {
-            ProgressView()
-                .tint(primaryColor)
-                .frame(maxWidth: .infinity)
-                .padding(16)
-        } else if !isSearchInProgress && !viewModel.state.hasMoreData && !viewModel.state.cocktails.isEmpty {
+        if !isSearchInProgress && !viewModel.state.hasMoreData && !viewModel.state.cocktails.isEmpty {
             Text(L(\.list_end_of_list_message))
                 .font(.subheadline)
                 .foregroundColor(textSecondary)
