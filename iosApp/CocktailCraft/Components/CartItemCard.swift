@@ -12,6 +12,7 @@ struct CartItemCard: View {
     let onRemoveFromCart: () -> Void
     let onToggleFavorite: (() -> Void)?
     @Environment(\.isDarkMode) var isDarkMode
+    @Environment(\.appearance) var appearance
 
     var body: some View {
         HStack(alignment: .center, spacing: AppTheme.Spacing.md) {
@@ -50,12 +51,12 @@ struct CartItemCard: View {
                 // Unit price
                 Text(item.cocktail.price.asPrice)
                     .font(.subheadline.weight(.bold))
-                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.primary(appearance))
 
                 if let alcoholic = item.cocktail.knownAlcoholic {
                     Text(alcoholic)
                         .font(.caption)
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.textSecondary(appearance))
                         .padding(.top, AppTheme.Spacing.xs)
                 }
 
@@ -122,6 +123,7 @@ struct QuantityControlView: View {
     let onIncrement: () -> Void
     let onDecrement: () -> Void
     @Environment(\.isDarkMode) var isDarkMode
+    @Environment(\.appearance) var appearance
 
     var body: some View {
         // The 44 pt hit targets pad the 36 pt circles by 4 pt; with the gap
@@ -164,7 +166,7 @@ struct QuantityControlView: View {
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .foregroundColor(AppColors.onPrimary(isDarkMode: isDarkMode))
                     .frame(width: 36, height: 36)
-                    .background(AppColors.primary(isDarkMode: isDarkMode))
+                    .background(AppColors.primary(appearance))
                     .clipShape(Circle())
                     .minimumHitTarget()
             }

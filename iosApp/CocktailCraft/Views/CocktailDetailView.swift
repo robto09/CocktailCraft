@@ -27,6 +27,7 @@ struct CocktailDetailView: View {
     var reviewViewModel: ReviewViewModelSKIE { reviewModel.wrapper }
     @State var showingWriteReview = false
     @Environment(\.isDarkMode) var isDarkMode
+    @Environment(\.appearance) var appearance
     @Environment(\.dynamicTypeSize) var dynamicTypeSize
 
     // Distinguishes "load not started yet" from "loaded but not found"

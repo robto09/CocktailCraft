@@ -1,15 +1,32 @@
 import SwiftUI
 import shared
 
-/// Environment key for theme state
-struct ThemeEnvironmentKey: EnvironmentKey {
-    static let defaultValue = false // Default to light mode
+/// The user's appearance settings that colors depend on, published by
+/// ContentView from the shared theme state. Living in the environment (not
+/// in globals) means SwiftUI re-renders exactly the views that read it when
+/// a setting changes, without re-identifying the tree — so navigation
+/// stacks and screen ViewModels survive an accent or contrast change.
+struct AppAppearance: Equatable {
+    var isDarkMode = false
+    /// Accent color name from the shared AccentColorTokens ("coral" = brand)
+    var accentName: String = AccentColorTokens.shared.DEFAULT
+    var isHighContrast = false
+}
+
+struct AppAppearanceKey: EnvironmentKey {
+    static let defaultValue = AppAppearance() // Light mode, brand accent
 }
 
 extension EnvironmentValues {
+    var appearance: AppAppearance {
+        get { self[AppAppearanceKey.self] }
+        set { self[AppAppearanceKey.self] = newValue }
+    }
+
+    /// Shorthand for `appearance.isDarkMode`, which most views need alone.
     var isDarkMode: Bool {
-        get { self[ThemeEnvironmentKey.self] }
-        set { self[ThemeEnvironmentKey.self] = newValue }
+        get { appearance.isDarkMode }
+        set { appearance.isDarkMode = newValue }
     }
 }
 
@@ -103,13 +120,14 @@ struct CardStyle: ViewModifier {
 struct ChipStyle: ViewModifier {
     let isSelected: Bool
     @Environment(\.isDarkMode) var isDarkMode
+    @Environment(\.appearance) var appearance
 
     func body(content: Content) -> some View {
         content
             .padding(.horizontal, AppTheme.Spacing.lg)
             .padding(.vertical, AppTheme.Spacing.xs)
-            .background(isSelected ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.surface(isDarkMode: isDarkMode))
-            .foregroundColor(isSelected ? AppColors.onPrimary(isDarkMode: isDarkMode) : AppColors.primary(isDarkMode: isDarkMode))
+            .background(isSelected ? AppColors.primary(appearance) : AppColors.surface(isDarkMode: isDarkMode))
+            .foregroundColor(isSelected ? AppColors.onPrimary(isDarkMode: isDarkMode) : AppColors.primary(appearance))
             .cornerRadius(AppTheme.CornerRadius.chip)
             .shadow(
                 color: isSelected ? AppTheme.Shadow.button.color : Color.clear,
@@ -129,7 +147,7 @@ struct ChipStyle: ViewModifier {
 /// sheets).
 struct BrandedNavigationBarStyle: ViewModifier {
     let title: String
-    @Environment(\.isDarkMode) var isDarkMode
+    @Environment(\.appearance) var appearance
 
     func body(content: Content) -> some View {
         content
@@ -154,7 +172,7 @@ struct BrandedNavigationBarStyle: ViewModifier {
                         .accessibilityAddTraits(.isHeader)
                 }
             }
-            .toolbarBackground(AppColors.topBar(isDarkMode: isDarkMode), for: .navigationBar)
+            .toolbarBackground(AppColors.topBar(appearance), for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             // Dark scheme = white title/status bar over either background
             .toolbarColorScheme(.dark, for: .navigationBar)

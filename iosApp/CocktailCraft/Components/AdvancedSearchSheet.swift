@@ -40,16 +40,17 @@ struct AdvancedSearchSheet: View {
     let viewModel: HomeViewModelSKIE
     @Environment(\.dismiss) private var dismiss
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     @State private var selectedCategory: String?
     @State private var selectedIngredient: String?
     @State private var alcoholic: AlcoholicFilter
     @State private var showingIngredientPicker = false
 
-    private var primaryColor: Color { AppColors.primary(isDarkMode: isDarkMode) }
+    private var primaryColor: Color { AppColors.primary(appearance) }
     private var surfaceColor: Color { AppColors.surface(isDarkMode: isDarkMode) }
     private var textPrimary: Color { AppColors.textPrimary(isDarkMode: isDarkMode) }
-    private var textSecondary: Color { AppColors.textSecondary(isDarkMode: isDarkMode) }
+    private var textSecondary: Color { AppColors.textSecondary(appearance) }
 
     init(viewModel: HomeViewModelSKIE) {
         self.viewModel = viewModel
@@ -203,6 +204,7 @@ private struct FilterSection<Content: View>: View {
 
     @State private var expanded = true
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -218,7 +220,7 @@ private struct FilterSection<Content: View>: View {
 
                     Image(systemName: expanded ? "chevron.up" : "chevron.down")
                         .font(.footnote.weight(.semibold))
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.textSecondary(appearance))
                 }
                 .contentShape(Rectangle())
             }
@@ -249,6 +251,7 @@ private struct SelectorRow: View {
     let placeholder: String
 
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     var body: some View {
         HStack {
@@ -257,14 +260,14 @@ private struct SelectorRow: View {
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
             } else {
                 Text(placeholder)
-                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.textSecondary(appearance))
             }
 
             Spacer()
 
             Image(systemName: "chevron.down")
                 .font(.footnote.weight(.semibold))
-                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                .foregroundColor(AppColors.textSecondary(appearance))
         }
         .font(.subheadline)
         .padding(16)
@@ -290,6 +293,7 @@ private struct IngredientPickerSheet: View {
     @State private var searchQuery = ""
     @Environment(\.dismiss) private var dismiss
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     private var filteredIngredients: [String] {
         guard !searchQuery.isEmpty else { return ingredients }
@@ -338,7 +342,7 @@ private struct IngredientPickerSheet: View {
                 if isSelected {
                     Image(systemName: "checkmark")
                         .font(.body.weight(.semibold))
-                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.primary(appearance))
                 }
             }
             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))

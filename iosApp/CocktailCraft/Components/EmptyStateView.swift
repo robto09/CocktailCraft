@@ -58,8 +58,9 @@ struct SearchEmptyStateView: View {
 
     @State private var appeared = false
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
-    private var primaryColor: Color { AppColors.primary(isDarkMode: isDarkMode) }
+    private var primaryColor: Color { AppColors.primary(appearance) }
     private var hasQuery: Bool { !searchQuery.isEmpty }
 
     var body: some View {
@@ -92,7 +93,7 @@ struct SearchEmptyStateView: View {
 
             Text(subtitle)
                 .font(.callout)
-                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                .foregroundColor(AppColors.textSecondary(appearance))
                 .multilineTextAlignment(.center)
 
             Spacer().frame(height: 32)

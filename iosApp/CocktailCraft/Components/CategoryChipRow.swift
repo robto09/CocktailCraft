@@ -7,8 +7,9 @@ struct CategoryChipRow: View {
     let onSelectAll: () -> Void
     let onSelect: (String) -> Void
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
-    private var primaryColor: Color { AppColors.primary(isDarkMode: isDarkMode) }
+    private var primaryColor: Color { AppColors.primary(appearance) }
     private var surfaceColor: Color { AppColors.surface(isDarkMode: isDarkMode) }
 
     var body: some View {

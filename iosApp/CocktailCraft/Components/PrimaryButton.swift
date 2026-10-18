@@ -16,9 +16,10 @@ struct PrimaryButton: View {
     let action: () -> Void
 
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     private var backgroundColor: Color {
-        isDestructive ? AppColors.error : AppColors.primary(isDarkMode: isDarkMode)
+        isDestructive ? AppColors.error : AppColors.primary(appearance)
     }
 
     private var contentColor: Color {

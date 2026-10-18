@@ -45,6 +45,7 @@ struct ReviewRow: View {
     let review: Review
 
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     private static let avatarSize: CGFloat = 40
 
@@ -74,9 +75,9 @@ struct ReviewRow: View {
             HStack(spacing: AppTheme.Spacing.md) {
                 Text(Self.initial(for: review.userName))
                     .font(.headline)
-                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.primary(appearance))
                     .frame(width: Self.avatarSize, height: Self.avatarSize)
-                    .background(AppColors.primary(isDarkMode: isDarkMode).opacity(0.2))
+                    .background(AppColors.primary(appearance).opacity(0.2))
                     .clipShape(Circle())
                     .accessibilityHidden(true)
 
@@ -90,7 +91,7 @@ struct ReviewRow: View {
                         StarRatingView(rating: review.rating)
                         Text(displayDate)
                             .font(.caption)
-                            .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                            .foregroundColor(AppColors.textSecondary(appearance))
                     }
                 }
             }

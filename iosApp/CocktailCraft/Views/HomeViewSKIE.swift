@@ -15,13 +15,14 @@ struct HomeViewSKIE: View {
     @State private var showingToast = false
     @State private var toastMessage = ""
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     // Theme-derived colors (the old hardcoded hex values bypassed AppTheme,
     // so Home ignored dark mode)
-    private var primaryColor: Color { AppColors.primary(isDarkMode: isDarkMode) }
+    private var primaryColor: Color { AppColors.primary(appearance) }
     private var backgroundColor: Color { AppColors.background(isDarkMode: isDarkMode) }
     private var surfaceColor: Color { AppColors.surface(isDarkMode: isDarkMode) }
-    private var textSecondary: Color { AppColors.textSecondary(isDarkMode: isDarkMode) }
+    private var textSecondary: Color { AppColors.textSecondary(appearance) }
 
     var body: some View {
         VStack(spacing: 0) {

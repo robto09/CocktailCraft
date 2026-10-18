@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SignInView: View {
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
     @State private var email = ""
     @State private var password = ""
     @State private var isPasswordVisible = false
@@ -19,11 +20,11 @@ struct SignInView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "person.circle.fill")
                         .font(.system(size: 60))
-                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.primary(appearance))
 
                     Text(L(\.sign_in_subtitle))
                         .font(.body)
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.textSecondary(appearance))
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 32)
@@ -66,7 +67,7 @@ struct SignInView: View {
                                 isPasswordVisible.toggle()
                             }) {
                                 Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
-                                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                                    .foregroundColor(AppColors.textSecondary(appearance))
                                     .minimumHitTarget()
                             }
                             .accessibilityLabel(isPasswordVisible ? L(\.hide_password) : L(\.show_password))

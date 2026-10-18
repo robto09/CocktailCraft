@@ -10,6 +10,7 @@ struct OrderListView: View {
     // CartView/ProfileView) so "Browse Cocktails" can land on Home.
     @Environment(AppRouter.self) private var router
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     var body: some View {
         // No nav container here: ContentView already wraps this tab in a
@@ -88,7 +89,7 @@ struct OrderListView: View {
                 Spacer()
                 Text(order.date)
                     .font(.subheadline)
-                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.textSecondary(appearance))
             }
             .padding(.bottom, AppTheme.Spacing.md)
 
@@ -114,7 +115,7 @@ struct OrderListView: View {
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 Spacer()
                 Text(order.total.asPrice)
-                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.primary(appearance))
             }
             .font(.callout.weight(.bold))
             .accessibilityElement(children: .combine)

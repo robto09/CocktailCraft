@@ -52,6 +52,7 @@ struct SummaryRow: View {
     let value: Double
     let isTotal: Bool
     @Environment(\.isDarkMode) var isDarkMode
+    @Environment(\.appearance) var appearance
     
     var body: some View {
         // Label and amount side by side; stacked when they don't fit
@@ -77,14 +78,14 @@ struct SummaryRow: View {
         Text(label)
             .font(isTotal ? AppTheme.Typography.headline : AppTheme.Typography.callout)
             .fontWeight(isTotal ? .bold : .regular)
-            .foregroundColor(isTotal ? AppColors.textPrimary(isDarkMode: isDarkMode) : AppColors.textSecondary(isDarkMode: isDarkMode))
+            .foregroundColor(isTotal ? AppColors.textPrimary(isDarkMode: isDarkMode) : AppColors.textSecondary(appearance))
     }
 
     private var valueText: some View {
         Text(value.asPrice)
             .font(isTotal ? AppTheme.Typography.headline : AppTheme.Typography.callout)
             .fontWeight(isTotal ? .bold : .regular)
-            .foregroundColor(isTotal ? AppColors.primary(isDarkMode: isDarkMode) : AppColors.textPrimary(isDarkMode: isDarkMode))
+            .foregroundColor(isTotal ? AppColors.primary(appearance) : AppColors.textPrimary(isDarkMode: isDarkMode))
             .fixedSize()
     }
 }

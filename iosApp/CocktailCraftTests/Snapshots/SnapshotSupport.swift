@@ -74,13 +74,6 @@ class SnapshotTestCase: XCTestCase {
         )
     }
 
-    override func tearDown() {
-        // AppColors appearance globals are process-wide; never leak them
-        AppColors.isHighContrast = false
-        AppColors.accentName = AccentColorTokens.shared.DEFAULT
-        super.tearDown()
-    }
-
     /// Snapshots `content` once per appearance, sized to fit at `width`.
     /// Pass a `height` for full-screen views that expand to fill their frame.
     func assertSnapshots<Content: View>(
@@ -93,15 +86,16 @@ class SnapshotTestCase: XCTestCase {
         line: UInt = #line
     ) {
         for appearance in appearances {
-            // Read by AppColors.primary/textSecondary at body evaluation
-            AppColors.isHighContrast = appearance.isHighContrast
-            AppColors.accentName = appearance.accentName
-
             let view = content()
                 .padding(height == nil ? 8 : 0)
                 .frame(width: width, height: height)
                 .background(AppColors.background(isDarkMode: appearance.isDarkMode))
-                .environment(\.isDarkMode, appearance.isDarkMode)
+                // What ContentView publishes from the shared theme state
+                .environment(\.appearance, AppAppearance(
+                    isDarkMode: appearance.isDarkMode,
+                    accentName: appearance.accentName,
+                    isHighContrast: appearance.isHighContrast
+                ))
                 .environment(\.colorScheme, appearance.isDarkMode ? .dark : .light)
                 .dynamicTypeSize(appearance.dynamicTypeSize)
                 // Entrance animations (onAppear + withAnimation) jump straight
