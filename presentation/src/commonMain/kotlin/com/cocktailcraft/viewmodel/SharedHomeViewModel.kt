@@ -9,6 +9,7 @@ import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
 import com.cocktailcraft.domain.usecase.LoadCocktailsByCategoryUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
+import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
 import com.cocktailcraft.domain.usecase.SearchCocktailsUseCase
 import com.cocktailcraft.domain.usecase.SortCocktailsUseCase
 import com.cocktailcraft.domain.util.getOrDefault
@@ -20,10 +21,12 @@ import com.cocktailcraft.resources.error_load_cocktail_details_failed
 import com.cocktailcraft.resources.error_load_cocktails_failed
 import com.cocktailcraft.resources.error_load_more_cocktails_failed
 import com.cocktailcraft.resources.error_refresh_cocktail_details_failed
-import com.cocktailcraft.resources.error_sort_cocktails_failed
 import com.cocktailcraft.resources.error_update_favorites_failed
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.util.NetworkMonitor
+import com.cocktailcraft.util.runCatchingNonCancellation
+import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
+import com.cocktailcraft.viewmodel.state.HomeSortOption
 import com.cocktailcraft.viewmodel.state.HomeUiState
 import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.FlowPreview
@@ -41,6 +44,9 @@ import kotlinx.coroutines.launch
  * or snapshot getters.
  */
 @OptIn(FlowPreview::class)
+// Home aggregates the catalog, search, favorites, reviews, recently viewed
+// and connectivity; each collaborator is a single-purpose use case/repository
+@Suppress("LongParameterList")
 class SharedHomeViewModel internal constructor(
     private val searchCocktailsUseCase: SearchCocktailsUseCase,
     private val loadCocktailsByCategoryUseCase: LoadCocktailsByCategoryUseCase,
@@ -49,7 +55,8 @@ class SharedHomeViewModel internal constructor(
     private val offlineRepository: CocktailOfflineRepository,
     private val getCocktailDetailUseCase: GetCocktailDetailUseCase,
     private val catalogRepository: CocktailCatalogRepository,
-    private val networkMonitor: NetworkMonitor
+    private val networkMonitor: NetworkMonitor,
+    private val manageReviewsUseCase: ManageReviewsUseCase
 ) : SharedViewModel() {
 
     // Consolidated UI State — single source of truth
@@ -76,6 +83,16 @@ class SharedHomeViewModel internal constructor(
     // detail lookup upgrading a placeholder — reaches the list through the
     // database flow. Restarted per load; stopped while search/filters show.
     private var categoryJob: Job? = null
+
+    // The listing on screen in its source order — the stored category page
+    // (plus loaded pages), search results as returned, or the offline
+    // fallback — before [HomeUiState.sortOption] is applied. Every listing
+    // change goes through [publishListing], so the selected sort holds
+    // across category changes, searches and database re-emissions, and
+    // DEFAULT can restore the source order.
+    private var listingSource: List<Cocktail> = emptyList()
+
+    private var recentlyViewedJob: Job? = null
 
     init {
         initialize()
@@ -113,6 +130,29 @@ class SharedHomeViewModel internal constructor(
                 _uiState.update { it.copy(favorites = favs) }
             }
         }
+
+        // Review averages, observed like favorites. They rank the Rating
+        // sort and show on the cards; a failing flow just leaves them empty.
+        viewModelScope.launch {
+            manageReviewsUseCase.observeReviews()
+                .catch { /* non-fatal: no review averages */ }
+                .collect { reviews ->
+                    val summaries = reviews.groupBy { it.cocktailId }.mapValues { (_, cocktailReviews) ->
+                        CocktailRatingSummary(
+                            rating = manageReviewsUseCase.computeAverageRating(cocktailReviews),
+                            count = cocktailReviews.size
+                        )
+                    }
+                    _uiState.update {
+                        it.copy(
+                            ratingSummaries = summaries,
+                            cocktails = sortListing(listingSource, it.sortOption, summaries)
+                        )
+                    }
+                }
+        }
+
+        refreshRecentlyViewed()
 
         // Initial load. No arbitrary delay: the cache suspends inside its own
         // ensureLoaded() when first touched (SH-7).
@@ -180,11 +220,12 @@ class SharedHomeViewModel internal constructor(
         try {
             val cocktailList = loadCocktailsByCategoryUseCase(targetCategory, forceRefresh).getOrThrow()
             val paginatedList = cocktailList.take(PAGE_SIZE)
-            _uiState.update { it.copy(
-                cocktails = paginatedList,
-                hasMoreData = paginatedList.size < cocktailList.size,
-                isLoading = false
-            ) }
+            publishListing(paginatedList) {
+                it.copy(
+                    hasMoreData = paginatedList.size < cocktailList.size,
+                    isLoading = false
+                )
+            }
             clearError()
             settleOfflineLoad(startedOffline)
         } catch (e: Exception) {
@@ -205,9 +246,10 @@ class SharedHomeViewModel internal constructor(
 
     /**
      * (Re)start observing [category]'s stored page. Emissions update the
-     * listing in place: the shown page keeps the user's sort order while its
-     * cocktails stay the same, and is replaced (API order) once a refresh
-     * changes which cocktails it lists. Empty emissions are skipped — an
+     * listing in place: while the page lists the same cocktails they keep
+     * their place (with the stored copies swapped in); once a refresh changes
+     * which cocktails it lists, the stored order replaces it. Either way the
+     * selected sort is applied on top. Empty emissions are skipped — an
      * empty or failed load is published, with its error or offline fallback,
      * by [loadCategory] itself.
      */
@@ -226,17 +268,46 @@ class SharedHomeViewModel internal constructor(
     }
 
     private fun publishCategoryPage(stored: List<Cocktail>) {
-        _uiState.update { state ->
-            val visible = stored.take(state.currentPage * PAGE_SIZE)
-            val shownIds = state.cocktails.mapTo(HashSet()) { it.id }
-            val cocktails = if (shownIds == visible.mapTo(HashSet()) { it.id }) {
-                val latest = visible.associateBy { it.id }
-                state.cocktails.map { latest.getValue(it.id) }
-            } else {
-                visible
-            }
-            state.copy(cocktails = cocktails, hasMoreData = visible.size < stored.size)
+        val visible = stored.take(_uiState.value.currentPage * PAGE_SIZE)
+        val source = if (listingSource.mapTo(HashSet()) { it.id } == visible.mapTo(HashSet()) { it.id }) {
+            val latest = visible.associateBy { it.id }
+            listingSource.map { latest.getValue(it.id) }
+        } else {
+            visible
         }
+        publishListing(source) { it.copy(hasMoreData = visible.size < stored.size) }
+    }
+
+    /**
+     * Show [source] as the listing, ordered by the selected sort, together
+     * with the other state changes in [transform] — one atomic update.
+     */
+    private fun publishListing(source: List<Cocktail>, transform: (HomeUiState) -> HomeUiState = { it }) {
+        listingSource = source
+        _uiState.update { state ->
+            val next = transform(state)
+            next.copy(cocktails = sortListing(source, next.sortOption, next.ratingSummaries))
+        }
+    }
+
+    /**
+     * [source] in [option]'s order. Rating ranks by the user's review
+     * average where there is one, and the demo [Cocktail.rating] otherwise.
+     */
+    private fun sortListing(
+        source: List<Cocktail>,
+        option: HomeSortOption,
+        ratings: Map<String, CocktailRatingSummary>
+    ): List<Cocktail> {
+        val sortType = when (option) {
+            HomeSortOption.DEFAULT -> return source
+            HomeSortOption.NAME_ASC -> SortCocktailsUseCase.SortType.NAME_ASC
+            HomeSortOption.PRICE_ASC -> SortCocktailsUseCase.SortType.PRICE_ASC
+            HomeSortOption.PRICE_DESC -> SortCocktailsUseCase.SortType.PRICE_DESC
+            HomeSortOption.RATING -> SortCocktailsUseCase.SortType.RATING
+            HomeSortOption.POPULARITY -> SortCocktailsUseCase.SortType.POPULARITY
+        }
+        return sortCocktailsUseCase(source, sortType) { ratings[it.id]?.rating ?: it.rating }
     }
 
     /**
@@ -297,17 +368,18 @@ class SharedHomeViewModel internal constructor(
                 .loadMore(category, state.currentPage, PAGE_SIZE)
                 .getOrThrow()
 
-            _uiState.update { cur ->
-                if (newItems.isNotEmpty()) {
+            if (newItems.isNotEmpty()) {
+                // The new page joins the listing and the whole of it is
+                // re-sorted, so a sorted list stays in order as it grows
+                publishListing(listingSource + newItems) { cur ->
                     cur.copy(
-                        cocktails = cur.cocktails + newItems,
                         currentPage = nextPage,
                         hasMoreData = newItems.size >= PAGE_SIZE,
                         isLoadingMore = false
                     )
-                } else {
-                    cur.copy(hasMoreData = false, isLoadingMore = false)
                 }
+            } else {
+                _uiState.update { it.copy(hasMoreData = false, isLoadingMore = false) }
             }
         } catch (e: Exception) {
             // hasMoreData stays true: a failed page fetch must surface as a
@@ -340,12 +412,13 @@ class SharedHomeViewModel internal constructor(
             // Search results are a complete, unpaginated set: clear the flag
             // left over from category pagination so clients don't offer
             // "load more" on top of search results.
-            _uiState.update { it.copy(
-                cocktails = filtered,
-                isLoading = false,
-                hasMoreData = false,
-                currentPage = 1
-            ) }
+            publishListing(filtered) {
+                it.copy(
+                    isLoading = false,
+                    hasMoreData = false,
+                    currentPage = 1
+                )
+            }
         } catch (e: Exception) {
             handleException(e, MR.strings.error_apply_filters_failed)
             _uiState.update { it.copy(isLoading = false) }
@@ -387,37 +460,34 @@ class SharedHomeViewModel internal constructor(
     }
 
     /**
-     * Sort cocktails by price.
-     * SKIE will convert this to Swift async function.
+     * Order the listing by [option]. The choice is kept in
+     * [HomeUiState.sortOption] and re-applied to every later listing —
+     * another category, a search, a page loaded on scroll, or a refresh
+     * landing through the database — until changed; [HomeSortOption.DEFAULT]
+     * restores the catalog's own order.
      */
-    suspend fun sortByPrice(ascending: Boolean) {
-        try {
-            val sortType = if (ascending) SortCocktailsUseCase.SortType.PRICE_ASC else SortCocktailsUseCase.SortType.PRICE_DESC
-            _uiState.update { it.copy(cocktails = sortCocktailsUseCase(it.cocktails, sortType)) }
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_sort_cocktails_failed)
+    fun setSortOption(option: HomeSortOption) {
+        _uiState.update {
+            it.copy(
+                sortOption = option,
+                cocktails = sortListing(listingSource, option, it.ratingSummaries)
+            )
         }
     }
 
     /**
-     * Sort cocktails by rating.
+     * Reload the "Recently viewed" row (newest first, at most
+     * [RECENTLY_VIEWED_LIMIT]). The store offers no change flow, so
+     * platforms call this whenever Home comes back on screen (e.g. after a
+     * cocktail's detail page was opened). A failed read keeps the row as is.
      */
-    suspend fun sortByRating() {
-        try {
-            _uiState.update { it.copy(cocktails = sortCocktailsUseCase(it.cocktails, SortCocktailsUseCase.SortType.RATING)) }
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_sort_cocktails_failed)
-        }
-    }
-
-    /**
-     * Sort cocktails by popularity.
-     */
-    suspend fun sortByPopularity() {
-        try {
-            _uiState.update { it.copy(cocktails = sortCocktailsUseCase(it.cocktails, SortCocktailsUseCase.SortType.POPULARITY)) }
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_sort_cocktails_failed)
+    fun refreshRecentlyViewed() {
+        recentlyViewedJob?.cancel()
+        recentlyViewedJob = viewModelScope.launch {
+            val recent = runCatchingNonCancellation(onFailure = { null }) {
+                offlineRepository.getRecentlyViewedCocktails().getOrNull()
+            } ?: return@launch
+            _uiState.update { it.copy(recentlyViewed = recent.distinctBy { c -> c.id }.take(RECENTLY_VIEWED_LIMIT)) }
         }
     }
 
@@ -444,7 +514,7 @@ class SharedHomeViewModel internal constructor(
             handleException(e, MR.strings.error_refresh_cocktail_details_failed)
         }
     }
-    
+
     /** Canonical curated category list — single source of truth for category chips on both platforms. */
     val curatedCategories: List<String>
         get() = CocktailCategories.CURATED
@@ -497,7 +567,7 @@ class SharedHomeViewModel internal constructor(
                 .filter { category == CocktailCategories.DEFAULT || it.category == category }
 
             if (cachedCocktails.isNotEmpty()) {
-                _uiState.update { it.copy(cocktails = cachedCocktails, isLoading = false) }
+                publishListing(cachedCocktails) { it.copy(isLoading = false) }
                 clearError()
                 settleOfflineLoad(startedOffline)
             } else {
@@ -511,5 +581,10 @@ class SharedHomeViewModel internal constructor(
             )
             _uiState.update { it.copy(isLoading = false) }
         }
+    }
+
+    private companion object {
+        /** How many cocktails the "Recently viewed" row shows. */
+        const val RECENTLY_VIEWED_LIMIT = 10
     }
 }
