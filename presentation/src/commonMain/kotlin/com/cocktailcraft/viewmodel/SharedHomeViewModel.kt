@@ -57,6 +57,8 @@ class SharedHomeViewModel internal constructor(
     private val loadCocktailsByCategoryUseCase: LoadCocktailsByCategoryUseCase,
     private val sortCocktailsUseCase: SortCocktailsUseCase,
     private val manageFavoritesUseCase: ManageFavoritesUseCase,
+    // Direct repository dependencies (AR-8): recently viewed and the
+    // filter option lists are read as they are, with no logic to wrap
     private val offlineRepository: CocktailOfflineRepository,
     private val catalogRepository: CocktailCatalogRepository,
     private val networkMonitor: NetworkMonitor,

@@ -110,7 +110,7 @@ Note the `secureSettingsQualifier` for `AuthRepositoryImpl`: auth data uses the 
 
 ### 4. Domain Module (`:presentation`, `DomainModule.kt`)
 
-The use cases (all `factory`). It lives in `:presentation`, next to `presentationModule`, so `:core:domain` itself has no DI (or logging) dependency. The `AppConfig` binding lives in each platform module (AR-4) — the platform knows whether this is a debug build; commonMain doesn't. A use case must earn its indirection (AR-8): pure 1:1 pass-throughs with a single consumer are collapsed onto the repository interface instead (`ManageOrdersUseCase` was removed this way).
+The use cases (all `factory`). It lives in `:presentation`, next to `presentationModule`, so `:core:domain` itself has no DI (or logging) dependency. The `AppConfig` binding lives in each platform module (AR-4) — the platform knows whether this is a debug build; commonMain doesn't. A use case must earn its indirection (AR-8): pure pass-throughs are collapsed onto the repository interface instead, and ViewModels call that repository directly (`ManageOrdersUseCase` and `ManageProfileUseCase` were removed this way).
 
 ```kotlin
 val domainModule = module {
@@ -121,7 +121,6 @@ val domainModule = module {
     factory { GetCocktailDetailUseCase(detailRepository = get(), favoritesRepository = get(), searchRepository = get()) }
     factory { ManageFavoritesUseCase(favoritesRepository = get(), detailRepository = get()) }
     factory { ManageCartUseCase(cartRepository = get(), detailRepository = get()) }
-    factory { ManageProfileUseCase(authRepository = get()) }
     factory { ManageReviewsUseCase(repository = get()) }
     factory { PlaceOrderUseCase(orderRepository = get()) }
 }

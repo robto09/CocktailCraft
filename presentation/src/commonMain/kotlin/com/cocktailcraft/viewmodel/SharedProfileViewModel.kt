@@ -2,7 +2,7 @@ package com.cocktailcraft.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.UserPreferences
-import com.cocktailcraft.domain.usecase.ManageProfileUseCase
+import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.util.AuthInputValidator
 import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.domain.util.getOrThrow
@@ -49,7 +49,9 @@ import kotlinx.coroutines.launch
  * input validators (they take the input, never read state).
  */
 class SharedProfileViewModel internal constructor(
-    private val manageProfileUseCase: ManageProfileUseCase
+    // Direct repository dependency (AR-8): there is no logic to wrap — the
+    // input rules live here, the auth rules in the repository
+    private val authRepository: AuthRepository
 ) : SharedViewModel() {
 
     // Consolidated UI State
@@ -73,7 +75,7 @@ class SharedProfileViewModel internal constructor(
     /** Check current authentication status. */
     private suspend fun checkAuthStatus() {
         runCatchingNonCancellation(onFailure = { handleException(it, MR.strings.error_check_auth_failed) }) {
-            val signedIn = manageProfileUseCase.isUserSignedIn().getOrThrow()
+            val signedIn = authRepository.isUserSignedIn().getOrThrow()
             _uiState.update { it.copy(
                 isLoggedIn = signedIn,
                 authStatus = if (signedIn) "Authenticated" else "Not Authenticated"
@@ -115,7 +117,7 @@ class SharedProfileViewModel internal constructor(
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
             false
         }) {
-            val success = manageProfileUseCase.signIn(email, password).getOrThrow()
+            val success = authRepository.signIn(email, password).getOrThrow()
             if (success) {
                 _uiState.update { it.copy(authStatus = "Sign In Successful") }
                 checkAuthStatus()
@@ -153,7 +155,7 @@ class SharedProfileViewModel internal constructor(
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
             false
         }) {
-            val success = manageProfileUseCase.signUp(email, password).getOrThrow()
+            val success = authRepository.signUp(email, password).getOrThrow()
             if (success) {
                 _uiState.update { it.copy(authStatus = "Sign Up Successful") }
                 saveProfile(name, email)
@@ -184,7 +186,7 @@ class SharedProfileViewModel internal constructor(
             handleException(it, MR.strings.error_sign_out_failed)
             false
         }) {
-            val success = manageProfileUseCase.signOut().getOrThrow()
+            val success = authRepository.signOut().getOrThrow()
             if (success) {
                 _uiState.update { it.copy(user = null, isLoggedIn = false, authStatus = "Signed Out") }
             } else {
@@ -214,7 +216,7 @@ class SharedProfileViewModel internal constructor(
             handleException(it, MR.strings.error_update_profile_failed)
             false
         }) {
-            val nameSuccess = manageProfileUseCase.updateUserName(name).getOrThrow()
+            val nameSuccess = authRepository.updateUserName(name).getOrThrow()
             if (nameSuccess) {
                 loadCurrentUser()
             } else {
@@ -252,7 +254,7 @@ class SharedProfileViewModel internal constructor(
             handleException(it, MR.strings.error_change_password_failed)
             false
         }) {
-            val success = manageProfileUseCase.changePassword(oldPassword, newPassword).getOrThrow()
+            val success = authRepository.changePassword(oldPassword, newPassword).getOrThrow()
             if (success) {
                 sendEvent(UiEvent.Success(MR.strings.password_changed_message.desc()))
             } else {
@@ -303,7 +305,7 @@ class SharedProfileViewModel internal constructor(
     private suspend fun loadCurrentUser() {
         // Silent fail for user loading
         runCatchingNonCancellation(onFailure = {}) {
-            val loadedUser = manageProfileUseCase.getCurrentUser().getOrThrow()
+            val loadedUser = authRepository.getCurrentUser().getOrThrow()
             _uiState.update { it.copy(user = loadedUser) }
         }
     }
@@ -311,7 +313,7 @@ class SharedProfileViewModel internal constructor(
     private suspend fun loadUserPreferences() {
         // Silent fail for preferences loading
         runCatchingNonCancellation(onFailure = {}) {
-            val prefs = manageProfileUseCase.getUserPreferences().getOrDefault(UserPreferences())
+            val prefs = authRepository.getUserPreferences().getOrDefault(UserPreferences())
             _uiState.update { it.copy(preferences = prefs) }
         }
     }

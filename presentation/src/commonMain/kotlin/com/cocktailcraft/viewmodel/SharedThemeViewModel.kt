@@ -4,7 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.designsystem.AccentColorTokens
 import com.cocktailcraft.domain.model.ThemeMode
 import com.cocktailcraft.domain.model.UserPreferences
-import com.cocktailcraft.domain.usecase.ManageProfileUseCase
+import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.resources.MR
@@ -48,7 +48,9 @@ import kotlinx.coroutines.launch
  * so a re-fired UI callback can only re-assert the same state.
  */
 class SharedThemeViewModel internal constructor(
-    private val manageProfileUseCase: ManageProfileUseCase
+    // Direct repository dependency (AR-8): preferences are read and saved
+    // as they are, with nothing to wrap
+    private val authRepository: AuthRepository
 ) : SharedViewModel() {
 
     // Consolidated UI State
@@ -163,7 +165,7 @@ class SharedThemeViewModel internal constructor(
     private suspend fun loadUserPreferences() {
         // Silent fail for preferences loading
         runCatchingNonCancellation(onFailure = {}) {
-            val preferences = manageProfileUseCase.getUserPreferences().getOrDefault(UserPreferences())
+            val preferences = authRepository.getUserPreferences().getOrDefault(UserPreferences())
             _uiState.update { it.copy(
                 userPreferences = preferences,
                 themeMode = when {
@@ -206,7 +208,7 @@ class SharedThemeViewModel internal constructor(
                 isReducedMotion = state.isReducedMotion
             )
 
-            val success = manageProfileUseCase.updateUserPreferences(updatedPreferences).getOrThrow()
+            val success = authRepository.updateUserPreferences(updatedPreferences).getOrThrow()
             if (success) {
                 _uiState.update { it.copy(userPreferences = updatedPreferences) }
             } else {

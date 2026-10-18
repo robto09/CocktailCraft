@@ -4,7 +4,6 @@ import app.cash.turbine.test
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.repository.AuthRepository
-import com.cocktailcraft.domain.usecase.ManageProfileUseCase
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.error_invalid_email_title
@@ -57,7 +56,7 @@ class SharedProfileViewModelTest : DataLayerTest() {
         val repository: AuthRepository = dataLayer(ioDispatcher, settings).get()
 
         fun viewModel(authRepository: AuthRepository = repository) =
-            SharedProfileViewModel(ManageProfileUseCase(authRepository))
+            SharedProfileViewModel(authRepository)
 
         /** Create an account with a profile name, then sign out so tests start from a clean session. */
         suspend fun seedAccount(name: String = "Ada Lovelace", email: String = "ada@example.com", password: String = "secret123") {

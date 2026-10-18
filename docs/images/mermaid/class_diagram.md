@@ -255,7 +255,7 @@ classDiagram
     }
 
     class SharedThemeViewModel {
-        -ManageProfileUseCase manageProfileUseCase
+        -AuthRepository authRepository
         +StateFlow~ThemeUiState~ uiState
         +toggleDarkMode()
         +setDarkMode(Boolean enabled)

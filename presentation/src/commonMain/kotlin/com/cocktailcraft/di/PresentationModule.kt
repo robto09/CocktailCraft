@@ -61,6 +61,6 @@ val presentationModule = module {
             placeOrderUseCase = get()
         )
     }
-    single { com.cocktailcraft.viewmodel.SharedProfileViewModel(manageProfileUseCase = get()) }
-    single { com.cocktailcraft.viewmodel.SharedThemeViewModel(manageProfileUseCase = get()) }
+    single { com.cocktailcraft.viewmodel.SharedProfileViewModel(authRepository = get()) }
+    single { com.cocktailcraft.viewmodel.SharedThemeViewModel(authRepository = get()) }
 }
