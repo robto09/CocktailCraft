@@ -140,7 +140,7 @@
     <string name="home_no_connection_title">No internet connection</string>
     <string name="home_no_connection_message">Check your connection and try again.</string>
     <string name="search_ingredients_placeholder">Search ingredients</string>
-    <string name="search_cocktails_placeholder">Search cocktails...</string>
+    <string name="search_cocktails_placeholder">Search</string>
     <string name="search_clear_search">Clear search</string>
     <string name="search_advanced_search">Advanced Search</string>
     <string name="search_advanced_search_ios">Advanced search</string>
