@@ -1,27 +1,21 @@
 # CocktailCraft Documentation Index
 
-This directory contains the technical documentation for CocktailCraft, a Kotlin Multiplatform cocktail ordering and discovery app for Android and iOS. For the project overview, architecture summary, features, and setup instructions, start with the [root README](../README.md). The pages below cover individual subsystems in depth.
+Technical documentation for CocktailCraft, a Kotlin Multiplatform cocktail ordering and discovery app for Android and iOS. Start with the [root README](../README.md) for the overview, module structure, features, setup, [testing](../README.md#testing) and [localization](../README.md#localization); the pages below cover individual subsystems.
 
-## Architecture & Patterns
+## Architecture
 
-- **[Shared ViewModel Strategy](Shared_ViewModel_Strategy.md)**: ViewModel architecture — the 8 shared KMP ViewModels plus the `SharedViewModel` base, the 8 iOS SKIE wrappers, direct consumption on Android, and the SKIE configuration
-- **[Dependency Injection](DependencyInjection.md)**: Koin module structure, the data layer (repository conventions and storage), ViewModel wiring, and testing approach
+- **[Shared ViewModel Strategy](Shared_ViewModel_Strategy.md)**: the 8 shared KMP ViewModels and their `SharedViewModel` base, the iOS SKIE wrappers, direct consumption on Android, and the SKIE configuration
+- **[Dependency Injection](DependencyInjection.md)**: Koin modules per Gradle module, the data layer (repository conventions and storage), ViewModel wiring, and DI testing
+- **Diagrams** (mermaid): [Catalog flow](images/mermaid/catalog_flow.md) · [Place order sequence](images/mermaid/sequence_diagram_place_order.md)
 
-## Features & Implementation
+## Features & UI
 
-- **[Advanced Search](AdvancedSearch.md)**: Multi-criteria search (query, category, ingredient, alcoholic) within TheCocktailDB free-tier constraints, and the related-cocktails row on the detail screen
-- **[UI Components](UI_Components.md)**: Reusable Android Compose components and the animation system
-- **[iOS UI Components](iOS_UI_Components.md)**: Reusable SwiftUI components
+- **[Advanced Search](AdvancedSearch.md)**: multi-criteria search within TheCocktailDB free-tier limits, and the related-cocktails row on the detail screen
+- **[UI Components](UI_Components.md)**: reusable Android Compose components, theming and animations
+- **[iOS UI Components](iOS_UI_Components.md)**: reusable SwiftUI components
 
-## Build, Tooling & Testing
+## Build & Tooling
 
-- **[Libraries](Libraries.md)**: Every dependency with version and purpose, managed via the `libraries.toml` version catalog
-- **[DebugSwift](DebugSwift.md)**: iOS in-app debugging tool integration and QA usage
-- **[iOS Setup Instructions](../iosApp/iOS_Setup_Instructions.md)**: Complete iOS development environment setup
-
-## Architecture Diagrams
-
-Mermaid diagrams under [`images/mermaid/`](images/mermaid/):
-
-- **[Catalog Flow](images/mermaid/catalog_flow.md)**: How a category page flows from TheCocktailDB through the database to the Home screen
-- **[Sequence Diagram — Place Order](images/mermaid/sequence_diagram_place_order.md)**: Order placement flow across layers
+- **[Libraries](Libraries.md)**: every dependency with its version and purpose (`libraries.toml`)
+- **[iOS Setup Instructions](../iosApp/iOS_Setup_Instructions.md)**: iOS development environment setup
+- **[DebugSwift](DebugSwift.md)**: the Debug-only iOS in-app debugging tool and how it is kept out of Release builds
