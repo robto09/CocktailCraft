@@ -37,11 +37,10 @@ Cross-target brand color tokens: `primary` (#EB6A43 coral) and `secondary` (#FFC
 ### AppTheme
 **File**: `Theme/AppTheme.swift`
 
-Design constants matching Android: `Typography` (Dynamic Type-anchored fonts), `Spacing` (xs...xxxl plus card-specific values), `CornerRadius`, `Shadow`, and `Animation` (standard/quick/slow). Also defines:
+Design constants matching Android: `Typography` (Dynamic Type-anchored fonts), `Spacing` (xs...xxxl), `CornerRadius`, `Shadow`, and `Animation` (standard/quick). Also defines:
 
 - The `isDarkMode` SwiftUI environment value (`ThemeEnvironmentKey`)
 - `.cardStyle()` — surface background, card corner radius, and shadow
-- `.chipStyle(isSelected:)` — filter-chip styling
 - `.minimumHitTarget()` — expands icon-only controls to Apple's 44 pt HIG minimum
 
 ```swift
@@ -217,7 +216,7 @@ VStack(alignment: .leading, spacing: 8) {
 
 1. **Theming**: Read the theme with `@Environment(\.isDarkMode)` and resolve colors through the `AppColors` functions — never through system appearance.
 2. **Spacing, typography, radii**: Use the `AppTheme` constants rather than literals.
-3. **Cards and chips**: Use `.cardStyle()` and `.chipStyle(isSelected:)` for consistent container styling.
+3. **Cards**: Use `.cardStyle()` for consistent container styling.
 4. **Touch targets**: Apply `.minimumHitTarget()` to icon-only buttons.
 5. **Errors**: Screens backed by a shared ViewModel surface errors with `.sharedErrorAlert`; use `ErrorView` for full-frame error states.
 6. **Loading and empty states**: Show a skeleton shaped like the content (`SkeletonBlock` + `.shimmering()`) rather than a spinner, and use `EmptyStateView` for empty states. Keep `ProgressView` for in-place work: buttons, pull-to-refresh and loading the next page.
