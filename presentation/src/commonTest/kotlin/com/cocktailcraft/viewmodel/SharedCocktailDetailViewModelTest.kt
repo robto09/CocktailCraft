@@ -12,9 +12,9 @@ import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.added_to_cart
 import com.cocktailcraft.resources.favorite_removed
 import com.cocktailcraft.testutil.FakeCartRepository
+import com.cocktailcraft.testutil.FakeCatalogRepository
 import com.cocktailcraft.testutil.FakeDetailRepository
 import com.cocktailcraft.testutil.FakeFavoritesRepository
-import com.cocktailcraft.testutil.FakeSearchRepository
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
 import dev.icerock.moko.resources.desc.Raw
@@ -50,11 +50,11 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
     private class Harness {
         val detail = FakeDetailRepository()
         val favorites = FakeFavoritesRepository()
-        val search = FakeSearchRepository()
+        val catalog = FakeCatalogRepository()
         val cart = FakeCartRepository()
 
         fun viewModel(detailRepository: CocktailDetailRepository = detail) = SharedCocktailDetailViewModel(
-            getCocktailDetailUseCase = GetCocktailDetailUseCase(detailRepository, favorites, search),
+            getCocktailDetailUseCase = GetCocktailDetailUseCase(detailRepository, favorites, catalog),
             manageFavoritesUseCase = ManageFavoritesUseCase(favorites, detailRepository),
             manageCartUseCase = ManageCartUseCase(cart, detailRepository)
         )
@@ -235,7 +235,7 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
     fun loadCocktailLoadsRelatedCocktailsFromSameCategory() = runTest {
         val harness = Harness()
         harness.detail.byId["1"] = testCocktail("1", category = "Cocktail")
-        harness.search.all = listOf(
+        harness.catalog.all = listOf(
             testCocktail("1", category = "Cocktail"),
             testCocktail("2", category = "Cocktail"),
             testCocktail("3", category = "Cocktail"),

@@ -2,7 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>ArgumentListWrapping:DomainModule.kt$(detailRepository = get(), favoritesRepository = get(), searchRepository = get())</ID>
     <ID>ArgumentListWrapping:DomainPolicyTest.kt$DeliveryPolicyTest$(15, 25)</ID>
     <ID>ArgumentListWrapping:DomainPolicyTest.kt$DeliveryPolicyTest$(MR.strings.delivery_estimate_minutes.format(15, 25), DeliveryPolicy.estimatedDeliveryTimeForStatus(OrderStatus.PROCESSING))</ID>
     <ID>ArgumentListWrapping:DomainPolicyTest.kt$DeliveryPolicyTest$(MR.strings.order_status_delivered.desc(), DeliveryPolicy.estimatedDeliveryTimeForStatus(OrderStatus.DELIVERED))</ID>
@@ -24,7 +23,6 @@
     <ID>MagicNumber:DeliveryPolicy.kt$DeliveryPolicy$5</ID>
     <ID>MagicNumber:ManageReviewsUseCase.kt$ManageReviewsUseCase$5.0f</ID>
     <ID>MatchingDeclarationName:DomainPolicyTest.kt$DeliveryPolicyTest</ID>
-    <ID>MaxLineLength:DomainModule.kt$factory { GetCocktailDetailUseCase(detailRepository = get(), favoritesRepository = get(), searchRepository = get()) }</ID>
     <ID>MaxLineLength:DomainPolicyTest.kt$DeliveryPolicyTest$assertEquals(MR.strings.delivery_estimate_minutes.format(15, 25), DeliveryPolicy.estimatedDeliveryTimeForStatus(OrderStatus.PROCESSING))</ID>
     <ID>MaxLineLength:DomainPolicyTest.kt$DeliveryPolicyTest$assertEquals(MR.strings.order_status_delivered.desc(), DeliveryPolicy.estimatedDeliveryTimeForStatus(OrderStatus.DELIVERED))</ID>
     <ID>MaxLineLength:GetCocktailDetailUseCase.kt$GetCocktailDetailUseCase$val cocktails = searchRepository.filterByCategory(cocktail.category ?: CocktailCategories.DEFAULT).getOrDefault(emptyList())</ID>

@@ -47,7 +47,7 @@ internal class HomeViewModelHarness {
         sortCocktailsUseCase = SortCocktailsUseCase(),
         manageFavoritesUseCase = ManageFavoritesUseCase(favorites, detail),
         offlineRepository = offline,
-        getCocktailDetailUseCase = GetCocktailDetailUseCase(detail, favorites, search),
+        getCocktailDetailUseCase = GetCocktailDetailUseCase(detail, favorites, catalog),
         catalogRepository = catalog,
         networkMonitor = network,
         manageReviewsUseCase = ManageReviewsUseCase(reviews)

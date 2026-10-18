@@ -2,9 +2,9 @@ package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.testutil.FakeCatalogRepository
 import com.cocktailcraft.testutil.FakeDetailRepository
 import com.cocktailcraft.testutil.FakeFavoritesRepository
-import com.cocktailcraft.testutil.FakeSearchRepository
 import com.cocktailcraft.testutil.testCocktail
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -17,12 +17,12 @@ class GetCocktailDetailUseCaseTest {
 
     private val detail = FakeDetailRepository()
     private val favorites = FakeFavoritesRepository()
-    private val search = FakeSearchRepository()
+    private val catalog = FakeCatalogRepository()
 
     private val useCase = GetCocktailDetailUseCase(
         detailRepository = detail,
         favoritesRepository = favorites,
-        searchRepository = search
+        catalogRepository = catalog
     )
 
     @Test
@@ -63,7 +63,7 @@ class GetCocktailDetailUseCaseTest {
     @Test
     fun relatedCocktailsComeFromSameCategoryExcludingSelf() = runTest {
         val self = testCocktail("1", category = "Cocktail")
-        search.all = listOf(
+        catalog.all = listOf(
             self,
             testCocktail("2", category = "Cocktail"),
             testCocktail("3", category = "Cocktail"),
@@ -83,7 +83,7 @@ class GetCocktailDetailUseCaseTest {
     @Test
     fun relatedCocktailsFallBackToDefaultCategoryWhenCocktailHasNone() = runTest {
         // testCocktail's default category "Cocktail" == CocktailCategories.DEFAULT
-        search.all = listOf(testCocktail("2"), testCocktail("3"))
+        catalog.all = listOf(testCocktail("2"), testCocktail("3"))
 
         val related = useCase.getRelatedCocktails(testCocktail("1", category = null))
 
@@ -91,13 +91,33 @@ class GetCocktailDetailUseCaseTest {
     }
 
     @Test
-    fun relatedCocktailsAreEmptyWhenSearchFails() = runTest {
-        search.all = listOf(testCocktail("2"))
-        search.errorMessage = "API down"
+    fun relatedCocktailsAreEmptyWhenTheFetchFails() = runTest {
+        catalog.all = listOf(testCocktail("2"))
+        catalog.errorMessage = "API down"
 
         val related = useCase.getRelatedCocktails(testCocktail("1"))
 
         assertTrue(related.isEmpty(), "a failed category lookup must degrade to no suggestions")
+    }
+
+    @Test
+    fun relatedCocktailsComeFromTheStoredPageWithoutAFetch() = runTest {
+        catalog.store("Cocktail", listOf(testCocktail("1"), testCocktail("2"), testCocktail("3")))
+
+        val related = useCase.getRelatedCocktails(testCocktail("1"))
+
+        assertEquals(setOf("2", "3"), related.map(Cocktail::id).toSet())
+        assertTrue(catalog.refreshCalls.isEmpty(), "a stored page is enough for suggestions")
+    }
+
+    @Test
+    fun relatedCocktailsFetchTheCategoryOnlyWhenNothingIsStored() = runTest {
+        catalog.all = listOf(testCocktail("2"), testCocktail("3"))
+
+        useCase.getRelatedCocktails(testCocktail("1"))
+        useCase.getRelatedCocktails(testCocktail("1"))
+
+        assertEquals(listOf("Cocktail" to false), catalog.refreshCalls)
     }
 
     @Test
