@@ -1,6 +1,7 @@
 package com.cocktailcraft.android.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -35,18 +38,22 @@ import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.order_item_quantity_name
 import com.cocktailcraft.resources.order_number
 import com.cocktailcraft.resources.order_price_format
+import com.cocktailcraft.resources.order_view_details_a11y
 import com.cocktailcraft.resources.total
 
 /**
  * Order summary card: order number + date header, line items, total, and a
  * colored status indicator. Extracted from OrderListScreen so the screen
- * stays a thin state/list shell.
+ * stays a thin state/list shell. With [onClick] the whole card opens the
+ * order's details (TalkBack: "View order details").
  */
 @Composable
 fun OrderCard(
     order: Order,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
+    val clickLabel = stringResource(MR.strings.order_view_details_a11y)
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
@@ -55,8 +62,18 @@ fun OrderCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
+        // Clickable inside the card, so the ripple is clipped to its shape
+        // without also clipping the card's shadow
         Column(
-            modifier = Modifier.padding(Spacing.lg)
+            modifier = Modifier
+                .then(
+                    if (onClick != null) {
+                        Modifier.clickable(onClickLabel = clickLabel, role = Role.Button, onClick = onClick)
+                    } else {
+                        Modifier
+                    }
+                )
+                .padding(Spacing.lg)
         ) {
             // Order header
             Row(
@@ -138,31 +155,41 @@ fun OrderCard(
             Spacer(modifier = Modifier.height(Spacing.md))
 
             // Order status
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val statusColor = when (order.status) {
-                    OrderStatus.DELIVERED -> CocktailCraftTheme.extendedColors.success
-                    OrderStatus.PENDING,
-                    OrderStatus.PROCESSING,
-                    OrderStatus.SHIPPED -> CocktailCraftTheme.extendedColors.warning
-                    OrderStatus.CANCELLED -> MaterialTheme.colorScheme.outline
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .background(statusColor, CircleShape)
-                )
-
-                Spacer(modifier = Modifier.width(Spacing.sm))
-
-                Text(
-                    text = order.status.displayName.resolve(),
-                    fontSize = 14.sp,
-                    color = statusColor
-                )
-            }
+            OrderStatusIndicator(status = order.status)
         }
+    }
+}
+
+/** The color an order status is shown in, on the order list and the detail screen. */
+@Composable
+internal fun orderStatusColor(status: OrderStatus): Color = when (status) {
+    OrderStatus.DELIVERED -> CocktailCraftTheme.extendedColors.success
+    OrderStatus.PENDING,
+    OrderStatus.PROCESSING,
+    OrderStatus.SHIPPED -> CocktailCraftTheme.extendedColors.warning
+    OrderStatus.CANCELLED -> MaterialTheme.colorScheme.outline
+}
+
+/** A colored dot and the status's localized label ("Being Prepared"). */
+@Composable
+internal fun OrderStatusIndicator(status: OrderStatus, modifier: Modifier = Modifier) {
+    val statusColor = orderStatusColor(status)
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .background(statusColor, CircleShape)
+        )
+
+        Spacer(modifier = Modifier.width(Spacing.sm))
+
+        Text(
+            text = status.displayName.resolve(),
+            fontSize = 14.sp,
+            color = statusColor
+        )
     }
 }
