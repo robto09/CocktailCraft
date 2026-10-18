@@ -86,5 +86,5 @@ Declared under `packages:` in `iosApp/project.yml` and pinned by the committed
 | Baseline Profile (`androidx.baselineprofile`) | 1.5.0 | Baseline profile generation and consumption |
 | SKIE (`co.touchlab.skie`) | 0.10.13 | Swift interop for the iOS framework |
 | moko-resources (`dev.icerock.mobile.multiplatform-resources`) | 0.27.1 | Generates the shared strings (`MR`) for Android and iOS; `copyFrameworkResourcesToApp` copies the iOS bundle into the app |
-| detekt (`io.gitlab.arturbosch.detekt`, via build-logic) | 1.23.8 | Kotlin static analysis; `detekt-formatting` 1.23.8 wraps ktlint (check-only) — see README "Static analysis" |
-| Compose rules for detekt (`io.nlopez.compose.rules:detekt`) | 0.4.28 | Jetpack Compose lint rules (last line built for detekt 1.23) |
+| detekt (`dev.detekt`, via build-logic) | 2.0.0-alpha.6 | Kotlin static analysis; pre-release because 1.23.x can't parse Kotlin 2.3. `detekt-rules-ktlint-wrapper` 2.0.0-alpha.6 wraps ktlint (check-only by default) — see README "Static analysis" |
+| Compose rules for detekt (`io.nlopez.compose.rules:detekt`) | 0.6.8 | Jetpack Compose lint rules (built against detekt 2.0.0-alpha.6) |
