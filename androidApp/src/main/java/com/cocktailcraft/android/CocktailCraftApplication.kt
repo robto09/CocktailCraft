@@ -1,9 +1,7 @@
 package com.cocktailcraft.android
 
 import android.app.Application
-import android.os.Looper
 import com.cocktailcraft.android.di.widgetModule
-import com.cocktailcraft.android.widget.WidgetUpdateWorker
 import com.cocktailcraft.initKoin
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -23,17 +21,7 @@ class CocktailCraftApplication : Application() {
             modules(widgetModule)
         }
 
-        // WorkManager scheduling touches its database — keep that off the
-        // cold-start critical path and run it when the main thread first goes
-        // idle (roughly after first frame). Koin stays eager above: everything
-        // else depends on it (AN-11).
-        Looper.getMainLooper().queue.addIdleHandler {
-            // Widget refresh had zero callers before AN-2 — data went stale
-            // indefinitely. KEEP policy makes this idempotent; the worker
-            // no-ops (no network) when no widgets are placed, and the widget
-            // receivers handle enable/disable lifecycle.
-            WidgetUpdateWorker.schedule(this)
-            false // run once
-        }
+        // Widget refresh is scheduled by the widget receivers (onEnabled),
+        // never at launch: no widgets placed means no background work.
     }
 }

@@ -4,11 +4,15 @@ import com.cocktailcraft.android.widget.WidgetDataProvider
 import org.koin.dsl.module
 
 /**
- * Koin module for widget-related dependencies.
- * Provides WidgetDataProvider for widget access to repositories.
+ * Koin module for widget-related dependencies. WidgetDataProvider is only
+ * ever obtained from here (the widget worker and refresh actions inject it).
  */
 val widgetModule = module {
-    // Widget data provider - singleton to ensure consistent data access
-    single { WidgetDataProvider.getInstance() }
+    single {
+        WidgetDataProvider(
+            detailRepository = get(),
+            offlineRepository = get(),
+            favoritesRepository = get()
+        )
+    }
 }
-
