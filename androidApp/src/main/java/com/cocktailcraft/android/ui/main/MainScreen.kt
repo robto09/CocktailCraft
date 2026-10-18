@@ -49,8 +49,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
-import com.cocktailcraft.android.navigation.COCKTAIL_DEEP_LINK_BASE_PATH
 import com.cocktailcraft.android.navigation.CartRoute
+import com.cocktailcraft.android.navigation.CocktailDeepLink
 import com.cocktailcraft.android.navigation.CocktailDetailRoute
 import com.cocktailcraft.android.navigation.FavoritesRoute
 import com.cocktailcraft.android.navigation.HomeRoute
@@ -101,14 +101,15 @@ fun MainScreen() {
     // MainActivity is singleTop, so a widget deep link while the app is
     // already running arrives via onNewIntent instead of a fresh launch —
     // forward it to the NavController (the launch intent is handled by
-    // NavHost itself). Widget PendingIntents are delivered with a
-    // framework-forced FLAG_ACTIVITY_NEW_TASK, which makes handleDeepLink
-    // finish and relaunch the activity instead of navigating in place —
-    // strip launch flags first, we are already in the right task.
+    // NavHost itself, after MainActivity has filtered it the same way).
+    // Only a well-formed cocktail deep link gets through, rebuilt without
+    // extras or launch flags (see CocktailDeepLink.navigationIntentOrNull):
+    // the activity is exported, and handleDeepLink would otherwise act on
+    // Navigation's internal extras from any app's intent.
     val activity = LocalActivity.current as? ComponentActivity
     DisposableEffect(activity, navController) {
         val listener = Consumer<Intent> { intent ->
-            navController.handleDeepLink(Intent(intent).setFlags(0))
+            CocktailDeepLink.navigationIntentOrNull(intent)?.let(navController::handleDeepLink)
         }
         activity?.addOnNewIntentListener(listener)
         onDispose { activity?.removeOnNewIntentListener(listener) }
@@ -247,7 +248,7 @@ fun MainScreen() {
             // which own the system-bar insets (AN-6).
             composable<CocktailDetailRoute>(
                 deepLinks = listOf(
-                    navDeepLink<CocktailDetailRoute>(basePath = COCKTAIL_DEEP_LINK_BASE_PATH)
+                    navDeepLink<CocktailDetailRoute>(basePath = CocktailDeepLink.BASE_PATH)
                 )
             ) { backStackEntry ->
                 val route = backStackEntry.toRoute<CocktailDetailRoute>()

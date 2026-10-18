@@ -27,11 +27,3 @@ data class CocktailDetailRoute(val cocktailId: String)
 /** One order's detail screen, opened from the order list. */
 @Serializable
 data class OrderDetailRoute(val orderId: String)
-
-/**
- * Deep-link base for [CocktailDetailRoute]; the cocktail id is the final path
- * segment (`app://cocktailcraft/cocktail/{cocktailId}`). Must stay in step
- * with the VIEW intent filter in AndroidManifest.xml, which can't reference
- * this constant.
- */
-const val COCKTAIL_DEEP_LINK_BASE_PATH = "app://cocktailcraft/cocktail"

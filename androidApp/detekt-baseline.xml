@@ -166,7 +166,6 @@
     <ID>TopLevelPropertyNaming:AppToasts.kt$// Matches the iOS toast duration private const val SUCCESS_TOAST_DURATION_MS = 2_000L</ID>
     <ID>TopLevelPropertyNaming:CartScreen.kt$/** * Above this font scale (the 1.3x maximum of Android's standard sizes, i.e. * the accessibility "non-linear" sizes), the cart's checkout section scrolls * with the items instead of being pinned. */ private const val LARGE_FONT_SCALE = 1.3f</ID>
     <ID>TopLevelPropertyNaming:OptimizedImage.kt$private const val MEDIUM_THUMBNAIL_PX = 350</ID>
-    <ID>TopLevelPropertyNaming:Routes.kt$/** * Deep-link base for [CocktailDetailRoute]; the cocktail id is the final path * segment (`app://cocktailcraft/cocktail/{cocktailId}`). Must stay in step * with the VIEW intent filter in AndroidManifest.xml, which can't reference * this constant. */ const val COCKTAIL_DEEP_LINK_BASE_PATH = "app://cocktailcraft/cocktail"</ID>
     <ID>TopLevelPropertyNaming:WriteReviewSheet.kt$// Mirrors the shared review rule (ManageReviewsUseCase.validateReview) private const val MAX_COMMENT_LENGTH = 500</ID>
     <ID>WildcardImport:CartItemCard.kt$import androidx.compose.foundation.layout.*</ID>
     <ID>WildcardImport:CartItemCard.kt$import androidx.compose.material3.*</ID>
