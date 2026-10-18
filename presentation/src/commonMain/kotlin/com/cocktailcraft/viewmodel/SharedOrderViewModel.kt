@@ -68,6 +68,7 @@ class SharedOrderViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun loadOrders() {
+        clearError()
         _uiState.update { it.copy(isLoading = true) }
         try {
             val orderList = orderRepository.getOrders().getOrThrow()
@@ -87,10 +88,14 @@ class SharedOrderViewModel internal constructor(
      * Check out: place an order for [cartItems] and empty the cart, atomically.
      * On success the cart is already empty (SharedCartViewModel picks that up
      * from its observed flow); on failure it is untouched. Callers must not
-     * clear the cart themselves.
+     * clear the cart themselves. A call while an order is already being
+     * placed is ignored (returns false), so a double tap can't order twice.
      * SKIE will convert this to Swift async function.
      */
     suspend fun placeOrder(cartItems: List<CocktailCartItem>, totalPrice: Double): Boolean {
+        if (_uiState.value.isPlacingOrder) return false
+        clearError()
+
         if (cartItems.isEmpty()) {
             setError(
                 MR.strings.error_empty_cart_title,
@@ -121,6 +126,8 @@ class SharedOrderViewModel internal constructor(
                     false
                 }
                 is Result.Loading -> {
+                    // Release the in-flight guard, or every later checkout is ignored
+                    _uiState.update { it.copy(isPlacingOrder = false, isLoading = false) }
                     false
                 }
             }
@@ -136,8 +143,10 @@ class SharedOrderViewModel internal constructor(
      * SKIE will convert this to Swift async function returning optional.
      */
     suspend fun getOrderById(orderId: String): Order? {
+        clearError()
         return try {
-            orderRepository.getOrderById(orderId).getOrNull()
+            orderRepository.getOrderById(orderId)
+                .getOrReport(null, MR.strings.error_load_order_details_failed)
         } catch (e: Exception) {
             handleException(e, MR.strings.error_load_order_details_failed)
             null
@@ -149,6 +158,7 @@ class SharedOrderViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun updateOrderStatus(orderId: String, status: String): Boolean {
+        clearError()
         return try {
             val result = orderRepository.updateOrderStatus(orderId, status)
             if (result.isSuccess()) {
@@ -169,6 +179,7 @@ class SharedOrderViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun cancelOrder(orderId: String): Boolean {
+        clearError()
         return try {
             val success = orderRepository.cancelOrder(orderId).getOrDefault(false)
             if (success) {

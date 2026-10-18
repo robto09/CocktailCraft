@@ -1,5 +1,6 @@
 package com.cocktailcraft.viewmodel
 
+import app.cash.turbine.test
 import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
@@ -12,6 +13,7 @@ import com.cocktailcraft.resources.error_invalid_name_title
 import com.cocktailcraft.resources.error_invalid_password_title
 import com.cocktailcraft.resources.error_sign_in_failed_title
 import com.cocktailcraft.resources.error_sign_up_failed_title
+import com.cocktailcraft.resources.password_changed_message
 import com.cocktailcraft.testutil.DataLayerTest
 import com.cocktailcraft.util.ErrorHandler
 import com.russhwolf.settings.MapSettings
@@ -21,6 +23,7 @@ import dev.icerock.moko.resources.desc.desc
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -254,6 +257,35 @@ class SharedProfileViewModelTest : DataLayerTest() {
 
         assertEquals(Result.Success(true), harness.repository.signIn("ada@example.com", "newpass456"))
         assertEquals(Result.Success(false), harness.repository.signIn("ada@example.com", "secret123"))
+    }
+
+    @Test
+    fun changePasswordSuccessIsAnEventNotAnError() = runTest {
+        val harness = Harness(StandardTestDispatcher(testScheduler))
+        harness.repository.signUp("ada@example.com", "secret123")
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        vm.events.test {
+            assertTrue(vm.changePassword("secret123", "newpass456"))
+            val event = assertIs<UiEvent.Success>(awaitItem())
+            assertEquals(MR.strings.password_changed_message.desc(), event.message)
+        }
+        assertNull(vm.error.value, "success used to be reported through the error channel")
+    }
+
+    @Test
+    fun failedSignInErrorIsClearedByTheNextAttempt() = runTest {
+        val harness = Harness(StandardTestDispatcher(testScheduler))
+        harness.seedAccount()
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+        assertFalse(vm.signIn("ada@example.com", "wrong-password"))
+        assertNotNull(vm.error.value)
+
+        assertTrue(vm.signIn("ada@example.com", "secret123"))
+
+        assertNull(vm.error.value, "the dialog must not keep showing the earlier failure")
     }
 
     @Test

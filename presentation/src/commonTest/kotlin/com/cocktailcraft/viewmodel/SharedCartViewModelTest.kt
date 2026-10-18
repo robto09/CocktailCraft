@@ -4,17 +4,24 @@ import app.cash.turbine.test
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.added_to_cart
 import com.cocktailcraft.testutil.FakeCartRepository
 import com.cocktailcraft.testutil.FakeDetailRepository
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
+import dev.icerock.moko.resources.desc.Raw
+import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.format
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -101,6 +108,54 @@ class SharedCartViewModelTest : MainDispatcherTest() {
 
         assertEquals(1, vm.quantityOf("1"), "failed removal must be reverted")
         assertNotNull(vm.error.value)
+    }
+
+    @Test
+    fun nextCartActionClearsAnEarlierFailure() = runTest {
+        // The ViewModel is a Koin single: one failure must not stick for the session
+        val repository = FakeCartRepository()
+        repository.addToCart(CocktailCartItem(testCocktail("1"), quantity = 1))
+        val vm = viewModel(repository)
+        advanceUntilIdle()
+        repository.failNextMutation = true
+        vm.updateQuantity("1", 2)
+        assertNotNull(vm.error.value)
+
+        vm.updateQuantity("1", 2)
+
+        assertNull(vm.error.value, "a successful retry must clear the earlier error")
+        assertEquals(2, vm.quantityOf("1"))
+    }
+
+    @Test
+    fun addToCartSuccessAnnouncesAddedEvent() = runTest {
+        val vm = viewModel()
+        advanceUntilIdle()
+
+        vm.events.test {
+            assertTrue(vm.addToCart(testCocktail("7", name = "Margarita")))
+            val event = assertIs<UiEvent.Success>(awaitItem())
+            assertEquals(MR.strings.added_to_cart.format("Margarita"), event.message)
+        }
+        assertNull(vm.error.value)
+    }
+
+    @Test
+    fun addToCartFailureAnnouncesFailureWithoutTouchingTheCartError() = runTest {
+        val repository = FakeCartRepository()
+        val vm = viewModel(repository)
+        advanceUntilIdle()
+        repository.failNextMutation = true
+
+        vm.events.test {
+            assertFalse(vm.addToCart(testCocktail("7")))
+            val event = assertIs<UiEvent.Failure>(awaitItem())
+            assertEquals(StringDesc.Raw("add failed"), event.message)
+        }
+        // Add-to-cart runs from other screens: its failure must not wait on
+        // the cart's error channel to pop up later on the Cart tab
+        assertNull(vm.error.value)
+        assertTrue(vm.uiState.value.cartItems.isEmpty())
     }
 
     @Test

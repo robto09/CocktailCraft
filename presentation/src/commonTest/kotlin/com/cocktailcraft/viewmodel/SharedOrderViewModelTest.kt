@@ -24,6 +24,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,7 +67,14 @@ private class FakeOrderRepository : OrderRepository {
         return Result.Success(orders.value)
     }
 
+    /** When set, placeOrder suspends until completed (to observe the in-flight state). */
+    var placeGate: CompletableDeferred<Unit>? = null
+
+    var placeOrderCalls = 0
+
     override suspend fun placeOrder(order: Order): Result<Unit> {
+        placeOrderCalls++
+        placeGate?.await()
         errorMessage?.let { return Result.Error(it) }
         orders.value = orders.value + order
         return Result.Success(Unit)
@@ -226,6 +234,46 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         assertNull(vm.uiState.value.currentOrder)
         assertFalse(vm.uiState.value.isPlacingOrder)
         assertTrue(vm.uiState.value.orders.isEmpty())
+    }
+
+    @Test
+    fun retryAfterFailedLoadClearsTheError() = runTest {
+        // Retry must be able to leave the error state (it never cleared before)
+        val repository = FakeOrderRepository()
+        repository.seed(testOrder("o1"))
+        val vm = viewModel(repository)
+        advanceUntilIdle()
+        repository.errorMessage = "orders backend down"
+        vm.loadOrders()
+        assertNotNull(vm.error.value)
+
+        repository.errorMessage = null
+        vm.loadOrders()
+
+        assertNull(vm.error.value, "a successful reload must clear the earlier error")
+        assertEquals(listOf("o1"), vm.uiState.value.orders.map { it.id })
+    }
+
+    @Test
+    fun placeOrderWhileOneIsInFlightIsIgnored() = runTest {
+        val repository = FakeOrderRepository()
+        val gate = CompletableDeferred<Unit>()
+        repository.placeGate = gate
+        val vm = viewModel(repository)
+        advanceUntilIdle()
+        val cartItems = listOf(CocktailCartItem(testCocktail("1", price = 10.0), quantity = 1))
+
+        val first = async { vm.placeOrder(cartItems, totalPrice = 10.0) }
+        runCurrent()
+        assertTrue(vm.uiState.value.isPlacingOrder)
+
+        assertFalse(vm.placeOrder(cartItems, totalPrice = 10.0), "a double tap must not order twice")
+        gate.complete(Unit)
+
+        assertTrue(first.await())
+        assertEquals(1, repository.placeOrderCalls)
+        assertEquals(1, vm.uiState.value.orders.size)
+        assertFalse(vm.uiState.value.isPlacingOrder)
     }
 
     @Test

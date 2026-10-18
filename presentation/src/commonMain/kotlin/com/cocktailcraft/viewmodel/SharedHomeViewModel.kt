@@ -233,6 +233,7 @@ class SharedHomeViewModel internal constructor(
         // connectivity returns.
         if (!state.isNetworkAvailable) return
 
+        clearError()
         _uiState.update { it.copy(isLoadingMore = true) }
 
         try {
@@ -254,7 +255,6 @@ class SharedHomeViewModel internal constructor(
                     cur.copy(hasMoreData = false, isLoadingMore = false)
                 }
             }
-            clearError()
         } catch (e: Exception) {
             // hasMoreData stays true: a failed page fetch must surface as a
             // retryable error, never masquerade as the end of the list.
@@ -316,12 +316,14 @@ class SharedHomeViewModel internal constructor(
     
     /**
      * Toggle favorite status for a cocktail. State updates arrive via the
-     * observed favorites flow (SH-4).
+     * observed favorites flow (SH-4); a failed toggle is reported.
      * SKIE will convert this to Swift async function.
      */
     suspend fun toggleFavorite(cocktail: Cocktail) {
+        clearError()
         try {
             manageFavoritesUseCase.toggle(cocktail)
+                .getOrReport(false, MR.strings.error_update_favorites_failed)
         } catch (e: Exception) {
             handleException(e, MR.strings.error_update_favorites_failed)
         }
