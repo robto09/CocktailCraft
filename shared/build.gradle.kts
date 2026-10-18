@@ -7,21 +7,12 @@ plugins {
     alias(libs.plugins.moko.resources)
 }
 
-// Configure SKIE for enhanced Swift interop
+// SKIE's Swift interop. Flows, suspend functions, enums and sealed classes
+// are on by default; default arguments are not.
 skie {
     features {
         group {
-            // Core interop features
-            co.touchlab.skie.configuration.FlowInterop.Enabled(true)
-            co.touchlab.skie.configuration.SuspendInterop.Enabled(true)
-
-            // Enhanced enum support for better Swift integration
-            co.touchlab.skie.configuration.EnumInterop.Enabled(true)
-
-            // Sealed class support for Swift enum-like behavior
-            co.touchlab.skie.configuration.SealedInterop.Enabled(true)
-
-            // Default arguments support for cleaner Swift APIs
+            // Default-argument overloads for cleaner Swift calls
             co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(true)
         }
         // moko-resources is an external library, but since it reaches the
