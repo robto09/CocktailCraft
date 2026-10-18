@@ -22,18 +22,6 @@ final class SharedViewModelWrapperTests: TestSetup {
                                uiState: sharedViewModel.uiState)
     }
 
-    /// Polls on the main actor — each sleep suspends, so the wrapper's
-    /// observation tasks get to run between checks. Bounded at 2s.
-    private func waitUntil(timeout: TimeInterval = 2.0,
-                           _ condition: () -> Bool) async -> Bool {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if condition() { return true }
-            try? await Task.sleep(nanoseconds: 50_000_000)
-        }
-        return condition()
-    }
-
     func testStateIsSeededSynchronously() {
         // No await between construction and assertion: whatever the wrapper
         // holds here came from the synchronous uiState.value seed in init,
@@ -49,9 +37,11 @@ final class SharedViewModelWrapperTests: TestSetup {
 
         let original = viewModel.uiState.value.fontSize
         let target = original == "small" ? "large" : "small"
-        // The theme VM is the app's Koin single and persists its settings —
-        // put the real value back whatever happens after this point
-        // (continueAfterFailure=false aborts the test body on failure).
+        // The theme VM is the app's Koin single, shared with every other
+        // test in this host: put the value back whatever happens after this
+        // point (continueAfterFailure=false aborts the test body on
+        // failure). The settings themselves are test mode's throwaway
+        // suite, never the simulator's real ones.
         addTeardownBlock {
             try await viewModel.setFontSize(size: original)
         }

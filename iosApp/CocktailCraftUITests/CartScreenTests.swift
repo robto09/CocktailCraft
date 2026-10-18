@@ -16,6 +16,18 @@ class CartScreenTests: UITestSetup {
                       "Cart must show its empty state or an order summary — it showed neither")
     }
 
+    func testEmptyCartStartShoppingGoesHome() {
+        // Test mode launches with an empty store, so the empty state is certain
+        XCTAssertTrue(waitForHomeScreen(), "Home screen should be loaded")
+        XCTAssertTrue(navigateToTab("Cart"), "Should navigate to Cart tab")
+        XCTAssertTrue(waitForElement(emptyStateTitle), "A fresh cart should be empty")
+
+        app.buttons["emptyState.actionButton"].firstMatch.tap()
+
+        XCTAssertTrue(waitForHomeScreen(timeout: 5.0), "Start Shopping should switch to Home")
+        XCTAssertTrue(app.tabBars.buttons["Home"].isSelected, "Home tab should be selected")
+    }
+
     func testCartStateIsStableAcrossTabSwitches() {
         XCTAssertTrue(waitForHomeScreen(), "Home screen should be loaded")
         XCTAssertTrue(navigateToTab("Cart"), "Should navigate to Cart tab")

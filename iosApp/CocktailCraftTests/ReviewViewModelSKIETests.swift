@@ -5,8 +5,9 @@ import shared
 /**
  * ReviewViewModelSKIE over the real shared review ViewModel, resolved
  * through the Koin graph the test host already started (TestSetup).
- * Reviews persist in the host app's settings, so every test uses a fresh
- * cocktail id and deletes whatever it submits.
+ * Reviews persist in the host's (test-mode, in-memory) database for the
+ * whole run, so every test uses a fresh cocktail id and deletes whatever it
+ * submits, keeping the tests independent of each other.
  */
 @MainActor
 final class ReviewViewModelSKIETests: TestSetup {
@@ -14,18 +15,6 @@ final class ReviewViewModelSKIETests: TestSetup {
     // nonisolated: also used as a default argument, which is evaluated
     // outside the class's main-actor isolation
     private nonisolated static let validComment = "Bright, balanced and easy to make."
-
-    /// Polls on the main actor. Each sleep suspends, so the wrapper's
-    /// observation tasks get to run between checks. Bounded at 2s.
-    private func waitUntil(timeout: TimeInterval = 2.0,
-                           _ condition: () -> Bool) async -> Bool {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if condition() { return true }
-            try? await Task.sleep(nanoseconds: 50_000_000)
-        }
-        return condition()
-    }
 
     private func uniqueCocktailId() -> String {
         "ios-review-test-\(UUID().uuidString)"

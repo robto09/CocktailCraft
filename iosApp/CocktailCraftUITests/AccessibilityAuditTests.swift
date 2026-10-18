@@ -8,9 +8,10 @@ import XCTest
  * the largest accessibility size (AX5). Any issue not covered by an
  * exclusion in `isExcluded` fails the test.
  *
- * Network-tolerant: the app loads live data, so each test audits whatever
- * state renders (content, loading, empty, offline or error) instead of
- * asserting a particular one.
+ * The app runs in test mode (fixture cocktails, empty stores; see
+ * UITestSetup), so the audited screens are the same on every run. The tests
+ * still audit whatever state renders rather than asserting one, so they
+ * also hold if the simulator itself is offline.
  */
 class AccessibilityAuditTests: UITestSetup {
 
@@ -18,7 +19,7 @@ class AccessibilityAuditTests: UITestSetup {
     /// launch, and each test chooses its text size.
     override func setUpWithError() throws {
         continueAfterFailure = true
-        app = XCUIApplication()
+        app = makeApp()
         // Debug builds float DebugSwift's QA overlay over every screen; it
         // never ships, so it is kept out of the audit
         app.launchEnvironment["HIDE_DEBUG_OVERLAY"] = "1"

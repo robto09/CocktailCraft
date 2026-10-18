@@ -16,9 +16,10 @@ class DeepLinkTests: UITestSetup {
     /// set before launch, so the base class's plain `app.launch()` is skipped.
     override func setUpWithError() throws {
         continueAfterFailure = false
-        app = XCUIApplication()
-        // "11007" is TheCocktailDB's Margarita — the same fixture id the
-        // WidgetDeepLink unit tests use. Only Debug builds read this.
+        app = makeApp()
+        // "11007" is TheCocktailDB's Margarita — one of test mode's fixture
+        // cocktails, and the id the WidgetDeepLink unit tests use. Only
+        // Debug builds read this.
         app.launchEnvironment["DEEPLINK_COCKTAIL_ID"] = "11007"
         app.launch()
     }

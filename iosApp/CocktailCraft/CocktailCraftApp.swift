@@ -20,8 +20,11 @@ struct CocktailCraftApp: App {
         // back indicator follows this appearance proxy.
         UINavigationBar.appearance().tintColor = .white
 
-        // Keep the home-screen widgets' favorites snapshot current
-        WidgetDataBridge.shared.start()
+        // Keep the home-screen widgets' snapshots current — except in test
+        // mode, whose fixture data must not overwrite the real widgets'
+        if !KoinInitializer.isTestMode {
+            WidgetDataBridge.shared.start()
+        }
 
         // Initialize DebugSwift for QA debugging
         #if DEBUG
@@ -134,8 +137,32 @@ class KoinInitializer {
         // Start Koin with all modules using SKIE generated function.
         // Swift never touches the Koin container directly — everything is
         // resolved through the shared KoinHelper below.
-        _ = shared.doInitKoin()
+        if Self.isTestMode {
+            #if DEBUG
+            // Same graph over an in-memory database, throwaway settings and
+            // fixture network responses (shared/src/iosMain/IosTestMode.kt)
+            _ = shared.doInitKoinForTesting()
+            #endif
+        } else {
+            _ = shared.doInitKoin()
+        }
     }
+
+    /// True when the app runs under the unit or UI tests, which must never
+    /// read or write the simulator's real app data or depend on the live
+    /// API. Set by COCKTAILCRAFT_TEST_MODE (the scheme's Test action, for
+    /// the unit-test host; UITestSetup's launch environment, for UI tests),
+    /// or implied when XCTest has injected a test bundle into this process.
+    /// Debug builds only: Release always runs against the real stores.
+    static let isTestMode: Bool = {
+        #if DEBUG
+        let environment = ProcessInfo.processInfo.environment
+        return environment["COCKTAILCRAFT_TEST_MODE"] != nil
+            || environment["XCTestConfigurationFilePath"] != nil
+        #else
+        return false
+        #endif
+    }()
 }
 
 #if DEBUG
