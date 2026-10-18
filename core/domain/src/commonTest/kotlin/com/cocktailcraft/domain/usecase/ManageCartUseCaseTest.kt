@@ -2,7 +2,13 @@ package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Money
+import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.OrderItem
+import com.cocktailcraft.domain.model.OrderStatus
+import com.cocktailcraft.domain.model.sumOfMoney
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
+import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.FakeCartRepository
@@ -116,6 +122,91 @@ class ManageCartUseCaseTest {
         val useCase = ManageCartUseCase(cart, detail)
 
         assertFailsWith<CancellationException> { useCase.addToCart(partialCocktail("1")) }
+        assertTrue(cart.getCartItems().getOrThrow().isEmpty())
+    }
+
+    private fun order(vararg items: OrderItem) = Order(
+        id = "ORD-1",
+        date = "2026-10-01",
+        items = items.toList(),
+        total = items.toList().sumOfMoney { it.lineTotal },
+        status = OrderStatus.DELIVERED
+    )
+
+    @Test
+    fun reorderAddsEveryItemWithItsQuantityAndCurrentDetails() = runTest {
+        val margarita = testCocktail("11007", name = "Margarita", price = Money(1250))
+        val mojito = testCocktail("11000", name = "Mojito", price = Money(999))
+        val useCase = ManageCartUseCase(cart, TrackingDetailRepository(mapOf("11007" to margarita, "11000" to mojito)))
+
+        val added = useCase.reorder(
+            order(
+                OrderItem(name = "Margarita", quantity = 2, price = Money(1250), cocktailId = "11007"),
+                OrderItem(name = "Mojito", quantity = 1, price = Money(999), cocktailId = "11000")
+            )
+        )
+
+        assertEquals(3, added.getOrThrow())
+        assertEquals(
+            listOf(CocktailCartItem(margarita, 2), CocktailCartItem(mojito, 1)),
+            cart.getCartItems().getOrThrow()
+        )
+    }
+
+    @Test
+    fun reorderAddsToQuantitiesAlreadyInTheCart() = runTest {
+        val margarita = testCocktail("11007", name = "Margarita")
+        val useCase = ManageCartUseCase(cart, TrackingDetailRepository(mapOf("11007" to margarita)))
+        useCase.addToCart(margarita, quantity = 1)
+
+        useCase.reorder(order(OrderItem(name = "Margarita", quantity = 2, price = Money(1000), cocktailId = "11007")))
+
+        assertEquals(3, cart.getCartItems().getOrThrow().single().quantity)
+    }
+
+    @Test
+    fun reorderFallsBackToTheOrderedNameAndPriceWhenTheCocktailCantBeLookedUp() = runTest {
+        val detail = TrackingDetailRepository().apply { throwOnLookup = true }
+        val useCase = ManageCartUseCase(cart, detail)
+
+        useCase.reorder(order(OrderItem(name = "Margarita", quantity = 2, price = Money(1250), cocktailId = "11007")))
+
+        val item = cart.getCartItems().getOrThrow().single()
+        assertEquals("11007", item.cocktail.id)
+        assertEquals("Margarita", item.cocktail.name)
+        assertEquals(Money(1250), item.cocktail.price)
+        assertEquals(2, item.quantity)
+    }
+
+    @Test
+    fun reorderRejectsOrdersWhoseItemsHaveNoCocktailIdAndLeavesTheCartAlone() = runTest {
+        val useCase = ManageCartUseCase(cart, TrackingDetailRepository())
+
+        val result = useCase.reorder(
+            order(
+                OrderItem(name = "Margarita", quantity = 2, price = Money(1250), cocktailId = "11007"),
+                // An item migrated from before order items recorded their cocktail
+                OrderItem(name = "Mojito", quantity = 1, price = Money(999), cocktailId = null)
+            )
+        )
+
+        assertEquals(ErrorCode.INVALID_DATA, (result as Result.Error).code)
+        assertTrue(cart.getCartItems().getOrThrow().isEmpty())
+    }
+
+    @Test
+    fun aFailedReorderAddsNothing() = runTest {
+        val useCase = ManageCartUseCase(cart, TrackingDetailRepository())
+        cart.failNextMutation = true
+
+        val result = useCase.reorder(
+            order(
+                OrderItem(name = "Margarita", quantity = 2, price = Money(1250), cocktailId = "11007"),
+                OrderItem(name = "Mojito", quantity = 1, price = Money(999), cocktailId = "11000")
+            )
+        )
+
+        assertTrue(result is Result.Error)
         assertTrue(cart.getCartItems().getOrThrow().isEmpty())
     }
 }

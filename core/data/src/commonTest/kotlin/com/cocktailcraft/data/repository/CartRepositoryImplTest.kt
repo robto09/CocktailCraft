@@ -35,6 +35,23 @@ class CartRepositoryImplTest {
     }
 
     @Test
+    fun addAllToCartAppendsNewItemsAndGrowsExistingOnes() = runTest {
+        val repository = repository()
+        repository.addToCart(CocktailCartItem(testCocktail("1", price = Money(1250)), quantity = 1)).getOrThrow()
+
+        repository.addAllToCart(
+            listOf(
+                CocktailCartItem(testCocktail("1", price = Money(1250)), quantity = 2),
+                CocktailCartItem(testCocktail("2", price = Money(999)), quantity = 1)
+            )
+        ).getOrThrow()
+
+        val items = repository.getCartItems().getOrThrow()
+        assertEquals(listOf("1" to 3, "2" to 1), items.map { it.cocktail.id to it.quantity })
+        assertEquals(Money(3 * 1250 + 999), repository.getCartTotal().getOrThrow())
+    }
+
+    @Test
     fun mergingADuplicateKeepsTheStoredCocktailAndPosition() = runTest {
         val repository = repository()
         repository.addToCart(CocktailCartItem(testCocktail("1", name = "First"), quantity = 1)).getOrThrow()

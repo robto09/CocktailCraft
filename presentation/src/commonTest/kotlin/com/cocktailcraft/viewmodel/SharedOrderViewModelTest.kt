@@ -8,11 +8,14 @@ import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.repository.OrderRepository
+import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.error_empty_cart_title
 import com.cocktailcraft.resources.error_order_failed_title
+import com.cocktailcraft.testutil.FakeCartRepository
+import com.cocktailcraft.testutil.FakeDetailRepository
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.util.ErrorHandler
@@ -108,9 +111,12 @@ private class FakeOrderRepository : OrderRepository {
 @OptIn(ExperimentalCoroutinesApi::class)
 class SharedOrderViewModelTest : MainDispatcherTest() {
 
+    private val cart = FakeCartRepository()
+
     private fun viewModel(repository: FakeOrderRepository) = SharedOrderViewModel(
         orderRepository = repository,
-        placeOrderUseCase = PlaceOrderUseCase(repository)
+        placeOrderUseCase = PlaceOrderUseCase(repository),
+        manageCartUseCase = ManageCartUseCase(cart, FakeDetailRepository())
     )
 
     @Test

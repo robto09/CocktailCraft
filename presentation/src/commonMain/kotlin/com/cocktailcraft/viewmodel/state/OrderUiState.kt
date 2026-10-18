@@ -19,7 +19,8 @@ data class OrderUiState(
     val isLoading: Boolean = false,
     val selectedOrder: Order? = null,
     val isLoadingOrderDetail: Boolean = false,
-    val isCancellingOrder: Boolean = false
+    val isCancellingOrder: Boolean = false,
+    val isReordering: Boolean = false
 ) {
     /** Sum of the selected order's line items, before delivery. */
     val selectedOrderSubtotal: Money
@@ -42,4 +43,12 @@ data class OrderUiState(
      */
     val canCancelSelectedOrder: Boolean
         get() = selectedOrder?.status?.isCancellable == true
+
+    /**
+     * Whether the detail screen's Reorder is enabled (shown busy while
+     * [isReordering]). Orders placed before items recorded their cocktail
+     * show it disabled, with order_reorder_unavailable as the reason.
+     */
+    val canReorderSelectedOrder: Boolean
+        get() = selectedOrder?.canReorder == true
 }

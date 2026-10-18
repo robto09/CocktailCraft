@@ -89,6 +89,13 @@ class FakeCartRepository : CartRepository {
         return Result.Success(Unit)
     }
 
+    /** All or nothing, like the database-backed cart: a failure adds none of them. */
+    override suspend fun addAllToCart(cartItems: List<CocktailCartItem>): Result<Unit> {
+        if (consumeFailFlag()) return Result.Error("add failed")
+        cartItems.forEach { addToCart(it) }
+        return Result.Success(Unit)
+    }
+
     override suspend fun getCartTotal(): Result<Money> =
         Result.Success(items.value.sumOfMoney { it.lineTotal })
 }

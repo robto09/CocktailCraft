@@ -3,8 +3,10 @@ package com.cocktailcraft.domain.usecase
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Money
+import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
+import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.runCatchingNonCancellation
 import kotlinx.coroutines.flow.Flow
@@ -32,6 +34,30 @@ class ManageCartUseCase(
             if (cartItem.cocktail.hasFullDetails) cartItem
             else cartItem.copy(cocktail = hydrated(cartItem.cocktail))
         return cartRepository.addToCart(item)
+    }
+
+    /**
+     * Reorder: puts [order]'s items back in the cart with their quantities
+     * (added to any already there), all or nothing. Each cocktail is looked
+     * up like any add (stored copy first, else fetched), so the cart holds
+     * its current details and price; one that can't be looked up (offline,
+     * not stored) goes in as the order recorded it, with its name and the
+     * price paid. Returns how many units were added.
+     *
+     * Fails with [ErrorCode.INVALID_DATA], leaving the cart as it was, for an
+     * order that can't be reordered ([Order.canReorder]: items placed before
+     * they recorded their cocktail id).
+     */
+    suspend fun reorder(order: Order): Result<Int> {
+        if (!order.canReorder) {
+            return Result.Error("Order ${order.id} has items without a cocktail id", ErrorCode.INVALID_DATA)
+        }
+        val cartItems = order.items.mapNotNull { item ->
+            item.cocktailId?.let { id ->
+                CocktailCartItem(hydrated(Cocktail(id = id, name = item.name, price = item.price)), item.quantity)
+            }
+        }
+        return cartRepository.addAllToCart(cartItems).map { cartItems.sumOf { it.quantity } }
     }
 
     /**

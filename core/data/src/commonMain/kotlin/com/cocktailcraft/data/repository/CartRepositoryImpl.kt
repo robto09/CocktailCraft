@@ -58,20 +58,16 @@ internal class CartRepositoryImpl(
     override suspend fun addToCart(cartItem: CocktailCartItem): Result<Unit> = withContext(ioDispatcher) {
         runCatchingResult("Failed to add to cart") {
             val db = localDatabase.get()
-            val id = cartItem.cocktail.id
-            db.transaction {
-                // An item already in the cart keeps its stored cocktail and
-                // position; only the quantity grows.
-                if (db.cartItemQueries.exists(id).executeAsOne() > 0L) {
-                    db.cartItemQueries.addQuantity(delta = cartItem.quantity.toLong(), cocktailId = id)
-                } else {
-                    db.cartItemQueries.insert(
-                        cocktailId = id,
-                        payload = json.encodeToString(Cocktail.serializer(), cartItem.cocktail),
-                        quantity = cartItem.quantity.toLong()
-                    )
-                }
-            }
+            db.transaction { db.add(cartItem, json) }
+            Result.Success(Unit)
+        }
+    }
+
+    // One transaction: a failure part-way adds none of them (reorder)
+    override suspend fun addAllToCart(cartItems: List<CocktailCartItem>): Result<Unit> = withContext(ioDispatcher) {
+        runCatchingResult("Failed to add to cart") {
+            val db = localDatabase.get()
+            db.transaction { cartItems.forEach { db.add(it, json) } }
             Result.Success(Unit)
         }
     }
@@ -106,5 +102,22 @@ internal class CartRepositoryImpl(
         runCatchingResult("Failed to get cart total") {
             Result.Success(localDatabase.get().readItems().sumOfMoney { it.lineTotal })
         }
+    }
+}
+
+/**
+ * Adds [cartItem]; call inside a transaction. An item already in the cart
+ * keeps its stored cocktail and position; only the quantity grows.
+ */
+private fun CocktailCraftDatabase.add(cartItem: CocktailCartItem, json: Json) {
+    val id = cartItem.cocktail.id
+    if (cartItemQueries.exists(id).executeAsOne() > 0L) {
+        cartItemQueries.addQuantity(delta = cartItem.quantity.toLong(), cocktailId = id)
+    } else {
+        cartItemQueries.insert(
+            cocktailId = id,
+            payload = json.encodeToString(Cocktail.serializer(), cartItem.cocktail),
+            quantity = cartItem.quantity.toLong()
+        )
     }
 }
