@@ -52,12 +52,14 @@
 		9567ABFD564D27BE73445A06 /* CheckoutButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0C4D551F91412F5FD5C211A /* CheckoutButton.swift */; };
 		96CF06A65ECCAB15A7E21B07 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EBC388A838EA20284B59381 /* ContentView.swift */; };
 		9CA8A23169EACEE6BAA6168E /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61384C5931B60FCC54CA0D2E /* ProfileView.swift */; };
+		9D0D6339BCF4145FE3899E45 /* HomeSortMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD593F4BDDD60A1FD91BE396 /* HomeSortMenu.swift */; };
 		A037D25E4CA0EF7D4BCBB851 /* CocktailCraftWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F4EA773C39DD6E2D60B60101 /* CocktailCraftWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A0FF029431994B1ECD80D88F /* SharedViewModelWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = E59065E611A6E07B1D9DCACB /* SharedViewModelWrapper.swift */; };
 		A166DB404CF006A66284D821 /* CocktailCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A00F91ED1F43F12CF3B7400 /* CocktailCard.swift */; };
 		A22D24F59CFC34A6C3643DED /* CartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BD10A6D0C4EF128674C822C /* CartView.swift */; };
 		A492237591D50187A605926B /* OrderDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26736A37630667E77327823 /* OrderDetailView.swift */; };
 		A5480CB053FE1474CCC6EEED /* AccessibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDCCD5225B417A9F4A1E3751 /* AccessibilityTests.swift */; };
+		A6AB0482FBD69D295F4B4F48 /* RecentlyViewedRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2813019D0407EF078F0104 /* RecentlyViewedRow.swift */; };
 		AFFEB2D6170F9EF4278DA398 /* PrimaryButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AE4237810823B2857D9E427 /* PrimaryButton.swift */; };
 		B1E7ACFDA703E6E8CADB3D8C /* ComponentSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACC5C4BCB1BC017A3170765 /* ComponentSnapshotTests.swift */; };
 		B4F08B8E6727BC900E81D87D /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 00CEEB753F07B3027707B278 /* SnapshotTesting */; };
@@ -190,9 +192,11 @@
 		AD14EE492DD75C2B42FCE09F /* AppTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTheme.swift; sourceTree = "<group>"; };
 		B3C9824BB27230081BF0DE7E /* SignUpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpView.swift; sourceTree = "<group>"; };
 		BCD7B48C5A8B2B9FF154993D /* ProfileSupportViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSupportViews.swift; sourceTree = "<group>"; };
+		BD593F4BDDD60A1FD91BE396 /* HomeSortMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSortMenu.swift; sourceTree = "<group>"; };
 		BD98A7B406A27881A66A031B /* SharedErrorAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedErrorAlert.swift; sourceTree = "<group>"; };
 		C94AC12750658C154846E82E /* CocktailCraftUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CocktailCraftUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB5A391666FF9C78D776F64C /* AdvancedSearchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedSearchSheet.swift; sourceTree = "<group>"; };
+		CC2813019D0407EF078F0104 /* RecentlyViewedRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentlyViewedRow.swift; sourceTree = "<group>"; };
 		CECF4DDA5214AF26E0ECA37A /* CocktailCraftWidgetsBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailCraftWidgetsBundle.swift; sourceTree = "<group>"; };
 		DF2F70830C783F8DE90EECC8 /* HomeViewSKIE.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewSKIE.swift; sourceTree = "<group>"; };
 		E2B26ED3A3ACF1E6DAEE3D49 /* OrderListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderListView.swift; sourceTree = "<group>"; };
@@ -386,12 +390,14 @@
 				04D295EC1E30F565480A8AEB /* EmptyStateView.swift */,
 				8885ACD7979C44B621ECA874 /* ErrorView.swift */,
 				6BEF65B792796FEFF449A2AA /* HomeSearchBar.swift */,
+				BD593F4BDDD60A1FD91BE396 /* HomeSortMenu.swift */,
 				6929210C9D9C1D6F5B25CF1F /* LoadingSkeletons.swift */,
 				5353458E21534CF1929CE2C8 /* OfflineBanner.swift */,
 				16E01BE6ED48B686E7163FCF /* OrderComponents.swift */,
 				00C275418C6920DC8B833762 /* PasswordStrengthMeter.swift */,
 				3AE4237810823B2857D9E427 /* PrimaryButton.swift */,
 				BCD7B48C5A8B2B9FF154993D /* ProfileSupportViews.swift */,
+				CC2813019D0407EF078F0104 /* RecentlyViewedRow.swift */,
 				711196F1A4BC17AFC4F2C53E /* ReviewComponents.swift */,
 				BD98A7B406A27881A66A031B /* SharedErrorAlert.swift */,
 				E7E56E30A4595D619E00539E /* Shimmer.swift */,
@@ -689,6 +695,7 @@
 				5DD5C9541804B1F02B26C2CA /* FavoritesView.swift in Sources */,
 				F34D8705F2D659CE7F39731F /* FavoritesViewModelSKIE.swift in Sources */,
 				372EC9C0DFB42D5401875CB0 /* HomeSearchBar.swift in Sources */,
+				9D0D6339BCF4145FE3899E45 /* HomeSortMenu.swift in Sources */,
 				5A2723FCDFFBA08B1EFBD337 /* HomeViewModelSKIE.swift in Sources */,
 				009F3B5A400B6282D5641221 /* HomeViewSKIE.swift in Sources */,
 				931FD2B77A0C67F4139AD207 /* LoadingSkeletons.swift in Sources */,
@@ -703,6 +710,7 @@
 				BF8BE75EA2A85E669160547D /* ProfileSupportViews.swift in Sources */,
 				9CA8A23169EACEE6BAA6168E /* ProfileView.swift in Sources */,
 				D58974F73AAB59227A39CBEE /* ProfileViewModelSKIE.swift in Sources */,
+				A6AB0482FBD69D295F4B4F48 /* RecentlyViewedRow.swift in Sources */,
 				73E3063D1FA4CD64012F3D01 /* ReviewComponents.swift in Sources */,
 				0926C525944B2677784A0435 /* ReviewViewModelSKIE.swift in Sources */,
 				4B1843A05358F5B1489781B5 /* SettingsView.swift in Sources */,

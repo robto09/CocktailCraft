@@ -1,5 +1,9 @@
 package com.cocktailcraft.android.ui.components
 
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,10 +17,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.animation.core.FiniteAnimationSpec
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -39,6 +39,7 @@ import com.cocktailcraft.resources.list_all_cocktails
 import com.cocktailcraft.resources.list_category_cocktails
 import com.cocktailcraft.resources.list_end_of_list_message
 import com.cocktailcraft.resources.list_search_results
+import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
 
 /**
  * A reusable component for displaying a list of cocktails with animations.
@@ -65,6 +66,8 @@ import com.cocktailcraft.resources.list_search_results
  * @param contentPadding The padding for the content
  * @param loadingIndicatorSize The size of the loading indicator
  * @param endOfListMessageFontSize The font size of the end of list message
+ * @param ratingSummaries The user's review averages by cocktail id, shown on the cards
+ * @param leadingContent Shown above the header, scrolling with the list (Home's "Recently viewed" row)
  */
 @Composable
 fun AnimatedCocktailList(
@@ -83,7 +86,9 @@ fun AnimatedCocktailList(
     itemSpacing: Int = 16,
     contentPadding: PaddingValues = PaddingValues(16.dp),
     loadingIndicatorSize: Int = 32,
-    endOfListMessageFontSize: Int = 14
+    endOfListMessageFontSize: Int = 14,
+    ratingSummaries: Map<String, CocktailRatingSummary> = emptyMap(),
+    leadingContent: (@Composable () -> Unit)? = null
 ) {
     // Remember scroll state for optimizations
     val listState = rememberLazyListState()
@@ -121,6 +126,10 @@ fun AnimatedCocktailList(
         verticalArrangement = Arrangement.spacedBy(itemSpacing.dp),
         contentPadding = contentPadding
     ) {
+        if (leadingContent != null) {
+            item(key = "leading") { leadingContent() }
+        }
+
         // Header item
         item(key = "header") {
             Text(
@@ -165,7 +174,8 @@ fun AnimatedCocktailList(
                     isFavorite = cocktail.id in favoriteIds,
                     onToggleFavorite = { cocktailToToggle ->
                         onToggleFavorite(cocktailToToggle)
-                    }
+                    },
+                    reviewRating = ratingSummaries[cocktail.id]
                 )
             }
         }

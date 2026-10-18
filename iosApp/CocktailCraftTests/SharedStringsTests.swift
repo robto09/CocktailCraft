@@ -22,6 +22,13 @@ final class SharedStringsTests: XCTestCase {
         XCTAssertEqual(L(\.review_count, count: 3), "(3 reviews)")
     }
 
+    func testHomeSortOptionsHaveSharedTitles() {
+        XCTAssertEqual(HomeSortOption.allCases.map(\.title), [
+            "Default", "Name A–Z", "Price: low to high", "Price: high to low", "Rating", "Popularity"
+        ])
+        XCTAssertEqual(L(\.home_sort_current_a11y, HomeSortOption.rating.title), "Sorted by Rating")
+    }
+
     func testEscapedCharactersSurviveGeneration() {
         XCTAssertEqual(L(\.offline_you_are_offline), "You're offline — showing saved cocktails.")
         XCTAssertEqual(L(\.search_no_results_query, "Mojito"), "No cocktails found matching \"Mojito\"")

@@ -8,6 +8,7 @@ import com.cocktailcraft.domain.model.SearchFilters
  * All state is updated atomically via copy(), eliminating intermediate inconsistent states.
  */
 data class HomeUiState(
+    // Already ordered by [sortOption]
     val cocktails: List<Cocktail> = emptyList(),
     val favorites: List<Cocktail> = emptyList(),
     val isLoading: Boolean = false,
@@ -22,6 +23,15 @@ data class HomeUiState(
     val currentPage: Int = 1,
     val hasMoreData: Boolean = true,
     val isLoadingMore: Boolean = false,
-    val isNetworkAvailable: Boolean = true
-)
-
+    val isNetworkAvailable: Boolean = true,
+    // Kept across category changes, searches and catalog refreshes
+    val sortOption: HomeSortOption = HomeSortOption.DEFAULT,
+    // Most recently viewed first, at most SharedHomeViewModel.RECENTLY_VIEWED_LIMIT
+    val recentlyViewed: List<Cocktail> = emptyList(),
+    // Review averages by cocktail id, for cocktails the user has reviewed
+    val ratingSummaries: Map<String, CocktailRatingSummary> = emptyMap()
+) {
+    /** The "Recently viewed" row shows when there is something in it and no search query. */
+    val showRecentlyViewed: Boolean
+        get() = recentlyViewed.isNotEmpty() && searchQuery.isBlank()
+}

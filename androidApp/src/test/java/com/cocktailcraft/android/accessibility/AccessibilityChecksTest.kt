@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.screens.AppSettingsCard
 import com.cocktailcraft.android.screens.CartContent
 import com.cocktailcraft.android.screens.HomeContentSection
+import com.cocktailcraft.android.screens.HomeSearchBarSection
 import com.cocktailcraft.android.screens.OrderDetailContent
 import com.cocktailcraft.android.screens.ProfileHeaderCard
 import com.cocktailcraft.android.screens.detail.DetailChipsSection
@@ -26,6 +27,8 @@ import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.viewmodel.state.CartUiState
+import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
+import com.cocktailcraft.viewmodel.state.HomeSortOption
 import com.cocktailcraft.viewmodel.state.OrderUiState
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.RoborazziATFAccessibilityCheckOptions
@@ -110,6 +113,44 @@ class AccessibilityChecksTest(private val fontScale: Float) {
             onToggleFavorite = {},
             onLoadMore = {}
         )
+    }
+
+    @Test
+    fun homeSortAndRecentlyViewed() = check {
+        Column {
+            HomeSearchBarSection(
+                searchQuery = "",
+                isAdvancedSearchActive = false,
+                hasActiveFilters = false,
+                sortOption = HomeSortOption.RATING,
+                onSearchQueryChange = {},
+                onClearSearch = {},
+                onToggleAdvancedSearch = {},
+                onSortChange = {}
+            )
+            HomeContentSection(
+                isLoading = false,
+                errorMessage = "",
+                cocktails = PreviewData.cocktails,
+                searchQuery = "",
+                selectedCategory = null,
+                hasActiveFilters = false,
+                isSearchActive = false,
+                isLoadingMore = false,
+                hasMoreData = false,
+                favorites = listOf(PreviewData.cocktail),
+                isNetworkAvailable = true,
+                recentlyViewed = PreviewData.cocktails,
+                ratingSummaries = mapOf(PreviewData.cocktail.id to CocktailRatingSummary(4f, 3)),
+                onRetry = {},
+                onClearSearch = {},
+                onClearCategory = {},
+                onCocktailClick = {},
+                onAddToCart = {},
+                onToggleFavorite = {},
+                onLoadMore = {}
+            )
+        }
     }
 
     @Test

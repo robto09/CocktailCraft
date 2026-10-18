@@ -143,7 +143,7 @@
     <string name="home_no_connection_title">No internet connection</string>
     <string name="home_no_connection_message">Check your connection and try again.</string>
     <string name="search_ingredients_placeholder">Search ingredients</string>
-    <string name="search_cocktails_placeholder">Search cocktails...</string>
+    <string name="search_cocktails_placeholder">Search</string>
     <string name="search_clear_search">Clear search</string>
     <string name="search_advanced_search">Advanced Search</string>
     <string name="search_advanced_search_ios">Advanced search</string>
@@ -161,6 +161,18 @@
     <string name="search_clear_search_button">Clear Search</string>
     <string name="search_clear_filters_button">Clear Filters</string>
     <string name="search_browse_all_cocktails">Browse All Cocktails</string>
+    <!-- Home sort menu. The option names double as the spoken current value ("Sort, Price: low to high"). -->
+    <string name="home_sort_a11y">Sort cocktails</string>
+    <string name="home_sort_menu_title">Sort by</string>
+    <string name="home_sort_current_a11y">Sorted by %1$s</string>
+    <string name="home_sort_default">Default</string>
+    <string name="home_sort_name_asc">Name A–Z</string>
+    <string name="home_sort_price_asc">Price: low to high</string>
+    <string name="home_sort_price_desc">Price: high to low</string>
+    <string name="home_sort_rating">Rating</string>
+    <string name="home_sort_popularity">Popularity</string>
+    <!-- Home "Recently viewed" row -->
+    <string name="home_recently_viewed">Recently viewed</string>
 
     <!-- Filters -->
     <string name="filter_collapse">Collapse</string>

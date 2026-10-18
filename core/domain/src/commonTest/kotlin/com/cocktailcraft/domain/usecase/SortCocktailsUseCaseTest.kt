@@ -51,6 +51,24 @@ class SortCocktailsUseCaseTest {
     }
 
     @Test
+    fun nameSortIgnoresCase() {
+        val mixed = listOf(testCocktail("z", name = "Zombie"), testCocktail("m", name = "mai tai"))
+
+        assertEquals(listOf("m", "z"), useCase(mixed, SortCocktailsUseCase.SortType.NAME_ASC).map(Cocktail::id))
+        assertEquals(listOf("z", "m"), useCase(mixed, SortCocktailsUseCase.SortType.NAME_DESC).map(Cocktail::id))
+    }
+
+    @Test
+    fun ratingSortRanksBySuppliedRating() {
+        // Review averages that invert the stored ratings
+        val reviewed = mapOf("a" to 5.0f, "b" to 1.0f, "c" to 3.0f)
+
+        val sorted = useCase(cocktails, SortCocktailsUseCase.SortType.RATING) { reviewed.getValue(it.id) }
+
+        assertEquals(listOf("a", "c", "b"), sorted.map(Cocktail::id))
+    }
+
+    @Test
     fun sortingDoesNotMutateTheInputList() {
         val before = cocktails.map(Cocktail::id)
 

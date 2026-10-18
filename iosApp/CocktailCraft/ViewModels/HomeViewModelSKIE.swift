@@ -96,6 +96,18 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
         sharedViewModel.retry()
     }
 
+    /// Orders the list; the shared state keeps the choice across category
+    /// changes, searches and catalog refreshes.
+    func setSortOption(_ option: HomeSortOption) {
+        sharedViewModel.setSortOption(option: option)
+    }
+
+    /// Re-reads the "Recently viewed" row (the store has no change flow), so
+    /// a cocktail opened since shows up when Home comes back on screen.
+    func refreshRecentlyViewed() {
+        sharedViewModel.refreshRecentlyViewed()
+    }
+
     // MARK: - Helper Methods for SwiftUI
 
     func refreshCocktails() async {
