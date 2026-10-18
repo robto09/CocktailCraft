@@ -66,10 +66,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocktailcraft.android.BuildConfig
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.AnimatedThemeToggleRow
+import com.cocktailcraft.android.ui.components.ChangePasswordDialog
+import com.cocktailcraft.android.ui.components.EditProfileDialog
+import com.cocktailcraft.android.ui.components.ErrorDialog
 import com.cocktailcraft.android.ui.components.PrimaryButton
 import com.cocktailcraft.android.ui.components.SettingsItem
 import com.cocktailcraft.android.ui.components.SignInDialog
 import com.cocktailcraft.android.ui.components.SignUpDialog
+import com.cocktailcraft.android.ui.components.UiEventToasts
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.resolve
@@ -81,13 +85,11 @@ import com.cocktailcraft.resources.create_account
 import com.cocktailcraft.resources.dark_mode
 import com.cocktailcraft.resources.edit_profile
 import com.cocktailcraft.resources.email_preferences
-import com.cocktailcraft.resources.error
 import com.cocktailcraft.resources.follow_system_theme
 import com.cocktailcraft.resources.help_support
 import com.cocktailcraft.resources.logout
 import com.cocktailcraft.resources.logout_confirm
 import com.cocktailcraft.resources.notification_settings
-import com.cocktailcraft.resources.ok
 import com.cocktailcraft.resources.order_history
 import com.cocktailcraft.resources.profile_about
 import com.cocktailcraft.resources.profile_about_app_name
@@ -125,12 +127,19 @@ fun ProfileScreen(
     // Get theme data from ThemeViewModel
     val themeState by themeViewModel.uiState.collectAsStateWithLifecycle()
 
+    // One-off outcomes, e.g. "Your password has been updated successfully"
+    UiEventToasts(profileViewModel.events)
+
     ProfileContent(
         profileState = profileState,
         themeState = themeState,
         error = error,
-        onSignIn = { email, password -> scope.launch { profileViewModel.signIn(email, password) } },
-        onSignUp = { name, email, password -> scope.launch { profileViewModel.signUp(name, email, password) } },
+        onSignIn = { email, password -> profileViewModel.signIn(email, password) },
+        onSignUp = { name, email, password -> profileViewModel.signUp(name, email, password) },
+        onUpdateProfile = { name, email -> profileViewModel.updateProfile(name, email) },
+        onChangePassword = { current, new -> profileViewModel.changePassword(current, new) },
+        isValidEmail = profileViewModel::isValidEmail,
+        meetsPasswordPolicy = profileViewModel::meetsPasswordPolicy,
         onConfirmLogout = {
             // Navigate only after sign-out completes — leaving the
             // screen would cancel this composition-scoped coroutine.
@@ -149,15 +158,21 @@ fun ProfileScreen(
 /**
  * Stateless profile content: renders the profile and theme state and reports
  * every intent upward, so it can be previewed/screenshot-tested without
- * ViewModels. Owns only UI-local state (which dialog is showing).
+ * ViewModels. Owns only UI-local state (which dialog is showing, whether its
+ * request is in flight). The form actions return whether they succeeded: a
+ * form dialog closes only on success and otherwise shows [error] inline.
  */
 @Composable
 internal fun ProfileContent(
     profileState: ProfileUiState,
     themeState: ThemeUiState,
     error: ErrorHandler.UserFriendlyError?,
-    onSignIn: (email: String, password: String) -> Unit,
-    onSignUp: (name: String, email: String, password: String) -> Unit,
+    onSignIn: suspend (email: String, password: String) -> Boolean,
+    onSignUp: suspend (name: String, email: String, password: String) -> Boolean,
+    onUpdateProfile: suspend (name: String, email: String) -> Boolean,
+    onChangePassword: suspend (currentPassword: String, newPassword: String) -> Boolean,
+    isValidEmail: (String) -> Boolean,
+    meetsPasswordPolicy: (String) -> Boolean,
     onConfirmLogout: () -> Unit,
     onOrderHistoryClick: () -> Unit,
     onSetFollowSystemTheme: (Boolean) -> Unit,
@@ -174,6 +189,32 @@ internal fun ProfileContent(
     var showLogoutDialog by rememberSaveable { mutableStateOf(false) }
     var showSignInDialog by rememberSaveable { mutableStateOf(false) }
     var showSignUpDialog by rememberSaveable { mutableStateOf(false) }
+    var showEditProfileDialog by rememberSaveable { mutableStateOf(false) }
+    var showChangePasswordDialog by rememberSaveable { mutableStateOf(false) }
+
+    // Form submission: the dialog stays open until the result is in. The
+    // scope outlives the dialog, so dismissing it mid-request is safe.
+    val scope = rememberCoroutineScope()
+    var isSubmitting by remember { mutableStateOf(false) }
+    val submit: (suspend () -> Boolean, () -> Unit) -> Unit = { action, onSuccess ->
+        if (!isSubmitting) {
+            isSubmitting = true
+            scope.launch {
+                val succeeded = try { action() } finally { isSubmitting = false }
+                if (succeeded) onSuccess()
+            }
+        }
+    }
+    // While a form is open its failure shows inside it, not as a second dialog
+    val isFormOpen = showSignInDialog || showSignUpDialog || showEditProfileDialog || showChangePasswordDialog
+    val formError = if (isFormOpen) error?.message?.resolve() else null
+    val dismissForm: () -> Unit = {
+        showSignInDialog = false
+        showSignUpDialog = false
+        showEditProfileDialog = false
+        showChangePasswordDialog = false
+        onDismissError()
+    }
 
     // Sample profile data (in a real app, this would come from a ViewModel)
     val userName = user?.name ?: stringResource(MR.strings.profile_guest_user)
@@ -182,22 +223,53 @@ internal fun ProfileContent(
     // Sign in dialog state
     if (showSignInDialog) {
         SignInDialog(
-            onDismiss = { showSignInDialog = false },
+            onDismiss = dismissForm,
             onSignIn = { email, password ->
-                onSignIn(email, password)
-                showSignInDialog = false
-            }
+                submit({ onSignIn(email, password) }) { showSignInDialog = false }
+            },
+            isSubmitting = isSubmitting,
+            errorMessage = formError
         )
     }
 
     // Sign up dialog state
     if (showSignUpDialog) {
         SignUpDialog(
-            onDismiss = { showSignUpDialog = false },
+            onDismiss = dismissForm,
             onSignUp = { name, email, password ->
-                onSignUp(name, email, password)
-                showSignUpDialog = false
-            }
+                submit({ onSignUp(name, email, password) }) { showSignUpDialog = false }
+            },
+            isSubmitting = isSubmitting,
+            errorMessage = formError
+        )
+    }
+
+    // Edit profile (parity with iOS's EditProfileView)
+    if (showEditProfileDialog) {
+        EditProfileDialog(
+            currentName = user?.name.orEmpty(),
+            currentEmail = user?.email.orEmpty(),
+            isValidEmail = isValidEmail,
+            onDismiss = dismissForm,
+            onSave = { name, email ->
+                submit({ onUpdateProfile(name, email) }) { showEditProfileDialog = false }
+            },
+            isSubmitting = isSubmitting,
+            errorMessage = formError
+        )
+    }
+
+    // Change password (parity with iOS's ChangePasswordView); success is
+    // confirmed by a toast from the ViewModel's events
+    if (showChangePasswordDialog) {
+        ChangePasswordDialog(
+            meetsPasswordPolicy = meetsPasswordPolicy,
+            onDismiss = dismissForm,
+            onChangePassword = { current, new ->
+                submit({ onChangePassword(current, new) }) { showChangePasswordDialog = false }
+            },
+            isSubmitting = isSubmitting,
+            errorMessage = formError
         )
     }
 
@@ -249,7 +321,10 @@ internal fun ProfileContent(
         // Only show account settings and logout option if signed in
         if (isLoggedIn) {
             // Account settings
-            AccountSettingsCard()
+            AccountSettingsCard(
+                onEditProfileClick = { showEditProfileDialog = true },
+                onChangePasswordClick = { showChangePasswordDialog = true }
+            )
         }
 
         // App settings
@@ -274,23 +349,11 @@ internal fun ProfileContent(
         LoadingOverlay()
     }
 
-    // Show error message if needed
-    error?.let { errorInfo ->
-        AlertDialog(
-            onDismissRequest = onDismissError,
-            title = { Text(stringResource(MR.strings.error)) },
-            text = { Text(errorInfo.message.resolve()) },
-            confirmButton = {
-                Button(
-                    onClick = onDismissError,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text(stringResource(MR.strings.ok))
-                }
-            }
-        )
+    // Failures outside a form (e.g. sign-out) in the shared error dialog
+    if (!isFormOpen) {
+        error?.let { errorInfo ->
+            ErrorDialog(error = errorInfo, onDismiss = onDismissError)
+        }
     }
 }
 
@@ -408,7 +471,10 @@ private fun SignInPromptSection(
 }
 
 @Composable
-internal fun AccountSettingsCard() {
+internal fun AccountSettingsCard(
+    onEditProfileClick: () -> Unit = {},
+    onChangePasswordClick: () -> Unit = {}
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -435,13 +501,13 @@ internal fun AccountSettingsCard() {
             SettingsItem(
                 icon = Icons.Default.Person,
                 title = stringResource(MR.strings.edit_profile),
-                onClick = { /* Handle edit profile */ }
+                onClick = onEditProfileClick
             )
 
             SettingsItem(
                 icon = Icons.Default.Lock,
                 title = stringResource(MR.strings.change_password),
-                onClick = { /* Handle change password */ }
+                onClick = onChangePasswordClick
             )
 
             SettingsItem(
