@@ -115,8 +115,7 @@ class SharedOrderViewModel internal constructor(
                 is Result.Error -> {
                     setError(
                         MR.strings.error_order_failed_title,
-                        ErrorHandler.rawMessage(result.message)
-                            ?: MR.strings.error_place_order_failed.desc(),
+                        ErrorHandler.errorFromResult(result, MR.strings.error_place_order_failed.desc()).message,
                         ErrorHandler.ErrorCategory.SERVER
                     )
                     false

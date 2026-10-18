@@ -7,12 +7,12 @@ import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.added_to_cart
+import com.cocktailcraft.resources.error_add_item_to_cart_failed
 import com.cocktailcraft.testutil.FakeCartRepository
 import com.cocktailcraft.testutil.FakeDetailRepository
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
-import dev.icerock.moko.resources.desc.Raw
-import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -151,7 +151,7 @@ class SharedCartViewModelTest : MainDispatcherTest() {
         vm.events.test {
             assertFalse(vm.addToCart(testCocktail("7")))
             val event = assertIs<UiEvent.Failure>(awaitItem())
-            assertEquals(StringDesc.Raw("add failed"), event.message)
+            assertEquals(MR.strings.error_add_item_to_cart_failed.desc(), event.message)
         }
         // Add-to-cart runs from other screens: its failure must not wait on
         // the cart's error channel to pop up later on the Cart tab

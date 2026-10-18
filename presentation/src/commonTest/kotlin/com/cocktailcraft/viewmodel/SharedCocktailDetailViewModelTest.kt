@@ -10,6 +10,8 @@ import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.added_to_cart
+import com.cocktailcraft.resources.error_add_item_to_cart_failed
+import com.cocktailcraft.resources.error_load_cocktail_details_failed
 import com.cocktailcraft.resources.favorite_removed
 import com.cocktailcraft.testutil.FakeCartRepository
 import com.cocktailcraft.testutil.FakeDetailRepository
@@ -17,8 +19,7 @@ import com.cocktailcraft.testutil.FakeFavoritesRepository
 import com.cocktailcraft.testutil.FakeSearchRepository
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
-import dev.icerock.moko.resources.desc.Raw
-import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -128,7 +129,7 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
         val event = assertIs<UiEvent.Failure>(vm.eventFrom { added = vm.addToCart() })
 
         assertFalse(added)
-        assertEquals(StringDesc.Raw("add failed"), event.message)
+        assertEquals(MR.strings.error_add_item_to_cart_failed.desc(), event.message)
         assertTrue(harness.cart.cartContents().isEmpty())
         assertFalse(vm.uiState.value.isAddingToCart)
         // Toasted on this screen, not parked on the detail error channel
@@ -258,7 +259,7 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         val error = assertNotNull(vm.error.value)
-        assertEquals(StringDesc.Raw("detail lookup failed"), error.message)
+        assertEquals(MR.strings.error_load_cocktail_details_failed.desc(), error.message)
         assertNull(vm.uiState.value.cocktail)
         assertFalse(vm.uiState.value.isLoading)
     }

@@ -13,14 +13,14 @@ import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.error_empty_cart_title
+import com.cocktailcraft.resources.error_load_orders_failed
 import com.cocktailcraft.resources.error_order_failed_title
+import com.cocktailcraft.resources.error_place_order_failed
 import com.cocktailcraft.testutil.FakeCartRepository
 import com.cocktailcraft.testutil.FakeDetailRepository
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.util.ErrorHandler
-import dev.icerock.moko.resources.desc.Raw
-import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -178,7 +178,7 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         vm.loadOrders()
 
         val error = assertNotNull(vm.error.value)
-        assertEquals(StringDesc.Raw("orders backend down"), error.message)
+        assertEquals(MR.strings.error_load_orders_failed.desc(), error.message)
         assertFalse(vm.uiState.value.isLoading)
     }
 
@@ -235,7 +235,7 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
 
         val error = assertNotNull(vm.error.value)
         assertEquals(MR.strings.error_order_failed_title.desc(), error.title)
-        assertEquals(StringDesc.Raw("order store failed"), error.message)
+        assertEquals(MR.strings.error_place_order_failed.desc(), error.message)
         assertEquals(ErrorHandler.ErrorCategory.SERVER, error.category)
         assertNull(vm.uiState.value.currentOrder)
         assertFalse(vm.uiState.value.isPlacingOrder)

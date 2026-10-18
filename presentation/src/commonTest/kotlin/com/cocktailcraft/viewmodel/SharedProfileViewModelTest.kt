@@ -10,14 +10,13 @@ import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.error_invalid_email_title
 import com.cocktailcraft.resources.error_invalid_name_title
 import com.cocktailcraft.resources.error_invalid_password_title
+import com.cocktailcraft.resources.error_sign_in_failed
 import com.cocktailcraft.resources.error_sign_in_failed_title
 import com.cocktailcraft.resources.error_sign_up_failed_title
 import com.cocktailcraft.resources.password_changed_message
 import com.cocktailcraft.testutil.DataLayerTest
 import com.cocktailcraft.util.ErrorHandler
 import com.russhwolf.settings.MapSettings
-import dev.icerock.moko.resources.desc.Raw
-import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -304,7 +303,7 @@ class SharedProfileViewModelTest : DataLayerTest() {
         assertFalse(vm.signIn("ada@example.com", "secret123"))
 
         val error = assertNotNull(vm.error.value)
-        assertEquals(StringDesc.Raw("auth storage unavailable"), error.message)
+        assertEquals(MR.strings.error_sign_in_failed.desc(), error.message)
         assertFalse(vm.uiState.value.isAuthenticating)
         assertFalse(vm.uiState.value.isLoading)
         assertFalse(vm.uiState.value.isLoggedIn)

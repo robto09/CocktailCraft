@@ -34,8 +34,7 @@ internal suspend fun ManageCartUseCase.addToCartAnnounced(
         is Result.Error -> {
             announce(
                 UiEvent.Failure(
-                    ErrorHandler.rawMessage(result.message)
-                        ?: MR.strings.error_add_item_to_cart_failed.desc()
+                    ErrorHandler.errorFromResult(result, MR.strings.error_add_item_to_cart_failed.desc()).message
                 )
             )
             false

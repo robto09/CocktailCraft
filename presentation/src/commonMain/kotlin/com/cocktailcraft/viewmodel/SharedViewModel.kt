@@ -129,8 +129,10 @@ abstract class SharedViewModel : ViewModel() {
 
     /**
      * Unwrap a [Result], reporting a [Result.Error] to the error channel
-     * (typed via its ErrorCode) instead of silently discarding it. The
-     * error's own (raw) message wins; [fallbackMessage] covers a blank one.
+     * instead of silently discarding it. The copy comes from the same
+     * mapping as [handleException] (ErrorHandler.errorFromResult): the
+     * error's localized displayMessage, else the shared copy for a transport
+     * failure, else [fallbackMessage]. The raw message is only logged.
      */
     protected fun <T> Result<T>.getOrReport(
         default: T,
@@ -139,11 +141,7 @@ abstract class SharedViewModel : ViewModel() {
     ): T = when (this) {
         is Result.Success -> data
         is Result.Error -> {
-            _error.value = ErrorHandler.errorFromCode(
-                code = code,
-                message = ErrorHandler.rawMessage(message) ?: fallbackMessage.desc(),
-                recoveryAction = recoveryAction
-            )
+            _error.value = ErrorHandler.errorFromResult(this, fallbackMessage.desc(), recoveryAction)
             Logger.e { "Error in ${this@SharedViewModel::class.simpleName}: $message ($code)" }
             default
         }
