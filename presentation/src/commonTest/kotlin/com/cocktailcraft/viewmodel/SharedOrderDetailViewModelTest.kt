@@ -8,7 +8,6 @@ import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
-import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.error_cancellation_failed_title
@@ -23,6 +22,7 @@ import com.cocktailcraft.testutil.testCocktail
 import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -33,9 +33,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** The order detail screen's slice of SharedOrderViewModel: loading, derived values, cancel. */
+/** The order detail screen's ViewModel: loading, derived values, cancel, reorder. */
 @OptIn(ExperimentalCoroutinesApi::class)
-class SharedOrderViewModelDetailTest : MainDispatcherTest() {
+class SharedOrderDetailViewModelTest : MainDispatcherTest() {
 
     private val pendingOrder = Order(
         id = "ORD-42052",
@@ -67,60 +67,88 @@ class SharedOrderViewModelDetailTest : MainDispatcherTest() {
         )
     )
 
-    private fun viewModel(repository: FakeOrderRepository) = SharedOrderViewModel(
+    private fun viewModel(repository: FakeOrderRepository) = SharedOrderDetailViewModel(
         orderRepository = repository,
-        placeOrderUseCase = PlaceOrderUseCase(repository),
         manageCartUseCase = ManageCartUseCase(cart, detail)
     )
 
+    /** A detail screen showing order [orderId], loaded. */
+    private fun TestScope.screen(repository: FakeOrderRepository, orderId: String): SharedOrderDetailViewModel {
+        val vm = viewModel(repository)
+        vm.loadOrder(orderId)
+        advanceUntilIdle()
+        return vm
+    }
+
     @Test
-    fun loadOrderDetailPublishesTheOrderWithItsDerivedValues() = runTest {
+    fun aNewScreenIsLoadingUntilItsOrderIsLookedUp() = runTest {
         val repository = FakeOrderRepository()
         repository.seed(pendingOrder)
         val vm = viewModel(repository)
-        advanceUntilIdle()
 
-        vm.loadOrderDetail(pendingOrder.id)
+        assertTrue(vm.uiState.value.isLoading, "not loaded yet is not \"not found\"")
+        assertNull(vm.uiState.value.order)
+    }
+
+    @Test
+    fun loadOrderPublishesTheOrderWithItsDerivedValues() = runTest {
+        val repository = FakeOrderRepository()
+        repository.seed(pendingOrder)
+
+        val vm = screen(repository, pendingOrder.id)
 
         val state = vm.uiState.value
-        assertEquals(pendingOrder, state.selectedOrder)
-        assertFalse(state.isLoadingOrderDetail)
-        assertEquals(Money(3400), state.selectedOrderSubtotal)
-        assertEquals(DeliveryPolicy.STANDARD_FEE, state.selectedOrderDeliveryFee)
+        assertEquals(pendingOrder, state.order)
+        assertFalse(state.isLoading)
+        assertEquals(Money(3400), state.subtotal)
+        assertEquals(DeliveryPolicy.STANDARD_FEE, state.deliveryFee)
         assertEquals(
             DeliveryPolicy.estimatedDeliveryTimeForStatus(OrderStatus.PENDING),
-            state.selectedOrderDeliveryEstimate
+            state.deliveryEstimate
         )
-        assertTrue(state.canCancelSelectedOrder)
+        assertTrue(state.canCancel)
         assertNull(vm.error.value)
     }
 
     @Test
-    fun loadOrderDetailForAnUnknownOrderLeavesNoSelection() = runTest {
+    fun loadingAnUnknownOrderLeavesNothingShown() = runTest {
         val repository = FakeOrderRepository()
         repository.seed(pendingOrder)
-        val vm = viewModel(repository)
+        val vm = screen(repository, pendingOrder.id)
+
+        vm.loadOrder("ORD-missing")
         advanceUntilIdle()
-        vm.loadOrderDetail(pendingOrder.id)
 
-        vm.loadOrderDetail("ORD-missing")
-
-        assertNull(vm.uiState.value.selectedOrder, "a previous order must not stand in for a missing one")
-        assertFalse(vm.uiState.value.isLoadingOrderDetail)
-        assertFalse(vm.uiState.value.canCancelSelectedOrder)
+        assertNull(vm.uiState.value.order, "a previous order must not stand in for a missing one")
+        assertFalse(vm.uiState.value.isLoading)
+        assertFalse(vm.uiState.value.canCancel)
         assertNull(vm.error.value)
+    }
+
+    @Test
+    fun eachScreenHasItsOwnOrder() = runTest {
+        // Screen-scoped: a second detail screen never starts out showing
+        // the order an earlier one left selected (the Koin single did)
+        val repository = FakeOrderRepository()
+        repository.seed(pendingOrder, reorderableOrder)
+        screen(repository, pendingOrder.id)
+
+        val second = viewModel(repository)
+
+        assertNull(second.uiState.value.order)
+        second.loadOrder(reorderableOrder.id)
+        advanceUntilIdle()
+        assertEquals(reorderableOrder.id, second.uiState.value.order?.id)
     }
 
     @Test
     fun cancelFromDetailUpdatesTheSelectedOrderAndAnnouncesIt() = runTest {
         val repository = FakeOrderRepository()
         repository.seed(pendingOrder)
-        val vm = viewModel(repository)
-        advanceUntilIdle()
-        vm.loadOrderDetail(pendingOrder.id)
+        val vm = screen(repository, pendingOrder.id)
 
         vm.events.test {
-            assertTrue(vm.cancelOrder(pendingOrder.id))
+            vm.cancelOrder()
             val event = assertIs<UiEvent.Success>(awaitItem())
             assertEquals(MR.strings.order_cancelled_message.desc(), event.message)
             assertNull(event.action, "a cancel cannot be undone, so it offers no action")
@@ -128,10 +156,10 @@ class SharedOrderViewModelDetailTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         val state = vm.uiState.value
-        assertEquals(OrderStatus.CANCELLED, state.selectedOrder?.status)
-        assertEquals(OrderStatus.CANCELLED, state.orders.single().status)
-        assertFalse(state.canCancelSelectedOrder)
-        assertFalse(state.isCancellingOrder)
+        assertEquals(OrderStatus.CANCELLED, state.order?.status)
+        assertEquals(OrderStatus.CANCELLED, repository.getOrderById(pendingOrder.id).getOrThrow()?.status)
+        assertFalse(state.canCancel)
+        assertFalse(state.isCancelling)
         assertNull(vm.error.value)
     }
 
@@ -139,32 +167,29 @@ class SharedOrderViewModelDetailTest : MainDispatcherTest() {
     fun cancelOfANonCancellableOrderReportsAndKeepsItsStatus() = runTest {
         val repository = FakeOrderRepository()
         repository.seed(pendingOrder.copy(status = OrderStatus.SHIPPED))
-        val vm = viewModel(repository)
-        advanceUntilIdle()
-        vm.loadOrderDetail(pendingOrder.id)
-        assertFalse(vm.uiState.value.canCancelSelectedOrder)
+        val vm = screen(repository, pendingOrder.id)
+        assertFalse(vm.uiState.value.canCancel)
 
         vm.events.test {
-            assertFalse(vm.cancelOrder(pendingOrder.id))
+            vm.cancelOrder()
+            advanceUntilIdle()
             expectNoEvents()
         }
 
         val error = assertNotNull(vm.error.value)
         assertEquals(MR.strings.error_cancellation_failed_title.desc(), error.title)
-        assertEquals(OrderStatus.SHIPPED, vm.uiState.value.selectedOrder?.status)
-        assertFalse(vm.uiState.value.isCancellingOrder)
+        assertEquals(OrderStatus.SHIPPED, vm.uiState.value.order?.status)
+        assertFalse(vm.uiState.value.isCancelling)
     }
 
     @Test
     fun reorderPutsTheItemsBackInTheCartAndAnnouncesHowMany() = runTest {
         val repository = FakeOrderRepository()
         repository.seed(reorderableOrder)
-        val vm = viewModel(repository)
-        advanceUntilIdle()
-        vm.loadOrderDetail(reorderableOrder.id)
-        assertTrue(vm.uiState.value.canReorderSelectedOrder)
+        val vm = screen(repository, reorderableOrder.id)
+        assertTrue(vm.uiState.value.canReorder)
 
-        val event = vm.eventFrom { assertTrue(vm.reorder(reorderableOrder.id)) }
+        val event = vm.eventFrom { vm.reorder() }
 
         val success = assertIs<UiEvent.Success>(event)
         assertEquals(MR.plurals.order_reorder_added.format(3, 3), success.message)
@@ -180,26 +205,25 @@ class SharedOrderViewModelDetailTest : MainDispatcherTest() {
     fun reorderingTwiceAddsTheQuantitiesAgain() = runTest {
         val repository = FakeOrderRepository()
         repository.seed(reorderableOrder)
-        val vm = viewModel(repository)
-        advanceUntilIdle()
-        vm.loadOrderDetail(reorderableOrder.id)
+        val vm = screen(repository, reorderableOrder.id)
 
-        vm.eventFrom { vm.reorder(reorderableOrder.id) }
-        vm.eventFrom { vm.reorder(reorderableOrder.id) }
+        vm.eventFrom { vm.reorder() }
+        vm.eventFrom { vm.reorder() }
 
         assertEquals(listOf(4, 2), cart.getCartItems().getOrThrow().map { it.quantity })
     }
 
     @Test
-    fun reorderWorksWithoutTheOrderOnScreen() = runTest {
+    fun aSecondReorderTapWhileTheFirstRunsIsIgnored() = runTest {
         val repository = FakeOrderRepository()
         repository.seed(reorderableOrder)
-        val vm = viewModel(repository)
+        val vm = screen(repository, reorderableOrder.id)
+
+        vm.reorder()
+        vm.reorder()
         advanceUntilIdle()
 
-        vm.eventFrom { assertTrue(vm.reorder(reorderableOrder.id)) }
-
-        assertEquals(2, cart.getCartItems().getOrThrow().size)
+        assertEquals(listOf(2, 1), cart.getCartItems().getOrThrow().map { it.quantity })
     }
 
     @Test
@@ -208,12 +232,10 @@ class SharedOrderViewModelDetailTest : MainDispatcherTest() {
         // from database version 4
         val repository = FakeOrderRepository()
         repository.seed(pendingOrder)
-        val vm = viewModel(repository)
-        advanceUntilIdle()
-        vm.loadOrderDetail(pendingOrder.id)
+        val vm = screen(repository, pendingOrder.id)
 
-        assertFalse(vm.uiState.value.canReorderSelectedOrder)
-        val event = vm.eventFrom { assertFalse(vm.reorder(pendingOrder.id)) }
+        assertFalse(vm.uiState.value.canReorder)
+        val event = vm.eventFrom { vm.reorder() }
 
         assertEquals(MR.strings.error_reorder_failed.desc(), assertIs<UiEvent.Failure>(event).message)
         assertTrue(cart.getCartItems().getOrThrow().isEmpty())
@@ -224,12 +246,10 @@ class SharedOrderViewModelDetailTest : MainDispatcherTest() {
     fun aFailedReorderIsAnnouncedAndAddsNothing() = runTest {
         val repository = FakeOrderRepository()
         repository.seed(reorderableOrder)
-        val vm = viewModel(repository)
-        advanceUntilIdle()
-        vm.loadOrderDetail(reorderableOrder.id)
+        val vm = screen(repository, reorderableOrder.id)
         cart.failNextMutation = true
 
-        val event = vm.eventFrom { assertFalse(vm.reorder(reorderableOrder.id)) }
+        val event = vm.eventFrom { vm.reorder() }
 
         assertIs<UiEvent.Failure>(event)
         assertTrue(cart.getCartItems().getOrThrow().isEmpty())
@@ -237,11 +257,14 @@ class SharedOrderViewModelDetailTest : MainDispatcherTest() {
     }
 
     @Test
-    fun reorderOfAnUnknownOrderIsAnnouncedAsAFailure() = runTest {
-        val vm = viewModel(FakeOrderRepository())
-        advanceUntilIdle()
+    fun reorderWithoutAnOrderShownDoesNothing() = runTest {
+        val vm = screen(FakeOrderRepository(), "ORD-missing")
 
-        assertIs<UiEvent.Failure>(vm.eventFrom { assertFalse(vm.reorder("ORD-missing")) })
+        vm.events.test {
+            vm.reorder()
+            advanceUntilIdle()
+            expectNoEvents()
+        }
         assertTrue(cart.getCartItems().getOrThrow().isEmpty())
     }
 }

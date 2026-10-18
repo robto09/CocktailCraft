@@ -35,6 +35,7 @@ import com.cocktailcraft.android.ui.components.ErrorStateView
 import com.cocktailcraft.android.ui.components.ErrorToastEffect
 import com.cocktailcraft.android.ui.components.OrderSummaryCard
 import com.cocktailcraft.android.ui.components.PrimaryButton
+import com.cocktailcraft.android.ui.components.UiEventToasts
 import com.cocktailcraft.android.ui.components.rememberCurrencyFormatter
 import com.cocktailcraft.android.util.rememberHapticHandler
 import com.cocktailcraft.android.util.stringResource
@@ -85,6 +86,8 @@ fun CartScreen(
         onConsumed = { viewModel.clearError() }
     )
     ErrorToastEffect(error = favoritesError, onConsumed = { favoritesViewModel.clearError() })
+    // This screen's own events: a removal or a clear, with Undo
+    UiEventToasts(viewModel.events)
 
     orderError?.let { failure ->
         ErrorDialog(error = failure, onDismiss = { orderError = null })

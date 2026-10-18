@@ -132,16 +132,18 @@ class SharedCartViewModelTest : MainDispatcherTest() {
     }
 
     @Test
-    fun addToCartSuccessAnnouncesAddedEvent() = runTest {
+    fun addToCartReturnsTheAddedOutcomeToTheCaller() = runTest {
         val vm = viewModel()
         advanceUntilIdle()
 
         vm.events.test {
-            assertTrue(vm.addToCart(testCocktail("7", name = "Margarita")))
-            val event = assertIs<UiEvent.Success>(awaitItem())
-            assertEquals(MR.strings.added_to_cart.format("Margarita"), event.message)
+            val outcome = assertIs<UiEvent.Success>(vm.addToCart(testCocktail("7", name = "Margarita")))
+            assertEquals(MR.strings.added_to_cart.format("Margarita"), outcome.message)
+            // The caller's screen toasts it; the cart's events are the Cart screen's
+            expectNoEvents()
         }
         assertNull(vm.error.value)
+        assertEquals(1, vm.quantityOf("7"))
     }
 
     @Test
@@ -152,9 +154,9 @@ class SharedCartViewModelTest : MainDispatcherTest() {
         repository.failNextMutation = true
 
         vm.events.test {
-            assertFalse(vm.addToCart(testCocktail("7")))
-            val event = assertIs<UiEvent.Failure>(awaitItem())
-            assertEquals(MR.strings.error_add_item_to_cart_failed.desc(), event.message)
+            val outcome = assertIs<UiEvent.Failure>(vm.addToCart(testCocktail("7")))
+            assertEquals(MR.strings.error_add_item_to_cart_failed.desc(), outcome.message)
+            expectNoEvents()
         }
         // Add-to-cart runs from other screens: its failure must not wait on
         // the cart's error channel to pop up later on the Cart tab

@@ -15,6 +15,7 @@ import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
+import com.cocktailcraft.viewmodel.SharedOrderDetailViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.viewmodel.SharedProfileViewModel
 import com.cocktailcraft.viewmodel.SharedReviewViewModel
@@ -85,6 +86,8 @@ class KoinHelper : KoinComponent {
     fun getSharedCocktailDetailViewModel(): SharedCocktailDetailViewModel = get()
 
     fun getSharedReviewViewModel(): SharedReviewViewModel = get()
+
+    fun getSharedOrderDetailViewModel(): SharedOrderDetailViewModel = get()
 
     /**
      * Clears a screen-scoped ViewModel the way Android's ViewModelStore does

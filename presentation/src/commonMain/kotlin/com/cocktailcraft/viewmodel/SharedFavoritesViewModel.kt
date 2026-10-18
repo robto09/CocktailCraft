@@ -21,7 +21,8 @@ import kotlinx.coroutines.launch
  *
  * [uiState] is the only public state surface: platforms render the
  * favorites list from it (and derive id sets for membership checks) rather
- * than calling snapshot getters on the ViewModel.
+ * than calling snapshot getters on the ViewModel. Its [events] are the
+ * Favorites screen's own (unfavoriting, with Undo).
  *
  * Key SKIE features:
  * - StateFlows are automatically converted to Swift AsyncSequence

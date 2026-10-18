@@ -20,6 +20,12 @@ val presentationModule = module {
         )
     }
     viewModel { com.cocktailcraft.viewmodel.SharedReviewViewModel(manageReviewsUseCase = get()) }
+    viewModel {
+        com.cocktailcraft.viewmodel.SharedOrderDetailViewModel(
+            orderRepository = get(),
+            manageCartUseCase = get()
+        )
+    }
 
     // Global-state ViewModels — single (shared across screens, persist across
     // navigation). They extend androidx.lifecycle.ViewModel, but a Koin
@@ -52,8 +58,7 @@ val presentationModule = module {
     single {
         com.cocktailcraft.viewmodel.SharedOrderViewModel(
             orderRepository = get(),
-            placeOrderUseCase = get(),
-            manageCartUseCase = get()
+            placeOrderUseCase = get()
         )
     }
     single { com.cocktailcraft.viewmodel.SharedProfileViewModel(manageProfileUseCase = get()) }

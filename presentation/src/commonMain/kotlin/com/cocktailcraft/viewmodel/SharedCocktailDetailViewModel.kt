@@ -130,8 +130,7 @@ class SharedCocktailDetailViewModel internal constructor(
         if (cocktail == null || _uiState.value.isAddingToCart) return
         _uiState.update { it.copy(isAddingToCart = true) }
         viewModelScope.launch {
-            // Never throws but for cancellation: a failure is announced
-            manageCartUseCase.addToCartAnnounced(cocktail, quantity = 1, announce = ::sendEvent)
+            sendEvent(manageCartUseCase.addToCartOutcome(cocktail, quantity = 1))
             _uiState.update { it.copy(isAddingToCart = false) }
         }
     }

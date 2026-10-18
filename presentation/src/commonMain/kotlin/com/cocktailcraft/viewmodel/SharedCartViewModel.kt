@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
  * Shared ViewModel for Cart functionality.
  * Uses consolidated [CartUiState] for atomic state updates; [uiState] is the
  * only public state surface (delivery pricing is derived on the state).
+ * Its [events] are the Cart screen's own (removals and clears, with Undo).
  */
 class SharedCartViewModel internal constructor(
     private val manageCartUseCase: ManageCartUseCase
@@ -56,17 +57,19 @@ class SharedCartViewModel internal constructor(
     }
 
     /**
-     * Add a cocktail to the cart. Returns whether it was added.
+     * Add a cocktail to the cart and return the outcome for the caller to
+     * toast: a "<name> added to cart" [UiEvent.Success] or a
+     * [UiEvent.Failure] with the reason.
      *
-     * Add-to-cart runs from Home, Favorites and Detail, not from the cart, so
-     * its outcome is announced on [events] (a "<name> added to cart" success
-     * or the failure message) for the screen that triggered it — never on
-     * the cart's error channel, where it would surface later on the Cart tab.
+     * Add-to-cart runs from Home and Favorites, not from the cart, so its
+     * outcome goes back to the screen that asked — not onto the cart's
+     * [events] (which belong to the Cart screen) or its error channel, where
+     * it would surface later on the Cart tab.
      * SKIE will convert this to Swift async function.
      */
     @Throws(Exception::class)
-    suspend fun addToCart(cocktail: Cocktail, quantity: Int = 1): Boolean = runInViewModelScope {
-        manageCartUseCase.addToCartAnnounced(cocktail, quantity, ::sendEvent)
+    suspend fun addToCart(cocktail: Cocktail, quantity: Int = 1): UiEvent = runInViewModelScope {
+        manageCartUseCase.addToCartOutcome(cocktail, quantity)
     }
 
     /**

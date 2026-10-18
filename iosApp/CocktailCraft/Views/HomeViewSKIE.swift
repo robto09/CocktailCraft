@@ -12,9 +12,8 @@ struct HomeViewSKIE: View {
     @State private var searchText = ""
     @State private var showingAdvancedSearch = false
     @State private var selectedCategory: String? = nil
-    @State private var showingToast = false
-    @State private var toastMessage = ""
-    @State private var toastType: Toast.ToastType = .success
+    // The latest add-to-cart outcome, until its toast picks it up
+    @State private var addToCartOutcome: UiEvent?
     @Environment(\.isDarkMode) private var isDarkMode
     @Environment(\.appearance) private var appearance
 
@@ -77,7 +76,8 @@ struct HomeViewSKIE: View {
             // ViewModel starts it itself.)
             viewModel.refreshRecentlyViewed()
         }
-        .toast(isShowing: $showingToast, message: toastMessage, type: toastType, duration: 2)
+        // Add-to-cart outcomes: returned to this screen, which asked
+        .sharedEventToast(addToCartOutcome, clear: { addToCartOutcome = nil })
     }
 
     // MARK: - Sections
@@ -227,20 +227,11 @@ struct HomeViewSKIE: View {
                                 viewModel.toggleFavorite(cocktail)
                             },
                             onAddToCart: {
-                                // Main-actor Task: the whole flow (VM call +
-                                // toast state) runs on main, without the old
-                                // mid-task MainActor.run hop.
-                                // Only a real add is confirmed; a failed one
-                                // says so instead.
+                                // Main-actor Task: the VM call and the toast
+                                // state both on main. Only a real add is
+                                // confirmed; a failed one says so instead.
                                 Task { @MainActor in
-                                    let added = await viewModel.addToCart(cocktail)
-                                    toastMessage = added
-                                        ? L(\.added_to_cart, cocktail.name)
-                                        : L(\.error_add_item_to_cart_failed)
-                                    toastType = added ? .success : .error
-                                    withAnimation {
-                                        showingToast = true
-                                    }
+                                    addToCartOutcome = await viewModel.addToCart(cocktail)
                                 }
                             },
                             onCardTap: nil // Explicitly set to nil to prevent interference with NavigationLink
