@@ -130,5 +130,5 @@ val networkModule = module {
     }
 
     // API
-    single<CocktailApi> { CocktailApiImpl(client = get(), appConfig = get()) }
+    single<CocktailApi> { CocktailApiImpl(client = get(), appConfig = get(), json = get()) }
 }

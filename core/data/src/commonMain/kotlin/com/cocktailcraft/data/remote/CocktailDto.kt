@@ -1,53 +1,46 @@
 package com.cocktailcraft.data.remote
 
+import com.cocktailcraft.domain.model.CocktailIngredient
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonTransformingSerializer
-import com.cocktailcraft.domain.model.CocktailIngredient
+import kotlinx.serialization.json.Json
 
 @Serializable
 internal data class CocktailResponse(
     @SerialName("drinks")
-    @Serializable(with = CocktailDtoListSerializer::class)
     val drinks: List<CocktailDto>? = null
 )
 
+// `{"drinks":"no data found"}`: drinks as a string instead of null/[]
+private val drinksAsString = Regex("""^\s*\{\s*"drinks"\s*:\s*"""")
+
 /**
- * TheCocktailDB quirk shield (SH-6): some empty-result endpoints return the
- * literal string "no data found" for `drinks` instead of null/[], and payloads
- * occasionally contain a malformed record missing idDrink/strDrink. Coerce the
- * former to an empty array and drop the latter at the JSON-tree level before
- * structural decoding, so one bad record/response shape doesn't fail the whole
- * payload. A literal JSON null still short-circuits to Kotlin null before this
- * transform runs (nullable-property semantics), keeping the
- * `response.drinks ?: emptyList()` call sites intact.
+ * Decodes a drinks response (search, lookup, random and filter.php) in a
+ * single streaming pass, with TheCocktailDB's quirks shielded (SH-6): some
+ * empty-result endpoints return the literal string "no data found" for
+ * `drinks` instead of null/[], which reads as an empty list, and payloads
+ * occasionally contain a malformed record without idDrink/strDrink, which is
+ * dropped instead of failing the whole response. A JSON null for `drinks`
+ * stays null, keeping the `?: emptyList()` call sites intact.
+ *
+ * Not a JsonTransformingSerializer: that parses the whole body into a
+ * JsonElement tree first and decodes the tree in a second pass.
  */
-internal object CocktailDtoListSerializer : JsonTransformingSerializer<List<CocktailDto>>(
-    ListSerializer(CocktailDto.serializer())
-) {
-    override fun transformDeserialize(element: JsonElement): JsonElement {
-        val array = element as? JsonArray ?: return JsonArray(emptyList())
-        return JsonArray(array.filter { item ->
-            val obj = item as? JsonObject
-            val id = obj?.get("idDrink")
-            val name = obj?.get("strDrink")
-            id != null && id !is JsonNull && name != null && name !is JsonNull
-        })
-    }
+internal fun Json.decodeDrinks(body: String): List<CocktailDto>? {
+    if (drinksAsString.containsMatchIn(body)) return emptyList()
+    return decodeFromString(CocktailResponse.serializer(), body).drinks
+        ?.filter { it.id.isNotEmpty() && it.name.isNotEmpty() }
 }
 
 @Serializable
 internal data class CocktailDto(
+    // Empty when a record lacks them (null coerces to the default);
+    // decodeDrinks drops such records
     @SerialName("idDrink")
-    val id: String,
+    val id: String = "",
     
     @SerialName("strDrink")
-    val name: String,
+    val name: String = "",
     
     @SerialName("strDrinkAlternate")
     val alternateName: String? = null,
