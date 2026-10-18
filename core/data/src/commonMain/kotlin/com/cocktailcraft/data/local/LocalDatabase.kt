@@ -86,9 +86,22 @@ internal class LocalDatabase(
         dispatcher: CoroutineDispatcher,
         query: CocktailCraftDatabase.() -> Query<T>,
         transform: (List<T>) -> R
+    ): Flow<R> = observeStateful(dispatcher, query) { transform }
+
+    /**
+     * [observe] with a transform made by [newTransform] for each collector,
+     * so it can keep state across emissions: a CocktailDecodeMemo, which
+     * only decodes the stored cocktails that changed since the last one.
+     */
+    fun <T : Any, R> observeStateful(
+        dispatcher: CoroutineDispatcher,
+        query: CocktailCraftDatabase.() -> Query<T>,
+        newTransform: () -> (List<T>) -> R
     ): Flow<R> =
-        flow { emitAll(get().query().asFlow().mapToList(dispatcher)) }
-            .map(transform)
+        flow {
+            val transform = newTransform()
+            emitAll(get().query().asFlow().mapToList(dispatcher).map(transform))
+        }
             .flowOn(dispatcher)
             // Queries joining cached_cocktail re-run on every catalog write
             .distinctUntilChanged()

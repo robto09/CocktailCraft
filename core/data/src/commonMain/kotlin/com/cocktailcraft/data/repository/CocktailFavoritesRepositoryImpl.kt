@@ -3,6 +3,7 @@ package com.cocktailcraft.data.repository
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.local.CocktailCodec
+import com.cocktailcraft.data.local.CocktailDecodeMemo
 import com.cocktailcraft.data.local.LocalDatabase
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.domain.model.Cocktail
@@ -71,8 +72,13 @@ internal class CocktailFavoritesRepositoryImpl(
                 Logger.e(e) { "Failed to resolve favorites: ${e.message}" }
             }
         }
-        localDatabase.observe(ioDispatcher, { favoriteCocktailQueries.selectAll() }) { rows ->
-            rows.mapNotNull(::decodeOrNull)
+        localDatabase.observeStateful(ioDispatcher, { favoriteCocktailQueries.selectAll() }) {
+            val memo = CocktailDecodeMemo(codec)
+            return@observeStateful { rows ->
+                memo.emission {
+                    rows.mapNotNull { row -> row.payload?.let { decode(row.cocktail_id, it, row.full_details != 0L) } }
+                }
+            }
         }.collect { send(it) }
     }
 

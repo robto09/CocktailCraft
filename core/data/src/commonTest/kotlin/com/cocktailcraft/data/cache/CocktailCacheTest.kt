@@ -1,5 +1,6 @@
 package com.cocktailcraft.data.cache
 
+import app.cash.turbine.test
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.local.CocktailCodec
@@ -16,6 +17,9 @@ import com.cocktailcraft.testutil.testCocktail
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -24,6 +28,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.time.Clock
 
@@ -165,6 +170,47 @@ class CocktailCacheTest {
         assertEquals(singleQueries, driver.queries, "one batched SELECT, not one per placeholder")
         // ...and the stored full records still win over the placeholders
         assertEquals(full, cache.getAllCachedCocktails().sortedBy { it.id.toInt() })
+    }
+
+    // --- Observation: re-runs and decoding ---
+
+    @Test
+    fun reReadingAPageOnlyDecodesTheCocktailsThatChanged() = runTest {
+        val cache = cache(createTestDatabase())
+        cache.cacheCategoryPage("Cocktail", listOf(testCocktail("1"), testCocktail("2")), fetchedAtMs = 1L)
+
+        cache.observeCategoryPage("Cocktail").test {
+            val before = awaitItem()
+            cache.cacheCocktail(testCocktail("2", name = "Renamed"))
+            val after = awaitItem()
+
+            assertSame(before[0], after[0], "an unchanged row reuses its decoded cocktail")
+            assertEquals("Renamed", after[1].name)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun readingACocktailDoesNotReRunTheQueriesObservingIt() = runTest {
+        val driver = CountingSqlDriver(createInMemorySqlDriver())
+        val cache = CocktailCache(
+            createTestDatabase(driver),
+            MapSettings(),
+            json,
+            config,
+            ioDispatcher = StandardTestDispatcher(testScheduler)
+        )
+        cache.cacheCategoryPage("Cocktail", listOf(testCocktail("1"), testCocktail("2")), fetchedAtMs = 1L)
+        backgroundScope.launch { cache.observeCategoryPage("Cocktail").collect {} }
+        advanceUntilIdle()
+
+        driver.reset()
+        // A hit records the access for LRU eviction: a write, but not to
+        // the cocktail rows the page reads
+        cache.getCachedCocktail("1")
+        advanceUntilIdle()
+
+        assertEquals(1, driver.queries, "only the lookup itself: the page query didn't re-run")
     }
 
     @Test

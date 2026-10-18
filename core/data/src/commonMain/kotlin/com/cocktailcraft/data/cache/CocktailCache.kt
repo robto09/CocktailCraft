@@ -6,6 +6,7 @@ import app.cash.sqldelight.coroutines.mapToList
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.local.CocktailCodec
+import com.cocktailcraft.data.local.CocktailDecodeMemo
 import com.cocktailcraft.data.local.CocktailEntity
 import com.cocktailcraft.data.local.LegacyCocktailSerializer
 import com.cocktailcraft.data.local.toDomain
@@ -404,28 +405,37 @@ internal class CocktailCache(
      * writes would re-trigger itself), and expired rows are still served:
      * stale data stays on screen until a refresh replaces it.
      *
+     * [transform] gets a [CocktailDecodeMemo] of its own for each collector,
+     * so a re-run only decodes the rows that changed.
+     *
      * A failing query is logged and ends the stream, so collectors keep their
      * last state instead of crashing the scope they collect in.
      */
     private fun <T : Any, R> observeQuery(
         query: CocktailCraftDatabase.() -> Query<T>,
-        transform: (List<T>) -> R
+        transform: CocktailDecodeMemo.(List<T>) -> R
     ): Flow<R> =
         flow {
             ensureLoaded()
-            emitAll(database.value.query().asFlow().mapToList(ioDispatcher))
+            val memo = CocktailDecodeMemo(codec)
+            emitAll(
+                database.value.query().asFlow().mapToList(ioDispatcher)
+                    .map { rows -> memo.emission { transform(rows) } }
+            )
         }
-            .map(transform)
             .flowOn(ioDispatcher)
             .catch { e -> Logger.e(e) { "Observing the cocktail cache failed: ${e.message}" } }
 
-    private fun decodeReadOnly(rows: List<StoredCocktail>): List<Cocktail> = rows.mapNotNull(::decodeOrNull)
+    private fun CocktailDecodeMemo.decodeReadOnly(rows: List<StoredCocktail>): List<Cocktail> =
+        rows.mapNotNull { decode(it.id, it.payload, it.hasFullDetails) }
 
     /** The cached cocktail [id] (null when not cached), re-emitted after every write. */
     fun observeCocktail(id: String): Flow<Cocktail?> =
         observeQuery({ cachedCocktailQueries.selectById(id) }) { rows ->
-            rows.firstOrNull()?.let { codec.decodeOrNull(it.payload, it.full_details != 0L) }
+            rows.firstOrNull()?.let { decode(id, it.payload, it.full_details != 0L) }
         }
+            // A write to another cocktail re-runs the query too
+            .distinctUntilChanged()
 
     /**
      * The stored page of [category], re-emitted after every write to the
@@ -447,7 +457,7 @@ internal class CocktailCache(
                 if (hasPage) {
                     observeQuery(
                         query = { categoryPageQueries.selectPage(category, storedCocktail) },
-                        transform = ::decodeReadOnly
+                        transform = { rows -> decodeReadOnly(rows) }
                     )
                 } else {
                     observeCategoryColumn(category, includeUncategorized)

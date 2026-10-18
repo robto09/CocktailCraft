@@ -3,7 +3,9 @@ package com.cocktailcraft.data.repository
 import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.local.CocktailCodec
+import com.cocktailcraft.data.local.CocktailDecodeMemo
 import com.cocktailcraft.data.local.LocalDatabase
+import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.repository.CartRepository
@@ -35,8 +37,8 @@ internal class CartRepositoryImpl(
 
     private val codec = CocktailCodec(json)
 
-    private fun toCartItem(row: CartItemRow): CocktailCartItem? {
-        val cocktail = codec.decodeOrNull(row.payload, row.full_details != 0L) ?: return null
+    private fun toCartItem(row: CartItemRow, decode: (String, String, Boolean) -> Cocktail?): CocktailCartItem? {
+        val cocktail = decode(row.cocktail_id, row.payload, row.full_details != 0L) ?: return null
         return CocktailCartItem(
             cocktail = row.price_cents?.let { cocktail.copy(price = Money(it)) } ?: cocktail,
             quantity = row.quantity.toInt()
@@ -44,11 +46,14 @@ internal class CartRepositoryImpl(
     }
 
     private fun CocktailCraftDatabase.readItems(): List<CocktailCartItem> =
-        cartItemQueries.selectAll().executeAsList().mapNotNull(::toCartItem)
+        cartItemQueries.selectAll().executeAsList().mapNotNull { row ->
+            toCartItem(row) { _, payload, full -> codec.decodeOrNull(payload, full) }
+        }
 
     override fun observeCartItems(): Flow<List<CocktailCartItem>> =
-        localDatabase.observe(ioDispatcher, { cartItemQueries.selectAll() }) { rows ->
-            rows.mapNotNull(::toCartItem)
+        localDatabase.observeStateful(ioDispatcher, { cartItemQueries.selectAll() }) {
+            val memo = CocktailDecodeMemo(codec)
+            return@observeStateful { rows -> memo.emission { rows.mapNotNull { toCartItem(it, ::decode) } } }
         }
 
     override suspend fun getCartItems(): Result<List<CocktailCartItem>> = withContext(ioDispatcher) {
