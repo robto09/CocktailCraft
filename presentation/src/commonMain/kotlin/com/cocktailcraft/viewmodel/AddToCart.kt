@@ -40,6 +40,5 @@ internal suspend fun ManageCartUseCase.addToCartAnnounced(
             )
             false
         }
-        is Result.Loading -> false
     }
 }

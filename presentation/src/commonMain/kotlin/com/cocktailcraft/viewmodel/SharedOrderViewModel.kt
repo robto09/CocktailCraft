@@ -121,7 +121,6 @@ class SharedOrderViewModel internal constructor(
                     )
                     false
                 }
-                is Result.Loading -> false
             }
         } catch (e: Exception) {
             handleException(e, MR.strings.error_place_order_failed)

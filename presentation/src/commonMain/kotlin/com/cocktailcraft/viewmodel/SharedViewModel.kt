@@ -147,7 +147,6 @@ abstract class SharedViewModel : ViewModel() {
             Logger.e { "Error in ${this@SharedViewModel::class.simpleName}: $message ($code)" }
             default
         }
-        is Result.Loading -> default
     }
 
     /**

@@ -55,7 +55,6 @@ class GetCocktailDetailUseCase(
         return when (val refreshed = detailRepository.refreshCocktail(cocktailId, force = true)) {
             is Result.Success -> Result.Success(detailRepository.observeCocktail(cocktailId).first())
             is Result.Error -> refreshed
-            is Result.Loading -> refreshed
         }
     }
 }
