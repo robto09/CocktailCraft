@@ -9,6 +9,7 @@ import com.cocktailcraft.resources.error_generic
 import com.cocktailcraft.resources.error_load_cocktails_failed
 import com.cocktailcraft.resources.error_message_invalid_payload
 import com.cocktailcraft.resources.error_message_network
+import com.cocktailcraft.resources.error_message_server
 import com.cocktailcraft.resources.error_message_timeout
 import com.cocktailcraft.resources.error_suggestion_network
 import com.cocktailcraft.resources.error_title_data
@@ -83,6 +84,26 @@ class ErrorHandlerTest {
         assertEquals(ErrorHandler.ErrorCategory.DATA, error.category)
         assertEquals(MR.strings.error_title_data.desc(), error.title)
         assertEquals(StringDesc.Raw("Cocktail not found"), error.message)
+    }
+
+    @Test
+    fun domainExceptionFromATransportFailureShowsSharedCopyNotTheKtorMessage() {
+        // The repository boundary keeps Ktor's text (with the request URL)
+        // as the raw message; the user sees the copy for the typed code.
+        val ktorText = "Request timeout has expired [url=https://www.thecocktaildb.com/api/json/v1/1/" +
+            "filter.php?c=Cocktail, request_timeout=10000 ms]"
+        val expected = mapOf(
+            ErrorCode.TIMEOUT to MR.strings.error_message_timeout.desc(),
+            ErrorCode.NETWORK to MR.strings.error_message_network.desc(),
+            ErrorCode.SERVER_ERROR to MR.strings.error_message_server.desc()
+        )
+
+        expected.forEach { (code, message) ->
+            val error = ErrorHandler.getErrorFromException(DomainException(code, ktorText))
+
+            assertEquals(code, error.errorCode)
+            assertEquals(message, error.message)
+        }
     }
 
     @Test

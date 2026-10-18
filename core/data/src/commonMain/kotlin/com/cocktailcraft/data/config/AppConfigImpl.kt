@@ -20,9 +20,11 @@ class AppConfigImpl(
 ) : AppConfig {
     override val apiBaseUrl: String = "https://www.thecocktaildb.com/api/json/v1/1"
 
-    // Budget for a whole request and for each socket read. NetworkModule
-    // caps the connect phase lower (CONNECT_TIMEOUT_MS, 10 seconds).
-    override val networkTimeoutMs: Long = 20_000 // 20 seconds
+    // Budget for a whole request, retries included, and for each socket
+    // read. NetworkModule caps the connect phase lower (CONNECT_TIMEOUT_MS,
+    // 5 seconds), so an unreachable server surfaces its error in about 10
+    // seconds instead of 20.
+    override val networkTimeoutMs: Long = 10_000 // 10 seconds
 
     // Number of retries for network operations (consumed by NetworkModule's
     // HttpRequestRetry — the single retry layer, SH-7/AR-4)
