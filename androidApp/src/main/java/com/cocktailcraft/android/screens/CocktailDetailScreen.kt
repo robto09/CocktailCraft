@@ -11,18 +11,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.LocalBar
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,6 +45,10 @@ import com.cocktailcraft.android.screens.detail.DetailReviewsSection
 import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.DetailHeaderImage
 import com.cocktailcraft.android.ui.components.CocktailDetailShimmer
+import com.cocktailcraft.android.ui.components.ErrorStateView
+import com.cocktailcraft.android.ui.components.ErrorToastEffect
+import com.cocktailcraft.android.ui.components.LocalToastHostState
+import com.cocktailcraft.android.ui.components.ToastSnackbarHost
 import com.cocktailcraft.android.ui.components.WriteReviewSheet
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.rememberHapticHandler
@@ -49,9 +58,12 @@ import com.cocktailcraft.android.util.toFavoriteIdSet
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.detail_not_found_message
+import com.cocktailcraft.resources.detail_not_found_title
 import com.cocktailcraft.resources.detail_share_cocktail
 import com.cocktailcraft.resources.detail_title_fallback
 import com.cocktailcraft.resources.favorite_toggle_a11y
+import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedReviewViewModel
@@ -72,9 +84,22 @@ fun CocktailDetailScreen(
     val detailViewModel = koinViewModel<SharedCocktailDetailViewModel>()
     val reviewViewModel = koinViewModel<SharedReviewViewModel>()
     val detailState by detailViewModel.uiState.collectAsStateWithLifecycle()
+    val detailError by detailViewModel.error.collectAsStateWithLifecycle()
+    // Distinguishes "load not started yet" from "loaded but not found"
+    // (same as iOS)
+    var hasLoaded by remember(cocktailId) { mutableStateOf(false) }
     LaunchedEffect(cocktailId) {
-        detailViewModel.loadCocktail(cocktailId)
+        // The ViewModel is nav-entry scoped and survives rotation: don't
+        // refetch a cocktail it already holds
+        if (detailViewModel.uiState.value.cocktail?.id != cocktailId) {
+            detailViewModel.loadCocktail(cocktailId)
+        }
+        hasLoaded = true
     }
+    val coroutineScope = rememberCoroutineScope()
+
+    // Own toast host: this screen has no tab chrome (see MainScreen)
+    val toastHostState = remember { SnackbarHostState() }
 
     // Load reviews for this cocktail
     LaunchedEffect(cocktailId) {
@@ -91,38 +116,54 @@ fun CocktailDetailScreen(
     val favoriteIds = remember(favorites) { favorites.toFavoriteIdSet() }
     val isFavorite = detailState.cocktail?.let { it.id in favoriteIds } ?: false
 
-    val coroutineScope = rememberCoroutineScope()
+    CompositionLocalProvider(LocalToastHostState provides toastHostState) {
+        // With the cocktail on screen, a failed refresh or favorite toggle is a
+        // toast; a failed initial load is the full-screen error state instead
+        // (iOS does the same with its alert).
+        ErrorToastEffect(
+            error = detailError.takeIf { detailState.cocktail != null },
+            onConsumed = { detailViewModel.clearError() }
+        )
 
-    CocktailDetailContent(
-        detailState = detailState,
-        reviews = reviewState.currentCocktailReviews,
-        isFavorite = isFavorite,
-        onBackClick = onBackClick,
-        onToggleFavorite = { cocktailData ->
-            coroutineScope.launch {
-                favoritesViewModel.toggleFavorite(cocktailData)
+        CocktailDetailContent(
+            detailState = detailState,
+            reviews = reviewState.currentCocktailReviews,
+            isFavorite = isFavorite,
+            hasLoaded = hasLoaded,
+            error = detailError,
+            toastHostState = toastHostState,
+            onRetry = {
+                coroutineScope.launch { detailViewModel.loadCocktail(cocktailId) }
+            },
+            onBackClick = onBackClick,
+            // Through the detail ViewModel (as on iOS), so a failed toggle is
+            // reported on this screen; the heart reads the shared favorites flow
+            onToggleFavorite = {
+                coroutineScope.launch {
+                    detailViewModel.toggleFavorite()
+                }
+            },
+            onRefreshDetails = {
+                // Force-refresh from the network and update the UI
+                coroutineScope.launch {
+                    detailViewModel.refreshCocktail()
+                }
+            },
+            onRecommendationClick = { recommendation ->
+                navigationManager.navigateToCocktailDetail(recommendation.id)
+            },
+            reviewError = reviewError?.message?.resolve(),
+            onClearReviewError = { reviewViewModel.clearError() },
+            onSubmitReview = { userName, rating, comment ->
+                reviewViewModel.submitReview(
+                    cocktailId = cocktailId,
+                    rating = rating,
+                    comment = comment,
+                    userName = userName
+                )
             }
-        },
-        onRefreshDetails = {
-            // Force-refresh from the network and update the UI
-            coroutineScope.launch {
-                detailViewModel.refreshCocktail()
-            }
-        },
-        onRecommendationClick = { recommendation ->
-            navigationManager.navigateToCocktailDetail(recommendation.id)
-        },
-        reviewError = reviewError?.message?.resolve(),
-        onClearReviewError = { reviewViewModel.clearError() },
-        onSubmitReview = { userName, rating, comment ->
-            reviewViewModel.submitReview(
-                cocktailId = cocktailId,
-                rating = rating,
-                comment = comment,
-                userName = userName
-            )
-        }
-    )
+        )
+    }
 }
 
 /**
@@ -144,21 +185,33 @@ internal fun CocktailDetailContent(
     reviewError: String?,
     onClearReviewError: () -> Unit,
     // Returns whether the review was saved; the sheet stays open otherwise
-    onSubmitReview: suspend (userName: String, rating: Float, comment: String) -> Boolean
+    onSubmitReview: suspend (userName: String, rating: Float, comment: String) -> Boolean,
+    // False until the first load has finished, so "not found" can't flash
+    // before the load starts
+    hasLoaded: Boolean = true,
+    error: ErrorHandler.UserFriendlyError? = null,
+    onRetry: () -> Unit = {},
+    toastHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
-    // Single source of truth for the cocktail. The full-screen skeleton is
-    // driven only by its absence: loadCocktail() publishes the cocktail before
-    // its slow, network-bound related-cocktails fetch completes, so gating on
-    // detailState.isLoading too would hide already-loaded content for the
-    // whole extra fetch (and starve the recommendations shimmer, which needs
-    // the content composed while isLoading is still true).
+    // Single source of truth for the cocktail; the branches mirror iOS's
+    // CocktailDetailView. The cocktail branch wins: loadCocktail() publishes
+    // the cocktail before its slow, network-bound related-cocktails fetch
+    // completes, so gating on detailState.isLoading too would hide
+    // already-loaded content for the whole extra fetch (and starve the
+    // recommendations shimmer, which needs the content composed while
+    // isLoading is still true). Without a cocktail: the skeleton until the
+    // load finishes, then the failed load's error (with Retry), else
+    // "not found" — previously a failed or empty load left the skeleton up
+    // forever.
     val cocktail = detailState.cocktail
-    val isLoading = cocktail == null
+    val isLoading = cocktail == null && (detailState.isLoading || !hasLoaded)
+    val loadError = error.takeIf { cocktail == null && !isLoading }
+    val isNotFound = cocktail == null && !isLoading && loadError == null
 
     // Haptic feedback handler
     val hapticHandler = rememberHapticHandler()
 
-    var showReviewDialog by remember { mutableStateOf(false) }
+    var showReviewDialog by rememberSaveable { mutableStateOf(false) }
 
     if (showReviewDialog) {
         WriteReviewSheet(
@@ -188,7 +241,8 @@ internal fun CocktailDetailContent(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { ToastSnackbarHost(toastHostState) }
     ) { paddingValues ->
         // Skeleton of the detail layout, cross-faded with the content
         AnimatedVisibility(
@@ -197,6 +251,25 @@ internal fun CocktailDetailContent(
             exit = fadeOut()
         ) {
             CocktailDetailShimmer(modifier = Modifier.padding(paddingValues))
+        }
+
+        loadError?.let { failure ->
+            ErrorStateView(
+                error = failure,
+                onRetry = onRetry,
+                modifier = Modifier.padding(paddingValues)
+            )
+        }
+
+        if (isNotFound) {
+            ErrorStateView(
+                title = stringResource(MR.strings.detail_not_found_title),
+                message = stringResource(MR.strings.detail_not_found_message),
+                icon = Icons.Filled.LocalBar,
+                iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+                onRetry = null,
+                modifier = Modifier.padding(paddingValues)
+            )
         }
 
         // Show content only when cocktail is loaded

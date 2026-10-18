@@ -2,7 +2,6 @@ package com.cocktailcraft.domain.model
 
 import kotlin.native.HiddenFromObjC
 import kotlinx.serialization.Serializable
-import kotlin.time.Clock
 
 @Serializable
 data class Cocktail(
@@ -26,7 +25,11 @@ data class Cocktail(
     val stockCount: Int = 50,
     val rating: Float = 4.5f,
     val popularity: Int = 0,
-    val dateAdded: Long = Clock.System.now().toEpochMilliseconds()
+    // Epoch millis, or 0 when unknown. TheCocktailDB supplies no such date;
+    // the default used to be construction time, which made two mappings of
+    // the same API record compare unequal. Kept (not removed) so cached
+    // payloads and platform callers that pass it stay compatible.
+    val dateAdded: Long = 0L
 ) {
     /**
      * False when this instance came from a list endpoint, which fabricates

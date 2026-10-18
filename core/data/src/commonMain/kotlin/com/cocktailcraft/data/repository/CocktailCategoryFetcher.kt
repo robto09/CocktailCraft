@@ -7,15 +7,17 @@ import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCategories
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.time.Clock
 
 /**
  * Lazily fetches cocktails by category with caching and rate limiting.
  *
- * Extracted from the former CocktailRepositoryImpl monolith because this
- * fetch-and-cache path is shared by two focused repositories:
- * [CocktailSearchRepositoryImpl.filterByCategory] and
- * [CocktailCatalogRepositoryImpl.getCocktailsSortedByNewest].
+ * Extracted from the former CocktailRepositoryImpl monolith; backs
+ * [CocktailSearchRepositoryImpl.filterByCategory] (category browsing and the
+ * advanced search's category filter).
  *
  * API Limitations & Workarounds:
  * - Filter endpoints (filter.php) only return partial data (id, name, thumbnail)
@@ -29,6 +31,17 @@ internal class CocktailCategoryFetcher(
     private val offlineRepository: CocktailOfflineRepository
 ) {
 
+    // One lock per category: concurrent fetches of the same category (the
+    // home screen and a filter opening together, a double refresh) queue
+    // behind the first, then find its result in the fresh category cache
+    // instead of each issuing the same request. Different categories still
+    // fetch in parallel. The map only ever holds the handful of categories.
+    private val categoryLocksGuard = Mutex()
+    private val categoryLocks = mutableMapOf<String, Mutex>()
+
+    private suspend fun lockFor(category: String): Mutex =
+        categoryLocksGuard.withLock { categoryLocks.getOrPut(category) { Mutex() } }
+
     /**
      * Fetch cocktails for [category], preferring fresh category cache, then
      * cached fallbacks when the API fails. A genuine failure with no cached
@@ -40,8 +53,14 @@ internal class CocktailCategoryFetcher(
      * [Cocktail.dateAdded], but that is construction time, not API data: fresh
      * placeholders sorted above cached records, so the same category listed
      * in a different order on every device.
+     *
+     * Concurrent calls for the same category share one request (see
+     * [categoryLocks]).
      */
-    suspend fun fetchCocktailsByCategory(category: String): List<Cocktail> {
+    suspend fun fetchCocktailsByCategory(category: String): List<Cocktail> =
+        lockFor(category).withLock { fetchUnderLock(category) }
+
+    private suspend fun fetchUnderLock(category: String): List<Cocktail> {
         // First check category-specific cache
         val categoryCachedCocktails = cacheManager.getCategoryCache(category)
         val categoryLastFetch = cacheManager.getCategoryLastFetchTime(category)
@@ -67,30 +86,24 @@ internal class CocktailCategoryFetcher(
             }
         }
 
-        // Respect the minimum interval between API calls (retry/backoff is
-        // Ktor's job — SH-7)
-        remote.awaitRateLimitWindow()
-
-        // Check API connectivity
-        if (!remote.ping()) {
-            Logger.w { "API unreachable" }
-            if (categoryCachedCocktails.isNotEmpty()) {
-                return categoryCachedCocktails
-            }
-            throw Exception("API is not reachable")
-        }
-
-        remote.noteApiCall()
-
+        // No connectivity ping first: it doubled the requests and, with
+        // HttpRequestRetry, added seconds on a dead network before reaching
+        // the fallback. The real request failing is what triggers the cache
+        // fallback below. filterByCategoryRaw takes the rate-limit slot
+        // (retry/backoff is Ktor's job — SH-7).
         try {
             val basicDtos = remote.filterByCategoryRaw(category)
 
-            // Prefer full cached details over the filter endpoint's partial data
+            // Prefer full cached details over the filter endpoint's partial
+            // data, looked up for the whole page in one batch
+            val cachedDetails = cocktailCache.getCachedCocktails(
+                basicDtos.filter { it.instructions.isNullOrBlank() }.map { it.id }
+            )
             val enrichedCocktails = basicDtos.map { basicDto ->
                 val cocktail = if (!basicDto.instructions.isNullOrBlank()) {
                     remote.mapToDomain(basicDto)
                 } else {
-                    cocktailCache.getCachedCocktail(basicDto.id) ?: remote.mapToDomain(basicDto)
+                    cachedDetails[basicDto.id] ?: remote.mapToDomain(basicDto)
                 }
                 // filter.php omits the category, so stamp the one we fetched
                 // by — otherwise persisted entries are undiscoverable by
@@ -102,6 +115,8 @@ internal class CocktailCategoryFetcher(
             cocktailCache.cacheCocktails(enrichedCocktails)
 
             return enrichedCocktails
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Logger.e { "API call failed: ${e.message}" }
 

@@ -58,6 +58,7 @@ class SharedReviewViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun submitReview(cocktailId: String, rating: Float, comment: String, userName: String): Boolean {
+        clearError()
         if (!validateReview(rating, comment)) {
             return false
         }
@@ -85,6 +86,7 @@ class SharedReviewViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun updateReview(reviewId: String, rating: Float, comment: String): Boolean {
+        clearError()
         if (!validateReview(rating, comment)) {
             return false
         }
@@ -110,6 +112,7 @@ class SharedReviewViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun deleteReview(reviewId: String): Boolean {
+        clearError()
         return try {
             val found = manageReviewsUseCase.deleteReview(reviewId).getOrThrow()
             if (!found) {
