@@ -222,9 +222,9 @@ class MainScreenSharedVmTest {
         waitForText("Confirm")
         composeTestRule.onNodeWithText("Confirm").performClick()
         // Placing the order lands on the Orders list; the new OrderCard shows
-        // the placed order's "Processing" status (the old in-list "Your
-        // Orders" heading is gone — the top bar carries the title now).
-        waitForText("Processing")
+        // the placed order's localized PROCESSING status (the old in-list
+        // "Your Orders" heading is gone — the top bar carries the title now).
+        waitForText("Being Prepared")
 
         composeTestRule.onNodeWithTag("nav_cart").performClick()
         waitForText("Your cart is empty")

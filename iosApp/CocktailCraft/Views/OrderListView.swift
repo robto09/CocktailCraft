@@ -121,7 +121,8 @@ struct OrderListView: View {
                 Circle()
                     .fill(statusColor(order.status))
                     .frame(width: 10, height: 10)
-                Text(order.status)
+                // Localized label from the shared OrderStatus, as on Android
+                Text(order.status.displayName.localized())
                     .font(.subheadline)
                     .foregroundColor(statusColor(order.status))
             }
@@ -133,11 +134,11 @@ struct OrderListView: View {
         .cardStyle()
     }
 
-    private func statusColor(_ status: String) -> Color {
+    private func statusColor(_ status: OrderStatus) -> Color {
         switch status {
-        case "Completed": return AppColors.success
-        case "In Progress": return AppColors.warning
-        default: return AppColors.gray
+        case .delivered: return AppColors.success
+        case .pending, .processing, .shipped: return AppColors.warning
+        case .cancelled: return AppColors.gray
         }
     }
 }

@@ -3,6 +3,7 @@ package com.cocktailcraft.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.util.Result
@@ -19,14 +20,8 @@ import com.cocktailcraft.resources.error_load_orders_failed
 import com.cocktailcraft.resources.error_order_failed_title
 import com.cocktailcraft.resources.error_place_order_failed
 import com.cocktailcraft.resources.error_update_order_status_failed
-import com.cocktailcraft.resources.order_status_cancelled
-import com.cocktailcraft.resources.order_status_delivered
-import com.cocktailcraft.resources.order_status_pending
-import com.cocktailcraft.resources.order_status_processing
-import com.cocktailcraft.resources.order_status_shipped
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.OrderUiState
-import dev.icerock.moko.resources.desc.Raw
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.flow.*
@@ -88,8 +83,12 @@ class SharedOrderViewModel internal constructor(
      * On success the cart is already empty (SharedCartViewModel picks that up
      * from its observed flow); on failure it is untouched. Callers must not
      * clear the cart themselves.
+     * [totalPrice] is ignored: PlaceOrderUseCase computes the stored total
+     * from [cartItems] and DeliveryPolicy. It stays only so the platform call
+     * sites keep compiling.
      * SKIE will convert this to Swift async function.
      */
+    @Suppress("UNUSED_PARAMETER")
     suspend fun placeOrder(cartItems: List<CocktailCartItem>, totalPrice: Double): Boolean {
         if (cartItems.isEmpty()) {
             setError(
@@ -103,7 +102,7 @@ class SharedOrderViewModel internal constructor(
         _uiState.update { it.copy(isPlacingOrder = true, isLoading = true) }
 
         try {
-            val result = placeOrderUseCase(cartItems, totalPrice)
+            val result = placeOrderUseCase(cartItems)
             return when (result) {
                 is Result.Success -> {
                     // The observed orders flow picks up the new order automatically
@@ -148,7 +147,7 @@ class SharedOrderViewModel internal constructor(
      * Update order status.
      * SKIE will convert this to Swift async function.
      */
-    suspend fun updateOrderStatus(orderId: String, status: String): Boolean {
+    suspend fun updateOrderStatus(orderId: String, status: OrderStatus): Boolean {
         return try {
             val result = orderRepository.updateOrderStatus(orderId, status)
             if (result.isSuccess()) {
@@ -192,16 +191,7 @@ class SharedOrderViewModel internal constructor(
     /**
      * Get order status display text.
      */
-    fun getOrderStatusDisplay(status: String): StringDesc {
-        return when (status.lowercase()) {
-            "pending" -> MR.strings.order_status_pending.desc()
-            "processing" -> MR.strings.order_status_processing.desc()
-            "shipped" -> MR.strings.order_status_shipped.desc()
-            "delivered" -> MR.strings.order_status_delivered.desc()
-            "cancelled" -> MR.strings.order_status_cancelled.desc()
-            else -> StringDesc.Raw(status)
-        }
-    }
+    fun getOrderStatusDisplay(status: OrderStatus): StringDesc = status.displayName
     
     /**
      * Refresh orders data.

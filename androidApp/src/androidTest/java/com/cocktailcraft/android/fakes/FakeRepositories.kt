@@ -4,6 +4,7 @@ import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
@@ -164,7 +165,7 @@ class FakeOrderRepository(
     }
     override suspend fun getOrderById(id: String): Result<Order?> =
         Result.Success(orders.value.firstOrNull { it.id == id })
-    override suspend fun updateOrderStatus(id: String, status: String): Result<Unit> = Result.Success(Unit)
+    override suspend fun updateOrderStatus(id: String, status: OrderStatus): Result<Unit> = Result.Success(Unit)
     override suspend fun deleteOrder(id: String): Result<Unit> {
         orders.update { list -> list.filterNot { it.id == id } }
         return Result.Success(Unit)

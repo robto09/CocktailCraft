@@ -12,6 +12,7 @@ import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.createInMemorySqlDriver
@@ -47,9 +48,9 @@ class LegacySettingsImportTest {
             date = "2026-06-01",
             items = listOf(OrderItem("Margarita", 2, 9.5), OrderItem("Mojito", 1, 11.0)),
             total = 30.0,
-            status = "Delivered"
+            status = OrderStatus.DELIVERED
         ),
-        Order(id = "ORD-2", date = "2026-06-02", items = emptyList(), total = 0.0, status = "Processing")
+        Order(id = "ORD-2", date = "2026-06-02", items = emptyList(), total = 0.0, status = OrderStatus.PROCESSING)
     )
 
     private val legacyReviews = listOf(
@@ -106,7 +107,7 @@ class LegacySettingsImportTest {
         // Meanwhile the user changed things; the database is now newer.
         val local = createTestLocalDatabase(db)
         CartRepositoryImpl(local, testJson).updateQuantity("1", 7).getOrThrow()
-        OrderRepositoryImpl(local).updateOrderStatus("ORD-2", "Cancelled").getOrThrow()
+        OrderRepositoryImpl(local).updateOrderStatus("ORD-2", OrderStatus.CANCELLED).getOrThrow()
         ReviewRepositoryImpl(local).updateReview("r1", 1.0f, "Changed my mind.", "2026-06-09").getOrThrow()
 
         settings.seedAll()
@@ -115,7 +116,7 @@ class LegacySettingsImportTest {
         val cart = CartRepositoryImpl(local, testJson).getCartItems().getOrThrow()
         assertEquals(listOf("1" to 7, "2" to 1), cart.map { it.cocktail.id to it.quantity })
         val orders = OrderRepositoryImpl(local).getOrders().getOrThrow()
-        assertEquals(listOf("Delivered", "Cancelled"), orders.map { it.status })
+        assertEquals(listOf(OrderStatus.DELIVERED, OrderStatus.CANCELLED), orders.map { it.status })
         assertEquals(listOf(2, 0), orders.map { it.items.size })
         val reviews = ReviewRepositoryImpl(local).getReviews().getOrThrow()
         assertEquals(listOf(1.0f, 3.0f), reviews.map { it.rating })
@@ -185,10 +186,28 @@ class LegacySettingsImportTest {
     }
 
     @Test
+    fun legacyOrderJsonWithStringStatusesImportsAsTheMatchingEnum() = runTest {
+        // Written by older versions, when Order.status was a raw String
+        val settings = MapSettings().apply {
+            putString(
+                ORDERS_KEY,
+                """[{"id":"ORD-1","date":"2026-06-01","items":[],"total":0.0,"status":"Processing"},""" +
+                    """{"id":"ORD-2","date":"2026-06-02","items":[],"total":0.0,"status":"Cancelled"}]"""
+            )
+        }
+        val local = createTestLocalDatabase(createTestDatabase(), settings)
+
+        assertEquals(
+            listOf(OrderStatus.PROCESSING, OrderStatus.CANCELLED),
+            OrderRepositoryImpl(local).getOrders().getOrThrow().map { it.status }
+        )
+    }
+
+    @Test
     fun duplicateIdsInALegacyListKeepTheFirstEntry() = runTest {
         val db = createTestDatabase()
         val settings = MapSettings().apply {
-            seedOrders(listOf(legacyOrders.first(), legacyOrders.first().copy(status = "Duplicate", items = emptyList())))
+            seedOrders(listOf(legacyOrders.first(), legacyOrders.first().copy(status = OrderStatus.CANCELLED, items = emptyList())))
             putString(FAVORITES_KEY, "1,1,2")
         }
         val local = createTestLocalDatabase(db, settings)

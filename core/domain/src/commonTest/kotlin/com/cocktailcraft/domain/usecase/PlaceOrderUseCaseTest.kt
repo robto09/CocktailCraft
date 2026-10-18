@@ -1,55 +1,26 @@
 package com.cocktailcraft.domain.usecase
 
+import com.cocktailcraft.domain.config.DeliveryPolicy
 import com.cocktailcraft.domain.model.CocktailCartItem
-import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
-import com.cocktailcraft.domain.repository.OrderRepository
+import com.cocktailcraft.domain.model.OrderStatus
+import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.testutil.FakeOrderRepository
 import com.cocktailcraft.testutil.testCocktail
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
-
-private class FakeOrderRepository : OrderRepository {
-    val placedOrders = mutableListOf<Order>()
-
-    /** Orders that went through the checkout path (placeOrderAndClearCart). */
-    val checkedOutOrders = mutableListOf<Order>()
-
-    /** When set, placeOrder returns Result.Error with this message. */
-    var errorMessage: String? = null
-
-    override fun observeOrders(): Flow<List<Order>> = MutableStateFlow(placedOrders.toList())
-    override suspend fun getOrders(): Result<List<Order>> = Result.Success(placedOrders.toList())
-
-    override suspend fun placeOrder(order: Order): Result<Unit> {
-        errorMessage?.let { return Result.Error(it) }
-        placedOrders += order
-        return Result.Success(Unit)
-    }
-
-    override suspend fun placeOrderAndClearCart(order: Order): Result<Unit> {
-        errorMessage?.let { return Result.Error(it) }
-        placedOrders += order
-        checkedOutOrders += order
-        return Result.Success(Unit)
-    }
-
-    override suspend fun getOrderById(id: String): Result<Order?> =
-        Result.Success(placedOrders.find { it.id == id })
-
-    override suspend fun updateOrderStatus(id: String, status: String): Result<Unit> = Result.Success(Unit)
-    override suspend fun deleteOrder(id: String): Result<Unit> = Result.Success(Unit)
-    override suspend fun cancelOrder(orderId: String): Result<Boolean> = Result.Success(false)
-}
 
 class PlaceOrderUseCaseTest {
 
     private val repository = FakeOrderRepository()
     private val useCase = PlaceOrderUseCase(repository)
+
+    private fun item(id: String, price: Double, quantity: Int = 1) =
+        CocktailCartItem(cocktail = testCocktail(id, name = "Cocktail $id", price = price), quantity = quantity)
 
     @Test
     fun invokeBuildsOrderItemsFromCartAndPersistsIt() = runTest {
@@ -58,7 +29,7 @@ class PlaceOrderUseCaseTest {
             CocktailCartItem(cocktail = testCocktail("2", name = "Mojito", price = 12.0), quantity = 1)
         )
 
-        val result = useCase(cart, totalPrice = 28.0)
+        val result = useCase(cart)
 
         val order = (result as Result.Success).data
         assertEquals(
@@ -68,28 +39,38 @@ class PlaceOrderUseCaseTest {
             ),
             order.items
         )
-        assertEquals(28.0, order.total)
-        assertEquals("Processing", order.status)
+        assertEquals(OrderStatus.PROCESSING, order.status)
         // The exact order the caller gets back is what was persisted.
         assertEquals(listOf(order), repository.placedOrders)
+    }
+
+    @Test
+    fun totalIsSubtotalPlusDeliveryFeeBelowTheFreeDeliveryThreshold() = runTest {
+        // 2 x 8.00 + 12.00 = 28.00, under the threshold: standard fee applies
+        val order = (useCase(listOf(item("1", 8.0, quantity = 2), item("2", 12.0))) as Result.Success).data
+
+        assertEquals(28.0 + DeliveryPolicy.STANDARD_FEE, order.total)
+    }
+
+    @Test
+    fun totalHasNoDeliveryFeeAtOrAboveTheThreshold() = runTest {
+        val order = (useCase(listOf(item("1", 25.0, quantity = 2))) as Result.Success).data
+
+        assertEquals(50.0, order.total)
     }
 
     @Test
     fun invokeChecksOutSoTheCartIsClearedInTheSameTransaction() = runTest {
         // Checkout goes through placeOrderAndClearCart, never plain
         // placeOrder: callers rely on the cart being emptied atomically.
-        val cart = listOf(CocktailCartItem(cocktail = testCocktail("1"), quantity = 1))
-
-        val order = (useCase(cart, totalPrice = 10.0) as Result.Success).data
+        val order = (useCase(listOf(item("1", 10.0))) as Result.Success).data
 
         assertEquals(listOf(order), repository.checkedOutOrders)
     }
 
     @Test
     fun invokeGeneratesOrderIdAndIsoLikeDate() = runTest {
-        val cart = listOf(CocktailCartItem(cocktail = testCocktail("1"), quantity = 1))
-
-        val order = (useCase(cart, totalPrice = 10.0) as Result.Success).data
+        val order = (useCase(listOf(item("1", 10.0))) as Result.Success).data
 
         assertTrue(order.id.startsWith("ORD-"), "order id must carry the ORD- prefix, got ${order.id}")
         assertTrue(
@@ -99,25 +80,36 @@ class PlaceOrderUseCaseTest {
     }
 
     @Test
-    fun invokePropagatesRepositoryErrorWithoutPersisting() = runTest {
+    fun ordersPlacedBackToBackGetDistinctIds() = runTest {
+        // A double tap places two orders within the same millisecond; the
+        // old ORD-<epoch ms> ids collided and the second insert failed.
+        val cart = listOf(item("1", 10.0))
+
+        val first = (useCase(cart) as Result.Success).data
+        val second = (useCase(cart) as Result.Success).data
+
+        assertNotEquals(first.id, second.id)
+        assertEquals(2, repository.placedOrders.size)
+    }
+
+    @Test
+    fun invokePropagatesRepositoryErrorMessageAndCodeWithoutPersisting() = runTest {
         repository.errorMessage = "storage full"
-        val cart = listOf(CocktailCartItem(cocktail = testCocktail("1"), quantity = 1))
+        repository.errorCode = ErrorCode.SERVER_ERROR
 
-        val result = useCase(cart, totalPrice = 10.0)
+        val result = useCase(listOf(item("1", 10.0)))
 
-        assertEquals("storage full", (result as Result.Error).message)
+        val error = result as Result.Error
+        assertEquals("storage full", error.message)
+        assertEquals(ErrorCode.SERVER_ERROR, error.code)
         assertTrue(repository.placedOrders.isEmpty())
     }
 
     @Test
-    fun emptyCartStillPlacesAnOrderWithNoItems() = runTest {
-        // The use case does not guard against empty carts — that policy lives
-        // with the caller. Lock in the pass-through behavior.
-        val result = useCase(emptyList(), totalPrice = 0.0)
+    fun emptyCartIsRejectedInsteadOfPlacingAnOrderForJustTheDeliveryFee() = runTest {
+        val result = useCase(emptyList())
 
-        val order = (result as Result.Success).data
-        assertTrue(order.items.isEmpty())
-        assertEquals(0.0, order.total)
-        assertEquals(1, repository.placedOrders.size)
+        assertEquals(ErrorCode.INVALID_DATA, (result as Result.Error).code)
+        assertTrue(repository.placedOrders.isEmpty())
     }
 }
