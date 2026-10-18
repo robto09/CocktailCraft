@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		00146292C621392C71E37E0C /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED40DA08D38951B4D2DEEFA0 /* AppColors.swift */; };
 		009F3B5A400B6282D5641221 /* HomeViewSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF2F70830C783F8DE90EECC8 /* HomeViewSKIE.swift */; };
+		0619A82BA0E238926472B345 /* ConnectivityObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 733AA7C2B225D63104D2FE3F /* ConnectivityObserver.swift */; };
 		0926C525944B2677784A0435 /* ReviewViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19FFF3A23773BC62FC6EEA4A /* ReviewViewModelSKIE.swift */; };
 		0E081D260EAB09CCD01B8603 /* EditProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D631D8039D0C0AD87E059DD /* EditProfileView.swift */; };
 		11EC08719812BBF953E8CEAA /* FavoritesScreenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFC19C339408793D3B6051E8 /* FavoritesScreenTests.swift */; };
@@ -31,7 +32,6 @@
 		4B1843A05358F5B1489781B5 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F79C3BBEFD0B2BE551CBB4A8 /* SettingsView.swift */; };
 		4BFEB7F904D60ED73FC3E3DA /* OfflineBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5353458E21534CF1929CE2C8 /* OfflineBanner.swift */; };
 		4EAB0A65C52EA16153C6396F /* ScreenSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DBC396FDE0509CC47FD9035 /* ScreenSnapshotTests.swift */; };
-		556B8A0A0C717207D3369E23 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509CBA5BD785E60D138BA5C8 /* NetworkMonitor.swift */; };
 		5A2723FCDFFBA08B1EFBD337 /* HomeViewModelSKIE.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CE2BAB7B77BB7B44AA60E88 /* HomeViewModelSKIE.swift */; };
 		5DD5C9541804B1F02B26C2CA /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77C5D3DBDD3CA76A90859F00 /* FavoritesView.swift */; };
 		6000E7B37198571C24F4D5EE /* CategoryChipRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 838D652D50C7E0C9D6B8F18E /* CategoryChipRow.swift */; };
@@ -149,7 +149,6 @@
 		443CF30B0AF2ABDDF8B207FD /* AccessibilityAuditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityAuditTests.swift; sourceTree = "<group>"; };
 		4525CA0675F84BEE843C6C8D /* WidgetBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridgeTests.swift; sourceTree = "<group>"; };
 		4ECEB1EF12FD4A7450DEE5F3 /* CocktailCraft.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CocktailCraft.entitlements; sourceTree = "<group>"; };
-		509CBA5BD785E60D138BA5C8 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		5353458E21534CF1929CE2C8 /* OfflineBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineBanner.swift; sourceTree = "<group>"; };
 		571BD1157D49DC0BF87884F3 /* SnapshotSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotSupport.swift; sourceTree = "<group>"; };
 		58E70DFA9A4A015542687047 /* CocktailImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailImageView.swift; sourceTree = "<group>"; };
@@ -167,6 +166,7 @@
 		6CBDF02E082F9EF7B21B04A9 /* OrderFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderFlowTests.swift; sourceTree = "<group>"; };
 		6F5736A8DCA291A70555FB8F /* CartSummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CartSummaryCard.swift; sourceTree = "<group>"; };
 		711196F1A4BC17AFC4F2C53E /* ReviewComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewComponents.swift; sourceTree = "<group>"; };
+		733AA7C2B225D63104D2FE3F /* ConnectivityObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectivityObserver.swift; sourceTree = "<group>"; };
 		7427431C73D6CC512AFB7E56 /* CocktailCraftWidgets.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CocktailCraftWidgets.entitlements; sourceTree = "<group>"; };
 		756BD085AFDE4F730D398B85 /* CocktailListSkeleton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CocktailListSkeleton.swift; sourceTree = "<group>"; };
 		77C5D3DBDD3CA76A90859F00 /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
@@ -274,7 +274,7 @@
 			isa = PBXGroup;
 			children = (
 				63786090651668CDB0593815 /* AppRouter.swift */,
-				509CBA5BD785E60D138BA5C8 /* NetworkMonitor.swift */,
+				733AA7C2B225D63104D2FE3F /* ConnectivityObserver.swift */,
 				A479F6F6F05ADE26BEFFE2EF /* Strings.swift */,
 				94DF7AD6512988642980335E /* WidgetBridge.swift */,
 				158E5268B263E67FCA03C4E7 /* WidgetDataBridge.swift */,
@@ -690,6 +690,7 @@
 				32BAAF705B9E5F683CE82611 /* CocktailDetailViewModelSKIE.swift in Sources */,
 				FA7E31BA8D2A30728866D896 /* CocktailImageView.swift in Sources */,
 				4768014BF3232DD4ADD1F33D /* CocktailListSkeleton.swift in Sources */,
+				0619A82BA0E238926472B345 /* ConnectivityObserver.swift in Sources */,
 				96CF06A65ECCAB15A7E21B07 /* ContentView.swift in Sources */,
 				FC2F0E87AFB8EEA0EFC1E216 /* DetailSections.swift in Sources */,
 				0E081D260EAB09CCD01B8603 /* EditProfileView.swift in Sources */,
@@ -702,7 +703,6 @@
 				5A2723FCDFFBA08B1EFBD337 /* HomeViewModelSKIE.swift in Sources */,
 				009F3B5A400B6282D5641221 /* HomeViewSKIE.swift in Sources */,
 				931FD2B77A0C67F4139AD207 /* LoadingSkeletons.swift in Sources */,
-				556B8A0A0C717207D3369E23 /* NetworkMonitor.swift in Sources */,
 				4BFEB7F904D60ED73FC3E3DA /* OfflineBanner.swift in Sources */,
 				F3669B5411BCCB33891D316A /* OrderComponents.swift in Sources */,
 				A492237591D50187A605926B /* OrderDetailView.swift in Sources */,
