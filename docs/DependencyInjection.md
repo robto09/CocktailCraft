@@ -158,6 +158,29 @@ val presentationModule = module {
 - `expect fun dataPlatformModule(): Module` in `:core:data`'s commonMain; the Android and iOS actuals provide the platform-specific bindings (Settings instances including the secure/encrypted one, `NetworkMonitor`, the SQLDelight `SqlDriver`, the debug-aware `AppConfig`). They are all data-layer adapters, so they live in `core/data/src/androidMain/.../di/DataPlatformModule.kt` and `core/data/src/iosMain/.../di/DataPlatformModule.kt` (named apart from `:shared`'s `PlatformModule.kt`: same package, so equal file names would clash as JVM classes in the app).
 - `:shared` re-exposes it as `platformModule()` (`shared/src/commonMain/.../di/PlatformModule.kt`) — the name androidApp and `initKoin()` use, since neither app can see `:core:data`.
 
+## Data layer
+
+The nine repository interfaces live in `core/domain/src/commonMain/kotlin/com/cocktailcraft/domain/repository/`; their `internal` implementations (plus the `CocktailCategoryFetcher` helper shared by the search and catalog repositories) are in `core/data/src/commonMain/kotlin/com/cocktailcraft/data/repository/`. The KDoc on the interfaces is the source of truth for their methods.
+
+**Conventions**
+- One-shot operations are `suspend` functions returning `Result<T>` (`com.cocktailcraft.domain.util.Result`).
+- Data the UI watches is exposed as an `observe*()` `Flow` (cart, orders, favorites, reviews, a catalog category page, a single cocktail): a SQLDelight query flow that emits what is stored on collection and again after every write to its tables, from any repository.
+- Implementations confine database and Settings I/O and JSON (de)serialization to the injected IO dispatcher, and multi-statement writes run in one transaction.
+
+**Storage** — everything except auth lives in one SQLite database (`cocktailcraft_cache.db`, schema in `core/data/src/commonMain/sqldelight/`):
+
+| Table(s) | Purpose |
+|----------|---------|
+| `cached_cocktail`, `category_page` | The cocktail catalog: the single source of truth that category browsing, search filters and details read, refreshed from the network when stale (`CocktailCache`) |
+| `recently_viewed_cocktail` | Recently viewed cocktails |
+| `cart_item` | Cart |
+| `customer_order`, `customer_order_item` | Orders |
+| `favorite_cocktail` | Favorites |
+| `cocktail_review` | Reviews |
+
+- Every schema change needs a numbered migration in `core/data/src/commonMain/sqldelight/migrations/` and a regenerated snapshot in `databases/`; `verifySqlDelightMigration` (part of `check`) fails otherwise.
+- Auth data (accounts, session, sign-in throttling, guest preferences) stays out of the database, in the platform `Settings` store registered by the platform module.
+
 ## ViewModel Dependency Injection
 
 ViewModels do **not** implement `KoinComponent` and do not use field injection. All shared ViewModels extend `SharedViewModel` (the multiplatform base class on androidx `ViewModel`) and receive their dependencies — use cases, occasionally a repository or `NetworkMonitor` — through their (`internal`) constructors. Koin wires them up in `presentationModule`:
