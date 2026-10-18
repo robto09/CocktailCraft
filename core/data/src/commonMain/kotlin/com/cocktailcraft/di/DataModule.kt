@@ -58,6 +58,9 @@ val dataModule = module {
     // Background dispatcher for database and Settings I/O and JSON (de)serialization
     single<CoroutineDispatcher>(named("ioDispatcher")) { Dispatchers.IO }
 
+    // CPU work off the main thread: decoding and mapping API responses
+    single<CoroutineDispatcher>(named("defaultDispatcher")) { Dispatchers.Default }
+
     // Offline decision — single source of truth for "is the app offline" (AR-7)
     single { com.cocktailcraft.data.cache.OfflineModePolicy(networkMonitor = get()) }
 
@@ -94,7 +97,9 @@ val dataModule = module {
     single { ApiRateLimiter() }
 
     // Remote data source: API access, DTO mapping, rate limiting
-    single { CocktailRemoteDataSource(api = get(), rateLimiter = get()) }
+    single {
+        CocktailRemoteDataSource(api = get(), rateLimiter = get(), defaultDispatcher = get(named("defaultDispatcher")))
+    }
 
     // Focused repositories, each owning one concern
     single<CocktailOfflineRepository> {

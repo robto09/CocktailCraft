@@ -4,7 +4,10 @@ import co.touchlab.kermit.Logger
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.model.Money
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlin.math.absoluteValue
 import kotlin.time.Clock
 
@@ -19,39 +22,56 @@ import kotlin.time.Clock
  * (debounced name search, opening a cocktail) and the one-off
  * list.php/random.php calls are not throttled, so they never wait behind
  * the interval.
+ *
+ * Every call runs on [defaultDispatcher]: Ktor decodes the response body and
+ * the mapping walks every record in the coroutine that asks for it, which is
+ * the main thread for a ViewModel. The rate-limit wait stays on the caller's
+ * dispatcher; it only suspends.
  */
 internal class CocktailRemoteDataSource(
     private val api: CocktailApi,
     private val rateLimiter: ApiRateLimiter,
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
     // Injectable for tests: coroutine virtual time does not move Clock.System.
     private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() }
 ) {
 
     suspend fun searchByName(name: String): List<Cocktail> =
-        api.searchCocktailsByName(name).map(::mapToDomain)
+        offMain { api.searchCocktailsByName(name).map(::mapToDomain) }
 
-    suspend fun getById(id: String): Cocktail? = api.getCocktailById(id)?.let(::mapToDomain)
+    suspend fun getById(id: String): Cocktail? = offMain { api.getCocktailById(id)?.let(::mapToDomain) }
 
-    suspend fun getRandom(): Cocktail? = api.getRandomCocktail()?.let(::mapToDomain)
+    suspend fun getRandom(): Cocktail? = offMain { api.getRandomCocktail()?.let(::mapToDomain) }
 
     suspend fun filterByIngredient(ingredient: String): List<Cocktail> {
         acquireRateLimitSlot()
-        return api.filterByIngredient(ingredient).map(::mapToDomain)
+        return offMain { api.filterByIngredient(ingredient).map(::mapToDomain) }
     }
 
     suspend fun filterByAlcoholic(alcoholic: Boolean): List<Cocktail> {
         acquireRateLimitSlot()
-        return api.filterByAlcoholic(alcoholic).map(::mapToDomain)
+        return offMain { api.filterByAlcoholic(alcoholic).map(::mapToDomain) }
     }
 
-    /** Raw DTOs so the catalog layer can decide between mapping and cache enrichment. */
-    suspend fun filterByCategoryRaw(category: String): List<CocktailDto> {
+    /**
+     * The cocktails filter.php lists for [category]. The endpoint omits the
+     * category, so each is stamped with the one it was fetched by; the
+     * offline fallback finds rows by that column.
+     */
+    suspend fun filterByCategory(category: String): List<Cocktail> {
         acquireRateLimitSlot()
-        return api.filterByCategory(category)
+        return offMain {
+            api.filterByCategory(category).map { dto ->
+                val cocktail = mapToDomain(dto)
+                if (cocktail.category.isNullOrBlank()) cocktail.copy(category = category) else cocktail
+            }
+        }
     }
 
-    suspend fun getCategories(): List<String> = api.getCategories().map { it.name }
-    suspend fun getIngredients(): List<String> = api.getIngredients().map { it.name }
+    suspend fun getCategories(): List<String> = offMain { api.getCategories().map { it.name } }
+    suspend fun getIngredients(): List<String> = offMain { api.getIngredients().map { it.name } }
+
+    private suspend fun <T> offMain(block: suspend () -> T): T = withContext(defaultDispatcher) { block() }
 
     // --- Rate limiting ---
     // Only the proactive min-interval throttle lives here (request shaping);

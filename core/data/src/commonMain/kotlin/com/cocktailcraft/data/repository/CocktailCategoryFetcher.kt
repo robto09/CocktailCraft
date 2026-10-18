@@ -91,14 +91,9 @@ internal class CocktailCategoryFetcher(
             if (offlineRepository.isOffline() && snapshot(category).isNotEmpty()) {
                 return Result.Error(CatalogRefreshPolicy.OFFLINE_MESSAGE, ErrorCode.NETWORK)
             }
-            // filterByCategoryRaw takes the rate-limit slot (retry/backoff
-            // is Ktor's job — SH-7).
-            val cocktails = remote.filterByCategoryRaw(category).map { dto ->
-                val cocktail = remote.mapToDomain(dto)
-                // filter.php omits the category, so stamp the one we fetched
-                // by; the offline fallback finds rows by that column.
-                if (cocktail.category.isNullOrBlank()) cocktail.copy(category = category) else cocktail
-            }
+            // filterByCategory takes the rate-limit slot (retry/backoff is
+            // Ktor's job — SH-7) and stamps the category filter.php omits.
+            val cocktails = remote.filterByCategory(category)
             cocktailCache.cacheCategoryPage(category, cocktails, fetchedAtMs = nowMs())
             Result.Success(Unit)
         }
