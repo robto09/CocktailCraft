@@ -2,11 +2,11 @@ package com.cocktailcraft.data.repository
 
 import app.cash.turbine.test
 import com.cocktailcraft.data.cache.CocktailCache
-import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.data.cache.OfflineModePolicy
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.local.LegacySettingsImport
+import com.cocktailcraft.data.remote.ApiRateLimiter
 import com.cocktailcraft.data.remote.CocktailDto
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.domain.model.Cocktail
@@ -42,7 +42,7 @@ class CocktailFavoritesRepositoryImplTest {
     ): CocktailFavoritesRepositoryImpl {
         val policy = OfflineModePolicy(FakeNetworkMonitor(online))
         val cocktailCache = cache ?: CocktailCache(db, settings, testJson, config, offlineModePolicy = policy)
-        val remote = CocktailRemoteDataSource(api, CocktailCacheManager())
+        val remote = CocktailRemoteDataSource(api, ApiRateLimiter())
         val offline = CocktailOfflineRepositoryImpl(
             offlineModePolicy = policy,
             cocktailCache = cocktailCache

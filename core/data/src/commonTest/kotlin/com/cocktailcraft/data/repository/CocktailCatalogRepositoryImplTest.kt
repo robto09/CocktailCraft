@@ -1,6 +1,6 @@
 package com.cocktailcraft.data.repository
 
-import com.cocktailcraft.data.cache.CocktailCacheManager
+import com.cocktailcraft.data.remote.ApiRateLimiter
 import com.cocktailcraft.data.remote.CategoryDto
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.data.remote.IngredientDto
@@ -14,7 +14,7 @@ class CocktailCatalogRepositoryImplTest {
 
     // Mirrors the DataModule wiring: the catalog impl only needs the remote source.
     private fun repository(api: FakeCocktailApi = FakeCocktailApi()): CocktailCatalogRepositoryImpl =
-        CocktailCatalogRepositoryImpl(remote = CocktailRemoteDataSource(api, CocktailCacheManager()))
+        CocktailCatalogRepositoryImpl(remote = CocktailRemoteDataSource(api, ApiRateLimiter()))
 
     // --- getCategories / getIngredients: list.php DTO name mapping ---
 

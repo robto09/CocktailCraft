@@ -6,6 +6,7 @@ import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.local.LegacySettingsImport
 import com.cocktailcraft.data.local.LocalDatabase
+import com.cocktailcraft.data.remote.ApiRateLimiter
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.data.repository.AuthRepositoryImpl
 import com.cocktailcraft.data.repository.CartRepositoryImpl
@@ -93,8 +94,11 @@ val dataModule = module {
     // In-memory cache manager (thread-safe singleton)
     single { CocktailCacheManager() }
 
-    // Remote data source: API access, DTO mapping, rate-limit bookkeeping
-    single { CocktailRemoteDataSource(api = get(), cacheManager = get()) }
+    // The API's min-interval throttle, shared by every remote call site
+    single { ApiRateLimiter() }
+
+    // Remote data source: API access, DTO mapping, rate limiting
+    single { CocktailRemoteDataSource(api = get(), rateLimiter = get()) }
 
     // Focused repositories, each owning one concern
     single<CocktailOfflineRepository> {
