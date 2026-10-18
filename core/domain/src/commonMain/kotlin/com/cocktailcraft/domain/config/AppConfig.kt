@@ -18,21 +18,6 @@ interface AppConfig {
     val verboseNetworkLogging: Boolean
 
     /**
-     * Base URL for images
-     */
-    val imageBaseUrl: String
-
-    /**
-     * Path for ingredient images
-     */
-    val ingredientsImagePath: String
-
-    /**
-     * Path for cocktail images
-     */
-    val cocktailsImagePath: String
-
-    /**
      * Default timeout for network requests in milliseconds
      */
     val networkTimeoutMs: Long

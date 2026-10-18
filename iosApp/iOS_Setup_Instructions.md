@@ -80,9 +80,9 @@ xcodegen generate
 ```
 
 ### 7. App Transport Security (already configured)
-No ATS changes are needed — and do **not** add `NSAllowsArbitraryLoads`. The app enforces TLS certificate pinning for TheCocktailDB via `NSAppTransportSecurity` → `NSPinnedDomains` in `CocktailCraft/Info.plist` (pinning the Cloudflare CA pool for `thecocktaildb.com`), mirrored for the widget extension in `project.yml`. If pinned requests start failing after a Cloudflare CA rotation, refresh the pin set per the comment in `Info.plist`.
+No ATS changes are needed — and do **not** add `NSAllowsArbitraryLoads`. The app enforces TLS certificate pinning for TheCocktailDB via `NSAppTransportSecurity` → `NSPinnedDomains` in `CocktailCraft/Info.plist` (pinning the Cloudflare CA pool for `thecocktaildb.com`). The widget extension does no networking (it reads App Group snapshots the app writes), so it has no ATS config of its own. If pinned requests start failing after a Cloudflare CA rotation, refresh the pin set per the comment in `Info.plist`.
 
-> **Pin review due 2027-07-08.** `NSPinnedDomains` has no expiry setting, so unlike Android's pin-set (`expiration="2027-07-08"` in `network_security_config.xml`, after which Android falls back to normal CA validation) the iOS pins stay enforced until replaced. Re-verify the Cloudflare CA pool and ship a refreshed set — app `Info.plist`, widget extension in `project.yml`, and the Android config together — before that date.
+> **Pin review due 2027-07-08.** `NSPinnedDomains` has no expiry setting, so unlike Android's pin-set (`expiration="2027-07-08"` in `network_security_config.xml`, after which Android falls back to normal CA validation) the iOS pins stay enforced until replaced. Re-verify the Cloudflare CA pool and ship a refreshed set — app `Info.plist` and the Android config together — before that date.
 
 ### 8. Run the App
 1. Select a simulator or device

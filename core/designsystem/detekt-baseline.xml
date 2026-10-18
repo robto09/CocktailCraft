@@ -14,9 +14,6 @@
     <ID>MagicNumber:DesignTokens.kt$AccentColorTokens$0xFFFF453A</ID>
     <ID>MagicNumber:DesignTokens.kt$AccentColorTokens$0xFFFF9500</ID>
     <ID>MagicNumber:DesignTokens.kt$AccentColorTokens$0xFFFF9F0A</ID>
-    <ID>MagicNumber:DesignTokens.kt$ColorTokens$0xFFFFFF</ID>
-    <ID>MagicNumber:DesignTokens.kt$ColorTokens$16</ID>
-    <ID>MagicNumber:DesignTokens.kt$ColorTokens$6</ID>
     <ID>MayBeConst:DesignTokens.kt$ColorTokens$// Brand val primaryLight: Long = 0xFFEB6A43 // Coral, main elements</ID>
     <ID>MayBeConst:DesignTokens.kt$ColorTokens$// Component accents val chipBackground: Long = 0xFF9C5C38 // Brown category chips ("Vodka")</ID>
     <ID>MayBeConst:DesignTokens.kt$ColorTokens$// Neutrals val gray: Long = 0xFF8E8E93</ID>

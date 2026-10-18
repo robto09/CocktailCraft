@@ -44,11 +44,6 @@ struct AppTheme {
         static let callout = Font.callout
         static let caption = Font.caption
         static let caption2 = Font.caption2
-        
-        // Custom sizes matching Android, each anchored to a text
-        // style so they scale with the user's Dynamic Type setting
-        static let cardSubtitle = Font.subheadline
-        static let price = Font.callout.weight(.bold)
     }
     
     // MARK: - Spacing
@@ -62,11 +57,6 @@ struct AppTheme {
         static let xl = CGFloat(SpacingTokens.shared.xl)
         static let xxl = CGFloat(SpacingTokens.shared.xxl)
         static let xxxl = CGFloat(SpacingTokens.shared.xxxl)
-
-        // Card specific spacing
-        static let cardPadding: CGFloat = 12
-        static let cardSpacing: CGFloat = 16
-        static let cardImageHeight: CGFloat = 150
     }
 
     // MARK: - Corner Radius
@@ -88,15 +78,12 @@ struct AppTheme {
     // MARK: - Shadows
     struct Shadow {
         static let card = (color: Color.black.opacity(0.1), radius: CGFloat(4), x: CGFloat(0), y: CGFloat(2))
-        static let button = (color: Color.black.opacity(0.15), radius: CGFloat(2), x: CGFloat(0), y: CGFloat(1))
-        static let searchBar = (color: Color.black.opacity(0.05), radius: CGFloat(1), x: CGFloat(0), y: CGFloat(1))
     }
     
     // MARK: - Animation
     struct Animation {
         static let standard = SwiftUI.Animation.easeInOut(duration: 0.3)
         static let quick = SwiftUI.Animation.easeInOut(duration: 0.2)
-        static let slow = SwiftUI.Animation.easeInOut(duration: 0.5)
     }
 }
 
@@ -113,27 +100,6 @@ struct CardStyle: ViewModifier {
                 radius: AppTheme.Shadow.card.radius,
                 x: AppTheme.Shadow.card.x,
                 y: AppTheme.Shadow.card.y
-            )
-    }
-}
-
-struct ChipStyle: ViewModifier {
-    let isSelected: Bool
-    @Environment(\.isDarkMode) var isDarkMode
-    @Environment(\.appearance) var appearance
-
-    func body(content: Content) -> some View {
-        content
-            .padding(.horizontal, AppTheme.Spacing.lg)
-            .padding(.vertical, AppTheme.Spacing.xs)
-            .background(isSelected ? AppColors.primary(appearance) : AppColors.surface(isDarkMode: isDarkMode))
-            .foregroundColor(isSelected ? AppColors.onPrimary(isDarkMode: isDarkMode) : AppColors.primary(appearance))
-            .cornerRadius(AppTheme.CornerRadius.chip)
-            .shadow(
-                color: isSelected ? AppTheme.Shadow.button.color : Color.clear,
-                radius: AppTheme.Shadow.button.radius,
-                x: AppTheme.Shadow.button.x,
-                y: AppTheme.Shadow.button.y
             )
     }
 }
@@ -210,10 +176,6 @@ extension View {
     /// Opaque surface tab bar matching Android's bottom navigation.
     func brandedTabBar() -> some View {
         modifier(BrandedTabBarStyle())
-    }
-
-    func chipStyle(isSelected: Bool = false) -> some View {
-        modifier(ChipStyle(isSelected: isSelected))
     }
 
     /// Expands an icon-only control's tappable area to Apple's 44 pt HIG

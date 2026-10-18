@@ -5,7 +5,6 @@ import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.common_unknown
 import com.cocktailcraft.resources.delivery_estimate_minutes
-import com.cocktailcraft.resources.delivery_estimate_no_items
 import com.cocktailcraft.resources.delivery_estimate_processing_soon
 import com.cocktailcraft.resources.order_status_cancelled
 import com.cocktailcraft.resources.order_status_delivered
@@ -29,14 +28,6 @@ object DeliveryPolicy {
     fun deliveryFee(subtotal: Money): Money = if (isFreeDelivery(subtotal)) Money.ZERO else STANDARD_FEE
 
     fun finalTotal(subtotal: Money): Money = subtotal + deliveryFee(subtotal)
-
-    /** Estimated delivery time for a cart of [itemCount] items. */
-    fun estimatedDeliveryTime(itemCount: Int): StringDesc = when {
-        itemCount == 0 -> MR.strings.delivery_estimate_no_items.desc()
-        itemCount <= 3 -> minutes(15, 20)
-        itemCount <= 6 -> minutes(20, 25)
-        else -> minutes(25, 30)
-    }
 
     /** Estimated delivery time for an order in the given status. */
     fun estimatedDeliveryTimeForStatus(status: OrderStatus?): StringDesc = when (status) {

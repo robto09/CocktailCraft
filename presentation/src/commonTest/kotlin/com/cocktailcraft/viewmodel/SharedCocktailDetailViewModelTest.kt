@@ -41,7 +41,6 @@ private class FailingDetailRepository(
     override fun observeCocktail(id: String): Flow<Cocktail?> = flowOf(null)
     override suspend fun refreshCocktail(id: String, force: Boolean): Result<Unit> = Result.Error(message)
     override suspend fun getRandomCocktail(): Result<Cocktail?> = Result.Error(message)
-    override fun getCocktailImageUrl(cocktail: Cocktail): String = ""
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

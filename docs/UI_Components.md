@@ -14,8 +14,6 @@ This document provides an overview of the reusable UI components in the Cocktail
    - [ConfirmationDialog](#confirmationdialog)
    - [DetailInfoCard](#detailinfocard)
    - [RatingDisplay](#ratingdisplay)
-   - [StatusIndicator](#statusindicator)
-   - [SettingsCard](#settingscard)
    - [ProfileCard](#profilecard)
    - [AuthDialog](#authdialog)
    - [CocktailItem](#cocktailitem)
@@ -25,15 +23,14 @@ This document provides an overview of the reusable UI components in the Cocktail
    - [FavoriteToggleButton](#favoritetogglebutton)
    - [RatingBar](#ratingbar)
    - [OptimizedImage](#optimizedimage)
-   - [ErrorDialog and ErrorBanner](#errordialog-and-errorbanner)
-   - [AnimatedButtons](#animatedbuttons)
+   - [ErrorDialog](#errordialog)
+   - [AnimatedIconButton](#animatediconbutton)
    - [AdvancedSearchBottomSheet](#advancedsearchbottomsheet)
    - [CocktailSearchBar](#cocktailsearchbar)
    - [NetworkErrorStateDisplay](#networkerrordisplay)
    - [AnimatedCocktailList](#animatedcocktaillist)
    - [CategoryFilterRow](#categoryfilterrow)
    - [CocktailLoadingShimmer](#cocktailloadingshimmer)
-   - [EndOfListMessage](#endoflistmessage)
 4. [Animations](#animations)
 5. [Refactoring Process](#refactoring-process)
 6. [Best Practices](#best-practices)
@@ -183,49 +180,6 @@ RatingDisplay(
 ```
 
 **When to use**: When you need to display a rating with stars and review count, such as in product listings or detail screens.
-
-### StatusIndicator
-
-**Purpose**: Displays a status with a colored dot or icon and text.
-
-**Usage**:
-```kotlin
-StatusIndicator(
-    status = order.status,
-    isActive = order.status == "Completed",
-    activeColor = Color(0xFF4CAF50),
-    icon = Icons.Default.CheckCircle
-)
-```
-
-**When to use**: When you need to display a status indicator, such as order status, network status, or any other state that can be active or inactive.
-
-### SettingsCard
-
-**Purpose**: Provides a consistent card layout for settings sections with a title and content.
-
-**Usage**:
-```kotlin
-SettingsCard(
-    title = "Account Settings",
-    modifier = Modifier.padding(bottom = 16.dp)
-) {
-    // Content goes here
-    SettingsItem(
-        icon = Icons.Default.Person,
-        title = "Edit Profile",
-        onClick = { /* Handle edit profile */ }
-    )
-
-    SettingsItem(
-        icon = Icons.Default.Lock,
-        title = "Change Password",
-        onClick = { /* Handle change password */ }
-    )
-}
-```
-
-**When to use**: For settings screens or any section that needs a consistent card layout with a title and content.
 
 ### ProfileCard
 
@@ -393,9 +347,9 @@ OptimizedImage(
 
 **When to use**: Whenever you need to display an image from a URL, especially when performance is a concern.
 
-### ErrorDialog and ErrorBanner
+### ErrorDialog
 
-**Purpose**: Displays error messages in a dialog or banner format.
+**Purpose**: Displays an error message in a modal dialog.
 
 **Usage**:
 ```kotlin
@@ -404,36 +358,24 @@ ErrorDialog(
     onDismiss = { /* Dismiss action */ },
     onRetry = { /* Retry action */ }
 )
-
-ErrorBanner(
-    error = error,
-    onDismiss = { /* Dismiss action */ },
-    onAction = { /* Action */ }
-)
 ```
 
-**When to use**: When you need to display error messages to the user, either in a modal dialog or a non-modal banner. The error's title, message and action label are shared `StringDesc`s; the components resolve them with `resolve()` (`util/SharedStrings.kt`).
+**When to use**: When you need to display an error message to the user in a modal dialog. The error's title, message and action label are shared `StringDesc`s; the component resolves them with `resolve()` (`util/SharedStrings.kt`).
 
-### AnimatedButtons
+### AnimatedIconButton
 
-**Purpose**: Provides buttons with scale animations when pressed.
+**Purpose**: An icon button that scales down while pressed.
 
 **Usage**:
 ```kotlin
-AnimatedButton(
+AnimatedIconButton(
     onClick = { /* Action */ },
-    modifier = Modifier
-) {
-    Text("Click Me")
-}
-
-AnimatedTextButton(
-    text = "Click Me",
-    onClick = { /* Action */ }
+    icon = Icons.Default.Favorite,
+    contentDescription = "Add to favorites"
 )
 ```
 
-**When to use**: When you want to add animations to buttons for a more engaging user experience.
+**When to use**: When you want a pressed-state animation on an icon button for a more engaging user experience.
 
 ### AdvancedSearchBottomSheet
 
@@ -548,56 +490,17 @@ CocktailLoadingShimmer(showHeader = false)  // Favorites: rows only
 
 **When to use**: When you need to display a loading state for cocktails, providing a better user experience than a simple spinner.
 
-### EndOfListMessage
-
-**Purpose**: Displays an animated message when the user reaches the end of a list.
-
-**Usage**:
-```kotlin
-EndOfListMessage(
-    visible = !hasMoreData && !isSearchActive && cocktails.isNotEmpty(),
-    message = "You've reached the end of the list"
-)
-```
-
-**When to use**: When you need to indicate to the user that they have reached the end of a paginated list.
-
 ## Animations
 
 The animation system consists of shared utilities in `androidApp/src/main/java/com/cocktailcraft/android/ui/animation/AnimationUtils.kt` and the animated components in `ui/components/` described above.
 
 ### AnimationUtils
 
-`AnimationUtils` is an object providing reusable animation building blocks:
-
-- **Duration constants**: `ANIMATION_DURATION_SHORT` (150ms), `ANIMATION_DURATION_MEDIUM` (300ms), `ANIMATION_DURATION_LONG` (500ms)
-- **Spring constants**: stiffness (`SPRING_STIFFNESS_LOW/MEDIUM/HIGH`) and damping (`SPRING_DAMPENING_*`) presets
-- **Prebuilt transitions**: `fadeInMedium`/`fadeOutMedium`, `scaleInMedium`/`scaleOutMedium`, `bounceScaleIn`, slide-in/out variants, and combined transitions such as `enterWithFadeAndScale`
-
-```kotlin
-// Combined enter transition: fade + scale with medium duration
-AnimatedVisibility(
-    visible = visible,
-    enter = AnimationUtils.enterWithFadeAndScale,
-    exit = AnimationUtils.exitWithFadeAndScale
-) { /* content */ }
-```
+`AnimationUtils` is an object holding the spring presets shared by the animated components: `SPRING_STIFFNESS_MEDIUM` and `SPRING_DAMPENING_MEDIUM_BOUNCY`.
 
 ### Button Animations
 
-`AnimatedButtons.kt` provides press-scale button variants driven by `interactionSource` and spring animations:
-
-- **`AnimatedButton`**: a `Button` that scales to 0.95 while pressed. Takes a content lambda (there is no `text` parameter):
-
-```kotlin
-AnimatedButton(onClick = { /* action */ }) {
-    Text("Add to Cart")
-}
-```
-
-- **`AnimatedTextButton(text, onClick)`**: convenience wrapper around `AnimatedButton` for a plain text label
-- **`AnimatedIconButton`**: icon button with press-scale and optional haptic feedback
-- **`AnimatedFloatingActionButton`**: FAB with press-scale
+`AnimatedButtons.kt` provides **`AnimatedIconButton`**: an icon button with press-scale (driven by `interactionSource` and a spring animation) and optional haptic feedback.
 
 ### Theming and Colors
 
@@ -614,7 +517,6 @@ colors only through the theme — there is no global color object (AN-5):
 - **`CocktailCraftTheme.extendedColors`** for brand/semantic colors Material
   has no role for
 - **`CocktailCraftTheme.isDarkTheme`** for theme-specific assets
-  (`ThemeAssets`)
 
 | Design token | Read it as |
 |---|---|

@@ -139,7 +139,6 @@ val dataModule = module {
         CocktailDetailRepositoryImpl(
             remote = get(),
             cocktailCache = get(),
-            appConfig = get(),
             offlineRepository = get()
         )
     }

@@ -32,5 +32,4 @@ interface CocktailDetailRepository {
     suspend fun refreshCocktail(id: String, force: Boolean = false): Result<Unit>
 
     suspend fun getRandomCocktail(): Result<Cocktail?>
-    fun getCocktailImageUrl(cocktail: Cocktail): String
 }

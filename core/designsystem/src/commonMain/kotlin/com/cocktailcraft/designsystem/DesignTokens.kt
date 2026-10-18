@@ -19,11 +19,6 @@ package com.cocktailcraft.designsystem
  *   which does not link the shared framework.
  */
 
-object BrandTokens {
-    /** Product name shown in launchers, headers, and empty states. */
-    const val APP_NAME: String = "CocktailCraft"
-}
-
 object ColorTokens {
     // Brand
     val primaryLight: Long = 0xFFEB6A43   // Coral, main elements
@@ -61,12 +56,6 @@ object ColorTokens {
     // Component accents
     val chipBackground: Long = 0xFF9C5C38     // Brown category chips ("Vodka")
     val chipBackgroundDark: Long = 0xFFC79A7E // Softer tan, reads on dark
-
-    /** "#RRGGBB" form for callers that need CSS-style hex (theme previews). */
-    fun hexString(argb: Long): String {
-        val rgb = argb and 0xFFFFFF
-        return "#" + rgb.toString(16).uppercase().padStart(6, '0')
-    }
 }
 
 /**

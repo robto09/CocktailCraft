@@ -105,7 +105,6 @@ classDiagram
         +getCocktailById(String id) Result~Cocktail?~
         +refreshCocktailById(String id) Result~Cocktail?~
         +getRandomCocktail() Result~Cocktail?~
-        +getCocktailImageUrl(Cocktail cocktail) String
     }
 
     class CocktailCatalogRepository {
@@ -142,16 +141,13 @@ classDiagram
         +removeFromCart(String cocktailId) Result~Unit~
         +updateQuantity(String cocktailId, Int quantity) Result~Unit~
         +clearCart() Result~Unit~
-        +getCartTotal() Result~Double~
     }
 
     class OrderRepository {
         <<interface>>
         +observeOrders() Flow~List~Order~~
         +getOrders() Result~List~Order~~
-        +placeOrder(Order order) Result~Unit~
         +getOrderById(String id) Result~Order?~
-        +updateOrderStatus(String id, String status) Result~Unit~
         +deleteOrder(String id) Result~Unit~
         +cancelOrder(String orderId) Result~Boolean~
     }
@@ -165,8 +161,6 @@ classDiagram
         +isUserSignedIn() Result~Boolean~
         +getCurrentUser() Result~User?~
         +updateUserName(String name) Result~Boolean~
-        +updateUserEmail(String email, String password) Result~Boolean~
-        +updateUserAddress(Address address) Result~Boolean~
         +updateUserPreferences(UserPreferences preferences) Result~Boolean~
         +getUserPreferences() Result~UserPreferences~
     }

@@ -20,12 +20,6 @@ class AppConfigImpl(
 ) : AppConfig {
     override val apiBaseUrl: String = "https://www.thecocktaildb.com/api/json/v1/1"
 
-    override val imageBaseUrl: String = "https://www.thecocktaildb.com/images"
-
-    override val ingredientsImagePath: String = "ingredients"
-
-    override val cocktailsImagePath: String = "media/k/drinks"
-
     // Budget for a whole request and for each socket read. NetworkModule
     // caps the connect phase lower (CONNECT_TIMEOUT_MS, 10 seconds).
     override val networkTimeoutMs: Long = 20_000 // 20 seconds

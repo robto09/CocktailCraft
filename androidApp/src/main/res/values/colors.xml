@@ -19,10 +19,6 @@
     <color name="background_light">#FAFAFA</color>
     <color name="background_dark">#121212</color>
 
-    <!-- ColorTokens.surfaceLight / surfaceDark -->
-    <color name="surface_light">#FFFFFF</color>
-    <color name="surface_dark">#1E1E1E</color>
-
     <!-- ColorTokens.textPrimaryLight / textPrimaryDark -->
     <color name="text_primary_light">#000000</color>
     <color name="text_primary_dark">#FFFFFF</color>
@@ -31,12 +27,6 @@
     <color name="text_secondary_light">#8E8E93</color>
     <color name="text_secondary_dark">#B0B0B0</color>
 
-    <!-- ColorTokens status colors (success / error / warning) -->
-    <color name="success">#34C759</color>
-    <color name="error">#FF3B30</color>
-    <color name="warning">#FF9500</color>
-
     <!-- System Colors -->
-    <color name="black">#000000</color>
     <color name="white">#FFFFFF</color>
 </resources>

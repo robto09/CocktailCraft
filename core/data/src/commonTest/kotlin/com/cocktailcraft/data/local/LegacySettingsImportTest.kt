@@ -15,6 +15,7 @@ import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.domain.model.sumOfMoney
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.testutil.createTestDatabase
@@ -115,7 +116,7 @@ class LegacySettingsImportTest {
         // Meanwhile the user changed things; the database is now newer.
         val local = createTestLocalDatabase(db)
         CartRepositoryImpl(local, testJson).updateQuantity("1", 7).getOrThrow()
-        OrderRepositoryImpl(local).updateOrderStatus("ORD-2", OrderStatus.CANCELLED).getOrThrow()
+        OrderRepositoryImpl(local).cancelOrder("ORD-2").getOrThrow()
         ReviewRepositoryImpl(local).updateReview("r1", 1.0f, "Changed my mind.", "2026-06-09").getOrThrow()
 
         settings.seedAll()
@@ -232,7 +233,7 @@ class LegacySettingsImportTest {
 
         val cart = CartRepositoryImpl(local, testJson)
         assertEquals(listOf(Money(950), Money(529)), cart.getCartItems().getOrThrow().map { it.cocktail.price })
-        assertEquals(Money(2429), cart.getCartTotal().getOrThrow())
+        assertEquals(Money(2429), cart.getCartItems().getOrThrow().sumOfMoney { it.lineTotal })
         val order = OrderRepositoryImpl(local).getOrders().getOrThrow().single()
         assertEquals(Money(3028), order.total)
         assertEquals(listOf(Money(950), Money(529)), order.items.map { it.price })

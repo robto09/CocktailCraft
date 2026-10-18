@@ -140,7 +140,8 @@ class KoinInitializer {
         if Self.isTestMode {
             #if DEBUG
             // Same graph over an in-memory database, throwaway settings and
-            // fixture network responses (shared/src/iosMain/IosTestMode.kt)
+            // fixture network responses (shared/src/iosTestMode/.../IosTestMode.kt,
+            // compiled into Debug frameworks only)
             _ = shared.doInitKoinForTesting()
             #endif
         } else {

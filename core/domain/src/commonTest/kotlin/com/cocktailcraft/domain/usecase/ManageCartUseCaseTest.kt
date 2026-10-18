@@ -44,7 +44,6 @@ class ManageCartUseCaseTest {
         override fun observeCocktail(id: String): Flow<Cocktail?> = flowOf(byId[id])
         override suspend fun refreshCocktail(id: String, force: Boolean): Result<Unit> = Result.Success(Unit)
         override suspend fun getRandomCocktail(): Result<Cocktail?> = Result.Success(byId.values.firstOrNull())
-        override fun getCocktailImageUrl(cocktail: Cocktail): String = cocktail.imageUrl.orEmpty()
     }
 
     private val cart = FakeCartRepository()

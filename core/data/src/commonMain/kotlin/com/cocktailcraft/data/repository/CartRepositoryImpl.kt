@@ -5,8 +5,6 @@ import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.local.LocalDatabase
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
-import com.cocktailcraft.domain.model.Money
-import com.cocktailcraft.domain.model.sumOfMoney
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.runCatchingResult
@@ -95,12 +93,6 @@ internal class CartRepositoryImpl(
         runCatchingResult("Failed to clear cart") {
             localDatabase.get().cartItemQueries.deleteAll()
             Result.Success(Unit)
-        }
-    }
-
-    override suspend fun getCartTotal(): Result<Money> = withContext(ioDispatcher) {
-        runCatchingResult("Failed to get cart total") {
-            Result.Success(localDatabase.get().readItems().sumOfMoney { it.lineTotal })
         }
     }
 }

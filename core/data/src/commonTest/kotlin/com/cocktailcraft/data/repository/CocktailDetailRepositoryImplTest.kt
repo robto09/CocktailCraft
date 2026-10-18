@@ -60,7 +60,6 @@ class CocktailDetailRepositoryImplTest {
         val detail = CocktailDetailRepositoryImpl(
             remote = remote,
             cocktailCache = cache,
-            appConfig = config,
             offlineRepository = offline,
             nowMs = { fixture.nowMs }
         )
@@ -226,34 +225,5 @@ class CocktailDetailRepositoryImplTest {
 
         assertEquals(1, api.lookupRequests)
         results.forEach { assertIs<Result.Success<Unit>>(it) }
-    }
-
-    // --- getCocktailImageUrl derivation ---
-
-    @Test
-    fun imageUrlPrefersTheCocktailsOwnUrl() = runTest {
-        val fixture = fixture()
-
-        val url = fixture.detail.getCocktailImageUrl(testCocktail("11007"))
-
-        assertEquals("https://example.com/11007.jpg", url)
-    }
-
-    @Test
-    fun imageUrlIsDerivedFromIdWhenMissing() = runTest {
-        val fixture = fixture()
-        val cocktail = testCocktail("11007").copy(imageUrl = null)
-
-        val url = fixture.detail.getCocktailImageUrl(cocktail)
-
-        assertEquals("${config.imageBaseUrl}/${config.cocktailsImagePath}/11007.jpg", url)
-    }
-
-    @Test
-    fun imageUrlIsEmptyWhenBothUrlAndIdAreBlank() = runTest {
-        val fixture = fixture()
-        val cocktail = testCocktail("x").copy(id = "", imageUrl = "")
-
-        assertEquals("", fixture.detail.getCocktailImageUrl(cocktail))
     }
 }

@@ -2,7 +2,6 @@ package com.cocktailcraft.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.designsystem.AccentColorTokens
-import com.cocktailcraft.designsystem.ColorTokens
 import com.cocktailcraft.domain.model.ThemeMode
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.usecase.ManageProfileUseCase
@@ -29,9 +28,6 @@ import com.cocktailcraft.resources.font_size_large
 import com.cocktailcraft.resources.font_size_medium
 import com.cocktailcraft.resources.font_size_small
 import com.cocktailcraft.resources.font_size_xlarge
-import com.cocktailcraft.resources.theme_mode_dark
-import com.cocktailcraft.resources.theme_mode_light
-import com.cocktailcraft.resources.theme_mode_system
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.ThemeUiState
 import dev.icerock.moko.resources.desc.Raw
@@ -57,8 +53,6 @@ class SharedThemeViewModel internal constructor(
     private val _uiState = MutableStateFlow(ThemeUiState())
     val uiState: StateFlow<ThemeUiState> = _uiState.asStateFlow()
 
-    val availableThemes: List<String>
-        get() = listOf("system", "light", "dark")
     val availableAccentColors: List<String>
         get() = AccentColorTokens.names
     val availableFontSizes: List<String>
@@ -85,13 +79,6 @@ class SharedThemeViewModel internal constructor(
         } catch (e: Exception) {
             handleException(e, MR.strings.error_update_theme_mode_failed)
         }
-    }
-
-    /**
-     * String convenience for callers driven by the availableThemes list.
-     */
-    suspend fun setThemeMode(mode: String) {
-        setThemeMode(ThemeMode.fromString(mode))
     }
 
     /**
@@ -164,39 +151,6 @@ class SharedThemeViewModel internal constructor(
     // MARK: - Synchronous Helper Methods
 
     /**
-     * Validate theme mode.
-     */
-    fun isValidThemeMode(mode: String): Boolean {
-        return availableThemes.contains(mode.lowercase())
-    }
-
-    /**
-     * Validate accent color.
-     */
-    fun isValidAccentColor(color: String): Boolean {
-        return availableAccentColors.contains(color.lowercase())
-    }
-
-    /**
-     * Validate font size.
-     */
-    fun isValidFontSize(size: String): Boolean {
-        return availableFontSizes.contains(size.lowercase())
-    }
-
-    /**
-     * Get theme mode display name.
-     */
-    fun getThemeModeDisplayName(mode: String): StringDesc {
-        return when (mode.lowercase()) {
-            "light" -> MR.strings.theme_mode_light
-            "dark" -> MR.strings.theme_mode_dark
-            "system" -> MR.strings.theme_mode_system
-            else -> MR.strings.common_unknown
-        }.desc()
-    }
-
-    /**
      * Get accent color display name.
      */
     fun getAccentColorDisplayName(color: String): StringDesc {
@@ -223,45 +177,6 @@ class SharedThemeViewModel internal constructor(
             "xlarge" -> MR.strings.font_size_xlarge
             else -> MR.strings.common_unknown
         }.desc()
-    }
-
-    /**
-     * Get theme preview colors.
-     */
-    fun getThemePreviewColors(mode: String): Map<String, String> {
-        // Real brand values from the shared design tokens (the previous
-        // implementation returned iOS-system-blue placeholders that matched
-        // neither platform's actual palette).
-        return when (mode.lowercase()) {
-            "dark" -> mapOf(
-                "background" to ColorTokens.hexString(ColorTokens.backgroundDark),
-                "surface" to ColorTokens.hexString(ColorTokens.surfaceDark),
-                "primary" to ColorTokens.hexString(ColorTokens.primaryDark),
-                "text" to ColorTokens.hexString(ColorTokens.textPrimaryDark)
-            )
-            else -> mapOf(
-                "background" to ColorTokens.hexString(ColorTokens.backgroundLight),
-                "surface" to ColorTokens.hexString(ColorTokens.surfaceLight),
-                "primary" to ColorTokens.hexString(ColorTokens.primaryLight),
-                "text" to ColorTokens.hexString(ColorTokens.textPrimaryLight)
-            )
-        }
-    }
-
-    /**
-     * Check if system supports dark mode.
-     */
-    fun systemSupportsDarkMode(): Boolean {
-        return true // Most modern systems support dark mode
-    }
-
-    /**
-     * Refresh theme settings.
-     */
-    fun refreshThemeSettings() {
-        viewModelScope.launch {
-            loadUserPreferences()
-        }
     }
 
     // MARK: - Private Helper Methods

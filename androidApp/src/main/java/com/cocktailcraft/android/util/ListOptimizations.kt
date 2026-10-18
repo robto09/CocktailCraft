@@ -29,18 +29,6 @@ object ListOptimizations {
     }
     
     /**
-     * Calculate a stable key for a list item with an index.
-     * 
-     * @param prefix A prefix to ensure uniqueness across different lists
-     * @param id The unique identifier of the item
-     * @param index The index of the item in the list
-     * @return A stable string key
-     */
-    fun itemKeyWithIndex(prefix: String, id: String, index: Int): String {
-        return "${prefix}_${id}_$index"
-    }
-    
-    /**
      * Detect when a lazy list has reached its end to implement pagination.
      * 
      * @param listState The LazyListState to monitor

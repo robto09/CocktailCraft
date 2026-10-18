@@ -34,6 +34,14 @@ skie {
     }
 }
 
+// The iOS test mode (src/iosTestMode: doInitKoinForTesting, its fixtures and
+// the ktor-client-mock engine they run on) only ever starts in Debug builds —
+// the app calls it under #if DEBUG — so Release frameworks leave it out.
+// Xcode's "Compile Kotlin Framework" phase runs Gradle with CONFIGURATION set
+// to the build configuration; builds outside Xcode (the iosTest suites, the
+// IDE) have none and keep it.
+val includeIosTestMode = providers.environmentVariable("CONFIGURATION").orNull.let { it == null || it == "Debug" }
+
 kotlin {
     android {
         namespace = "com.cocktailcraft"
@@ -96,16 +104,21 @@ kotlin {
             }
         }
 
-        // iOS test mode and Debug hooks (iosMain/IosTestMode.kt, KoinIOS.kt):
-        // the stand-in storage (an in-memory database, throwaway
-        // NSUserDefaults suites) and the MockEngine HTTP client that
+        // iOS test mode and Debug hooks (iosTestMode/IosTestMode.kt,
+        // iosMain/KoinIOS.kt): the stand-in storage (an in-memory database,
+        // throwaway NSUserDefaults suites) and the MockEngine HTTP client that
         // doInitKoinForTesting() binds over the platform ones, plus the
         // HttpSend hook behind the Debug "simulate network failure" toggle
+        if (includeIosTestMode) {
+            iosMain.configure { kotlin.srcDir("src/iosTestMode/kotlin") }
+        }
         iosMain.dependencies {
             implementation(libs.multiplatform.settings.core)
             implementation(libs.sqldelight.native.driver)
             implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.mock)
+            if (includeIosTestMode) {
+                implementation(libs.ktor.client.mock)
+            }
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
         }

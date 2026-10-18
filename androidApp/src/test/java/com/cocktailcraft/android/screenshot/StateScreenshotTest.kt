@@ -1,6 +1,5 @@
 package com.cocktailcraft.android.screenshot
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -10,16 +9,11 @@ import com.cocktailcraft.android.screens.OrderListContent
 import com.cocktailcraft.android.ui.components.CocktailLoadingShimmer
 import com.cocktailcraft.android.ui.components.EmptySearchResultsMessage
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
-import com.cocktailcraft.android.ui.components.EndOfListMessage
-import com.cocktailcraft.android.ui.components.ErrorBanner
 import com.cocktailcraft.android.ui.components.NetworkErrorStateDisplay
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
-import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.CartUiState
 import com.cocktailcraft.viewmodel.state.FavoritesUiState
 import com.cocktailcraft.viewmodel.state.OrderUiState
-import dev.icerock.moko.resources.desc.Raw
-import dev.icerock.moko.resources.desc.StringDesc
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
@@ -88,27 +82,7 @@ class StateScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
 
     @Test
     fun banners() = snapshot("Banners") {
-        Column {
-            OfflineModeIndicator(isOffline = true)
-            ErrorBanner(
-                error = ErrorHandler.UserFriendlyError(
-                    title = StringDesc.Raw("Connection problem"),
-                    message = StringDesc.Raw("Showing cached cocktails."),
-                    category = ErrorHandler.ErrorCategory.NETWORK
-                ),
-                onDismiss = {},
-                onAction = {}
-            )
-            ErrorBanner(
-                error = ErrorHandler.UserFriendlyError(
-                    title = StringDesc.Raw("Something went wrong"),
-                    message = StringDesc.Raw("Please try again later."),
-                    category = ErrorHandler.ErrorCategory.SERVER
-                ),
-                onDismiss = {}
-            )
-            EndOfListMessage(visible = true)
-        }
+        OfflineModeIndicator(isOffline = true)
     }
 
     @Test

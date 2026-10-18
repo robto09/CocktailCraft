@@ -14,9 +14,8 @@ import com.cocktailcraft.util.ErrorHandler
 /**
  * Compose helpers for presenting errors on Android.
  *
- * Error construction lives in the shared [ErrorHandler] (with
- * [com.cocktailcraft.util.PlatformErrorHandler] for Android-specific
- * exceptions); this object only maps error categories to UI resources.
+ * Error construction lives in the shared [ErrorHandler]; this object only
+ * maps error categories to UI resources.
  */
 object ErrorUtils {
 

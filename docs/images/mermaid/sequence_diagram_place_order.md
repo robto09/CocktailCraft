@@ -42,7 +42,7 @@ sequenceDiagram
     OrderVM->>UC: invoke(cartItems, totalPrice)
     activate UC
     UC->>UC: Create Order (id, date, items, status "Processing")
-    UC->>OrderRepo: placeOrder(order)
+    UC->>OrderRepo: placeOrderAndClearCart(order)
     activate OrderRepo
     OrderRepo->>Storage: Save order
     activate Storage
@@ -74,7 +74,7 @@ sequenceDiagram
     activate OrderVM
     OrderVM->>UC: invoke(cartItems, totalPrice)
     activate UC
-    UC->>OrderRepo: placeOrder(order)
+    UC->>OrderRepo: placeOrderAndClearCart(order)
     activate OrderRepo
     OrderRepo--xOrderRepo: Error occurs
     OrderRepo-->>UC: Result.Error
@@ -109,7 +109,7 @@ sequenceDiagram
 This sequence diagram illustrates the flow of interactions when a user places an order in the CocktailCraft application, including:
 
 1. **View Cart**: The cart UI collects `SharedCartViewModel.uiState`, fed by `CartRepository.observeCartItems()` — a hot flow re-published after every mutation
-2. **Place Order - Success Path**: `SharedOrderViewModel.placeOrder(cartItems, totalPrice)` invokes `PlaceOrderUseCase`, which builds the `Order` and persists it via `OrderRepository.placeOrder(order)` (suspend, returns `Result`); the screen then clears the cart through `SharedCartViewModel`
+2. **Place Order - Success Path**: `SharedOrderViewModel.placeOrder(cartItems, totalPrice)` invokes `PlaceOrderUseCase`, which builds the `Order` and persists it via `OrderRepository.placeOrderAndClearCart(order)` (suspend, returns `Result`); the screen then clears the cart through `SharedCartViewModel`
 3. **Place Order - Error Path**: Errors are classified by `ErrorHandler` through the `SharedViewModel` base class and surface on the shared `error` StateFlow, displayed with a retry option
 4. **Navigation**: Order history reflects the new order automatically via `OrderRepository.observeOrders()`
 

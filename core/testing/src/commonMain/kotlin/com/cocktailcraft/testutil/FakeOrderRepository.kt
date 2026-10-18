@@ -30,23 +30,17 @@ class FakeOrderRepository : OrderRepository {
     override fun observeOrders(): Flow<List<Order>> = orders.asStateFlow()
     override suspend fun getOrders(): Result<List<Order>> = Result.Success(orders.value)
 
-    override suspend fun placeOrder(order: Order): Result<Unit> {
-        errorMessage?.let { return Result.Error(it, errorCode) }
-        if (orders.value.any { it.id == order.id }) return Result.Error("Duplicate order id ${order.id}")
+    override suspend fun placeOrderAndClearCart(order: Order): Result<Unit> {
+        val failure = errorMessage?.let { Result.Error(it, errorCode) }
+            ?: Result.Error("Duplicate order id ${order.id}").takeIf { orders.value.any { it.id == order.id } }
+        if (failure != null) return failure
         orders.value = orders.value + order
+        checkedOutOrders += order
         return Result.Success(Unit)
     }
-
-    override suspend fun placeOrderAndClearCart(order: Order): Result<Unit> =
-        placeOrder(order).also { if (it.isSuccess()) checkedOutOrders += order }
 
     override suspend fun getOrderById(id: String): Result<Order?> =
         Result.Success(orders.value.find { it.id == id })
-
-    override suspend fun updateOrderStatus(id: String, status: OrderStatus): Result<Unit> {
-        orders.value = orders.value.map { if (it.id == id) it.copy(status = status) else it }
-        return Result.Success(Unit)
-    }
 
     override suspend fun deleteOrder(id: String): Result<Unit> {
         orders.value = orders.value.filterNot { it.id == id }
@@ -56,7 +50,7 @@ class FakeOrderRepository : OrderRepository {
     override suspend fun cancelOrder(orderId: String): Result<Boolean> {
         val order = orders.value.find { it.id == orderId } ?: return Result.Success(false)
         if (!order.status.isCancellable) return Result.Success(false)
-        updateOrderStatus(orderId, OrderStatus.CANCELLED)
+        orders.value = orders.value.map { if (it.id == orderId) it.copy(status = OrderStatus.CANCELLED) else it }
         return Result.Success(true)
     }
 }

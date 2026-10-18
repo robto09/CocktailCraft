@@ -62,14 +62,6 @@ internal class OrderRepositoryImpl(
         }
     }
 
-    override suspend fun placeOrder(order: Order): Result<Unit> = withContext(ioDispatcher) {
-        runCatchingResult("Failed to place order") {
-            val db = localDatabase.get()
-            db.transaction { db.insertOrderWithItems(withId(order)) }
-            Result.Success(Unit)
-        }
-    }
-
     override suspend fun placeOrderAndClearCart(order: Order): Result<Unit> = withContext(ioDispatcher) {
         runCatchingResult("Failed to place order") {
             val db = localDatabase.get()
@@ -89,13 +81,6 @@ internal class OrderRepositoryImpl(
             val rows = localDatabase.get().customerOrderQueries.selectByIdWithItems(id).executeAsList()
                 .map { it.toRow() }
             Result.Success(rows.toOrders().firstOrNull())
-        }
-    }
-
-    override suspend fun updateOrderStatus(id: String, status: OrderStatus): Result<Unit> = withContext(ioDispatcher) {
-        runCatchingResult("Failed to update order status") {
-            localDatabase.get().customerOrderQueries.updateStatus(status = status.storageValue, id = id)
-            Result.Success(Unit)
         }
     }
 

@@ -5,6 +5,7 @@ import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.di.appModule
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.FakeNetworkMonitor
@@ -69,14 +70,15 @@ class IosTestModeTest : MainDispatcherTest() {
     @Test
     fun debugResetUserDataEmptiesCartAndFavorites() = runTest {
         val cocktail = testCocktail("1")
-        helper.getCartRepository().addToCart(CocktailCartItem(cocktail, quantity = 2)).getOrThrow()
+        val cart = KoinPlatform.getKoin().get<CartRepository>()
+        cart.addToCart(CocktailCartItem(cocktail, quantity = 2)).getOrThrow()
         val favorites = KoinPlatform.getKoin().get<CocktailFavoritesRepository>()
         favorites.addToFavorites(cocktail).getOrThrow()
 
         helper.debugResetUserData()
 
-        assertTrue(helper.getCartRepository().getCartItems().getOrThrow().isEmpty())
-        assertTrue(helper.getFavoriteCocktailsSnapshot().isEmpty())
+        assertTrue(cart.getCartItems().getOrThrow().isEmpty())
+        assertTrue(favorites.getFavoriteCocktails().getOrThrow().isEmpty())
     }
 
     @Test

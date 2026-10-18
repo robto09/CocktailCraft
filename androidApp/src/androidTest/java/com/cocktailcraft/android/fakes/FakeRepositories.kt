@@ -1,16 +1,13 @@
 package com.cocktailcraft.android.fakes
 
-import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
-import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
-import com.cocktailcraft.domain.model.sumOfMoney
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
@@ -109,7 +106,6 @@ class FakeCocktailRepository(
     override fun observeCocktail(id: String): Flow<Cocktail?> = flowOf(cocktails.firstOrNull { it.id == id })
     override suspend fun refreshCocktail(id: String, force: Boolean): Result<Unit> = Result.Success(Unit)
     override suspend fun getRandomCocktail(): Result<Cocktail?> = Result.Success(cocktails.firstOrNull())
-    override fun getCocktailImageUrl(cocktail: Cocktail): String = cocktail.imageUrl ?: ""
 
     // Favorites
     override fun observeFavorites(): Flow<List<Cocktail>> = favorites
@@ -167,8 +163,6 @@ class FakeCartRepository : CartRepository {
         items.value = emptyList()
         return Result.Success(Unit)
     }
-    override suspend fun getCartTotal(): Result<Money> =
-        Result.Success(items.value.sumOfMoney { it.lineTotal })
 }
 
 class FakeOrderRepository(
@@ -179,18 +173,13 @@ class FakeOrderRepository(
 
     override fun observeOrders(): Flow<List<Order>> = orders
     override suspend fun getOrders(): Result<List<Order>> = Result.Success(orders.value)
-    override suspend fun placeOrder(order: Order): Result<Unit> {
-        orders.update { it + order }
-        return Result.Success(Unit)
-    }
     override suspend fun placeOrderAndClearCart(order: Order): Result<Unit> {
-        placeOrder(order)
+        orders.update { it + order }
         cart?.clearCart()
         return Result.Success(Unit)
     }
     override suspend fun getOrderById(id: String): Result<Order?> =
         Result.Success(orders.value.firstOrNull { it.id == id })
-    override suspend fun updateOrderStatus(id: String, status: OrderStatus): Result<Unit> = Result.Success(Unit)
     override suspend fun deleteOrder(id: String): Result<Unit> {
         orders.update { list -> list.filterNot { it.id == id } }
         return Result.Success(Unit)
@@ -243,8 +232,6 @@ class FakeAuthRepository : AuthRepository {
     override suspend fun isUserSignedIn(): Result<Boolean> = Result.Success(user != null)
     override suspend fun getCurrentUser(): Result<User?> = Result.Success(user)
     override suspend fun updateUserName(name: String): Result<Boolean> = Result.Success(true)
-    override suspend fun updateUserEmail(email: String, password: String): Result<Boolean> = Result.Success(true)
-    override suspend fun updateUserAddress(address: Address): Result<Boolean> = Result.Success(true)
     override suspend fun updateUserPreferences(preferences: UserPreferences): Result<Boolean> = Result.Success(true)
     override suspend fun getUserPreferences(): Result<UserPreferences> = Result.Success(UserPreferences())
 }

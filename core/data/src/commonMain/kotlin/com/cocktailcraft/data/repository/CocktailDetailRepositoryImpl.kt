@@ -3,7 +3,6 @@ package com.cocktailcraft.data.repository
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
-import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
@@ -15,7 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlin.time.Clock
 
 /**
- * Single-cocktail detail lookups plus image URL resolution, extracted from
+ * Single-cocktail detail lookups, extracted from
  * the former CocktailRepositoryImpl monolith.
  *
  * The local catalog ([CocktailCache]) is the source of truth: [refreshCocktail]
@@ -26,7 +25,6 @@ import kotlin.time.Clock
 internal class CocktailDetailRepositoryImpl(
     private val remote: CocktailRemoteDataSource,
     private val cocktailCache: CocktailCache,
-    private val appConfig: AppConfig,
     private val offlineRepository: CocktailOfflineRepository,
     // Injectable for tests: coroutine virtual time does not move Clock.System.
     private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() }
@@ -83,20 +81,6 @@ internal class CocktailDetailRepositoryImpl(
     override suspend fun getRandomCocktail(): Result<Cocktail?> {
         return runCatchingResult("Failed to get random cocktail") {
             Result.Success(remote.getRandom())
-        }
-    }
-
-    override fun getCocktailImageUrl(cocktail: Cocktail): String {
-        // Local copy: Cocktail lives in :core:domain, so its properties
-        // can't be smart-cast here
-        val imageUrl = cocktail.imageUrl
-        if (!imageUrl.isNullOrBlank()) {
-            return imageUrl
-        }
-        return if (cocktail.id.isNotBlank()) {
-            "${appConfig.imageBaseUrl}/${appConfig.cocktailsImagePath}/${cocktail.id}.jpg"
-        } else {
-            ""
         }
     }
 }

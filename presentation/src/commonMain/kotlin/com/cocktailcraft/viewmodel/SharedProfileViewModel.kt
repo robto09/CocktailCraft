@@ -1,8 +1,6 @@
 package com.cocktailcraft.viewmodel
 
 import androidx.lifecycle.viewModelScope
-import com.cocktailcraft.domain.model.Address
-import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.usecase.ManageProfileUseCase
 import com.cocktailcraft.domain.util.AuthInputValidator
@@ -30,7 +28,6 @@ import com.cocktailcraft.resources.error_sign_out_failed_message
 import com.cocktailcraft.resources.error_sign_out_failed_title
 import com.cocktailcraft.resources.error_sign_up_failed_message
 import com.cocktailcraft.resources.error_sign_up_failed_title
-import com.cocktailcraft.resources.error_update_address_failed
 import com.cocktailcraft.resources.error_update_failed_title
 import com.cocktailcraft.resources.error_update_profile_failed
 import com.cocktailcraft.resources.error_update_profile_info_failed
@@ -267,30 +264,6 @@ class SharedProfileViewModel internal constructor(
             nameSuccess
         } catch (e: Exception) {
             handleException(e, MR.strings.error_update_profile_failed)
-            false
-        }
-    }
-    
-    /**
-     * Update user address.
-     * SKIE will convert this to Swift async function.
-     */
-    suspend fun updateAddress(address: Address): Boolean {
-        clearError()
-        return try {
-            val success = manageProfileUseCase.updateUserAddress(address).getOrThrow()
-            if (success) {
-                loadCurrentUser()
-            } else {
-                setError(
-                    MR.strings.error_update_failed_title,
-                    MR.strings.error_update_address_failed,
-                    ErrorHandler.ErrorCategory.SERVER
-                )
-            }
-            success
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_update_address_failed)
             false
         }
     }

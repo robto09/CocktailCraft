@@ -46,20 +46,20 @@ class OrderRepositoryImplTest {
     )
 
     @Test
-    fun placeOrderGeneratesIdForBlankIdAndKeepsProvidedId() = runTest {
+    fun checkoutGeneratesIdForBlankIdAndKeepsProvidedId() = runTest {
         val repo = repository()
-        repo.placeOrder(order(id = "")).getOrThrow()
-        repo.placeOrder(order(id = "ORD-42")).getOrThrow()
+        repo.placeOrderAndClearCart(order(id = "")).getOrThrow()
+        repo.placeOrderAndClearCart(order(id = "ORD-42")).getOrThrow()
 
         val orders = repo.getOrders().getOrThrow()
         assertEquals(2, orders.size)
-        assertTrue(orders[0].id.isNotBlank(), "placeOrder must generate an id for a blank one")
+        assertTrue(orders[0].id.isNotBlank(), "checkout must generate an id for a blank one")
         assertEquals("ORD-42", orders[1].id)
     }
 
     @Test
     fun placedOrderSurvivesRepositoryRecreation() = runTest {
-        repository().placeOrder(order(id = "ORD-1")).getOrThrow()
+        repository().placeOrderAndClearCart(order(id = "ORD-1")).getOrThrow()
 
         val reloaded = repository().getOrders().getOrThrow()
         assertEquals(listOf("ORD-1"), reloaded.map { it.id })
@@ -77,8 +77,8 @@ class OrderRepositoryImplTest {
         )
         val empty = order(id = "ORD-2", items = emptyList())
         val repo = repository()
-        repo.placeOrder(multi).getOrThrow()
-        repo.placeOrder(empty).getOrThrow()
+        repo.placeOrderAndClearCart(multi).getOrThrow()
+        repo.placeOrderAndClearCart(empty).getOrThrow()
 
         assertEquals(listOf(multi, empty), repository().getOrders().getOrThrow())
         assertEquals(multi, repo.getOrderById("ORD-1").getOrThrow())
@@ -87,12 +87,12 @@ class OrderRepositoryImplTest {
     }
 
     @Test
-    fun placeOrderWithDuplicateIdFailsAndKeepsTheOriginal() = runTest {
+    fun checkoutWithDuplicateIdFailsAndKeepsTheOriginal() = runTest {
         val repo = repository()
-        repo.placeOrder(order(id = "ORD-1")).getOrThrow()
+        repo.placeOrderAndClearCart(order(id = "ORD-1")).getOrThrow()
 
         val duplicate = order(id = "ORD-1", items = listOf(OrderItem("Mojito", 4, Money(1100))))
-        assertIs<Result.Error>(repo.placeOrder(duplicate))
+        assertIs<Result.Error>(repo.placeOrderAndClearCart(duplicate))
 
         assertEquals(listOf(order(id = "ORD-1")), repo.getOrders().getOrThrow())
     }
@@ -114,7 +114,7 @@ class OrderRepositoryImplTest {
         // The order insert and the cart clear share one transaction, so a
         // failed checkout (here: a duplicate order id) changes nothing.
         val repo = repository()
-        repo.placeOrder(order(id = "ORD-1")).getOrThrow()
+        repo.placeOrderAndClearCart(order(id = "ORD-1")).getOrThrow()
         val cart = cart()
         cart.addToCart(CocktailCartItem(testCocktail("1"), quantity = 2)).getOrThrow()
 
@@ -131,7 +131,7 @@ class OrderRepositoryImplTest {
         repo.observeOrders().test {
             assertEquals(emptyList(), awaitItem())
 
-            repo.placeOrder(order(id = "ORD-1")).getOrThrow()
+            repo.placeOrderAndClearCart(order(id = "ORD-1")).getOrThrow()
             assertEquals(listOf("ORD-1"), awaitItem().map { it.id })
 
             repo.cancelOrder("ORD-1").getOrThrow()
@@ -146,9 +146,9 @@ class OrderRepositoryImplTest {
     @Test
     fun cancelOrderOnlyCancelsOpenOrders() = runTest {
         val repo = repository()
-        repo.placeOrder(order(id = "processing", status = OrderStatus.PROCESSING)).getOrThrow()
-        repo.placeOrder(order(id = "pending", status = OrderStatus.PENDING)).getOrThrow()
-        repo.placeOrder(order(id = "shipped", status = OrderStatus.SHIPPED)).getOrThrow()
+        repo.placeOrderAndClearCart(order(id = "processing", status = OrderStatus.PROCESSING)).getOrThrow()
+        repo.placeOrderAndClearCart(order(id = "pending", status = OrderStatus.PENDING)).getOrThrow()
+        repo.placeOrderAndClearCart(order(id = "shipped", status = OrderStatus.SHIPPED)).getOrThrow()
 
         assertTrue(repo.cancelOrder("processing").getOrThrow())
         assertTrue(repo.cancelOrder("pending").getOrThrow())
@@ -159,15 +159,6 @@ class OrderRepositoryImplTest {
             listOf(OrderStatus.CANCELLED, OrderStatus.CANCELLED, OrderStatus.SHIPPED),
             repo.getOrders().getOrThrow().map { it.status }
         )
-    }
-
-    @Test
-    fun updateOrderStatusPersists() = runTest {
-        repository().placeOrder(order(id = "ORD-1")).getOrThrow()
-
-        repository().updateOrderStatus("ORD-1", OrderStatus.DELIVERED).getOrThrow()
-
-        assertEquals(OrderStatus.DELIVERED, repository().getOrderById("ORD-1").getOrThrow()?.status)
     }
 
     @Test
@@ -185,15 +176,15 @@ class OrderRepositoryImplTest {
 
         assertTrue(repo.cancelOrder("old").getOrThrow())
         assertEquals("Cancelled", queries.selectStatus("old").executeAsOne())
-        repo.updateOrderStatus("odd-case", OrderStatus.SHIPPED).getOrThrow()
-        assertEquals("Shipped", queries.selectStatus("odd-case").executeAsOne())
+        assertTrue(repo.cancelOrder("odd-case").getOrThrow())
+        assertEquals("Cancelled", queries.selectStatus("odd-case").executeAsOne())
     }
 
     @Test
     fun deleteOrderRemovesTheOrderAndItsItems() = runTest {
         val repo = repository()
-        repo.placeOrder(order(id = "ORD-1")).getOrThrow()
-        repo.placeOrder(order(id = "ORD-2")).getOrThrow()
+        repo.placeOrderAndClearCart(order(id = "ORD-1")).getOrThrow()
+        repo.placeOrderAndClearCart(order(id = "ORD-2")).getOrThrow()
 
         repo.deleteOrder("ORD-1").getOrThrow()
 

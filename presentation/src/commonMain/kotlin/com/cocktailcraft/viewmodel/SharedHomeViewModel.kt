@@ -20,7 +20,6 @@ import com.cocktailcraft.resources.error_apply_filters_failed
 import com.cocktailcraft.resources.error_load_cocktail_details_failed
 import com.cocktailcraft.resources.error_load_cocktails_failed
 import com.cocktailcraft.resources.error_load_more_cocktails_failed
-import com.cocktailcraft.resources.error_refresh_cocktail_details_failed
 import com.cocktailcraft.resources.error_update_favorites_failed
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.util.NetworkMonitor
@@ -501,17 +500,6 @@ class SharedHomeViewModel internal constructor(
         } catch (e: Exception) {
             handleException(e, MR.strings.error_load_cocktail_details_failed)
             null
-        }
-    }
-
-    /**
-     * Force refresh cocktail details.
-     */
-    suspend fun refreshCocktailDetails(id: String) {
-        try {
-            getCocktailDetailUseCase.refresh(id)
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_refresh_cocktail_details_failed)
         }
     }
 

@@ -14,6 +14,7 @@ import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
+import com.cocktailcraft.domain.model.sumOfMoney
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.testutil.createTestLocalDatabase
@@ -211,7 +212,7 @@ class MoneyInCentsMigrationTest {
             status = OrderStatus.PROCESSING
         )
 
-        repository.placeOrder(order).getOrThrow()
+        repository.placeOrderAndClearCart(order).getOrThrow()
 
         assertEquals(order, repository.getOrderById("ORD-4").getOrThrow())
         assertTrue(repository.getOrderById("ORD-4").getOrThrow()!!.canReorder)
@@ -226,7 +227,7 @@ class MoneyInCentsMigrationTest {
 
         assertEquals(listOf(Money(1250), Money(529)), items.map { it.cocktail.price })
         assertEquals(listOf(2, 1), items.map { it.quantity })
-        assertEquals(Money(2 * 1250 + 529), cart.getCartTotal().getOrThrow())
+        assertEquals(Money(2 * 1250 + 529), items.sumOfMoney { it.lineTotal })
     }
 
     @Test

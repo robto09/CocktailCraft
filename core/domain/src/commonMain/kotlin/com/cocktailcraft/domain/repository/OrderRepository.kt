@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 interface OrderRepository {
     fun observeOrders(): Flow<List<Order>>
     suspend fun getOrders(): Result<List<Order>>
-    suspend fun placeOrder(order: Order): Result<Unit>
 
     /**
      * Checkout: stores [order] and empties the cart atomically — either both
@@ -18,7 +17,6 @@ interface OrderRepository {
     suspend fun placeOrderAndClearCart(order: Order): Result<Unit>
 
     suspend fun getOrderById(id: String): Result<Order?>
-    suspend fun updateOrderStatus(id: String, status: OrderStatus): Result<Unit>
     suspend fun deleteOrder(id: String): Result<Unit>
 
     /** Cancels a [OrderStatus.isCancellable] order; false when it isn't (or doesn't exist). */
