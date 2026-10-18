@@ -67,7 +67,7 @@ CocktailCard(
 **Used in**: `HomeViewSKIE`, `FavoritesView`, `CocktailDetailView` (recommendations).
 
 ### CocktailImageView
-**Purpose**: Kingfisher-backed cocktail image with disk+memory caching, retry (3 attempts), a spinner placeholder while loading, and a static fallback when there is no URL.
+**Purpose**: Kingfisher-backed cocktail image with disk+memory caching, retry (3 attempts), a shimmering placeholder block while loading, and a static fallback when there is no URL.
 
 **Parameters**: `imageUrl: String?`, `height: CGFloat = 300`, `cornerRadius: CGFloat = 0`, `width: CGFloat? = nil` (nil keeps flexible-width hero behavior).
 
@@ -95,7 +95,7 @@ CocktailCard(
 **Used in**: `HomeViewSKIE`.
 
 ### CocktailListSkeleton
-**Purpose**: Redacted placeholder list matching the cocktail card layout, shown while the first page loads (the deliberate exception to `LoadingStateView`).
+**Purpose**: Shimmering placeholder list matching the cocktail card layout, shown while the first page loads. Built from `SkeletonBlock`s and `.shimmering()`.
 
 **Parameters**: `rowCount: Int = 6`.
 
@@ -182,12 +182,27 @@ A small collection of profile-screen building blocks:
 
 **Used in**: `CartView`, `FavoritesView`.
 
-### LoadingStateView
-**Purpose**: Standard full-frame loading indicator with an optional message. Use this instead of ad-hoc `ProgressView` arrangements so loading looks the same on every screen (Home's skeleton list is the deliberate exception).
+### Shimmer / SkeletonBlock
+**File**: `Components/Shimmer.swift`
 
-**Parameters**: `message: String? = nil`.
+**Purpose**: The loading-skeleton building blocks, the iOS counterpart of Android's `Modifier.placeholder` skeletons. `SkeletonBlock(width:height:cornerRadius:)` draws one shape in the `neutralSubtle` fill (a nil width fills the row); `.shimmering()` sweeps a surface-colored highlight across the shapes of the view it is applied to. Apply `.shimmering()` once to a group of blocks (not to each block) so they shimmer as one wave, and apply it before a card's background so only the blocks shimmer. Reduce Motion (in-app or system) turns the sweep off through ContentView's app-wide transaction.
 
-**Used in**: `OrderListView`, `CocktailDetailView`.
+```swift
+VStack(alignment: .leading, spacing: 8) {
+    SkeletonBlock(width: 120, height: 20)
+    SkeletonBlock(height: 16)
+}
+.shimmering()
+```
+
+### CocktailDetailSkeleton / OrderListSkeleton
+**File**: `Components/LoadingSkeletons.swift`
+
+**Purpose**: Full-screen skeletons laid out like the screens they stand in for; VoiceOver reads the screen's loading message instead of the blocks. `DetailSections`' `relatedCocktailsLoadingSection` shows three shimmering cards while related cocktails load.
+
+**Parameters**: `OrderListSkeleton(cardCount: Int = 3)`.
+
+**Used in**: `CocktailDetailView`, `OrderListView`.
 
 ### Toast
 **Purpose**: Transient confirmation banner with `.success`/`.error`/`.info` styles, applied via the modifier:
@@ -198,12 +213,6 @@ A small collection of profile-screen building blocks:
 
 **Used in**: `HomeViewSKIE` (add-to-cart confirmation).
 
-### LoadingOverlay
-**Purpose**: Modal dark overlay with spinner and message, plus a `.loadingOverlay(isShowing:message:)` modifier. Currently not used by any screen.
-
-### ShimmerEffect / CocktailCardPlaceholder
-**Purpose**: Animated shimmer gradient and a shimmering card placeholder built on it. Currently not used by any screen (`CocktailListSkeleton` covers the Home loading state).
-
 ## Usage Guidelines
 
 1. **Theming**: Read the theme with `@Environment(\.isDarkMode)` and resolve colors through the `AppColors` functions — never through system appearance.
@@ -211,7 +220,7 @@ A small collection of profile-screen building blocks:
 3. **Cards and chips**: Use `.cardStyle()` and `.chipStyle(isSelected:)` for consistent container styling.
 4. **Touch targets**: Apply `.minimumHitTarget()` to icon-only buttons.
 5. **Errors**: Screens backed by a shared ViewModel surface errors with `.sharedErrorAlert`; use `ErrorView` for full-frame error states.
-6. **Loading and empty states**: Prefer `LoadingStateView` and `EmptyStateView` over ad-hoc arrangements.
+6. **Loading and empty states**: Show a skeleton shaped like the content (`SkeletonBlock` + `.shimmering()`) rather than a spinner, and use `EmptyStateView` for empty states. Keep `ProgressView` for in-place work: buttons, pull-to-refresh and loading the next page.
 7. **Reuse first**: Check this list before writing a new component, and document new components here.
 8. **Accessibility**: Hide decorative images (`CocktailImageView` already is), mark section titles `.isHeader`, give toggles one stable label plus `.isSelected`/`.isToggle`, and let rows wrap or stack at accessibility text sizes — see README "Accessibility" for the conventions and the automated audit.
 9. **Copy**: Never hardcode user-facing text (labels, placeholders, accessibility labels/hints). Add it to the shared strings and use `L(\.key)` from `Utils/Strings.swift`; pass the resulting `String` to `Text`, `Button`, `Label`, `.navigationTitle`, `.accessibilityLabel`, … (see README "Localization"). Component parameters for copy are `String`, not `LocalizedStringKey`.

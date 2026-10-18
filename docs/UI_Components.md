@@ -10,7 +10,6 @@ This document provides an overview of the reusable UI components in the Cocktail
    - [EmptyStateComponent](#emptystatecomponent)
    - [DetailHeaderImage](#detailheaderimage)
    - [SectionHeader](#sectionheader)
-   - [LoadingStateComponent](#loadingstatecomponent)
    - [OrderSummaryCard](#ordersummarycard)
    - [ConfirmationDialog](#confirmationdialog)
    - [DetailInfoCard](#detailinfocard)
@@ -35,7 +34,6 @@ This document provides an overview of the reusable UI components in the Cocktail
    - [CategoryFilterRow](#categoryfilterrow)
    - [CocktailLoadingShimmer](#cocktailloadingshimmer)
    - [EndOfListMessage](#endoflistmessage)
-   - [LoadingMoreIndicator](#loadingmoreindicator)
 4. [Animations](#animations)
 5. [Refactoring Process](#refactoring-process)
 6. [Best Practices](#best-practices)
@@ -111,20 +109,6 @@ SectionHeader(
 ```
 
 **When to use**: For any section in a screen that needs a header, especially when you want to maintain consistent styling across the app.
-
-### LoadingStateComponent
-
-**Purpose**: Displays a standardized loading indicator with animation.
-
-**Usage**:
-```kotlin
-LoadingStateComponent(
-    isLoading = isLoading,
-    paddingValues = paddingValues
-)
-```
-
-**When to use**: Whenever you need to show a loading state while data is being fetched or processed.
 
 ### OrderSummaryCard
 
@@ -558,7 +542,8 @@ CategoryFilterRow(
 
 **Usage**:
 ```kotlin
-CocktailLoadingShimmer()
+CocktailLoadingShimmer()                    // Home: section-title bar + rows
+CocktailLoadingShimmer(showHeader = false)  // Favorites: rows only
 ```
 
 **When to use**: When you need to display a loading state for cocktails, providing a better user experience than a simple spinner.
@@ -576,19 +561,6 @@ EndOfListMessage(
 ```
 
 **When to use**: When you need to indicate to the user that they have reached the end of a paginated list.
-
-### LoadingMoreIndicator
-
-**Purpose**: Displays a loading indicator when loading more items in a paginated list.
-
-**Usage**:
-```kotlin
-LoadingMoreIndicator(
-    isLoading = isLoadingMore
-)
-```
-
-**When to use**: When you need to indicate that more items are being loaded in a paginated list.
 
 ## Animations
 
@@ -690,19 +662,19 @@ AnimatedThemeSwitch(
 
 ### Shimmer Loading
 
-`ShimmerLoading.kt` implements a shared-transition shimmer: one infinite transition drives every placeholder under a loading container, and the animated value is read only at draw time so ticks invalidate drawing rather than recomposing.
+Skeletons use RevenueCat's [placeholder-compose](https://github.com/RevenueCat/placeholder-compose) (`Modifier.placeholder`). `AnimatedCocktailBarTheme` provides the defaults for every placeholder in the app: the `neutralSubtle` fill with a surface-colored shimmer, and under Reduce Motion static blocks with no shimmer or fade. Call sites pass only a shape.
+
+Wrap a loading container in `PlaceholderSurface` so every block beneath it shares one animation clock and shimmers in unison. `OptimizedImage` also shimmers the image area while a photo loads.
 
 ```kotlin
-// Hoist one transition per loading container
-val translate = rememberShimmerTranslate()
+// Any skeleton block
+Box(modifier = Modifier.size(100.dp).placeholder(shape = RoundedCornerShape(8.dp)))
 
-// Apply to any placeholder
-Box(modifier = Modifier.size(100.dp).shimmerEffect(translate))
-
-// Prebuilt placeholders
-CocktailItemShimmer(translate)   // single list-row placeholder
-CocktailDetailShimmer()          // full detail-screen placeholder (hoists its own transition)
-CocktailLoadingShimmer()         // full list placeholder (header + N rows)
+// Prebuilt placeholders (ShimmerLoading.kt / CocktailLoadingShimmer.kt)
+CocktailLoadingShimmer()    // Home / Favorites list
+CocktailDetailShimmer()     // cocktail detail screen
+CartLoadingShimmer()        // cart rows (CartItemShimmer)
+OrderListLoadingShimmer()   // order cards (OrderCardShimmer)
 ```
 
 ### List Animations
@@ -744,7 +716,7 @@ Recent refactoring in the CocktailCraft app focused on:
 - Extracting an animated cocktail list with pagination
 - Creating a category filter row for content filtering
 - Implementing a shimmer loading effect for cocktails
-- Creating end-of-list and loading-more indicators for pagination
+- Creating an end-of-list indicator for pagination
 - Extracting filter options loading logic into a utility
 
 ## Best Practices

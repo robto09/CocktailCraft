@@ -33,9 +33,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.CartItemCard
+import com.cocktailcraft.android.ui.components.CartLoadingShimmer
 import com.cocktailcraft.android.ui.components.ConfirmationDialog
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
-import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.OrderSummaryCard
 import com.cocktailcraft.android.ui.components.PrimaryButton
 import com.cocktailcraft.android.util.rememberHapticHandler
@@ -149,8 +149,10 @@ internal fun CartContent(
             .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
-        // Show loading state
-        LoadingStateComponent(isLoading = isLoading)
+        // Skeleton cart rows while the cart loads
+        if (isLoading) {
+            CartLoadingShimmer()
+        }
 
         // Show error state
         if (!isLoading && error != null) {

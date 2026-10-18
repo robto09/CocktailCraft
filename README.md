@@ -260,7 +260,7 @@ For detailed information about the dependency injection implementation, see:
 - **Coil**: For image loading and caching on Android
 - **Kingfisher**: For image loading with disk/memory caching on iOS
 - **Animation Utilities**: Custom animation components and utilities for enhanced UX
-- **Shimmer Effects**: Loading state animations with shimmer effects
+- **placeholder-compose** (RevenueCat): Shimmering skeleton placeholders while Android screens and images load; iOS draws matching skeletons with its own SwiftUI `.shimmering()` modifier
 
 ### Testing
 - **JUnit Jupiter**: Modern unit testing framework

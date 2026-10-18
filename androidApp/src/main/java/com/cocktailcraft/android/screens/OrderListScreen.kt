@@ -25,8 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
-import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.ui.components.OrderCard
+import com.cocktailcraft.android.ui.components.OrderListLoadingShimmer
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.refreshAccessibilityAction
 import com.cocktailcraft.android.util.resolve
@@ -85,7 +85,10 @@ internal fun OrderListContent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        LoadingStateComponent(isLoading = isLoading)
+        // Skeleton order cards while orders load
+        if (isLoading) {
+            OrderListLoadingShimmer()
+        }
 
         if (!isLoading && error != null) {
             EmptyStateComponent(

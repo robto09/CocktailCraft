@@ -173,6 +173,25 @@ extension CocktailDetailView {
         }
     }
 
+    /// Shimmering stand-ins for the related cocktail cards while they load,
+    /// as Android's RecommendationsLoadingRow.
+    var relatedCocktailsLoadingSection: some View {
+        sectionCard(title: L(\.detail_you_might_also_like)) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: AppTheme.Spacing.md) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        SkeletonBlock(width: 140, height: 200, cornerRadius: AppTheme.CornerRadius.card)
+                    }
+                }
+                .shimmering()
+                .padding(.vertical, AppTheme.Spacing.xs)
+            }
+            .scrollDisabled(true)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(L(\.detail_loading_recommendations))
+        }
+    }
+
     // MARK: - Reviews
 
     /// Mirrors Android's DetailReviewsSection: count header with a

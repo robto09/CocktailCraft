@@ -450,9 +450,12 @@ internal fun HomeContentSection(
 ) {
     // Material3 pull-to-refresh state
     val pullToRefreshState = rememberPullToRefreshState()
+    // The first load shows the skeleton list; the refresh spinner is only
+    // for reloading cocktails that are already on screen
+    val isRefreshing = isLoading && cocktails.isNotEmpty()
 
     PullToRefreshBox(
-        isRefreshing = isLoading,
+        isRefreshing = isRefreshing,
         onRefresh = onRetry,
         modifier = Modifier
             .fillMaxSize()
@@ -463,7 +466,7 @@ internal fun HomeContentSection(
             // (white container, primary spinner).
             PullToRefreshDefaults.Indicator(
                 state = pullToRefreshState,
-                isRefreshing = isLoading,
+                isRefreshing = isRefreshing,
                 modifier = Modifier.align(Alignment.TopCenter),
                 containerColor = MaterialTheme.colorScheme.surface,
                 color = MaterialTheme.colorScheme.primary
