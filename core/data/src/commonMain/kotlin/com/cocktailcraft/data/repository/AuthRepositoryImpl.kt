@@ -87,16 +87,7 @@ internal class AuthRepositoryImpl(
             // casing of it shares one counter
             val throttleEmail = user?.email ?: normalizeEmail(email)
 
-            val lockoutMs = lockoutRemainingMs(throttleEmail)
-            if (lockoutMs > 0) {
-                // Must be an Error (not Success(false)) so the lockout message
-                // reaches the UI instead of the generic invalid-credentials one.
-                return@locked Result.Error(
-                    message = "Sign-in locked for ${lockoutMs}ms after repeated failures",
-                    code = ErrorCode.FORBIDDEN,
-                    displayMessage = lockoutMessage(lockoutMs)
-                )
-            }
+            lockoutError(throttleEmail)?.let { return@locked it }
 
             if (user == null || !verifyCredentials(user.email, password)) {
                 recordFailedSignIn(throttleEmail)
@@ -117,7 +108,15 @@ internal class AuthRepositoryImpl(
     override suspend fun changePassword(oldPassword: String, newPassword: String): Result<Boolean> =
         locked("Failed to change password") {
             val currentUser = getCurrentUserSync() ?: return@locked Result.Success(false)
-            if (!verifyCredentials(currentUser.email, oldPassword)) return@locked Result.Success(false)
+            // Checking the current password is a password guess like any
+            // sign-in (an unlocked phone left signed in), so it shares the
+            // account's sign-in counter and lockout.
+            lockoutError(currentUser.email)?.let { return@locked it }
+            if (!verifyCredentials(currentUser.email, oldPassword)) {
+                recordFailedSignIn(currentUser.email)
+                return@locked Result.Success(false)
+            }
+            clearFailedSignIns(currentUser.email)
             saveCredentials(currentUser.email, newPassword)
             Result.Success(true)
         }
@@ -250,8 +249,9 @@ internal class AuthRepositoryImpl(
 
     private fun passwordKey(email: String) = "${AuthStorageKeys.PASSWORD_PREFIX}$email"
 
-    // Sign-in throttling: after FREE_SIGN_IN_ATTEMPTS consecutive failures the
-    // email locks for BASE_LOCKOUT_MS, doubling per further failure up to
+    // Sign-in throttling: after FREE_SIGN_IN_ATTEMPTS consecutive failures
+    // (sign-ins and change-password checks of the current password count
+    // alike) the email locks for BASE_LOCKOUT_MS, doubling per further failure up to
     // BASE_LOCKOUT_MS << MAX_LOCKOUT_DOUBLINGS. State clears on success.
     // Deadlines use the wall clock — the only persistent cross-platform time
     // source available here — so advancing the device clock skips one wait;
@@ -261,6 +261,21 @@ internal class AuthRepositoryImpl(
     private fun lockoutRemainingMs(email: String): Long {
         val until = settings.getLongOrNull(lockoutUntilKey(email)) ?: return 0
         return until - nowMs()
+    }
+
+    /**
+     * The error to return while [email] is locked out, or null. An Error (not
+     * Success(false)) so the lockout message reaches the UI instead of the
+     * generic invalid-credentials one.
+     */
+    private fun lockoutError(email: String): Result.Error? {
+        val lockoutMs = lockoutRemainingMs(email)
+        if (lockoutMs <= 0) return null
+        return Result.Error(
+            message = "Locked for ${lockoutMs}ms after repeated failed password attempts",
+            code = ErrorCode.FORBIDDEN,
+            displayMessage = lockoutMessage(lockoutMs)
+        )
     }
 
     private fun recordFailedSignIn(email: String) {

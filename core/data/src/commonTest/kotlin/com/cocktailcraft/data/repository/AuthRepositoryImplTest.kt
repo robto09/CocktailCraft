@@ -100,6 +100,40 @@ class AuthRepositoryImplTest {
     }
 
     @Test
+    fun changePasswordLocksOutAfterRepeatedWrongCurrentPasswords() = runTest {
+        var now = 0L
+        val repository = AuthRepositoryImpl(MapSettings(), Json { ignoreUnknownKeys = true }, nowMs = { now })
+        repository.signUp("a@b.com", "secret123")
+
+        repeat(5) { assertFalse(repository.changePassword("wrong-pass", "newpass456").getOrThrow()) }
+
+        // Locked: even the right current password is refused, with the lockout copy
+        val locked = repository.changePassword("secret123", "newpass456")
+        assertIs<Result.Error>(locked)
+        assertEquals(ErrorCode.FORBIDDEN, locked.code)
+        assertEquals(AuthRepositoryImpl.lockoutMessage(30_000), locked.displayMessage)
+        // ...and the lockout is the account's, so sign-in is locked too
+        assertIs<Result.Error>(repository.signIn("a@b.com", "secret123"))
+
+        now += 31_000
+        assertTrue(repository.changePassword("secret123", "newpass456").getOrThrow())
+        assertTrue(repository.signIn("a@b.com", "newpass456").getOrThrow())
+    }
+
+    @Test
+    fun changePasswordFailuresShareTheSignInCounter() = runTest {
+        var now = 0L
+        val repository = AuthRepositoryImpl(MapSettings(), Json { ignoreUnknownKeys = true }, nowMs = { now })
+        repository.signUp("a@b.com", "secret123")
+
+        // Alternating between the two entry points must not reset the count
+        repeat(3) { assertFalse(repository.signIn("a@b.com", "wrong-pass").getOrThrow()) }
+        repeat(2) { assertFalse(repository.changePassword("wrong-pass", "newpass456").getOrThrow()) }
+
+        assertIs<Result.Error>(repository.signIn("a@b.com", "secret123"))
+    }
+
+    @Test
     fun signInLocksOutAfterRepeatedFailuresAndRecoversAfterBackoff() = runTest {
         var now = 0L
         val settings = MapSettings()
