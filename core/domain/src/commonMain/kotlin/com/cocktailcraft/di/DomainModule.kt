@@ -30,7 +30,7 @@ val domainModule = module {
     // interface instead (ManageOrdersUseCase was removed this way — don't
     // reintroduce shells).
     factory { SearchCocktailsUseCase(searchRepository = get()) }
-    factory { LoadCocktailsByCategoryUseCase(searchRepository = get()) }
+    factory { LoadCocktailsByCategoryUseCase(catalogRepository = get()) }
     factory { SortCocktailsUseCase() }
     factory { GetCocktailDetailUseCase(detailRepository = get(), favoritesRepository = get(), searchRepository = get()) }
     factory { ManageFavoritesUseCase(favoritesRepository = get(), detailRepository = get()) }

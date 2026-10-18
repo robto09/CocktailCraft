@@ -1,6 +1,5 @@
 package com.cocktailcraft.data.remote
 
-import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.testutil.FakeCocktailApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -10,7 +9,7 @@ import kotlin.test.assertEquals
 
 class CocktailRemoteDataSourceTest {
 
-    private val interval = CocktailCacheManager.MIN_API_CALL_INTERVAL_MS
+    private val interval = ApiRateLimiter.MIN_API_CALL_INTERVAL_MS
 
     private val drinks = listOf(
         CocktailDto(id = "1", name = "Margarita", category = "Cocktail", instructions = "Shake."),
@@ -18,8 +17,8 @@ class CocktailRemoteDataSourceTest {
     )
 
     /** Data source on the test scheduler's virtual clock. */
-    private fun TestScope.remote(cacheManager: CocktailCacheManager = CocktailCacheManager()) =
-        CocktailRemoteDataSource(FakeCocktailApi(drinks), cacheManager, nowMs = { testScheduler.currentTime })
+    private fun TestScope.remote(rateLimiter: ApiRateLimiter = ApiRateLimiter()) =
+        CocktailRemoteDataSource(FakeCocktailApi(drinks), rateLimiter, nowMs = { testScheduler.currentTime })
 
     @Test
     fun concurrentCallsEachGetTheirOwnRateLimitSlot() = runTest {

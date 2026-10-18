@@ -1,0 +1,14 @@
+-- Version 3 -> 4: category pages move from an in-memory index into the
+-- database (see CategoryPage.sq), so a page's membership, order and fetch
+-- time survive a restart. Starts empty: pages fill on their next fetch, and
+-- until then they fall back to cached_cocktail's category column.
+
+CREATE TABLE category_page (
+    category TEXT NOT NULL,
+    cocktail_id TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    fetched_at INTEGER NOT NULL,
+    PRIMARY KEY (category, cocktail_id)
+);
+
+CREATE INDEX category_page_position ON category_page(category, position);

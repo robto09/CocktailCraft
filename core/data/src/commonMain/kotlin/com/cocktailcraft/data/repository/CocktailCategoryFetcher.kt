@@ -2,147 +2,104 @@ package com.cocktailcraft.data.repository
 
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.cache.CocktailCache
-import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCategories
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import com.cocktailcraft.domain.util.ErrorCode
+import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.domain.util.onError
+import com.cocktailcraft.util.runCatchingResult
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlin.time.Clock
 
 /**
- * Lazily fetches cocktails by category with caching and rate limiting.
+ * Category pages, read from the local catalog ([CocktailCache]) and
+ * refreshed from the network into it. Backs category browsing
+ * ([CocktailCatalogRepositoryImpl]) and the search's category filter
+ * ([CocktailSearchRepositoryImpl.filterByCategory]).
  *
- * Extracted from the former CocktailRepositoryImpl monolith; backs
- * [CocktailSearchRepositoryImpl.filterByCategory] (category browsing and the
- * advanced search's category filter).
+ * The database is the single source of truth: [refresh] writes the fetched
+ * cocktails into cached_cocktail and the page (ids, order, fetch time) into
+ * category_page; [observe] emits the page from the database again after
+ * every write. Both survive a restart.
  *
  * API Limitations & Workarounds:
  * - Filter endpoints (filter.php) only return partial data (id, name, thumbnail)
- * - Full cocktail details require individual lookup.php calls
- * - The free API has rate limits, so we cache aggressively
+ * - Full cocktail details require individual lookup.php calls; the cache
+ *   keeps a full record when a page refresh brings its placeholder again
+ * - The free API has rate limits, so pages are refreshed only when stale
  */
 internal class CocktailCategoryFetcher(
     private val remote: CocktailRemoteDataSource,
     private val cocktailCache: CocktailCache,
-    private val cacheManager: CocktailCacheManager,
-    private val offlineRepository: CocktailOfflineRepository
+    private val offlineRepository: CocktailOfflineRepository,
+    // Injectable for tests: coroutine virtual time does not move Clock.System.
+    private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() }
 ) {
 
-    // One lock per category: concurrent fetches of the same category (the
-    // home screen and a filter opening together, a double refresh) queue
-    // behind the first, then find its result in the fresh category cache
-    // instead of each issuing the same request. Different categories still
-    // fetch in parallel. The map only ever holds the handful of categories.
-    private val categoryLocksGuard = Mutex()
-    private val categoryLocks = mutableMapOf<String, Mutex>()
-
-    private suspend fun lockFor(category: String): Mutex =
-        categoryLocksGuard.withLock { categoryLocks.getOrPut(category) { Mutex() } }
+    // Concurrent refreshes of one category share one request.
+    private val inFlight = InFlightRequests<String, Result<Unit>>()
 
     /**
-     * Fetch cocktails for [category], preferring fresh category cache, then
-     * cached fallbacks when the API fails. A genuine failure with no cached
-     * data to fall back on PROPAGATES as an exception — callers wrap it in
-     * Result.Error so the UI can show an error/retry instead of silently
-     * rendering an empty list. An empty return means the category is empty.
-     *
-     * Results keep the API's (alphabetical) order. They used to be sorted by
-     * [Cocktail.dateAdded], but that is construction time, not API data: fresh
-     * placeholders sorted above cached records, so the same category listed
-     * in a different order on every device.
-     *
-     * Concurrent calls for the same category share one request (see
-     * [categoryLocks]).
+     * The cocktails of [category] as stored in the database, emitted right
+     * away and again whenever the stored rows change. Once the category has
+     * been fetched the page lists exactly the fetched cocktails, in the API's
+     * (alphabetical) order. Before that it lists the cached cocktails whose
+     * category matches, by name; for the default category, entries cached
+     * before category stamping existed stand in when nothing else matches,
+     * so they aren't stranded offline.
      */
-    suspend fun fetchCocktailsByCategory(category: String): List<Cocktail> =
-        lockFor(category).withLock { fetchUnderLock(category) }
-
-    private suspend fun fetchUnderLock(category: String): List<Cocktail> {
-        // First check category-specific cache
-        val categoryCachedCocktails = cacheManager.getCategoryCache(category)
-        val categoryLastFetch = cacheManager.getCategoryLastFetchTime(category)
-        val categoryCacheAge = Clock.System.now().toEpochMilliseconds() - categoryLastFetch
-
-        // Return cached data if available and fresh
-        if (categoryCachedCocktails.isNotEmpty() && categoryCacheAge < CocktailCacheManager.CACHE_VALIDITY_MS) {
-            return categoryCachedCocktails
-        }
-
-        // Offline per the network monitor: serve cached data when any exists.
-        // With nothing cached, fall through and attempt the fetch anyway — if
-        // the monitor is stale (path updates can lag or, on the simulator,
-        // never arrive) the request succeeds and recovers the screen, and when
-        // genuinely offline it fails fast into the cache/error path below.
-        if (offlineRepository.isOffline()) {
-            if (categoryCachedCocktails.isNotEmpty()) {
-                return categoryCachedCocktails
-            }
-            val generalCache = generalCacheForCategory(category)
-            if (generalCache.isNotEmpty()) {
-                return generalCache
-            }
-        }
-
-        // No connectivity ping first: it doubled the requests and, with
-        // HttpRequestRetry, added seconds on a dead network before reaching
-        // the fallback. The real request failing is what triggers the cache
-        // fallback below. filterByCategoryRaw takes the rate-limit slot
-        // (retry/backoff is Ktor's job — SH-7).
-        try {
-            val basicDtos = remote.filterByCategoryRaw(category)
-
-            // Prefer full cached details over the filter endpoint's partial
-            // data, looked up for the whole page in one batch
-            val cachedDetails = cocktailCache.getCachedCocktails(
-                basicDtos.filter { it.instructions.isNullOrBlank() }.map { it.id }
-            )
-            val enrichedCocktails = basicDtos.map { basicDto ->
-                val cocktail = if (!basicDto.instructions.isNullOrBlank()) {
-                    remote.mapToDomain(basicDto)
-                } else {
-                    cachedDetails[basicDto.id] ?: remote.mapToDomain(basicDto)
-                }
-                // filter.php omits the category, so stamp the one we fetched
-                // by — otherwise persisted entries are undiscoverable by
-                // category once we're offline.
-                if (cocktail.category.isNullOrBlank()) cocktail.copy(category = category) else cocktail
-            }
-
-            cacheManager.setCategoryCache(category, enrichedCocktails)
-            cocktailCache.cacheCocktails(enrichedCocktails)
-
-            return enrichedCocktails
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Logger.e { "API call failed: ${e.message}" }
-
-            // If we have cached data, use it
-            if (categoryCachedCocktails.isNotEmpty()) {
-                return categoryCachedCocktails
-            }
-
-            // Try general cache as last resort
-            val generalCache = generalCacheForCategory(category)
-            if (generalCache.isNotEmpty()) {
-                return generalCache
-            } else {
-                throw e
-            }
-        }
-    }
-
-    /**
-     * Cached cocktails matching [category]. Entries persisted before category
-     * stamping existed carry no category; surface those on the default browse
-     * listing rather than stranding them invisible while offline.
-     */
-    private suspend fun generalCacheForCategory(category: String): List<Cocktail> =
-        cocktailCache.getCachedCocktailsByCategory(
+    fun observe(category: String): Flow<List<Cocktail>> =
+        cocktailCache.observeCategoryPage(
             category = category,
             includeUncategorized = category == CocktailCategories.DEFAULT
-        ).sortedBy { it.name }
+        )
+
+    /** The page as currently stored (see [observe]). */
+    suspend fun snapshot(category: String): List<Cocktail> = observe(category).first()
+
+    /**
+     * Fetch [category] from the network into the database, unless it was
+     * fetched less than [CatalogRefreshPolicy.FRESHNESS_MS] ago ([force] fetches anyway).
+     *
+     * Failures come back as Result.Error and leave the stored page as it
+     * was, so callers keep showing it. While offline (per the network
+     * monitor) a category with stored rows is not fetched at all
+     * ([CatalogRefreshPolicy.OFFLINE_MESSAGE], ErrorCode.NETWORK). With nothing stored the
+     * fetch is attempted anyway: the monitor can be stale (path updates lag
+     * or, on the simulator, never arrive), and when genuinely offline the
+     * request fails fast.
+     *
+     * Concurrent calls for the same category share one request; different
+     * categories fetch in parallel.
+     */
+    suspend fun refresh(category: String, force: Boolean = false): Result<Unit> {
+        if (!force && isFresh(category)) return Result.Success(Unit)
+        return inFlight.run(category) { fetchIntoCache(category) }
+            .onError { message, _ -> Logger.w { "Refreshing category $category failed: $message" } }
+    }
+
+    private suspend fun isFresh(category: String): Boolean {
+        val fetchedAt = cocktailCache.categoryPageFetchedAt(category) ?: return false
+        return nowMs() - fetchedAt < CatalogRefreshPolicy.FRESHNESS_MS
+    }
+
+    private suspend fun fetchIntoCache(category: String): Result<Unit> =
+        runCatchingResult("Failed to load cocktails for $category") {
+            if (offlineRepository.isOffline() && snapshot(category).isNotEmpty()) {
+                return Result.Error(CatalogRefreshPolicy.OFFLINE_MESSAGE, ErrorCode.NETWORK)
+            }
+            // filterByCategoryRaw takes the rate-limit slot (retry/backoff
+            // is Ktor's job — SH-7).
+            val cocktails = remote.filterByCategoryRaw(category).map { dto ->
+                val cocktail = remote.mapToDomain(dto)
+                // filter.php omits the category, so stamp the one we fetched
+                // by; the offline fallback finds rows by that column.
+                if (cocktail.category.isNullOrBlank()) cocktail.copy(category = category) else cocktail
+            }
+            cocktailCache.cacheCategoryPage(category, cocktails, fetchedAtMs = nowMs())
+            Result.Success(Unit)
+        }
 }

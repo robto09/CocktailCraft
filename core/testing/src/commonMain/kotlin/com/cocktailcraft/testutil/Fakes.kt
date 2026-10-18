@@ -9,6 +9,7 @@ import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
+import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.NetworkMonitor
 import kotlinx.coroutines.delay
@@ -16,6 +17,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 
 class FakeNetworkMonitor(initiallyOnline: Boolean = true) : NetworkMonitor {
     private val _online = MutableStateFlow(initiallyOnline)
@@ -87,17 +91,45 @@ class FakeCartRepository : CartRepository {
         Result.Success(items.value.sumOf { it.cocktail.price * it.quantity })
 }
 
+/**
+ * [byId] plays the local database; [remote] is what a refresh fetches into
+ * it. Writes made through [refreshCocktail] reach [observeCocktail].
+ */
 class FakeDetailRepository(
     val byId: MutableMap<String, Cocktail> = mutableMapOf()
 ) : CocktailDetailRepository {
     /** When set, getCocktailById throws it (e.g. a CancellationException). */
     var throwOnLookup: Exception? = null
 
+    /** Fresher copies a refresh writes into [byId]. */
+    val remote = mutableMapOf<String, Cocktail>()
+
+    /** When set, refreshCocktail fails with this message (ErrorCode.NETWORK). */
+    var refreshError: String? = null
+
+    /** Every refreshCocktail call as (id, force). */
+    val refreshCalls = mutableListOf<Pair<String, Boolean>>()
+
+    private val writes = MutableStateFlow(0)
+
     override suspend fun getCocktailById(id: String): Result<Cocktail?> {
         throwOnLookup?.let { throw it }
         return Result.Success(byId[id])
     }
-    override suspend fun refreshCocktailById(id: String): Result<Cocktail?> = Result.Success(byId[id])
+
+    override fun observeCocktail(id: String): Flow<Cocktail?> =
+        writes.map { byId[id] }.distinctUntilChanged()
+
+    override suspend fun refreshCocktail(id: String, force: Boolean): Result<Unit> {
+        refreshCalls += id to force
+        refreshError?.let { return Result.Error(it, ErrorCode.NETWORK) }
+        remote[id]?.let {
+            byId[id] = it
+            writes.update { n -> n + 1 }
+        }
+        return Result.Success(Unit)
+    }
+
     override suspend fun getRandomCocktail(): Result<Cocktail?> = Result.Success(byId.values.firstOrNull())
     override fun getCocktailImageUrl(cocktail: Cocktail): String = cocktail.imageUrl.orEmpty()
 }
@@ -183,26 +215,53 @@ class FakeSearchRepository(var all: List<Cocktail> = emptyList()) : CocktailSear
         return Result.Success(all)
     }
 
-    /**
-     * When > 0, filterByCategory decides its result at call time and then
-     * suspends this long before returning — models the real fetcher's cache
-     * IO / timing-out network attempt, for in-flight race tests.
-     */
-    var filterDelayMs: Long = 0
-
     override suspend fun filterByCategory(category: String): Result<List<Cocktail>> {
         errorMessage?.let { return Result.Error(it) }
-        val result = all.filter { it.category == category } // snapshot at call time
-        if (filterDelayMs > 0) delay(filterDelayMs)
-        return Result.Success(result)
+        return Result.Success(all.filter { it.category == category })
     }
 }
 
+/**
+ * [all] plays the network: [refreshCategory] copies a category's slice of it
+ * into the stored pages (the fake database) that [observeCategory] emits.
+ */
 class FakeCatalogRepository(var all: List<Cocktail> = emptyList()) : CocktailCatalogRepository {
+
+    /** When set, refreshCategory fails with this message (ErrorCode.NETWORK). */
+    var errorMessage: String? = null
+
+    /**
+     * When > 0, refreshCategory reads [all] at call time and then suspends
+     * this long before storing it — a slow network, for in-flight race tests.
+     */
+    var refreshDelayMs: Long = 0
+
+    /** Every refreshCategory call as (category, force). */
+    val refreshCalls = mutableListOf<Pair<String, Boolean>>()
+
+    private val stored = MutableStateFlow<Map<String, List<Cocktail>>>(emptyMap())
+
+    /** Seed the stored page of [category], as if cached by an earlier run. */
+    fun store(category: String, cocktails: List<Cocktail>) {
+        stored.update { it + (category to cocktails) }
+    }
+
     override suspend fun getCategories(): Result<List<String>> =
         Result.Success(all.mapNotNull { it.category }.distinct())
 
     override suspend fun getIngredients(): Result<List<String>> = Result.Success(emptyList())
+
+    override fun observeCategory(category: String): Flow<List<Cocktail>> =
+        stored.map { it[category].orEmpty() }.distinctUntilChanged()
+
+    override suspend fun refreshCategory(category: String, force: Boolean): Result<Unit> {
+        refreshCalls += category to force
+        errorMessage?.let { return Result.Error(it, ErrorCode.NETWORK) }
+        val fetched = all.filter { it.category == category } // snapshot at call time
+        if (refreshDelayMs > 0) delay(refreshDelayMs)
+        store(category, fetched)
+        return Result.Success(Unit)
+    }
 }
 
 class FakeOfflineRepository : CocktailOfflineRepository {

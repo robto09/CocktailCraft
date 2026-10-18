@@ -1,11 +1,13 @@
 package com.cocktailcraft.data.repository
 
+import app.cash.turbine.test
 import com.cocktailcraft.data.cache.CocktailCache
-import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.data.cache.OfflineModePolicy
 import com.cocktailcraft.data.config.AppConfigImpl
+import com.cocktailcraft.data.remote.ApiRateLimiter
 import com.cocktailcraft.data.remote.CocktailDto
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
+import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.testutil.FakeCocktailApi
 import com.cocktailcraft.testutil.FakeNetworkMonitor
@@ -14,11 +16,17 @@ import com.cocktailcraft.testutil.partialCocktail
 import com.cocktailcraft.testutil.testCocktail
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.time.Clock
 
 class CocktailDetailRepositoryImplTest {
 
@@ -26,8 +34,12 @@ class CocktailDetailRepositoryImplTest {
 
     private class Fixture(
         val detail: CocktailDetailRepositoryImpl,
-        val cache: CocktailCache
-    )
+        val cache: CocktailCache,
+        val network: FakeNetworkMonitor
+    ) {
+        // Wall clock seen by the repository's freshness check
+        var nowMs = 0L
+    }
 
     // Mirrors the DataModule wiring: remote source + focused offline repo
     // backing the detail impl's cache-first lookups.
@@ -39,19 +51,24 @@ class CocktailDetailRepositoryImplTest {
         val networkMonitor = FakeNetworkMonitor(online)
         val policy = OfflineModePolicy(networkMonitor)
         val cache = CocktailCache(createTestDatabase(), settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
-        val cacheManager = CocktailCacheManager()
-        val remote = CocktailRemoteDataSource(api, cacheManager)
+        val remote = CocktailRemoteDataSource(api, ApiRateLimiter())
         val offline = CocktailOfflineRepositoryImpl(
             offlineModePolicy = policy,
             cocktailCache = cache
         )
+        lateinit var fixture: Fixture
         val detail = CocktailDetailRepositoryImpl(
             remote = remote,
             cocktailCache = cache,
             appConfig = config,
-            offlineRepository = offline
+            offlineRepository = offline,
+            nowMs = { fixture.nowMs }
         )
-        return Fixture(detail, cache)
+        fixture = Fixture(detail, cache, networkMonitor)
+        // Rows are stamped with the real clock; start the repository's
+        // clock there so freshly written rows count as fresh.
+        fixture.nowMs = Clock.System.now().toEpochMilliseconds()
+        return fixture
     }
 
     private fun remoteDto(id: String, name: String) = CocktailDto(
@@ -117,27 +134,98 @@ class CocktailDetailRepositoryImplTest {
         assertEquals("Remote Margarita", (second as Result.Success).data?.name)
     }
 
-    // --- refreshCocktailById: always refetch, then update the cache ---
+    // --- observeCocktail + refreshCocktail: the database is the source of truth ---
 
     @Test
-    fun refreshReplacesStaleCacheWithFreshApiData() = runTest {
+    fun observeEmitsTheCachedCopyWithoutHittingRemote() = runTest {
+        val api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita")))
+        val fixture = fixture(api = api)
+        fixture.cache.cacheCocktail(testCocktail("1", name = "Cached Margarita"))
+
+        assertEquals("Cached Margarita", fixture.detail.observeCocktail("1").first()?.name)
+        assertEquals(0, api.lookupRequests)
+    }
+
+    @Test
+    fun forcedRefreshWritesThroughToObservers() = runTest {
         val fixture = fixture(api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Fresh Margarita"))))
         fixture.cache.cacheCocktail(testCocktail("1", name = "Stale Margarita"))
 
-        val result = fixture.detail.refreshCocktailById("1")
+        fixture.detail.observeCocktail("1").test {
+            assertEquals("Stale Margarita", awaitItem()?.name)
 
-        assertEquals("Fresh Margarita", (result as Result.Success).data?.name)
+            assertIs<Result.Success<Unit>>(fixture.detail.refreshCocktail("1", force = true))
+
+            var item = awaitItem()
+            while (item?.name != "Fresh Margarita") item = awaitItem()
+            cancelAndIgnoreRemainingEvents()
+        }
         assertEquals("Fresh Margarita", fixture.cache.getCachedCocktail("1")?.name)
     }
 
     @Test
-    fun refreshWhileOfflineReturnsCachedWithoutFetching() = runTest {
-        val fixture = fixture(api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))), online = false)
+    fun refreshSkipsAFreshFullCopyAndRefetchesWhenStale() = runTest {
+        val api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita")))
+        val fixture = fixture(api = api)
         fixture.cache.cacheCocktail(testCocktail("1", name = "Cached Margarita"))
 
-        val result = fixture.detail.refreshCocktailById("1")
+        fixture.detail.refreshCocktail("1")
+        assertEquals(0, api.lookupRequests, "a fresh full copy is not refetched")
 
-        assertEquals("Cached Margarita", (result as Result.Success).data?.name)
+        // Past the window even allowing for the real-clock write stamp
+        fixture.nowMs += CatalogRefreshPolicy.FRESHNESS_MS + 60_000
+        fixture.detail.refreshCocktail("1")
+        assertEquals(1, api.lookupRequests, "a stale copy is refetched")
+        assertEquals("Remote Margarita", fixture.cache.getCachedCocktail("1")?.name)
+    }
+
+    @Test
+    fun refreshAlwaysFetchesAPartialCopy() = runTest {
+        val api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita")))
+        val fixture = fixture(api = api)
+        fixture.cache.cacheCocktail(partialCocktail("1"))
+
+        fixture.detail.refreshCocktail("1")
+
+        assertEquals(1, api.lookupRequests)
+        assertTrue(fixture.cache.getCachedCocktail("1")?.hasFullDetails == true)
+    }
+
+    @Test
+    fun failedRefreshReturnsErrorAndKeepsTheCachedCopy() = runTest {
+        val api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita")))
+        api.lookupError = RuntimeException("API down")
+        val fixture = fixture(api = api)
+        fixture.cache.cacheCocktail(testCocktail("1", name = "Cached Margarita"))
+
+        val result = fixture.detail.refreshCocktail("1", force = true)
+
+        assertIs<Result.Error>(result, "the failure must be surfaced, not swallowed")
+        assertEquals("Cached Margarita", fixture.detail.observeCocktail("1").first()?.name)
+    }
+
+    @Test
+    fun refreshWhileOfflineKeepsTheCacheWithoutFetching() = runTest {
+        val api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita")))
+        val fixture = fixture(api = api, online = false)
+        fixture.cache.cacheCocktail(testCocktail("1", name = "Cached Margarita"))
+
+        val result = fixture.detail.refreshCocktail("1", force = true)
+
+        assertEquals(ErrorCode.NETWORK, (result as Result.Error).code)
+        assertEquals(0, api.lookupRequests)
+        assertEquals("Cached Margarita", fixture.detail.observeCocktail("1").first()?.name)
+    }
+
+    @Test
+    fun concurrentRefreshesOfOneCocktailShareOneRequest() = runTest {
+        val api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))).apply { lookupDelayMs = 500 }
+        val fixture = fixture(api = api)
+
+        val results = List(3) { async { fixture.detail.refreshCocktail("1", force = true) } }.awaitAll()
+
+        assertEquals(1, api.lookupRequests)
+        results.forEach { assertIs<Result.Success<Unit>>(it) }
     }
 
     // --- getCocktailImageUrl derivation ---

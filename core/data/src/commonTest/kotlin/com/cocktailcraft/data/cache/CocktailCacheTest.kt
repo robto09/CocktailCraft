@@ -13,6 +13,7 @@ import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.testCocktail
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -131,61 +132,15 @@ class CocktailCacheTest {
     // --- Batched reads/writes: a fixed number of statements, not one per row ---
 
     @Test
-    fun getCachedCocktailsReturnsHitsKeyedByIdAndSkipsMisses() = runTest {
-        val cache = cache(createTestDatabase())
-        cache.cacheCocktails(listOf(testCocktail("1"), testCocktail("2")))
-
-        val hits = cache.getCachedCocktails(listOf("1", "2", "404"))
-
-        assertEquals(setOf("1", "2"), hits.keys)
-        assertEquals(testCocktail("2"), hits["2"])
-    }
-
-    @Test
-    fun getCachedCocktailsDropsExpiredEntriesWhileOnline() = runTest {
-        val db = createTestDatabase()
-        seedRow(db, testCocktail("old"), cachedAt = expiredAt())
-        seedRow(db, testCocktail("fresh"), cachedAt = nowMs())
-
-        val hits = cache(db).getCachedCocktails(listOf("old", "fresh"))
-
-        assertEquals(setOf("fresh"), hits.keys)
-        assertNull(cachedAt(db, "old"))
-    }
-
-    @Test
-    fun getCachedCocktailsKeepsExpiredEntriesWhileOffline() = runTest {
-        val db = createTestDatabase()
-        seedRow(db, testCocktail("old"), cachedAt = expiredAt())
-
-        assertEquals(setOf("old"), cache(db, online = false).getCachedCocktails(listOf("old")).keys)
-    }
-
-    @Test
-    fun getCachedCocktailsHandlesMoreIdsThanOneInQueryBinds() = runTest {
-        // Ids are chunked below SQLite's bound-parameter limit
+    fun cachingMorePlaceholdersThanOneInQueryBindsKeepsEveryFullRecord() = runTest {
+        // The stored-record lookup is chunked below SQLite's bound-parameter limit
         val cache = cache(createTestDatabase(), appConfig = smallConfig(cap = 1200))
-        val cocktails = (1..1100).map { testCocktail("$it") }
-        cache.cacheCocktails(cocktails)
+        val full = (1..1100).map { testCocktail("$it") }
+        cache.cacheCocktails(full)
 
-        assertEquals(1100, cache.getCachedCocktails(cocktails.map { it.id }).size)
-    }
+        cache.cacheCocktails(full.map(::placeholderOf))
 
-    @Test
-    fun getCachedCocktailsCostsTheSameStatementsForOneIdOrAHundred() = runTest {
-        val driver = CountingSqlDriver(createInMemorySqlDriver())
-        val cache = cache(createTestDatabase(driver))
-        val ids = (1..100).map { "$it" }
-        cache.cacheCocktails(ids.map { testCocktail(it) })
-
-        driver.reset()
-        cache.getCachedCocktails(listOf("1"))
-        val single = driver.queries to driver.statements
-
-        driver.reset()
-        assertEquals(100, cache.getCachedCocktails(ids).size)
-
-        assertEquals(single, driver.queries to driver.statements)
+        assertTrue(cache.getAllCachedCocktails().all { it.hasFullDetails })
     }
 
     @Test
@@ -204,7 +159,7 @@ class CocktailCacheTest {
 
         assertEquals(singleQueries, driver.queries, "one batched SELECT, not one per placeholder")
         // ...and the stored full records still win over the placeholders
-        assertEquals(full, cache.getCachedCocktails(full.map { it.id }).values.sortedBy { it.id.toInt() })
+        assertEquals(full, cache.getAllCachedCocktails().sortedBy { it.id.toInt() })
     }
 
     @Test
@@ -297,8 +252,8 @@ class CocktailCacheTest {
         cache.cacheCocktails((1..100).map { testCocktail("ordinary$it", category = "Ordinary Drink") })
         cache.cacheCocktails((1..100).map { testCocktail("cocktail$it", category = "Cocktail") })
 
-        assertEquals(100, cache.getCachedCocktailsByCategory("Ordinary Drink").size)
-        assertEquals(100, cache.getCachedCocktailsByCategory("Cocktail").size)
+        assertEquals(100, cache.observeCategoryPage("Ordinary Drink").first().size)
+        assertEquals(100, cache.observeCategoryPage("Cocktail").first().size)
     }
 
     @Test
@@ -382,7 +337,7 @@ class CocktailCacheTest {
 
         assertEquals("old", cache.getCachedCocktail("old")?.id)
         assertEquals(listOf("old"), cache.getAllCachedCocktails().map { it.id })
-        assertEquals(listOf("old"), cache.getCachedCocktailsByCategory("Shot").map { it.id })
+        assertEquals(listOf("old"), cache.observeCategoryPage("Shot").first().map { it.id })
         assertEquals(1, cache.getCachedCocktailCount())
     }
 
@@ -409,9 +364,9 @@ class CocktailCacheTest {
             testCocktail("4", category = null)
         ))
 
-        assertEquals(setOf("1", "3"), cache.getCachedCocktailsByCategory("Cocktail").map { it.id }.toSet())
-        assertEquals(listOf("2"), cache.getCachedCocktailsByCategory("Shot").map { it.id })
-        assertTrue(cache.getCachedCocktailsByCategory("Beer").isEmpty())
+        assertEquals(setOf("1", "3"), cache.observeCategoryPage("Cocktail").first().map { it.id }.toSet())
+        assertEquals(listOf("2"), cache.observeCategoryPage("Shot").first().map { it.id })
+        assertTrue(cache.observeCategoryPage("Beer").first().isEmpty())
     }
 
     @Test
@@ -424,26 +379,56 @@ class CocktailCacheTest {
             testCocktail("other", category = "Shot")
         ))
 
+        // Legacy rows only stand in while nothing carries the category
         assertEquals(
-            setOf("stamped", "null", "blank"),
-            cache.getCachedCocktailsByCategory(CocktailCategories.DEFAULT, includeUncategorized = true)
-                .map { it.id }.toSet()
+            listOf("stamped"),
+            cache.observeCategoryPage(CocktailCategories.DEFAULT, includeUncategorized = true).first().map { it.id }
         )
         assertEquals(
             listOf("stamped"),
-            cache.getCachedCocktailsByCategory(CocktailCategories.DEFAULT).map { it.id }
+            cache.observeCategoryPage(CocktailCategories.DEFAULT).first().map { it.id }
+        )
+        assertEquals(
+            setOf("null", "blank"),
+            cache.observeCategoryPage("Ordinary Drink", includeUncategorized = true).first().map { it.id }.toSet()
         )
     }
 
+    // --- Category pages (category_page) ---
+
     @Test
-    fun categoryQueryDropsExpiredEntriesWhenOnline() = runTest {
+    fun storedCategoryPageKeepsTheFetchedOrderAndFetchTime() = runTest {
         val db = createTestDatabase()
-        seedRow(db, testCocktail("old", category = "Shot"), cachedAt = expiredAt())
-        seedRow(db, testCocktail("fresh", category = "Shot"), cachedAt = nowMs())
+        val page = listOf(testCocktail("z", name = "Zombie"), testCocktail("a", name = "Aviation"))
+        cache(db).cacheCategoryPage("Cocktail", page, fetchedAtMs = 42L)
 
-        val cache = cache(db, online = true)
+        val restarted = cache(db)
 
-        assertEquals(listOf("fresh"), cache.getCachedCocktailsByCategory("Shot").map { it.id })
+        assertEquals(listOf("z", "a"), restarted.observeCategoryPage("Cocktail").first().map { it.id })
+        assertEquals(42L, restarted.categoryPageFetchedAt("Cocktail"))
+        assertNull(restarted.categoryPageFetchedAt("Shot"), "never fetched")
+    }
+
+    @Test
+    fun categoryPageWithAnEvictedCocktailIsNoLongerFresh() = runTest {
+        val cache = cache(createTestDatabase(), appConfig = smallConfig(cap = 2))
+        cache.cacheCategoryPage("Cocktail", listOf(testCocktail("1"), testCocktail("2")), fetchedAtMs = 42L)
+
+        cache.cacheCocktail(testCocktail("other", category = "Shot")) // evicts id 1
+
+        assertEquals(listOf("2"), cache.observeCategoryPage("Cocktail").first().map { it.id })
+        assertNull(cache.categoryPageFetchedAt("Cocktail"), "the page no longer holds every listed cocktail")
+    }
+
+    @Test
+    fun cachingWithoutACategoryKeepsTheStoredOne() = runTest {
+        val cache = cache(createTestDatabase())
+        cache.cacheCocktail(placeholderOf(testCocktail("1", category = "Shot")))
+
+        cache.cacheCocktail(placeholderOf(testCocktail("1", category = null)))
+
+        assertEquals("Shot", cache.getCachedCocktail("1")?.category)
+        assertEquals(listOf("1"), cache.observeCategoryPage("Shot").first().map { it.id })
     }
 
     // --- Recently viewed ---
@@ -560,10 +545,10 @@ class CocktailCacheTest {
 
         val cache = cache(createTestDatabase(), settings)
 
-        assertEquals(listOf("shot"), cache.getCachedCocktailsByCategory("Shot").map { it.id })
+        assertEquals(listOf("shot"), cache.observeCategoryPage("Shot").first().map { it.id })
         assertEquals(
             listOf("legacy"),
-            cache.getCachedCocktailsByCategory(CocktailCategories.DEFAULT, includeUncategorized = true).map { it.id }
+            cache.observeCategoryPage(CocktailCategories.DEFAULT, includeUncategorized = true).first().map { it.id }
         )
     }
 

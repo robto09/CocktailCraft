@@ -88,11 +88,12 @@ graph TD
         CocktailApiInt["CocktailApi"]
         CocktailApiImpl["CocktailApiImpl"]
         RemoteDataSource["CocktailRemoteDataSource"]
+        RateLimiter["ApiRateLimiter"]
 
         LocalStorage["Local Storage (Settings)"]
         SecureStorage["Secure Storage (Keystore/Keychain)"]
         CocktailCache["CocktailCache"]
-        CacheManager["CocktailCacheManager"]
+        CatalogDb["Local Database (SQLDelight: cached_cocktail, category_page)"]
         OfflinePolicy["OfflineModePolicy"]
         NetworkMonitor["NetworkMonitor"]
         ErrorHandler["ErrorHandler"]
@@ -212,7 +213,6 @@ graph TD
     FavRepoImpl --> RemoteDataSource
     OfflineRepoImpl --> OfflinePolicy
     OfflineRepoImpl --> CocktailCache
-    OfflineRepoImpl --> CacheManager
     CartRepoImpl --> LocalStorage
     OrderRepoImpl --> LocalStorage
     ReviewRepoImpl --> LocalStorage
@@ -221,9 +221,9 @@ graph TD
     CategoryFetcher --> RemoteDataSource
     CategoryFetcher --> CocktailCache
     RemoteDataSource --> CocktailApiInt
-    RemoteDataSource --> CacheManager
+    RemoteDataSource --> RateLimiter
     CocktailApiImpl --> CocktailApiInt
-    CocktailCache --> LocalStorage
+    CocktailCache --> CatalogDb
     OfflinePolicy --> NetworkMonitor
 
     %% DI Relationships
@@ -260,7 +260,7 @@ This diagram shows the main components of the CocktailCraft application and thei
 1. **UI Layer**: Android Compose screens and components (iOS SwiftUI views mirror the same structure via thin `*SKIE` wrappers over the same shared ViewModels)
 2. **Shared ViewModel Layer**: the nine `Shared*ViewModel`s on the `SharedViewModel` base class, consumed by both platforms
 3. **Domain Layer**: the nine focused repository interfaces (the former monolithic `CocktailRepository` was split into Search/Detail/Catalog/Favorites/Offline), the use cases ViewModels depend on, models, and `BackgroundSyncService`
-4. **Data Layer**: one implementation per repository interface plus the shared `CocktailCategoryFetcher`, the remote data source, the caching/offline stack (`CocktailCache`, `CocktailCacheManager`, `OfflineModePolicy`), plain and secure local storage, Network Monitor, Error Handler, and App Configuration
+4. **Data Layer**: one implementation per repository interface plus the shared `CocktailCategoryFetcher`, the remote data source and its `ApiRateLimiter`, the caching/offline stack (`CocktailCache` over the SQLDelight catalog tables — the single source of truth the catalog repositories observe and refresh into — and `OfflineModePolicy`), plain and secure local storage, Network Monitor, Error Handler, and App Configuration
 5. **Dependency Injection**: modular Koin setup — `AppModule` combines the network/data/domain modules, with `platformModule()` supplying per-platform bindings
 
 Related-cocktail recommendations are part of `GetCocktailDetailUseCase` (no separate recommendation engine or module).

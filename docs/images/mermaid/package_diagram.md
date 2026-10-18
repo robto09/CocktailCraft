@@ -107,13 +107,13 @@ graph TD
 
     Cache[cache]
     CocktailCache[CocktailCache]
-    CocktailCacheManager[CocktailCacheManager]
     OfflineModePolicy[OfflineModePolicy]
 
     Remote[remote]
     CocktailApi[CocktailApi]
     CocktailApiImpl[CocktailApiImpl]
     CocktailRemoteDataSource[CocktailRemoteDataSource]
+    ApiRateLimiter[ApiRateLimiter]
 
     DataConfig[config]
     AppConfigImpl[AppConfigImpl]
@@ -244,12 +244,12 @@ graph TD
     DataRepository --> CocktailCategoryFetcher
 
     Cache --> CocktailCache
-    Cache --> CocktailCacheManager
     Cache --> OfflineModePolicy
 
     Remote --> CocktailApi
     Remote --> CocktailApiImpl
     Remote --> CocktailRemoteDataSource
+    Remote --> ApiRateLimiter
 
     DataConfig --> AppConfigImpl
 
@@ -319,7 +319,7 @@ This package diagram shows the organization of the CocktailCraft codebase, inclu
 1. **Android App**: Compose screens, UI components, navigation, widget/work/sync platform integrations — the ViewModels live in the shared `:presentation` KMP module, not here
 2. **Shared Module**:
    - Domain Layer: Models, the nine focused Repository Interfaces (the former monolithic `CocktailRepository` was split into Search/Detail/Catalog/Favorites/Offline plus Cart/Auth/Order/Review), Use Cases, and `BackgroundSyncService`
-   - Data Layer: one implementation per repository interface (plus the `CocktailCategoryFetcher` helper), the remote data source, and the caching/offline stack (`CocktailCache`, `CocktailCacheManager`, `OfflineModePolicy`)
+   - Data Layer: one implementation per repository interface (plus the `CocktailCategoryFetcher` helper), the remote data source and `ApiRateLimiter`, and the caching/offline stack (`CocktailCache`, the SQLDelight-backed catalog the repositories observe and refresh into, and `OfflineModePolicy`)
    - ViewModels: `SharedViewModel` base class plus nine `Shared*ViewModel`s consumed by both platforms
    - Cross-Cutting Concerns: modular Koin setup (`AppModule` = network + data + domain, plus the per-platform `platformModule()`)
 3. **Platform-Specific**: Android and iOS `platformModule()` actuals (Settings stores incl. the secure one, NetworkMonitor implementations)

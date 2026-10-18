@@ -1,7 +1,6 @@
 package com.cocktailcraft.data.remote
 
 import co.touchlab.kermit.Logger
-import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailIngredient
 import kotlinx.coroutines.delay
@@ -10,8 +9,8 @@ import kotlin.time.Clock
 
 /**
  * Remote access to TheCocktailDB: DTO→domain mapping plus the API rate
- * limiter (state shared via [CocktailCacheManager]). Extracted from the
- * former CocktailRepositoryImpl god class.
+ * limiter (state shared via [ApiRateLimiter]). Extracted from the former
+ * CocktailRepositoryImpl god class.
  *
  * The filter endpoints — fired in bursts by category paging and multi-filter
  * searches — each take a rate-limit slot ([acquireRateLimitSlot]) before
@@ -22,7 +21,7 @@ import kotlin.time.Clock
  */
 internal class CocktailRemoteDataSource(
     private val api: CocktailApi,
-    private val cacheManager: CocktailCacheManager,
+    private val rateLimiter: ApiRateLimiter,
     // Injectable for tests: coroutine virtual time does not move Clock.System.
     private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() }
 ) {
@@ -59,12 +58,12 @@ internal class CocktailRemoteDataSource(
 
     /**
      * Takes the next API call slot and waits until it arrives. Reserving is
-     * atomic ([CocktailCacheManager.reserveApiCallSlot]), so concurrent
-     * callers are spaced [CocktailCacheManager.MIN_API_CALL_INTERVAL_MS]
-     * apart instead of all passing one shared "time since last call" check.
+     * atomic ([ApiRateLimiter.reserveSlot]), so concurrent callers are spaced
+     * [ApiRateLimiter.MIN_API_CALL_INTERVAL_MS] apart instead of all passing
+     * one shared "time since last call" check.
      */
     private suspend fun acquireRateLimitSlot() {
-        val waitMs = cacheManager.reserveApiCallSlot(nowMs())
+        val waitMs = rateLimiter.reserveSlot(nowMs())
         if (waitMs > 0) {
             Logger.d { "Rate limiting: waiting ${waitMs}ms before API call" }
             delay(waitMs)
