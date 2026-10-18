@@ -120,6 +120,7 @@ struct AnimatedThemeSwitch: View {
     let onToggle: () -> Void
 
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -133,7 +134,7 @@ struct AnimatedThemeSwitch: View {
             Circle()
                 // Follows the selected accent (dark/light variant by state),
                 // matching Android's AnimatedThemeSwitch thumb
-                .fill(AppColors.primary(isDarkMode: isChecked))
+                .fill(AppColors.primary(isDarkMode: isChecked, accentName: appearance.accentName))
                 .frame(width: 24, height: 24)
                 .overlay(
                     Image(systemName: isChecked ? "moon.fill" : "sun.max.fill")
@@ -165,6 +166,7 @@ struct AnimatedThemeSwitch: View {
 // the app (Place Order, Add to Cart) and of Android's Profile buttons.
 struct PrimaryButtonStyle: ButtonStyle {
     @Environment(\.isDarkMode) var isDarkMode
+    @Environment(\.appearance) var appearance
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -172,19 +174,19 @@ struct PrimaryButtonStyle: ButtonStyle {
             .foregroundColor(AppColors.onPrimary(isDarkMode: isDarkMode))
             .frame(maxWidth: .infinity)
             .padding()
-            .background(AppColors.primary(isDarkMode: isDarkMode))
+            .background(AppColors.primary(appearance))
             .clipShape(RoundedRectangle(cornerRadius: AppTheme.CornerRadius.md))
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
     }
 }
 
 struct SecondaryButtonStyle: ButtonStyle {
-    @Environment(\.isDarkMode) var isDarkMode
+    @Environment(\.appearance) var appearance
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
-            .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+            .foregroundColor(AppColors.primary(appearance))
             .frame(maxWidth: .infinity)
             .padding()
             .background(Color.clear)

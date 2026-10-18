@@ -15,14 +15,19 @@ import SwiftUI
 /// The section subviews live in Components/DetailSections.swift.
 struct CocktailDetailView: View {
     let cocktailId: String
+    // Both wrap Koin factory instances they own (and clear on deinit), so
+    // they are built once per screen through ViewModelHolder rather than on
+    // every parent re-render (IO-13).
+    @State private var detailModel = ViewModelHolder(CocktailDetailViewModelSKIE.init)
+    // Screen-scoped like Android's koinViewModel<SharedReviewViewModel>()
+    @State private var reviewModel = ViewModelHolder(ReviewViewModelSKIE.init)
     // Internal (not private) so the section extension in
     // Components/DetailSections.swift can read them.
-    @State var viewModel = CocktailDetailViewModelSKIE()
-    // Screen-scoped like Android's koinViewModel<SharedReviewViewModel>();
-    // the wrapper owns the shared factory instance and clears it on deinit.
-    @State var reviewViewModel = ReviewViewModelSKIE()
+    var viewModel: CocktailDetailViewModelSKIE { detailModel.wrapper }
+    var reviewViewModel: ReviewViewModelSKIE { reviewModel.wrapper }
     @State var showingWriteReview = false
     @Environment(\.isDarkMode) var isDarkMode
+    @Environment(\.appearance) var appearance
     @Environment(\.dynamicTypeSize) var dynamicTypeSize
 
     // Distinguishes "load not started yet" from "loaded but not found"

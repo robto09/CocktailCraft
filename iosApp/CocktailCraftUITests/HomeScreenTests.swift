@@ -13,6 +13,18 @@ class HomeScreenTests: UITestSetup {
         }
     }
 
+    func testHomeListsTheTestModeFixtures() {
+        XCTAssertTrue(waitForHomeScreen(), "Home screen should be loaded")
+
+        // Test mode serves fixture cocktails, not the live API; Mojito is in
+        // the default "Cocktail" category. Cards combine their text into one
+        // accessibility element, so match on the label.
+        let mojito = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "Mojito")).firstMatch
+        XCTAssertTrue(waitForElement(mojito, timeout: 10.0),
+                      "Home should list the fixture cocktails")
+    }
+
     func testSearchFieldAcceptsInput() {
         XCTAssertTrue(waitForHomeScreen(), "Home screen should be loaded")
 

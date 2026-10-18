@@ -3,7 +3,9 @@ import shared
 
 struct ContentView: View {
     @State private var router = AppRouter()
-    @State private var cartViewModel = CartViewModelSKIE()
+    // Built once via ViewModelHolder, not on every re-render (IO-13)
+    @State private var cartModel = ViewModelHolder(CartViewModelSKIE.init)
+    private var cartViewModel: CartViewModelSKIE { cartModel.wrapper }
     private let themeViewModel = ThemeViewModelSKIE.shared
     // System accessibility settings, read above the app's own overrides
     @Environment(\.dynamicTypeSize) private var systemTypeSize
@@ -11,9 +13,11 @@ struct ContentView: View {
 
     var body: some View {
         let themeState = themeViewModel.state
-        // Publish accent + high contrast into AppColors before children
-        // render (mirrors Android's AppColors globals; see applyAppearance).
-        let _ = Self.applyAppearance(themeState)
+        let appearance = AppAppearance(
+            isDarkMode: themeState.isDarkMode,
+            accentName: themeState.accentColor,
+            isHighContrast: themeState.isHighContrast
+        )
 
         ZStack {
             TabView(selection: $router.selectedTab) {
@@ -70,11 +74,7 @@ struct ContentView: View {
                 .brandedTabBar()
             }
             // Selected tab in the brand color, matching the Android bottom nav
-            .tint(AppColors.primary(isDarkMode: themeState.isDarkMode))
-            // Re-identify the tree when accent/contrast change so every view
-            // re-reads the AppColors statics. These change only from the
-            // Settings sheet, so the (rare) navigation-state reset is fine.
-            .id("appearance-\(themeState.accentColor)-\(themeState.isHighContrast)")
+            .tint(AppColors.primary(appearance))
 
             // Offline Banner
             VStack {
@@ -104,7 +104,10 @@ struct ContentView: View {
         #endif
         .environment(cartViewModel)
         .environment(router)
-        .environment(\.isDarkMode, themeState.isDarkMode)
+        // Theme, accent and contrast for every AppColors lookup below; a
+        // change re-renders the views that read them, in place (navigation
+        // stacks and screen ViewModels survive it)
+        .environment(\.appearance, appearance)
         .preferredColorScheme(themeState.isSystemTheme ? nil : (themeState.isDarkMode ? .dark : .light))
         // In-app Font Size setting, applied relative to the system Dynamic
         // Type size so accessibility sizes keep working
@@ -116,15 +119,6 @@ struct ContentView: View {
                 transaction.animation = nil
             }
         }
-    }
-
-    /// Mirrors the shared theme state into AppColors' appearance statics.
-    /// Runs at the top of body, before any child view resolves a color.
-    @discardableResult
-    private static func applyAppearance(_ state: ThemeUiState) -> Bool {
-        AppColors.accentName = state.accentColor
-        AppColors.isHighContrast = state.isHighContrast
-        return true
     }
 
     /// Maps the shared font-size setting onto a Dynamic Type size, as steps

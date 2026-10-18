@@ -4,7 +4,10 @@ import shared
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     private let themeViewModel = ThemeViewModelSKIE.shared
-    @AppStorage("notificationsEnabled") private var notificationsEnabled = true
+    @State private var showingResetConfirmation = false
+    // No Notifications section: the app has no notifications to enable, and
+    // the old toggle only flipped an unused @AppStorage flag. Bring it back
+    // with the feature itself.
 
     var body: some View {
         NavigationStack {
@@ -79,24 +82,31 @@ struct SettingsView: View {
                     ))
                 }
                 
-                Section(header: Text(L(\.notifications))) {
-                    Toggle(L(\.settings_enable_notifications), isOn: $notificationsEnabled)
-                }
-                
                 Section(header: Text(L(\.settings_theme_actions))) {
-                    Button(L(\.settings_reset_to_defaults)) {
-                        Task {
-                            await themeViewModel.resetToDefaults()
-                        }
+                    // Resets every appearance setting at once, so it asks first
+                    Button(L(\.settings_reset_to_defaults), role: .destructive) {
+                        showingResetConfirmation = true
                     }
-                    .foregroundColor(.red)
+                    .accessibilityIdentifier("settings.resetButton")
+                    .confirmationDialog(
+                        L(\.settings_reset_to_defaults),
+                        isPresented: $showingResetConfirmation,
+                        titleVisibility: .visible
+                    ) {
+                        Button(L(\.settings_reset_to_defaults), role: .destructive) {
+                            Task {
+                                await themeViewModel.resetToDefaults()
+                            }
+                        }
+                        Button(L(\.cancel), role: .cancel) {}
+                    }
                 }
-                
+
                 Section(header: Text(L(\.profile_about))) {
                     HStack {
                         Text(L(\.settings_version))
                         Spacer()
-                        Text("1.0.0")
+                        Text(Bundle.main.appVersion)
                             .foregroundColor(.secondary)
                     }
                     

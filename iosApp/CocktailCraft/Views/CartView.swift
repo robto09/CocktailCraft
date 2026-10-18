@@ -4,9 +4,12 @@ import shared
 struct CartView: View {
     // Injected via .environment(cartViewModel) at the ContentView root
     @Environment(CartViewModelSKIE.self) private var cartViewModel
-    @State private var orderViewModel = OrderViewModelSKIE()
+    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    @State private var orderModel = ViewModelHolder(OrderViewModelSKIE.init)
     // Cart rows carry a favorite heart, as on Android
-    @State private var favoritesViewModel = FavoritesViewModelSKIE()
+    @State private var favoritesModel = ViewModelHolder(FavoritesViewModelSKIE.init)
+    private var orderViewModel: OrderViewModelSKIE { orderModel.wrapper }
+    private var favoritesViewModel: FavoritesViewModelSKIE { favoritesModel.wrapper }
     @Environment(AppRouter.self) private var router
     @State private var showCheckoutConfirmation = false
     @Environment(\.isDarkMode) private var isDarkMode
@@ -15,10 +18,13 @@ struct CartView: View {
     var body: some View {
         Group {
             if cartViewModel.state.cartItems.isEmpty {
+                // "Start Shopping" goes to Home, as on Android
                 EmptyStateView(
                     icon: "cart",
                     title: L(\.cart_empty_title),
-                    message: L(\.cart_empty_message_ios)
+                    message: L(\.cart_empty_message_ios),
+                    actionTitle: L(\.cart_start_shopping),
+                    action: { router.selectedTab = .home }
                 )
                 .brandedNavigationBar(title: L(\.cart))
             } else {

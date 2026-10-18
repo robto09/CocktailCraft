@@ -11,10 +11,11 @@ struct HomeSearchBar: View {
     /// orange, as on Android
     var isFilterActive: Bool = false
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
     @FocusState private var isFieldFocused: Bool
 
-    private var primaryColor: Color { AppColors.primary(isDarkMode: isDarkMode) }
-    private var textSecondary: Color { AppColors.textSecondary(isDarkMode: isDarkMode) }
+    private var primaryColor: Color { AppColors.primary(appearance) }
+    private var textSecondary: Color { AppColors.textSecondary(appearance) }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -93,8 +94,9 @@ struct ActiveFiltersCard: View {
     let onApply: (SearchFilters) -> Void
     let onClearAll: () -> Void
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
-    private var primaryColor: Color { AppColors.primary(isDarkMode: isDarkMode) }
+    private var primaryColor: Color { AppColors.primary(appearance) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -106,7 +108,7 @@ struct ActiveFiltersCard: View {
 
                 Text(L(\.filter_active_filters))
                     .font(.caption)
-                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.textSecondary(appearance))
                     .accessibilityAddTraits(.isHeader)
 
                 Spacer()

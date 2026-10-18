@@ -8,6 +8,7 @@ import SwiftUI
 /// `submissionError`, keeping the sheet open so nothing typed is lost.
 struct WriteReviewView: View {
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
     @State private var userName = ""
     @State private var rating = 0
     @State private var comment = ""
@@ -99,7 +100,7 @@ struct WriteReviewView: View {
             onDismiss()
         }
         .font(.subheadline.weight(.medium))
-        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+        .foregroundColor(AppColors.primary(appearance))
         .accessibilityIdentifier("writeReview.cancelButton")
     }
 
@@ -190,7 +191,7 @@ struct WriteReviewView: View {
 
             Text(L(\.review_character_count, comment.count, Self.maxCommentLength))
                 .font(.caption)
-                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                .foregroundColor(AppColors.textSecondary(appearance))
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .accessibilityIdentifier("writeReview.characterCount")
         }

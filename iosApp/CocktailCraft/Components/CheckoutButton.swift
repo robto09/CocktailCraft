@@ -6,6 +6,7 @@ struct CheckoutButton: View {
     let isLoading: Bool
     let action: () -> Void
     @Environment(\.isDarkMode) var isDarkMode
+    @Environment(\.appearance) var appearance
     
     init(
         title: String = L(\.cart_place_order),
@@ -41,8 +42,8 @@ struct CheckoutButton: View {
             .padding(.vertical, AppTheme.Spacing.lg)
             .background(
                 isEnabled 
-                    ? AppColors.primary(isDarkMode: isDarkMode)
-                    : AppColors.textSecondary(isDarkMode: isDarkMode)
+                    ? AppColors.primary(appearance)
+                    : AppColors.textSecondary(appearance)
             )
             .cornerRadius(AppTheme.CornerRadius.md)
         }

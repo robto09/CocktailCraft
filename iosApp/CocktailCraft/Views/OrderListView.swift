@@ -2,12 +2,15 @@ import SwiftUI
 import shared
 
 struct OrderListView: View {
-    @State private var viewModel = OrderViewModelSKIE()
+    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    @State private var model = ViewModelHolder(OrderViewModelSKIE.init)
+    private var viewModel: OrderViewModelSKIE { model.wrapper }
     @State private var hasLoaded = false
     // Tab switches route through the app-level router (same pattern as
     // CartView/ProfileView) so "Browse Cocktails" can land on Home.
     @Environment(AppRouter.self) private var router
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     var body: some View {
         // No nav container here: ContentView already wraps this tab in a
@@ -86,7 +89,7 @@ struct OrderListView: View {
                 Spacer()
                 Text(order.date)
                     .font(.subheadline)
-                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.textSecondary(appearance))
             }
             .padding(.bottom, AppTheme.Spacing.md)
 
@@ -112,7 +115,7 @@ struct OrderListView: View {
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 Spacer()
                 Text(order.total.asPrice)
-                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.primary(appearance))
             }
             .font(.callout.weight(.bold))
             .accessibilityElement(children: .combine)

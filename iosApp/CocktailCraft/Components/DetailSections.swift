@@ -30,13 +30,13 @@ extension CocktailDetailView {
             if !subtitle.isEmpty {
                 Text(subtitle)
                     .font(.callout.weight(.medium))
-                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.textSecondary(appearance))
                     .padding(.top, AppTheme.Spacing.xs)
             }
 
             Text(viewModel.formatPrice())
                 .font(.title2.weight(.bold))
-                .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                .foregroundColor(AppColors.primary(appearance))
                 // A bare "$7.46" reads without context (and fails the
                 // audit's human-readable label check)
                 .accessibilityLabel(L(\.detail_price_a11y, viewModel.formatPrice()))
@@ -51,7 +51,7 @@ extension CocktailDetailView {
 
                 Text(instructions)
                     .font(.callout)
-                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.textSecondary(appearance))
                     .lineSpacing(4)
                     .padding(.top, AppTheme.Spacing.sm)
             }
@@ -105,12 +105,12 @@ extension CocktailDetailView {
                 ForEach(Array(cocktail.ingredients.enumerated()), id: \.offset) { _, ingredient in
                     HStack(spacing: AppTheme.Spacing.md) {
                         Circle()
-                            .fill(AppColors.primary(isDarkMode: isDarkMode))
+                            .fill(AppColors.primary(appearance))
                             .frame(width: 8, height: 8)
                             .accessibilityHidden(true)
                         Text(ingredient.displayText)
                             .font(.callout)
-                            .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                            .foregroundColor(AppColors.textSecondary(appearance))
                     }
                     .padding(.vertical, 6)
                 }
@@ -214,7 +214,7 @@ extension CocktailDetailView {
                     Label(L(\.write_review), systemImage: "square.and.pencil")
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.primary(appearance))
                         .frame(minHeight: 44)
                         .contentShape(Rectangle())
                 }
@@ -224,7 +224,7 @@ extension CocktailDetailView {
             if latestReviews.isEmpty {
                 Text(L(\.detail_be_first_review))
                     .font(.body)
-                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.textSecondary(appearance))
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, AppTheme.Spacing.xxl)
@@ -257,6 +257,7 @@ extension CocktailDetailView {
 struct RelatedCocktailCard: View {
     let cocktail: Cocktail
     @Environment(\.isDarkMode) var isDarkMode
+    @Environment(\.appearance) var appearance
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -275,7 +276,7 @@ struct RelatedCocktailCard: View {
 
                 Text(cocktail.price.asPrice)
                     .font(.subheadline.weight(.bold))
-                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.primary(appearance))
             }
             .padding(AppTheme.Spacing.sm)
         }

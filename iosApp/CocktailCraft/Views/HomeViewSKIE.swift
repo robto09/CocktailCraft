@@ -6,7 +6,9 @@ import shared
 /// sheet live in Components/; this view owns the state wiring and the
 /// loading/empty/content branching.
 struct HomeViewSKIE: View {
-    @State private var viewModel = HomeViewModelSKIE()
+    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    @State private var model = ViewModelHolder(HomeViewModelSKIE.init)
+    private var viewModel: HomeViewModelSKIE { model.wrapper }
     @State private var searchText = ""
     @State private var showingAdvancedSearch = false
     @State private var selectedCategory: String? = nil
@@ -14,13 +16,14 @@ struct HomeViewSKIE: View {
     @State private var toastMessage = ""
     @State private var toastType: Toast.ToastType = .success
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     // Theme-derived colors (the old hardcoded hex values bypassed AppTheme,
     // so Home ignored dark mode)
-    private var primaryColor: Color { AppColors.primary(isDarkMode: isDarkMode) }
+    private var primaryColor: Color { AppColors.primary(appearance) }
     private var backgroundColor: Color { AppColors.background(isDarkMode: isDarkMode) }
     private var surfaceColor: Color { AppColors.surface(isDarkMode: isDarkMode) }
-    private var textSecondary: Color { AppColors.textSecondary(isDarkMode: isDarkMode) }
+    private var textSecondary: Color { AppColors.textSecondary(appearance) }
 
     var body: some View {
         VStack(spacing: 0) {

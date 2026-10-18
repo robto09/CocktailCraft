@@ -104,6 +104,66 @@ enum WidgetSnapshotStore {
     }
 }
 
+/// One cocktail the Random Cocktail widget can show. The thumbnail travels
+/// with it (TheCocktailDB's ~100px preview, a few KB) because the widget
+/// extension does no networking of its own.
+struct WidgetRandomCocktail: Codable, Identifiable {
+    let id: String
+    let name: String
+    let category: String?
+    let thumbnail: Data?
+}
+
+/// The pool the Random Cocktail widget rotates through: a fresh random pick
+/// when the app was last online, then the user's recently viewed cocktails
+/// (so it stays populated offline, like Android's widget).
+struct WidgetRandomCocktailSnapshot: Codable {
+    let cocktails: [WidgetRandomCocktail]
+    let updatedAt: Date
+}
+
+/// Reads/writes the Random Cocktail pool in the shared App Group container,
+/// next to the favorites snapshot.
+enum WidgetRandomSnapshotStore {
+    private static let filename = "widget-random-snapshot.json"
+
+    private static var fileURL: URL? {
+        FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: WidgetSnapshotStore.appGroupId)?
+            .appendingPathComponent(filename)
+    }
+
+    static func write(_ snapshot: WidgetRandomCocktailSnapshot) {
+        guard let url = fileURL else { return }
+        do {
+            let data = try JSONEncoder().encode(snapshot)
+            try data.write(to: url, options: .atomic)
+        } catch {
+            #if DEBUG
+            print("WidgetRandomSnapshotStore: write failed: \(error)")
+            #endif
+        }
+    }
+
+    static func read() -> WidgetRandomCocktailSnapshot? {
+        guard let url = fileURL,
+              let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(WidgetRandomCocktailSnapshot.self, from: data)
+    }
+
+    /// The pool entry to show at `date`: the first (freshest) one when the
+    /// snapshot is new, then the next one every `rotation` (the widget's
+    /// refresh interval), so the widget keeps changing between app launches
+    /// without any network access.
+    static func cocktail(in snapshot: WidgetRandomCocktailSnapshot?,
+                         at date: Date,
+                         rotation: TimeInterval) -> WidgetRandomCocktail? {
+        guard let snapshot, !snapshot.cocktails.isEmpty, rotation > 0 else { return nil }
+        let slot = max(0, Int(date.timeIntervalSince(snapshot.updatedAt) / rotation))
+        return snapshot.cocktails[slot % snapshot.cocktails.count]
+    }
+}
+
 extension Double {
     /// Canonical price string, shared by the app and the widget extension.
     /// Prices are demo USD values, so the currency is fixed to USD while the
