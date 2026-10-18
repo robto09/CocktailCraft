@@ -45,11 +45,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<!-- Privacy Usage Descriptions -->
-	<key>NSNetworkVolumesUsageDescription</key>
-	<string>CocktailCraft needs network access to fetch cocktail recipes and images.</string>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>CocktailCraft may access local network for enhanced functionality.</string>
+	<!-- No privacy usage descriptions: the app uses no permission-gated API
+	     (no tracking, local network or network volumes). Privacy details
+	     live in PrivacyInfo.xcprivacy. -->
 	<!-- Deep links from the home-screen widgets:
 	     cocktailcraft://cocktail/{id} (see WidgetBridge.swift) -->
 	<key>CFBundleURLTypes</key>
@@ -66,8 +64,6 @@
 	<!-- iOS 18.5 Compatibility -->
 	<key>NSSupportsLiveActivities</key>
 	<false/>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>CocktailCraft respects your privacy and does not track users across apps.</string>
 	<!-- App Transport Security: platform defaults (HTTPS only, system
 	     trust). No certificate pinning, on purpose: TheCocktailDB is a public,
 	     unauthenticated API (no credentials or user data go to it), so a pin

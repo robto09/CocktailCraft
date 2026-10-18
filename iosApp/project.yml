@@ -34,6 +34,8 @@ targets:
   CocktailCraft:
     type: application
     platform: iOS
+    # Includes the app's privacy manifest (CocktailCraft/PrivacyInfo.xcprivacy),
+    # which XcodeGen copies as a resource; keep it at the bundle root.
     sources:
       - CocktailCraft
     # The shared KMP framework uses Kotlin's direct Xcode integration (no
