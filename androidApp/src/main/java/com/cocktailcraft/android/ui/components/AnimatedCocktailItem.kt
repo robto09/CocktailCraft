@@ -52,9 +52,9 @@ fun AnimatedCocktailItem(
     cocktail: Cocktail,
     onClick: () -> Unit,
     onAddToCart: (Cocktail) -> Unit,
+    modifier: Modifier = Modifier,
     isFavorite: Boolean = false,
     onToggleFavorite: (Cocktail) -> Unit = {},
-    modifier: Modifier = Modifier,
     reviewRating: CocktailRatingSummary? = null
 ) {
     Card(

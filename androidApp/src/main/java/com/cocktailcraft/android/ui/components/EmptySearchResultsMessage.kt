@@ -72,12 +72,12 @@ import com.cocktailcraft.resources.search_suggestion_none_found
 @Composable
 fun EmptySearchResultsMessage(
     searchQuery: String,
+    onClearSearch: () -> Unit,
+    modifier: Modifier = Modifier,
     selectedCategory: String? = null,
     hasActiveFilters: Boolean = false,
-    onClearSearch: () -> Unit,
     onClearCategory: (() -> Unit)? = null,
-    onClearFilters: () -> Unit = onClearSearch,
-    modifier: Modifier = Modifier
+    onClearFilters: () -> Unit = onClearSearch
 ) {
     // Animation states (Reduce Motion: start visible, no bouncy slide-in)
     val reducedMotion = LocalReducedMotion.current

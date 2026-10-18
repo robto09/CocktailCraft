@@ -1,6 +1,5 @@
 package com.cocktailcraft.android.ui.components
 
-import android.graphics.drawable.ColorDrawable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +19,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toDrawable
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
@@ -197,7 +197,7 @@ private fun rememberCocktailImageRequest(
     return remember(context, url, targetSize, useThumbnail, placeholderColor) {
         val data = if (useThumbnail) cocktailThumbnailUrl(url, targetSize) else url
         // Placeholder and error share one drawable
-        val placeholder = ColorDrawable(placeholderColor)
+        val placeholder = placeholderColor.toDrawable()
         // No explicit size or cache keys: AsyncImage then decodes at the
         // slot's laid-out size (a fixed pixel size was upscaled on dense
         // screens), and Coil's default memory key includes that size, so the
