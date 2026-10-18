@@ -101,6 +101,32 @@ class GetCocktailDetailUseCaseTest {
     }
 
     @Test
+    fun refreshForcesAFetchAndReturnsTheStoredResult() = runTest {
+        detail.byId["1"] = testCocktail("1", name = "Stale Margarita")
+        detail.remote["1"] = testCocktail("1", name = "Fresh Margarita")
+
+        val result = useCase.refresh("1")
+
+        assertEquals("Fresh Margarita", (result as Result.Success).data?.name)
+        assertEquals(listOf("1" to true), detail.refreshCalls)
+    }
+
+    @Test
+    fun refreshFailureIsSurfacedAsAnError() = runTest {
+        detail.byId["1"] = testCocktail("1")
+        detail.refreshError = "offline"
+
+        assertTrue(useCase.refresh("1") is Result.Error)
+    }
+
+    @Test
+    fun refreshIfStaleDoesNotForce() = runTest {
+        useCase.refreshIfStale("1")
+
+        assertEquals(listOf("1" to false), detail.refreshCalls)
+    }
+
+    @Test
     fun refreshReturnsLatestFromDetailRepository() = runTest {
         detail.byId["1"] = testCocktail("1", name = "Refreshed Margarita")
 

@@ -21,6 +21,8 @@ import dev.icerock.moko.resources.desc.Raw
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.format
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -36,7 +38,8 @@ private class FailingDetailRepository(
     private val message: String = "detail lookup failed"
 ) : CocktailDetailRepository {
     override suspend fun getCocktailById(id: String): Result<Cocktail?> = Result.Error(message)
-    override suspend fun refreshCocktailById(id: String): Result<Cocktail?> = Result.Error(message)
+    override fun observeCocktail(id: String): Flow<Cocktail?> = flowOf(null)
+    override suspend fun refreshCocktail(id: String, force: Boolean): Result<Unit> = Result.Error(message)
     override suspend fun getRandomCocktail(): Result<Cocktail?> = Result.Error(message)
     override fun getCocktailImageUrl(cocktail: Cocktail): String = ""
 }
@@ -289,6 +292,54 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
         vm.toggleFavorite()
         assertFalse(vm.uiState.value.isFavorite)
         assertTrue(harness.favorites.stored.isEmpty())
+    }
+
+    // --- Stale-while-revalidate through the stored cocktail's flow ---
+
+    @Test
+    fun backgroundRevalidationReachesTheScreenThroughTheFlow() = runTest {
+        val harness = Harness()
+        harness.detail.byId["1"] = testCocktail("1", name = "Cached Martini")
+        harness.detail.remote["1"] = testCocktail("1", name = "Fresh Martini")
+        val vm = harness.viewModel()
+
+        vm.loadCocktail("1")
+        advanceUntilIdle()
+
+        assertEquals("Fresh Martini", vm.uiState.value.cocktail?.name)
+        assertEquals(listOf("1" to false), harness.detail.refreshCalls, "only refetched when stale")
+    }
+
+    @Test
+    fun failedBackgroundRevalidationKeepsTheCachedCopySilently() = runTest {
+        val harness = Harness()
+        harness.detail.byId["1"] = testCocktail("1", name = "Cached Martini")
+        harness.detail.refreshError = "offline"
+        val vm = harness.viewModel()
+
+        vm.loadCocktail("1")
+        advanceUntilIdle()
+
+        assertEquals("Cached Martini", vm.uiState.value.cocktail?.name)
+        assertNull(vm.error.value)
+    }
+
+    @Test
+    fun explicitRefreshPublishesTheFetchedCopyAndReportsFailures() = runTest {
+        val harness = Harness()
+        harness.detail.byId["1"] = testCocktail("1", name = "Cached Martini")
+        val vm = harness.viewModel()
+        vm.loadCocktail("1")
+        advanceUntilIdle()
+
+        harness.detail.remote["1"] = testCocktail("1", name = "Fresh Martini")
+        vm.refreshCocktail()
+        assertEquals("Fresh Martini", vm.uiState.value.cocktail?.name)
+
+        harness.detail.refreshError = "offline"
+        vm.refreshCocktail()
+        assertNotNull(vm.error.value, "a failed explicit refresh is reported")
+        assertEquals("Fresh Martini", vm.uiState.value.cocktail?.name, "the stored copy stays on screen")
     }
 
     @Test

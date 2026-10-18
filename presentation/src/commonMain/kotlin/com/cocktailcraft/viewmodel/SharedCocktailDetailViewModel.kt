@@ -14,6 +14,7 @@ import com.cocktailcraft.resources.error_update_favorites_failed
 import com.cocktailcraft.resources.favorite_removed
 import com.cocktailcraft.viewmodel.state.DetailUiState
 import dev.icerock.moko.resources.format
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -35,13 +36,20 @@ class SharedCocktailDetailViewModel internal constructor(
     private val _uiState = MutableStateFlow(DetailUiState())
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
 
+    // Observes the shown cocktail's stored copy, so a refresh (background or
+    // explicit) reaches the screen through the database flow.
+    private var observeJob: Job? = null
+
     /**
-     * Load cocktail details by ID.
+     * Load cocktail details by ID: the stored copy right away when it has
+     * full details (fetched otherwise), then revalidated in the background
+     * when stale.
      * SKIE will convert this to Swift async function.
      */
     suspend fun loadCocktail(cocktailId: String) {
         _uiState.update { it.copy(isLoading = true) }
         clearError()
+        observeCocktail(cocktailId)
 
         try {
             val loadedCocktail = getCocktailDetailUseCase(cocktailId).getOrThrow()
@@ -53,6 +61,9 @@ class SharedCocktailDetailViewModel internal constructor(
                         _uiState.update { it.copy(isFavorite = fav) }
                     } catch (e: Exception) { /* Silent fail */ }
                 }
+                // Stale-while-revalidate: the stored copy stays on screen;
+                // a failure is silent (the explicit refresh reports errors).
+                viewModelScope.launch { getCocktailDetailUseCase.refreshIfStale(cocktailId) }
                 loadRelatedCocktails(loadedCocktail)
             }
             _uiState.update { it.copy(isLoading = false) }
@@ -139,6 +150,20 @@ class SharedCocktailDetailViewModel internal constructor(
         _uiState.update { it.copy(cocktail = cocktail) }
     }
 
+    /**
+     * (Re)start observing [cocktailId]'s stored copy. Emissions only replace
+     * the cocktail once [loadCocktail] has published that id, so a stored
+     * placeholder never flashes up before its full details are fetched.
+     */
+    private fun observeCocktail(cocktailId: String) {
+        observeJob?.cancel()
+        observeJob = viewModelScope.launch {
+            getCocktailDetailUseCase.observe(cocktailId).filterNotNull().collect { stored ->
+                if (_uiState.value.cocktail?.id == cocktailId) publishCocktail(stored)
+            }
+        }
+    }
+    
     /**
      * Refresh cocktail details.
      */

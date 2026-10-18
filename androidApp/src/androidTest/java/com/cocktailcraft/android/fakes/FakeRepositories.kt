@@ -5,6 +5,7 @@ import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderStatus
+import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
@@ -15,7 +16,6 @@ import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
-import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.util.Result
@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 
 /** Deterministic fixtures the fake repositories serve. */
@@ -78,11 +79,15 @@ class FakeCocktailRepository(
     override suspend fun getCategories(): Result<List<String>> =
         Result.Success(cocktails.mapNotNull { it.category }.distinct())
     override suspend fun getIngredients(): Result<List<String>> = Result.Success(emptyList())
+    override fun observeCategory(category: String): Flow<List<Cocktail>> =
+        flowOf(cocktails.filter { it.category == category })
+    override suspend fun refreshCategory(category: String, force: Boolean): Result<Unit> = Result.Success(Unit)
 
     // Detail
     override suspend fun getCocktailById(id: String): Result<Cocktail?> =
         Result.Success(cocktails.firstOrNull { it.id == id })
-    override suspend fun refreshCocktailById(id: String): Result<Cocktail?> = getCocktailById(id)
+    override fun observeCocktail(id: String): Flow<Cocktail?> = flowOf(cocktails.firstOrNull { it.id == id })
+    override suspend fun refreshCocktail(id: String, force: Boolean): Result<Unit> = Result.Success(Unit)
     override suspend fun getRandomCocktail(): Result<Cocktail?> = Result.Success(cocktails.firstOrNull())
     override fun getCocktailImageUrl(cocktail: Cocktail): String = cocktail.imageUrl ?: ""
 

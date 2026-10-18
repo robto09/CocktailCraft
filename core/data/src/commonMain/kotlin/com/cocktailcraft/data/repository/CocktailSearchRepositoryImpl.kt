@@ -13,8 +13,8 @@ import com.cocktailcraft.util.runCatchingResult
 
 /**
  * Search and filter operations over TheCocktailDB, extracted from the former
- * CocktailRepositoryImpl monolith. Category browsing shares the cached
- * fetch path in [CocktailCategoryFetcher] with the catalog repository.
+ * CocktailRepositoryImpl monolith. The category filter reads the same
+ * database-backed pages as category browsing, via [CocktailCategoryFetcher].
  */
 internal class CocktailSearchRepositoryImpl(
     private val remote: CocktailRemoteDataSource,
@@ -43,9 +43,18 @@ internal class CocktailSearchRepositoryImpl(
         }
     }
 
+    /**
+     * One-shot read of a category page: refreshed first when stale, then
+     * read from the database. A failed refresh falls back to the stored page;
+     * only a failure with nothing stored is a Result.Error, so the UI can
+     * show an error/retry instead of an empty list. An empty success means
+     * the category is empty.
+     */
     override suspend fun filterByCategory(category: String): Result<List<Cocktail>> {
         return runCatchingResult("Failed to filter by category") {
-            Result.Success(categoryFetcher.fetchCocktailsByCategory(category))
+            val refreshed = categoryFetcher.refresh(category)
+            val stored = categoryFetcher.snapshot(category)
+            if (stored.isEmpty() && refreshed is Result.Error) refreshed else Result.Success(stored)
         }
     }
 

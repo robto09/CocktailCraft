@@ -73,24 +73,27 @@ val dataModule = module {
     // App database over the platform's SqlDriver (cache + user data)
     single { CocktailCraftDatabase(get<SqlDriver>()) }
 
-    // Caches
+    // The local cocktail catalog (cached_cocktail + category_page): the
+    // single source of truth the catalog repositories observe and refresh into
     single { CocktailCache(/* database (lazy), settings, json, appConfig, ioDispatcher, offlineModePolicy */) }
 
     // Database access for cart/orders/favorites/reviews; the first open
     // imports (once) what older versions kept as JSON in Settings
     single { LocalDatabase(/* database (lazy), LegacySettingsImport(settings, json), ioDispatcher */) }
-    single { CocktailCacheManager() }
 
-    // Remote data source: API access, DTO mapping, rate-limit bookkeeping
-    single { CocktailRemoteDataSource(api = get(), cacheManager = get()) }
+    // The API's min-interval throttle, shared by every remote call site
+    single { ApiRateLimiter() }
+
+    // Remote data source: API access, DTO mapping, rate limiting
+    single { CocktailRemoteDataSource(api = get(), rateLimiter = get()) }
 
     // Focused repositories, each owning one concern
     single<CocktailOfflineRepository> { CocktailOfflineRepositoryImpl(/* ... */) }
     single<CocktailFavoritesRepository> { CocktailFavoritesRepositoryImpl(/* ... */) }
 
-    // Category fetch-and-cache path shared by the search and catalog repositories
-    single { CocktailCategoryFetcher(remote = get(), cocktailCache = get(),
-        cacheManager = get(), offlineRepository = get()) }
+    // Database-backed category pages (observe + refresh) shared by the
+    // search and catalog repositories
+    single { CocktailCategoryFetcher(remote = get(), cocktailCache = get(), offlineRepository = get()) }
 
     single<CocktailSearchRepository> { CocktailSearchRepositoryImpl(/* ... */) }
     single<CocktailDetailRepository> { CocktailDetailRepositoryImpl(/* ... */) }

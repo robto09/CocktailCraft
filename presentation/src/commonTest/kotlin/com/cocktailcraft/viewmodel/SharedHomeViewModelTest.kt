@@ -1,6 +1,7 @@
 package com.cocktailcraft.viewmodel
 
 import app.cash.turbine.test
+import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
 import com.cocktailcraft.domain.usecase.LoadCocktailsByCategoryUseCase
@@ -9,10 +10,10 @@ import com.cocktailcraft.domain.usecase.SearchCocktailsUseCase
 import com.cocktailcraft.domain.usecase.SortCocktailsUseCase
 import com.cocktailcraft.testutil.FakeCatalogRepository
 import com.cocktailcraft.testutil.FakeDetailRepository
-import com.cocktailcraft.testutil.FlakyFavoritesRepository
 import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.FakeOfflineRepository
 import com.cocktailcraft.testutil.FakeSearchRepository
+import com.cocktailcraft.testutil.FlakyFavoritesRepository
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,9 +39,25 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         val offline = FakeOfflineRepository()
         val network = FakeNetworkMonitor()
 
+        /** What the network serves: search results and category pages alike. */
+        var all: List<Cocktail>
+            get() = search.all
+            set(value) {
+                search.all = value
+                catalog.all = value
+            }
+
+        /** Fails (or, with null, un-fails) every search and category refresh. */
+        var errorMessage: String?
+            get() = search.errorMessage
+            set(value) {
+                search.errorMessage = value
+                catalog.errorMessage = value
+            }
+
         fun viewModel() = SharedHomeViewModel(
             searchCocktailsUseCase = SearchCocktailsUseCase(search),
-            loadCocktailsByCategoryUseCase = LoadCocktailsByCategoryUseCase(search),
+            loadCocktailsByCategoryUseCase = LoadCocktailsByCategoryUseCase(catalog),
             sortCocktailsUseCase = SortCocktailsUseCase(),
             manageFavoritesUseCase = ManageFavoritesUseCase(favorites, detail),
             offlineRepository = offline,
@@ -55,7 +72,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     @Test
     fun typingBurstFiresOneDebouncedSearchForTheLastQuery() = runTest {
         val harness = Harness()
-        harness.search.all = listOf(
+        harness.all = listOf(
             testCocktail("1", name = "Margarita"),
             testCocktail("2", name = "Mojito")
         )
@@ -80,7 +97,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     @Test
     fun clearSearchCancelsPendingDebouncedSearch() = runTest {
         val harness = Harness()
-        harness.search.all = listOf(testCocktail("1", name = "Margarita", category = "Cocktail"))
+        harness.all = listOf(testCocktail("1", name = "Margarita", category = "Cocktail"))
         val vm = harness.viewModel()
         advanceUntilIdle()
         harness.search.advancedSearchCalls.clear()
@@ -97,7 +114,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     @Test
     fun emptyQueryAfterTypingFallsBackToCategoryListing() = runTest {
         val harness = Harness()
-        harness.search.all = listOf(
+        harness.all = listOf(
             testCocktail("1", name = "Margarita", category = "Cocktail"),
             testCocktail("2", name = "Beer", category = "Beer")
         )
@@ -122,7 +139,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         // SH-12 (Turbine): the init-block network observer must auto-retry a
         // failed load once connectivity is restored, emitting the recovered list.
         val harness = Harness()
-        harness.search.errorMessage = "api down"
+        harness.errorMessage = "api down"
         val vm = harness.viewModel()
         advanceUntilIdle()
         assertTrue(vm.uiState.value.cocktails.isEmpty())
@@ -130,8 +147,8 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
 
         // Backend recovers while the device is briefly offline; the restore
         // handler must auto-retry and refill the list.
-        harness.search.errorMessage = null
-        harness.search.all = listOf(testCocktail("1", category = "Cocktail"))
+        harness.errorMessage = null
+        harness.all = listOf(testCocktail("1", category = "Cocktail"))
         harness.network.setOnline(false)
         advanceUntilIdle()
 
@@ -152,7 +169,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         // without any manual loadFavorites() re-pull.
         val harness = Harness()
         val cocktail = testCocktail("7")
-        harness.search.all = listOf(cocktail)
+        harness.all = listOf(cocktail)
         val vm = harness.viewModel()
         advanceUntilIdle()
         assertFalse(vm.isFavorite("7"))
@@ -178,7 +195,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     @Test
     fun initLoadsDefaultCategoryAndFavorites() = runTest {
         val harness = Harness()
-        harness.search.all = listOf(
+        harness.all = listOf(
             testCocktail("1", category = "Cocktail"),
             testCocktail("2", category = "Cocktail"),
             testCocktail("3", category = "Shot")
@@ -199,9 +216,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         val harness = Harness()
         val shots = (1..12).map { testCocktail("shot$it", category = "Shot") }
         val defaults = (1..12).map { testCocktail("cocktail$it", category = "Cocktail") }
-        harness.search.all = shots + defaults
-        // Mirrors the real repository, whose newest-sorted list only holds the default category.
-        harness.catalog.all = defaults
+        harness.all = shots + defaults
         val vm = harness.viewModel()
         advanceUntilIdle()
 
@@ -221,18 +236,36 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     }
 
     @Test
-    fun loadMoreFailureSurfacesRetryableErrorInsteadOfEndOfList() = runTest {
-        // A transient failure while fetching page 2 must surface an error with
-        // a Retry action — not silently flip hasMoreData off, which is
-        // indistinguishable from genuinely reaching the end of the list.
+    fun loadMorePagesTheStoredPageWhenTheNetworkFails() = runTest {
+        // Page 2 comes from the stored category page; a failing refresh
+        // doesn't stop it.
         val harness = Harness()
-        harness.search.all = (1..12).map { testCocktail("c$it", category = "Cocktail") }
+        harness.all = (1..12).map { testCocktail("c$it", category = "Cocktail") }
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        harness.errorMessage = "api down"
+        vm.loadMoreCocktails()
+
+        assertEquals(12, vm.uiState.value.cocktails.size)
+        assertFalse(vm.uiState.value.hasMoreData)
+        assertNull(vm.error.value)
+    }
+
+    @Test
+    fun loadMoreFailureSurfacesRetryableErrorInsteadOfEndOfList() = runTest {
+        // A failure while fetching page 2 with nothing stored must surface an
+        // error with a Retry action — not silently flip hasMoreData off,
+        // which is indistinguishable from genuinely reaching the end of the list.
+        val harness = Harness()
+        harness.all = (1..12).map { testCocktail("c$it", category = "Cocktail") }
         val vm = harness.viewModel()
         advanceUntilIdle()
         assertEquals(10, vm.uiState.value.cocktails.size)
         assertTrue(vm.uiState.value.hasMoreData)
 
-        harness.search.errorMessage = "api down"
+        harness.catalog.store("Cocktail", emptyList()) // e.g. evicted from the cache
+        harness.errorMessage = "api down"
         vm.loadMoreCocktails()
 
         assertNotNull(vm.error.value, "a failed page fetch must surface an error")
@@ -242,7 +275,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         assertEquals(10, vm.uiState.value.cocktails.size, "the loaded list must be untouched")
 
         // Backend recovers: the retry path completes the pagination.
-        harness.search.errorMessage = null
+        harness.errorMessage = null
         vm.loadMoreCocktails()
 
         assertEquals(12, vm.uiState.value.cocktails.size)
@@ -256,7 +289,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         // clear it (results are complete, not paginated) and loadMoreCocktails
         // must never splice category pages into search results.
         val harness = Harness()
-        harness.search.all =
+        harness.all =
             (1..12).map { testCocktail("c$it", name = "Cocktail $it", category = "Cocktail") } +
             testCocktail("m1", name = "Margarita", category = "Ordinary Drink")
         val vm = harness.viewModel()
@@ -280,7 +313,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     @Test
     fun searchFiltersByNameAndUpdatesQueryState() = runTest {
         val harness = Harness()
-        harness.search.all = listOf(
+        harness.all = listOf(
             testCocktail("1", name = "Margarita"),
             testCocktail("2", name = "Mojito")
         )
@@ -296,7 +329,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     @Test
     fun blankSearchReloadsSelectedCategory() = runTest {
         val harness = Harness()
-        harness.search.all = listOf(
+        harness.all = listOf(
             testCocktail("1", name = "Margarita"),
             testCocktail("2", name = "Mojito")
         )
@@ -312,7 +345,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     @Test
     fun networkLossKeepsLoadedListAndPausesPagination() = runTest {
         val harness = Harness()
-        harness.search.all = (1..12).map { testCocktail("c$it", category = "Cocktail") }
+        harness.all = (1..12).map { testCocktail("c$it", category = "Cocktail") }
         val vm = harness.viewModel()
         advanceUntilIdle()
         assertTrue(vm.uiState.value.isNetworkAvailable)
@@ -336,7 +369,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     @Test
     fun networkRestoreAfterOfflineLoadRefetchesFreshData() = runTest {
         val harness = Harness()
-        harness.search.all = listOf(testCocktail("cached", category = "Cocktail"))
+        harness.all = listOf(testCocktail("cached", category = "Cocktail"))
         harness.network.setOnline(false)
         val vm = harness.viewModel()
         advanceUntilIdle()
@@ -346,7 +379,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         assertEquals(listOf("cached"), vm.uiState.value.cocktails.map { it.id })
 
         // Fresh content is available once connectivity returns.
-        harness.search.all = listOf(
+        harness.all = listOf(
             testCocktail("fresh1", category = "Cocktail"),
             testCocktail("fresh2", category = "Cocktail")
         )
@@ -362,14 +395,14 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     @Test
     fun networkRestoreDuringInFlightOfflineLoadStillRefreshes() = runTest {
         val harness = Harness()
-        harness.search.all = listOf(testCocktail("cached", category = "Cocktail"))
-        harness.search.filterDelayMs = 1_000
+        harness.all = listOf(testCocktail("cached", category = "Cocktail"))
+        harness.catalog.refreshDelayMs = 1_000
         harness.network.setOnline(false)
         val vm = harness.viewModel()
         advanceTimeBy(500) // initial offline load is suspended mid-flight
 
         // Connectivity returns before the offline load publishes its snapshot.
-        harness.search.all = listOf(
+        harness.all = listOf(
             testCocktail("fresh1", category = "Cocktail"),
             testCocktail("fresh2", category = "Cocktail")
         )
@@ -385,7 +418,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     @Test
     fun sortByPriceReordersCurrentList() = runTest {
         val harness = Harness()
-        harness.search.all = listOf(
+        harness.all = listOf(
             testCocktail("1", price = 30.0),
             testCocktail("2", price = 10.0),
             testCocktail("3", price = 20.0)
@@ -404,7 +437,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     fun toggleFavoriteRefreshesFavoritesState() = runTest {
         val harness = Harness()
         val cocktail = testCocktail("1")
-        harness.search.all = listOf(cocktail)
+        harness.all = listOf(cocktail)
         val vm = harness.viewModel()
         advanceUntilIdle()
 
@@ -420,7 +453,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     @Test
     fun applyFiltersPopulatesSearchFiltersAndCocktails() = runTest {
         val harness = Harness()
-        harness.search.all = listOf(
+        harness.all = listOf(
             testCocktail("1", name = "Margarita", category = "Ordinary Drink"),
             testCocktail("2", name = "Mojito", category = "Cocktail"),
             testCocktail("3", name = "Daiquiri", category = "Cocktail")
@@ -437,7 +470,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     @Test
     fun clearSearchFiltersResetsFiltersAndReloadsDefault() = runTest {
         val harness = Harness()
-        harness.search.all = listOf(
+        harness.all = listOf(
             testCocktail("1", category = "Cocktail"),
             testCocktail("2", category = "Cocktail"),
             testCocktail("3", category = "Shot")
@@ -458,7 +491,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     @Test
     fun searchComposesWithActiveFilters() = runTest {
         val harness = Harness()
-        harness.search.all = listOf(
+        harness.all = listOf(
             testCocktail("1", name = "Mojito", category = "Cocktail"),
             testCocktail("2", name = "Mojito Especial", category = "Ordinary Drink"),
             testCocktail("3", name = "Daiquiri", category = "Cocktail")
@@ -478,7 +511,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     fun toggleFavoriteFailureIsReportedNotDropped() = runTest {
         val harness = Harness()
         val cocktail = testCocktail("1")
-        harness.search.all = listOf(cocktail)
+        harness.all = listOf(cocktail)
         val vm = harness.viewModel()
         advanceUntilIdle()
 
@@ -494,18 +527,108 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     @Test
     fun filterFailureThenSuccessfulRetryClearsTheError() = runTest {
         val harness = Harness()
-        harness.search.all = listOf(testCocktail("1", name = "Margarita"))
+        harness.all = listOf(testCocktail("1", name = "Margarita"))
         val vm = harness.viewModel()
         advanceUntilIdle()
 
-        harness.search.errorMessage = "api down"
+        harness.errorMessage = "api down"
         vm.applyFilters(SearchFilters(query = "marg"))
         assertNotNull(vm.error.value)
 
-        harness.search.errorMessage = null
+        harness.errorMessage = null
         vm.applyFilters(SearchFilters(query = "marg"))
 
         assertNull(vm.error.value, "the next attempt must clear the earlier failure")
+        assertEquals(listOf("1"), vm.uiState.value.cocktails.map { it.id })
+    }
+
+    // --- Database-backed category page: stale-while-revalidate ---
+
+    @Test
+    fun storedPageShowsWhileTheRefreshIsInFlight() = runTest {
+        val harness = Harness()
+        harness.catalog.store("Cocktail", listOf(testCocktail("cached")))
+        harness.all = listOf(testCocktail("fresh"))
+        harness.catalog.refreshDelayMs = 1_000
+        val vm = harness.viewModel()
+        advanceTimeBy(500)
+
+        assertEquals(listOf("cached"), vm.uiState.value.cocktails.map { it.id }, "cached rows show right away")
+        assertTrue(vm.uiState.value.isLoading, "the refresh is still running")
+
+        advanceUntilIdle()
+
+        assertEquals(listOf("fresh"), vm.uiState.value.cocktails.map { it.id }, "the refresh lands through the flow")
+        assertFalse(vm.uiState.value.isLoading)
+    }
+
+    @Test
+    fun failedRefreshKeepsTheStoredPageWithoutAnError() = runTest {
+        val harness = Harness()
+        harness.catalog.store("Cocktail", listOf(testCocktail("cached")))
+        harness.errorMessage = "api down"
+
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        assertEquals(listOf("cached"), vm.uiState.value.cocktails.map { it.id })
+        assertNull(vm.error.value, "with content on screen a failed refresh is not an error state")
+        assertFalse(vm.uiState.value.isLoading)
+    }
+
+    @Test
+    fun storedChangesReachTheListAndKeepTheSortOrder() = runTest {
+        val harness = Harness()
+        harness.all = listOf(
+            testCocktail("1", price = 30.0),
+            testCocktail("2", price = 10.0)
+        )
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+        vm.sortByPrice(ascending = true)
+        assertEquals(listOf("2", "1"), vm.uiState.value.cocktails.map { it.id })
+
+        // e.g. a detail lookup upgrading id 1 in the database
+        harness.catalog.store(
+            "Cocktail",
+            listOf(
+                testCocktail("1", name = "Upgraded", price = 30.0),
+                testCocktail("2", price = 10.0)
+            )
+        )
+        advanceUntilIdle()
+
+        assertEquals(listOf("2", "1"), vm.uiState.value.cocktails.map { it.id }, "same cocktails: keep the sort")
+        assertEquals("Upgraded", vm.uiState.value.cocktails.last().name)
+    }
+
+    @Test
+    fun retryForcesARefreshWhileLoadsOnlyRefreshWhenStale() = runTest {
+        val harness = Harness()
+        harness.all = listOf(testCocktail("1"))
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        vm.retry()
+        advanceUntilIdle()
+
+        assertEquals(listOf("Cocktail" to false, "Cocktail" to true), harness.catalog.refreshCalls)
+    }
+
+    @Test
+    fun storedPageChangesDoNotOverwriteSearchResults() = runTest {
+        val harness = Harness()
+        harness.all = listOf(
+            testCocktail("1", name = "Margarita"),
+            testCocktail("2", name = "Mojito")
+        )
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        vm.searchCocktails("marg")
+        harness.catalog.store("Cocktail", listOf(testCocktail("3")))
+        advanceUntilIdle()
+
         assertEquals(listOf("1"), vm.uiState.value.cocktails.map { it.id })
     }
 

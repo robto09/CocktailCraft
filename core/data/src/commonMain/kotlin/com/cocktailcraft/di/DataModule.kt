@@ -2,10 +2,10 @@ package com.cocktailcraft.di
 
 import app.cash.sqldelight.db.SqlDriver
 import com.cocktailcraft.data.cache.CocktailCache
-import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.local.LegacySettingsImport
 import com.cocktailcraft.data.local.LocalDatabase
+import com.cocktailcraft.data.remote.ApiRateLimiter
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.data.repository.AuthRepositoryImpl
 import com.cocktailcraft.data.repository.CartRepositoryImpl
@@ -90,11 +90,11 @@ val dataModule = module {
         )
     }
 
-    // In-memory cache manager (thread-safe singleton)
-    single { CocktailCacheManager() }
+    // The API's min-interval throttle, shared by every remote call site
+    single { ApiRateLimiter() }
 
-    // Remote data source: API access, DTO mapping, rate-limit bookkeeping
-    single { CocktailRemoteDataSource(api = get(), cacheManager = get()) }
+    // Remote data source: API access, DTO mapping, rate limiting
+    single { CocktailRemoteDataSource(api = get(), rateLimiter = get()) }
 
     // Focused repositories, each owning one concern
     single<CocktailOfflineRepository> {
@@ -115,12 +115,13 @@ val dataModule = module {
         )
     }
 
-    // Category fetch-and-cache path behind the search repository's category filter
+    // Database-backed category pages, shared by category browsing (catalog
+    // repository) and the search repository's category filter. A single, so
+    // both see one page index and one set of in-flight requests.
     single {
         CocktailCategoryFetcher(
             remote = get(),
             cocktailCache = get(),
-            cacheManager = get(),
             offlineRepository = get()
         )
     }
@@ -144,7 +145,7 @@ val dataModule = module {
     }
 
     single<CocktailCatalogRepository> {
-        CocktailCatalogRepositoryImpl(remote = get())
+        CocktailCatalogRepositoryImpl(remote = get(), categoryFetcher = get())
     }
 
     single<CartRepository> {
