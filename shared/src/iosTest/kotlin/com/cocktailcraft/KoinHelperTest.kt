@@ -57,6 +57,7 @@ class KoinHelperTest : MainDispatcherTest() {
 
         // Services / platform bridges
         assertNotNull(helper.getNetworkMonitor())
+        assertNotNull(helper.observeFavoriteCocktails())
 
         // Shared ViewModels — screen-scoped
         assertNotNull(helper.getSharedCocktailDetailViewModel())
