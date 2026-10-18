@@ -62,5 +62,4 @@ internal class FakeCocktailApi(var drinks: List<CocktailDto> = emptyList()) : Co
 
     override suspend fun getCategories(): List<CategoryDto> = categories
     override suspend fun getIngredients(): List<IngredientDto> = ingredients
-    override suspend fun pingApi(): Boolean = true
 }

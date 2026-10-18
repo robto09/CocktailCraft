@@ -68,21 +68,11 @@ internal class CocktailCategoryFetcher(
             }
         }
 
-        // Respect the minimum interval between API calls (retry/backoff is
-        // Ktor's job — SH-7)
-        remote.awaitRateLimitWindow()
-
-        // Check API connectivity
-        if (!remote.ping()) {
-            Logger.w { "API unreachable" }
-            if (categoryCachedCocktails.isNotEmpty()) {
-                return categoryCachedCocktails
-            }
-            throw Exception("API is not reachable")
-        }
-
-        remote.noteApiCall()
-
+        // No connectivity ping first: it doubled the requests and, with
+        // HttpRequestRetry, added seconds on a dead network before reaching
+        // the fallback. The real request failing is what triggers the cache
+        // fallback below. filterByCategoryRaw takes the rate-limit slot
+        // (retry/backoff is Ktor's job — SH-7).
         try {
             val basicDtos = remote.filterByCategoryRaw(category)
 

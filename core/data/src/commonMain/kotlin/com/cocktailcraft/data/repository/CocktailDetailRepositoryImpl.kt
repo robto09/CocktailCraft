@@ -46,8 +46,7 @@ internal class CocktailDetailRepositoryImpl(
             // If online, fetch full details from API; on API error, return
             // the cached version (cancellation still propagates)
             runCatchingNonCancellation(onFailure = { Result.Success(cachedCocktail) }) {
-                remote.awaitRateLimitWindow() // shared min-interval throttle, not an ad hoc sleep (SH-7)
-                remote.noteApiCall()
+                // getById takes the shared min-interval throttle slot (SH-7)
                 val cocktail = remote.getById(id)
                 if (cocktail != null) {
                     cocktailCache.cacheCocktail(cocktail)
@@ -65,8 +64,6 @@ internal class CocktailDetailRepositoryImpl(
             if (isOffline()) {
                 Result.Success(cocktailCache.getCachedCocktail(id))
             } else {
-                remote.awaitRateLimitWindow() // shared min-interval throttle, not an ad hoc sleep (SH-7)
-                remote.noteApiCall()
                 val cocktail = remote.getById(id)
                 if (cocktail != null) {
                     cocktailCache.cacheCocktail(cocktail)

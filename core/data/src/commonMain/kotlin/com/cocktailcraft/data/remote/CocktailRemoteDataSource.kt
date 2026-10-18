@@ -9,68 +9,68 @@ import kotlin.math.absoluteValue
 import kotlin.time.Clock
 
 /**
- * Remote access to TheCocktailDB: DTO→domain mapping plus API rate-limit
- * bookkeeping (state shared via [CocktailCacheManager]). Extracted from the
+ * Remote access to TheCocktailDB: DTO→domain mapping plus the API rate
+ * limiter (state shared via [CocktailCacheManager]). Extracted from the
  * former CocktailRepositoryImpl god class.
+ *
+ * The search, filter and lookup endpoints — the ones a user can fire in
+ * bursts by typing, filtering or opening cocktails — each take a rate-limit
+ * slot ([acquireRateLimitSlot]) before calling the API, so no caller can
+ * forget to. The one-off list.php/random.php calls are not throttled.
  */
 internal class CocktailRemoteDataSource(
     private val api: CocktailApi,
-    private val cacheManager: CocktailCacheManager
+    private val cacheManager: CocktailCacheManager,
+    // Injectable for tests: coroutine virtual time does not move Clock.System.
+    private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() }
 ) {
 
-    suspend fun searchByName(name: String): List<Cocktail> =
-        api.searchCocktailsByName(name).map(::mapToDomain)
+    suspend fun searchByName(name: String): List<Cocktail> {
+        acquireRateLimitSlot()
+        return api.searchCocktailsByName(name).map(::mapToDomain)
+    }
 
-    suspend fun getById(id: String): Cocktail? = api.getCocktailById(id)?.let(::mapToDomain)
+    suspend fun getById(id: String): Cocktail? {
+        acquireRateLimitSlot()
+        return api.getCocktailById(id)?.let(::mapToDomain)
+    }
 
     suspend fun getRandom(): Cocktail? = api.getRandomCocktail()?.let(::mapToDomain)
 
-    suspend fun filterByIngredient(ingredient: String): List<Cocktail> =
-        api.filterByIngredient(ingredient).map(::mapToDomain)
+    suspend fun filterByIngredient(ingredient: String): List<Cocktail> {
+        acquireRateLimitSlot()
+        return api.filterByIngredient(ingredient).map(::mapToDomain)
+    }
 
-    suspend fun filterByAlcoholic(alcoholic: Boolean): List<Cocktail> =
-        api.filterByAlcoholic(alcoholic).map(::mapToDomain)
+    suspend fun filterByAlcoholic(alcoholic: Boolean): List<Cocktail> {
+        acquireRateLimitSlot()
+        return api.filterByAlcoholic(alcoholic).map(::mapToDomain)
+    }
 
     /** Raw DTOs so the catalog layer can decide between mapping and cache enrichment. */
-    suspend fun filterByCategoryRaw(category: String): List<CocktailDto> = api.filterByCategory(category)
+    suspend fun filterByCategoryRaw(category: String): List<CocktailDto> {
+        acquireRateLimitSlot()
+        return api.filterByCategory(category)
+    }
 
     suspend fun getCategories(): List<String> = api.getCategories().map { it.name }
     suspend fun getIngredients(): List<String> = api.getIngredients().map { it.name }
 
-    // --- Rate limiting / connectivity ---
+    // --- Rate limiting ---
     // Only the proactive min-interval throttle lives here (request shaping);
     // retry and 429 backoff are owned solely by Ktor's HttpRequestRetry (SH-7).
 
-    /** Wait out the minimum interval between API calls. */
-    suspend fun awaitRateLimitWindow() {
-        val timeSinceLastCall = Clock.System.now().toEpochMilliseconds() - cacheManager.getLastApiCallTime()
-        if (timeSinceLastCall < CocktailCacheManager.MIN_API_CALL_INTERVAL_MS) {
-            val waitTime = CocktailCacheManager.MIN_API_CALL_INTERVAL_MS - timeSinceLastCall
-            Logger.d { "Rate limiting: waiting ${waitTime}ms before API call" }
-            delay(waitTime)
-        }
-    }
-
-    suspend fun noteApiCall() {
-        cacheManager.setLastApiCallTime(Clock.System.now().toEpochMilliseconds())
-    }
-
     /**
-     * Ping with rate-limit awareness. Callers are expected to have handled
-     * offline mode already.
+     * Takes the next API call slot and waits until it arrives. Reserving is
+     * atomic ([CocktailCacheManager.reserveApiCallSlot]), so concurrent
+     * callers are spaced [CocktailCacheManager.MIN_API_CALL_INTERVAL_MS]
+     * apart instead of all passing one shared "time since last call" check.
      */
-    suspend fun ping(): Boolean {
-        return try {
-            val sinceLastCall = Clock.System.now().toEpochMilliseconds() - cacheManager.getLastApiCallTime()
-            if (sinceLastCall < CocktailCacheManager.MIN_API_CALL_INTERVAL_MS) {
-                Logger.d { "Skipping ping to avoid rate limit (last call ${sinceLastCall}ms ago)" }
-                return true // Assume API is reachable
-            }
-
-            noteApiCall()
-            api.pingApi()
-        } catch (e: Exception) {
-            false
+    private suspend fun acquireRateLimitSlot() {
+        val waitMs = cacheManager.reserveApiCallSlot(nowMs())
+        if (waitMs > 0) {
+            Logger.d { "Rate limiting: waiting ${waitMs}ms before API call" }
+            delay(waitMs)
         }
     }
 

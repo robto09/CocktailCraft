@@ -15,9 +15,6 @@ internal interface CocktailApi {
     suspend fun filterByCategory(category: String): List<CocktailDto>
     suspend fun getCategories(): List<CategoryDto>
     suspend fun getIngredients(): List<IngredientDto>
-
-    // New method to check API connectivity
-    suspend fun pingApi(): Boolean
 }
 
 internal class CocktailApiImpl(
@@ -99,16 +96,4 @@ internal class CocktailApiImpl(
         
         return response.ingredients ?: emptyList()
     }
-    
-    // Implemented the ping method
-    override suspend fun pingApi(): Boolean {
-        return try {
-            // Use a lightweight endpoint for checking connectivity
-            val response = client.get("$baseUrl/random.php")
-            response.status.isSuccess()
-        } catch (e: Exception) {
-            false
-        }
-    }
-    
-} 
+}
