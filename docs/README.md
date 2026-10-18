@@ -25,10 +25,5 @@ This directory contains the technical documentation for CocktailCraft, a Kotlin 
 
 Mermaid diagrams under [`images/mermaid/`](images/mermaid/):
 
-- **[High-Level Architecture](images/mermaid/high_level_architecture.md)**: Application layers and their relationships
-- **[Component Diagram](images/mermaid/component_diagram.md)**: Main components and their interactions
-- **[Use Case Diagram](images/mermaid/use_case_diagram.md)**: User interactions with the system
-- **[Class Diagram](images/mermaid/class_diagram.md)**: Domain models and their relationships
+- **[Catalog Flow](images/mermaid/catalog_flow.md)**: How a category page flows from TheCocktailDB through the database to the Home screen
 - **[Sequence Diagram — Place Order](images/mermaid/sequence_diagram_place_order.md)**: Order placement flow across layers
-- **[Data Flow Diagram](images/mermaid/data_flow_diagram.md)**: How data moves through the system
-- **[Package Diagram](images/mermaid/package_diagram.md)**: Package structure of the codebase

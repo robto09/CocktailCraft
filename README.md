@@ -221,7 +221,7 @@ only use what its module depends on.
 - **Dependency Injection**: Modular Koin setup for better testability and separation of concerns
 - **Dark Mode**: System-integrated and user-configurable theme preferences
 
-For more detailed architecture diagrams, please see the [Documentation Index](docs/README.md), which links to the mermaid diagrams (high-level architecture, component, use case, class, sequence, data flow, and package diagrams).
+For diagrams of the catalog flow and order placement, see the [Documentation Index](docs/README.md).
 
 ### Animations and Transitions
 The app features a focused set of animations to enhance the user experience:
