@@ -10,7 +10,7 @@ No CocoaPods: the shared Kotlin framework uses Kotlin's direct Xcode
 integration and the third-party Swift libraries come from Swift Package
 Manager, so there is no Podfile, no `pod install` and no `.xcworkspace`.
 
-> **Source of truth (IO-8):** `project.yml` (XcodeGen) defines the Xcode
+> **Source of truth:** `project.yml` (XcodeGen) defines the Xcode
 > project — targets, entitlements, per-target ATS pinning, Swift packages,
 > the Kotlin build phase, and the test targets. The committed
 > `CocktailCraft.xcodeproj` (including its SPM `Package.resolved`) is
@@ -25,12 +25,11 @@ Manager, so there is no Podfile, no `pod install` and no `.xcworkspace`.
 cd iosApp
 xcodegen generate
 ```
-(The manual project-creation steps below are legacy documentation of what the
-generated project contains — you never need to perform them by hand.)
 
 ### 2. Open the Project
 Open `CocktailCraft.xcodeproj`. Xcode resolves the Swift packages (Kingfisher,
-DebugSwift) on first open, pinned by the committed `Package.resolved`.
+DebugSwift, and swift-snapshot-testing for the unit tests) on first open,
+pinned by the committed `Package.resolved`.
 
 There is no separate step to build the shared framework: the app target's
 **Compile Kotlin Framework** build phase runs
@@ -47,30 +46,14 @@ app — a static framework cannot carry resources. The first build downloads
 the Kotlin/Native toolchain and takes a few minutes; later builds are
 incremental.
 
-### 3. (Legacy reference) Create Xcode Project
-1. Open Xcode
-2. Create new iOS App:
-   - Product Name: `CocktailCraft`
-   - Organization Identifier: `com.cocktailcraft`
-   - Interface: SwiftUI
-   - Language: Swift
-   - Use Core Data: No
-   - Include Tests: Yes
-
-### 4. (Legacy reference) Add Project Files
-1. Delete the default `ContentView.swift`
-2. Drag all files from `iosApp/CocktailCraft/` into the Xcode project
-3. Ensure "Copy items if needed" is checked
-4. Select "Create groups" for added folders
-
-### 5. Debug-only DebugSwift
+### 3. Debug-only DebugSwift
 DebugSwift is a Swift package dependency of the app, but it never ships:
 Release excludes `DebugSwift.o` from the link, the **Strip DebugSwift from
 Release** build phase removes its resource bundle (and fails the build if any
 DebugSwift symbol is linked), and all app-side usage is wrapped in
 `#if DEBUG`. See the [DebugSwift Guide](../docs/DebugSwift.md).
 
-### 6. Migrating an Existing CocoaPods Checkout
+### 4. Migrating an Existing CocoaPods Checkout
 Delete the leftover CocoaPods artifacts (both are gitignored), regenerate, and
 open the `.xcodeproj` from now on:
 ```bash
@@ -79,12 +62,12 @@ rm -rf Pods CocktailCraft.xcworkspace
 xcodegen generate
 ```
 
-### 7. App Transport Security (already configured)
+### 5. App Transport Security (already configured)
 No ATS changes are needed — and do **not** add `NSAllowsArbitraryLoads`. The app enforces TLS certificate pinning for TheCocktailDB via `NSAppTransportSecurity` → `NSPinnedDomains` in `CocktailCraft/Info.plist` (pinning the Cloudflare CA pool for `thecocktaildb.com`). The widget extension does no networking (it reads App Group snapshots the app writes), so it has no ATS config of its own. If pinned requests start failing after a Cloudflare CA rotation, refresh the pin set per the comment in `Info.plist`.
 
 > **Pin review due 2027-07-08.** `NSPinnedDomains` has no expiry setting, so unlike Android's pin-set (`expiration="2027-07-08"` in `network_security_config.xml`, after which Android falls back to normal CA validation) the iOS pins stay enforced until replaced. Re-verify the Cloudflare CA pool and ship a refreshed set — app `Info.plist` and the Android config together — before that date.
 
-### 8. Run the App
+### 6. Run the App
 1. Select a simulator or device
 2. Press Cmd+R to build and run
 
