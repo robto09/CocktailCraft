@@ -6,8 +6,10 @@ import com.cocktailcraft.domain.util.Result
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlin.native.HiddenFromObjC
 
 /** In-memory [ReviewRepository]. */
+@HiddenFromObjC // implements a Kotlin-only repository port
 class FakeReviewRepository : ReviewRepository {
     private val reviews = MutableStateFlow<List<Review>>(emptyList())
 

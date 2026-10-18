@@ -1,7 +1,7 @@
 package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
+import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.usecase.LoadCocktailsByCategoryUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
@@ -41,14 +41,14 @@ internal class HomeViewModelHarness {
             catalog.errorMessage = value
         }
 
-    fun viewModel() = SharedHomeViewModel(
+    /** [catalogRepository] stands in for [catalog] where a test needs to wrap it. */
+    fun viewModel(catalogRepository: CocktailCatalogRepository = catalog) = SharedHomeViewModel(
         searchCocktailsUseCase = SearchCocktailsUseCase(search),
-        loadCocktailsByCategoryUseCase = LoadCocktailsByCategoryUseCase(catalog),
+        loadCocktailsByCategoryUseCase = LoadCocktailsByCategoryUseCase(catalogRepository),
         sortCocktailsUseCase = SortCocktailsUseCase(),
         manageFavoritesUseCase = ManageFavoritesUseCase(favorites, detail),
         offlineRepository = offline,
-        getCocktailDetailUseCase = GetCocktailDetailUseCase(detail, favorites, catalog),
-        catalogRepository = catalog,
+        catalogRepository = catalogRepository,
         networkMonitor = network,
         manageReviewsUseCase = ManageReviewsUseCase(reviews)
     )

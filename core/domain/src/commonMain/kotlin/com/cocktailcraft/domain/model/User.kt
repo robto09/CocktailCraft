@@ -1,9 +1,8 @@
 package com.cocktailcraft.domain.model
 
-import com.cocktailcraft.designsystem.AccentColorTokens
-import kotlin.native.HiddenFromObjC
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlin.native.HiddenFromObjC
 
 @Serializable
 data class User(
@@ -47,8 +46,11 @@ data class UserPreferences(
     // any persisted "accentColor" value was never a choice the user saw
     // honored. Renaming the key resets everyone to the brand coral default
     // the moment accents actually start working.
+    // The name of one of the design system's accent colors
+    // (AccentColorTokens.names); the default is its DEFAULT, kept as a
+    // plain value so the domain doesn't depend on design tokens.
     @SerialName("accent")
-    val accentColor: String = AccentColorTokens.DEFAULT,
+    val accentColor: String = DEFAULT_ACCENT_COLOR,
     val fontSize: String = "medium",
     val isHighContrast: Boolean = false,
     val isReducedMotion: Boolean = false
@@ -56,5 +58,8 @@ data class UserPreferences(
     // Hidden so the generated serializer does not drag the
     // kotlinx-serialization type tree into the Obj-C header.
     @HiddenFromObjC
-    companion object
+    companion object {
+        /** The brand coral; DomainDisplayTest (:presentation) pins it to AccentColorTokens.DEFAULT. */
+        const val DEFAULT_ACCENT_COLOR = "coral"
+    }
 }

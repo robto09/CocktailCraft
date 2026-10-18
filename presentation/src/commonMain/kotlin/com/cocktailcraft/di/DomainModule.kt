@@ -4,7 +4,6 @@ import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
 import com.cocktailcraft.domain.usecase.LoadCocktailsByCategoryUseCase
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
-import com.cocktailcraft.domain.usecase.ManageProfileUseCase
 import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
 import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.usecase.SearchCocktailsUseCase
@@ -13,9 +12,10 @@ import org.koin.dsl.module
 import kotlin.native.HiddenFromObjC
 
 /**
- * Koin module for the domain layer's use cases. The shared ViewModels that
- * consume them are wired in presentationModule; the repositories they need
- * come from the data layer's modules.
+ * Koin module for the domain layer's use cases. Lives here, next to
+ * presentationModule (which wires the ViewModels that consume them), so
+ * :core:domain itself stays free of DI; the repositories come from the
+ * data layer's modules.
  */
 @HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper (AR-12)
 val domainModule = module {
@@ -24,11 +24,13 @@ val domainModule = module {
 
     // Use Cases.
     // Convention (AR-8): a use case must EARN its indirection — validation,
-    // orchestration, or aggregation across repositories (e.g. Sort/Analyze
-    // hold real logic; ManageProfile serves two ViewModels). A pure 1:1
-    // pass-through with a single consumer is collapsed onto the repository
-    // interface instead (ManageOrdersUseCase was removed this way — don't
-    // reintroduce shells).
+    // orchestration, or aggregation across repositories (e.g. Sort, Search,
+    // PlaceOrder hold real logic). A pure pass-through is collapsed onto
+    // the repository interface instead, and ViewModels call that
+    // repository directly (ManageOrdersUseCase and ManageProfileUseCase
+    // were removed this way — don't reintroduce shells). So a ViewModel
+    // depends on a use case where there is logic and on the repository
+    // where there is none.
     factory { SearchCocktailsUseCase(searchRepository = get()) }
     factory { LoadCocktailsByCategoryUseCase(catalogRepository = get()) }
     factory { SortCocktailsUseCase() }
@@ -37,7 +39,6 @@ val domainModule = module {
     }
     factory { ManageFavoritesUseCase(favoritesRepository = get(), detailRepository = get()) }
     factory { ManageCartUseCase(cartRepository = get(), detailRepository = get()) }
-    factory { ManageProfileUseCase(authRepository = get()) }
     factory { ManageReviewsUseCase(repository = get()) }
     factory { PlaceOrderUseCase(orderRepository = get()) }
 }

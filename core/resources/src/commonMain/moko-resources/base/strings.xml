@@ -373,7 +373,6 @@
     <string name="error_cancellation_failed_message">Unable to cancel order at this time</string>
     <string name="error_save_failed_title">Save Failed</string>
     <string name="error_load_cocktails_failed">Failed to load cocktails</string>
-    <string name="error_load_more_cocktails_failed">Failed to load more cocktails</string>
     <string name="error_apply_filters_failed">Failed to apply filters</string>
     <string name="error_load_cocktail_details_failed">Failed to load cocktail details</string>
     <string name="error_refresh_cocktail_details_failed">Failed to refresh cocktail details</string>

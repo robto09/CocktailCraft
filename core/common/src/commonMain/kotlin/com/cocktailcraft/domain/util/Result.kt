@@ -17,12 +17,10 @@ sealed class Result<out T> {
         val code: ErrorCode = ErrorCode.UNKNOWN,
         val displayMessage: StringDesc? = null
     ) : Result<Nothing>()
-    object Loading : Result<Nothing>()
 
     // Helper functions to safely handle results
     fun isSuccess(): Boolean = this is Success
     fun isError(): Boolean = this is Error
-    fun isLoading(): Boolean = this is Loading
 
     // Safely get data or null
     fun getOrNull(): T? = when (this) {
@@ -34,7 +32,6 @@ sealed class Result<out T> {
     fun <R> map(transform: (T) -> R): Result<R> = when (this) {
         is Success -> Success(transform(data))
         is Error -> this
-        is Loading -> this
     }
 }
 
@@ -43,7 +40,6 @@ sealed class Result<out T> {
 fun <T, R> Result<T>.flatMap(transform: (T) -> Result<R>): Result<R> = when (this) {
     is Result.Success -> transform(data)
     is Result.Error -> this
-    is Result.Loading -> Result.Loading
 }
 
 // Extension: perform a side-effect on success
@@ -83,5 +79,4 @@ class DomainException(
 fun <T> Result<T>.getOrThrow(): T = when (this) {
     is Result.Success -> data
     is Result.Error -> throw DomainException(code, message, displayMessage)
-    is Result.Loading -> throw IllegalStateException("Result is still loading")
 }

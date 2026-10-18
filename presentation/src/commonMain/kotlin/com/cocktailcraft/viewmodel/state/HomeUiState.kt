@@ -22,7 +22,6 @@ data class HomeUiState(
     val selectedCategory: String? = null,
     val currentPage: Int = 1,
     val hasMoreData: Boolean = true,
-    val isLoadingMore: Boolean = false,
     val isNetworkAvailable: Boolean = true,
     // Kept across category changes, searches and catalog refreshes
     val sortOption: HomeSortOption = HomeSortOption.DEFAULT,

@@ -9,6 +9,7 @@ import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.error_load_favorites_failed
 import com.cocktailcraft.resources.error_update_favorites_failed
 import com.cocktailcraft.resources.favorite_removed
+import com.cocktailcraft.util.runCatchingNonCancellation
 import com.cocktailcraft.viewmodel.state.FavoritesUiState
 import dev.icerock.moko.resources.format
 import kotlinx.coroutines.flow.*
@@ -20,7 +21,8 @@ import kotlinx.coroutines.launch
  *
  * [uiState] is the only public state surface: platforms render the
  * favorites list from it (and derive id sets for membership checks) rather
- * than calling snapshot getters on the ViewModel.
+ * than calling snapshot getters on the ViewModel. Its [events] are the
+ * Favorites screen's own (unfavoriting, with Undo).
  *
  * Key SKIE features:
  * - StateFlows are automatically converted to Swift AsyncSequence
@@ -46,15 +48,20 @@ class SharedFavoritesViewModel internal constructor(
         }
     }
 
-    /** Manual refresh (pull-to-refresh); routine updates arrive via the observed flow. */
+    /**
+     * Manual refresh (pull-to-refresh); routine updates arrive via the
+     * observed flow. Returns once the reload is done, so a refresh spinner
+     * lasts exactly as long.
+     * SKIE will convert this to Swift async function.
+     */
+    @Throws(Exception::class)
     suspend fun loadFavorites() {
-        clearError()
-        _uiState.update { it.copy(isLoading = true) }
-        try {
-            manageFavoritesUseCase.loadFavorites().getOrThrow()
-            _uiState.update { it.copy(isLoading = false) }
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_load_favorites_failed)
+        runInViewModelScope {
+            clearError()
+            _uiState.update { it.copy(isLoading = true) }
+            runCatchingNonCancellation(onFailure = { handleException(it, MR.strings.error_load_favorites_failed) }) {
+                manageFavoritesUseCase.loadFavorites().getOrThrow()
+            }
             _uiState.update { it.copy(isLoading = false) }
         }
     }
@@ -62,15 +69,14 @@ class SharedFavoritesViewModel internal constructor(
     /**
      * Toggle favorite status for a cocktail. State updates arrive via the
      * observed favorites flow (SH-4); a failed toggle is reported.
-     * SKIE will convert this to Swift async function.
      */
-    suspend fun toggleFavorite(cocktail: Cocktail) {
+    fun toggleFavorite(cocktail: Cocktail) {
         clearError()
-        try {
-            manageFavoritesUseCase.toggle(cocktail)
-                .getOrReport(false, MR.strings.error_update_favorites_failed)
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_update_favorites_failed)
+        viewModelScope.launch {
+            runCatchingNonCancellation(onFailure = { handleException(it, MR.strings.error_update_favorites_failed) }) {
+                manageFavoritesUseCase.toggle(cocktail)
+                    .getOrReport(false, MR.strings.error_update_favorites_failed)
+            }
         }
     }
 
@@ -78,12 +84,19 @@ class SharedFavoritesViewModel internal constructor(
      * Unfavorite [cocktail] from a list of favorites (the Favorites screen,
      * where every heart is filled), announcing it on [events] with an Undo
      * action that favorites it again. State updates arrive via the observed
-     * flow (SH-4); a failed removal is reported and offers no Undo.
+     * flow (SH-4); a failed removal is reported and offers no Undo. Returns
+     * once the removal is done, so the screen can hold the card's emptied
+     * heart until then.
      * SKIE will convert this to Swift async function.
      */
+    @Throws(Exception::class)
     suspend fun removeFavorite(cocktail: Cocktail) {
+        runInViewModelScope { remove(cocktail) }
+    }
+
+    private suspend fun remove(cocktail: Cocktail) {
         clearError()
-        try {
+        runCatchingNonCancellation(onFailure = { handleException(it, MR.strings.error_update_favorites_failed) }) {
             val result = manageFavoritesUseCase.removeFromFavorites(cocktail)
             if (result is Result.Error) {
                 result.getOrReport(Unit, MR.strings.error_update_favorites_failed)
@@ -95,8 +108,6 @@ class SharedFavoritesViewModel internal constructor(
                     action = undoAction { restore(listOf(cocktail)) }
                 )
             )
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_update_favorites_failed)
         }
     }
 
@@ -107,7 +118,7 @@ class SharedFavoritesViewModel internal constructor(
      */
     private suspend fun restore(cocktails: List<Cocktail>) {
         clearError()
-        try {
+        runCatchingNonCancellation(onFailure = { handleException(it, MR.strings.error_update_favorites_failed) }) {
             for (cocktail in cocktails) {
                 val result = manageFavoritesUseCase.addToFavorites(cocktail)
                 if (result is Result.Error) {
@@ -115,12 +126,10 @@ class SharedFavoritesViewModel internal constructor(
                     return
                 }
             }
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_update_favorites_failed)
         }
     }
 
-    /** Fire-and-forget [loadFavorites] for callers without a coroutine scope. */
+    /** [loadFavorites] for callers that don't wait for it. */
     fun refresh() {
         viewModelScope.launch { loadFavorites() }
     }

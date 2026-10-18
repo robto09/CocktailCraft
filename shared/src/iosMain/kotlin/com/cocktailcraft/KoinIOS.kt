@@ -15,6 +15,7 @@ import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
+import com.cocktailcraft.viewmodel.SharedOrderDetailViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.viewmodel.SharedProfileViewModel
 import com.cocktailcraft.viewmodel.SharedReviewViewModel
@@ -65,8 +66,10 @@ class KoinHelper : KoinComponent {
      * random pick when online (best-effort — a failed fetch is skipped),
      * followed by the recently viewed cocktails, which keep the widget
      * populated offline, like Android's WidgetDataProvider fallback.
-     * At most [limit], without duplicates.
+     * At most [limit], without duplicates. @Throws: Swift calls it, and an
+     * undeclared exception reaching Swift terminates the app.
      */
+    @Throws(Exception::class)
     suspend fun getRandomCocktailWidgetPool(limit: Int): List<Cocktail> {
         val offline = get<CocktailOfflineRepository>()
         val random = if (offline.isOffline()) {
@@ -85,6 +88,8 @@ class KoinHelper : KoinComponent {
     fun getSharedCocktailDetailViewModel(): SharedCocktailDetailViewModel = get()
 
     fun getSharedReviewViewModel(): SharedReviewViewModel = get()
+
+    fun getSharedOrderDetailViewModel(): SharedOrderDetailViewModel = get()
 
     /**
      * Clears a screen-scoped ViewModel the way Android's ViewModelStore does
