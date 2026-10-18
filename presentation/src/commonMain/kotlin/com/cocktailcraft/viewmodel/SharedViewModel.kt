@@ -84,14 +84,18 @@ abstract class SharedViewModel : ViewModel() {
             return
         }
 
-        _error.value = ErrorHandler.getErrorFromException(
+        val error = ErrorHandler.getErrorFromException(
             exception = exception,
             defaultMessage = defaultMessage.desc(),
             recoveryAction = recoveryAction
         )
+        _error.value = error
 
-        // Log the error
-        Logger.e("Error in ${this::class.simpleName}", exception)
+        // Release builds keep Warn and up: only the exception type and the
+        // error code reach them. The message (a Ktor one embeds the request
+        // URL, search terms included) and the stack trace are debug-only.
+        Logger.w { "Error in ${this::class.simpleName}: ${exception::class.simpleName} (${error.errorCode})" }
+        Logger.d(exception) { "Error detail: ${exception.message}" }
     }
 
     /**
@@ -142,7 +146,8 @@ abstract class SharedViewModel : ViewModel() {
         is Result.Success -> data
         is Result.Error -> {
             _error.value = ErrorHandler.errorFromResult(this, fallbackMessage.desc(), recoveryAction)
-            Logger.e { "Error in ${this@SharedViewModel::class.simpleName}: $message ($code)" }
+            Logger.w { "Error in ${this@SharedViewModel::class.simpleName}: $code" }
+            Logger.d { "Error detail: $message" }
             default
         }
     }
