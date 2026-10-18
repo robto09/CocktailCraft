@@ -15,13 +15,11 @@ struct HomeViewSKIE: View {
     // The latest add-to-cart outcome, until its toast picks it up
     @State private var addToCartOutcome: UiEvent?
     @Environment(\.isDarkMode) private var isDarkMode
-    @Environment(\.appearance) private var appearance
 
     // Theme-derived colors (the old hardcoded hex values bypassed AppTheme,
     // so Home ignored dark mode)
     private var backgroundColor: Color { AppColors.background(isDarkMode: isDarkMode) }
     private var surfaceColor: Color { AppColors.surface(isDarkMode: isDarkMode) }
-    private var textSecondary: Color { AppColors.textSecondary(appearance) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -194,65 +192,31 @@ struct HomeViewSKIE: View {
     }
 
     private var cocktailList: some View {
-        // Derived from the observed state (not the synchronous isFavorite()
-        // helper, which sits outside SwiftUI's Observation graph): the hearts
-        // re-render the moment state.favorites changes — including the
-        // optimistic publish on toggle.
-        let favoriteIds = Set(viewModel.state.favorites.map(\.id))
-        // Reaching any of the last 5 rows loads the next page, like
-        // Android's OnBottomReached(buffer = 5); no Load More button
-        let nearEndIds = Set(viewModel.state.cocktails.suffix(5).map(\.id))
-        return ScrollView {
-            LazyVStack(spacing: 12) {
-                // Hidden while a search query is active (shared rule)
-                if viewModel.state.showRecentlyViewed {
-                    RecentlyViewedRow(
-                        cocktails: viewModel.state.recentlyViewed,
-                        // The list's own horizontal padding
-                        horizontalBleed: 16
-                    )
-                    .padding(.bottom, 4)
+        HomeCocktailList(
+            list: viewModel.list,
+            isSearchInProgress: isSearchInProgress,
+            onToggleFavorite: { cocktail in
+                viewModel.toggleFavorite(cocktail)
+            },
+            onAddToCart: { cocktail in
+                // Main-actor Task: the VM call and the toast state both on
+                // main. Only a real add is confirmed; a failed one says so
+                // instead.
+                Task { @MainActor in
+                    addToCartOutcome = await viewModel.addToCart(cocktail)
                 }
-
-                ForEach(viewModel.state.cocktails, id: \.id) { cocktail in
-                    // Value-based link: the destination (and its
-                    // factory-scoped detail ViewModel) is only built
-                    // on push, not eagerly for every visible row.
-                    NavigationLink(value: cocktail.id) {
-                        CocktailCard(
-                            cocktail: cocktail,
-                            isFavorite: favoriteIds.contains(cocktail.id),
-                            reviewRating: viewModel.state.ratingSummaries[cocktail.id],
-                            onFavoriteToggle: {
-                                viewModel.toggleFavorite(cocktail)
-                            },
-                            onAddToCart: {
-                                // Main-actor Task: the VM call and the toast
-                                // state both on main. Only a real add is
-                                // confirmed; a failed one says so instead.
-                                Task { @MainActor in
-                                    addToCartOutcome = await viewModel.addToCart(cocktail)
-                                }
-                            },
-                            onCardTap: nil // Explicitly set to nil to prevent interference with NavigationLink
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .onAppear {
-                        if nearEndIds.contains(cocktail.id) {
-                            loadMoreIfNeeded()
-                        }
-                    }
-                }
-
-                listFooter
+            },
+            onLoadMore: {
+                viewModel.loadMoreCocktails()
+            },
+            onRefresh: {
+                await viewModel.refreshCocktails()
             }
-            .padding(16)
-        }
-        .background(backgroundColor)
-        .refreshable {
-            await viewModel.refreshCocktails()
-        }
+        )
+        // Skips the list's body when Home re-renders for anything else
+        // (the search text, loading flags): it re-renders on its own when
+        // `list.content` changes
+        .equatable()
     }
 
     /// Pagination belongs to the category listing only. Search results are a
@@ -262,30 +226,104 @@ struct HomeViewSKIE: View {
         !searchText.isEmpty || viewModel.state.searchFilters.hasActiveFilters()
     }
 
-    private func loadMoreIfNeeded() {
-        guard !isSearchInProgress, viewModel.state.hasMoreData else { return }
-        viewModel.loadMoreCocktails()
-    }
-
-    /// Android's end-of-list line once the category is exhausted. (The next
-    /// page is already stored, so there is no loading spinner.)
-    @ViewBuilder
-    private var listFooter: some View {
-        if !isSearchInProgress && !viewModel.state.hasMoreData && !viewModel.state.cocktails.isEmpty {
-            Text(L(\.list_end_of_list_message))
-                .font(.subheadline)
-                .foregroundColor(textSecondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-                .padding(16)
-        }
-    }
-
     // MARK: - Helper Functions
 
     // Canonical curated categories come from shared — single source of truth
     private var availableCategories: [String] {
         viewModel.curatedCategories
+    }
+}
+
+// MARK: - Cocktail list
+
+/// Home's cocktail list, apart from the rest of the screen. HomeViewSKIE
+/// mirrors the whole HomeUiState, so every keystroke in the search field
+/// used to rebuild every card (and the favorite id set). This view reads
+/// only `list.content`, which changes when the cocktails, favorites,
+/// ratings or paging do, and compares equal across Home's other re-renders,
+/// so SwiftUI skips its body then. The closures are left out of `==`: they
+/// only forward to the (same) ViewModel.
+private struct HomeCocktailList: View, Equatable {
+    let list: HomeListModel
+    let isSearchInProgress: Bool
+    let onToggleFavorite: (Cocktail) -> Void
+    let onAddToCart: (Cocktail) -> Void
+    let onLoadMore: () -> Void
+    let onRefresh: () async -> Void
+
+    @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
+
+    static func == (lhs: HomeCocktailList, rhs: HomeCocktailList) -> Bool {
+        lhs.list === rhs.list && lhs.isSearchInProgress == rhs.isSearchInProgress
+    }
+
+    var body: some View {
+        let content = list.content
+        // Reaching any of the last 5 rows loads the next page, like
+        // Android's OnBottomReached(buffer = 5); no Load More button
+        let nearEndIds = Set(content.cocktails.suffix(5).map(\.id))
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                // Hidden while a search query is active (shared rule)
+                if !content.recentlyViewed.isEmpty {
+                    RecentlyViewedRow(
+                        cocktails: content.recentlyViewed,
+                        // The list's own horizontal padding
+                        horizontalBleed: 16
+                    )
+                    .padding(.bottom, 4)
+                }
+
+                ForEach(content.cocktails, id: \.id) { cocktail in
+                    // Value-based link: the destination (and its
+                    // factory-scoped detail ViewModel) is only built
+                    // on push, not eagerly for every visible row.
+                    NavigationLink(value: cocktail.id) {
+                        // The hearts come from the observed favorites (not
+                        // the synchronous isFavorite() helper, outside
+                        // SwiftUI's Observation graph), so they re-render
+                        // the moment they change — including the
+                        // optimistic publish on toggle.
+                        CocktailCard(
+                            cocktail: cocktail,
+                            isFavorite: content.favoriteIds.contains(cocktail.id),
+                            reviewRating: content.ratingSummaries[cocktail.id],
+                            onFavoriteToggle: { onToggleFavorite(cocktail) },
+                            onAddToCart: { onAddToCart(cocktail) },
+                            onCardTap: nil // Explicitly set to nil to prevent interference with NavigationLink
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .onAppear {
+                        if nearEndIds.contains(cocktail.id) && !isSearchInProgress && content.hasMoreData {
+                            onLoadMore()
+                        }
+                    }
+                }
+
+                footer(content)
+            }
+            .padding(16)
+        }
+        .background(AppColors.background(isDarkMode: isDarkMode))
+        .refreshable {
+            await onRefresh()
+        }
+    }
+
+    /// Android's end-of-list line once the category is exhausted. (The next
+    /// page is already stored, so there is no loading spinner.)
+    @ViewBuilder
+    private func footer(_ content: HomeListContent) -> some View {
+        if !isSearchInProgress && !content.hasMoreData && !content.cocktails.isEmpty {
+            Text(L(\.list_end_of_list_message))
+                .font(.subheadline)
+                .foregroundColor(AppColors.textSecondary(appearance))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(16)
+        }
     }
 }
 

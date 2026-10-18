@@ -12,17 +12,35 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
     private let sharedViewModel: SharedHomeViewModel
     private let cartViewModel: SharedCartViewModel
 
+    /// The cocktail list's inputs, mirrored apart from `state`: they change
+    /// far less often than the rest of HomeUiState (the search text on
+    /// every keystroke, loading flags), and the list reads only these.
+    let list: HomeListModel
+    @ObservationIgnored private var listObservation: Task<Void, Never>?
+
     init() {
         let viewModel = getSharedKoinHelper().getSharedHomeViewModel()
         self.sharedViewModel = viewModel
         self.cartViewModel = getSharedKoinHelper().getSharedCartViewModel()
+        let list = HomeListModel(HomeListContent(viewModel.uiState.value))
+        self.list = list
         // No initial load here or in the view: the shared ViewModel (a
         // Koin single) starts the one initial load itself.
         super.init(viewModel: viewModel, uiState: viewModel.uiState)
+        let uiState = viewModel.uiState
+        listObservation = Task {
+            for await value in uiState {
+                list.update(HomeListContent(value))
+            }
+        }
     }
 
-    // No deinit: the base class cancels observation. Wraps a Koin `single`
-    // whose coroutine scope must survive any one wrapper — never onCleared().
+    // Wraps a Koin `single` whose coroutine scope must survive any one
+    // wrapper — never onCleared(). The base class cancels its own
+    // observation; this one stops the list's.
+    deinit {
+        listObservation?.cancel()
+    }
 
     // MARK: - Intents
     // Fire-and-forget: the shared ViewModel runs each on its own scope and
@@ -116,5 +134,44 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
     /// long as the reload does (IO-2).
     func refreshCocktails() async {
         await run { try await sharedViewModel.refresh() }
+    }
+}
+
+/// What Home's cocktail list renders, derived once per state change (the
+/// favorite id set used to be rebuilt on every render of Home).
+struct HomeListContent: Equatable {
+    let cocktails: [Cocktail]
+    let favoriteIds: Set<String>
+    let ratingSummaries: [String: CocktailRatingSummary]
+    /// Empty while the row is hidden (an active search query)
+    let recentlyViewed: [Cocktail]
+    let hasMoreData: Bool
+
+    init(_ state: HomeUiState) {
+        cocktails = state.cocktails
+        favoriteIds = Set(state.favorites.map(\.id))
+        ratingSummaries = state.ratingSummaries
+        recentlyViewed = state.showRecentlyViewed ? state.recentlyViewed : []
+        hasMoreData = state.hasMoreData
+    }
+}
+
+/// Observation holder for [HomeListContent]: views reading `content` only
+/// re-render when it actually changes.
+@MainActor
+@Observable
+final class HomeListModel {
+    private(set) var content: HomeListContent
+
+    init(_ content: HomeListContent) {
+        self.content = content
+    }
+
+    /// Publishes a real change only: an @Observable property notifies its
+    /// readers on every assignment, even of an equal value.
+    func update(_ next: HomeListContent) {
+        if next != content {
+            content = next
+        }
     }
 }
