@@ -24,6 +24,10 @@ CREATE INDEX cached_cocktail_category ON cached_cocktail(category);
 
 CREATE INDEX cached_cocktail_last_accessed ON cached_cocktail(last_accessed);
 
+-- The TTL sweep (deleteCachedBefore) runs on every list read while online.
+-- Added in version 3 (migrations/2.sqm).
+CREATE INDEX cached_cocktail_cached_at ON cached_cocktail(cached_at);
+
 -- INSERT OR REPLACE rather than ON CONFLICT DO UPDATE: upsert syntax needs
 -- SQLite 3.24, newer than the framework SQLite on minSdk 24 devices.
 upsert:
@@ -39,11 +43,19 @@ VALUES (?, ?, ?, ?, ?);
 selectById:
 SELECT payload, cached_at FROM cached_cocktail WHERE id = ?;
 
+-- Batch lookup. Callers chunk :ids to stay under SQLite's bound-parameter
+-- limit (999 on older framework SQLite).
+selectByIds:
+SELECT id, payload FROM cached_cocktail WHERE id IN :ids;
+
 exists:
 SELECT COUNT(*) FROM cached_cocktail WHERE id = ?;
 
 touch:
 UPDATE cached_cocktail SET last_accessed = :lastAccessed WHERE id = :id;
+
+touchByIds:
+UPDATE cached_cocktail SET last_accessed = :lastAccessed WHERE id IN :ids;
 
 selectAll:
 SELECT id, payload FROM cached_cocktail ORDER BY last_accessed;

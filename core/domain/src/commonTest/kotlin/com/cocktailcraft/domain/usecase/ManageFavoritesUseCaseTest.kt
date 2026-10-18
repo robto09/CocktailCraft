@@ -6,9 +6,11 @@ import com.cocktailcraft.testutil.FakeDetailRepository
 import com.cocktailcraft.testutil.FakeFavoritesRepository
 import com.cocktailcraft.testutil.partialCocktail
 import com.cocktailcraft.testutil.testCocktail
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -117,5 +119,13 @@ class ManageFavoritesUseCaseTest {
         useCase.removeFromFavorites(testCocktail("1"))
 
         assertEquals(listOf("2"), favorites.stored.map(Cocktail::id))
+    }
+
+    @Test
+    fun toggleRethrowsCancellationInsteadOfReportingAnError() = runTest {
+        val detail = FakeDetailRepository().apply { throwOnLookup = CancellationException("left screen") }
+        val useCase = ManageFavoritesUseCase(FakeFavoritesRepository(), detail)
+
+        assertFailsWith<CancellationException> { useCase.toggle(partialCocktail("1")) }
     }
 }

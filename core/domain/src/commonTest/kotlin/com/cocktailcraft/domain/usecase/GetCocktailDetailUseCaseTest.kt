@@ -49,6 +49,15 @@ class GetCocktailDetailUseCaseTest {
         assertFalse(useCase.isFavorite("2"))
     }
 
+    @Test
+    fun isFavoriteIsAPointLookupNotAFullFavoritesLoad() = runTest {
+        favorites.addToFavorites(testCocktail("1"))
+
+        useCase.isFavorite("1")
+
+        assertEquals(0, favorites.getFavoriteCocktailsCalls)
+    }
+
     // --- Related cocktails: same category, excluding the cocktail itself ---
 
     @Test

@@ -4,6 +4,7 @@ import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.local.LocalDatabase
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.UUID
@@ -18,6 +19,10 @@ import kotlinx.coroutines.withContext
  * Orders in the customer_order / customer_order_item tables (see
  * CustomerOrder.sq). [observeOrders] re-emits after every write to either
  * table, so there is no in-memory copy to keep in sync.
+ *
+ * The status column holds [OrderStatus.storageValue] ("Processing", ...),
+ * the same strings stored before the enum existed, so old rows read back
+ * unchanged.
  */
 internal class OrderRepositoryImpl(
     private val localDatabase: LocalDatabase,
@@ -52,7 +57,7 @@ internal class OrderRepositoryImpl(
                     }
                 },
                 total = order.total,
-                status = order.status
+                status = OrderStatus.fromStorageValue(order.status)
             )
         }
 
@@ -100,9 +105,9 @@ internal class OrderRepositoryImpl(
         }
     }
 
-    override suspend fun updateOrderStatus(id: String, status: String): Result<Unit> = withContext(ioDispatcher) {
+    override suspend fun updateOrderStatus(id: String, status: OrderStatus): Result<Unit> = withContext(ioDispatcher) {
         runCatchingResult("Failed to update order status") {
-            localDatabase.get().customerOrderQueries.updateStatus(status = status, id = id)
+            localDatabase.get().customerOrderQueries.updateStatus(status = status.storageValue, id = id)
             Result.Success(Unit)
         }
     }
@@ -125,8 +130,9 @@ internal class OrderRepositoryImpl(
             // change can't slip in between.
             val cancelled = db.transactionWithResult {
                 val status = db.customerOrderQueries.selectStatus(orderId).executeAsOneOrNull()
-                if (status == "Processing" || status == "Pending") {
-                    db.customerOrderQueries.updateStatus(status = "Cancelled", id = orderId)
+                    ?.let(OrderStatus::fromStorageValue)
+                if (status?.isCancellable == true) {
+                    db.customerOrderQueries.updateStatus(status = OrderStatus.CANCELLED.storageValue, id = orderId)
                     true
                 } else {
                     false
@@ -146,7 +152,7 @@ internal fun CocktailCraftDatabase.insertOrderWithItems(order: Order) {
         id = order.id,
         date = order.date,
         total = order.total,
-        status = order.status
+        status = order.status.storageValue
     )
     order.items.forEachIndexed { index, item ->
         customerOrderQueries.insertItem(

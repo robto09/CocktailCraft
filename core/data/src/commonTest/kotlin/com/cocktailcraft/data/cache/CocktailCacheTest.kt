@@ -6,7 +6,9 @@ import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCategories
 import com.cocktailcraft.domain.model.CocktailIngredient
+import com.cocktailcraft.testutil.CountingSqlDriver
 import com.cocktailcraft.testutil.FakeNetworkMonitor
+import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.testCocktail
 import com.russhwolf.settings.MapSettings
@@ -119,6 +121,90 @@ class CocktailCacheTest {
         cache.cacheCocktail(placeholder)
 
         assertEquals(placeholder, cache.getCachedCocktail("1"))
+    }
+
+    private fun placeholderOf(cocktail: Cocktail) = cocktail.copy(
+        alcoholic = "Unknown",
+        ingredients = listOf(CocktailIngredient(Cocktail.PLACEHOLDER_INGREDIENT_NAME, ""))
+    )
+
+    // --- Batched reads/writes: a fixed number of statements, not one per row ---
+
+    @Test
+    fun getCachedCocktailsReturnsHitsKeyedByIdAndSkipsMisses() = runTest {
+        val cache = cache(createTestDatabase())
+        cache.cacheCocktails(listOf(testCocktail("1"), testCocktail("2")))
+
+        val hits = cache.getCachedCocktails(listOf("1", "2", "404"))
+
+        assertEquals(setOf("1", "2"), hits.keys)
+        assertEquals(testCocktail("2"), hits["2"])
+    }
+
+    @Test
+    fun getCachedCocktailsDropsExpiredEntriesWhileOnline() = runTest {
+        val db = createTestDatabase()
+        seedRow(db, testCocktail("old"), cachedAt = expiredAt())
+        seedRow(db, testCocktail("fresh"), cachedAt = nowMs())
+
+        val hits = cache(db).getCachedCocktails(listOf("old", "fresh"))
+
+        assertEquals(setOf("fresh"), hits.keys)
+        assertNull(cachedAt(db, "old"))
+    }
+
+    @Test
+    fun getCachedCocktailsKeepsExpiredEntriesWhileOffline() = runTest {
+        val db = createTestDatabase()
+        seedRow(db, testCocktail("old"), cachedAt = expiredAt())
+
+        assertEquals(setOf("old"), cache(db, online = false).getCachedCocktails(listOf("old")).keys)
+    }
+
+    @Test
+    fun getCachedCocktailsHandlesMoreIdsThanOneInQueryBinds() = runTest {
+        // Ids are chunked below SQLite's bound-parameter limit
+        val cache = cache(createTestDatabase(), appConfig = smallConfig(cap = 1200))
+        val cocktails = (1..1100).map { testCocktail("$it") }
+        cache.cacheCocktails(cocktails)
+
+        assertEquals(1100, cache.getCachedCocktails(cocktails.map { it.id }).size)
+    }
+
+    @Test
+    fun getCachedCocktailsCostsTheSameStatementsForOneIdOrAHundred() = runTest {
+        val driver = CountingSqlDriver(createInMemorySqlDriver())
+        val cache = cache(createTestDatabase(driver))
+        val ids = (1..100).map { "$it" }
+        cache.cacheCocktails(ids.map { testCocktail(it) })
+
+        driver.reset()
+        cache.getCachedCocktails(listOf("1"))
+        val single = driver.queries to driver.statements
+
+        driver.reset()
+        assertEquals(100, cache.getCachedCocktails(ids).size)
+
+        assertEquals(single, driver.queries to driver.statements)
+    }
+
+    @Test
+    fun cachingPlaceholdersLooksUpStoredRecordsInOneBatch() = runTest {
+        val driver = CountingSqlDriver(createInMemorySqlDriver())
+        val cache = cache(createTestDatabase(driver))
+        val full = (1..100).map { testCocktail("$it") }
+        cache.cacheCocktails(full)
+
+        driver.reset()
+        cache.cacheCocktails(listOf(placeholderOf(full.first())))
+        val singleQueries = driver.queries
+
+        driver.reset()
+        cache.cacheCocktails(full.map(::placeholderOf))
+
+        assertEquals(singleQueries, driver.queries, "one batched SELECT, not one per placeholder")
+        // ...and the stored full records still win over the placeholders
+        assertEquals(full, cache.getCachedCocktails(full.map { it.id }).values.sortedBy { it.id.toInt() })
     }
 
     @Test

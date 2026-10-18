@@ -1,5 +1,6 @@
 package com.cocktailcraft.domain.config
 
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.common_unknown
 import com.cocktailcraft.resources.delivery_estimate_minutes
@@ -34,13 +35,13 @@ object DeliveryPolicy {
     }
 
     /** Estimated delivery time for an order in the given status. */
-    fun estimatedDeliveryTimeForStatus(status: String?): StringDesc = when (status?.lowercase()) {
-        "pending" -> MR.strings.delivery_estimate_processing_soon.desc()
-        "processing" -> minutes(15, 25)
-        "shipped" -> minutes(5, 10)
-        "delivered" -> MR.strings.order_status_delivered.desc()
-        "cancelled" -> MR.strings.order_status_cancelled.desc()
-        else -> MR.strings.common_unknown.desc()
+    fun estimatedDeliveryTimeForStatus(status: OrderStatus?): StringDesc = when (status) {
+        OrderStatus.PENDING -> MR.strings.delivery_estimate_processing_soon.desc()
+        OrderStatus.PROCESSING -> minutes(15, 25)
+        OrderStatus.SHIPPED -> minutes(5, 10)
+        OrderStatus.DELIVERED -> MR.strings.order_status_delivered.desc()
+        OrderStatus.CANCELLED -> MR.strings.order_status_cancelled.desc()
+        null -> MR.strings.common_unknown.desc()
     }
 
     private fun minutes(from: Int, to: Int): StringDesc =

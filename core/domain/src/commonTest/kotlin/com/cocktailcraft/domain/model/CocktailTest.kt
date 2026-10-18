@@ -9,6 +9,13 @@ class CocktailTest {
     private fun cocktail(alcoholic: String?) = Cocktail(id = "1", name = "Margarita", alcoholic = alcoholic)
 
     @Test
+    fun cocktailsBuiltFromTheSameDataAreEqual() {
+        // dateAdded used to default to construction time
+        assertEquals(cocktail(alcoholic = "Alcoholic"), cocktail(alcoholic = "Alcoholic"))
+        assertEquals(cocktail(alcoholic = "Alcoholic").hashCode(), cocktail(alcoholic = "Alcoholic").hashCode())
+    }
+
+    @Test
     fun knownAlcoholicKeepsApiValues() {
         assertEquals("Alcoholic", cocktail("Alcoholic").knownAlcoholic)
         assertEquals("Non alcoholic", cocktail("Non alcoholic").knownAlcoholic)

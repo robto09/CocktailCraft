@@ -72,6 +72,10 @@ internal class CocktailCache(
         internal const val ALL_COCKTAILS_KEY = "all_cached_cocktails"
         internal const val RECENTLY_VIEWED_KEY = "recently_viewed_cocktails"
         internal const val MAX_RECENTLY_VIEWED = 20
+
+        // Ids bound per `IN` query: below the 999-parameter limit of the
+        // framework SQLite on older devices.
+        private const val MAX_IDS_PER_QUERY = 500
     }
 
     private val cocktailSerializer = Cocktail.serializer()
@@ -268,20 +272,31 @@ internal class CocktailCache(
     }
 
     /**
+     * (id, payload) rows for [ids], one `IN` query per [MAX_IDS_PER_QUERY]
+     * ids. Call inside a transaction so the chunks see one snapshot.
+     */
+    private fun CocktailCraftDatabase.selectPayloads(ids: Collection<String>): List<Pair<String, String>> =
+        ids.distinct().chunked(MAX_IDS_PER_QUERY).flatMap { chunk ->
+            cachedCocktailQueries.selectByIds(chunk) { id, payload -> id to payload }.executeAsList()
+        }
+
+    /**
      * Upserts [cocktails] in order and applies the LRU cap. A list-endpoint
      * placeholder never replaces a cached full record (it would put "Tap to
      * view ingredients" back on cards); the full record is kept and refreshed.
-     * Call inside a transaction.
+     * Existing records for the placeholders are read in one batch, not one
+     * SELECT per row. Call inside a transaction.
      */
     private fun CocktailCraftDatabase.upsertCocktails(cocktails: List<Cocktail>) {
         val now = nowMs()
+        val placeholderIds = cocktails.filterNot { it.hasFullDetails }.map { it.id }
+        val cachedFull: Map<String, Cocktail> =
+            if (placeholderIds.isEmpty()) emptyMap()
+            else selectPayloads(placeholderIds)
+                .mapNotNull { (id, payload) -> decodeOrNull(payload)?.takeIf { it.hasFullDetails }?.let { id to it } }
+                .toMap()
         cocktails.forEach { incoming ->
-            val cocktail = if (incoming.hasFullDetails) incoming else {
-                cachedCocktailQueries.selectById(incoming.id).executeAsOneOrNull()
-                    ?.let { decodeOrNull(it.payload) }
-                    ?.takeIf { it.hasFullDetails }
-                    ?: incoming
-            }
+            val cocktail = if (incoming.hasFullDetails) incoming else cachedFull[incoming.id] ?: incoming
             cachedCocktailQueries.upsert(
                 id = cocktail.id,
                 category = normalizedCategory(cocktail),
@@ -347,6 +362,35 @@ internal class CocktailCache(
                 cachedCocktailQueries.touch(lastAccessed = nextStamp(), id = id)
             }
             cocktail
+        }
+    }
+
+    /**
+     * Cached cocktails for [ids], keyed by id, read in one transaction with
+     * batched `IN` queries instead of a [getCachedCocktail] round trip (a
+     * SELECT plus an UPDATE) per id. Ids that are not cached, expired
+     * (online only) or unreadable are absent. Every hit counts as an access
+     * for LRU eviction, with one shared stamp.
+     */
+    suspend fun getCachedCocktails(ids: Collection<String>): Map<String, Cocktail> {
+        if (ids.isEmpty()) return emptyMap()
+        val applyExpiry = shouldApplyExpiry()
+        return withDatabase(emptyMap()) {
+            transactionWithResult {
+                if (applyExpiry) cachedCocktailQueries.deleteCachedBefore(expiryCutoff())
+                val hits = selectPayloads(ids).mapNotNull { (id, payload) ->
+                    val cocktail = decodeOrNull(payload)
+                    if (cocktail == null) cachedCocktailQueries.deleteById(id)
+                    cocktail?.let { id to it }
+                }.toMap()
+                if (hits.isNotEmpty()) {
+                    val stamp = nextStamp()
+                    hits.keys.chunked(MAX_IDS_PER_QUERY).forEach { chunk ->
+                        cachedCocktailQueries.touchByIds(lastAccessed = stamp, ids = chunk)
+                    }
+                }
+                hits
+            }
         }
     }
 
