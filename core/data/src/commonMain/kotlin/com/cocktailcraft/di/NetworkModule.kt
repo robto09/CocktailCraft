@@ -31,6 +31,9 @@ import org.koin.dsl.module
 internal fun shouldRetryResponse(statusCode: Int): Boolean =
     statusCode in 500..599 || statusCode == 429
 
+/** Upper bound for establishing a connection (TCP + TLS). */
+internal const val CONNECT_TIMEOUT_MS = 10_000L
+
 /**
  * Builds the shared [HttpClient] with the full production plugin stack.
  * Extracted from the Koin single (AR-5) so tests can inject a MockEngine while
@@ -52,7 +55,9 @@ internal fun buildHttpClient(
         }
 
         install(io.ktor.client.plugins.HttpTimeout) {
-            connectTimeoutMillis = config.networkTimeoutMs
+            // Fail fast on an unreachable host; the whole request and each
+            // socket read get AppConfig's budget.
+            connectTimeoutMillis = minOf(CONNECT_TIMEOUT_MS, config.networkTimeoutMs)
             requestTimeoutMillis = config.networkTimeoutMs
             socketTimeoutMillis = config.networkTimeoutMs
         }
