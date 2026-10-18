@@ -272,9 +272,6 @@ For detailed information about the dependency injection implementation, see:
 - **Robolectric**: Android unit testing framework
 - **Roborazzi** / **swift-snapshot-testing**: Screenshot tests on Android / iOS
 
-**Testing Setup:**
-- [Testing Implementation Summary](docs/TESTING_IMPLEMENTATION_SUMMARY.md) - Complete testing framework overview and setup
-
 See the [Testing](#testing) section below for where the test suites live and how to run them.
 
 For a detailed list of all libraries with versions and purposes, see the [Libraries Documentation](docs/Libraries.md).
@@ -519,9 +516,10 @@ Contributions are welcome! Please follow the standard GitHub flow:
 
 The test suites live alongside the code they cover — the tests themselves are the up-to-date catalog:
 
-- **Shared (KMP)**: each module's `src/commonTest` (plus `androidHostTest`/`iosTest`), next to the code it covers — `presentation` (ViewModels), `core/domain` (use cases, policies, validators), `core/data` (repositories, cache, API, database, data DI), `core/common` (`ErrorHandler`), and `shared` (full DI graph, `KoinHelper`, Android string resolution). Shared fakes live in the test-only `core/testing` module.
-- **Android**: `androidApp/src/test` (unit) and `androidApp/src/androidTest` (instrumented/UI)
-- **iOS**: `iosApp/CocktailCraftTests` (unit) and `iosApp/CocktailCraftUITests` (XCUITest)
+- **Shared (KMP)**: each module's `src/commonTest` (plus `androidHostTest`/`iosTest`), next to the code it covers — `presentation` (ViewModels), `core/domain` (use cases, policies, validators), `core/data` (repositories, cache, API, database, data DI), `core/common` (`ErrorHandler`), and `shared` (full DI graph, `KoinHelper`, Android string resolution).
+- **`core/testing`**: a test-only module (only ever a test dependency) with hand-written fakes (`Fakes.kt`, `FakeOrderRepository`, `FakeReviewRepository`), test data, the `MainDispatcherTest` base and an in-memory SQLite driver (`createInMemorySqlDriver`, plus `CountingSqlDriver`). Tests construct ViewModels and use cases directly through their constructors; there is no mock-based Koin test module. Some `presentation` tests run against the real repositories on the in-memory database (`:core:data` is a test-only dependency there).
+- **Android**: `androidApp/src/test` (JVM unit, Robolectric and screenshot tests) and `androidApp/src/androidTest` (instrumented Compose tests against fake repositories, e.g. `MainScreenSharedVmTest`)
+- **iOS**: `iosApp/CocktailCraftTests` (unit and snapshot tests) and `iosApp/CocktailCraftUITests` (XCUITest flows and the accessibility audit)
 
 Run them with:
 
@@ -529,6 +527,7 @@ Run them with:
 ./gradlew testAndroidHostTest               # Shared (KMP) tests, every module, on the JVM
 ./gradlew iosSimulatorArm64Test             # the same suites on the iOS simulator
 ./gradlew :androidApp:testDebugUnitTest     # Android unit tests (incl. screenshot verify)
+./gradlew :androidApp:connectedDebugAndroidTest  # Android instrumented tests (device/emulator)
 # iOS (from iosApp/, after xcodegen generate):
 xcodebuild test -project CocktailCraft.xcodeproj -scheme CocktailCraft \
   -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5'

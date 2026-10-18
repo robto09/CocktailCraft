@@ -18,7 +18,6 @@ This directory contains the technical documentation for CocktailCraft, a Kotlin 
 ## Build, Tooling & Testing
 
 - **[Libraries](Libraries.md)**: Every dependency with version and purpose, managed via the `libraries.toml` version catalog
-- **[Testing Implementation Summary](TESTING_IMPLEMENTATION_SUMMARY.md)**: Test structure and how to run the shared, Android, and iOS suites
 - **[DebugSwift](DebugSwift.md)**: iOS in-app debugging tool integration and QA usage
 - **[iOS Setup Instructions](../iosApp/iOS_Setup_Instructions.md)**: Complete iOS development environment setup
 
