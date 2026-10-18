@@ -148,6 +148,9 @@ struct ChipStyle: ViewModifier {
 struct BrandedNavigationBarStyle: ViewModifier {
     let title: String
     @Environment(\.appearance) var appearance
+    // Android's top-bar title size (24) at the default text size, scaled
+    // with Dynamic Type like the .title2 style it sits next to
+    @ScaledMetric(relativeTo: .title2) private var titleSize = CGFloat(TypographyTokens.shared.title)
 
     func body(content: Content) -> some View {
         content
@@ -156,13 +159,15 @@ struct BrandedNavigationBarStyle: ViewModifier {
             .navigationBarTitleDisplayMode(.inline)
             // Drawn in the title slot so it can match Android's AppTopBar
             // title (bold, top-bar title size 24, white); the system inline
-            // title is 17pt semibold and ignores appearance overrides here
+            // title is 17pt semibold and ignores appearance overrides here.
+            // It scales with Dynamic Type; lineLimit + minimumScaleFactor
+            // keep long titles at large sizes inside the fixed-height bar.
             .toolbar {
                 // .title is the bar's own title slot on iOS 26+ (centered
                 // with a back button and actions); .principal before that
                 ToolbarItem(placement: .title) {
                     Text(title)
-                        .font(.system(size: CGFloat(TypographyTokens.shared.title), weight: .bold))
+                        .font(.system(size: titleSize, weight: .bold))
                         .foregroundColor(.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
