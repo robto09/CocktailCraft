@@ -12,6 +12,7 @@ import platform.CoreCrypto.kCCPBKDF2
 import platform.CoreCrypto.kCCPRFHmacAlgSHA256
 import platform.CoreCrypto.kCCSuccess
 import platform.Security.SecRandomCopyBytes
+import platform.Security.errSecSuccess
 import platform.Security.kSecRandomDefault
 
 @OptIn(ExperimentalForeignApi::class)
@@ -33,9 +34,12 @@ internal actual fun sha256(data: ByteArray): ByteArray {
 internal actual fun secureRandomBytes(count: Int): ByteArray {
     val bytes = ByteArray(count)
     if (count > 0) {
-        bytes.usePinned { pinned ->
+        val status = bytes.usePinned { pinned ->
             SecRandomCopyBytes(kSecRandomDefault, count.convert(), pinned.addressOf(0))
         }
+        // On failure the buffer is left as zeros; a zero salt must never be
+        // used silently, so fail loudly instead.
+        check(status == errSecSuccess) { "SecRandomCopyBytes failed with status $status" }
     }
     return bytes
 }
