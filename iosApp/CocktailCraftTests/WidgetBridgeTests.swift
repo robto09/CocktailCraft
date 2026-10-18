@@ -26,6 +26,27 @@ final class WidgetDeepLinkTests: XCTestCase {
         XCTAssertNil(WidgetDeepLink.cocktailId(from: try XCTUnwrap(URL(string: "cocktailcraft://cocktail"))))
         XCTAssertNil(WidgetDeepLink.cocktailId(from: try XCTUnwrap(URL(string: "cocktailcraft://cocktail/"))))
     }
+
+    func testNonNumericOrOverlongIdIsRejected() throws {
+        let rejected = [
+            "cocktailcraft://cocktail/abc",
+            "cocktailcraft://cocktail/11007a",
+            "cocktailcraft://cocktail/12345678901", // 11 digits
+            "cocktailcraft://cocktail/-1",
+            "cocktailcraft://cocktail/11007/extra",
+            "cocktailcraft://cocktail/..%2Fprofile",
+            "cocktailcraft://cocktail/%EF%BC%91%EF%BC%92" // full-width digits
+        ]
+        for string in rejected {
+            let url = try XCTUnwrap(URL(string: string), string)
+            XCTAssertNil(WidgetDeepLink.cocktailId(from: url), string)
+        }
+    }
+
+    func testTenDigitIdIsAccepted() throws {
+        let url = try XCTUnwrap(URL(string: "cocktailcraft://cocktail/1234567890"))
+        XCTAssertEqual(WidgetDeepLink.cocktailId(from: url), "1234567890")
+    }
 }
 
 /// Snapshot round-trip through the real App Group container. The container

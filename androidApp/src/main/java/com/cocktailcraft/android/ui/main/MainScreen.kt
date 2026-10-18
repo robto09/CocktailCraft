@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -58,6 +59,7 @@ import com.cocktailcraft.android.navigation.HomeRoute
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.navigation.OrderListRoute
 import com.cocktailcraft.android.navigation.ProfileRoute
+import com.cocktailcraft.android.navigation.isValidCocktailId
 import com.cocktailcraft.android.navigation.Screen
 import com.cocktailcraft.android.screens.CartScreen
 import com.cocktailcraft.android.screens.CocktailDetailScreen
@@ -239,6 +241,14 @@ fun MainScreen() {
             )
         ) { backStackEntry ->
             val route = backStackEntry.toRoute<CocktailDetailRoute>()
+            if (!isValidCocktailId(route.cocktailId)) {
+                // Malformed deep link (any app can fire the VIEW intent):
+                // never hand the raw string to the detail screen. Popping
+                // the entry lands on Home for a cold launch, or back where
+                // the user was for a running app.
+                LaunchedEffect(backStackEntry) { navigationManager.navigateBack() }
+                return@composable
+            }
             CocktailDetailScreen(
                 cocktailId = route.cocktailId,
                 favoritesViewModel = sharedFavoritesViewModel,

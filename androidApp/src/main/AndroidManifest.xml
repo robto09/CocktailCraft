@@ -28,11 +28,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <!-- Cocktail detail deep link: app://cocktailcraft/cocktail/{id}
-                 (COCKTAIL_DEEP_LINK_BASE_PATH in navigation/Routes.kt) -->
+                 (COCKTAIL_DEEP_LINK_BASE_PATH in navigation/Routes.kt).
+                 Not BROWSABLE: only the widgets (explicit intents) need it,
+                 so web pages cannot fire it. The detail route still
+                 rejects ids that are not numeric (isValidCocktailId). -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="app"
                     android:host="cocktailcraft"
