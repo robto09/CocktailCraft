@@ -227,6 +227,60 @@ internal fun CartContent(state: CartUiState, error: UserFriendlyError?, /* lambd
 
 The same split exists for Home, Favorites, Orders, Cocktail Detail and Profile (`HomeContent`, `FavoritesContent`, `OrderListContent`, `CocktailDetailContent`, `ProfileContent`).
 
+## SKIE configuration
+
+The SKIE version lives in the version catalog and the plugin is applied via its catalog alias:
+
+```toml
+# libraries.toml
+[versions]
+skie = "0.10.13"
+
+[plugins]
+skie = { id = "co.touchlab.skie", version.ref = "skie" }
+```
+
+```kotlin
+// shared/build.gradle.kts
+plugins {
+    alias(libs.plugins.skie)
+}
+
+skie {
+    features {
+        group {
+            co.touchlab.skie.configuration.FlowInterop.Enabled(true)
+            co.touchlab.skie.configuration.SuspendInterop.Enabled(true)
+            co.touchlab.skie.configuration.EnumInterop.Enabled(true)
+            co.touchlab.skie.configuration.SealedInterop.Enabled(true)
+            co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(true)
+        }
+        // moko-resources' own classes reach the framework through the
+        // :core:resources module; no default-argument overloads for them
+        group("dev.icerock.moko") {
+            co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(false)
+        }
+    }
+}
+```
+
+SKIE runs only in `:shared`, the umbrella that builds the framework; it
+processes the modules that framework `export()`s (`:presentation`,
+`:core:domain`, `:core:common`, `:core:resources`, `:core:designsystem`).
+
+The five enabled flags and what they buy:
+
+- **FlowInterop** — Kotlin `Flow`/`StateFlow` surface in Swift as `AsyncSequence` (the basis of the wrapper pattern above)
+- **SuspendInterop** — `suspend` functions become Swift `async` functions with cancellation propagation
+- **EnumInterop** — Kotlin enums map to exhaustive Swift enums
+- **SealedInterop** — sealed classes/interfaces get `onEnum(of:)` for exhaustive Swift `switch`
+- **DefaultArgumentInterop** — Kotlin default parameter values generate Swift overloads
+
+If Xcode does not see a newly added Kotlin API, rebuild the framework (the
+app's "Compile Kotlin Framework" phase) before suspecting SKIE. For options
+beyond these flags, see the vendor documentation at
+[skie.touchlab.co](https://skie.touchlab.co).
+
 ## SKIE Enhanced Features
 
 ### 1. StateFlow → AsyncSequence Conversion
@@ -338,7 +392,7 @@ Maintaining the same logic in two places loses the point of Kotlin Multiplatform
 ### ✅ Phase 1: Foundation (COMPLETE)
 - [x] Enhanced SKIE configuration
 - [x] SharedViewModel base class
-- [x] All 9 shared ViewModels implemented
+- [x] All 8 shared ViewModels (plus the `SharedViewModel` base) implemented
 - [x] iOS 18.5 compatibility validated
 - [x] Android compatibility validated
 
@@ -390,14 +444,14 @@ Maintaining the same logic in two places loses the point of Kotlin Multiplatform
 ## Key Takeaways
 
 1. **SKIE doesn't eliminate platform wrappers** — it makes them dramatically simpler
-2. **The business logic is shared** through the 9 shared ViewModels; the thin iOS wrappers handle only platform UI integration
+2. **The business logic is shared** through the 8 shared ViewModels; the thin iOS wrappers handle only platform UI integration
 3. **Android needs no adapter code** — the shared ViewModels are AndroidX ViewModels
 4. **70% code reduction** on iOS compared to manual bridge implementations
 5. **Native experience** on both platforms while sharing core logic
 
 ## Conclusion
 
-The shared ViewModel strategy with SKIE integration has been **successfully completed**. All 9 shared ViewModels are implemented and working across both platforms — consumed directly on Android, and through 8 thin SKIE wrappers on iOS — with:
+The shared ViewModel strategy with SKIE integration has been **successfully completed**. All 8 shared ViewModels are implemented and working across both platforms — consumed directly on Android, and through 8 thin SKIE wrappers on iOS — with:
 
 - ✅ **Complete Implementation**: All ViewModels migrated to shared architecture
 - ✅ **Build Success**: Both platforms compile and run successfully

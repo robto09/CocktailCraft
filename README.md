@@ -283,7 +283,7 @@ For information about the reusable UI components in the app, see:
 - [Android UI Components Documentation](docs/UI_Components.md) - Jetpack Compose components and design system
 - [iOS UI Components Documentation](docs/iOS_UI_Components.md) - SwiftUI components and design system
 
-For details about the iOS migration, SKIE implementation, and native Swift async/await integration, see the [SKIE Full Migration Guide](docs/SKIE_FULL_MIGRATION_GUIDE.md).
+For how the iOS app consumes the shared ViewModels through SKIE (and the SKIE configuration), see the [Shared ViewModel Strategy](docs/Shared_ViewModel_Strategy.md).
 
 ## Package Structure
 
@@ -455,7 +455,7 @@ The application includes comprehensive test coverage:
 ## Troubleshooting
 - **Build Issues**: Try cleaning and rebuilding the project
 - **KMP Plugin Issues**: Make sure the Kotlin Multiplatform plugin is up to date
-- **iOS Builds**: See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) and the [SKIE Full Migration Guide](docs/SKIE_FULL_MIGRATION_GUIDE.md) for details
+- **iOS Builds**: See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) and the [SKIE configuration](docs/Shared_ViewModel_Strategy.md#skie-configuration) for details
 - **iOS Build Warnings**: Non-blocking warnings exist (see iOS documentation for details)
 - **Dependency Resolution**: Check Gradle settings and the `libraries.toml` version catalog
 
@@ -464,7 +464,7 @@ The application includes comprehensive test coverage:
 ### 📚 **Core Documentation**
 - [Documentation Index](docs/README.md) - Index of all project documentation
 - [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) - Complete iOS development setup
-- [SKIE Full Migration Guide](docs/SKIE_FULL_MIGRATION_GUIDE.md) - iOS compatibility and SKIE integration details
+- [Shared ViewModel Strategy](docs/Shared_ViewModel_Strategy.md) - iOS SKIE wrappers and the SKIE configuration
 
 ### 🐛 **QA & Debugging Tools**
 - [DebugSwift Guide](docs/DebugSwift.md) - iOS debugging tool integration and usage for QA testing

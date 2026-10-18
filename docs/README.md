@@ -4,10 +4,9 @@ This directory contains the technical documentation for CocktailCraft, a Kotlin 
 
 ## Architecture & Patterns
 
-- **[Shared ViewModel Strategy](Shared_ViewModel_Strategy.md)**: ViewModel architecture — the 9 shared KMP ViewModels, the 8 iOS SKIE wrappers, and direct consumption on Android
+- **[Shared ViewModel Strategy](Shared_ViewModel_Strategy.md)**: ViewModel architecture — the 8 shared KMP ViewModels plus the `SharedViewModel` base, the 8 iOS SKIE wrappers, direct consumption on Android, and the SKIE configuration
 - **[Dependency Injection](DependencyInjection.md)**: Koin module structure, ViewModel wiring, and testing approach
 - **[Repository Methods](REPOSITORY_METHODS.md)**: Index of the nine focused repository interfaces and their conventions
-- **[SKIE Full Migration Guide](SKIE_FULL_MIGRATION_GUIDE.md)**: SKIE setup and the Kotlin-to-Swift interop patterns it enables
 
 ## Features & Implementation
 
