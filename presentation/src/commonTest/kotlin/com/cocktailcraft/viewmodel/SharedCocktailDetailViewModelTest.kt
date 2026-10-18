@@ -13,22 +13,25 @@ import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
 import dev.icerock.moko.resources.desc.Raw
 import dev.icerock.moko.resources.desc.StringDesc
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
 
 /** A detail source that always fails, for error-path tests. */
 private class FailingDetailRepository(
     private val message: String = "detail lookup failed"
 ) : CocktailDetailRepository {
     override suspend fun getCocktailById(id: String): Result<Cocktail?> = Result.Error(message)
-    override suspend fun refreshCocktailById(id: String): Result<Cocktail?> = Result.Error(message)
+    override fun observeCocktail(id: String): Flow<Cocktail?> = flowOf(null)
+    override suspend fun refreshCocktail(id: String, force: Boolean): Result<Unit> = Result.Error(message)
     override suspend fun getRandomCocktail(): Result<Cocktail?> = Result.Error(message)
     override fun getCocktailImageUrl(cocktail: Cocktail): String = ""
 }

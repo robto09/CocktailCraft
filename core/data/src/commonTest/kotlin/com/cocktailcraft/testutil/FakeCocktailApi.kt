@@ -20,7 +20,22 @@ internal class FakeCocktailApi(var drinks: List<CocktailDto> = emptyList()) : Co
         return drinks.filter { it.name.contains(name, ignoreCase = true) }
     }
 
-    override suspend fun getCocktailById(id: String): CocktailDto? = drinks.find { it.id == id }
+    /** lookup.php calls served so far, to assert request deduplication. */
+    var lookupRequests = 0
+        private set
+
+    /** When > 0, lookup.php suspends this long first (a slow network). */
+    var lookupDelayMs = 0L
+
+    /** When set, only lookup.php throws it. */
+    var lookupError: Exception? = null
+
+    override suspend fun getCocktailById(id: String): CocktailDto? {
+        lookupRequests++
+        if (lookupDelayMs > 0) delay(lookupDelayMs)
+        lookupError?.let { throw it }
+        return drinks.find { it.id == id }
+    }
     override suspend fun getRandomCocktail(): CocktailDto? = drinks.firstOrNull()
 
     override suspend fun filterByIngredient(ingredient: String): List<CocktailDto> {

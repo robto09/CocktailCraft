@@ -8,6 +8,8 @@ import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.util.runCatchingNonCancellation
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlin.native.HiddenFromObjC
 
 @HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
@@ -19,6 +21,16 @@ class GetCocktailDetailUseCase(
     suspend operator fun invoke(cocktailId: String): Result<Cocktail?> {
         return detailRepository.getCocktailById(cocktailId)
     }
+
+    /** The stored cocktail, re-emitted whenever it changes (e.g. after a refresh). */
+    fun observe(cocktailId: String): Flow<Cocktail?> = detailRepository.observeCocktail(cocktailId)
+
+    /**
+     * Background revalidation: refetch the cocktail only when the stored copy
+     * is stale. The result reaches screens through [observe].
+     */
+    suspend fun refreshIfStale(cocktailId: String): Result<Unit> =
+        detailRepository.refreshCocktail(cocktailId, force = false)
 
     suspend fun isFavorite(cocktailId: String): Boolean {
         // Point lookup, not a load (and decode) of every stored favorite
@@ -34,8 +46,16 @@ class GetCocktailDetailUseCase(
         }
     }
 
+    /**
+     * Force-refresh from the network, then return the stored copy. A failed
+     * refresh (offline included) is a [Result.Error]; the stored copy is left
+     * as it was.
+     */
     suspend fun refresh(cocktailId: String): Result<Cocktail?> {
-        return detailRepository.refreshCocktailById(cocktailId)
+        return when (val refreshed = detailRepository.refreshCocktail(cocktailId, force = true)) {
+            is Result.Success -> Result.Success(detailRepository.observeCocktail(cocktailId).first())
+            is Result.Error -> refreshed
+            is Result.Loading -> refreshed
+        }
     }
 }
-

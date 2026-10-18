@@ -1,7 +1,6 @@
 package com.cocktailcraft.data.repository
 
 import com.cocktailcraft.data.cache.CocktailCache
-import com.cocktailcraft.data.cache.CocktailCacheManager
 import com.cocktailcraft.data.cache.OfflineModePolicy
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.remote.ApiRateLimiter
@@ -44,7 +43,6 @@ class CocktailSearchRepositoryImplTest {
         val networkMonitor = FakeNetworkMonitor(online)
         val policy = OfflineModePolicy(networkMonitor)
         val cache = CocktailCache(createTestDatabase(), settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
-        val cacheManager = CocktailCacheManager()
         val remote = CocktailRemoteDataSource(api, ApiRateLimiter())
         val offline = CocktailOfflineRepositoryImpl(
             offlineModePolicy = policy,
@@ -53,7 +51,6 @@ class CocktailSearchRepositoryImplTest {
         val fetcher = CocktailCategoryFetcher(
             remote = remote,
             cocktailCache = cache,
-            cacheManager = cacheManager,
             offlineRepository = offline
         )
         val search = CocktailSearchRepositoryImpl(

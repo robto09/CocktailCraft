@@ -1,5 +1,8 @@
 package com.cocktailcraft.data.cache
 
+import app.cash.sqldelight.Query
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.domain.config.AppConfig
@@ -9,6 +12,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -29,8 +40,17 @@ internal data class CachedCocktailEntry(
     val cachedAtMs: Long = 0L
 )
 
+/** A cached cocktail plus when its row was last written (epoch millis). */
+internal data class CachedCocktailRow(
+    val cocktail: Cocktail,
+    val cachedAtMs: Long
+)
+
 /**
- * Persistent offline cache of cocktails, backed by SQLDelight.
+ * The local cocktail catalog (the cached_cocktail table), backed by
+ * SQLDelight. It is the single source of truth for every cocktail the app
+ * shows: repositories write network results here and the UI reads them back
+ * through the observe* flows, which emit again after every write.
  *
  * Each cocktail is one row, so caching or viewing a cocktail is a single-row
  * upsert instead of rewriting the whole cache.
@@ -38,9 +58,8 @@ internal data class CachedCocktailEntry(
  * Entries expire after [AppConfig.cacheExpirationMs], but only while the app is
  * effectively online — see [shouldApplyExpiry].
  *
- * Eviction matrix (SH-11): this is the PERSISTENT layer. See
- * [CocktailCacheManager] for the separate short-lived (5 min) in-memory
- * category cache and rate-limit state. Eviction is LRU (capped at
+ * Eviction matrix (SH-11): this is the only cocktail store; there is no
+ * in-memory copy with its own expiry. Eviction is LRU (capped at
  * [AppConfig.maxOfflineCocktails]) plus the TTL expiry above — there is no
  * user-facing "clear cache" path.
  *
@@ -284,19 +303,22 @@ internal class CocktailCache(
      * Upserts [cocktails] in order and applies the LRU cap. A list-endpoint
      * placeholder never replaces a cached full record (it would put "Tap to
      * view ingredients" back on cards); the full record is kept and refreshed.
-     * Existing records for the placeholders are read in one batch, not one
-     * SELECT per row. Call inside a transaction.
+     * Likewise a record without a category (the ingredient and alcoholic
+     * filters omit it) keeps the category already stored for that id, so it
+     * doesn't drop out of the category page it was cached for. Existing
+     * records are read in one batch, not one SELECT per row. Call inside a
+     * transaction.
      */
     private fun CocktailCraftDatabase.upsertCocktails(cocktails: List<Cocktail>) {
         val now = nowMs()
-        val placeholderIds = cocktails.filterNot { it.hasFullDetails }.map { it.id }
-        val cachedFull: Map<String, Cocktail> =
-            if (placeholderIds.isEmpty()) emptyMap()
-            else selectPayloads(placeholderIds)
-                .mapNotNull { (id, payload) -> decodeOrNull(payload)?.takeIf { it.hasFullDetails }?.let { id to it } }
-                .toMap()
+        val lookupIds = cocktails
+            .filter { !it.hasFullDetails || normalizedCategory(it) == null }
+            .map { it.id }
+        val existing: Map<String, Cocktail> = selectPayloads(lookupIds)
+            .mapNotNull { (id, payload) -> decodeOrNull(payload)?.let { id to it } }
+            .toMap()
         cocktails.forEach { incoming ->
-            val cocktail = if (incoming.hasFullDetails) incoming else cachedFull[incoming.id] ?: incoming
+            val cocktail = merge(incoming, existing[incoming.id])
             cachedCocktailQueries.upsert(
                 id = cocktail.id,
                 category = normalizedCategory(cocktail),
@@ -306,6 +328,15 @@ internal class CocktailCache(
             )
         }
         cachedCocktailQueries.trimToCapacity(appConfig.maxOfflineCocktails.toLong())
+    }
+
+    /** What to store for [incoming] given the row already cached for its id. */
+    private fun merge(incoming: Cocktail, existing: Cocktail?): Cocktail {
+        val base = if (incoming.hasFullDetails) incoming else existing?.takeIf { it.hasFullDetails } ?: incoming
+        val category = normalizedCategory(base)
+            ?: normalizedCategory(incoming)
+            ?: existing?.let(::normalizedCategory)
+        return if (category == base.category) base else base.copy(category = category)
     }
 
     /**
@@ -321,6 +352,89 @@ internal class CocktailCache(
             null
         }
     }
+
+    // --- Observation: the catalog read path ---
+
+    /**
+     * Emits the rows of [query], mapped by [transform], and again after every
+     * write to cached_cocktail. Querying and decoding run on [ioDispatcher].
+     * Unlike the suspend reads these never delete or touch rows (a read that
+     * writes would re-trigger itself), and expired rows are still served:
+     * stale data stays on screen until a refresh replaces it.
+     *
+     * A failing query is logged and ends the stream, so collectors keep their
+     * last state instead of crashing the scope they collect in.
+     */
+    private fun <T : Any, R> observeQuery(
+        query: CocktailCraftDatabase.() -> Query<T>,
+        transform: (List<T>) -> R
+    ): Flow<R> =
+        flow {
+            ensureLoaded()
+            emitAll(database.value.query().asFlow().mapToList(ioDispatcher))
+        }
+            .map(transform)
+            .flowOn(ioDispatcher)
+            .catch { e -> Logger.e(e) { "Observing the cocktail cache failed: ${e.message}" } }
+
+    private fun decodeReadOnly(rows: List<Pair<String, String>>): List<Cocktail> =
+        rows.mapNotNull { (_, payload) -> decodeOrNull(payload) }
+
+    /** The cached cocktail [id] (null when not cached), re-emitted after every write. */
+    fun observeCocktail(id: String): Flow<Cocktail?> =
+        observeQuery({ cachedCocktailQueries.selectById(id) }) { rows ->
+            rows.firstOrNull()?.let { decodeOrNull(it.payload) }
+        }
+
+    /**
+     * Cached cocktails among [ids], keyed by id (missing and unreadable ids
+     * are absent), re-emitted after every write. One `IN` query per
+     * [MAX_IDS_PER_QUERY] ids.
+     */
+    fun observeCocktailsByIds(ids: List<String>): Flow<Map<String, Cocktail>> {
+        val chunks = ids.distinct().chunked(MAX_IDS_PER_QUERY)
+        if (chunks.isEmpty()) return flowOf(emptyMap())
+        val parts = chunks.map { chunk ->
+            observeQuery({ cachedCocktailQueries.selectByIds(chunk) { id, payload -> id to payload } }) { rows ->
+                decodeReadOnly(rows).associateBy { it.id }
+            }
+        }
+        return combine(parts) { maps -> maps.fold(emptyMap()) { acc, map -> acc + map } }
+    }
+
+    /**
+     * Cached cocktails whose category column is [category], by name,
+     * re-emitted after every write. With [includeUncategorized], rows cached
+     * without a category (they predate category stamping) stand in when no
+     * row carries [category] itself.
+     */
+    fun observeCocktailsByCategory(
+        category: String,
+        includeUncategorized: Boolean = false
+    ): Flow<List<Cocktail>> =
+        observeQuery({
+            if (includeUncategorized) {
+                cachedCocktailQueries.selectByCategoryOrUncategorized(category) { id, payload -> id to payload }
+            } else {
+                cachedCocktailQueries.selectByCategory(category) { id, payload -> id to payload }
+            }
+        }) { rows ->
+            val decoded = decodeReadOnly(rows)
+            decoded.filter { it.category == category }
+                .ifEmpty { decoded }
+                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+        }
+
+    /**
+     * The cached row for [id] with its write time, without counting as an
+     * access or applying expiry. For freshness checks.
+     */
+    suspend fun peekCachedCocktail(id: String): CachedCocktailRow? =
+        withDatabase(null) {
+            cachedCocktailQueries.selectById(id).executeAsOneOrNull()?.let { row ->
+                decodeOrNull(row.payload)?.let { CachedCocktailRow(it, row.cached_at) }
+            }
+        }
 
     /**
      * Cache a cocktail for offline access.

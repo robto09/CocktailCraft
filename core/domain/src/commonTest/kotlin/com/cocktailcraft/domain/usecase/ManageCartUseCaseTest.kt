@@ -10,6 +10,8 @@ import com.cocktailcraft.testutil.FakeDetailRepository
 import com.cocktailcraft.testutil.partialCocktail
 import com.cocktailcraft.testutil.testCocktail
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,7 +35,8 @@ class ManageCartUseCaseTest {
             return Result.Success(byId[id])
         }
 
-        override suspend fun refreshCocktailById(id: String): Result<Cocktail?> = getCocktailById(id)
+        override fun observeCocktail(id: String): Flow<Cocktail?> = flowOf(byId[id])
+        override suspend fun refreshCocktail(id: String, force: Boolean): Result<Unit> = Result.Success(Unit)
         override suspend fun getRandomCocktail(): Result<Cocktail?> = Result.Success(byId.values.firstOrNull())
         override fun getCocktailImageUrl(cocktail: Cocktail): String = cocktail.imageUrl.orEmpty()
     }
