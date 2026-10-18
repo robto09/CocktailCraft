@@ -14,6 +14,8 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasClickAction
@@ -24,10 +26,14 @@ import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.cocktailcraft.android.screens.HomeContentSection
+import com.cocktailcraft.android.screens.OrderDetailContent
 import com.cocktailcraft.android.screens.detail.DetailChipsSection
+import com.cocktailcraft.android.screenshot.ScreenshotFixtures
 import com.cocktailcraft.android.ui.components.ActiveFilterChip
 import com.cocktailcraft.android.ui.components.AnimatedThemeToggleRow
 import com.cocktailcraft.android.ui.components.AppTopBar
@@ -39,6 +45,7 @@ import com.cocktailcraft.android.ui.components.RatingDisplay
 import com.cocktailcraft.android.ui.components.SectionHeader
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
+import com.cocktailcraft.viewmodel.state.OrderUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -232,5 +239,43 @@ class AccessibilitySemanticsTest {
 
         composeRule.onNode(hasText("You're offline — showing saved cocktails.", substring = true))
             .assert(isPoliteLiveRegion)
+    }
+
+    @Test
+    fun orderDetail_reorderPutsTheItemsBackAndIsOfferedForTodaysOrders() {
+        var reorders = 0
+        setContent {
+            OrderDetailContent(
+                state = OrderUiState(selectedOrder = ScreenshotFixtures.completedOrder),
+                onBackClick = {},
+                onConfirmCancel = {},
+                onReorder = { reorders++ }
+            )
+        }
+
+        composeRule.onNodeWithTag("order_detail_reorder")
+            .performScrollTo()
+            .assertIsEnabled()
+            .assert(hasClickAction())
+            .performClick()
+        assertEquals(1, reorders)
+    }
+
+    @Test
+    fun orderDetail_reorderOfAMigratedOrderIsDisabledWithItsReasonAsState() {
+        // Items from before order items recorded their cocktail have no id
+        setContent {
+            OrderDetailContent(
+                state = OrderUiState(selectedOrder = ScreenshotFixtures.inProgressOrder),
+                onBackClick = {},
+                onConfirmCancel = {}
+            )
+        }
+
+        composeRule.onNodeWithTag("order_detail_reorder")
+            .assertIsNotEnabled()
+            .assert(hasStateDescription("Reorder isn't available for orders placed before the latest app update."))
+        // The visible reason is not a second TalkBack stop
+        composeRule.onAllNodes(hasText("Reorder isn't available", substring = true)).assertCountEquals(0)
     }
 }

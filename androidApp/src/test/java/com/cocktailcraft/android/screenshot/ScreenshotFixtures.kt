@@ -47,8 +47,8 @@ internal object ScreenshotFixtures {
         id = "ORD-1024",
         date = "2026-07-02",
         items = listOf(
-            OrderItem(name = "Margarita", quantity = 2, price = Money(1250)),
-            OrderItem(name = "Mojito", quantity = 1, price = Money(900))
+            OrderItem(name = "Margarita", quantity = 2, price = Money(1250), cocktailId = "11007"),
+            OrderItem(name = "Mojito", quantity = 1, price = Money(900), cocktailId = "11000")
         ),
         total = Money(3999),
         status = OrderStatus.DELIVERED
