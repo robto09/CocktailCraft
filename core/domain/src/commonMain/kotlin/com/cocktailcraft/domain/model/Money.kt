@@ -35,9 +35,6 @@ class Money(val cents: Long) : Comparable<Money> {
 
     fun coerceAtLeast(minimum: Money): Money = if (this < minimum) minimum else this
 
-    val isZero: Boolean
-        get() = cents == 0L
-
     /**
      * This amount as US dollars laid out for the device's current locale:
      * "$12.50" in en-US, "12,50 $" in fr-FR.

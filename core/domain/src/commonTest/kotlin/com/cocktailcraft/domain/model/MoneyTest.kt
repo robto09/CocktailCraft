@@ -38,8 +38,6 @@ class MoneyTest {
         assertEquals(Money(1250), Money(1250))
         assertEquals(Money(1250).hashCode(), Money(1250).hashCode())
         assertNotEquals(Money(1250), Money(1251))
-        assertTrue(Money.ZERO.isZero)
-        assertFalse(Money(1).isZero)
     }
 
     @Test

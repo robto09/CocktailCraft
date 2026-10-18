@@ -3,10 +3,7 @@ package com.cocktailcraft.util
 import com.cocktailcraft.domain.util.DomainException
 import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.common_retry
-import com.cocktailcraft.resources.dialog_try_again
 import com.cocktailcraft.resources.error
-import com.cocktailcraft.resources.error_action_log_in
 import com.cocktailcraft.resources.error_generic
 import com.cocktailcraft.resources.error_message_authentication
 import com.cocktailcraft.resources.error_message_forbidden
@@ -29,7 +26,6 @@ import com.cocktailcraft.resources.error_title_data
 import com.cocktailcraft.resources.error_title_network
 import com.cocktailcraft.resources.error_title_server
 import com.cocktailcraft.resources.error_title_timeout
-import com.cocktailcraft.resources.refresh
 import dev.icerock.moko.resources.desc.Raw
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
@@ -269,22 +265,6 @@ object ErrorHandler {
             ErrorCategory.DATA -> MR.strings.error_suggestion_data
             ErrorCategory.UNKNOWN -> MR.strings.error_suggestion_unknown
         }.desc()
-    }
-
-    /**
-     * Get a default recovery action based on error category
-     */
-    fun getDefaultRecoveryAction(category: ErrorCategory, action: () -> Unit): RecoveryAction {
-        val label = when (category) {
-            ErrorCategory.NETWORK -> MR.strings.common_retry
-            ErrorCategory.SERVER -> MR.strings.dialog_try_again
-            ErrorCategory.CLIENT -> MR.strings.refresh
-            ErrorCategory.AUTHENTICATION -> MR.strings.error_action_log_in
-            ErrorCategory.DATA -> MR.strings.refresh
-            ErrorCategory.UNKNOWN -> MR.strings.dialog_try_again
-        }
-
-        return RecoveryAction(label.desc(), action)
     }
 
     /**
