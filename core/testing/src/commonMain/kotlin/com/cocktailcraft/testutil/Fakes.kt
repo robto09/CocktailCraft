@@ -90,7 +90,13 @@ class FakeCartRepository : CartRepository {
 class FakeDetailRepository(
     val byId: MutableMap<String, Cocktail> = mutableMapOf()
 ) : CocktailDetailRepository {
-    override suspend fun getCocktailById(id: String): Result<Cocktail?> = Result.Success(byId[id])
+    /** When set, getCocktailById throws it (e.g. a CancellationException). */
+    var throwOnLookup: Exception? = null
+
+    override suspend fun getCocktailById(id: String): Result<Cocktail?> {
+        throwOnLookup?.let { throw it }
+        return Result.Success(byId[id])
+    }
     override suspend fun refreshCocktailById(id: String): Result<Cocktail?> = Result.Success(byId[id])
     override suspend fun getRandomCocktail(): Result<Cocktail?> = Result.Success(byId.values.firstOrNull())
     override fun getCocktailImageUrl(cocktail: Cocktail): String = cocktail.imageUrl.orEmpty()

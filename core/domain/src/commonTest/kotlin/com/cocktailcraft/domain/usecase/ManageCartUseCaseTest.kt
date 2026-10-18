@@ -6,11 +6,14 @@ import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.FakeCartRepository
+import com.cocktailcraft.testutil.FakeDetailRepository
 import com.cocktailcraft.testutil.partialCocktail
 import com.cocktailcraft.testutil.testCocktail
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -100,5 +103,16 @@ class ManageCartUseCaseTest {
 
         assertTrue(storedCocktail().hasFullDetails)
         assertEquals(3, cart.getCartItems().getOrThrow().single().quantity)
+    }
+
+    @Test
+    fun hydrationRethrowsCancellationInsteadOfStoringThePartialCocktail() = runTest {
+        // A cancelled caller must stop, not fall back to persisting the
+        // placeholder record as if the lookup had merely failed.
+        val detail = FakeDetailRepository().apply { throwOnLookup = CancellationException("left screen") }
+        val useCase = ManageCartUseCase(cart, detail)
+
+        assertFailsWith<CancellationException> { useCase.addToCart(partialCocktail("1")) }
+        assertTrue(cart.getCartItems().getOrThrow().isEmpty())
     }
 }
