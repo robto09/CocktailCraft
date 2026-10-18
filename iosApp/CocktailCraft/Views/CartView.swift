@@ -18,10 +18,13 @@ struct CartView: View {
     var body: some View {
         Group {
             if cartViewModel.state.cartItems.isEmpty {
+                // "Start Shopping" goes to Home, as on Android
                 EmptyStateView(
                     icon: "cart",
                     title: L(\.cart_empty_title),
-                    message: L(\.cart_empty_message_ios)
+                    message: L(\.cart_empty_message_ios),
+                    actionTitle: L(\.cart_start_shopping),
+                    action: { router.selectedTab = .home }
                 )
                 .brandedNavigationBar(title: L(\.cart))
             } else {

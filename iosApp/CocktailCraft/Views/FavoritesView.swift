@@ -7,6 +7,7 @@ struct FavoritesView: View {
     @State private var model = ViewModelHolder(FavoritesViewModelSKIE.init)
     private var viewModel: FavoritesViewModelSKIE { model.wrapper }
     @Environment(CartViewModelSKIE.self) private var cartViewModel
+    @Environment(AppRouter.self) private var router
     /// Ids mid-unfavorite: their heart renders deselected for a beat before
     /// the card animates out, instead of the card vanishing on tap.
     @State private var removingIds: Set<String> = []
@@ -35,11 +36,14 @@ struct FavoritesView: View {
         .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
     }
     
+    /// "Browse Cocktails" goes to Home, as on Android.
     private var emptyStateView: some View {
         EmptyStateView(
             icon: "heart",
             title: L(\.no_favorites),
-            message: L(\.favorites_empty_message_ios)
+            message: L(\.favorites_empty_message_ios),
+            actionTitle: L(\.browse_cocktails),
+            action: { router.selectedTab = .home }
         )
     }
     
