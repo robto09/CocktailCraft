@@ -224,8 +224,8 @@ enum SnapshotFixtures {
         id: "ORD-42052",
         date: "2026-07-02",
         items: [
-            OrderItem(name: "Margarita", quantity: 2, price: Money(cents: 1250)),
-            OrderItem(name: "Mojito", quantity: 1, price: Money(cents: 900))
+            OrderItem(name: "Margarita", quantity: 2, price: Money(cents: 1250), cocktailId: "11007"),
+            OrderItem(name: "Mojito", quantity: 1, price: Money(cents: 900), cocktailId: "11009")
         ],
         total: Money(cents: 3999),
         status: .processing

@@ -180,7 +180,28 @@ final class ComponentSnapshotTests: SnapshotTestCase {
             subtotal: Money(cents: 3400),
             deliveryFee: Money(cents: 599),
             deliveryEstimate: "15-25 minutes",
-            canCancel: true
+            canCancel: true,
+            canReorder: SnapshotFixtures.order.canReorder
+        ))
+    }
+
+    /// An order from before items recorded their cocktail: Reorder dimmed,
+    /// with the reason underneath.
+    func testOrderDetailContentWithoutReorder() {
+        let order = Order(
+            id: "ORD-41007",
+            date: "2026-06-30",
+            items: [OrderItem(name: "Margarita", quantity: 1, price: Money(cents: 1250))],
+            total: Money(cents: 1849),
+            status: .delivered
+        )
+        assertSnapshots(of: OrderDetailContent(
+            order: order,
+            subtotal: order.subtotal,
+            deliveryFee: order.deliveryFee,
+            deliveryEstimate: "Delivered",
+            canCancel: false,
+            canReorder: order.canReorder
         ))
     }
 
