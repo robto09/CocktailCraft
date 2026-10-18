@@ -4,6 +4,13 @@ options:
   deploymentTarget:
     iOS: "17.0"
 
+settings:
+  base:
+    # The Kotlin framework has no x86_64 simulator slice (no iosX64 target in
+    # build-logic), so simulator builds are Apple-silicon only. Without this,
+    # Release simulator builds (ONLY_ACTIVE_ARCH=NO) also try to link x86_64.
+    EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
+
 # Third-party Swift packages (SPM). Package.resolved is committed under
 # CocktailCraft.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/ so every
 # checkout resolves the same versions. Keep this map alphabetical.
