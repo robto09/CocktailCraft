@@ -1,0 +1,217 @@
+# Checks every pull request and every push to dev and main: the same commands
+# as README → "Static analysis" and "Testing", split into a Linux job
+# (Kotlin, Android) and a macOS job (Kotlin/Native, Xcode). No secrets are
+# used: release artifacts are built unsigned.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [dev, main]
+
+# A newer push to the same PR or branch supersedes the run in progress
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Each step is one Gradle invocation; no daemon to keep warm between them
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+
+jobs:
+  android:
+    name: Android and shared Kotlin (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Caches the Gradle distribution, dependencies and build cache. Pull
+      # requests read the cache that dev/main pushes write.
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Static analysis (detekt, ktlint, Compose rules)
+        run: ./gradlew detekt --console=plain
+
+      # commonTest + androidHostTest of every KMP module, on the JVM. (The
+      # iOS test tasks need a Mac; the macOS job runs them.)
+      - name: KMP host tests
+        run: ./gradlew testAndroidHostTest --console=plain
+
+      # Unit, Robolectric and Roborazzi screenshot tests; screenshots are
+      # verified against the committed baselines (roborazzi.test.verify in
+      # gradle.properties). The baselines were recorded on macOS: if Linux
+      # renders a baseline differently, re-record it here or on macOS with
+      # ./gradlew recordRoborazziDebug.
+      - name: Android unit and screenshot tests
+        run: ./gradlew :androidApp:testDebugUnitTest --console=plain
+
+      - name: Database migrations
+        run: ./gradlew :core:data:verifySqlDelightMigration --console=plain
+
+      - name: Android lint (release)
+        run: ./gradlew :androidApp:lintRelease --console=plain
+
+      - name: Release build (unsigned, minified)
+        run: ./gradlew :androidApp:assembleRelease --console=plain
+
+      - name: Upload reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-reports
+          path: |
+            **/build/reports/
+            **/build/test-results/
+            androidApp/build/outputs/roborazzi/
+          if-no-files-found: ignore
+
+  ios:
+    name: iOS (macOS)
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      DERIVED_DATA: ${{ github.workspace }}/build/DerivedData
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      # The Kotlin/Native toolchain and its dependencies (~1 GB) live outside
+      # the Gradle user home, so setup-gradle does not cache them
+      - name: Cache Kotlin/Native toolchain
+        uses: actions/cache@v4
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('libraries.toml') }}
+          restore-keys: konan-${{ runner.os }}-
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      # Kotlin/Native tests of every KMP module on the iOS simulator. Without
+      # CONFIGURATION=Debug the iOS test mode is compiled into the test
+      # source set only (see includeIosTestMode in shared/build.gradle.kts).
+      - name: KMP iOS simulator tests
+        run: ./gradlew iosSimulatorArm64Test --console=plain
+
+      # The committed Xcode project is generated output; fail if it is out of
+      # date with iosApp/project.yml or the file tree. XcodeGen is pinned to
+      # the version the project was generated with, since another version
+      # can write the same project differently.
+      - name: Generate the Xcode project and check it is committed
+        env:
+          XCODEGEN_VERSION: "2.45.4"
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/xcodegen.zip" \
+            "https://github.com/yonaskolb/XcodeGen/releases/download/$XCODEGEN_VERSION/xcodegen.zip"
+          unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP"
+          cd iosApp
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate
+          git diff --exit-code -- CocktailCraft.xcodeproj ||
+            { echo "::error::CocktailCraft.xcodeproj is out of date: run xcodegen generate in iosApp and commit the result"; exit 1; }
+
+      # Snapshot references were recorded on an iPhone 16 Pro simulator on
+      # iOS 18.5. When the runner has that runtime the snapshot tests must
+      # pass (SNAPSHOT_REQUIRE_REFERENCE_RUNTIME); otherwise they skip
+      # themselves (XCTSkip, see SnapshotSupport.swift) and every other unit
+      # test still runs.
+      - name: Pick a simulator
+        id: simulator
+        run: |
+          read -r udid reference < <(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          def find(runtime_suffix, name):
+              for runtime, entries in sorted(devices.items(), reverse=True):
+                  if "iOS" not in runtime or not runtime.endswith(runtime_suffix):
+                      continue
+                  for device in entries:
+                      if name is None or device["name"] == name:
+                          return device["udid"]
+              return None
+          reference = find("iOS-18-5", "iPhone 16 Pro")
+          fallback = find("", "iPhone 16 Pro") or find("", None)
+          print(reference or fallback, "yes" if reference else "no")
+          ')
+          if [ -z "$udid" ] || [ "$udid" = "None" ]; then
+            echo "::error::No iOS simulator available"; exit 1
+          fi
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+          echo "reference=$reference" >> "$GITHUB_OUTPUT"
+          if [ "$reference" = "yes" ]; then
+            echo "Using iPhone 16 Pro on iOS 18.5 ($udid): snapshot tests are verified"
+          else
+            echo "::notice::No iPhone 16 Pro iOS 18.5 simulator on this runner; snapshot tests are skipped, the other unit tests run"
+          fi
+
+      # Debug build of the app (the "Compile Kotlin Framework" phase builds
+      # the shared framework through Gradle) and the CocktailCraftTests unit
+      # and snapshot tests. The UI tests are left to local runs.
+      - name: Build and run Xcode unit tests (Debug)
+        working-directory: iosApp
+        env:
+          TEST_RUNNER_SNAPSHOT_REQUIRE_REFERENCE_RUNTIME: ${{ steps.simulator.outputs.reference == 'yes' && '1' || '' }}
+        run: |
+          if [ -z "$TEST_RUNNER_SNAPSHOT_REQUIRE_REFERENCE_RUNTIME" ]; then
+            unset TEST_RUNNER_SNAPSHOT_REQUIRE_REFERENCE_RUNTIME
+          fi
+          xcodebuild test \
+            -project CocktailCraft.xcodeproj \
+            -scheme CocktailCraft \
+            -configuration Debug \
+            -destination "id=${{ steps.simulator.outputs.udid }}" \
+            -derivedDataPath "$DERIVED_DATA" \
+            -only-testing:CocktailCraftTests
+
+      # Release configuration for the simulator, unsigned (DEVELOPMENT_TEAM is
+      # empty). Its "Strip DebugSwift from Release" phase fails the build if
+      # DebugSwift is linked; the check below does the same for the Debug-only
+      # Kotlin test mode and QA hooks.
+      - name: Build the Release configuration
+        working-directory: iosApp
+        run: |
+          xcodebuild build \
+            -project CocktailCraft.xcodeproj \
+            -scheme CocktailCraft \
+            -configuration Release \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath "$DERIVED_DATA" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Check the Release app has no Debug-only Kotlin code
+        run: |
+          bin="$DERIVED_DATA/Build/Products/Release-iphonesimulator/CocktailCraft.app/CocktailCraft"
+          [ -f "$bin" ] || { echo "::error::No Release app binary at $bin"; exit 1; }
+          if grep -a -q -E 'MockEngine|IosTestMode|doInitKoinForTesting|debugClearFavorites|debugResetUserData|debugSetSimulatedNetworkFailure|SimulatedNetworkFailure' "$bin"; then
+            echo "::error::The Release app contains the iOS test mode or Debug QA hooks"
+            exit 1
+          fi
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-reports
+          path: |
+            **/build/reports/
+            **/build/test-results/
+            ${{ env.DERIVED_DATA }}/Logs/Test/
+          if-no-files-found: ignore

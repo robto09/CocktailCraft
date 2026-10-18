@@ -476,7 +476,8 @@ The application includes comprehensive test coverage:
 
 ## Static analysis
 
-All checks are local (there is no CI). Findings that predate a tool are
+CI (`.github/workflows/ci.yml`) runs these checks and the tests below on
+every pull request and push to `dev` and `main`. Findings that predate a tool are
 recorded in baselines, so the commands below pass today and report only new
 issues.
 
