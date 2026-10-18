@@ -73,12 +73,12 @@ private class FakeOrderRepository : OrderRepository {
         return Result.Success(orders.value)
     }
 
-    /** When set, placeOrder suspends until completed (to observe the in-flight state). */
+    /** When set, placeOrderAndClearCart suspends until completed (to observe the in-flight state). */
     var placeGate: CompletableDeferred<Unit>? = null
 
     var placeOrderCalls = 0
 
-    override suspend fun placeOrder(order: Order): Result<Unit> {
+    override suspend fun placeOrderAndClearCart(order: Order): Result<Unit> {
         placeOrderCalls++
         placeGate?.await()
         errorMessage?.let { return Result.Error(it) }
@@ -86,15 +86,8 @@ private class FakeOrderRepository : OrderRepository {
         return Result.Success(Unit)
     }
 
-    override suspend fun placeOrderAndClearCart(order: Order): Result<Unit> = placeOrder(order)
-
     override suspend fun getOrderById(id: String): Result<Order?> =
         Result.Success(orders.value.find { it.id == id })
-
-    override suspend fun updateOrderStatus(id: String, status: OrderStatus): Result<Unit> {
-        orders.value = orders.value.map { if (it.id == id) it.copy(status = status) else it }
-        return Result.Success(Unit)
-    }
 
     override suspend fun deleteOrder(id: String): Result<Unit> {
         orders.value = orders.value.filterNot { it.id == id }
@@ -103,7 +96,7 @@ private class FakeOrderRepository : OrderRepository {
 
     override suspend fun cancelOrder(orderId: String): Result<Boolean> {
         if (orders.value.none { it.id == orderId }) return Result.Success(false)
-        updateOrderStatus(orderId, OrderStatus.CANCELLED)
+        orders.value = orders.value.map { if (it.id == orderId) it.copy(status = OrderStatus.CANCELLED) else it }
         return Result.Success(true)
     }
 }
@@ -300,19 +293,5 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         assertEquals(OrderStatus.CANCELLED, vm.uiState.value.orders.single().status)
-    }
-
-    @Test
-    fun updateOrderStatusRefreshesOrders() = runTest {
-        val repository = FakeOrderRepository()
-        repository.seed(testOrder("o1", status = OrderStatus.PROCESSING))
-        val vm = viewModel(repository)
-        advanceUntilIdle()
-
-        assertTrue(vm.updateOrderStatus("o1", OrderStatus.DELIVERED))
-        advanceUntilIdle()
-
-        assertEquals(OrderStatus.DELIVERED, vm.uiState.value.orders.single().status)
-        assertFalse(vm.uiState.value.isLoading)
     }
 }

@@ -1,7 +1,7 @@
 package com.cocktailcraft.data.repository
 
 import com.cocktailcraft.data.security.PasswordHasher
-import com.cocktailcraft.domain.model.Address
+import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrThrow
@@ -195,18 +195,6 @@ class AuthRepositoryImplTest {
         assertIs<Result.Error>(repository.signIn("a@b.com", "secret123"))
     }
 
-    @Test
-    fun updateUserEmailStoresNormalizedEmailAndRejectsAnotherAccountsEmail() = runTest {
-        repository.signUp("other@b.com", "secret456")
-        repository.signUp("a@b.com", "secret123")
-
-        assertFalse(repository.updateUserEmail("OTHER@b.com", "secret123").getOrThrow())
-        assertTrue(repository.updateUserEmail(" New@B.com", "secret123").getOrThrow())
-
-        assertEquals("new@b.com", repository.getCurrentUser().getOrThrow()?.email)
-        assertTrue(repository.signIn("NEW@b.com", "secret123").getOrThrow())
-    }
-
     // --- Concurrency ---
 
     @Test
@@ -217,16 +205,15 @@ class AuthRepositoryImplTest {
         repository.signUp("a@b.com", "secret123")
 
         repeat(50) { round ->
-            val address = Address(street = "$round Main St")
+            val preferences = UserPreferences(language = "lang-$round")
             withContext(Dispatchers.Default) {
                 awaitAll(
                     async { repository.updateUserName("Name $round") },
-                    async { repository.updateUserAddress(address) }
+                    async { repository.updateUserPreferences(preferences) }
                 )
             }
-            val user = repository.getCurrentUser().getOrThrow()
-            assertEquals("Name $round", user?.name)
-            assertEquals(address, user?.address)
+            assertEquals("Name $round", repository.getCurrentUser().getOrThrow()?.name)
+            assertEquals(preferences, repository.getUserPreferences().getOrThrow())
         }
     }
 

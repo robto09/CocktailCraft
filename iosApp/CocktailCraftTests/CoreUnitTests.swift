@@ -32,10 +32,9 @@ final class DeliveryPolicyBridgeTests: XCTestCase {
         XCTAssertEqual(DeliveryPolicy.shared.deliveryFee(subtotal: Money(cents: 7500)).cents, 0)
     }
 
-    func testEstimatedDeliveryTimeBuckets() {
-        XCTAssertEqual(DeliveryPolicy.shared.estimatedDeliveryTime(itemCount: 0).localized(), "No items")
-        XCTAssertEqual(DeliveryPolicy.shared.estimatedDeliveryTime(itemCount: 2).localized(), "15-20 minutes")
-        XCTAssertEqual(DeliveryPolicy.shared.estimatedDeliveryTime(itemCount: 9).localized(), "25-30 minutes")
+    func testEstimatedDeliveryTimeByStatus() {
+        XCTAssertEqual(DeliveryPolicy.shared.estimatedDeliveryTimeForStatus(status: OrderStatus.processing).localized(), "15-25 minutes")
+        XCTAssertEqual(DeliveryPolicy.shared.estimatedDeliveryTimeForStatus(status: OrderStatus.shipped).localized(), "5-10 minutes")
     }
 }
 

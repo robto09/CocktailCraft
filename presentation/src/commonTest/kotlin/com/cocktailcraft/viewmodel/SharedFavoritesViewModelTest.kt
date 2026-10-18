@@ -70,22 +70,6 @@ class SharedFavoritesViewModelTest : MainDispatcherTest() {
     }
 
     @Test
-    fun clearAllFavoritesEmptiesStateAndRepository() = runTest {
-        val repository = FakeFavoritesRepository()
-        repository.addToFavorites(testCocktail("1"))
-        repository.addToFavorites(testCocktail("2"))
-        val vm = viewModel(repository)
-        advanceUntilIdle()
-
-        vm.clearAllFavorites()
-        advanceUntilIdle() // state arrives via the observed favorites flow (SH-4)
-
-        assertTrue(vm.uiState.value.favorites.isEmpty())
-        assertEquals(0, vm.uiState.value.favoriteCount)
-        assertTrue(repository.stored.isEmpty())
-    }
-
-    @Test
     fun toggleFailureReportsErrorAndKeepsState() = runTest {
         val repository = FlakyFavoritesRepository()
         val vm = SharedFavoritesViewModel(ManageFavoritesUseCase(repository, FakeDetailRepository()))
@@ -115,23 +99,6 @@ class SharedFavoritesViewModelTest : MainDispatcherTest() {
 
         assertNull(vm.error.value, "a successful retry must clear the earlier error")
         assertTrue(vm.isFavorite("42"))
-    }
-
-    @Test
-    fun clearAllFavoritesReportsAFailedRemoval() = runTest {
-        val repository = FlakyFavoritesRepository()
-        repository.addToFavorites(testCocktail("1"))
-        repository.addToFavorites(testCocktail("2"))
-        val vm = SharedFavoritesViewModel(ManageFavoritesUseCase(repository, FakeDetailRepository()))
-        advanceUntilIdle()
-
-        repository.failingMutations = 1
-        vm.clearAllFavorites()
-        advanceUntilIdle()
-
-        assertNotNull(vm.error.value, "a failed removal must be reported")
-        // The other removal still went through
-        assertEquals(listOf("1"), vm.uiState.value.favorites.map { it.id })
     }
 
     private fun SharedFavoritesViewModel.isFavorite(cocktailId: String): Boolean =

@@ -1,11 +1,9 @@
 package com.cocktailcraft.domain.usecase
 
-import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.util.Result
-import com.cocktailcraft.domain.util.getOrDefault
 import kotlin.native.HiddenFromObjC
 
 @HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
@@ -34,10 +32,6 @@ class ManageProfileUseCase(
 
     suspend fun updateUserName(name: String): Result<Boolean> {
         return authRepository.updateUserName(name)
-    }
-
-    suspend fun updateUserAddress(address: Address): Result<Boolean> {
-        return authRepository.updateUserAddress(address)
     }
 
     suspend fun changePassword(oldPassword: String, newPassword: String): Result<Boolean> {

@@ -4,12 +4,10 @@ import app.cash.turbine.test
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.favorite_removed
-import com.cocktailcraft.resources.favorites_cleared
 import com.cocktailcraft.testutil.FakeDetailRepository
 import com.cocktailcraft.testutil.FlakyFavoritesRepository
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
-import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -78,20 +76,5 @@ class SharedFavoritesViewModelUndoTest : MainDispatcherTest() {
 
         assertNotNull(vm.error.value)
         assertTrue(repository.stored.isEmpty())
-    }
-
-    @Test
-    fun clearingAllFavoritesOffersUndoThatRestoresThemInOrder() = runTest {
-        val vm = viewModelWith("1", "2", "3")
-
-        val event = vm.eventFrom { vm.clearAllFavorites() }
-        assertEquals(MR.strings.favorites_cleared.desc(), event.message)
-        advanceUntilIdle()
-        assertTrue(vm.ids().isEmpty())
-
-        assertNotNull(event.action).perform()
-        advanceUntilIdle()
-
-        assertEquals(listOf("1", "2", "3"), vm.ids())
     }
 }

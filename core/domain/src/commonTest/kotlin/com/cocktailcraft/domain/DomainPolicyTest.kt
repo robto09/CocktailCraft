@@ -6,7 +6,6 @@ import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.common_unknown
 import com.cocktailcraft.resources.delivery_estimate_minutes
-import com.cocktailcraft.resources.delivery_estimate_no_items
 import com.cocktailcraft.resources.order_status_delivered
 import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
@@ -46,14 +45,6 @@ class DeliveryPolicyTest {
     @Test
     fun emptyCartHasTheStandardFee() {
         assertEquals(Money(599), DeliveryPolicy.finalTotal(Money.ZERO))
-    }
-
-    @Test
-    fun estimatedTimeScalesWithItemCount() {
-        assertEquals(MR.strings.delivery_estimate_no_items.desc(), DeliveryPolicy.estimatedDeliveryTime(0))
-        assertEquals(MR.strings.delivery_estimate_minutes.format(15, 20), DeliveryPolicy.estimatedDeliveryTime(3))
-        assertEquals(MR.strings.delivery_estimate_minutes.format(20, 25), DeliveryPolicy.estimatedDeliveryTime(6))
-        assertEquals(MR.strings.delivery_estimate_minutes.format(25, 30), DeliveryPolicy.estimatedDeliveryTime(7))
     }
 
     @Test

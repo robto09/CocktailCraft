@@ -6,13 +6,10 @@ import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.error_clear_favorites_failed
 import com.cocktailcraft.resources.error_load_favorites_failed
 import com.cocktailcraft.resources.error_update_favorites_failed
 import com.cocktailcraft.resources.favorite_removed
-import com.cocktailcraft.resources.favorites_cleared
 import com.cocktailcraft.viewmodel.state.FavoritesUiState
-import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -104,39 +101,9 @@ class SharedFavoritesViewModel internal constructor(
     }
 
     /**
-     * Clear all favorites. State updates arrive via the observed flow (SH-4).
-     * Every removal is attempted; if any fails, the first failure is reported
-     * (the ones that succeeded stay removed). Whatever was removed is
-     * announced on [events] with an Undo action that restores it, in order.
-     * SKIE will convert this to Swift async function.
-     */
-    suspend fun clearAllFavorites() {
-        clearError()
-        try {
-            // Remove all favorites one by one since clearFavorites doesn't exist
-            val currentFavorites = _uiState.value.favorites
-            val results = currentFavorites.map { it to manageFavoritesUseCase.removeFromFavorites(it) }
-            val removed = results.filter { (_, result) -> result !is Result.Error }.map { (cocktail, _) -> cocktail }
-            results.firstOrNull { (_, result) -> result is Result.Error }
-                ?.second?.getOrReport(Unit, MR.strings.error_clear_favorites_failed)
-            if (removed.isNotEmpty()) {
-                sendEvent(
-                    UiEvent.Success(
-                        message = MR.strings.favorites_cleared.desc(),
-                        action = undoAction { restore(removed) }
-                    )
-                )
-            }
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_clear_favorites_failed)
-        }
-    }
-
-    /**
-     * Undo for [removeFavorite] / [clearAllFavorites]: favorites [cocktails]
-     * again, in order. The repository appends re-added favorites, so after a
-     * single removal the cocktail returns at the end of the list. Stops at,
-     * and reports, the first failure.
+     * Undo for [removeFavorite]: favorites [cocktails] again, in order. The
+     * repository appends re-added favorites, so the cocktail returns at the
+     * end of the list. Stops at, and reports, the first failure.
      */
     private suspend fun restore(cocktails: List<Cocktail>) {
         clearError()

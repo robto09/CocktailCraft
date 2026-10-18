@@ -3,7 +3,6 @@ package com.cocktailcraft.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
-import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.model.sumOfMoney
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
@@ -22,13 +21,11 @@ import com.cocktailcraft.resources.error_load_orders_failed
 import com.cocktailcraft.resources.error_order_failed_title
 import com.cocktailcraft.resources.error_place_order_failed
 import com.cocktailcraft.resources.error_reorder_failed
-import com.cocktailcraft.resources.error_update_order_status_failed
 import com.cocktailcraft.resources.order_cancelled_message
 import com.cocktailcraft.resources.order_reorder_added
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.util.runCatchingNonCancellation
 import com.cocktailcraft.viewmodel.state.OrderUiState
-import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
 import kotlinx.coroutines.flow.*
@@ -169,27 +166,6 @@ class SharedOrderViewModel internal constructor(
     }
 
     /**
-     * Update order status.
-     * SKIE will convert this to Swift async function.
-     */
-    suspend fun updateOrderStatus(orderId: String, status: OrderStatus): Boolean {
-        clearError()
-        return try {
-            val result = orderRepository.updateOrderStatus(orderId, status)
-            if (result.isSuccess()) {
-                loadOrders() // Refresh orders list
-                true
-            } else {
-                handleException(Exception("Failed to update order status"), MR.strings.error_update_order_status_failed)
-                false
-            }
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_update_order_status_failed)
-            false
-        }
-    }
-    
-    /**
      * Cancel an order. Success is announced on [events] ("Order cancelled")
      * and the list and detail state pick up the new status; a failure is
      * reported on [error]. A call while a cancel is in flight is ignored
@@ -253,13 +229,6 @@ class SharedOrderViewModel internal constructor(
         }
     }
 
-// MARK: - Synchronous Helper Methods
-    
-    /**
-     * Get order status display text.
-     */
-    fun getOrderStatusDisplay(status: OrderStatus): StringDesc = status.displayName
-    
     /**
      * Refresh orders data.
      */

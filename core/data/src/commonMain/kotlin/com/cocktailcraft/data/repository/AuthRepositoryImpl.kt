@@ -4,13 +4,14 @@ import com.cocktailcraft.data.security.AuthStorageKeys
 import com.cocktailcraft.data.security.PasswordHasher
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
-import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.error_sign_in_locked_out_minutes
 import com.cocktailcraft.resources.error_sign_in_locked_out_seconds
+import com.cocktailcraft.util.UUID
+import com.cocktailcraft.util.runCatchingResult
 import com.russhwolf.settings.Settings
 import dev.icerock.moko.resources.desc.PluralFormatted
 import dev.icerock.moko.resources.desc.StringDesc
@@ -23,8 +24,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import com.cocktailcraft.util.UUID
-import com.cocktailcraft.util.runCatchingResult
 import kotlin.time.Clock
 
 /**
@@ -139,29 +138,6 @@ internal class AuthRepositoryImpl(
         locked("Failed to update user name") {
             val currentUser = getCurrentUserSync() ?: return@locked Result.Success(false)
             val updatedUser = currentUser.copy(name = name)
-            updateUser(updatedUser)
-            Result.Success(true)
-        }
-
-    override suspend fun updateUserEmail(email: String, password: String): Result<Boolean> =
-        locked("Failed to update email") {
-            val currentUser = getCurrentUserSync() ?: return@locked Result.Success(false)
-            val owner = getUserByEmail(email)
-            if (owner != null && owner.id != currentUser.id) return@locked Result.Success(false)
-            if (!verifyCredentials(currentUser.email, password)) return@locked Result.Success(false)
-
-            val newEmail = normalizeEmail(email)
-            settings.remove(passwordKey(currentUser.email))
-            val updatedUser = currentUser.copy(email = newEmail)
-            updateUser(updatedUser)
-            saveCredentials(newEmail, password)
-            Result.Success(true)
-        }
-
-    override suspend fun updateUserAddress(address: Address): Result<Boolean> =
-        locked("Failed to update address") {
-            val currentUser = getCurrentUserSync() ?: return@locked Result.Success(false)
-            val updatedUser = currentUser.copy(address = address)
             updateUser(updatedUser)
             Result.Success(true)
         }

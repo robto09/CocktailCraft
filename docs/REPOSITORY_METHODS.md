@@ -42,13 +42,12 @@ suspend fun filterByCategory(category: String): Result<List<Cocktail>>
 ```
 
 ### CocktailDetailRepository
-Single-cocktail lookups and image URL resolution.
+Single-cocktail lookups.
 
 ```kotlin
 suspend fun getCocktailById(id: String): Result<Cocktail?>
 suspend fun refreshCocktailById(id: String): Result<Cocktail?>   // bypasses cache
 suspend fun getRandomCocktail(): Result<Cocktail?>
-fun getCocktailImageUrl(cocktail: Cocktail): String
 ```
 
 ### CocktailCatalogRepository
@@ -91,7 +90,6 @@ suspend fun addToCart(cartItem: CocktailCartItem): Result<Unit>
 suspend fun removeFromCart(cocktailId: String): Result<Unit>
 suspend fun updateQuantity(cocktailId: String, quantity: Int): Result<Unit>
 suspend fun clearCart(): Result<Unit>
-suspend fun getCartTotal(): Result<Double>
 ```
 
 ### OrderRepository
@@ -100,10 +98,8 @@ Order placement, history, and status.
 ```kotlin
 fun observeOrders(): Flow<List<Order>>
 suspend fun getOrders(): Result<List<Order>>
-suspend fun placeOrder(order: Order): Result<Unit>
 suspend fun placeOrderAndClearCart(order: Order): Result<Unit>   // checkout: order insert + cart clear in one transaction
 suspend fun getOrderById(id: String): Result<Order?>
-suspend fun updateOrderStatus(id: String, status: String): Result<Unit>
 suspend fun deleteOrder(id: String): Result<Unit>
 suspend fun cancelOrder(orderId: String): Result<Boolean>
 ```
@@ -122,8 +118,6 @@ suspend fun getCurrentUser(): Result<User?>
 
 // Profile
 suspend fun updateUserName(name: String): Result<Boolean>
-suspend fun updateUserEmail(email: String, password: String): Result<Boolean>
-suspend fun updateUserAddress(address: Address): Result<Boolean>
 
 // Preferences
 suspend fun updateUserPreferences(preferences: UserPreferences): Result<Boolean>

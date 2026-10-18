@@ -3,6 +3,7 @@ package com.cocktailcraft.data.repository
 import app.cash.turbine.test
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Money
+import com.cocktailcraft.domain.model.sumOfMoney
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.createTestLocalDatabase
@@ -31,7 +32,7 @@ class CartRepositoryImplTest {
         val items = repository.getCartItems().getOrThrow()
         assertEquals(1, items.size)
         assertEquals(3, items.single().quantity)
-        assertEquals(Money(3000), repository.getCartTotal().getOrThrow())
+        assertEquals(Money(3000), repository.getCartItems().getOrThrow().sumOfMoney { it.lineTotal })
     }
 
     @Test
@@ -48,7 +49,7 @@ class CartRepositoryImplTest {
 
         val items = repository.getCartItems().getOrThrow()
         assertEquals(listOf("1" to 3, "2" to 1), items.map { it.cocktail.id to it.quantity })
-        assertEquals(Money(3 * 1250 + 999), repository.getCartTotal().getOrThrow())
+        assertEquals(Money(3 * 1250 + 999), repository.getCartItems().getOrThrow().sumOfMoney { it.lineTotal })
     }
 
     @Test
@@ -82,7 +83,7 @@ class CartRepositoryImplTest {
 
         repository.updateQuantity("1", 5).getOrThrow()
         assertEquals(5, repository.getCartItems().getOrThrow().single().quantity)
-        assertEquals(Money(5000), repository.getCartTotal().getOrThrow())
+        assertEquals(Money(5000), repository.getCartItems().getOrThrow().sumOfMoney { it.lineTotal })
 
         repository.updateQuantity("1", 0).getOrThrow()
         assertTrue(repository.getCartItems().getOrThrow().isEmpty())
@@ -96,7 +97,6 @@ class CartRepositoryImplTest {
         repository.clearCart().getOrThrow()
 
         assertTrue(repository.getCartItems().getOrThrow().isEmpty())
-        assertEquals(Money.ZERO, repository.getCartTotal().getOrThrow())
         assertTrue(repository().getCartItems().getOrThrow().isEmpty(), "persisted cart must be empty")
     }
 
@@ -112,7 +112,7 @@ class CartRepositoryImplTest {
         assertEquals(listOf("1", "2"), items.map { it.cocktail.id })
         assertEquals(listOf(2, 1), items.map { it.quantity })
         assertEquals(testCocktail("1", price = Money(1250)), items.first().cocktail)
-        assertEquals(Money(3300), second.getCartTotal().getOrThrow())
+        assertEquals(Money(3300), second.getCartItems().getOrThrow().sumOfMoney { it.lineTotal })
     }
 
     @Test

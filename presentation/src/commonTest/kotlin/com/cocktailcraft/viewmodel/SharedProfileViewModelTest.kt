@@ -1,7 +1,6 @@
 package com.cocktailcraft.viewmodel
 
 import app.cash.turbine.test
-import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.repository.AuthRepository
@@ -20,6 +19,11 @@ import com.russhwolf.settings.MapSettings
 import dev.icerock.moko.resources.desc.Raw
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -27,11 +31,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
 
 /** An auth store that is completely unavailable, for error-propagation tests. */
 private class FailingAuthRepository(
@@ -45,8 +44,6 @@ private class FailingAuthRepository(
     override suspend fun isUserSignedIn(): Result<Boolean> = Result.Error(message)
     override suspend fun getCurrentUser(): Result<User?> = Result.Error(message)
     override suspend fun updateUserName(name: String): Result<Boolean> = Result.Error(message)
-    override suspend fun updateUserEmail(email: String, password: String): Result<Boolean> = Result.Error(message)
-    override suspend fun updateUserAddress(address: Address): Result<Boolean> = Result.Error(message)
     override suspend fun updateUserPreferences(preferences: UserPreferences): Result<Boolean> = Result.Error(message)
     override suspend fun getUserPreferences(): Result<UserPreferences> = Result.Error(message)
 }

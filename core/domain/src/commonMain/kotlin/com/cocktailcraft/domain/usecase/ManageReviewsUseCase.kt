@@ -52,20 +52,6 @@ class ManageReviewsUseCase(
         return if (reviews.isNotEmpty()) reviews.map { it.rating }.average().toFloat() else 0.0f
     }
 
-    /**
-     * Review counts per whole star, 1..5 (a 4.5 counts as 4). A rating
-     * outside 1..5 — only possible from bad stored data, since
-     * [validateReview] rejects it — is left out instead of crashing.
-     */
-    fun getRatingDistribution(reviews: List<Review>): Map<Int, Int> {
-        val distribution = (1..5).associateWithTo(mutableMapOf()) { 0 }
-        reviews.forEach { review ->
-            val stars = review.rating.toInt()
-            distribution[stars]?.let { distribution[stars] = it + 1 }
-        }
-        return distribution
-    }
-
     /** The validation failure to show, or null when the review is valid. */
     fun validateReview(rating: Float, comment: String): StringDesc? {
         return when {

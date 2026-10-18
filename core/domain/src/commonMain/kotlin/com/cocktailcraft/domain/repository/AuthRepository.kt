@@ -2,7 +2,6 @@ package com.cocktailcraft.domain.repository
 
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
-import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.util.Result
 
 interface AuthRepository {
@@ -16,8 +15,6 @@ interface AuthRepository {
 
     // Profile management methods
     suspend fun updateUserName(name: String): Result<Boolean>
-    suspend fun updateUserEmail(email: String, password: String): Result<Boolean>
-    suspend fun updateUserAddress(address: Address): Result<Boolean>
 
     // Preferences management
     suspend fun updateUserPreferences(preferences: UserPreferences): Result<Boolean>

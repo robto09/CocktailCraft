@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.cocktailcraft.domain.config.DeliveryPolicy
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
 import com.cocktailcraft.util.ErrorHandler
@@ -64,7 +65,7 @@ class SharedStringsTest {
             "Unable to connect to the server. Please check your internet connection.",
             ErrorHandler.getErrorFromException(IOException("offline")).message.text()
         )
-        assertEquals("15-20 minutes", DeliveryPolicy.estimatedDeliveryTime(2).text())
+        assertEquals("15-25 minutes", DeliveryPolicy.estimatedDeliveryTimeForStatus(OrderStatus.PROCESSING).text())
     }
 
     @Test
