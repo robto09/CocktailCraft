@@ -3,6 +3,9 @@ package com.cocktailcraft.util
 import com.cocktailcraft.domain.util.DomainException
 import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.domain.util.getOrThrow
+import dev.icerock.moko.resources.desc.Raw
+import dev.icerock.moko.resources.desc.StringDesc
 import kotlinx.coroutines.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,6 +38,18 @@ class ResultCatchingTest {
         val error = result as Result.Error
         assertEquals(ErrorCode.NOT_FOUND, error.code, "a nested getOrThrow() must not lose its code")
         assertEquals("no such cocktail", error.message)
+    }
+
+    @Test
+    fun displayMessageSurvivesGetOrThrowAndRunCatchingResult() {
+        val localized = StringDesc.Raw("localized copy")
+        val original = Result.Error("raw", ErrorCode.FORBIDDEN, displayMessage = localized)
+
+        val thrown = assertFailsWith<DomainException> { original.getOrThrow() }
+        assertEquals(localized, thrown.displayMessage)
+
+        val rewrapped = runCatchingResult<Int>("fallback") { original.getOrThrow() }
+        assertEquals(original, rewrapped)
     }
 
     @Test

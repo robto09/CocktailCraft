@@ -1,10 +1,21 @@
 package com.cocktailcraft.data.repository
 
+import com.cocktailcraft.data.security.PasswordHasher
+import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.error_sign_in_locked_out_minutes
+import com.cocktailcraft.resources.error_sign_in_locked_out_seconds
 import com.russhwolf.settings.MapSettings
+import dev.icerock.moko.resources.desc.PluralFormatted
+import dev.icerock.moko.resources.desc.StringDesc
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -103,7 +114,8 @@ class AuthRepositoryImplTest {
         val locked = repository.signIn("a@b.com", "secret123")
         assertIs<Result.Error>(locked)
         assertEquals(ErrorCode.FORBIDDEN, locked.code)
-        assertTrue(locked.message.contains("Too many failed attempts"))
+        // User-facing copy is a localized resource, not hard-coded English
+        assertEquals(AuthRepositoryImpl.lockoutMessage(30_000), locked.displayMessage)
 
         // Base lockout is 30s; once it elapses the correct password works and
         // the counters reset.
@@ -129,6 +141,93 @@ class AuthRepositoryImplTest {
         assertIs<Result.Error>(repository.signIn("a@b.com", "secret123"), "60s lockout must still hold at +31s")
         now += 30_000
         assertTrue(repository.signIn("a@b.com", "secret123").getOrThrow())
+    }
+
+    @Test
+    fun lockoutMessageRoundsUpToSecondsThenMinutes() {
+        val seconds = MR.plurals.error_sign_in_locked_out_seconds
+        val minutes = MR.plurals.error_sign_in_locked_out_minutes
+        assertEquals(StringDesc.PluralFormatted(seconds, 1, 1), AuthRepositoryImpl.lockoutMessage(1))
+        assertEquals(StringDesc.PluralFormatted(seconds, 30, 30), AuthRepositoryImpl.lockoutMessage(29_001))
+        assertEquals(StringDesc.PluralFormatted(minutes, 1, 1), AuthRepositoryImpl.lockoutMessage(60_000))
+        assertEquals(StringDesc.PluralFormatted(minutes, 2, 2), AuthRepositoryImpl.lockoutMessage(60_001))
+    }
+
+    // --- Email normalization ---
+
+    @Test
+    fun emailsMatchIgnoringCaseAndSurroundingSpaces() = runTest {
+        assertTrue(repository.signUp("  Alice@Example.COM ", "secret123").getOrThrow())
+
+        assertEquals("alice@example.com", repository.getCurrentUser().getOrThrow()?.email)
+        assertTrue(repository.signIn("alice@example.com", "secret123").getOrThrow())
+        assertTrue(repository.signIn("ALICE@example.com  ", "secret123").getOrThrow())
+        assertFalse(
+            repository.signUp("alice@EXAMPLE.com", "other-pass").getOrThrow(),
+            "a differently cased email is the same account"
+        )
+    }
+
+    @Test
+    fun accountStoredWithMixedCaseBeforeNormalizationStillSignsIn() = runTest {
+        // Written by an older version that stored emails exactly as typed
+        settings.putString(
+            "users",
+            """[{"id":"legacy-1","email":"Bob@Example.com","name":"Bob","preferences":{}}]"""
+        )
+        settings.putString("password_Bob@Example.com", PasswordHasher.hash("secret123"))
+
+        assertTrue(repository.signIn("bob@example.com", "secret123").getOrThrow())
+        assertTrue(repository.signIn("Bob@Example.com", "secret123").getOrThrow())
+        assertEquals("legacy-1", repository.getCurrentUser().getOrThrow()?.id)
+    }
+
+    @Test
+    fun throttleIsSharedAcrossCasingsOfOneEmail() = runTest {
+        var now = 0L
+        val repository = AuthRepositoryImpl(MapSettings(), Json { ignoreUnknownKeys = true }, nowMs = { now })
+        repository.signUp("a@b.com", "secret123")
+
+        listOf("a@b.com", "A@b.com", "a@B.com", " a@b.com", "A@B.COM").forEach {
+            assertFalse(repository.signIn(it, "wrong-pass").getOrThrow())
+        }
+
+        assertIs<Result.Error>(repository.signIn("a@b.com", "secret123"))
+    }
+
+    @Test
+    fun updateUserEmailStoresNormalizedEmailAndRejectsAnotherAccountsEmail() = runTest {
+        repository.signUp("other@b.com", "secret456")
+        repository.signUp("a@b.com", "secret123")
+
+        assertFalse(repository.updateUserEmail("OTHER@b.com", "secret123").getOrThrow())
+        assertTrue(repository.updateUserEmail(" New@B.com", "secret123").getOrThrow())
+
+        assertEquals("new@b.com", repository.getCurrentUser().getOrThrow()?.email)
+        assertTrue(repository.signIn("NEW@b.com", "secret123").getOrThrow())
+    }
+
+    // --- Concurrency ---
+
+    @Test
+    fun concurrentProfileUpdatesDoNotDropEachOther() = runTest {
+        // Each update rewrites the whole users list; unserialized, one
+        // writer's read-modify-write would overwrite the other's change.
+        val repository = AuthRepositoryImpl(settings, Json { ignoreUnknownKeys = true }, ioDispatcher = Dispatchers.Default)
+        repository.signUp("a@b.com", "secret123")
+
+        repeat(50) { round ->
+            val address = Address(street = "$round Main St")
+            withContext(Dispatchers.Default) {
+                awaitAll(
+                    async { repository.updateUserName("Name $round") },
+                    async { repository.updateUserAddress(address) }
+                )
+            }
+            val user = repository.getCurrentUser().getOrThrow()
+            assertEquals("Name $round", user?.name)
+            assertEquals(address, user?.address)
+        }
     }
 
     @Test

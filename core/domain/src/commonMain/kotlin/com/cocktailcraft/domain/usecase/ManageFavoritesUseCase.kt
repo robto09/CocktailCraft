@@ -23,12 +23,12 @@ class ManageFavoritesUseCase(
             val isFav = favoritesRepository.isCocktailFavorite(cocktail.id).getOrNull() ?: false
             if (isFav) {
                 when (val removed = favoritesRepository.removeFromFavorites(cocktail)) {
-                    is Result.Error -> Result.Error(removed.message, removed.code)
+                    is Result.Error -> removed
                     else -> Result.Success(false)
                 }
             } else {
                 when (val added = addToFavorites(cocktail)) {
-                    is Result.Error -> Result.Error(added.message, added.code)
+                    is Result.Error -> added
                     else -> Result.Success(true)
                 }
             }

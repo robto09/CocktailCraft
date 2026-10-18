@@ -1,5 +1,6 @@
 package com.cocktailcraft.util
 
+import com.cocktailcraft.domain.util.DomainException
 import com.cocktailcraft.domain.util.Result
 import kotlinx.coroutines.CancellationException
 import kotlin.native.HiddenFromObjC
@@ -25,6 +26,8 @@ inline fun <T> runCatchingResult(defaultMessage: String, block: () -> Result<T>)
         block()
     } catch (e: CancellationException) {
         throw e
+    } catch (e: DomainException) {
+        Result.Error(message = e.message ?: defaultMessage, code = e.code, displayMessage = e.displayMessage)
     } catch (e: Exception) {
         Result.Error(
             message = e.message ?: defaultMessage,
