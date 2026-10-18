@@ -60,7 +60,7 @@ class LargeFontScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
         CartContent(
             state = CartUiState(
                 cartItems = listOf(item),
-                totalPrice = item.cocktail.price * item.quantity,
+                totalPrice = item.lineTotal,
                 itemCount = item.quantity
             ),
             error = null,

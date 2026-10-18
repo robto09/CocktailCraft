@@ -3,6 +3,7 @@ package com.cocktailcraft.viewmodel
 import app.cash.turbine.test
 import com.cocktailcraft.domain.config.DeliveryPolicy
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
@@ -18,12 +19,6 @@ import com.cocktailcraft.util.ErrorHandler
 import dev.icerock.moko.resources.desc.Raw
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -34,16 +29,22 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 private fun testOrder(
     id: String,
     date: String = "2026-01-15",
-    total: Double = 20.0,
+    total: Money = Money(2000),
     status: OrderStatus = OrderStatus.PROCESSING
 ) = Order(
     id = id,
     date = date,
-    items = listOf(OrderItem(name = "Cocktail $id", quantity = 2, price = total / 2)),
+    items = listOf(OrderItem(name = "Cocktail $id", quantity = 2, price = Money(total.cents / 2))),
     total = total,
     status = status
 )
@@ -122,7 +123,7 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
 
         vm.uiState.test {
             assertEquals(0, awaitItem().orderCount)
-            repository.seed(testOrder("o1", date = "2026-07-01", total = 12.0))
+            repository.seed(testOrder("o1", date = "2026-07-01", total = Money(1200)))
             var state = awaitItem()
             while (state.orders.isEmpty()) state = awaitItem()
             assertEquals(listOf("o1"), state.orders.map { it.id })
@@ -134,8 +135,8 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
     fun initCollectsPersistedOrdersMostRecentFirst() = runTest {
         val repository = FakeOrderRepository()
         repository.seed(
-            testOrder("o1", date = "2026-01-05", total = 10.0),
-            testOrder("o2", date = "2026-03-01", total = 30.0)
+            testOrder("o1", date = "2026-01-05", total = Money(1000)),
+            testOrder("o2", date = "2026-03-01", total = Money(3000))
         )
 
         val vm = viewModel(repository)
@@ -143,7 +144,7 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
 
         assertEquals(listOf("o2", "o1"), vm.uiState.value.orders.map { it.id })
         assertEquals(2, vm.uiState.value.orderCount)
-        assertEquals(40.0, vm.uiState.value.totalSpent)
+        assertEquals(Money(4000), vm.uiState.value.totalSpent)
         assertFalse(vm.uiState.value.isLoading)
     }
 
@@ -187,16 +188,19 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         val repository = FakeOrderRepository()
         val vm = viewModel(repository)
         advanceUntilIdle()
-        val cartItems = listOf(CocktailCartItem(testCocktail("1", price = 10.0), quantity = 2))
+        val cartItems = listOf(CocktailCartItem(testCocktail("1", price = Money(1000)), quantity = 2))
 
-        assertTrue(vm.placeOrder(cartItems, totalPrice = 20.0))
+        assertTrue(vm.placeOrder(cartItems))
         advanceUntilIdle() // the observed orders flow delivers the new order
 
         val placed = assertNotNull(vm.uiState.value.currentOrder)
         assertEquals(OrderStatus.PROCESSING, placed.status)
-        // Computed from the items + delivery fee, not the passed totalPrice
-        assertEquals(20.0 + DeliveryPolicy.STANDARD_FEE, placed.total)
-        assertEquals(listOf(OrderItem(name = "Cocktail 1", quantity = 2, price = 10.0)), placed.items)
+        // Computed from the items + delivery fee
+        assertEquals(Money(2000) + DeliveryPolicy.STANDARD_FEE, placed.total)
+        assertEquals(
+            listOf(OrderItem(name = "Cocktail 1", quantity = 2, price = Money(1000), cocktailId = "1")),
+            placed.items
+        )
         assertEquals(listOf(placed.id), vm.uiState.value.orders.map { it.id })
         assertFalse(vm.uiState.value.isPlacingOrder)
         assertFalse(vm.uiState.value.isLoading)
@@ -209,7 +213,7 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         val vm = viewModel(repository)
         advanceUntilIdle()
 
-        assertFalse(vm.placeOrder(emptyList(), totalPrice = 0.0))
+        assertFalse(vm.placeOrder(emptyList()))
         advanceUntilIdle()
 
         val error = assertNotNull(vm.error.value)
@@ -225,9 +229,9 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         val vm = viewModel(repository)
         advanceUntilIdle()
         repository.errorMessage = "order store failed"
-        val cartItems = listOf(CocktailCartItem(testCocktail("1", price = 10.0), quantity = 1))
+        val cartItems = listOf(CocktailCartItem(testCocktail("1", price = Money(1000)), quantity = 1))
 
-        assertFalse(vm.placeOrder(cartItems, totalPrice = 10.0))
+        assertFalse(vm.placeOrder(cartItems))
         advanceUntilIdle()
 
         val error = assertNotNull(vm.error.value)
@@ -264,13 +268,13 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         repository.placeGate = gate
         val vm = viewModel(repository)
         advanceUntilIdle()
-        val cartItems = listOf(CocktailCartItem(testCocktail("1", price = 10.0), quantity = 1))
+        val cartItems = listOf(CocktailCartItem(testCocktail("1", price = Money(1000)), quantity = 1))
 
-        val first = async { vm.placeOrder(cartItems, totalPrice = 10.0) }
+        val first = async { vm.placeOrder(cartItems) }
         runCurrent()
         assertTrue(vm.uiState.value.isPlacingOrder)
 
-        assertFalse(vm.placeOrder(cartItems, totalPrice = 10.0), "a double tap must not order twice")
+        assertFalse(vm.placeOrder(cartItems), "a double tap must not order twice")
         gate.complete(Unit)
 
         assertTrue(first.await())

@@ -36,6 +36,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.ui.components.OptimizedImage
+import com.cocktailcraft.android.ui.components.formatPrice
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
@@ -44,7 +45,6 @@ import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.detail_loading_recommendations
-import com.cocktailcraft.resources.detail_price_format
 import com.cocktailcraft.resources.detail_you_might_also_like
 import com.cocktailcraft.resources.list_view_details_label
 import com.revenuecat.placeholder.PlaceholderSurface
@@ -205,7 +205,7 @@ internal fun RecommendationCard(
 
                 // Price
                 Text(
-                    text = stringResource(MR.strings.detail_price_format, recommendation.price),
+                    text = formatPrice(recommendation.price),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Bold
                     ),

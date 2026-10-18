@@ -37,7 +37,6 @@ import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.order_item_quantity_name
 import com.cocktailcraft.resources.order_number
-import com.cocktailcraft.resources.order_price_format
 import com.cocktailcraft.resources.order_view_details_a11y
 import com.cocktailcraft.resources.total
 
@@ -115,7 +114,7 @@ fun OrderCard(
                         )
 
                         Text(
-                            text = stringResource(MR.strings.order_price_format, item.price * item.quantity),
+                            text = formatPrice(item.lineTotal),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface
@@ -145,7 +144,7 @@ fun OrderCard(
                 )
 
                 Text(
-                    text = stringResource(MR.strings.order_price_format, order.total),
+                    text = formatPrice(order.total),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary

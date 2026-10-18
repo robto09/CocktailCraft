@@ -2,6 +2,7 @@ package com.cocktailcraft.data.repository
 
 import app.cash.turbine.test
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.createTestLocalDatabase
@@ -24,13 +25,13 @@ class CartRepositoryImplTest {
     fun addToCartStoresItemAndMergesDuplicates() = runTest {
         val repository = repository()
 
-        repository.addToCart(CocktailCartItem(testCocktail("1", price = 10.0), quantity = 1)).getOrThrow()
-        repository.addToCart(CocktailCartItem(testCocktail("1", price = 10.0), quantity = 2)).getOrThrow()
+        repository.addToCart(CocktailCartItem(testCocktail("1", price = Money(1000)), quantity = 1)).getOrThrow()
+        repository.addToCart(CocktailCartItem(testCocktail("1", price = Money(1000)), quantity = 2)).getOrThrow()
 
         val items = repository.getCartItems().getOrThrow()
         assertEquals(1, items.size)
         assertEquals(3, items.single().quantity)
-        assertEquals(30.0, repository.getCartTotal().getOrThrow())
+        assertEquals(Money(3000), repository.getCartTotal().getOrThrow())
     }
 
     @Test
@@ -60,11 +61,11 @@ class CartRepositoryImplTest {
     @Test
     fun updateQuantityChangesItemOrRemovesItAtZero() = runTest {
         val repository = repository()
-        repository.addToCart(CocktailCartItem(testCocktail("1", price = 10.0), quantity = 1))
+        repository.addToCart(CocktailCartItem(testCocktail("1", price = Money(1000)), quantity = 1))
 
         repository.updateQuantity("1", 5).getOrThrow()
         assertEquals(5, repository.getCartItems().getOrThrow().single().quantity)
-        assertEquals(50.0, repository.getCartTotal().getOrThrow())
+        assertEquals(Money(5000), repository.getCartTotal().getOrThrow())
 
         repository.updateQuantity("1", 0).getOrThrow()
         assertTrue(repository.getCartItems().getOrThrow().isEmpty())
@@ -78,23 +79,23 @@ class CartRepositoryImplTest {
         repository.clearCart().getOrThrow()
 
         assertTrue(repository.getCartItems().getOrThrow().isEmpty())
-        assertEquals(0.0, repository.getCartTotal().getOrThrow())
+        assertEquals(Money.ZERO, repository.getCartTotal().getOrThrow())
         assertTrue(repository().getCartItems().getOrThrow().isEmpty(), "persisted cart must be empty")
     }
 
     @Test
     fun cartSurvivesRepositoryRecreation() = runTest {
         val first = repository()
-        first.addToCart(CocktailCartItem(testCocktail("1", price = 12.5), quantity = 2))
-        first.addToCart(CocktailCartItem(testCocktail("2", price = 8.0), quantity = 1))
+        first.addToCart(CocktailCartItem(testCocktail("1", price = Money(1250)), quantity = 2))
+        first.addToCart(CocktailCartItem(testCocktail("2", price = Money(800)), quantity = 1))
 
         val second = repository()
         val items = second.getCartItems().getOrThrow()
 
         assertEquals(listOf("1", "2"), items.map { it.cocktail.id })
         assertEquals(listOf(2, 1), items.map { it.quantity })
-        assertEquals(testCocktail("1", price = 12.5), items.first().cocktail)
-        assertEquals(33.0, second.getCartTotal().getOrThrow())
+        assertEquals(testCocktail("1", price = Money(1250)), items.first().cocktail)
+        assertEquals(Money(3300), second.getCartTotal().getOrThrow())
     }
 
     @Test

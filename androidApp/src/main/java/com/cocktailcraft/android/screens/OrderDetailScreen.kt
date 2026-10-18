@@ -52,6 +52,7 @@ import com.cocktailcraft.android.ui.components.OrderStatusIndicator
 import com.cocktailcraft.android.ui.components.OrderSummaryCard
 import com.cocktailcraft.android.ui.components.ToastSnackbarHost
 import com.cocktailcraft.android.ui.components.UiEventToasts
+import com.cocktailcraft.android.ui.components.formatPrice
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.resolve
 import com.cocktailcraft.android.util.stringResource
@@ -72,7 +73,6 @@ import com.cocktailcraft.resources.order_detail_status
 import com.cocktailcraft.resources.order_detail_title
 import com.cocktailcraft.resources.order_item_quantity_name
 import com.cocktailcraft.resources.order_number
-import com.cocktailcraft.resources.order_price_format
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.viewmodel.state.OrderUiState
@@ -307,7 +307,7 @@ private fun OrderItemRow(item: OrderItem) {
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = stringResource(MR.strings.order_price_format, item.price * item.quantity),
+                text = formatPrice(item.lineTotal),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
@@ -316,7 +316,7 @@ private fun OrderItemRow(item: OrderItem) {
         Text(
             text = stringResource(
                 MR.strings.order_detail_item_each,
-                stringResource(MR.strings.order_price_format, item.price)
+                formatPrice(item.price)
             ),
             fontSize = 13.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant

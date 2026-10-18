@@ -18,6 +18,7 @@ import com.cocktailcraft.android.ui.components.OrderCard
 import com.cocktailcraft.android.ui.components.OrderSummaryCard
 import com.cocktailcraft.android.ui.components.SettingsCard
 import com.cocktailcraft.android.ui.components.SettingsItem
+import com.cocktailcraft.domain.model.Money
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
@@ -75,7 +76,7 @@ class CardScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
 
     @Test
     fun orderSummaryCard() = snapshot("OrderSummaryCard") {
-        OrderSummaryCard(subtotal = 34.0)
+        OrderSummaryCard(subtotal = Money(3400))
     }
 
     @Test

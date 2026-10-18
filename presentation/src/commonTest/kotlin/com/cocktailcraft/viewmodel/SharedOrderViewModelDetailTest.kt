@@ -2,6 +2,7 @@ package com.cocktailcraft.viewmodel
 
 import app.cash.turbine.test
 import com.cocktailcraft.domain.config.DeliveryPolicy
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
@@ -31,11 +32,11 @@ class SharedOrderViewModelDetailTest : MainDispatcherTest() {
         id = "ORD-42052",
         date = "2026-07-02",
         items = listOf(
-            OrderItem(name = "Margarita", quantity = 2, price = 12.5),
-            OrderItem(name = "Mojito", quantity = 1, price = 9.0)
+            OrderItem(name = "Margarita", quantity = 2, price = Money(1250)),
+            OrderItem(name = "Mojito", quantity = 1, price = Money(900))
         ),
         // 34.0 of items + the standard fee, as PlaceOrderUseCase stores it
-        total = 34.0 + DeliveryPolicy.STANDARD_FEE,
+        total = Money(3400) + DeliveryPolicy.STANDARD_FEE,
         status = OrderStatus.PENDING
     )
 
@@ -56,8 +57,8 @@ class SharedOrderViewModelDetailTest : MainDispatcherTest() {
         val state = vm.uiState.value
         assertEquals(pendingOrder, state.selectedOrder)
         assertFalse(state.isLoadingOrderDetail)
-        assertEquals(34.0, state.selectedOrderSubtotal)
-        assertEquals(DeliveryPolicy.STANDARD_FEE, state.selectedOrderDeliveryFee, 0.0001)
+        assertEquals(Money(3400), state.selectedOrderSubtotal)
+        assertEquals(DeliveryPolicy.STANDARD_FEE, state.selectedOrderDeliveryFee)
         assertEquals(
             DeliveryPolicy.estimatedDeliveryTimeForStatus(OrderStatus.PENDING),
             state.selectedOrderDeliveryEstimate

@@ -2,6 +2,7 @@ package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.util.Result
@@ -57,7 +58,7 @@ class ManageCartUseCase(
         return cartRepository.clearCart()
     }
 
-    suspend fun getCartTotal(): Result<Double> {
+    suspend fun getCartTotal(): Result<Money> {
         return cartRepository.getCartTotal()
     }
 }

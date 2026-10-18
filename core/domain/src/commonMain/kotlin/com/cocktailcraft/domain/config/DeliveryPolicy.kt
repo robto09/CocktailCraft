@@ -1,5 +1,6 @@
 package com.cocktailcraft.domain.config
 
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.common_unknown
@@ -17,14 +18,17 @@ import dev.icerock.moko.resources.format
  * order ViewModels delegate here instead of hardcoding fees/thresholds.
  */
 object DeliveryPolicy {
-    const val FREE_DELIVERY_THRESHOLD = 50.0
-    const val STANDARD_FEE = 5.99
+    /** Subtotals of at least this much ($50.00) deliver for free. */
+    val FREE_DELIVERY_THRESHOLD = Money(5000)
 
-    fun isFreeDelivery(subtotal: Double): Boolean = subtotal >= FREE_DELIVERY_THRESHOLD
+    /** The delivery fee below [FREE_DELIVERY_THRESHOLD] ($5.99). */
+    val STANDARD_FEE = Money(599)
 
-    fun deliveryFee(subtotal: Double): Double = if (isFreeDelivery(subtotal)) 0.0 else STANDARD_FEE
+    fun isFreeDelivery(subtotal: Money): Boolean = subtotal >= FREE_DELIVERY_THRESHOLD
 
-    fun finalTotal(subtotal: Double): Double = subtotal + deliveryFee(subtotal)
+    fun deliveryFee(subtotal: Money): Money = if (isFreeDelivery(subtotal)) Money.ZERO else STANDARD_FEE
+
+    fun finalTotal(subtotal: Money): Money = subtotal + deliveryFee(subtotal)
 
     /** Estimated delivery time for a cart of [itemCount] items. */
     fun estimatedDeliveryTime(itemCount: Int): StringDesc = when {

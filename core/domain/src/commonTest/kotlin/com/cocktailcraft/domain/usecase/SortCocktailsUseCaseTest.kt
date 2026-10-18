@@ -1,6 +1,7 @@
 package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.testutil.testCocktail
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -11,9 +12,9 @@ class SortCocktailsUseCaseTest {
 
     // Distinct values per axis so each sort produces a unique order.
     private val cocktails = listOf(
-        testCocktail("a", name = "Banana Daiquiri", price = 12.0, rating = 3.5f, popularity = 10),
-        testCocktail("b", name = "Aperol Spritz", price = 8.0, rating = 5.0f, popularity = 99),
-        testCocktail("c", name = "Cosmopolitan", price = 10.0, rating = 4.0f, popularity = 50)
+        testCocktail("a", name = "Banana Daiquiri", price = Money(1200), rating = 3.5f, popularity = 10),
+        testCocktail("b", name = "Aperol Spritz", price = Money(800), rating = 5.0f, popularity = 99),
+        testCocktail("c", name = "Cosmopolitan", price = Money(1000), rating = 4.0f, popularity = 50)
     )
 
     private fun sortedIds(sortType: SortCocktailsUseCase.SortType): List<String> =

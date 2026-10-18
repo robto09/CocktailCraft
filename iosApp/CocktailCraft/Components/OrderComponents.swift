@@ -38,8 +38,8 @@ struct OrderStatusIndicator: View {
 /// estimate are derived there).
 struct OrderDetailContent: View {
     let order: Order
-    let subtotal: Double
-    let deliveryFee: Double
+    let subtotal: Money
+    let deliveryFee: Money
     let deliveryEstimate: String
     let canCancel: Bool
     var isCancelling: Bool = false
@@ -108,11 +108,11 @@ struct OrderDetailContent: View {
                             Text(L(\.order_item_quantity_name, item.quantity, item.name))
                                 .font(.callout.weight(.medium))
                             Spacer()
-                            Text((item.price * Double(item.quantity)).asPrice)
+                            Text(item.lineTotal.formatted())
                                 .font(.callout.weight(.medium))
                         }
                         .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                        Text(L(\.order_detail_item_each, item.price.asPrice))
+                        Text(L(\.order_detail_item_each, item.price.formatted()))
                             .font(.caption)
                             .foregroundColor(AppColors.textSecondary(appearance))
                     }

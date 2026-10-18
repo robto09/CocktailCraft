@@ -1,9 +1,8 @@
 import Foundation
 
 // Compiled into BOTH the app target and the widget extension (see
-// project.yml) so the deep-link format, App Group id, snapshot schema, and
-// price formatting have exactly one definition. Keep this file
-// Foundation-only.
+// project.yml) so the deep-link format, App Group id and snapshot schema
+// have exactly one definition. Keep this file Foundation-only.
 
 /// WidgetKit kind strings, shared so the app can reload a specific widget's
 /// timelines without stringly-typed drift.
@@ -62,11 +61,17 @@ enum WidgetDeepLink {
 /// Minimal cocktail projection the widgets render — decoupled from the KMP
 /// `Cocktail` model on purpose: the widget extension does not link the
 /// shared framework.
+///
+/// `priceText` is the price already formatted by the app with the shared
+/// Money formatter, so prices have one formatter on every surface. Nil in a
+/// snapshot written before it existed (those held a Double `price`, which
+/// decoding ignores): the row then shows no price until the app rewrites
+/// the snapshot.
 struct WidgetCocktail: Codable, Identifiable {
     let id: String
     let name: String
     let imageUrl: String?
-    let price: Double
+    let priceText: String?
 }
 
 struct WidgetFavoritesSnapshot: Codable {
@@ -164,23 +169,3 @@ enum WidgetRandomSnapshotStore {
     }
 }
 
-extension Double {
-    /// Canonical price string, shared by the app and the widget extension.
-    /// Prices are demo USD values, so the currency is fixed to USD while the
-    /// *rendering* follows the device locale — en_US shows "$12.50", fr_FR
-    /// shows "12,50 $US" — instead of hard-pinning an en_US string.
-    var asPrice: String {
-        Double.priceFormatter.string(from: NSNumber(value: self)) ?? "$" + String(format: "%.2f", self)
-    }
-
-    private static let priceFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.locale = Locale.current
-        // Plain "$" in every region, as on Android: outside the US the
-        // locale would otherwise write "US$8.24"
-        formatter.currencySymbol = "$"
-        return formatter
-    }()
-}

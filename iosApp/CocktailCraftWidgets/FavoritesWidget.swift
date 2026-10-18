@@ -46,9 +46,9 @@ struct FavoritesProvider: TimelineProvider {
     }
 
     static let sampleFavorites = [
-        WidgetCocktail(id: "11007", name: "Margarita", imageUrl: nil, price: 12.5),
-        WidgetCocktail(id: "11000", name: "Mojito", imageUrl: nil, price: 11.0),
-        WidgetCocktail(id: "11001", name: "Old Fashioned", imageUrl: nil, price: 14.0),
+        WidgetCocktail(id: "11007", name: "Margarita", imageUrl: nil, priceText: "$12.50"),
+        WidgetCocktail(id: "11000", name: "Mojito", imageUrl: nil, priceText: "$11.00"),
+        WidgetCocktail(id: "11001", name: "Old Fashioned", imageUrl: nil, priceText: "$14.00"),
     ]
 }
 
@@ -122,9 +122,11 @@ private struct FavoriteRow: View {
 
             Spacer()
 
-            Text(cocktail.price.asPrice)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if let priceText = cocktail.priceText {
+                Text(priceText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 }

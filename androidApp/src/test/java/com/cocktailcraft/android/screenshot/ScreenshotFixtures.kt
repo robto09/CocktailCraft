@@ -2,6 +2,7 @@ package com.cocktailcraft.android.screenshot
 
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.domain.model.CocktailIngredient
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
@@ -30,7 +31,7 @@ internal object ScreenshotFixtures {
                 CocktailIngredient("Light rum", "2-3 oz"),
                 CocktailIngredient("Lime", "Juice of 1")
             ),
-            price = 9.0
+            price = Money(900)
         )
     )
 
@@ -46,17 +47,17 @@ internal object ScreenshotFixtures {
         id = "ORD-1024",
         date = "2026-07-02",
         items = listOf(
-            OrderItem(name = "Margarita", quantity = 2, price = 12.5),
-            OrderItem(name = "Mojito", quantity = 1, price = 9.0)
+            OrderItem(name = "Margarita", quantity = 2, price = Money(1250)),
+            OrderItem(name = "Mojito", quantity = 1, price = Money(900))
         ),
-        total = 39.99,
+        total = Money(3999),
         status = OrderStatus.DELIVERED
     )
 
     val inProgressOrder = completedOrder.copy(
         id = "ORD-1025",
-        items = listOf(OrderItem(name = "Manhattan", quantity = 1, price = 14.0)),
-        total = 19.99,
+        items = listOf(OrderItem(name = "Manhattan", quantity = 1, price = Money(1400))),
+        total = Money(1999),
         status = OrderStatus.PROCESSING
     )
 }

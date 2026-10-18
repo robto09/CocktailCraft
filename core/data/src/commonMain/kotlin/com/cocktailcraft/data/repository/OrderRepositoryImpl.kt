@@ -1,7 +1,10 @@
 package com.cocktailcraft.data.repository
 
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
+import com.cocktailcraft.data.cache.db.SelectAllWithItems
+import com.cocktailcraft.data.cache.db.SelectByIdWithItems
 import com.cocktailcraft.data.local.LocalDatabase
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
@@ -29,17 +32,6 @@ internal class OrderRepositoryImpl(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : OrderRepository {
 
-    /** One row of the order/item join (item columns are null for an order without items). */
-    private class OrderRow(
-        val id: String,
-        val date: String,
-        val total: Double,
-        val status: String,
-        val itemName: String?,
-        val itemQuantity: Long?,
-        val itemPrice: Double?
-    )
-
     private fun List<OrderRow>.toOrders(): List<Order> =
         // groupBy keeps first-occurrence order, i.e. the query's order position
         groupBy { it.id }.map { (_, rows) ->
@@ -47,28 +39,22 @@ internal class OrderRepositoryImpl(
             Order(
                 id = order.id,
                 date = order.date,
-                items = rows.mapNotNull { row ->
-                    row.itemName?.let { name ->
-                        OrderItem(
-                            name = name,
-                            quantity = row.itemQuantity?.toInt() ?: 0,
-                            price = row.itemPrice ?: 0.0
-                        )
-                    }
-                },
-                total = order.total,
+                items = rows.mapNotNull { it.item },
+                total = Money(order.totalCents),
                 status = OrderStatus.fromStorageValue(order.status)
             )
         }
 
     private fun CocktailCraftDatabase.readOrders(): List<Order> =
-        customerOrderQueries.selectAllWithItems(::OrderRow).executeAsList().toOrders()
+        customerOrderQueries.selectAllWithItems().executeAsList().map { it.toRow() }.toOrders()
 
     private fun withId(order: Order): Order =
         if (order.id.isBlank()) order.copy(id = UUID.randomUUID()) else order
 
     override fun observeOrders(): Flow<List<Order>> =
-        localDatabase.observe(ioDispatcher, { customerOrderQueries.selectAllWithItems(::OrderRow) }) { it.toOrders() }
+        localDatabase.observe(ioDispatcher, { customerOrderQueries.selectAllWithItems() }) { rows ->
+            rows.map { it.toRow() }.toOrders()
+        }
 
     override suspend fun getOrders(): Result<List<Order>> = withContext(ioDispatcher) {
         runCatchingResult("Failed to load orders") {
@@ -100,7 +86,8 @@ internal class OrderRepositoryImpl(
 
     override suspend fun getOrderById(id: String): Result<Order?> = withContext(ioDispatcher) {
         runCatchingResult("Failed to get order by ID") {
-            val rows = localDatabase.get().customerOrderQueries.selectByIdWithItems(id, ::OrderRow).executeAsList()
+            val rows = localDatabase.get().customerOrderQueries.selectByIdWithItems(id).executeAsList()
+                .map { it.toRow() }
             Result.Success(rows.toOrders().firstOrNull())
         }
     }
@@ -143,6 +130,32 @@ internal class OrderRepositoryImpl(
     }
 }
 
+/** One row of the order/item join; [item] is null for an order without items. */
+private class OrderRow(
+    val id: String,
+    val date: String,
+    val totalCents: Long,
+    val status: String,
+    val item: OrderItem?
+)
+
+private fun SelectAllWithItems.toRow() =
+    OrderRow(id, date, total_cents, status, orderItem(item_cocktail_id, item_name, item_quantity, item_price_cents))
+
+private fun SelectByIdWithItems.toRow() =
+    OrderRow(id, date, total_cents, status, orderItem(item_cocktail_id, item_name, item_quantity, item_price_cents))
+
+/** The item a joined row carries, or null when its item columns are (no items). */
+private fun orderItem(cocktailId: String?, name: String?, quantity: Long?, priceCents: Long?): OrderItem? =
+    name?.let {
+        OrderItem(
+            name = it,
+            quantity = quantity?.toInt() ?: 0,
+            price = Money(priceCents ?: 0L),
+            cocktailId = cocktailId
+        )
+    }
+
 /**
  * Inserts [order] and its items; a duplicate order id fails. Call inside a
  * transaction. Shared with the legacy Settings import.
@@ -151,16 +164,17 @@ internal fun CocktailCraftDatabase.insertOrderWithItems(order: Order) {
     customerOrderQueries.insertOrder(
         id = order.id,
         date = order.date,
-        total = order.total,
+        totalCents = order.total.cents,
         status = order.status.storageValue
     )
     order.items.forEachIndexed { index, item ->
         customerOrderQueries.insertItem(
             order_id = order.id,
             position = index.toLong(),
+            cocktail_id = item.cocktailId,
             name = item.name,
             quantity = item.quantity.toLong(),
-            price = item.price
+            price_cents = item.price.cents
         )
     }
 }

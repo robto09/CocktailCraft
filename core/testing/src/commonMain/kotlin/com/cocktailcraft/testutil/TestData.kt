@@ -2,13 +2,14 @@ package com.cocktailcraft.testutil
 
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailIngredient
+import com.cocktailcraft.domain.model.Money
 
 /** A cocktail with full details (real ingredients/instructions), as returned by lookup endpoints. */
 fun testCocktail(
     id: String,
     name: String = "Cocktail $id",
     category: String? = "Cocktail",
-    price: Double = 10.0,
+    price: Money = Cocktail.DEFAULT_PRICE,
     rating: Float = 4.5f,
     popularity: Int = 0,
     dateAdded: Long = 0L

@@ -1,0 +1,52 @@
+-- Version 4 -> 5: money is stored as whole US cents instead of REAL
+-- dollars, and order items remember which cocktail they were (for Reorder).
+--
+-- SQLite can't change a column's type in place, so both order tables are
+-- rebuilt and their rows copied across. Amounts convert with
+-- CAST(ROUND(x * 100) AS INTEGER): ROUND goes half away from zero, which
+-- also absorbs binary noise (5.29 stored as 5.2899999999999991 -> 529).
+-- Money.fromDollars applies the same rounding to old JSON payloads.
+--
+-- Existing items get a NULL cocktail_id: they were stored by name only, and
+-- names can't be matched back reliably (the cached catalog is evicted and
+-- expires, so a match would depend on what happened to be cached at upgrade
+-- time). Those orders show Reorder as unavailable.
+--
+-- Cocktail prices inside JSON payloads (cart_item, favorite_cocktail,
+-- cached_cocktail, recently_viewed_cocktail) are not rewritten here: the
+-- Cocktail serializer reads the old "price" dollars as cents, and rows pick
+-- up the new shape the next time they are written.
+
+CREATE TABLE customer_order_new (
+    id TEXT NOT NULL PRIMARY KEY,
+    date TEXT NOT NULL,
+    total_cents INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    position INTEGER NOT NULL
+);
+
+INSERT INTO customer_order_new(id, date, total_cents, status, position)
+SELECT id, date, CAST(ROUND(total * 100) AS INTEGER), status, position
+FROM customer_order;
+
+DROP TABLE customer_order;
+
+ALTER TABLE customer_order_new RENAME TO customer_order;
+
+CREATE TABLE customer_order_item_new (
+    order_id TEXT NOT NULL REFERENCES customer_order(id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    cocktail_id TEXT,
+    name TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    price_cents INTEGER NOT NULL,
+    PRIMARY KEY (order_id, position)
+);
+
+INSERT INTO customer_order_item_new(order_id, position, cocktail_id, name, quantity, price_cents)
+SELECT order_id, position, NULL, name, quantity, CAST(ROUND(price * 100) AS INTEGER)
+FROM customer_order_item;
+
+DROP TABLE customer_order_item;
+
+ALTER TABLE customer_order_item_new RENAME TO customer_order_item;

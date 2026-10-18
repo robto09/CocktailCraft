@@ -3,6 +3,8 @@ package com.cocktailcraft.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Money
+import com.cocktailcraft.domain.model.sumOfMoney
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.resources.MR
@@ -44,11 +46,13 @@ class SharedCartViewModel internal constructor(
 
     /** Atomically publish an item list with its derived totals. */
     private fun applyItems(items: List<CocktailCartItem>) {
-        _uiState.update { it.copy(
-            cartItems = items,
-            itemCount = items.sumOf { item -> item.quantity },
-            totalPrice = items.sumOf { item -> item.cocktail.price * item.quantity }
-        ) }
+        _uiState.update {
+            it.copy(
+                cartItems = items,
+                itemCount = items.sumOf { item -> item.quantity },
+                totalPrice = items.sumOfMoney { item -> item.lineTotal }
+            )
+        }
     }
 
     /**
@@ -177,7 +181,7 @@ class SharedCartViewModel internal constructor(
         try {
             val result = manageCartUseCase.clearCart()
             if (result is Result.Success) {
-                _uiState.update { it.copy(cartItems = emptyList(), itemCount = 0, totalPrice = 0.0) }
+                _uiState.update { it.copy(cartItems = emptyList(), itemCount = 0, totalPrice = Money.ZERO) }
                 if (previous.isNotEmpty()) {
                     sendEvent(
                         UiEvent.Success(

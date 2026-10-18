@@ -2,6 +2,7 @@ package com.cocktailcraft.viewmodel
 
 import app.cash.turbine.test
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.resources.MR
@@ -35,13 +36,13 @@ class SharedCartViewModelTest : MainDispatcherTest() {
     @Test
     fun initialLoadPopulatesCartFromRepository() = runTest {
         val repository = FakeCartRepository()
-        repository.addToCart(CocktailCartItem(testCocktail("1", price = 12.0), quantity = 2))
+        repository.addToCart(CocktailCartItem(testCocktail("1", price = Money(1200)), quantity = 2))
 
         val vm = viewModel(repository)
         advanceUntilIdle()
 
         assertEquals(2, vm.uiState.value.itemCount)
-        assertEquals(24.0, vm.uiState.value.totalPrice)
+        assertEquals(Money(2400), vm.uiState.value.totalPrice)
         assertTrue(vm.uiState.value.cartItems.isNotEmpty())
         assertFalse(vm.uiState.value.isLoading)
     }
@@ -51,18 +52,18 @@ class SharedCartViewModelTest : MainDispatcherTest() {
         val vm = viewModel()
         advanceUntilIdle()
 
-        vm.addToCart(testCocktail("7", price = 8.0), quantity = 3)
+        vm.addToCart(testCocktail("7", price = Money(800)), quantity = 3)
         advanceUntilIdle() // state arrives via the collected repository flow
 
         assertEquals(3, vm.uiState.value.itemCount)
-        assertEquals(24.0, vm.uiState.value.totalPrice)
+        assertEquals(Money(2400), vm.uiState.value.totalPrice)
         assertEquals(3, vm.quantityOf("7"))
     }
 
     @Test
     fun updateQuantityEmitsNewTotals() = runTest {
         val repository = FakeCartRepository()
-        repository.addToCart(CocktailCartItem(testCocktail("1", price = 10.0), quantity = 1))
+        repository.addToCart(CocktailCartItem(testCocktail("1", price = Money(1000)), quantity = 1))
         val vm = viewModel(repository)
         advanceUntilIdle()
 
@@ -71,7 +72,7 @@ class SharedCartViewModelTest : MainDispatcherTest() {
             vm.updateQuantity("1", 5)
             val updated = awaitItem()
             assertEquals(5, updated.itemCount)
-            assertEquals(50.0, updated.totalPrice)
+            assertEquals(Money(5000), updated.totalPrice)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -181,14 +182,14 @@ class SharedCartViewModelTest : MainDispatcherTest() {
         vm.clearCart()
 
         assertTrue(vm.uiState.value.cartItems.isEmpty())
-        assertEquals(0.0, vm.uiState.value.totalPrice)
+        assertEquals(Money.ZERO, vm.uiState.value.totalPrice)
         assertEquals(emptyList(), (repository.getCartItems() as Result.Success).data)
     }
 
     @Test
     fun deliveryFeeIsWaivedAtFiftyAndChargedBelow() = runTest {
         val repository = FakeCartRepository()
-        repository.addToCart(CocktailCartItem(testCocktail("1", price = 10.0), quantity = 1))
+        repository.addToCart(CocktailCartItem(testCocktail("1", price = Money(1000)), quantity = 1))
         val vm = viewModel(repository)
         advanceUntilIdle()
 
@@ -196,13 +197,13 @@ class SharedCartViewModelTest : MainDispatcherTest() {
             // Delivery pricing is derived on the emitted state, so every
             // emission carries fee/total consistent with its subtotal.
             val belowThreshold = awaitItem()
-            assertEquals(5.99, belowThreshold.deliveryFee)
-            assertEquals(15.99, belowThreshold.finalTotal)
+            assertEquals(Money(599), belowThreshold.deliveryFee)
+            assertEquals(Money(1599), belowThreshold.finalTotal)
 
-            vm.updateQuantity("1", 5) // 50.0 total → free delivery threshold
+            vm.updateQuantity("1", 5) // $50.00 total → free delivery threshold
             val free = awaitItem()
-            assertEquals(0.0, free.deliveryFee)
-            assertEquals(50.0, free.finalTotal)
+            assertEquals(Money.ZERO, free.deliveryFee)
+            assertEquals(Money(5000), free.finalTotal)
             cancelAndIgnoreRemainingEvents()
         }
     }

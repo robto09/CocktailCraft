@@ -24,6 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.ui.components.PrimaryButton
+import com.cocktailcraft.android.ui.components.formatPrice
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.android.ui.theme.Spacing
@@ -32,7 +33,6 @@ import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.detail_add_to_cart
 import com.cocktailcraft.resources.detail_no_instructions
-import com.cocktailcraft.resources.detail_price_format
 import com.cocktailcraft.resources.detail_refresh_details
 import com.cocktailcraft.resources.how_to_prepare
 
@@ -91,7 +91,7 @@ internal fun DetailMainInfoCard(
             }
 
             Text(
-                text = stringResource(MR.strings.detail_price_format, cocktail.price),
+                text = formatPrice(cocktail.price),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary

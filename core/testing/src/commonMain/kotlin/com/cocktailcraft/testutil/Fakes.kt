@@ -2,7 +2,9 @@ package com.cocktailcraft.testutil
 
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.SearchFilters
+import com.cocktailcraft.domain.model.sumOfMoney
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
@@ -87,8 +89,8 @@ class FakeCartRepository : CartRepository {
         return Result.Success(Unit)
     }
 
-    override suspend fun getCartTotal(): Result<Double> =
-        Result.Success(items.value.sumOf { it.cocktail.price * it.quantity })
+    override suspend fun getCartTotal(): Result<Money> =
+        Result.Success(items.value.sumOfMoney { it.lineTotal })
 }
 
 /**

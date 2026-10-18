@@ -1,6 +1,7 @@
 package com.cocktailcraft.domain
 
 import com.cocktailcraft.domain.config.DeliveryPolicy
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.common_unknown
@@ -17,13 +18,34 @@ import kotlin.test.assertTrue
 class DeliveryPolicyTest {
 
     @Test
+    fun thresholdAndFeeAreFiftyDollarsAndFiveNinetyNine() {
+        assertEquals(Money(5000), DeliveryPolicy.FREE_DELIVERY_THRESHOLD)
+        assertEquals(Money(599), DeliveryPolicy.STANDARD_FEE)
+    }
+
+    @Test
     fun feeIsWaivedAtThresholdAndChargedBelow() {
-        assertFalse(DeliveryPolicy.isFreeDelivery(49.99))
-        assertTrue(DeliveryPolicy.isFreeDelivery(50.0))
-        assertEquals(DeliveryPolicy.STANDARD_FEE, DeliveryPolicy.deliveryFee(10.0))
-        assertEquals(0.0, DeliveryPolicy.deliveryFee(75.0))
-        assertEquals(10.0 + DeliveryPolicy.STANDARD_FEE, DeliveryPolicy.finalTotal(10.0))
-        assertEquals(75.0, DeliveryPolicy.finalTotal(75.0))
+        // One cent either side of the threshold: no floating-point fuzz
+        assertFalse(DeliveryPolicy.isFreeDelivery(Money(4999)))
+        assertTrue(DeliveryPolicy.isFreeDelivery(Money(5000)))
+        assertTrue(DeliveryPolicy.isFreeDelivery(Money(5001)))
+        assertEquals(Money(599), DeliveryPolicy.deliveryFee(Money(1000)))
+        assertEquals(Money(599), DeliveryPolicy.deliveryFee(Money(4999)))
+        assertEquals(Money.ZERO, DeliveryPolicy.deliveryFee(Money(5000)))
+        assertEquals(Money.ZERO, DeliveryPolicy.deliveryFee(Money(7500)))
+    }
+
+    @Test
+    fun finalTotalAddsTheFeeInWholeCents() {
+        assertEquals(Money(1599), DeliveryPolicy.finalTotal(Money(1000)))
+        // 49.99 + 5.99 = 55.98 exactly, with no binary-fraction remainder
+        assertEquals(Money(5598), DeliveryPolicy.finalTotal(Money(4999)))
+        assertEquals(Money(7500), DeliveryPolicy.finalTotal(Money(7500)))
+    }
+
+    @Test
+    fun emptyCartHasTheStandardFee() {
+        assertEquals(Money(599), DeliveryPolicy.finalTotal(Money.ZERO))
     }
 
     @Test

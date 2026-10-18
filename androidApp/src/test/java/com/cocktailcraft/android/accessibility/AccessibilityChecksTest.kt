@@ -20,6 +20,7 @@ import com.cocktailcraft.android.ui.components.SearchFilterChips
 import com.cocktailcraft.android.ui.components.SuccessToast
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
@@ -144,8 +145,8 @@ class AccessibilityChecksTest(private val fontScale: Float) {
                 selectedOrder = Order(
                     id = "ORD-42052",
                     date = "2026-07-02",
-                    items = listOf(OrderItem(name = "Margarita", quantity = 2, price = 12.5)),
-                    total = 30.99,
+                    items = listOf(OrderItem(name = "Margarita", quantity = 2, price = Money(1250))),
+                    total = Money(3099),
                     status = OrderStatus.PENDING
                 )
             ),
@@ -165,7 +166,7 @@ class AccessibilityChecksTest(private val fontScale: Float) {
         CartContent(
             state = CartUiState(
                 cartItems = listOf(item),
-                totalPrice = item.cocktail.price * item.quantity,
+                totalPrice = item.lineTotal,
                 itemCount = item.quantity
             ),
             error = null,

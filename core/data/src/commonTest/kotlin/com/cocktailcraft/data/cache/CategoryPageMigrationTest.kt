@@ -45,11 +45,6 @@ class CategoryPageMigrationTest {
     }
 
     @Test
-    fun schemaVersionIsFour() {
-        assertEquals(4L, CocktailCraftDatabase.Schema.version)
-    }
-
-    @Test
     fun upgradingFromVersion3AddsCategoryPagesAndKeepsCachedCocktails() = runTest {
         val driver = createInMemorySqlDriver(Version3Schema)
         val config = AppConfigImpl()

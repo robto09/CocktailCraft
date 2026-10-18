@@ -41,7 +41,7 @@ final class OrderViewModelSKIE: SharedViewModelWrapper<OrderUiState> {
 
     /// Returns whether the order was placed, so the caller can navigate on
     /// success; failures surface on the mirrored `error`.
-    func placeOrder(cartItems: [CocktailCartItem], totalPrice: Double) async -> Bool {
-        return await run(fallback: false) { try await sharedViewModel.placeOrder(cartItems: cartItems, totalPrice: totalPrice).boolValue }
+    func placeOrder(cartItems: [CocktailCartItem]) async -> Bool {
+        return await run(fallback: false) { try await sharedViewModel.placeOrder(cartItems: cartItems).boolValue }
     }
 }

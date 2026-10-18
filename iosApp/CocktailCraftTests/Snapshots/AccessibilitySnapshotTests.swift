@@ -30,7 +30,7 @@ final class AccessibilitySnapshotTests: SnapshotTestCase {
 
     func testCartSummaryCard() {
         assertSnapshots(
-            of: CartSummaryCard(subtotal: 34, deliveryFee: 5.99, total: 39.99),
+            of: CartSummaryCard(subtotal: Money(cents: 3400), deliveryFee: Money(cents: 599), total: Money(cents: 3999)),
             in: SnapshotAppearance.accessibility
         )
     }

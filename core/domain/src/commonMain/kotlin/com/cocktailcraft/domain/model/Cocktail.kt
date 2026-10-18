@@ -1,9 +1,18 @@
 package com.cocktailcraft.domain.model
 
-import kotlin.native.HiddenFromObjC
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KeepGeneratedSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonTransformingSerializer
+import kotlin.native.HiddenFromObjC
 
-@Serializable
+// CocktailSerializer wraps the generated serializer to read payloads stored
+// before prices were in cents
+@OptIn(ExperimentalSerializationApi::class)
+@KeepGeneratedSerializer
+@Serializable(with = CocktailSerializer::class)
 data class Cocktail(
     val id: String,
     val name: String,
@@ -20,7 +29,10 @@ data class Cocktail(
     val imageAttribution: String? = null,
     val creativeCommonsConfirmed: Boolean? = null,
     val dateModified: String? = null,
-    val price: Double = 10.0,
+    // Stored as "priceCents"; payloads written before that hold "price" in
+    // floating-point dollars, converted on read (see CocktailSerializer)
+    @SerialName("priceCents")
+    val price: Money = DEFAULT_PRICE,
     val inStock: Boolean = true,
     val stockCount: Int = 50,
     val rating: Float = 4.5f,
@@ -56,5 +68,19 @@ data class Cocktail(
         const val PLACEHOLDER_INGREDIENT_NAME = "Tap to view ingredients"
         const val PLACEHOLDER_INSTRUCTIONS = "Tap to view recipe"
         const val ALCOHOLIC_UNKNOWN = "Unknown"
+
+        /** What a cocktail costs when nothing set a price ($10.00). */
+        val DEFAULT_PRICE = Money(1000)
     }
+}
+
+/**
+ * Cocktail JSON (cache, cart, favorites and recently viewed payloads, the
+ * legacy Settings blobs) as the generated serializer writes it, also
+ * reading the pre-cents shape (`"price": 12.5` dollars).
+ */
+@OptIn(ExperimentalSerializationApi::class)
+internal object CocktailSerializer : JsonTransformingSerializer<Cocktail>(Cocktail.generatedSerializer()) {
+    override fun transformDeserialize(element: JsonElement): JsonElement =
+        element.withLegacyDollarsAsCents(dollarsKey = "price", centsKey = "priceCents")
 }

@@ -1,6 +1,7 @@
 package com.cocktailcraft.viewmodel.state
 
 import com.cocktailcraft.domain.config.DeliveryPolicy
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
 import dev.icerock.moko.resources.desc.StringDesc
 
@@ -14,22 +15,22 @@ data class OrderUiState(
     val currentOrder: Order? = null,
     val orderCount: Int = 0,
     val isPlacingOrder: Boolean = false,
-    val totalSpent: Double = 0.0,
+    val totalSpent: Money = Money.ZERO,
     val isLoading: Boolean = false,
     val selectedOrder: Order? = null,
     val isLoadingOrderDetail: Boolean = false,
     val isCancellingOrder: Boolean = false
 ) {
     /** Sum of the selected order's line items, before delivery. */
-    val selectedOrderSubtotal: Double
-        get() = selectedOrder?.items?.sumOf { it.price * it.quantity } ?: 0.0
+    val selectedOrderSubtotal: Money
+        get() = selectedOrder?.subtotal ?: Money.ZERO
 
     /**
      * The delivery fee the selected order was charged: what its stored
      * total (items + DeliveryPolicy fee at checkout) adds to the items.
      */
-    val selectedOrderDeliveryFee: Double
-        get() = selectedOrder?.let { (it.total - selectedOrderSubtotal).coerceAtLeast(0.0) } ?: 0.0
+    val selectedOrderDeliveryFee: Money
+        get() = selectedOrder?.deliveryFee ?: Money.ZERO
 
     /** Delivery estimate for the selected order's status, from DeliveryPolicy. */
     val selectedOrderDeliveryEstimate: StringDesc

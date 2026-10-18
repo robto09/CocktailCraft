@@ -26,7 +26,11 @@ final class ComponentSnapshotTests: SnapshotTestCase {
     }
 
     func testCartSummaryCard() {
-        assertSnapshots(of: CartSummaryCard(subtotal: 34, deliveryFee: 5.99, total: 39.99))
+        assertSnapshots(of: CartSummaryCard(
+            subtotal: Money(cents: 3400),
+            deliveryFee: Money(cents: 599),
+            total: Money(cents: 3999)
+        ))
     }
 
     func testRelatedCocktailCard() {
@@ -173,8 +177,8 @@ final class ComponentSnapshotTests: SnapshotTestCase {
     func testOrderDetailContent() {
         assertSnapshots(of: OrderDetailContent(
             order: SnapshotFixtures.order,
-            subtotal: 34,
-            deliveryFee: 5.99,
+            subtotal: Money(cents: 3400),
+            deliveryFee: Money(cents: 599),
             deliveryEstimate: "15-25 minutes",
             canCancel: true
         ))

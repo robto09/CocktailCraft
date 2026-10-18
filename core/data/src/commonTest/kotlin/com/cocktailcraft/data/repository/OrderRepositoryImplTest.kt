@@ -3,9 +3,11 @@ package com.cocktailcraft.data.repository
 import app.cash.sqldelight.db.QueryResult
 import app.cash.turbine.test
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
+import com.cocktailcraft.domain.model.sumOfMoney
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.createInMemorySqlDriver
@@ -34,12 +36,12 @@ class OrderRepositoryImplTest {
     private fun order(
         id: String,
         status: OrderStatus = OrderStatus.PROCESSING,
-        items: List<OrderItem> = listOf(OrderItem(name = "Margarita", quantity = 1, price = 9.5))
+        items: List<OrderItem> = listOf(OrderItem(name = "Margarita", quantity = 1, price = Money(950)))
     ) = Order(
         id = id,
         date = "2026-07-07",
         items = items,
-        total = items.sumOf { it.price * it.quantity },
+        total = items.sumOfMoney { it.lineTotal },
         status = status
     )
 
@@ -68,9 +70,9 @@ class OrderRepositoryImplTest {
         val multi = order(
             id = "ORD-1",
             items = listOf(
-                OrderItem(name = "Margarita", quantity = 2, price = 9.5),
-                OrderItem(name = "Mojito", quantity = 1, price = 11.0),
-                OrderItem(name = "Negroni", quantity = 3, price = 12.25)
+                OrderItem(name = "Margarita", quantity = 2, price = Money(950)),
+                OrderItem(name = "Mojito", quantity = 1, price = Money(1100)),
+                OrderItem(name = "Negroni", quantity = 3, price = Money(1225))
             )
         )
         val empty = order(id = "ORD-2", items = emptyList())
@@ -89,7 +91,7 @@ class OrderRepositoryImplTest {
         val repo = repository()
         repo.placeOrder(order(id = "ORD-1")).getOrThrow()
 
-        val duplicate = order(id = "ORD-1", items = listOf(OrderItem("Mojito", 4, 11.0)))
+        val duplicate = order(id = "ORD-1", items = listOf(OrderItem("Mojito", 4, Money(1100))))
         assertIs<Result.Error>(repo.placeOrder(duplicate))
 
         assertEquals(listOf(order(id = "ORD-1")), repo.getOrders().getOrThrow())
@@ -174,8 +176,8 @@ class OrderRepositoryImplTest {
         // they must read back as the matching enum, and writes must keep
         // storing those same strings.
         val queries = localDatabase.get().customerOrderQueries
-        queries.insertOrder(id = "old", date = "2026-01-01", total = 9.5, status = "Processing")
-        queries.insertOrder(id = "odd-case", date = "2026-01-01", total = 9.5, status = "pending")
+        queries.insertOrder(id = "old", date = "2026-01-01", totalCents = 950, status = "Processing")
+        queries.insertOrder(id = "odd-case", date = "2026-01-01", totalCents = 950, status = "pending")
 
         val repo = repository()
         assertEquals(OrderStatus.PROCESSING, repo.getOrderById("old").getOrThrow()?.status)

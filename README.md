@@ -401,10 +401,14 @@ Translate the native leftovers below as well.
   (their iOS counterparts are the widget's `configurationDisplayName`s).
 - The Debug-only DebugSwift menu labels, which never ship.
 
-Prices are formatted per platform, not through translatable strings (IO-6),
-and are US dollars only for now: Android formats them with `Locale.US`, iOS
-formats USD in the device locale's number style (`Double.asPrice`), and the
-shared `*_price_format` strings hard-code `$`.
+Prices are US dollars only for now, held as `Money` (whole cents, in
+`:core:domain`) and turned into text in one place, the shared
+`Money.formatted()`: USD in the device locale's number style ("$12.50" in
+en-US, "12,50 $" in de-DE) — `java.text`'s currency format for the
+configuration locale on Android, `NSNumberFormatter` with a plain "$" on iOS.
+No string hard-codes `$` or a number format: copy that shows a price takes the
+formatted amount as a `%1$s` argument. The iOS widget extension, which doesn't
+link the framework, gets prices already formatted in its snapshot.
 
 ## Test Coverage
 The application includes comprehensive test coverage:
