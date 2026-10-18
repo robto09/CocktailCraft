@@ -119,7 +119,7 @@
     <ID>TopLevelPropertyNaming:DataModule.kt$/** * File name of the app's SQLite database: the offline cocktail cache plus the * user's cart, orders, favorites and reviews. The name predates the user-data * tables; it stays so existing installs keep their database. */ internal const val COCKTAIL_DATABASE_NAME = "cocktailcraft_cache.db"</ID>
     <ID>TopLevelPropertyNaming:DataPlatformModule.kt$// Lives in NSUserDefaults (wiped on uninstall) — its absence detects a fresh // install so stale Keychain auth data can be cleared. Not an auth key itself. private const val KEYCHAIN_INSTALL_MARKER = "keychain_install_marker"</ID>
     <ID>TopLevelPropertyNaming:DataPlatformModule.kt$private const val SECURE_PREFS_FILE = "cocktailcraft_secure_prefs"</ID>
-    <ID>TopLevelPropertyNaming:NetworkModule.kt$/** Upper bound for establishing a connection (TCP + TLS). */ internal const val CONNECT_TIMEOUT_MS = 10_000L</ID>
+    <ID>TopLevelPropertyNaming:NetworkModule.kt$/** Upper bound for establishing a connection (TCP + TLS). */ internal const val CONNECT_TIMEOUT_MS = 5_000L</ID>
     <ID>UseCheckOrError:LazySettingsTest.kt$LazySettingsTest$throw IllegalStateException("keystore unavailable")</ID>
     <ID>WildcardImport:CocktailApi.kt$import io.ktor.client.call.*</ID>
     <ID>WildcardImport:CocktailApi.kt$import io.ktor.client.request.*</ID>

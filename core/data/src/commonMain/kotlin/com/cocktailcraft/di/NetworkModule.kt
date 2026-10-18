@@ -32,7 +32,7 @@ internal fun shouldRetryResponse(statusCode: Int): Boolean =
     statusCode in 500..599 || statusCode == 429
 
 /** Upper bound for establishing a connection (TCP + TLS). */
-internal const val CONNECT_TIMEOUT_MS = 10_000L
+internal const val CONNECT_TIMEOUT_MS = 5_000L
 
 /**
  * Builds the shared [HttpClient] with the full production plugin stack.

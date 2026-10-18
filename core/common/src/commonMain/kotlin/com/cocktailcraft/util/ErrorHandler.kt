@@ -128,12 +128,15 @@ object ErrorHandler {
     ): UserFriendlyError {
         return when {
             // Errors that already carry a typed domain code. Localized copy
-            // from the producer wins; otherwise the message is raw data-layer
-            // text: missing -> the caller's default, blank -> the category's
-            // recovery suggestion.
+            // from the producer wins; transport failures get the shared copy
+            // for their code (their raw text is a Ktor message with the
+            // request URL, not something to show); otherwise the message is
+            // raw data-layer text: missing -> the caller's default, blank ->
+            // the category's recovery suggestion.
             exception is DomainException -> errorFromCode(
                 code = exception.code,
                 message = exception.displayMessage
+                    ?: transportMessage(exception.code)
                     ?: exception.message.let { if (it == null) defaultMessage else rawMessage(it) },
                 recoveryAction = recoveryAction,
                 originalException = exception
@@ -238,6 +241,17 @@ object ErrorHandler {
             )
         }
     }
+
+    /**
+     * Shared copy for a connectivity, timeout or server failure, or null for
+     * codes whose data-layer message is meant for the user.
+     */
+    private fun transportMessage(code: ErrorCode): StringDesc? = when (code) {
+        ErrorCode.NETWORK -> MR.strings.error_message_network
+        ErrorCode.TIMEOUT -> MR.strings.error_message_timeout
+        ErrorCode.SERVER_ERROR -> MR.strings.error_message_server
+        else -> null
+    }?.desc()
 
     /**
      * Get a user-friendly title for an error category
