@@ -2,7 +2,6 @@ package com.cocktailcraft.data.remote
 
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.model.Money
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -36,21 +35,24 @@ internal class CocktailRemoteDataSource(
     private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() }
 ) {
 
+    // search.php, lookup.php and random.php return full records; the
+    // filter.php endpoints only partial ones (id, name, thumbnail)
+
     suspend fun searchByName(name: String): List<Cocktail> =
-        offMain { api.searchCocktailsByName(name).map(::mapToDomain) }
+        offMain { api.searchCocktailsByName(name).map(::mapFull) }
 
-    suspend fun getById(id: String): Cocktail? = offMain { api.getCocktailById(id)?.let(::mapToDomain) }
+    suspend fun getById(id: String): Cocktail? = offMain { api.getCocktailById(id)?.let(::mapFull) }
 
-    suspend fun getRandom(): Cocktail? = offMain { api.getRandomCocktail()?.let(::mapToDomain) }
+    suspend fun getRandom(): Cocktail? = offMain { api.getRandomCocktail()?.let(::mapFull) }
 
     suspend fun filterByIngredient(ingredient: String): List<Cocktail> {
         acquireRateLimitSlot()
-        return offMain { api.filterByIngredient(ingredient).map(::mapToDomain) }
+        return offMain { api.filterByIngredient(ingredient).map(::mapPartial) }
     }
 
     suspend fun filterByAlcoholic(alcoholic: Boolean): List<Cocktail> {
         acquireRateLimitSlot()
-        return offMain { api.filterByAlcoholic(alcoholic).map(::mapToDomain) }
+        return offMain { api.filterByAlcoholic(alcoholic).map(::mapPartial) }
     }
 
     /**
@@ -62,7 +64,7 @@ internal class CocktailRemoteDataSource(
         acquireRateLimitSlot()
         return offMain {
             api.filterByCategory(category).map { dto ->
-                val cocktail = mapToDomain(dto)
+                val cocktail = mapPartial(dto)
                 if (cocktail.category.isNullOrBlank()) cocktail.copy(category = category) else cocktail
             }
         }
@@ -91,28 +93,31 @@ internal class CocktailRemoteDataSource(
         }
     }
 
+    private fun mapFull(dto: CocktailDto): Cocktail = mapToDomain(dto, hasFullDetails = true)
+
+    private fun mapPartial(dto: CocktailDto): Cocktail = mapToDomain(dto, hasFullDetails = false)
+
     /**
-     * Map a DTO to the domain model. Price/rating/popularity are demo values
+     * Map a DTO to the domain model; [hasFullDetails] says which kind of
+     * endpoint returned it. Price/rating/popularity are demo values
      * TheCocktailDB doesn't provide — derived deterministically from the
      * cocktail id so the same drink always shows the same values.
      */
-    fun mapToDomain(dto: CocktailDto): Cocktail {
+    fun mapToDomain(dto: CocktailDto, hasFullDetails: Boolean): Cocktail {
         val seed = dto.id.hashCode().absoluteValue
         return Cocktail(
             id = dto.id,
             name = dto.name,
-            instructions = dto.instructions ?: Cocktail.PLACEHOLDER_INSTRUCTIONS,
+            instructions = dto.instructions,
             imageUrl = dto.imageUrl,
             price = demoPrice(seed),
-            ingredients = dto.getIngredients().ifEmpty {
-                // If no ingredients (from filter endpoint), add placeholder
-                listOf(CocktailIngredient(Cocktail.PLACEHOLDER_INGREDIENT_NAME, ""))
-            },
+            ingredients = dto.getIngredients(),
             rating = demoRating(seed),
             category = dto.category,
             glass = dto.glass,
             alcoholic = dto.alcoholic ?: Cocktail.ALCOHOLIC_UNKNOWN,
-            popularity = demoPopularity(seed)
+            popularity = demoPopularity(seed),
+            hasFullDetails = hasFullDetails
         )
     }
 

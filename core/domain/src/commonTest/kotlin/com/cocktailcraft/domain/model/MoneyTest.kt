@@ -41,19 +41,6 @@ class MoneyTest {
     }
 
     @Test
-    fun legacyDollarsRoundHalfAwayFromZeroToTheNearestCent() {
-        assertEquals(Money(1250), Money.fromDollars(12.5))
-        assertEquals(Money(599), Money.fromDollars(5.99))
-        // Binary doubles a hair below the cent still land on it
-        assertEquals(Money(529), Money.fromDollars(5.0 + 29 / 100.0))
-        assertEquals(Money(1015), Money.fromDollars(5.0 + 515 / 100.0))
-        assertEquals(Money(13), Money.fromDollars(0.125))
-        assertEquals(Money(-13), Money.fromDollars(-0.125))
-        assertEquals(Money(0), Money.fromDollars(0.004))
-        assertEquals(Money(1), Money.fromDollars(0.005))
-    }
-
-    @Test
     fun formatsUsDollarsForUsEnglish() {
         assertEquals("$12.50", Money(1250).formatted("en-US"))
         assertEquals("$0.00", Money.ZERO.formatted("en-US"))

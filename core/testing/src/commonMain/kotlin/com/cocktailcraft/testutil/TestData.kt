@@ -29,14 +29,13 @@ fun testCocktail(
 )
 
 /**
- * A cocktail as returned by list/filter endpoints: placeholder ingredients and
- * instructions, so [Cocktail.hasFullDetails] is false and use cases must hydrate it.
+ * A cocktail as returned by list/filter endpoints: no ingredients or
+ * instructions, and [Cocktail.hasFullDetails] false, so use cases must hydrate it.
  */
 fun partialCocktail(id: String, name: String = "Partial $id") = Cocktail(
     id = id,
     name = name,
     category = "Cocktail",
     imageUrl = "https://example.com/$id.jpg",
-    instructions = Cocktail.PLACEHOLDER_INSTRUCTIONS,
-    ingredients = listOf(CocktailIngredient(Cocktail.PLACEHOLDER_INGREDIENT_NAME, ""))
+    hasFullDetails = false
 )

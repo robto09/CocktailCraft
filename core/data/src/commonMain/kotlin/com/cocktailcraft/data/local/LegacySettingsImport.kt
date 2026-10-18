@@ -3,9 +3,6 @@ package com.cocktailcraft.data.local
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.repository.insertOrderWithItems
-import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.model.CocktailCartItem
-import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.Review
 import com.russhwolf.settings.Settings
 import kotlinx.serialization.KSerializer
@@ -34,6 +31,8 @@ internal class LegacySettingsImport(
     private val settings: Settings,
     private val json: Json
 ) {
+    private val codec = CocktailCodec(json)
+
     companion object {
         // Settings keys of the legacy stores. internal (not private) so tests
         // can seed fixtures under the real keys.
@@ -63,13 +62,13 @@ internal class LegacySettingsImport(
     }
 
     private fun importCart(db: CocktailCraftDatabase, raw: String): Int {
-        val items = decodeList(raw, CocktailCartItem.serializer(), "cart")
+        val items = decodeList(raw, LegacyCartItem.serializer(), "cart")
         db.transaction {
             // Legacy lists are in display order; positions follow insertion.
             items.forEach { item ->
                 db.cartItemQueries.insertIfAbsent(
                     cocktailId = item.cocktail.id,
-                    payload = json.encodeToString(Cocktail.serializer(), item.cocktail),
+                    payload = codec.encode(item.cocktail.toDomain()),
                     quantity = item.quantity.toLong()
                 )
             }
@@ -78,7 +77,7 @@ internal class LegacySettingsImport(
     }
 
     private fun importOrders(db: CocktailCraftDatabase, raw: String): Int {
-        val orders = decodeList(raw, Order.serializer(), "orders")
+        val orders = decodeList(raw, LegacyOrder.serializer(), "orders").map { it.toDomain() }
         db.transaction {
             orders.forEach { order ->
                 // The INSERT OR IGNORE equivalent for an order and its items:

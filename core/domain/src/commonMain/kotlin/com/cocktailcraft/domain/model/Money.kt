@@ -1,12 +1,5 @@
 package com.cocktailcraft.domain.model
 
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 import kotlin.native.HiddenFromObjC
 
 /**
@@ -18,10 +11,7 @@ import kotlin.native.HiddenFromObjC
  * class reaches Swift as a bare Int64 (and as an untyped `Any?` when
  * nullable) with none of its members exported, while this one stays a
  * typed `Money` with [cents], [formatted] and the arithmetic.
- *
- * Serialized (database payloads) as the plain number of cents.
  */
-@Serializable(with = MoneyCentsSerializer::class)
 class Money(val cents: Long) : Comparable<Money> {
 
     operator fun plus(other: Money): Money = Money(cents + other.cents)
@@ -50,28 +40,10 @@ class Money(val cents: Long) : Comparable<Money> {
 
     override fun toString(): String = "Money(cents=$cents)"
 
-    // Hidden so the generated serializer() accessor does not drag the
-    // kotlinx-serialization type tree into the Obj-C header. Swift spells
-    // amounts as Money(cents:).
+    // Kotlin-side constants; Swift spells amounts as Money(cents:)
     @HiddenFromObjC
     companion object {
         val ZERO = Money(0)
-
-        private const val CENTS_PER_DOLLAR = 100
-
-        /**
-         * Converts a legacy floating-point dollar amount (what the app stored
-         * before money was kept in cents) to cents, rounding half away from
-         * zero exactly like SQLite's ROUND() in migrations/4.sqm, so a price
-         * read from an old JSON payload matches the same price migrated in
-         * a database column.
-         */
-        internal fun fromDollars(dollars: Double): Money {
-            val scaled = dollars * CENTS_PER_DOLLAR
-            return Money((scaled + if (scaled < 0) -HALF else HALF).toLong())
-        }
-
-        private const val HALF = 0.5
     }
 }
 
@@ -90,13 +62,3 @@ inline fun <T> Iterable<T>.sumOfMoney(selector: (T) -> Money): Money {
  * symbol as the app always has there.
  */
 internal expect fun formatUsd(cents: Long, languageTag: String?): String
-
-/** [Money] as its number of cents. */
-internal object MoneyCentsSerializer : KSerializer<Money> {
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("com.cocktailcraft.domain.model.Money", PrimitiveKind.LONG)
-
-    override fun serialize(encoder: Encoder, value: Money) = encoder.encodeLong(value.cents)
-
-    override fun deserialize(decoder: Decoder): Money = Money(decoder.decodeLong())
-}

@@ -5,6 +5,10 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
+import com.cocktailcraft.data.local.CocktailCodec
+import com.cocktailcraft.data.local.CocktailEntity
+import com.cocktailcraft.data.local.LegacyCocktailSerializer
+import com.cocktailcraft.data.local.toDomain
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
 import com.russhwolf.settings.Settings
@@ -37,7 +41,8 @@ import kotlin.time.Clock
  */
 @Serializable
 internal data class CachedCocktailEntry(
-    val cocktail: Cocktail,
+    @Serializable(with = LegacyCocktailSerializer::class)
+    val cocktail: CocktailEntity,
     val cachedAtMs: Long = 0L
 )
 
@@ -100,7 +105,7 @@ internal class CocktailCache(
         private const val MAX_IDS_PER_QUERY = 500
     }
 
-    private val cocktailSerializer = Cocktail.serializer()
+    private val codec = CocktailCodec(json)
 
     // Guards every database operation. Besides serialising writes, it keeps
     // the access stamps below strictly increasing.
@@ -141,15 +146,9 @@ internal class CocktailCache(
     private fun normalizedCategory(cocktail: Cocktail): String? =
         cocktail.category?.takeIf { it.isNotBlank() }
 
-    private fun encode(cocktail: Cocktail): String = json.encodeToString(cocktailSerializer, cocktail)
+    private fun encode(cocktail: Cocktail): String = codec.encode(cocktail)
 
-    private fun decodeOrNull(payload: String): Cocktail? =
-        try {
-            json.decodeFromString(cocktailSerializer, payload)
-        } catch (e: Exception) {
-            Logger.w(e) { "Dropping unreadable cached cocktail: ${e.message}" }
-            null
-        }
+    private fun decodeOrNull(payload: String): Cocktail? = codec.decodeOrNull(payload)
 
     /**
      * Runs [block] against the database on [ioDispatcher], one operation at a
@@ -235,10 +234,11 @@ internal class CocktailCache(
             // Legacy lists are oldest-first, so ascending stamps keep both
             // the LRU order and the recently viewed order.
             entries.forEach { entry ->
+                val cocktail = entry.cocktail.toDomain()
                 db.cachedCocktailQueries.insertIfAbsent(
-                    id = entry.cocktail.id,
-                    category = normalizedCategory(entry.cocktail),
-                    payload = encode(entry.cocktail),
+                    id = cocktail.id,
+                    category = normalizedCategory(cocktail),
+                    payload = encode(cocktail),
                     cached_at = entry.cachedAtMs,
                     last_accessed = nextStamp()
                 )
@@ -274,7 +274,7 @@ internal class CocktailCache(
         } catch (e: Exception) {
             try {
                 val now = nowMs()
-                json.decodeFromString(ListSerializer(cocktailSerializer), raw)
+                json.decodeFromString(ListSerializer(LegacyCocktailSerializer), raw)
                     .map { CachedCocktailEntry(it, now) }
             } catch (e: Exception) {
                 Logger.w(e) { "Discarding unreadable legacy cocktail cache" }
@@ -286,7 +286,7 @@ internal class CocktailCache(
     private fun decodeLegacyRecentlyViewed(raw: String): List<Cocktail> {
         if (raw.isBlank()) return emptyList()
         return try {
-            json.decodeFromString(ListSerializer(cocktailSerializer), raw)
+            json.decodeFromString(ListSerializer(LegacyCocktailSerializer), raw).map { it.toDomain() }
         } catch (e: Exception) {
             Logger.w(e) { "Discarding unreadable legacy recently viewed list" }
             emptyList()

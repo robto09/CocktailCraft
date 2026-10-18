@@ -282,7 +282,10 @@ class CocktailCatalogRepositoryImplTest {
 
         // The ingredient filter returns partial records without a category.
         fixture.cache.cacheCocktail(
-            fixture.remote.mapToDomain(CocktailDto(id = "2", name = "Mojito", imageUrl = "https://example.com/2.jpg"))
+            fixture.remote.mapToDomain(
+                CocktailDto(id = "2", name = "Mojito", imageUrl = "https://example.com/2.jpg"),
+                hasFullDetails = false
+            )
         )
 
         assertEquals(listOf("2", "3"), fixture.catalog.observeCategory("Cocktail").first().ids())

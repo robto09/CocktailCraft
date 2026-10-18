@@ -99,7 +99,7 @@ class CocktailRemoteDataSourceTest {
             // The formula before prices were cents, as displayed (two decimals)
             val legacyDollars = 5.0 + (seed % 1001) / 100.0
 
-            val price = remote.mapToDomain(CocktailDto(id = id, name = "Drink $id")).price
+            val price = remote.mapToDomain(CocktailDto(id = id, name = "Drink $id"), hasFullDetails = true).price
 
             assertEquals((legacyDollars * 100).roundToLong(), price.cents, "price of $id")
             assertTrue(price in Money(500)..Money(1500))

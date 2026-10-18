@@ -2,8 +2,8 @@ package com.cocktailcraft.data.repository
 
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
+import com.cocktailcraft.data.local.CocktailCodec
 import com.cocktailcraft.data.local.LocalDatabase
-import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.util.Result
@@ -28,10 +28,12 @@ internal class CartRepositoryImpl(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : CartRepository {
 
+    private val codec = CocktailCodec(json)
+
     private fun toCartItem(row: CartItemRow): CocktailCartItem? =
         try {
             CocktailCartItem(
-                cocktail = json.decodeFromString(Cocktail.serializer(), row.payload),
+                cocktail = codec.decode(row.payload),
                 quantity = row.quantity.toInt()
             )
         } catch (e: Exception) {
@@ -56,7 +58,7 @@ internal class CartRepositoryImpl(
     override suspend fun addToCart(cartItem: CocktailCartItem): Result<Unit> = withContext(ioDispatcher) {
         runCatchingResult("Failed to add to cart") {
             val db = localDatabase.get()
-            db.transaction { db.add(cartItem, json) }
+            db.transaction { db.add(cartItem, codec) }
             Result.Success(Unit)
         }
     }
@@ -65,7 +67,7 @@ internal class CartRepositoryImpl(
     override suspend fun addAllToCart(cartItems: List<CocktailCartItem>): Result<Unit> = withContext(ioDispatcher) {
         runCatchingResult("Failed to add to cart") {
             val db = localDatabase.get()
-            db.transaction { cartItems.forEach { db.add(it, json) } }
+            db.transaction { cartItems.forEach { db.add(it, codec) } }
             Result.Success(Unit)
         }
     }
@@ -101,14 +103,14 @@ internal class CartRepositoryImpl(
  * Adds [cartItem]; call inside a transaction. An item already in the cart
  * keeps its stored cocktail and position; only the quantity grows.
  */
-private fun CocktailCraftDatabase.add(cartItem: CocktailCartItem, json: Json) {
+private fun CocktailCraftDatabase.add(cartItem: CocktailCartItem, codec: CocktailCodec) {
     val id = cartItem.cocktail.id
     if (cartItemQueries.exists(id).executeAsOne() > 0L) {
         cartItemQueries.addQuantity(delta = cartItem.quantity.toLong(), cocktailId = id)
     } else {
         cartItemQueries.insert(
             cocktailId = id,
-            payload = json.encodeToString(Cocktail.serializer(), cartItem.cocktail),
+            payload = codec.encode(cartItem.cocktail),
             quantity = cartItem.quantity.toLong()
         )
     }

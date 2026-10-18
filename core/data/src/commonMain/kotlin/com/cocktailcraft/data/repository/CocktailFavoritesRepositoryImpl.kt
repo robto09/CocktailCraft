@@ -2,6 +2,7 @@ package com.cocktailcraft.data.repository
 
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.cache.CocktailCache
+import com.cocktailcraft.data.local.CocktailCodec
 import com.cocktailcraft.data.local.LocalDatabase
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.domain.model.Cocktail
@@ -48,12 +49,14 @@ internal class CocktailFavoritesRepositoryImpl(
     // the second pass finds nothing left to fetch.
     private val resolveMutex = Mutex()
 
-    private fun encode(cocktail: Cocktail): String = json.encodeToString(Cocktail.serializer(), cocktail)
+    private val codec = CocktailCodec(json)
+
+    private fun encode(cocktail: Cocktail): String = codec.encode(cocktail)
 
     private fun decodeOrNull(row: FavoriteRow): Cocktail? {
         val payload = row.payload ?: return null
         return try {
-            json.decodeFromString(Cocktail.serializer(), payload)
+            codec.decode(payload)
         } catch (e: Exception) {
             Logger.w(e) { "Unreadable stored favorite ${row.id}, will re-resolve it" }
             null

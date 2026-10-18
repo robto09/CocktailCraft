@@ -2,14 +2,16 @@ package com.cocktailcraft.data.cache
 
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
+import com.cocktailcraft.data.local.CocktailCodec
+import com.cocktailcraft.data.local.toEntity
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCategories
-import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.testutil.CountingSqlDriver
 import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.testutil.createTestDatabase
+import com.cocktailcraft.testutil.legacyCocktailsJson
 import com.cocktailcraft.testutil.testCocktail
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
@@ -61,7 +63,7 @@ class CocktailCacheTest {
         db.cachedCocktailQueries.upsert(
             id = cocktail.id,
             category = cocktail.category,
-            payload = json.encodeToString(Cocktail.serializer(), cocktail),
+            payload = CocktailCodec(json).encode(cocktail),
             cached_at = cachedAt,
             last_accessed = lastAccessed
         )
@@ -80,7 +82,7 @@ class CocktailCacheTest {
     }
 
     private fun seedLegacyCocktails(settings: Settings, key: String, cocktails: List<Cocktail>) {
-        settings.putString(key, json.encodeToString(ListSerializer(Cocktail.serializer()), cocktails))
+        settings.putString(key, legacyCocktailsJson(cocktails))
     }
 
     // --- Per-row persistence ---
@@ -103,7 +105,9 @@ class CocktailCacheTest {
         // What a filter.php listing maps to: no ingredients, alcoholic unknown
         val placeholder = full.copy(
             alcoholic = "Unknown",
-            ingredients = listOf(CocktailIngredient(Cocktail.PLACEHOLDER_INGREDIENT_NAME, ""))
+            ingredients = emptyList(),
+            instructions = null,
+            hasFullDetails = false
         )
 
         cache.cacheCocktail(full)
@@ -115,9 +119,7 @@ class CocktailCacheTest {
     @Test
     fun placeholderIsCachedWhenNothingBetterIsStored() = runTest {
         val cache = cache(createTestDatabase())
-        val placeholder = testCocktail("1").copy(
-            ingredients = listOf(CocktailIngredient(Cocktail.PLACEHOLDER_INGREDIENT_NAME, ""))
-        )
+        val placeholder = testCocktail("1").copy(ingredients = emptyList(), instructions = null, hasFullDetails = false)
 
         cache.cacheCocktail(placeholder)
 
@@ -126,7 +128,9 @@ class CocktailCacheTest {
 
     private fun placeholderOf(cocktail: Cocktail) = cocktail.copy(
         alcoholic = "Unknown",
-        ingredients = listOf(CocktailIngredient(Cocktail.PLACEHOLDER_INGREDIENT_NAME, ""))
+        ingredients = emptyList(),
+        instructions = null,
+        hasFullDetails = false
     )
 
     // --- Batched reads/writes: a fixed number of statements, not one per row ---
@@ -487,10 +491,13 @@ class CocktailCacheTest {
         val settings = MapSettings()
         val oneHourAgo = nowMs() - 3_600_000
         val twoHoursAgo = nowMs() - 7_200_000
-        seedLegacyEntries(settings, listOf(
-            CachedCocktailEntry(testCocktail("1"), oneHourAgo),
-            CachedCocktailEntry(testCocktail("2"), twoHoursAgo)
-        ))
+        seedLegacyEntries(
+            settings,
+            listOf(
+                CachedCocktailEntry(testCocktail("1").toEntity(), oneHourAgo),
+                CachedCocktailEntry(testCocktail("2").toEntity(), twoHoursAgo)
+            )
+        )
 
         val cache = cache(db, settings)
 
@@ -538,10 +545,13 @@ class CocktailCacheTest {
     @Test
     fun migratedLegacyCategoriesAreQueryable() = runTest {
         val settings = MapSettings()
-        seedLegacyEntries(settings, listOf(
-            CachedCocktailEntry(testCocktail("legacy", category = null), nowMs()),
-            CachedCocktailEntry(testCocktail("shot", category = "Shot"), nowMs())
-        ))
+        seedLegacyEntries(
+            settings,
+            listOf(
+                CachedCocktailEntry(testCocktail("legacy", category = null).toEntity(), nowMs()),
+                CachedCocktailEntry(testCocktail("shot", category = "Shot").toEntity(), nowMs())
+            )
+        )
 
         val cache = cache(createTestDatabase(), settings)
 
@@ -557,8 +567,8 @@ class CocktailCacheTest {
         val db = createTestDatabase()
         val settings = MapSettings()
         val legacyEntries = listOf(
-            CachedCocktailEntry(testCocktail("1", name = "Legacy name"), nowMs()),
-            CachedCocktailEntry(testCocktail("2"), nowMs())
+            CachedCocktailEntry(testCocktail("1", name = "Legacy name").toEntity(), nowMs()),
+            CachedCocktailEntry(testCocktail("2").toEntity(), nowMs())
         )
         val legacyRecent = listOf(testCocktail("1"))
         seedLegacyEntries(settings, legacyEntries)
@@ -584,8 +594,8 @@ class CocktailCacheTest {
     @Test
     fun expiredLegacyEntriesAreDroppedOnlineButKeptOffline() = runTest {
         val legacy = listOf(
-            CachedCocktailEntry(testCocktail("old"), expiredAt()),
-            CachedCocktailEntry(testCocktail("fresh"), nowMs())
+            CachedCocktailEntry(testCocktail("old").toEntity(), expiredAt()),
+            CachedCocktailEntry(testCocktail("fresh").toEntity(), nowMs())
         )
 
         val onlineSettings = MapSettings().also { seedLegacyEntries(it, legacy) }

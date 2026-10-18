@@ -126,8 +126,6 @@
     <ID>WildcardImport:NetworkMonitor.kt$import platform.Network.*</ID>
     <ID>Wrapping:AuthRepositoryImpl.kt$AuthRepositoryImpl$(</ID>
     <ID>Wrapping:CocktailCacheTest.kt$CocktailCacheTest$(</ID>
-    <ID>Wrapping:CocktailCacheTest.kt$CocktailCacheTest$(settings, listOf( CachedCocktailEntry(testCocktail("1"), oneHourAgo), CachedCocktailEntry(testCocktail("2"), twoHoursAgo) ))</ID>
-    <ID>Wrapping:CocktailCacheTest.kt$CocktailCacheTest$(settings, listOf( CachedCocktailEntry(testCocktail("legacy", category = null), nowMs()), CachedCocktailEntry(testCocktail("shot", category = "Shot"), nowMs()) ))</ID>
     <ID>Wrapping:CocktailDetailRepositoryImplTest.kt$CocktailDetailRepositoryImplTest$ignoreUnknownKeys = true</ID>
     <ID>Wrapping:CocktailOfflineRepositoryImplTest.kt$CocktailOfflineRepositoryImplTest$ignoreUnknownKeys = true</ID>
     <ID>Wrapping:CocktailSearchRepositoryImplTest.kt$CocktailSearchRepositoryImplTest$(</ID>

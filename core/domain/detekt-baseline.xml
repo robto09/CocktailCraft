@@ -11,8 +11,6 @@
     <ID>ArgumentListWrapping:GetCocktailDetailUseCase.kt$GetCocktailDetailUseCase$(emptyList())</ID>
     <ID>ArgumentListWrapping:PlaceOrderUseCase.kt$PlaceOrderUseCase$(2, '0')</ID>
     <ID>Filename:DomainPolicyTest.kt$com.cocktailcraft.domain.DomainPolicyTest.kt</ID>
-    <ID>ImportOrdering:CocktailCartItem.kt$import kotlin.native.HiddenFromObjC import kotlinx.serialization.Serializable</ID>
-    <ID>ImportOrdering:CocktailIngredient.kt$import kotlin.native.HiddenFromObjC import kotlinx.serialization.Serializable</ID>
     <ID>ImportOrdering:ManageReviewsUseCase.kt$import com.cocktailcraft.domain.model.Review import com.cocktailcraft.domain.repository.ReviewRepository import com.cocktailcraft.domain.util.Result import com.cocktailcraft.resources.MR import com.cocktailcraft.resources.review_error_comment_required import com.cocktailcraft.resources.review_error_comment_too_long import com.cocktailcraft.resources.review_error_comment_too_short import com.cocktailcraft.resources.review_error_rating_range import dev.icerock.moko.resources.desc.StringDesc import dev.icerock.moko.resources.desc.desc import dev.icerock.moko.resources.format import kotlin.time.Clock import kotlinx.coroutines.flow.Flow import kotlinx.datetime.TimeZone import kotlinx.datetime.number import kotlinx.datetime.toLocalDateTime import kotlin.native.HiddenFromObjC</ID>
     <ID>ImportOrdering:Review.kt$import com.cocktailcraft.util.UUID import kotlin.native.HiddenFromObjC import kotlinx.serialization.Serializable import kotlin.time.Clock import kotlinx.datetime.TimeZone import kotlinx.datetime.number import kotlinx.datetime.toLocalDateTime</ID>
     <ID>ImportOrdering:User.kt$import com.cocktailcraft.designsystem.AccentColorTokens import kotlin.native.HiddenFromObjC import kotlinx.serialization.SerialName import kotlinx.serialization.Serializable</ID>
@@ -32,7 +30,6 @@
     <ID>NewLineAtEndOfFile:AppConfig.kt$com.cocktailcraft.domain.config.AppConfig.kt</ID>
     <ID>NewLineAtEndOfFile:AuthRepository.kt$com.cocktailcraft.domain.repository.AuthRepository.kt</ID>
     <ID>NewLineAtEndOfFile:CartRepository.kt$com.cocktailcraft.domain.repository.CartRepository.kt</ID>
-    <ID>NewLineAtEndOfFile:Cocktail.kt$com.cocktailcraft.domain.model.Cocktail.kt</ID>
     <ID>NewLineAtEndOfFile:CocktailCartItem.kt$com.cocktailcraft.domain.model.CocktailCartItem.kt</ID>
     <ID>NewLineAtEndOfFile:CocktailIngredient.kt$com.cocktailcraft.domain.model.CocktailIngredient.kt</ID>
     <ID>NewLineAtEndOfFile:Review.kt$com.cocktailcraft.domain.model.Review.kt</ID>

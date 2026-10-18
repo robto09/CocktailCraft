@@ -20,8 +20,11 @@ import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.createTestLocalDatabase
+import com.cocktailcraft.testutil.legacyCartJson
+import com.cocktailcraft.testutil.legacyOrdersJson
 import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.testutil.testJson
+import com.cocktailcraft.testutil.toLegacy
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.test.runTest
@@ -35,8 +38,8 @@ import kotlin.test.assertTrue
 /**
  * The one-time move of the cart, orders, reviews and favorites out of the
  * Settings JSON blobs older versions wrote. Fixtures are encoded with the
- * models' serializers; the blobs older versions actually wrote held money
- * as Double dollars, which legacyDollarAmountsImportAsCents covers.
+ * legacy record serializers; the blobs older versions actually wrote held
+ * money as Double dollars, which legacyDollarAmountsImportAsCents covers.
  */
 class LegacySettingsImportTest {
 
@@ -67,11 +70,9 @@ class LegacySettingsImportTest {
         Review(id = "r2", cocktailId = "2", userName = "Ana", rating = 3.0f, comment = "A bit too minty.", date = "2026-06-03")
     )
 
-    private fun Settings.seedCart(items: List<CocktailCartItem>) =
-        putString(CART_KEY, testJson.encodeToString(ListSerializer(CocktailCartItem.serializer()), items))
+    private fun Settings.seedCart(items: List<CocktailCartItem>) = putString(CART_KEY, legacyCartJson(items))
 
-    private fun Settings.seedOrders(orders: List<Order>) =
-        putString(ORDERS_KEY, testJson.encodeToString(ListSerializer(Order.serializer()), orders))
+    private fun Settings.seedOrders(orders: List<Order>) = putString(ORDERS_KEY, legacyOrdersJson(orders))
 
     private fun Settings.seedReviews(reviews: List<Review>) =
         putString(REVIEWS_KEY, testJson.encodeToString(ListSerializer(Review.serializer()), reviews))
@@ -179,8 +180,8 @@ class LegacySettingsImportTest {
 
     @Test
     fun readableEntriesSurviveAnUnreadableNeighbour() = runTest {
-        val validOrder = testJson.encodeToString(Order.serializer(), legacyOrders.first())
-        val validItem = testJson.encodeToString(CocktailCartItem.serializer(), CocktailCartItem(mojito, 3))
+        val validOrder = testJson.encodeToString(LegacyOrder.serializer(), legacyOrders.first().toLegacy())
+        val validItem = testJson.encodeToString(LegacyCartItem.serializer(), CocktailCartItem(mojito, 3).toLegacy())
         val settings = MapSettings().apply {
             putString(ORDERS_KEY, """[{"id":"broken"}, $validOrder, 42]""")
             putString(CART_KEY, """[$validItem, {"quantity":1}]""")

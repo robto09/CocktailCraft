@@ -6,6 +6,7 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
+import com.cocktailcraft.data.local.CocktailCodec
 import com.cocktailcraft.data.repository.CartRepositoryImpl
 import com.cocktailcraft.data.repository.OrderRepositoryImpl
 import com.cocktailcraft.domain.model.Cocktail
@@ -255,6 +256,6 @@ class MoneyInCentsMigrationTest {
 
         // The migration leaves payloads in their old shape; reads convert them
         assertFalse(payload!!.contains("priceCents"))
-        assertEquals(Money(529), testJson.decodeFromString(Cocktail.serializer(), payload).price)
+        assertEquals(Money(529), CocktailCodec(testJson).decode(payload).price)
     }
 }
