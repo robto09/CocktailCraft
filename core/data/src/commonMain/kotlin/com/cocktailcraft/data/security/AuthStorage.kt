@@ -4,7 +4,7 @@ import com.russhwolf.settings.Settings
 
 /**
  * Every Settings key the auth store owns. AuthRepositoryImpl writes these to
- * the dedicated secure store (EncryptedSharedPreferences on Android, the
+ * the dedicated secure store (Tink-encrypted, Keystore-keyed on Android, the
  * Keychain on iOS); the platform modules use [migrateAuthStorage] to move
  * values written by older app versions out of the plain store.
  */

@@ -6,9 +6,9 @@ import com.russhwolf.settings.Settings
  * A [Settings] whose backing store is created on first use instead of when
  * Koin resolves it.
  *
- * The secure store is expensive to open — on Android, MasterKey/Keystore
- * access, Tink keyset parsing, the EncryptedSharedPreferences disk read and
- * the one-time auth migration; on iOS, Keychain reads plus the migration —
+ * The secure store is expensive to open — on Android, Keystore access,
+ * Tink keyset parsing, decrypting the store file and the one-time
+ * migrations; on iOS, Keychain reads plus the migration —
  * and it sits on the first frame's injection path (MainActivity's theme
  * ViewModel → ManageProfileUseCase → AuthRepository). Wrapping it here keeps
  * resolution free: every AuthRepositoryImpl access already runs inside

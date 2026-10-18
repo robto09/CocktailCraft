@@ -4,8 +4,13 @@
      longer live there, but on installs upgraded from older versions it can still hold
      auth data, orders (with addresses) and the cocktail cache until the first launch
      moves them out, so it must never leave the device either.
-     cocktailcraft_secure_prefs.xml is Keystore-encrypted; its master key is not backed
-     up, so restored copies are unreadable and would only corrupt a fresh install.
+     The auth store (credentials, profile PII) is no_backup/cocktailcraft_auth_store,
+     encrypted with the Tink keyset in cocktailcraft_auth_keyset.xml, which is wrapped
+     by an Android Keystore key. That key is never backed up, so restored copies would
+     be unreadable and would only corrupt a fresh install. no_backup/ is already left
+     out by the OS; it is listed anyway so the rule survives the file moving.
+     cocktailcraft_secure_prefs.xml is the EncryptedSharedPreferences file the auth
+     store used before; the first launch of a current version imports and deletes it.
      cocktailcraft_cache.db holds the offline cocktail cache and the cart, orders,
      favorites and reviews. SQLite keeps uncommitted and not-yet-checkpointed pages in
      the -wal/-shm (WAL mode) or -journal (rollback mode) files beside it, which
@@ -14,6 +19,8 @@
     <cloud-backup>
         <exclude domain="sharedpref" path="cocktailcraft_prefs.xml" />
         <exclude domain="sharedpref" path="cocktailcraft_secure_prefs.xml" />
+        <exclude domain="sharedpref" path="cocktailcraft_auth_keyset.xml" />
+        <exclude domain="root" path="no_backup/cocktailcraft_auth_store" />
         <exclude domain="database" path="cocktailcraft_cache.db" />
         <exclude domain="database" path="cocktailcraft_cache.db-wal" />
         <exclude domain="database" path="cocktailcraft_cache.db-shm" />
@@ -22,6 +29,8 @@
     <device-transfer>
         <exclude domain="sharedpref" path="cocktailcraft_prefs.xml" />
         <exclude domain="sharedpref" path="cocktailcraft_secure_prefs.xml" />
+        <exclude domain="sharedpref" path="cocktailcraft_auth_keyset.xml" />
+        <exclude domain="root" path="no_backup/cocktailcraft_auth_store" />
         <exclude domain="database" path="cocktailcraft_cache.db" />
         <exclude domain="database" path="cocktailcraft_cache.db-wal" />
         <exclude domain="database" path="cocktailcraft_cache.db-shm" />
