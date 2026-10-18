@@ -29,7 +29,6 @@
 
     <!-- Common -->
     <string name="error">Error</string>
-    <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
     <string name="name">Name</string>
     <string name="loading">Loading…</string>
@@ -76,7 +75,6 @@
 
     <!-- Settings & profile -->
     <string name="dark_mode">Dark Mode</string>
-    <string name="notifications">Notifications</string>
     <string name="create_account">Create Account</string>
     <string name="edit_profile">Edit Profile</string>
     <string name="change_password">Change Password</string>
@@ -104,7 +102,6 @@
     <string name="profile_version_format">Version %1$s</string>
     <string name="profile_copyright">© 2026 CocktailCraft. All rights reserved.</string>
     <string name="profile_guest_user_ios">Guest</string>
-    <string name="settings_enable_notifications">Enable Notifications</string>
     <string name="settings_theme_actions">Theme Actions</string>
     <string name="settings_reset_to_defaults">Reset to Defaults</string>
     <string name="settings_version">Version</string>
@@ -138,7 +135,6 @@
     <string name="accent_color_pink">Pink</string>
 
     <!-- Home / search -->
-    <string name="search">Search</string>
     <string name="browse_cocktails">Browse Cocktails</string>
     <string name="home_no_connection_title">No internet connection</string>
     <string name="home_no_connection_message">Check your connection and try again.</string>
@@ -216,16 +212,13 @@
     <string name="no_favorites">No favorites yet</string>
     <string name="favorites_empty_message_ios">Start adding cocktails to your favorites</string>
     <string name="favorite_removed">Removed %1$s from favorites</string>
-    <string name="favorites_cleared">Favorites cleared</string>
 
     <!-- Cart -->
     <string name="cart_empty_title">Your cart is empty</string>
     <string name="cart_empty_message">Add some cocktails to your cart and they will appear here</string>
-    <string name="cart_section_title">Your Cart</string>
     <string name="confirm_order_title">Confirm Order</string>
     <string name="confirm_order_message">Are you sure you want to place this order for %1$s?</string>
     <string name="cart_empty_message_ios">Add some cocktails to get started</string>
-    <string name="cart_try_again">Try Again</string>
     <string name="cart_start_shopping">Start Shopping</string>
     <string name="cart_place_order">Place Order</string>
     <string name="cart_confirm">Confirm</string>
@@ -282,7 +275,6 @@
     <string name="order_status_shipped">On the Way</string>
     <string name="order_status_delivered">Delivered</string>
     <string name="order_status_cancelled">Cancelled</string>
-    <string name="delivery_estimate_no_items">No items</string>
     <string name="delivery_estimate_minutes">%1$d-%2$d minutes</string>
     <string name="delivery_estimate_processing_soon">Processing will begin shortly</string>
 
@@ -336,7 +328,6 @@
     <string name="error_message_too_many_requests">Too many requests. Please wait a moment and try again.</string>
     <string name="error_message_server">The server encountered an error. Please try again later.</string>
     <string name="error_message_network">Unable to connect to the server. Please check your internet connection.</string>
-    <string name="error_message_network_retry">Unable to connect to the server. Please check your internet connection and try again.</string>
     <string name="error_message_invalid_payload">Received unexpected data from the server. Please try again.</string>
     <string name="error_message_authentication">You don\'t have permission to access this resource. Please log in again.</string>
     <string name="error_message_invalid_data">Invalid data received. Please try again.</string>
@@ -347,7 +338,6 @@
     <string name="error_suggestion_authentication">Please log in again.</string>
     <string name="error_suggestion_data">Try refreshing the data.</string>
     <string name="error_suggestion_unknown">Please try again or contact support if the issue persists.</string>
-    <string name="error_action_log_in">Log In</string>
 
     <!-- Errors (validation and failed actions raised by the shared ViewModels) -->
     <string name="error_invalid_email_title">Invalid Email</string>
@@ -366,7 +356,6 @@
     <string name="error_sign_out_failed_message">Failed to sign out. Please try again.</string>
     <string name="error_update_failed_title">Update Failed</string>
     <string name="error_update_profile_info_failed">Failed to update profile information</string>
-    <string name="password_changed_title">Password Changed</string>
     <string name="password_changed_message">Your password has been updated successfully</string>
     <string name="error_change_failed_title">Change Failed</string>
     <string name="error_change_password_check_current">Failed to change password. Check your current password.</string>
@@ -386,12 +375,10 @@
     <string name="error_load_cocktails_failed">Failed to load cocktails</string>
     <string name="error_load_more_cocktails_failed">Failed to load more cocktails</string>
     <string name="error_apply_filters_failed">Failed to apply filters</string>
-    <string name="error_sort_cocktails_failed">Failed to sort cocktails</string>
     <string name="error_load_cocktail_details_failed">Failed to load cocktail details</string>
     <string name="error_refresh_cocktail_details_failed">Failed to refresh cocktail details</string>
     <string name="error_load_favorites_failed">Failed to load favorites</string>
     <string name="error_update_favorites_failed">Failed to update favorites</string>
-    <string name="error_clear_favorites_failed">Failed to clear favorites</string>
     <string name="error_add_item_to_cart_failed">Failed to add item to cart</string>
     <string name="error_update_quantity_failed">Failed to update quantity</string>
     <string name="error_remove_item_from_cart_failed">Failed to remove item from cart</string>
@@ -405,12 +392,10 @@
     <string name="error_create_account_failed">Failed to create account</string>
     <string name="error_sign_out_failed">Failed to sign out</string>
     <string name="error_update_profile_failed">Failed to update profile</string>
-    <string name="error_update_address_failed">Failed to update address</string>
     <string name="error_change_password_failed">Failed to change password</string>
     <string name="error_load_orders_failed">Failed to load orders</string>
     <string name="error_place_order_failed">Failed to place order</string>
     <string name="error_load_order_details_failed">Failed to load order details</string>
-    <string name="error_update_order_status_failed">Failed to update order status</string>
     <string name="error_cancel_order_failed">Failed to cancel order</string>
     <string name="error_update_theme_mode_failed">Failed to update theme mode</string>
     <string name="error_update_accent_color_failed">Failed to update accent color</string>
