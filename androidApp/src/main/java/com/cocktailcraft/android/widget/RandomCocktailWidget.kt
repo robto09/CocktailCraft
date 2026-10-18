@@ -1,9 +1,7 @@
 package com.cocktailcraft.android.widget
 
 import android.content.Context
-import android.content.Intent
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
@@ -14,7 +12,6 @@ import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.LocalContext
 import androidx.glance.action.ActionParameters
-import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
@@ -26,7 +23,6 @@ import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
-import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
@@ -39,7 +35,6 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
-import androidx.glance.layout.width
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
@@ -57,6 +52,7 @@ import com.cocktailcraft.resources.widget_refresh_icon
 import com.cocktailcraft.resources.widget_tap_refresh_to_discover
 import com.cocktailcraft.resources.widget_tap_refresh_to_retry
 import com.cocktailcraft.resources.widget_tropical_drink_icon
+import com.cocktailcraft.widget.WidgetDataSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -311,7 +307,7 @@ object RandomCocktailKeys {
  * Action callback to refresh the random cocktail.
  */
 class RefreshRandomCocktailAction : ActionCallback, KoinComponent {
-    private val dataProvider: WidgetDataProvider by inject()
+    private val dataProvider: WidgetDataSource by inject()
 
     override suspend fun onAction(
         context: Context,
