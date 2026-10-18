@@ -9,8 +9,7 @@ This directory contains the technical documentation for CocktailCraft, a Kotlin 
 
 ## Features & Implementation
 
-- **[Advanced Search](AdvancedSearch.md)**: Multi-criteria search (query, category, ingredient, alcoholic) within TheCocktailDB free-tier constraints
-- **[Recommendation System](RecommendationSystem.md)**: Category-based related-cocktail suggestions and their design constraints
+- **[Advanced Search](AdvancedSearch.md)**: Multi-criteria search (query, category, ingredient, alcoholic) within TheCocktailDB free-tier constraints, and the related-cocktails row on the detail screen
 - **[UI Components](UI_Components.md)**: Reusable Android Compose components and the animation system
 - **[iOS UI Components](iOS_UI_Components.md)**: Reusable SwiftUI components
 

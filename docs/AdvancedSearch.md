@@ -21,9 +21,9 @@ Everything the API cannot supply — price, rating, popularity, taste profile, c
 
 TheCocktailDB's `filter.php` accepts only **one parameter per request** and cannot combine dimensions server-side. However, each call returns the *complete* ID set for its dimension, so combined filtering is done by **intersecting those ID sets on the client**:
 
-1. **Offline** — filter the in-memory cocktail cache directly on the four real fields.
+1. **Offline** — filter every stored cocktail (the SQLDelight `cached_cocktail` table, read via `CocktailCache.getAllCachedCocktails()`) on the four real fields.
 2. **Nothing active** — return the default listing (`filterByCategory("Cocktail")`).
-3. Otherwise, make **one API call per active filter**, in priority order (query → category → ingredient → alcoholic), each routed through the existing rate limiter.
+3. Otherwise, make **one API call per active filter**, in priority order (query → category → ingredient → alcoholic), each spaced by the shared `ApiRateLimiter` in `CocktailRemoteDataSource`. The category filter goes through `CocktailCategoryFetcher`: it refreshes the database-backed `category_page` when stale and reads the stored page, so it usually costs no call at all.
 4. The **base list** is the first active result (query wins, so full records are preferred over slim ones).
 5. The **result** keeps only the cocktails whose id appears in *every* other active set.
 6. If any active filter call fails, the whole search returns `Result.Error` — a filter is never silently dropped.
@@ -70,8 +70,30 @@ Both platforms drive the same shared ViewModel; the filter options and active-fi
 
 ## Data flow
 
-1. User opens advanced search (Android panel / iOS sheet); the option lists load via `loadFilterOptions()`.
+1. User opens advanced search (Android bottom sheet / iOS sheet); the option lists load via `loadFilterOptions()`.
 2. User selects filters and taps Apply; a `SearchFilters` is built and passed to `applyFilters(filters)`.
 3. The ViewModel stores the filters in state and calls `SearchCocktailsUseCase.search(filters)`.
 4. `advancedSearch` performs one call per active filter and intersects the ID sets.
 5. Results replace `state.cocktails`; the active filters appear as chips, each dismissable.
+
+## Related cocktails
+
+The detail screen's "You might also like" row reuses the category filter: a
+client-side pick from the same category, since the free API has no
+recommendation endpoint.
+
+- **`GetCocktailDetailUseCase.getRelatedCocktails(cocktail, limit = 3)`**
+  (`core/domain/.../usecase/GetCocktailDetailUseCase.kt`) calls
+  `CocktailSearchRepository.filterByCategory(...)` for the cocktail's category
+  (or the default one), drops the cocktail itself and returns a random sample.
+  The work runs in `runCatchingNonCancellation`, so a failure degrades to an
+  empty list without swallowing cancellation.
+- `filterByCategory` reads the database-backed category page through
+  `CocktailCategoryFetcher`, so the row usually costs no extra API call and
+  works offline for any category already stored.
+- `SharedCocktailDetailViewModel` exposes the result as `relatedCocktails` in
+  the shared detail state.
+- UI: `DetailRecommendationsSection`
+  (`androidApp/.../screens/detail/DetailRecommendations.kt`) on Android and
+  `relatedCocktailsSection` (`iosApp/CocktailCraft/Components/DetailSections.swift`)
+  on iOS, each a horizontal carousel that opens the related cocktail's detail.
