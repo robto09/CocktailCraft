@@ -65,30 +65,30 @@ struct CocktailCraftApp: App {
     }
 
     private func configureCustomDebugActions() {
-        // Add custom debugging actions specific to CocktailCraft
+        // QA actions over the real data stores. Favorites, cart, orders and
+        // reviews live in the shared SQLDelight database (not UserDefaults),
+        // so each action goes through a KoinHelper debug hook; the screens
+        // observe the database and update on their own.
         DebugSwift.App.shared.customAction = {
-            [
+            let helper = getSharedKoinHelper()
+            let simulatingFailure = helper.debugIsSimulatingNetworkFailure()
+            return [
                 .init(title: "CocktailCraft Debug Tools", actions: [
-                    .init(title: "Clear Favorites Cache") {
-                        // Clear favorites from UserDefaults
-                        UserDefaults.standard.removeObject(forKey: "favorites")
-                        print("🗑️ Favorites cache cleared")
+                    .init(title: "Clear Favorites") {
+                        Task { try? await helper.debugClearFavorites() }
                     },
-                    .init(title: "Clear Cart Data") {
-                        // Clear cart data
-                        UserDefaults.standard.removeObject(forKey: "cart")
-                        print("🛒 Cart data cleared")
+                    .init(title: "Clear Cart") {
+                        Task { try? await helper.debugClearCart() }
                     },
-                    .init(title: "Reset App State") {
-                        // Reset all app state
-                        UserDefaults.standard.removeObject(forKey: "favorites")
-                        UserDefaults.standard.removeObject(forKey: "cart")
-                        UserDefaults.standard.removeObject(forKey: "searchHistory")
-                        print("🔄 App state reset")
+                    .init(title: "Delete All User Data (cart, favorites, orders, reviews)") {
+                        Task { try? await helper.debugResetUserData() }
                     },
-                    .init(title: "Force Network Error") {
-                        // Simulate network error for testing
-                        print("🌐 Network error simulation triggered")
+                    // Every API request fails as a dropped connection would
+                    // (retries, then cache fallback / error UI) until toggled off
+                    .init(title: simulatingFailure
+                          ? "Stop Simulating Network Failure"
+                          : "Simulate Network Failure") {
+                        helper.debugSetSimulatedNetworkFailure(enabled: !simulatingFailure)
                     }
                 ])
             ]
