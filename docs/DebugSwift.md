@@ -86,9 +86,22 @@ Debug-only in three layers:
    Release; it just is not linked.)
 3. **Bundle + guard** — the **Strip DebugSwift from Release** build phase
    deletes the `DebugSwift_DebugSwift.bundle` resources Xcode still copies in,
-   and fails the build if `nm` finds any DebugSwift symbol in the binary (for
+   then fails the build if DebugSwift turns up in any of four places (for
    example, if a future Xcode renames the package object and the exclusion
-   stops matching).
+   stops matching):
+   - `nm`: DebugSwift symbols in the binary's symbol table;
+   - `grep -a`: DebugSwift in the binary's bytes — Swift type metadata and
+     Objective-C class names stay in the binary even when the symbol table is
+     stripped, so this still works on a stripped build;
+   - `otool -L`: a linked DebugSwift dylib/framework (if the package ever
+     ships as a dynamic product);
+   - `find`: any other `*DebugSwift*` file left in the app bundle.
+
+   Limitations: the exclusion itself still depends on the object file being
+   named `DebugSwift.o`; the guard is what catches a rename. The string check
+   would also trip if Release code ever spelled "DebugSwift" in a literal —
+   keep such text out of shipping code. The phase runs on the build Xcode just
+   produced, before any App Store processing.
 
 Verify with a Release build:
 ```bash
@@ -96,8 +109,10 @@ cd iosApp
 xcodebuild build -project CocktailCraft.xcodeproj -scheme CocktailCraft \
   -configuration Release -destination 'platform=iOS Simulator,name=iPhone 16e' \
   -derivedDataPath build/DerivedData
-nm build/DerivedData/Build/Products/Release-iphonesimulator/CocktailCraft.app/CocktailCraft | grep -c DebugSwift   # 0
+grep -a -c DebugSwift build/DerivedData/Build/Products/Release-iphonesimulator/CocktailCraft.app/CocktailCraft   # 0
 ```
+(The build phase already runs this and the other checks; a successful Release
+build means they passed.)
 
 ### Step 3: App Integration
 DebugSwift is set up in `CocktailCraftApp.swift`:

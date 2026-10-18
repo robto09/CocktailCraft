@@ -562,7 +562,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ \"$CONFIGURATION\" = \"Debug\" ]; then\n  exit 0\nfi\nrm -rf \"$TARGET_BUILD_DIR/$WRAPPER_NAME/DebugSwift_DebugSwift.bundle\"\nif nm \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\" 2>/dev/null | grep -q DebugSwift; then\n  echo \"error: DebugSwift is linked into the $CONFIGURATION build\"\n  exit 1\nfi\n";
+			shellScript = "if [ \"$CONFIGURATION\" = \"Debug\" ]; then\n  exit 0\nfi\nAPP=\"$TARGET_BUILD_DIR/$WRAPPER_NAME\"\nBIN=\"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\"\nfail() {\n  echo \"error: $1 (see docs/DebugSwift.md)\"\n  exit 1\n}\nrm -rf \"$APP/DebugSwift_DebugSwift.bundle\"\n[ -f \"$BIN\" ] || fail \"no app binary at $BIN to check for DebugSwift\"\nif nm \"$BIN\" 2>/dev/null | grep -q DebugSwift; then\n  fail \"DebugSwift symbols are linked into the $CONFIGURATION build\"\nfi\nif grep -a -q DebugSwift \"$BIN\"; then\n  fail \"the $CONFIGURATION binary contains DebugSwift type names or strings\"\nfi\nif otool -L \"$BIN\" | grep -qi debugswift; then\n  fail \"the $CONFIGURATION binary links a DebugSwift library\"\nfi\nLEFTOVER=$(find \"$APP\" -iname '*debugswift*' | head -n 1)\nif [ -n \"$LEFTOVER\" ]; then\n  fail \"DebugSwift file in the $CONFIGURATION bundle: ${LEFTOVER#$APP/}\"\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 		6C5431A4A12813F1D3831922 /* SwiftLint */ = {

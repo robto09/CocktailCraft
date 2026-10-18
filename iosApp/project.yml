@@ -80,8 +80,11 @@ targets:
     # DebugSwift must never ship. SPM cannot link a package per
     # configuration, so Release drops DebugSwift.o from the link via
     # EXCLUDED_SOURCE_FILE_NAMES (below); this phase then removes the resource
-    # bundle Xcode still copies in, and fails the build if any DebugSwift
-    # symbol slipped into the binary (e.g. if Xcode renames the product).
+    # bundle Xcode still copies in, and fails the build if DebugSwift slipped
+    # in anyway (e.g. if Xcode renames the object file so the exclusion stops
+    # matching). The symbol table alone is not proof — a stripped binary has
+    # none — so it also checks the Swift/ObjC metadata strings (which survive
+    # stripping), the linked dylibs, and the bundle's files.
     # All app-side usage sits behind `#if DEBUG`.
     postBuildScripts:
       - name: Strip DebugSwift from Release
@@ -91,10 +94,26 @@ targets:
           if [ "$CONFIGURATION" = "Debug" ]; then
             exit 0
           fi
-          rm -rf "$TARGET_BUILD_DIR/$WRAPPER_NAME/DebugSwift_DebugSwift.bundle"
-          if nm "$TARGET_BUILD_DIR/$EXECUTABLE_PATH" 2>/dev/null | grep -q DebugSwift; then
-            echo "error: DebugSwift is linked into the $CONFIGURATION build"
+          APP="$TARGET_BUILD_DIR/$WRAPPER_NAME"
+          BIN="$TARGET_BUILD_DIR/$EXECUTABLE_PATH"
+          fail() {
+            echo "error: $1 (see docs/DebugSwift.md)"
             exit 1
+          }
+          rm -rf "$APP/DebugSwift_DebugSwift.bundle"
+          [ -f "$BIN" ] || fail "no app binary at $BIN to check for DebugSwift"
+          if nm "$BIN" 2>/dev/null | grep -q DebugSwift; then
+            fail "DebugSwift symbols are linked into the $CONFIGURATION build"
+          fi
+          if grep -a -q DebugSwift "$BIN"; then
+            fail "the $CONFIGURATION binary contains DebugSwift type names or strings"
+          fi
+          if otool -L "$BIN" | grep -qi debugswift; then
+            fail "the $CONFIGURATION binary links a DebugSwift library"
+          fi
+          LEFTOVER=$(find "$APP" -iname '*debugswift*' | head -n 1)
+          if [ -n "$LEFTOVER" ]; then
+            fail "DebugSwift file in the $CONFIGURATION bundle: ${LEFTOVER#$APP/}"
           fi
     dependencies:
       - target: CocktailCraftWidgets
