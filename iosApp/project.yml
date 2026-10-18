@@ -185,30 +185,6 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
-        # ATS pinning is per-bundle: without this mirror of the app's pin
-        # set, the Random Cocktail widget's thecocktaildb.com traffic would
-        # bypass the certificate pinning the app enforces. Keep in sync with
-        # CocktailCraft/Info.plist and the Android
-        # network_security_config.xml (same Cloudflare CA pool).
-        # REVIEW BY 2027-07-08 (Android's pin-set expiration): ATS pins never
-        # expire, so refresh this set with the app's before that date.
-        NSAppTransportSecurity:
-          NSPinnedDomains:
-            thecocktaildb.com:
-              NSIncludesSubdomains: true
-              NSPinnedCAIdentities:
-                - SPKI-SHA256-BASE64: kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=
-                - SPKI-SHA256-BASE64: mEflZT5enoR1FuXLgYYGqnVEoZvmf9c2bVBpiOjYQ0c=
-                - SPKI-SHA256-BASE64: hxqRlPTu1bMS/0DITB1SSu0vd4u/8l8TjPgfaAp63Gc=
-                - SPKI-SHA256-BASE64: Vfd95BwDeSQo+NUYxVEEIlvkOlWY2SalKK1lPhzOx78=
-                - SPKI-SHA256-BASE64: QXnt2YHvdHR3tJYmQIr0Paosp6t/nggsEGD4QJZ3Q0g=
-                - SPKI-SHA256-BASE64: CLOmM1/OXvSPjw5UOYbAf9GKOxImEp9hhku9W90fHMk=
-                - SPKI-SHA256-BASE64: C5+lpZ7tcVwmwQIMcRtPbsQtWLABXhQzejna0wHFr8M=
-                - SPKI-SHA256-BASE64: diGVwiVYbubAI3RW4hB9xU8e/CH2GnkuvVFZE8zmgzI=
-                - SPKI-SHA256-BASE64: 0cRTd+vc1hjNFlHcLgLCHXUeWqn80bNDH/bs9qMTSPo=
-                - SPKI-SHA256-BASE64: oyD01TTXvpfBro3QSZc1vIlcMjrdLTiL/M9mLCPX+Zo=
-                - SPKI-SHA256-BASE64: K89VOmb1cJAN3TK6bf4ezAbJGC1mLcG2Dh97dnwr3VQ=
-                - SPKI-SHA256-BASE64: G/ANXI8TwJTdF+AFBM8IiIUPEv0Gf6H5LA/b9guG4yE=
     entitlements:
       path: CocktailCraftWidgets/CocktailCraftWidgets.entitlements
       properties:

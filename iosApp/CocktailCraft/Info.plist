@@ -81,8 +81,9 @@
 	     REVIEW BY 2027-07-08: NSPinnedDomains has no expiry key, so this date
 	     only mirrors Android's pin-set expiration="2027-07-08" (after which
 	     Android stops enforcing its pins). Re-verify the CA pool and ship a
-	     refreshed set here, in project.yml (widget extension) and in the
-	     Android config, before then. -->
+	     refreshed set here and in the Android config before then. (The
+	     widget extension does no networking — it reads App Group snapshots
+	     the app writes — so it needs no pins of its own.) -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSPinnedDomains</key>
