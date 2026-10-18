@@ -7,7 +7,7 @@ import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.util.Result
-import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.util.runCatchingResult
 import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
@@ -24,7 +24,7 @@ class PlaceOrderUseCase(
     private val orderRepository: OrderRepository
 ) {
     suspend operator fun invoke(cartItems: List<CocktailCartItem>, totalPrice: Double): Result<Order> {
-        return try {
+        return runCatchingResult("Unknown error occurred") {
             Logger.d { "PlaceOrderUseCase: Starting order placement" }
             val orderId = "ORD-${Clock.System.now().toEpochMilliseconds()}"
             val currentInstant = Clock.System.now()
@@ -57,9 +57,6 @@ class PlaceOrderUseCase(
 
             Logger.d { "PlaceOrderUseCase: Order added to repository, returning success result" }
             Result.Success(order)
-        } catch (e: Exception) {
-            Logger.e(e) { "PlaceOrderUseCase: Exception occurred: ${e.message}" }
-            Result.Error(e.message ?: "Unknown error occurred")
         }
     }
 }

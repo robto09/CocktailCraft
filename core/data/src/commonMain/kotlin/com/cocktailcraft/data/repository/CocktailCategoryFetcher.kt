@@ -7,6 +7,7 @@ import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCategories
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
+import kotlinx.coroutines.CancellationException
 import kotlin.time.Clock
 
 /**
@@ -102,6 +103,8 @@ internal class CocktailCategoryFetcher(
             cocktailCache.cacheCocktails(enrichedCocktails)
 
             return enrichedCocktails
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Logger.e { "API call failed: ${e.message}" }
 

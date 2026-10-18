@@ -62,4 +62,21 @@ class ResultCatchingTest {
         assertEquals(ErrorCode.FORBIDDEN, error.code)
         assertTrue(result.isError())
     }
+
+    @Test
+    fun nonCancellationHelperReturnsFallbackForOrdinaryFailures() {
+        val value = runCatchingNonCancellation(onFailure = { "fallback: ${it.message}" }) {
+            throw IllegalStateException("boom")
+        }
+        assertEquals("fallback: boom", value)
+    }
+
+    @Test
+    fun nonCancellationHelperRethrowsCancellation() {
+        assertFailsWith<CancellationException> {
+            runCatchingNonCancellation(onFailure = { "swallowed" }) {
+                throw CancellationException("cancelled")
+            }
+        }
+    }
 }
