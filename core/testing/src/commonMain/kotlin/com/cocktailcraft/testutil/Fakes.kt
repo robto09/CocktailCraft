@@ -203,7 +203,6 @@ class FakeCatalogRepository(var all: List<Cocktail> = emptyList()) : CocktailCat
         Result.Success(all.mapNotNull { it.category }.distinct())
 
     override suspend fun getIngredients(): Result<List<String>> = Result.Success(emptyList())
-    override suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>> = Result.Success(all)
 }
 
 class FakeOfflineRepository : CocktailOfflineRepository {

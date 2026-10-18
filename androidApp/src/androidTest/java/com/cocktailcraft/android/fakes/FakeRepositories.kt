@@ -77,7 +77,6 @@ class FakeCocktailRepository(
     override suspend fun getCategories(): Result<List<String>> =
         Result.Success(cocktails.mapNotNull { it.category }.distinct())
     override suspend fun getIngredients(): Result<List<String>> = Result.Success(emptyList())
-    override suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>> = Result.Success(cocktails)
 
     // Detail
     override suspend fun getCocktailById(id: String): Result<Cocktail?> =

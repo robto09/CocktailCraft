@@ -104,6 +104,7 @@ class CocktailSearchRepositoryImplTest {
         val first = (repo.searchCocktailsByName("marg") as Result.Success).data.single()
         val second = (repo.searchCocktailsByName("marg") as Result.Success).data.single()
 
+        assertEquals(first, second, "the same API record must map to equal cocktails")
         assertEquals(first.price, second.price, "price must be stable across fetches")
         assertEquals(first.rating, second.rating)
         assertEquals(first.popularity, second.popularity)

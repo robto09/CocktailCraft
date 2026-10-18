@@ -15,10 +15,9 @@ import kotlin.time.Clock
 /**
  * Lazily fetches cocktails by category with caching and rate limiting.
  *
- * Extracted from the former CocktailRepositoryImpl monolith because this
- * fetch-and-cache path is shared by two focused repositories:
- * [CocktailSearchRepositoryImpl.filterByCategory] and
- * [CocktailCatalogRepositoryImpl.getCocktailsSortedByNewest].
+ * Extracted from the former CocktailRepositoryImpl monolith; backs
+ * [CocktailSearchRepositoryImpl.filterByCategory] (category browsing and the
+ * advanced search's category filter).
  *
  * API Limitations & Workarounds:
  * - Filter endpoints (filter.php) only return partial data (id, name, thumbnail)
