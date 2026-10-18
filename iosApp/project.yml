@@ -144,6 +144,8 @@ targets:
         # bypass the certificate pinning the app enforces. Keep in sync with
         # CocktailCraft/Info.plist and the Android
         # network_security_config.xml (same Cloudflare CA pool).
+        # REVIEW BY 2027-07-08 (Android's pin-set expiration): ATS pins never
+        # expire, so refresh this set with the app's before that date.
         NSAppTransportSecurity:
           NSPinnedDomains:
             thecocktaildb.com:
