@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.baselineprofile)
     alias(libs.plugins.roborazzi)
+    // detekt + ktlint + Compose rules (build-logic)
+    id("cocktailcraft.detekt")
 }
 
 // Release signing comes from an untracked keystore.properties at the repo root

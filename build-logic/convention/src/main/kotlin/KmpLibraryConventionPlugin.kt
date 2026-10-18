@@ -19,6 +19,8 @@ class KmpLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
         pluginManager.apply("org.jetbrains.kotlin.multiplatform")
         pluginManager.apply("com.android.kotlin.multiplatform.library")
+        // detekt + ktlint + Compose rules (DetektConventionPlugin)
+        pluginManager.apply("cocktailcraft.detekt")
 
         val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
         fun version(alias: String): String = libs.findVersion(alias).get().requiredVersion

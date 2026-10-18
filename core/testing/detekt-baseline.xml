@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>MultiLineIfElse:Fakes.kt$FakeSearchRepository$value.equals("Alcoholic", ignoreCase = true)</ID>
+    <ID>MultiLineIfElse:Fakes.kt$FakeSearchRepository$value.equals("Non alcoholic", ignoreCase = true)</ID>
+  </CurrentIssues>
+</SmellBaseline>

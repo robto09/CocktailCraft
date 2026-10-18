@@ -1,0 +1,70 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>MagicNumber:DesignTokens.kt$AccentColorTokens$0xFF007AFF</ID>
+    <ID>MagicNumber:DesignTokens.kt$AccentColorTokens$0xFF0A84FF</ID>
+    <ID>MagicNumber:DesignTokens.kt$AccentColorTokens$0xFF30D158</ID>
+    <ID>MagicNumber:DesignTokens.kt$AccentColorTokens$0xFF34C759</ID>
+    <ID>MagicNumber:DesignTokens.kt$AccentColorTokens$0xFFAF52DE</ID>
+    <ID>MagicNumber:DesignTokens.kt$AccentColorTokens$0xFFBF5AF2</ID>
+    <ID>MagicNumber:DesignTokens.kt$AccentColorTokens$0xFFFF2D55</ID>
+    <ID>MagicNumber:DesignTokens.kt$AccentColorTokens$0xFFFF375F</ID>
+    <ID>MagicNumber:DesignTokens.kt$AccentColorTokens$0xFFFF3B30</ID>
+    <ID>MagicNumber:DesignTokens.kt$AccentColorTokens$0xFFFF453A</ID>
+    <ID>MagicNumber:DesignTokens.kt$AccentColorTokens$0xFFFF9500</ID>
+    <ID>MagicNumber:DesignTokens.kt$AccentColorTokens$0xFFFF9F0A</ID>
+    <ID>MagicNumber:DesignTokens.kt$ColorTokens$0xFFFFFF</ID>
+    <ID>MagicNumber:DesignTokens.kt$ColorTokens$16</ID>
+    <ID>MagicNumber:DesignTokens.kt$ColorTokens$6</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$// Brand val primaryLight: Long = 0xFFEB6A43 // Coral, main elements</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$// Component accents val chipBackground: Long = 0xFF9C5C38 // Brown category chips ("Vodka")</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$// Neutrals val gray: Long = 0xFF8E8E93</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$// Raised controls on a surface (search field, filter button, unselected // chips). Light uses plain white; dark needs a third, lighter level. val surfaceRaisedLight: Long = 0xFFFFFFFF</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$// Semantic statuses — exactly one green/red/amber per meaning, everywhere. val success: Long = 0xFF34C759</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$// Surfaces val backgroundLight: Long = 0xFFFAFAFA</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$// Text val textPrimaryLight: Long = 0xFF000000</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val backgroundDark: Long = 0xFF121212</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val chipBackgroundDark: Long = 0xFFC79A7E // Softer tan, reads on dark</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val darkGray: Long = 0xFF636366</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val error: Long = 0xFFFF3B30</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val lightGray: Long = 0xFFE5E5EA</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val primaryDark: Long = 0xFFFF8A65 // Lighter coral for dark theme</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val secondaryDark: Long = 0xFFFFD180 // Lighter gold for dark theme</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val secondaryLight: Long = 0xFFFFC84D // Gold accents</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val subtleDark: Long = 0xFF3A3A3C // lightGray's role on dark surfaces</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val surfaceDark: Long = 0xFF1E1E1E</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val surfaceLight: Long = 0xFFFFFFFF</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val surfaceRaisedDark: Long = 0xFF2C2C2E</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val textPrimaryDark: Long = 0xFFFFFFFF</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val textSecondaryDark: Long = 0xFFB0B0B0</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val textSecondaryLight: Long = 0xFF8E8E93</ID>
+    <ID>MayBeConst:DesignTokens.kt$ColorTokens$val warning: Long = 0xFFFF9500</ID>
+    <ID>MayBeConst:DesignTokens.kt$RadiusTokens$val button: Int = 8</ID>
+    <ID>MayBeConst:DesignTokens.kt$RadiusTokens$val card: Int = 12</ID>
+    <ID>MayBeConst:DesignTokens.kt$RadiusTokens$val chip: Int = 16</ID>
+    <ID>MayBeConst:DesignTokens.kt$RadiusTokens$val lg: Int = 16</ID>
+    <ID>MayBeConst:DesignTokens.kt$RadiusTokens$val md: Int = 12</ID>
+    <ID>MayBeConst:DesignTokens.kt$RadiusTokens$val searchBar: Int = 10</ID>
+    <ID>MayBeConst:DesignTokens.kt$RadiusTokens$val sm: Int = 8</ID>
+    <ID>MayBeConst:DesignTokens.kt$RadiusTokens$val xl: Int = 20</ID>
+    <ID>MayBeConst:DesignTokens.kt$SpacingTokens$val lg: Int = 16</ID>
+    <ID>MayBeConst:DesignTokens.kt$SpacingTokens$val md: Int = 12</ID>
+    <ID>MayBeConst:DesignTokens.kt$SpacingTokens$val sm: Int = 8</ID>
+    <ID>MayBeConst:DesignTokens.kt$SpacingTokens$val xl: Int = 20</ID>
+    <ID>MayBeConst:DesignTokens.kt$SpacingTokens$val xs: Int = 4</ID>
+    <ID>MayBeConst:DesignTokens.kt$SpacingTokens$val xxl: Int = 24</ID>
+    <ID>MayBeConst:DesignTokens.kt$SpacingTokens$val xxxl: Int = 32</ID>
+    <ID>MayBeConst:DesignTokens.kt$TypographyTokens$val body: Int = 16</ID>
+    <ID>MayBeConst:DesignTokens.kt$TypographyTokens$val bodySmall: Int = 14</ID>
+    <ID>MayBeConst:DesignTokens.kt$TypographyTokens$val caption: Int = 12</ID>
+    <ID>MayBeConst:DesignTokens.kt$TypographyTokens$val display: Int = 28</ID>
+    <ID>MayBeConst:DesignTokens.kt$TypographyTokens$val headline: Int = 20 // section headers</ID>
+    <ID>MayBeConst:DesignTokens.kt$TypographyTokens$val label: Int = 11</ID>
+    <ID>MayBeConst:DesignTokens.kt$TypographyTokens$val subtitle: Int = 18</ID>
+    <ID>MayBeConst:DesignTokens.kt$TypographyTokens$val title: Int = 24 // top bar titles</ID>
+    <ID>NoMultipleSpaces:DesignTokens.kt$ColorTokens$ </ID>
+    <ID>NoMultipleSpaces:DesignTokens.kt$TypographyTokens$ </ID>
+    <ID>SpacingBetweenDeclarationsWithComments:DesignTokens.kt$ColorTokens$// Raised controls on a surface (search field, filter button, unselected</ID>
+  </CurrentIssues>
+</SmellBaseline>

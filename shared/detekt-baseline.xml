@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ArgumentListWrapping:KoinDependencyGraphTest.kt$KoinDependencyGraphTest$("Cocktail 1", 2, 10.0)</ID>
+    <ID>ArgumentListWrapping:KoinDependencyGraphTest.kt$KoinDependencyGraphTest$(OrderItem("Cocktail 1", 2, 10.0))</ID>
+    <ID>ArgumentListWrapping:KoinDependencyGraphTest.kt$KoinDependencyGraphTest$(id = "ORD-1", date = "2026-07-07", items = listOf(OrderItem("Cocktail 1", 2, 10.0)), total = 20.0, status = "Processing")</ID>
+    <ID>ImportOrdering:KoinHelperTest.kt$import app.cash.sqldelight.db.SqlDriver import com.cocktailcraft.data.cache.db.CocktailCraftDatabase import com.cocktailcraft.data.config.AppConfigImpl import com.cocktailcraft.di.appModule import com.cocktailcraft.domain.config.AppConfig import com.cocktailcraft.di.secureSettingsQualifier import com.cocktailcraft.testutil.FakeNetworkMonitor import com.cocktailcraft.testutil.MainDispatcherTest import com.cocktailcraft.testutil.createInMemorySqlDriver import com.cocktailcraft.util.NetworkMonitor import com.russhwolf.settings.MapSettings import com.russhwolf.settings.Settings import org.koin.core.context.startKoin import org.koin.core.context.stopKoin import org.koin.dsl.module import kotlin.test.AfterTest import kotlin.test.Test import kotlin.test.assertNotNull</ID>
+    <ID>ImportOrdering:KoinIOS.kt$import com.cocktailcraft.domain.model.Cocktail import com.cocktailcraft.domain.repository.AuthRepository import com.cocktailcraft.domain.repository.CocktailFavoritesRepository import com.cocktailcraft.domain.repository.CartRepository import com.cocktailcraft.domain.repository.OrderRepository import com.cocktailcraft.domain.util.getOrThrow import com.cocktailcraft.viewmodel.SharedFavoritesViewModel import com.cocktailcraft.viewmodel.SharedHomeViewModel import com.cocktailcraft.viewmodel.SharedCartViewModel import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel import com.cocktailcraft.viewmodel.SharedOrderViewModel import com.cocktailcraft.viewmodel.SharedProfileViewModel import com.cocktailcraft.viewmodel.SharedThemeViewModel import com.cocktailcraft.viewmodel.SharedReviewViewModel import com.cocktailcraft.util.NetworkMonitor import org.koin.core.KoinApplication import org.koin.core.component.KoinComponent import org.koin.core.component.get</ID>
+    <ID>MaxLineLength:KoinDependencyGraphTest.kt$KoinDependencyGraphTest$Order(id = "ORD-1", date = "2026-07-07", items = listOf(OrderItem("Cocktail 1", 2, 10.0)), total = 20.0, status = "Processing")</ID>
+    <ID>NewLineAtEndOfFile:AppModule.kt$com.cocktailcraft.di.AppModule.kt</ID>
+    <ID>NewLineAtEndOfFile:KoinInit.kt$com.cocktailcraft.KoinInit.kt</ID>
+    <ID>NoUnusedImports:AppModule.kt$com.cocktailcraft.di.AppModule.kt</ID>
+    <ID>TooManyFunctions:KoinIOS.kt$KoinHelper : KoinComponent</ID>
+  </CurrentIssues>
+</SmellBaseline>
