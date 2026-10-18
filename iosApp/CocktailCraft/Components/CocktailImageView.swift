@@ -2,6 +2,7 @@ import SwiftUI
 import Kingfisher
 
 struct CocktailImageView: View {
+    @Environment(\.isDarkMode) private var isDarkMode
     let imageUrl: String?
     var height: CGFloat = 300
     var cornerRadius: CGFloat = 0
@@ -14,8 +15,12 @@ struct CocktailImageView: View {
             if let urlString = imageUrl, !urlString.isEmpty, let url = URL(string: urlString) {
                 KFImage(url)
                     .placeholder {
-                        ProgressView()
+                        // Shimmering block until the photo arrives
+                        Rectangle()
+                            .fill(AppColors.neutralSubtle(isDarkMode: isDarkMode))
+                            .frame(maxWidth: .infinity)
                             .frame(height: height)
+                            .shimmering()
                     }
                     .retry(maxCount: 3, interval: .seconds(2))
                     .onFailureImage(UIImage(systemName: "photo"))

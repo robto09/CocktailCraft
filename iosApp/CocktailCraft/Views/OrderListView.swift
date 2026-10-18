@@ -39,7 +39,7 @@ struct OrderListView: View {
     }
 
     private var loadingView: some View {
-        LoadingStateView(message: L(\.order_list_loading))
+        OrderListSkeleton()
     }
 
     // Mirrors Android's Orders empty state: icon/title/message plus a

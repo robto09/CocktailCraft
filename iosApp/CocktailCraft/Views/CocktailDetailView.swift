@@ -54,6 +54,9 @@ struct CocktailDetailView: View {
 
                         if !viewModel.state.relatedCocktails.isEmpty {
                             relatedCocktailsSection
+                        } else if viewModel.state.isLoading {
+                            // Related cocktails arrive after the cocktail
+                            relatedCocktailsLoadingSection
                         }
 
                         reviewsSection
@@ -82,7 +85,7 @@ struct CocktailDetailView: View {
                     }
                 }
             } else if viewModel.state.isLoading || !hasLoaded {
-                LoadingStateView(message: L(\.detail_loading))
+                CocktailDetailSkeleton()
             } else if let error = viewModel.error {
                 ErrorView(
                     error: error,

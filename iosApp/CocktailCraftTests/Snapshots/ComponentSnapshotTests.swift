@@ -143,6 +143,14 @@ final class ComponentSnapshotTests: SnapshotTestCase {
         assertSnapshots(of: CocktailListSkeleton(rowCount: 3), height: 600)
     }
 
+    func testCocktailDetailSkeleton() {
+        assertSnapshots(of: CocktailDetailSkeleton(), height: 800)
+    }
+
+    func testOrderListSkeleton() {
+        assertSnapshots(of: OrderListSkeleton(cardCount: 2), height: 600)
+    }
+
     func testToast() {
         assertSnapshots(of: VStack(spacing: 12) {
             Toast(message: "Added to cart", type: .success)
