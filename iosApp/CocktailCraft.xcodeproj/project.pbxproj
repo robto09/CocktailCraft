@@ -467,6 +467,7 @@
 			buildPhases = (
 				AA6F300A090B31F57716A628 /* Compile Kotlin Framework */,
 				B7BE29C2D9427FF20A890F5D /* Sources */,
+				6C5431A4A12813F1D3831922 /* SwiftLint */,
 				FE87D19B269F1080AEABCDAE /* Frameworks */,
 				1F6A96DF4B34587FBD0FB4A0 /* Embed Foundation Extensions */,
 				35155E678BBEEEFC7C2B87BD /* Strip DebugSwift from Release */,
@@ -562,6 +563,26 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "if [ \"$CONFIGURATION\" = \"Debug\" ]; then\n  exit 0\nfi\nrm -rf \"$TARGET_BUILD_DIR/$WRAPPER_NAME/DebugSwift_DebugSwift.bundle\"\nif nm \"$TARGET_BUILD_DIR/$EXECUTABLE_PATH\" 2>/dev/null | grep -q DebugSwift; then\n  echo \"error: DebugSwift is linked into the $CONFIGURATION build\"\n  exit 1\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+		6C5431A4A12813F1D3831922 /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "export PATH=\"$PATH:/opt/homebrew/bin:/usr/local/bin\"\nif which swiftlint >/dev/null 2>&1; then\n  cd \"$SRCROOT\"\n  swiftlint lint --quiet 2>&1 | sed 's/: error: /: warning: /'\nelse\n  echo \"SwiftLint not installed; skipping (brew install swiftlint)\"\nfi\nexit 0\n";
 			showEnvVarsInLog = 0;
 		};
 		AA6F300A090B31F57716A628 /* Compile Kotlin Framework */ = {

@@ -54,6 +54,22 @@ targets:
             -Pmoko.resources.ARCHS="$ARCHS" \
             -Pmoko.resources.BUILT_PRODUCTS_DIR="$BUILT_PRODUCTS_DIR" \
             -Pmoko.resources.CONTENTS_FOLDER_PATH="$CONTENTS_FOLDER_PATH"
+    # Advisory only: lints all four targets with iosApp/.swiftlint.yml when
+    # SwiftLint is installed (brew install swiftlint), reporting findings as
+    # warnings. Never fails the build; skipped silently without SwiftLint.
+    postCompileScripts:
+      - name: SwiftLint
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
+        script: |
+          export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
+          if which swiftlint >/dev/null 2>&1; then
+            cd "$SRCROOT"
+            swiftlint lint --quiet 2>&1 | sed 's/: error: /: warning: /'
+          else
+            echo "SwiftLint not installed; skipping (brew install swiftlint)"
+          fi
+          exit 0
     # DebugSwift must never ship. SPM cannot link a package per
     # configuration, so Release drops DebugSwift.o from the link via
     # EXCLUDED_SOURCE_FILE_NAMES (below); this phase then removes the resource
