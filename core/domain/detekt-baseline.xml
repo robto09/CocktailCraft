@@ -12,25 +12,16 @@
     <ID>ArgumentListWrapping:GetCocktailDetailUseCase.kt$GetCocktailDetailUseCase$(emptyList())</ID>
     <ID>ArgumentListWrapping:PlaceOrderUseCase.kt$PlaceOrderUseCase$(2, '0')</ID>
     <ID>Filename:DomainPolicyTest.kt$com.cocktailcraft.domain.DomainPolicyTest.kt</ID>
-    <ID>ImportOrdering:AuthRepository.kt$import com.cocktailcraft.domain.model.User import com.cocktailcraft.domain.model.UserPreferences import com.cocktailcraft.domain.model.Address import com.cocktailcraft.domain.util.Result</ID>
-    <ID>ImportOrdering:Cocktail.kt$import kotlin.native.HiddenFromObjC import kotlinx.serialization.Serializable</ID>
     <ID>ImportOrdering:CocktailCartItem.kt$import kotlin.native.HiddenFromObjC import kotlinx.serialization.Serializable</ID>
     <ID>ImportOrdering:CocktailIngredient.kt$import kotlin.native.HiddenFromObjC import kotlinx.serialization.Serializable</ID>
     <ID>ImportOrdering:ManageReviewsUseCase.kt$import com.cocktailcraft.domain.model.Review import com.cocktailcraft.domain.repository.ReviewRepository import com.cocktailcraft.domain.util.Result import com.cocktailcraft.resources.MR import com.cocktailcraft.resources.review_error_comment_required import com.cocktailcraft.resources.review_error_comment_too_long import com.cocktailcraft.resources.review_error_comment_too_short import com.cocktailcraft.resources.review_error_rating_range import dev.icerock.moko.resources.desc.StringDesc import dev.icerock.moko.resources.desc.desc import dev.icerock.moko.resources.format import kotlin.time.Clock import kotlinx.coroutines.flow.Flow import kotlinx.datetime.TimeZone import kotlinx.datetime.number import kotlinx.datetime.toLocalDateTime import kotlin.native.HiddenFromObjC</ID>
-    <ID>ImportOrdering:Order.kt$import com.cocktailcraft.resources.MR import com.cocktailcraft.resources.order_status_cancelled import com.cocktailcraft.resources.order_status_delivered import com.cocktailcraft.resources.order_status_pending import com.cocktailcraft.resources.order_status_processing import com.cocktailcraft.resources.order_status_shipped import dev.icerock.moko.resources.desc.StringDesc import dev.icerock.moko.resources.desc.desc import kotlin.native.HiddenFromObjC import kotlinx.serialization.KSerializer import kotlinx.serialization.Serializable import kotlinx.serialization.descriptors.PrimitiveKind import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor import kotlinx.serialization.descriptors.SerialDescriptor import kotlinx.serialization.encoding.Decoder import kotlinx.serialization.encoding.Encoder</ID>
-    <ID>ImportOrdering:PlaceOrderUseCase.kt$import co.touchlab.kermit.Logger import com.cocktailcraft.domain.config.DeliveryPolicy import com.cocktailcraft.domain.model.CocktailCartItem import com.cocktailcraft.domain.model.Order import com.cocktailcraft.domain.model.OrderItem import com.cocktailcraft.domain.model.OrderStatus import com.cocktailcraft.domain.repository.OrderRepository import com.cocktailcraft.domain.util.ErrorCode import com.cocktailcraft.domain.util.Result import com.cocktailcraft.util.UUID import com.cocktailcraft.util.runCatchingResult import kotlin.time.Clock import kotlinx.datetime.TimeZone import kotlinx.datetime.number import kotlinx.datetime.toLocalDateTime import kotlin.native.HiddenFromObjC</ID>
     <ID>ImportOrdering:Review.kt$import com.cocktailcraft.util.UUID import kotlin.native.HiddenFromObjC import kotlinx.serialization.Serializable import kotlin.time.Clock import kotlinx.datetime.TimeZone import kotlinx.datetime.number import kotlinx.datetime.toLocalDateTime</ID>
     <ID>ImportOrdering:User.kt$import com.cocktailcraft.designsystem.AccentColorTokens import kotlin.native.HiddenFromObjC import kotlinx.serialization.SerialName import kotlinx.serialization.Serializable</ID>
     <ID>MagicNumber:AuthInputValidator.kt$AuthInputValidator$8</ID>
     <ID>MagicNumber:DeliveryPolicy.kt$DeliveryPolicy$10</ID>
     <ID>MagicNumber:DeliveryPolicy.kt$DeliveryPolicy$15</ID>
-    <ID>MagicNumber:DeliveryPolicy.kt$DeliveryPolicy$20</ID>
     <ID>MagicNumber:DeliveryPolicy.kt$DeliveryPolicy$25</ID>
-    <ID>MagicNumber:DeliveryPolicy.kt$DeliveryPolicy$3</ID>
-    <ID>MagicNumber:DeliveryPolicy.kt$DeliveryPolicy$30</ID>
     <ID>MagicNumber:DeliveryPolicy.kt$DeliveryPolicy$5</ID>
-    <ID>MagicNumber:DeliveryPolicy.kt$DeliveryPolicy$6</ID>
-    <ID>MagicNumber:ManageReviewsUseCase.kt$ManageReviewsUseCase$5</ID>
     <ID>MagicNumber:ManageReviewsUseCase.kt$ManageReviewsUseCase$5.0f</ID>
     <ID>MatchingDeclarationName:DomainPolicyTest.kt$DeliveryPolicyTest</ID>
     <ID>MaxLineLength:DomainModule.kt$factory { GetCocktailDetailUseCase(detailRepository = get(), favoritesRepository = get(), searchRepository = get()) }</ID>
@@ -48,23 +39,15 @@
     <ID>NewLineAtEndOfFile:CocktailIngredient.kt$com.cocktailcraft.domain.model.CocktailIngredient.kt</ID>
     <ID>NewLineAtEndOfFile:Review.kt$com.cocktailcraft.domain.model.Review.kt</ID>
     <ID>NewLineAtEndOfFile:User.kt$com.cocktailcraft.domain.model.User.kt</ID>
-    <ID>NoConsecutiveBlankLines:CocktailCatalogRepository.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:CocktailDetailRepository.kt$ </ID>
     <ID>NoConsecutiveBlankLines:CocktailFavoritesRepository.kt$ </ID>
     <ID>NoConsecutiveBlankLines:CocktailSearchRepository.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:GetCocktailDetailUseCase.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:LoadCocktailsByCategoryUseCase.kt$ </ID>
     <ID>NoConsecutiveBlankLines:ManageCartUseCase.kt$ </ID>
     <ID>NoConsecutiveBlankLines:ManageFavoritesUseCase.kt$ </ID>
     <ID>NoConsecutiveBlankLines:ManageProfileUseCase.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:SortCocktailsUseCase.kt$ </ID>
     <ID>NoMultipleSpaces:AuthInputValidatorTest.kt$AuthInputValidatorTest$ </ID>
     <ID>NoMultipleSpaces:SearchFilters.kt$SearchFilters$ </ID>
-    <ID>NoUnusedImports:ManageProfileUseCase.kt$com.cocktailcraft.domain.usecase.ManageProfileUseCase.kt</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:Order.kt$OrderItem</ID>
     <ID>SpacingBetweenDeclarationsWithAnnotations:User.kt$Address</ID>
     <ID>SpacingBetweenDeclarationsWithAnnotations:User.kt$UserPreferences</ID>
-    <ID>TooManyFunctions:AuthRepository.kt$AuthRepository</ID>
     <ID>UseCheckOrError:ManageCartUseCaseTest.kt$ManageCartUseCaseTest.TrackingDetailRepository$throw IllegalStateException("lookup failed")</ID>
   </CurrentIssues>
 </SmellBaseline>
