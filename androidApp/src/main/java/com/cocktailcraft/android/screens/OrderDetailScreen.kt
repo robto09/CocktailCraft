@@ -35,8 +35,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,8 +52,10 @@ import com.cocktailcraft.android.ui.components.LocalToastHostState
 import com.cocktailcraft.android.ui.components.OrderListLoadingShimmer
 import com.cocktailcraft.android.ui.components.OrderStatusIndicator
 import com.cocktailcraft.android.ui.components.OrderSummaryCard
+import com.cocktailcraft.android.ui.components.PrimaryButton
 import com.cocktailcraft.android.ui.components.ToastSnackbarHost
 import com.cocktailcraft.android.ui.components.UiEventToasts
+import com.cocktailcraft.android.ui.components.formatPrice
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.resolve
 import com.cocktailcraft.android.util.stringResource
@@ -72,15 +76,17 @@ import com.cocktailcraft.resources.order_detail_status
 import com.cocktailcraft.resources.order_detail_title
 import com.cocktailcraft.resources.order_item_quantity_name
 import com.cocktailcraft.resources.order_number
-import com.cocktailcraft.resources.order_price_format
+import com.cocktailcraft.resources.order_reorder
+import com.cocktailcraft.resources.order_reorder_unavailable
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.viewmodel.state.OrderUiState
 import kotlinx.coroutines.launch
 
 /**
- * One order: status, delivery estimate, items and totals, with "Cancel
- * Order" (behind a confirmation) while the order is still cancellable.
+ * One order: status, delivery estimate, items and totals, with Reorder (its
+ * items back into the cart) and "Cancel Order" (behind a confirmation)
+ * while the order is still cancellable.
  * Pushed above the Orders tab with its own top bar and toast host, like the
  * cocktail detail screen.
  */
@@ -106,7 +112,8 @@ fun OrderDetailScreen(
     val order = state.selectedOrder?.takeIf { it.id == orderId }
 
     CompositionLocalProvider(LocalToastHostState provides toastHostState) {
-        // "Order cancelled" — the only collector of the order events
+        // "Order cancelled", "Added 3 items to your cart" and a failed
+        // reorder — the only collector of the order events
         UiEventToasts(orderViewModel.events)
         // With the order on screen a failed cancel is a toast; a failed load
         // is the full-screen error state instead
@@ -122,6 +129,7 @@ fun OrderDetailScreen(
             onBackClick = onBackClick,
             onRetry = { scope.launch { orderViewModel.loadOrderDetail(orderId) } },
             onConfirmCancel = { scope.launch { orderViewModel.cancelOrder(orderId) } },
+            onReorder = { scope.launch { orderViewModel.reorder(orderId) } },
             toastHostState = toastHostState
         )
     }
@@ -140,6 +148,7 @@ internal fun OrderDetailContent(
     isLoading: Boolean = false,
     error: ErrorHandler.UserFriendlyError? = null,
     onRetry: () -> Unit = {},
+    onReorder: () -> Unit = {},
     toastHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     val order = state.selectedOrder
@@ -195,6 +204,7 @@ internal fun OrderDetailContent(
                 order = order,
                 state = state,
                 onCancelClick = { showCancelDialog = true },
+                onReorderClick = onReorder,
                 modifier = contentModifier
             )
         }
@@ -206,6 +216,7 @@ private fun OrderDetailBody(
     order: Order,
     state: OrderUiState,
     onCancelClick: () -> Unit,
+    onReorderClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -229,6 +240,12 @@ private fun OrderDetailBody(
             subtotal = state.selectedOrderSubtotal,
             deliveryFee = state.selectedOrderDeliveryFee,
             total = order.total
+        )
+
+        ReorderButton(
+            canReorder = state.canReorderSelectedOrder,
+            isReordering = state.isReordering,
+            onClick = onReorderClick
         )
 
         if (state.canCancelSelectedOrder) {
@@ -307,7 +324,7 @@ private fun OrderItemRow(item: OrderItem) {
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = stringResource(MR.strings.order_price_format, item.price * item.quantity),
+                text = formatPrice(item.lineTotal),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
@@ -316,11 +333,44 @@ private fun OrderItemRow(item: OrderItem) {
         Text(
             text = stringResource(
                 MR.strings.order_detail_item_each,
-                stringResource(MR.strings.order_price_format, item.price)
+                formatPrice(item.price)
             ),
             fontSize = 13.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+/**
+ * Puts the order's items back in the cart; shows a spinner while that runs.
+ * Orders placed before items recorded their cocktail can't be reordered:
+ * the button is disabled with the reason underneath, and TalkBack reads the
+ * reason as the disabled button's state rather than as a separate stop.
+ */
+@Composable
+private fun ReorderButton(canReorder: Boolean, isReordering: Boolean, onClick: () -> Unit) {
+    val unavailable = stringResource(MR.strings.order_reorder_unavailable)
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        PrimaryButton(
+            text = stringResource(MR.strings.order_reorder),
+            onClick = onClick,
+            enabled = canReorder,
+            isLoading = isReordering,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("order_detail_reorder")
+                .then(if (canReorder) Modifier else Modifier.semantics { stateDescription = unavailable })
+        )
+        if (!canReorder) {
+            Text(
+                text = unavailable,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clearAndSetSemantics {}
+            )
+        }
     }
 }
 

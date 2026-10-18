@@ -23,13 +23,13 @@ final class AppRouterTests: XCTestCase {
 final class DeliveryPolicyBridgeTests: XCTestCase {
 
     func testFreeDeliveryThreshold() {
-        XCTAssertFalse(DeliveryPolicy.shared.isFreeDelivery(subtotal: 49.99))
-        XCTAssertTrue(DeliveryPolicy.shared.isFreeDelivery(subtotal: 50.0))
+        XCTAssertFalse(DeliveryPolicy.shared.isFreeDelivery(subtotal: Money(cents: 4999)))
+        XCTAssertTrue(DeliveryPolicy.shared.isFreeDelivery(subtotal: Money(cents: 5000)))
     }
 
     func testDeliveryFee() {
-        XCTAssertEqual(DeliveryPolicy.shared.deliveryFee(subtotal: 10.0), 5.99, accuracy: 0.001)
-        XCTAssertEqual(DeliveryPolicy.shared.deliveryFee(subtotal: 75.0), 0.0, accuracy: 0.001)
+        XCTAssertEqual(DeliveryPolicy.shared.deliveryFee(subtotal: Money(cents: 1000)).cents, 599)
+        XCTAssertEqual(DeliveryPolicy.shared.deliveryFee(subtotal: Money(cents: 7500)).cents, 0)
     }
 
     func testEstimatedDeliveryTimeBuckets() {
@@ -44,13 +44,33 @@ final class DeliveryPolicyBridgeTests: XCTestCase {
 final class UiStateDerivedValueBridgeTests: XCTestCase {
 
     func testCartStateDerivesDeliveryPricing() {
-        let belowThreshold = CartUiState(cartItems: [], totalPrice: 10.0, itemCount: 1, isLoading: false)
-        XCTAssertEqual(belowThreshold.deliveryFee, 5.99, accuracy: 0.001)
-        XCTAssertEqual(belowThreshold.finalTotal, 15.99, accuracy: 0.001)
+        let belowThreshold = CartUiState(cartItems: [], totalPrice: Money(cents: 1000), itemCount: 1, isLoading: false)
+        XCTAssertEqual(belowThreshold.deliveryFee.cents, 599)
+        XCTAssertEqual(belowThreshold.finalTotal.cents, 1599)
 
-        let free = CartUiState(cartItems: [], totalPrice: 50.0, itemCount: 5, isLoading: false)
-        XCTAssertEqual(free.deliveryFee, 0.0, accuracy: 0.001)
-        XCTAssertEqual(free.finalTotal, 50.0, accuracy: 0.001)
+        let free = CartUiState(cartItems: [], totalPrice: Money(cents: 5000), itemCount: 5, isLoading: false)
+        XCTAssertEqual(free.deliveryFee.cents, 0)
+        XCTAssertEqual(free.finalTotal.cents, 5000)
+    }
+}
+
+/// The shared Money type reaches Swift as a typed class (not a bare Int64,
+/// as a Kotlin value class would), with its formatter and arithmetic.
+final class MoneyBridgeTests: XCTestCase {
+
+    func testFormatsUsDollarsThroughTheSharedFormatter() {
+        XCTAssertEqual(Money(cents: 1250).formatted(languageTag: "en-US"), "$12.50")
+        XCTAssertEqual(Money(cents: 123_456_789).formatted(languageTag: "en-US"), "$1,234,567.89")
+        // The device locale's number style, still in dollars
+        let german = Money(cents: 123_450).formatted(languageTag: "de-DE")
+        XCTAssertTrue(german.contains("1.234,50"), german)
+        XCTAssertTrue(german.contains("$"), german)
+    }
+
+    func testArithmeticAndEqualityAreInCents() {
+        XCTAssertEqual(Money(cents: 1250).plus(other: Money(cents: 599)), Money(cents: 1849))
+        XCTAssertEqual(Money(cents: 1250).times(quantity: 3).cents, 3750)
+        XCTAssertEqual(CocktailCartItem(cocktail: SnapshotFixtures.margarita, quantity: 2).lineTotal.cents, 2500)
     }
 }
 

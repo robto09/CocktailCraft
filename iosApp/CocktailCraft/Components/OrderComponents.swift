@@ -33,17 +33,21 @@ struct OrderStatusIndicator: View {
 
 /// Stateless body of the order detail screen, laid out like Android's
 /// OrderDetailContent: number/date/status/delivery card, items card, the
-/// order summary, then Cancel Order while the order is cancellable. Values
-/// come straight from the shared OrderUiState (subtotal, delivery fee and
-/// estimate are derived there).
+/// order summary, Reorder, then Cancel Order while the order is
+/// cancellable. Values come straight from the shared OrderUiState
+/// (subtotal, delivery fee, estimate and canReorder are derived there).
 struct OrderDetailContent: View {
     let order: Order
-    let subtotal: Double
-    let deliveryFee: Double
+    let subtotal: Money
+    let deliveryFee: Money
     let deliveryEstimate: String
     let canCancel: Bool
     var isCancelling: Bool = false
     var onCancel: () -> Void = {}
+    /// False for orders placed before items recorded their cocktail.
+    var canReorder: Bool = false
+    var isReordering: Bool = false
+    var onReorder: () -> Void = {}
 
     @Environment(\.isDarkMode) private var isDarkMode
     @Environment(\.appearance) private var appearance
@@ -53,6 +57,8 @@ struct OrderDetailContent: View {
             statusCard
             itemsCard
             CartSummaryCard(subtotal: subtotal, deliveryFee: deliveryFee, total: order.total)
+
+            reorderButton
 
             if canCancel {
                 PrimaryButton(
@@ -66,6 +72,31 @@ struct OrderDetailContent: View {
             }
         }
         .padding(.vertical, AppTheme.Spacing.lg)
+    }
+
+    /// Reorder, or for an order that can't be reordered the dimmed button
+    /// with the reason underneath. VoiceOver reads the reason as the
+    /// button's value instead of as a separate element.
+    private var reorderButton: some View {
+        VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+            PrimaryButton(
+                title: L(\.order_reorder),
+                isLoading: isReordering,
+                isDisabled: !canReorder,
+                action: onReorder
+            )
+            .accessibilityIdentifier("orderDetail.reorderButton")
+            .accessibilityValue(canReorder ? "" : L(\.order_reorder_unavailable))
+
+            if !canReorder {
+                Text(L(\.order_reorder_unavailable))
+                    .font(.footnote)
+                    .foregroundColor(AppColors.textSecondary(appearance))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityHidden(true)
+            }
+        }
+        .padding(.horizontal, AppTheme.Spacing.lg)
     }
 
     private var statusCard: some View {
@@ -108,11 +139,11 @@ struct OrderDetailContent: View {
                             Text(L(\.order_item_quantity_name, item.quantity, item.name))
                                 .font(.callout.weight(.medium))
                             Spacer()
-                            Text((item.price * Double(item.quantity)).asPrice)
+                            Text(item.lineTotal.formatted())
                                 .font(.callout.weight(.medium))
                         }
                         .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                        Text(L(\.order_detail_item_each, item.price.asPrice))
+                        Text(L(\.order_detail_item_each, item.price.formatted()))
                             .font(.caption)
                             .foregroundColor(AppColors.textSecondary(appearance))
                     }

@@ -7,6 +7,7 @@ import com.cocktailcraft.data.remote.ApiRateLimiter
 import com.cocktailcraft.data.remote.CocktailDto
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.domain.model.CocktailCategories
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.testutil.FakeCocktailApi
@@ -106,7 +107,7 @@ class CocktailSearchRepositoryImplTest {
         assertEquals(first.price, second.price, "price must be stable across fetches")
         assertEquals(first.rating, second.rating)
         assertEquals(first.popularity, second.popularity)
-        assertTrue(first.price in 5.0..15.0)
+        assertTrue(first.price in Money(500)..Money(1500))
         assertTrue(first.rating in 3.0f..5.0f)
         assertTrue(first.popularity in 1..100)
     }

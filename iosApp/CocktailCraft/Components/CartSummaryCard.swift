@@ -1,9 +1,10 @@
 import SwiftUI
+import shared
 
 struct CartSummaryCard: View {
-    let subtotal: Double
-    let deliveryFee: Double
-    let total: Double
+    let subtotal: Money
+    let deliveryFee: Money
+    let total: Money
     @Environment(\.isDarkMode) var isDarkMode
     
     /// Laid out like Android's OrderSummaryCard: the title inside the card,
@@ -49,7 +50,7 @@ struct CartSummaryCard: View {
 
 struct SummaryRow: View {
     let label: String
-    let value: Double
+    let value: Money
     let isTotal: Bool
     @Environment(\.isDarkMode) var isDarkMode
     @Environment(\.appearance) var appearance
@@ -82,7 +83,7 @@ struct SummaryRow: View {
     }
 
     private var valueText: some View {
-        Text(value.asPrice)
+        Text(value.formatted())
             .font(isTotal ? AppTheme.Typography.headline : AppTheme.Typography.callout)
             .fontWeight(isTotal ? .bold : .regular)
             .foregroundColor(isTotal ? AppColors.primary(appearance) : AppColors.textPrimary(isDarkMode: isDarkMode))
@@ -92,9 +93,9 @@ struct SummaryRow: View {
 
 #Preview {
     CartSummaryCard(
-        subtotal: 25.98,
-        deliveryFee: 3.99,
-        total: 29.97
+        subtotal: Money(cents: 2598),
+        deliveryFee: Money(cents: 399),
+        total: Money(cents: 2997)
     )
     .environment(\.isDarkMode, false)
     .padding()

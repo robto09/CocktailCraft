@@ -1,6 +1,7 @@
 package com.cocktailcraft.viewmodel
 
 import app.cash.turbine.test
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
@@ -371,9 +372,9 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     fun sortByPriceReordersCurrentList() = runTest {
         val harness = HomeViewModelHarness()
         harness.all = listOf(
-            testCocktail("1", price = 30.0),
-            testCocktail("2", price = 10.0),
-            testCocktail("3", price = 20.0)
+            testCocktail("1", price = Money(3000)),
+            testCocktail("2", price = Money(1000)),
+            testCocktail("3", price = Money(2000))
         )
         val vm = harness.viewModel()
         advanceUntilIdle()
@@ -532,8 +533,8 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     fun storedChangesReachTheListAndKeepTheSortOrder() = runTest {
         val harness = HomeViewModelHarness()
         harness.all = listOf(
-            testCocktail("1", price = 30.0),
-            testCocktail("2", price = 10.0)
+            testCocktail("1", price = Money(3000)),
+            testCocktail("2", price = Money(1000))
         )
         val vm = harness.viewModel()
         advanceUntilIdle()
@@ -544,8 +545,8 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         harness.catalog.store(
             "Cocktail",
             listOf(
-                testCocktail("1", name = "Upgraded", price = 30.0),
-                testCocktail("2", price = 10.0)
+                testCocktail("1", name = "Upgraded", price = Money(3000)),
+                testCocktail("2", price = Money(1000))
             )
         )
         advanceUntilIdle()

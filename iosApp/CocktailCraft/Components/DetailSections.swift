@@ -285,7 +285,7 @@ struct RelatedCocktailCard: View {
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                     .lineLimit(1)
 
-                Text(cocktail.price.asPrice)
+                Text(cocktail.price.formatted())
                     .font(.subheadline.weight(.bold))
                     .foregroundColor(AppColors.primary(appearance))
             }

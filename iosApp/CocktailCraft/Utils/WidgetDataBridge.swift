@@ -64,7 +64,7 @@ final class WidgetDataBridge {
                     id: $0.id,
                     name: $0.name,
                     imageUrl: $0.imageUrl,
-                    price: $0.price
+                    priceText: $0.price.formatted()
                 )
             },
             updatedAt: Date()

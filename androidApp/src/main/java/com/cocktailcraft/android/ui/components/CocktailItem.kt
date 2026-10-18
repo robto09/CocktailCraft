@@ -33,7 +33,6 @@ import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.add_to_cart_item_a11y
 import com.cocktailcraft.resources.list_out_of_stock
-import com.cocktailcraft.resources.list_price_format
 import com.cocktailcraft.resources.list_tap_to_view_ingredients
 import com.cocktailcraft.resources.list_view_details_label
 
@@ -162,7 +161,7 @@ fun CocktailItem(
                 ) {
                     // Price
                     Text(
-                        text = stringResource(MR.strings.list_price_format, cocktail.price),
+                        text = formatPrice(cocktail.price),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = MaterialTheme.colorScheme.primary

@@ -22,6 +22,8 @@ import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -46,11 +48,23 @@ class CocktailCatalogRepositoryImplTest {
     }
 
     // Mirrors the DataModule wiring: one cache and one category fetcher
-    // behind the catalog impl.
-    private fun fixture(api: FakeCocktailApi = FakeCocktailApi(sampleDrinks()), online: Boolean = true): Fixture {
+    // behind the catalog impl. The cache runs on the test scheduler: on the
+    // real Dispatchers.IO the scheduler idles while a query is off-thread and
+    // skips FakeCocktailApi's delays, so overlapping-request tests flake.
+    private fun TestScope.fixture(
+        api: FakeCocktailApi = FakeCocktailApi(sampleDrinks()),
+        online: Boolean = true
+    ): Fixture {
         val network = FakeNetworkMonitor(online)
         val policy = OfflineModePolicy(network)
-        val cache = CocktailCache(createTestDatabase(), MapSettings(), testJson, config, offlineModePolicy = policy)
+        val cache = CocktailCache(
+            createTestDatabase(),
+            MapSettings(),
+            testJson,
+            config,
+            ioDispatcher = StandardTestDispatcher(testScheduler),
+            offlineModePolicy = policy
+        )
         val remote = CocktailRemoteDataSource(api, ApiRateLimiter())
         val offline = CocktailOfflineRepositoryImpl(offlineModePolicy = policy, cocktailCache = cache)
         lateinit var fixture: Fixture

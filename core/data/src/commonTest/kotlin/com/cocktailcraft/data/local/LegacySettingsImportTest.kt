@@ -10,6 +10,7 @@ import com.cocktailcraft.data.repository.OrderRepositoryImpl
 import com.cocktailcraft.data.repository.ReviewRepositoryImpl
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
@@ -32,25 +33,32 @@ import kotlin.test.assertTrue
 
 /**
  * The one-time move of the cart, orders, reviews and favorites out of the
- * Settings JSON blobs older versions wrote. Fixtures are encoded exactly as
- * the old repositories encoded them.
+ * Settings JSON blobs older versions wrote. Fixtures are encoded with the
+ * models' serializers; the blobs older versions actually wrote held money
+ * as Double dollars, which legacyDollarAmountsImportAsCents covers.
  */
 class LegacySettingsImportTest {
 
     private val legacyKeys = listOf(CART_KEY, ORDERS_KEY, REVIEWS_KEY, FAVORITES_KEY)
 
-    private val margarita = testCocktail("1", name = "Margarita", price = 9.5)
-    private val mojito = testCocktail("2", name = "Mojito", price = 11.0)
+    private val margarita = testCocktail("1", name = "Margarita", price = Money(950))
+    private val mojito = testCocktail("2", name = "Mojito", price = Money(1100))
 
     private val legacyOrders = listOf(
         Order(
             id = "ORD-1",
             date = "2026-06-01",
-            items = listOf(OrderItem("Margarita", 2, 9.5), OrderItem("Mojito", 1, 11.0)),
-            total = 30.0,
+            items = listOf(OrderItem("Margarita", 2, Money(950)), OrderItem("Mojito", 1, Money(1100))),
+            total = Money(3000),
             status = OrderStatus.DELIVERED
         ),
-        Order(id = "ORD-2", date = "2026-06-02", items = emptyList(), total = 0.0, status = OrderStatus.PROCESSING)
+        Order(
+            id = "ORD-2",
+            date = "2026-06-02",
+            items = emptyList(),
+            total = Money.ZERO,
+            status = OrderStatus.PROCESSING
+        )
     )
 
     private val legacyReviews = listOf(
@@ -201,6 +209,35 @@ class LegacySettingsImportTest {
             listOf(OrderStatus.PROCESSING, OrderStatus.CANCELLED),
             OrderRepositoryImpl(local).getOrders().getOrThrow().map { it.status }
         )
+    }
+
+    @Test
+    fun legacyDollarAmountsImportAsCents() = runTest {
+        // Written by versions before money was kept in cents: Double dollars
+        // under "price" and "total"
+        val settings = MapSettings().apply {
+            putString(
+                CART_KEY,
+                """[{"cocktail":{"id":"1","name":"Margarita","price":9.5},"quantity":2},""" +
+                    """{"cocktail":{"id":"2","name":"Mojito","price":5.29},"quantity":1}]"""
+            )
+            putString(
+                ORDERS_KEY,
+                """[{"id":"ORD-1","date":"2026-06-01","total":30.28,"status":"Delivered",""" +
+                    """"items":[{"name":"Margarita","quantity":2,"price":9.5},""" +
+                    """{"name":"Mojito","quantity":1,"price":5.29}]}]"""
+            )
+        }
+        val local = createTestLocalDatabase(createTestDatabase(), settings)
+
+        val cart = CartRepositoryImpl(local, testJson)
+        assertEquals(listOf(Money(950), Money(529)), cart.getCartItems().getOrThrow().map { it.cocktail.price })
+        assertEquals(Money(2429), cart.getCartTotal().getOrThrow())
+        val order = OrderRepositoryImpl(local).getOrders().getOrThrow().single()
+        assertEquals(Money(3028), order.total)
+        assertEquals(listOf(Money(950), Money(529)), order.items.map { it.price })
+        assertEquals(Money(599), order.deliveryFee)
+        assertFalse(order.canReorder, "legacy items never recorded their cocktail id")
     }
 
     @Test

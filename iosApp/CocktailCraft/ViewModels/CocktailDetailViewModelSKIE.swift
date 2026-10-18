@@ -63,6 +63,6 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
 
     func formatPrice() -> String {
         guard let cocktail = state.cocktail else { return "$0.00" }
-        return cocktail.price.asPrice
+        return cocktail.price.formatted()
     }
 }

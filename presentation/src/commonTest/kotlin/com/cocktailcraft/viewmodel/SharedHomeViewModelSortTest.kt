@@ -1,5 +1,6 @@
 package com.cocktailcraft.viewmodel
 
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
@@ -20,9 +21,9 @@ class SharedHomeViewModelSortTest : MainDispatcherTest() {
 
     /** Distinct values per axis, listed in an order no sort produces. */
     private val sortable = listOf(
-        testCocktail("b", name = "banana Daiquiri", price = 12.0, rating = 3.5f, popularity = 10),
-        testCocktail("a", name = "Aperol Spritz", price = 8.0, rating = 5.0f, popularity = 50),
-        testCocktail("c", name = "Cosmopolitan", price = 10.0, rating = 4.0f, popularity = 99)
+        testCocktail("b", name = "banana Daiquiri", price = Money(1200), rating = 3.5f, popularity = 10),
+        testCocktail("a", name = "Aperol Spritz", price = Money(800), rating = 5.0f, popularity = 50),
+        testCocktail("c", name = "Cosmopolitan", price = Money(1000), rating = 4.0f, popularity = 99)
     )
 
     private suspend fun TestScope.sortedIds(option: HomeSortOption): List<String> {
@@ -82,9 +83,9 @@ class SharedHomeViewModelSortTest : MainDispatcherTest() {
     fun sortIsKeptAcrossCategoryChanges() = runTest {
         val harness = HomeViewModelHarness()
         harness.all = sortable + listOf(
-            testCocktail("s1", category = "Shot", price = 9.0),
-            testCocktail("s2", category = "Shot", price = 3.0),
-            testCocktail("s3", category = "Shot", price = 6.0)
+            testCocktail("s1", category = "Shot", price = Money(900)),
+            testCocktail("s2", category = "Shot", price = Money(300)),
+            testCocktail("s3", category = "Shot", price = Money(600))
         )
         val vm = harness.viewModel()
         advanceUntilIdle()
@@ -114,9 +115,9 @@ class SharedHomeViewModelSortTest : MainDispatcherTest() {
         harness.catalog.store(
             "Cocktail",
             listOf(
-                testCocktail("x", price = 20.0),
-                testCocktail("a", price = 8.0),
-                testCocktail("y", price = 1.0)
+                testCocktail("x", price = Money(2000)),
+                testCocktail("a", price = Money(800)),
+                testCocktail("y", price = Money(100))
             )
         )
         advanceUntilIdle()
@@ -142,7 +143,7 @@ class SharedHomeViewModelSortTest : MainDispatcherTest() {
     @Test
     fun sortAppliesToSearchResultsAndLoadedPages() = runTest {
         val harness = HomeViewModelHarness()
-        harness.all = (1..15).map { testCocktail("$it", name = "Drink $it", price = 100.0 - it) }
+        harness.all = (1..15).map { testCocktail("$it", name = "Drink $it", price = Money((100L - it) * 100)) }
         val vm = harness.viewModel()
         advanceUntilIdle()
         vm.setSortOption(HomeSortOption.PRICE_ASC)

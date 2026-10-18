@@ -89,14 +89,14 @@ struct CartView: View {
         .alert(isPresented: $showCheckoutConfirmation) {
             Alert(
                 title: Text(L(\.confirm_order_title)),
-                message: Text(L(\.confirm_order_message, cartViewModel.state.finalTotal.asPrice)),
+                message: Text(L(\.confirm_order_message, cartViewModel.state.finalTotal.formatted())),
                 primaryButton: .default(Text(L(\.cart_confirm))) {
                     Task {
                         // Order and cart state propagate reactively from the
                         // shared flows — no notifications or delays needed.
                         // placeOrder empties the cart in the same transaction
                         // as the order insert, so there is no clearCart here.
-                        let success = await orderViewModel.placeOrder(cartItems: cartViewModel.state.cartItems, totalPrice: cartViewModel.state.finalTotal)
+                        let success = await orderViewModel.placeOrder(cartItems: cartViewModel.state.cartItems)
                         if success {
                             router.selectedTab = .orders
                         }

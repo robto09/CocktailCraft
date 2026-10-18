@@ -8,7 +8,7 @@ import shared
 // locale so call sites stay terse:
 //
 //     Text(L(\.cart_empty_title))
-//     L(\.confirm_order_message, total.asPrice)
+//     L(\.confirm_order_message, total.formatted())
 //     L(\.review_count, count: reviews.count)
 //
 // The results are plain Strings (already localized), so pass them to

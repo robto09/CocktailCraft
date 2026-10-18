@@ -232,7 +232,7 @@ fun CartItemCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = currencyFormatter.format(item.cocktail.price * item.quantity),
+                            text = currencyFormatter.format(item.lineTotal),
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.onSurface,

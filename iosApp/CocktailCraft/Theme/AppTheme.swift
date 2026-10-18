@@ -224,5 +224,6 @@ extension View {
     }
 }
 
-// Double.asPrice moved to Utils/WidgetBridge.swift so the widget extension
-// (which also compiles that file) shares the exact same price formatting.
+// Prices are shared Money values formatted by the KMP layer
+// (money.formatted()); the widget extension gets them pre-formatted in its
+// snapshot (WidgetCocktail.priceText).

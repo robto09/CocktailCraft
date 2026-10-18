@@ -5,6 +5,7 @@ import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
@@ -105,7 +106,13 @@ class KoinDependencyGraphTest : MainDispatcherTest() {
         cart.addToCart(CocktailCartItem(testCocktail("1"), quantity = 2)).getOrThrow()
 
         orders.placeOrderAndClearCart(
-            Order(id = "ORD-1", date = "2026-07-07", items = listOf(OrderItem("Cocktail 1", 2, 10.0)), total = 20.0, status = OrderStatus.PROCESSING)
+            Order(
+                id = "ORD-1",
+                date = "2026-07-07",
+                items = listOf(OrderItem("Cocktail 1", 2, Money(1000))),
+                total = Money(2000),
+                status = OrderStatus.PROCESSING
+            )
         ).getOrThrow()
 
         assertTrue(cart.getCartItems().getOrThrow().isEmpty())

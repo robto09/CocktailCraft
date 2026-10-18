@@ -148,7 +148,7 @@ struct CocktailCard: View {
 
             // Price and Actions Row
             HStack(alignment: .center) {
-                Text((cocktail.price ?? 12.99).asPrice)
+                Text(cocktail.price.formatted())
                     .font(.headline.weight(.bold))
                     .foregroundColor(AppColors.primary(appearance))
                     .lineLimit(1)
@@ -214,7 +214,7 @@ struct CocktailCard: View {
             parts.append(L(\.review_stars_a11y, StarRatingView.spokenRating(reviewRating.rating), 5))
             parts.append(L(\.review_count, count: Int(reviewRating.count)))
         }
-        parts.append((cocktail.price ?? 12.99).asPrice)
+        parts.append(cocktail.price.formatted())
         if isOutOfStock {
             parts.append(L(\.list_out_of_stock))
         }

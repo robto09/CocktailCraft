@@ -1,11 +1,15 @@
 package com.cocktailcraft.data.remote
 
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.testutil.FakeCocktailApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlin.math.absoluteValue
+import kotlin.math.roundToLong
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class CocktailRemoteDataSourceTest {
 
@@ -76,5 +80,21 @@ class CocktailRemoteDataSourceTest {
         remote.getRandom()
 
         assertEquals(0L, testScheduler.currentTime)
+    }
+
+    @Test
+    fun demoPricesAreTheSameAmountsTheDoubleFormulaGave() = runTest {
+        val remote = remote()
+
+        for (id in listOf("11007", "11000", "17222", "178325", "1", "999999")) {
+            val seed = id.hashCode().absoluteValue
+            // The formula before prices were cents, as displayed (two decimals)
+            val legacyDollars = 5.0 + (seed % 1001) / 100.0
+
+            val price = remote.mapToDomain(CocktailDto(id = id, name = "Drink $id")).price
+
+            assertEquals((legacyDollars * 100).roundToLong(), price.cents, "price of $id")
+            assertTrue(price in Money(500)..Money(1500))
+        }
     }
 }

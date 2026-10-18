@@ -3,6 +3,7 @@ package com.cocktailcraft.data.remote
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailIngredient
+import com.cocktailcraft.domain.model.Money
 import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
 import kotlin.time.Clock
@@ -95,8 +96,15 @@ internal class CocktailRemoteDataSource(
         )
     }
 
-    // Demo values: price $5.00-$15.00, rating 3.0-5.0, popularity 1-100
-    private fun demoPrice(seed: Int): Double = 5.0 + (seed % 1001) / 100.0
+    // Demo values: price $5.00-$15.00, rating 3.0-5.0, popularity 1-100.
+    // The price is the same as when it was the Double 5.0 + (seed % 1001) / 100.0
+    private fun demoPrice(seed: Int): Money = Money(DemoMinPriceCents + seed % DemoPriceSteps)
     private fun demoRating(seed: Int): Float = 3.0f + (seed % 21) / 10.0f
     private fun demoPopularity(seed: Int): Int = seed % 100 + 1
 }
+
+/** $5.00, the cheapest demo price. */
+private const val DemoMinPriceCents = 500L
+
+/** 1001 one-cent steps: demo prices run $5.00-$15.00. */
+private const val DemoPriceSteps = 1001

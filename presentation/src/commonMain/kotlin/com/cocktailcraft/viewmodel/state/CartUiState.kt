@@ -2,6 +2,7 @@ package com.cocktailcraft.viewmodel.state
 
 import com.cocktailcraft.domain.config.DeliveryPolicy
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Money
 
 /**
  * Consolidated UI state for the Cart screen.
@@ -11,10 +12,11 @@ import com.cocktailcraft.domain.model.CocktailCartItem
  */
 data class CartUiState(
     val cartItems: List<CocktailCartItem> = emptyList(),
-    val totalPrice: Double = 0.0,
+    /** The items' subtotal, before delivery. */
+    val totalPrice: Money = Money.ZERO,
     val itemCount: Int = 0,
     val isLoading: Boolean = false
 ) {
-    val deliveryFee: Double get() = DeliveryPolicy.deliveryFee(totalPrice)
-    val finalTotal: Double get() = DeliveryPolicy.finalTotal(totalPrice)
+    val deliveryFee: Money get() = DeliveryPolicy.deliveryFee(totalPrice)
+    val finalTotal: Money get() = DeliveryPolicy.finalTotal(totalPrice)
 }

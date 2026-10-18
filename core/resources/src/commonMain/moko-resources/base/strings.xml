@@ -9,6 +9,9 @@
     positional (%1$s, %2$d) so translations can reorder them; copy that
     changes with a count belongs in plurals.xml.
 
+    Never put a price in a string with a hard-coded "$" or number format:
+    pass Money.formatted() (the shared USD formatter) as a %1$s argument.
+
     Keys ending in _ios hold copy that differs from the Android wording of
     the same element today (e.g. "Add to cart" vs "Add to Cart"); unifying a
     pair is a deliberate visual change that needs the screenshot baselines
@@ -200,7 +203,6 @@
     <string name="favorite_toggle_a11y">Favorite</string>
     <string name="list_out_of_stock">Out of Stock</string>
     <string name="list_tap_to_view_ingredients">Tap to view ingredients</string>
-    <string name="list_price_format">$%1$.2f</string>
     <string name="list_view_details_label">View %1$s details</string>
     <string name="list_search_results">Search Results</string>
     <string name="list_category_cocktails">%1$s Cocktails</string>
@@ -245,7 +247,6 @@
     <string name="reviews_title">Reviews (%1$d)</string>
     <string name="write_review">Write a Review</string>
     <string name="detail_title_fallback">Cocktail Detail</string>
-    <string name="detail_price_format">$%1$.2f</string>
     <string name="detail_price_a11y">Price, %1$s</string>
     <string name="detail_no_instructions">No instructions available for this cocktail.</string>
     <string name="detail_refresh_details">Refresh Details</string>
@@ -272,7 +273,6 @@
     <string name="order_list_empty_message">Your order history will appear here</string>
     <string name="order_number">Order #%1$s</string>
     <string name="order_item_quantity_name">%1$dx %2$s</string>
-    <string name="order_price_format">$%1$.2f</string>
     <string name="order_summary_title">Order Summary</string>
     <string name="order_subtotal">Subtotal</string>
     <string name="order_delivery_fee">Delivery Fee</string>
@@ -301,6 +301,9 @@
     <string name="order_cancel_confirm_message">Order #%1$s will be cancelled. This can\'t be undone.</string>
     <string name="order_cancel_keep">Keep Order</string>
     <string name="order_cancelled_message">Order cancelled</string>
+    <string name="order_reorder">Reorder</string>
+    <string name="order_reorder_unavailable">Reorder isn\'t available for orders placed before the latest app update.</string>
+    <string name="error_reorder_failed">Couldn\'t add this order\'s items to your cart. Please try again.</string>
 
     <!-- Reviews -->
     <string name="review_your_name">Your Name</string>

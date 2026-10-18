@@ -115,10 +115,8 @@ fun CartScreen(
             // empties the cart in the same transaction and leaves it alone if
             // the order fails; it also ignores a second tap while in flight.
             scope.launch {
-                val placed = orderViewModel.placeOrder(
-                    cartItems = state.cartItems,
-                    totalPrice = state.finalTotal // subtotal + DeliveryPolicy fee
-                )
+                // The use case computes the total from the items and DeliveryPolicy
+                val placed = orderViewModel.placeOrder(cartItems = state.cartItems)
                 if (placed) {
                     navigationManager.navigateToOrderList()
                 } else {

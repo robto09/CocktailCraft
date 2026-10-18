@@ -49,7 +49,7 @@ struct CartItemCard: View {
                 }
 
                 // Unit price
-                Text(item.cocktail.price.asPrice)
+                Text(item.cocktail.price.formatted())
                     .font(.subheadline.weight(.bold))
                     .foregroundColor(AppColors.primary(appearance))
 
@@ -96,7 +96,7 @@ struct CartItemCard: View {
         HStack(spacing: AppTheme.Spacing.xs) {
             // 16 pt like Android's line total, so stepper, total and
             // remove still fit one row with longer prices ("US$13.65")
-            Text((item.cocktail.price * Double(item.quantity)).asPrice)
+            Text(item.lineTotal.formatted())
                 .font(.callout.weight(.bold))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .lineLimit(1)
@@ -196,7 +196,7 @@ struct QuantityControlView: View {
                 imageAttribution: nil,
                 creativeCommonsConfirmed: nil,
                 dateModified: nil,
-                price: 12.99,
+                price: Money(cents: 1299),
                 inStock: true,
                 stockCount: 15,
                 rating: 4.8,

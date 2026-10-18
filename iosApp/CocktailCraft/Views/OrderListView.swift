@@ -113,7 +113,7 @@ struct OrderListView: View {
                     Text(L(\.order_item_quantity_name, item.quantity, item.name))
                         .font(.subheadline)
                     Spacer()
-                    Text((item.price * Double(item.quantity)).asPrice)
+                    Text(item.lineTotal.formatted())
                         .font(.subheadline.weight(.medium))
                 }
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
@@ -129,7 +129,7 @@ struct OrderListView: View {
                 Text(L(\.total))
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 Spacer()
-                Text(order.total.asPrice)
+                Text(order.total.formatted())
                     .foregroundColor(AppColors.primary(appearance))
             }
             .font(.callout.weight(.bold))

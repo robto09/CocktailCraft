@@ -85,7 +85,7 @@ final class WidgetSnapshotStoreTests: XCTestCase {
     func testWriteReadRoundTrip() throws {
         let written = WidgetFavoritesSnapshot(
             favorites: [
-                WidgetCocktail(id: "test-11007", name: "Unit Test Margarita", imageUrl: nil, price: 12.5)
+                WidgetCocktail(id: "test-11007", name: "Unit Test Margarita", imageUrl: nil, priceText: "$12.50")
             ],
             updatedAt: Date()
         )
@@ -106,10 +106,24 @@ final class WidgetSnapshotStoreTests: XCTestCase {
         XCTAssertEqual(favorite.id, "test-11007")
         XCTAssertEqual(favorite.name, "Unit Test Margarita")
         XCTAssertNil(favorite.imageUrl)
-        XCTAssertEqual(favorite.price, 12.5, accuracy: 0.0001)
+        XCTAssertEqual(favorite.priceText, "$12.50")
         XCTAssertEqual(snapshot.updatedAt.timeIntervalSince1970,
                        written.updatedAt.timeIntervalSince1970,
                        accuracy: 0.001)
+    }
+
+    /// Snapshots written before prices were pre-formatted held a Double
+    /// `price`; they still decode (so the widget keeps its favorites), just
+    /// without a price until the app rewrites the snapshot.
+    func testSnapshotWithTheOldDoublePriceStillDecodes() throws {
+        let legacy = """
+        {"favorites":[{"id":"11007","name":"Margarita","imageUrl":null,"price":12.5}],"updatedAt":700000000}
+        """
+        let snapshot = try JSONDecoder().decode(WidgetFavoritesSnapshot.self, from: Data(legacy.utf8))
+
+        let favorite = try XCTUnwrap(snapshot.favorites.first)
+        XCTAssertEqual(favorite.name, "Margarita")
+        XCTAssertNil(favorite.priceText)
     }
 }
 

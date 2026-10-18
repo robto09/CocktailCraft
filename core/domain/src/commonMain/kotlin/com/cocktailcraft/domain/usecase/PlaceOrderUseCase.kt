@@ -6,16 +6,17 @@ import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
+import com.cocktailcraft.domain.model.sumOfMoney
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.UUID
 import com.cocktailcraft.util.runCatchingResult
-import kotlin.time.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import kotlin.native.HiddenFromObjC
+import kotlin.time.Clock
 
 /**
  * Checkout: turns the cart into an order. The order is stored and the cart
@@ -45,10 +46,13 @@ class PlaceOrderUseCase(
                 OrderItem(
                     name = cartItem.cocktail.name,
                     quantity = cartItem.quantity,
-                    price = cartItem.cocktail.price
+                    price = cartItem.cocktail.price,
+                    // Lets the order detail screen offer Reorder
+                    cocktailId = cartItem.cocktail.id
                 )
             }
-            val subtotal = orderItems.sumOf { it.price * it.quantity }
+            // Whole cents throughout: the stored total is exact
+            val subtotal = orderItems.sumOfMoney { it.lineTotal }
 
             val order = Order(
                 id = orderId,

@@ -169,7 +169,7 @@ enum SnapshotFixtures {
         name: String = "Margarita",
         category: String = "Ordinary Drink",
         ingredients: [CocktailIngredient] = margaritaIngredients,
-        price: Double = 12.5,
+        price: Money = Money(cents: 1250),
         stockCount: Int32 = 8
     ) -> Cocktail {
         Cocktail(
@@ -215,7 +215,7 @@ enum SnapshotFixtures {
             CocktailIngredient(name: "Light rum", measure: "2-3 oz"),
             CocktailIngredient(name: "Lime", measure: "Juice of 1")
         ],
-        price: 9
+        price: Money(cents: 900)
     )
 
     static let cartItem = CocktailCartItem(cocktail: margarita, quantity: 2)
@@ -224,10 +224,10 @@ enum SnapshotFixtures {
         id: "ORD-42052",
         date: "2026-07-02",
         items: [
-            OrderItem(name: "Margarita", quantity: 2, price: 12.5),
-            OrderItem(name: "Mojito", quantity: 1, price: 9)
+            OrderItem(name: "Margarita", quantity: 2, price: Money(cents: 1250), cocktailId: "11007"),
+            OrderItem(name: "Mojito", quantity: 1, price: Money(cents: 900), cocktailId: "11009")
         ],
-        total: 39.99,
+        total: Money(cents: 3999),
         status: .processing
     )
 

@@ -22,12 +22,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.domain.config.DeliveryPolicy
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.order_delivery_fee
 import com.cocktailcraft.resources.order_subtotal
 import com.cocktailcraft.resources.order_summary_title
 import com.cocktailcraft.resources.total
-import java.text.NumberFormat
 
 /**
  * A reusable order summary card component.
@@ -42,13 +43,13 @@ import java.text.NumberFormat
  */
 @Composable
 fun OrderSummaryCard(
-    subtotal: Double,
-    deliveryFee: Double = 5.99,
-    total: Double? = null,
+    subtotal: Money,
+    deliveryFee: Money = DeliveryPolicy.STANDARD_FEE,
+    total: Money? = null,
     modifier: Modifier = Modifier,
-    currencyFormatter: NumberFormat = rememberCurrencyFormatter(),
+    currencyFormatter: CurrencyFormatter = rememberCurrencyFormatter(),
     showDeliveryFee: Boolean = true,
-    additionalItems: List<Pair<String, Double>>? = null
+    additionalItems: List<Pair<String, Money>>? = null
 ) {
     val calculatedTotal = total ?: (subtotal + deliveryFee)
     

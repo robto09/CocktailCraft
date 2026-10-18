@@ -6,8 +6,9 @@ struct OrderDetailRoute: Hashable {
     let orderId: String
 }
 
-/// One order: status, delivery estimate, items and totals, with Cancel
-/// Order (behind a confirmation) while the order is still cancellable —
+/// One order: status, delivery estimate, items and totals, with Reorder
+/// (its items back into the cart) and Cancel Order (behind a
+/// confirmation) while the order is still cancellable —
 /// the counterpart of Android's OrderDetailScreen. Shares the order list's
 /// wrapper, whose shared ViewModel holds the selected order.
 struct OrderDetailView: View {
@@ -46,7 +47,7 @@ struct OrderDetailView: View {
                 await viewModel.loadOrderDetail(orderId)
                 if !Task.isCancelled { hasLoaded = true }
             }
-            // "Order cancelled"
+            // "Order cancelled", "Added 3 items to your cart" or a failed reorder
             .sharedEventToast(viewModel.event, clear: { viewModel.clearEvent() })
             // A failed cancel alerts over the order; a failed load is the
             // full-screen ErrorView with Retry instead
@@ -64,7 +65,12 @@ struct OrderDetailView: View {
                     deliveryEstimate: viewModel.state.selectedOrderDeliveryEstimate.localized(),
                     canCancel: viewModel.state.canCancelSelectedOrder,
                     isCancelling: viewModel.state.isCancellingOrder,
-                    onCancel: { showCancelConfirmation = true }
+                    onCancel: { showCancelConfirmation = true },
+                    canReorder: viewModel.state.canReorderSelectedOrder,
+                    isReordering: viewModel.state.isReordering,
+                    onReorder: {
+                        Task { await viewModel.reorder(orderId) }
+                    }
                 )
             }
         } else if !hasLoaded || viewModel.state.isLoadingOrderDetail {

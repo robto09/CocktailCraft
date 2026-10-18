@@ -50,7 +50,13 @@ val presentationModule = module {
     }
     single { com.cocktailcraft.viewmodel.SharedCartViewModel(manageCartUseCase = get()) }
     single { com.cocktailcraft.viewmodel.SharedFavoritesViewModel(manageFavoritesUseCase = get()) }
-    single { com.cocktailcraft.viewmodel.SharedOrderViewModel(orderRepository = get(), placeOrderUseCase = get()) }
+    single {
+        com.cocktailcraft.viewmodel.SharedOrderViewModel(
+            orderRepository = get(),
+            placeOrderUseCase = get(),
+            manageCartUseCase = get()
+        )
+    }
     single { com.cocktailcraft.viewmodel.SharedProfileViewModel(manageProfileUseCase = get()) }
     single { com.cocktailcraft.viewmodel.SharedThemeViewModel(manageProfileUseCase = get()) }
 }

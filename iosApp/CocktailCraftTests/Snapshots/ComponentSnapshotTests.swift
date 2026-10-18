@@ -48,7 +48,11 @@ final class ComponentSnapshotTests: SnapshotTestCase {
     }
 
     func testCartSummaryCard() {
-        assertSnapshots(of: CartSummaryCard(subtotal: 34, deliveryFee: 5.99, total: 39.99))
+        assertSnapshots(of: CartSummaryCard(
+            subtotal: Money(cents: 3400),
+            deliveryFee: Money(cents: 599),
+            total: Money(cents: 3999)
+        ))
     }
 
     func testRelatedCocktailCard() {
@@ -195,10 +199,31 @@ final class ComponentSnapshotTests: SnapshotTestCase {
     func testOrderDetailContent() {
         assertSnapshots(of: OrderDetailContent(
             order: SnapshotFixtures.order,
-            subtotal: 34,
-            deliveryFee: 5.99,
+            subtotal: Money(cents: 3400),
+            deliveryFee: Money(cents: 599),
             deliveryEstimate: "15-25 minutes",
-            canCancel: true
+            canCancel: true,
+            canReorder: SnapshotFixtures.order.canReorder
+        ))
+    }
+
+    /// An order from before items recorded their cocktail: Reorder dimmed,
+    /// with the reason underneath.
+    func testOrderDetailContentWithoutReorder() {
+        let order = Order(
+            id: "ORD-41007",
+            date: "2026-06-30",
+            items: [OrderItem(name: "Margarita", quantity: 1, price: Money(cents: 1250))],
+            total: Money(cents: 1849),
+            status: .delivered
+        )
+        assertSnapshots(of: OrderDetailContent(
+            order: order,
+            subtotal: order.subtotal,
+            deliveryFee: order.deliveryFee,
+            deliveryEstimate: "Delivered",
+            canCancel: false,
+            canReorder: order.canReorder
         ))
     }
 

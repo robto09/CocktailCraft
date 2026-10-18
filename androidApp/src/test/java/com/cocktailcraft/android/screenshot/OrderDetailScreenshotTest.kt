@@ -10,8 +10,9 @@ import org.robolectric.annotation.Config
 
 /**
  * The order detail screen (top bar included), in a window tall enough for
- * the whole order: a cancellable one with its Cancel Order button, and a
- * cancelled one without.
+ * the whole order: a cancellable one with Reorder and its Cancel Order
+ * button, and a cancelled one without, from before order items recorded
+ * their cocktail (Reorder disabled, with the reason).
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(qualifiers = "w360dp-h860dp")

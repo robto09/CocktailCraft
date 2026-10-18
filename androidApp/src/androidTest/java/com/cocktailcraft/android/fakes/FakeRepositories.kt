@@ -3,12 +3,14 @@ package com.cocktailcraft.android.fakes
 import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
+import com.cocktailcraft.domain.model.sumOfMoney
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
@@ -29,9 +31,27 @@ import kotlinx.coroutines.flow.update
 
 /** Deterministic fixtures the fake repositories serve. */
 object TestCocktails {
-    val mojito = Cocktail(id = "1", name = "Test Mojito", category = "Cocktail", alcoholic = "Alcoholic", price = 8.50)
-    val negroni = Cocktail(id = "2", name = "Test Negroni", category = "Cocktail", alcoholic = "Alcoholic", price = 11.00)
-    val cola = Cocktail(id = "3", name = "Test Cola", category = "Soft Drink", alcoholic = "Non alcoholic", price = 3.25)
+    val mojito = Cocktail(
+        id = "1",
+        name = "Test Mojito",
+        category = "Cocktail",
+        alcoholic = "Alcoholic",
+        price = Money(850)
+    )
+    val negroni = Cocktail(
+        id = "2",
+        name = "Test Negroni",
+        category = "Cocktail",
+        alcoholic = "Alcoholic",
+        price = Money(1100)
+    )
+    val cola = Cocktail(
+        id = "3",
+        name = "Test Cola",
+        category = "Soft Drink",
+        alcoholic = "Non alcoholic",
+        price = Money(325)
+    )
     val all = listOf(mojito, negroni, cola)
 }
 
@@ -147,8 +167,8 @@ class FakeCartRepository : CartRepository {
         items.value = emptyList()
         return Result.Success(Unit)
     }
-    override suspend fun getCartTotal(): Result<Double> =
-        Result.Success(items.value.sumOf { it.cocktail.price * it.quantity })
+    override suspend fun getCartTotal(): Result<Money> =
+        Result.Success(items.value.sumOfMoney { it.lineTotal })
 }
 
 class FakeOrderRepository(
