@@ -86,6 +86,18 @@ class ErrorHandlerTest {
     }
 
     @Test
+    fun domainExceptionDisplayMessageWinsOverItsRawMessage() {
+        val localized = MR.strings.error_load_cocktails_failed.desc()
+
+        val error = ErrorHandler.getErrorFromException(
+            DomainException(ErrorCode.FORBIDDEN, "raw log text", displayMessage = localized)
+        )
+
+        assertEquals(ErrorCode.FORBIDDEN, error.errorCode)
+        assertEquals(localized, error.message)
+    }
+
+    @Test
     fun illegalArgumentExceptionKeepsItsMessageAsDataError() {
         val error = ErrorHandler.getErrorFromException(IllegalArgumentException("bad id"))
 

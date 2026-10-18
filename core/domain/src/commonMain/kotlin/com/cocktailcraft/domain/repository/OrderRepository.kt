@@ -1,6 +1,7 @@
 package com.cocktailcraft.domain.repository
 
 import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.util.Result
 import kotlinx.coroutines.flow.Flow
 
@@ -17,7 +18,9 @@ interface OrderRepository {
     suspend fun placeOrderAndClearCart(order: Order): Result<Unit>
 
     suspend fun getOrderById(id: String): Result<Order?>
-    suspend fun updateOrderStatus(id: String, status: String): Result<Unit>
+    suspend fun updateOrderStatus(id: String, status: OrderStatus): Result<Unit>
     suspend fun deleteOrder(id: String): Result<Unit>
+
+    /** Cancels a [OrderStatus.isCancellable] order; false when it isn't (or doesn't exist). */
     suspend fun cancelOrder(orderId: String): Result<Boolean>
 }

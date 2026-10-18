@@ -27,8 +27,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.resolve
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.order_item_quantity_name
 import com.cocktailcraft.resources.order_number
@@ -140,9 +142,11 @@ fun OrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val statusColor = when (order.status) {
-                    "Completed" -> CocktailCraftTheme.extendedColors.success
-                    "In Progress" -> CocktailCraftTheme.extendedColors.warning
-                    else -> MaterialTheme.colorScheme.outline
+                    OrderStatus.DELIVERED -> CocktailCraftTheme.extendedColors.success
+                    OrderStatus.PENDING,
+                    OrderStatus.PROCESSING,
+                    OrderStatus.SHIPPED -> CocktailCraftTheme.extendedColors.warning
+                    OrderStatus.CANCELLED -> MaterialTheme.colorScheme.outline
                 }
 
                 Box(
@@ -154,7 +158,7 @@ fun OrderCard(
                 Spacer(modifier = Modifier.width(Spacing.sm))
 
                 Text(
-                    text = order.status,
+                    text = order.status.displayName.resolve(),
                     fontSize = 14.sp,
                     color = statusColor
                 )

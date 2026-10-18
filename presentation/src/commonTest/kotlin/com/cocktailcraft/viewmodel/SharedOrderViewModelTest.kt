@@ -1,9 +1,11 @@
 package com.cocktailcraft.viewmodel
 
 import app.cash.turbine.test
+import com.cocktailcraft.domain.config.DeliveryPolicy
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.util.Result
@@ -36,7 +38,7 @@ private fun testOrder(
     id: String,
     date: String = "2026-01-15",
     total: Double = 20.0,
-    status: String = "Processing"
+    status: OrderStatus = OrderStatus.PROCESSING
 ) = Order(
     id = id,
     date = date,
@@ -77,7 +79,7 @@ private class FakeOrderRepository : OrderRepository {
     override suspend fun getOrderById(id: String): Result<Order?> =
         Result.Success(orders.value.find { it.id == id })
 
-    override suspend fun updateOrderStatus(id: String, status: String): Result<Unit> {
+    override suspend fun updateOrderStatus(id: String, status: OrderStatus): Result<Unit> {
         orders.value = orders.value.map { if (it.id == id) it.copy(status = status) else it }
         return Result.Success(Unit)
     }
@@ -89,7 +91,7 @@ private class FakeOrderRepository : OrderRepository {
 
     override suspend fun cancelOrder(orderId: String): Result<Boolean> {
         if (orders.value.none { it.id == orderId }) return Result.Success(false)
-        updateOrderStatus(orderId, "Cancelled")
+        updateOrderStatus(orderId, OrderStatus.CANCELLED)
         return Result.Success(true)
     }
 }
@@ -183,8 +185,9 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         advanceUntilIdle() // the observed orders flow delivers the new order
 
         val placed = assertNotNull(vm.uiState.value.currentOrder)
-        assertEquals("Processing", placed.status)
-        assertEquals(20.0, placed.total)
+        assertEquals(OrderStatus.PROCESSING, placed.status)
+        // Computed from the items + delivery fee, not the passed totalPrice
+        assertEquals(20.0 + DeliveryPolicy.STANDARD_FEE, placed.total)
         assertEquals(listOf(OrderItem(name = "Cocktail 1", quantity = 2, price = 10.0)), placed.items)
         assertEquals(listOf(placed.id), vm.uiState.value.orders.map { it.id })
         assertFalse(vm.uiState.value.isPlacingOrder)
@@ -231,27 +234,27 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
     @Test
     fun cancelOrderMarksOrderCancelled() = runTest {
         val repository = FakeOrderRepository()
-        repository.seed(testOrder("o1", status = "Pending"))
+        repository.seed(testOrder("o1", status = OrderStatus.PENDING))
         val vm = viewModel(repository)
         advanceUntilIdle()
 
         assertTrue(vm.cancelOrder("o1"))
         advanceUntilIdle()
 
-        assertEquals("Cancelled", vm.uiState.value.orders.single().status)
+        assertEquals(OrderStatus.CANCELLED, vm.uiState.value.orders.single().status)
     }
 
     @Test
     fun updateOrderStatusRefreshesOrders() = runTest {
         val repository = FakeOrderRepository()
-        repository.seed(testOrder("o1", status = "Processing"))
+        repository.seed(testOrder("o1", status = OrderStatus.PROCESSING))
         val vm = viewModel(repository)
         advanceUntilIdle()
 
-        assertTrue(vm.updateOrderStatus("o1", "Delivered"))
+        assertTrue(vm.updateOrderStatus("o1", OrderStatus.DELIVERED))
         advanceUntilIdle()
 
-        assertEquals("Delivered", vm.uiState.value.orders.single().status)
+        assertEquals(OrderStatus.DELIVERED, vm.uiState.value.orders.single().status)
         assertFalse(vm.uiState.value.isLoading)
     }
 }

@@ -5,6 +5,8 @@ import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
+import com.cocktailcraft.util.runCatchingNonCancellation
+import com.cocktailcraft.util.runCatchingResult
 import kotlinx.coroutines.flow.Flow
 import kotlin.native.HiddenFromObjC
 
@@ -17,21 +19,19 @@ class ManageFavoritesUseCase(
     fun observeFavorites(): Flow<List<Cocktail>> = favoritesRepository.observeFavorites()
 
     suspend fun toggle(cocktail: Cocktail): Result<Boolean> {
-        return try {
+        return runCatchingResult("Failed to update favorites") {
             val isFav = favoritesRepository.isCocktailFavorite(cocktail.id).getOrNull() ?: false
             if (isFav) {
                 when (val removed = favoritesRepository.removeFromFavorites(cocktail)) {
-                    is Result.Error -> Result.Error(removed.message, removed.code)
+                    is Result.Error -> removed
                     else -> Result.Success(false)
                 }
             } else {
                 when (val added = addToFavorites(cocktail)) {
-                    is Result.Error -> Result.Error(added.message, added.code)
+                    is Result.Error -> added
                     else -> Result.Success(true)
                 }
             }
-        } catch (e: Exception) {
-            Result.Error(e.message ?: "Unknown error occurred")
         }
     }
 
@@ -66,10 +66,8 @@ class ManageFavoritesUseCase(
      */
     private suspend fun hydrated(cocktail: Cocktail): Cocktail {
         if (cocktail.hasFullDetails) return cocktail
-        return try {
+        return runCatchingNonCancellation(onFailure = { cocktail }) {
             detailRepository.getCocktailById(cocktail.id).getOrNull() ?: cocktail
-        } catch (e: Exception) {
-            cocktail
         }
     }
 

@@ -7,6 +7,7 @@ import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
+import com.cocktailcraft.util.runCatchingNonCancellation
 import kotlin.native.HiddenFromObjC
 
 @HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
@@ -20,20 +21,16 @@ class GetCocktailDetailUseCase(
     }
 
     suspend fun isFavorite(cocktailId: String): Boolean {
-        return try {
-            val favorites = favoritesRepository.getFavoriteCocktails().getOrDefault(emptyList())
-            favorites.any { it.id == cocktailId }
-        } catch (e: Exception) {
-            false
+        // Point lookup, not a load (and decode) of every stored favorite
+        return runCatchingNonCancellation(onFailure = { false }) {
+            favoritesRepository.isCocktailFavorite(cocktailId).getOrDefault(false)
         }
     }
 
     suspend fun getRelatedCocktails(cocktail: Cocktail, limit: Int = 3): List<Cocktail> {
-        return try {
+        return runCatchingNonCancellation(onFailure = { emptyList() }) {
             val cocktails = searchRepository.filterByCategory(cocktail.category ?: CocktailCategories.DEFAULT).getOrDefault(emptyList())
             cocktails.filter { it.id != cocktail.id }.shuffled().take(limit)
-        } catch (e: Exception) {
-            emptyList()
         }
     }
 

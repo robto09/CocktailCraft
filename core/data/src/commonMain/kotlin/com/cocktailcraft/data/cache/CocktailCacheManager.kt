@@ -29,7 +29,8 @@ internal class CocktailCacheManager {
 
     // Rate limit tracking: only the proactive min-interval throttle lives
     // here; retry/backoff is owned solely by Ktor's HttpRequestRetry (SH-7).
-    private var _lastApiCallTime: Long = 0
+    // The most recently reserved call slot (epoch millis; may be in the future).
+    private var _lastApiCallTime: Long = Long.MIN_VALUE / 2
 
     // Constants
     companion object {
@@ -57,12 +58,19 @@ internal class CocktailCacheManager {
 
     // --- Rate limiting ---
 
-    suspend fun getLastApiCallTime(): Long = mutex.withLock {
-        _lastApiCallTime
-    }
-
-    suspend fun setLastApiCallTime(value: Long) = mutex.withLock {
-        _lastApiCallTime = value
+    /**
+     * Atomically reserves the next free API call slot at or after [nowMs]
+     * (at least [MIN_API_CALL_INTERVAL_MS] after the previously reserved one)
+     * and returns how long the caller must wait before making its call.
+     *
+     * Check and record happen under one lock, so concurrent callers each get
+     * their own slot instead of all reading the same "last call" time and
+     * firing together. The lock is not held while the caller waits.
+     */
+    suspend fun reserveApiCallSlot(nowMs: Long): Long = mutex.withLock {
+        val slot = maxOf(nowMs, _lastApiCallTime + MIN_API_CALL_INTERVAL_MS)
+        _lastApiCallTime = slot
+        slot - nowMs
     }
 }
 

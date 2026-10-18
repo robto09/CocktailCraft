@@ -1,6 +1,5 @@
 package com.cocktailcraft.domain.repository
 
-import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.util.Result
 
 /**
@@ -10,6 +9,5 @@ import com.cocktailcraft.domain.util.Result
 interface CocktailCatalogRepository {
     suspend fun getCategories(): Result<List<String>>
     suspend fun getIngredients(): Result<List<String>>
-    suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>>
 }
 

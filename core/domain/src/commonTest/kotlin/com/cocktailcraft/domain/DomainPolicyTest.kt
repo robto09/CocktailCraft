@@ -1,6 +1,7 @@
 package com.cocktailcraft.domain
 
 import com.cocktailcraft.domain.config.DeliveryPolicy
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.common_unknown
 import com.cocktailcraft.resources.delivery_estimate_minutes
@@ -35,8 +36,8 @@ class DeliveryPolicyTest {
 
     @Test
     fun statusBasedEstimateCoversAllStatuses() {
-        assertEquals(MR.strings.order_status_delivered.desc(), DeliveryPolicy.estimatedDeliveryTimeForStatus("DELIVERED"))
-        assertEquals(MR.strings.delivery_estimate_minutes.format(15, 25), DeliveryPolicy.estimatedDeliveryTimeForStatus("processing"))
+        assertEquals(MR.strings.order_status_delivered.desc(), DeliveryPolicy.estimatedDeliveryTimeForStatus(OrderStatus.DELIVERED))
+        assertEquals(MR.strings.delivery_estimate_minutes.format(15, 25), DeliveryPolicy.estimatedDeliveryTimeForStatus(OrderStatus.PROCESSING))
         assertEquals(MR.strings.common_unknown.desc(), DeliveryPolicy.estimatedDeliveryTimeForStatus(null))
     }
 }

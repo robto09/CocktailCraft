@@ -1,10 +1,22 @@
 package com.cocktailcraft.domain.util
 
+import dev.icerock.moko.resources.desc.StringDesc
 import kotlin.native.HiddenFromObjC
 
 sealed class Result<out T> {
     data class Success<T>(val data: T) : Result<T>()
-    data class Error(val message: String, val code: ErrorCode = ErrorCode.UNKNOWN) : Result<Nothing>()
+
+    /**
+     * [message] is raw (untranslated) data-layer text. [displayMessage],
+     * when set, is localized user-facing copy for the failure (e.g. the
+     * sign-in lockout with its remaining time) and wins over [message] in
+     * the UI.
+     */
+    data class Error(
+        val message: String,
+        val code: ErrorCode = ErrorCode.UNKNOWN,
+        val displayMessage: StringDesc? = null
+    ) : Result<Nothing>()
     object Loading : Result<Nothing>()
 
     // Helper functions to safely handle results
@@ -30,7 +42,7 @@ sealed class Result<out T> {
 @HiddenFromObjC
 fun <T, R> Result<T>.flatMap(transform: (T) -> Result<R>): Result<R> = when (this) {
     is Result.Success -> transform(data)
-    is Result.Error -> Result.Error(message, code)
+    is Result.Error -> this
     is Result.Loading -> Result.Loading
 }
 
@@ -56,15 +68,20 @@ fun <T> Result<T>.getOrDefault(defaultValue: @UnsafeVariance T): T = when (this)
 }
 
 /**
- * Exception carrying a domain [ErrorCode], thrown when a [Result.Error] is
- * unwrapped via [getOrThrow]. Lets try/catch error paths keep the typed code.
+ * Exception carrying a domain [ErrorCode] (and the error's localized
+ * [displayMessage], if any), thrown when a [Result.Error] is unwrapped via
+ * [getOrThrow]. Lets try/catch error paths keep the typed code and copy.
  */
-class DomainException(val code: ErrorCode, message: String) : Exception(message)
+class DomainException(
+    val code: ErrorCode,
+    message: String,
+    val displayMessage: StringDesc? = null
+) : Exception(message)
 
 // Extension: get data or throw an exception (useful for bridging to try/catch callers)
 @HiddenFromObjC
 fun <T> Result<T>.getOrThrow(): T = when (this) {
     is Result.Success -> data
-    is Result.Error -> throw DomainException(code, message)
+    is Result.Error -> throw DomainException(code, message, displayMessage)
     is Result.Loading -> throw IllegalStateException("Result is still loading")
 }

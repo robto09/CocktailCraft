@@ -4,6 +4,7 @@ import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.model.SearchFilters
 
 /**
@@ -49,13 +50,13 @@ internal object ScreenshotFixtures {
             OrderItem(name = "Mojito", quantity = 1, price = 9.0)
         ),
         total = 39.99,
-        status = "Completed"
+        status = OrderStatus.DELIVERED
     )
 
     val inProgressOrder = completedOrder.copy(
         id = "ORD-1025",
         items = listOf(OrderItem(name = "Manhattan", quantity = 1, price = 14.0)),
         total = 19.99,
-        status = "In Progress"
+        status = OrderStatus.PROCESSING
     )
 }
