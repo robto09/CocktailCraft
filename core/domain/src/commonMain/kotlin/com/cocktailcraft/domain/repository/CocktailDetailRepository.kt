@@ -3,6 +3,7 @@ package com.cocktailcraft.domain.repository
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.util.Result
 import kotlinx.coroutines.flow.Flow
+import kotlin.native.HiddenFromObjC
 
 /**
  * Repository interface for cocktail detail operations.
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
  * stored cocktail and [refreshCocktail] fetches it from the network into the
  * database.
  */
+@HiddenFromObjC // Kotlin-side port, not Swift API (AR-12): Swift reaches data through the ViewModels
 interface CocktailDetailRepository {
     /**
      * One-shot lookup: the stored cocktail when it has full details,

@@ -8,8 +8,10 @@ import com.cocktailcraft.domain.util.Result
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlin.native.HiddenFromObjC
 
 /** In-memory [OrderRepository]; cancellation follows [OrderStatus.isCancellable] like the real one. */
+@HiddenFromObjC // implements a Kotlin-only repository port
 class FakeOrderRepository : OrderRepository {
     private val orders = MutableStateFlow<List<Order>>(emptyList())
 
