@@ -2,26 +2,24 @@ package com.cocktailcraft
 
 import androidx.lifecycle.ViewModelStore
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.repository.AuthRepository
+import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
-import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
-import com.cocktailcraft.domain.util.getOrThrow
-import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
-import com.cocktailcraft.viewmodel.SharedHomeViewModel
+import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
+import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
+import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.viewmodel.SharedProfileViewModel
-import com.cocktailcraft.viewmodel.SharedThemeViewModel
 import com.cocktailcraft.viewmodel.SharedReviewViewModel
+import com.cocktailcraft.viewmodel.SharedThemeViewModel
 import com.cocktailcraft.viewmodel.SharedViewModel
-import com.cocktailcraft.util.NetworkMonitor
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.plugin
@@ -50,27 +48,9 @@ fun doInitKoin(isDebug: Boolean): KoinApplication = initKoin(isDebug) {}
  */
 class KoinHelper : KoinComponent {
 
-    // Repositories
-
-    fun getAuthRepository(): AuthRepository = get()
-
-    fun getCartRepository(): CartRepository = get()
-
-    fun getOrderRepository(): OrderRepository = get()
-
     // Services / platform bridges
 
     fun getNetworkMonitor(): NetworkMonitor = get()
-
-    /**
-     * One-shot favorites snapshot for the iOS home-screen widget bridge.
-     * Throws on a failed fetch (via getOrThrow) instead of returning an
-     * empty list: the bridge must be able to tell "no favorites" apart
-     * from "fetch failed" so a transient failure never wipes the widget's
-     * last-known-good snapshot.
-     */
-    suspend fun getFavoriteCocktailsSnapshot(): List<Cocktail> =
-        get<CocktailFavoritesRepository>().getFavoriteCocktails().getOrThrow()
 
     /**
      * Favorites as they change (any add/remove, from any screen), so the

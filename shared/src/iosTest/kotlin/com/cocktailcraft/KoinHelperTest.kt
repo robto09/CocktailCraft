@@ -50,11 +50,6 @@ class KoinHelperTest : MainDispatcherTest() {
         startKoin { modules(appModule + testPlatformModule) }
         val helper = KoinHelper()
 
-        // Repositories
-        assertNotNull(helper.getAuthRepository())
-        assertNotNull(helper.getCartRepository())
-        assertNotNull(helper.getOrderRepository())
-
         // Services / platform bridges
         assertNotNull(helper.getNetworkMonitor())
         assertNotNull(helper.observeFavoriteCocktails())
