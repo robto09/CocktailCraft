@@ -9,16 +9,17 @@ import io.ktor.client.*
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.network.sockets.SocketTimeoutException
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.logging.*
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.ResponseException
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.header
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.util.network.UnresolvedAddressException
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
@@ -31,8 +32,46 @@ import org.koin.dsl.module
 internal fun shouldRetryResponse(statusCode: Int): Boolean =
     statusCode in 500..599 || statusCode == 429
 
+/**
+ * Retry predicate for transport failures. Retried: a dropped or reset
+ * connection, which a second attempt often gets through. Not retried:
+ * - timeouts, which already used up their HttpTimeout budget;
+ * - an unresolvable or unreachable host (no network, DNS failure, refused
+ *   connection; see [isUnreachableHostError]), which fails the same way a
+ *   moment later — retrying only delays the error or the cached fallback.
+ */
+internal fun shouldRetryException(cause: Throwable): Boolean = when {
+    cause is ResponseException -> shouldRetryResponse(cause.response.status.value)
+    cause is CancellationException -> false
+    cause is HttpRequestTimeoutException ||
+        cause is ConnectTimeoutException ||
+        cause is SocketTimeoutException -> false
+    cause is UnresolvedAddressException || isUnreachableHostError(cause) -> false
+    else -> true
+}
+
+/**
+ * True for the platform engine's "no route to the server" failures: unknown
+ * host, refused connection, no network (OkHttp's java.net exceptions on
+ * Android, NSURLError codes on iOS).
+ */
+internal expect fun isUnreachableHostError(cause: Throwable): Boolean
+
 /** Upper bound for establishing a connection (TCP + TLS). */
 internal const val CONNECT_TIMEOUT_MS = 5_000L
+
+/**
+ * Backoff before a retry: [BASE_DELAY_MS] doubling per attempt (capped at
+ * [MAX_DELAY_MS]) plus up to [JITTER_MS] of jitter. With
+ * AppConfig.maxRetries = 1 the only retry waits 300-500 ms. HttpTimeout's
+ * request budget (AppConfig.networkTimeoutMs, 10 seconds) spans every
+ * attempt and wait of a call, so a failing request surfaces within it.
+ */
+internal object RetryBackoff {
+    const val BASE_DELAY_MS = 300L
+    const val JITTER_MS = 200L
+    const val MAX_DELAY_MS = 1_000L
+}
 
 /**
  * Builds the shared [HttpClient] with the full production plugin stack.
@@ -79,19 +118,12 @@ internal fun buildHttpClient(
             retryIf(maxRetries = maxRetries) { _, response ->
                 shouldRetryResponse(response.status.value)
             }
-            retryOnExceptionIf(maxRetries = maxRetries) { _, cause ->
-                when {
-                    cause is ResponseException -> shouldRetryResponse(cause.response.status.value)
-                    cause is CancellationException -> false
-                    // Timeouts already consumed the full HttpTimeout budget —
-                    // retrying triples worst-case latency (pre-SH-7 behavior kept).
-                    cause is HttpRequestTimeoutException ||
-                        cause is ConnectTimeoutException ||
-                        cause is SocketTimeoutException -> false
-                    else -> true
-                }
-            }
-            exponentialDelay()
+            retryOnExceptionIf(maxRetries = maxRetries) { _, cause -> shouldRetryException(cause) }
+            exponentialDelay(
+                baseDelayMs = RetryBackoff.BASE_DELAY_MS,
+                maxDelayMs = RetryBackoff.MAX_DELAY_MS,
+                randomizationMs = RetryBackoff.JITTER_MS
+            )
             modifyRequest { request ->
                 // Log retry attempts - access retryCount from the context
                 Logger.d { "Retrying request to ${request.url} (attempt #${retryCount})" }

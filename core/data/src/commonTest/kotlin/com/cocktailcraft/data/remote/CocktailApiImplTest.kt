@@ -10,7 +10,9 @@ import io.ktor.client.request.HttpResponseData
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import io.ktor.util.network.UnresolvedAddressException
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -112,7 +114,7 @@ class CocktailApiImplTest {
         }
 
         // HttpRequestRetry re-requests retryable 5xx: initial attempt plus
-        // AppConfig.maxRetries (3) retries before the failure surfaces.
+        // AppConfig.maxRetries (1) retry before the failure surfaces.
         assertEquals(config.maxRetries + 1, engine.requestHistory.size)
         assertTrue(engine.requestHistory.all { it.url.parameters["c"] == "Cocktail" })
     }
@@ -169,5 +171,36 @@ class CocktailApiImplTest {
 
         assertEquals(2, engine.requestHistory.size, "the 429 must be retried exactly once")
         assertEquals("Margarita", drinks.single().name)
+    }
+
+    @Test
+    fun anUnreachableHostFailsAtOnceWithoutRetrying() = runTest {
+        // No network or DNS: a second attempt fails the same way, so the
+        // error (or the cached fallback) mustn't wait for it
+        var attempts = 0
+        val engine = MockEngine {
+            attempts++
+            throw UnresolvedAddressException()
+        }
+
+        assertFailsWith<UnresolvedAddressException> { api(engine).searchCocktailsByName("margarita") }
+
+        assertEquals(1, attempts)
+        assertEquals(0L, testScheduler.currentTime, "no backoff before giving up")
+    }
+
+    @Test
+    fun aDroppedConnectionIsRetriedOnceAfterAShortBackoff() = runTest {
+        var attempts = 0
+        val engine = MockEngine {
+            attempts++
+            if (attempts == 1) throw IOException("Connection reset") else respondJson(margaritaPayload)
+        }
+
+        val drinks = api(engine).searchCocktailsByName("margarita")
+
+        assertEquals(2, attempts)
+        assertEquals("Margarita", drinks.single().name)
+        assertTrue(testScheduler.currentTime <= 500L, "backoff was ${testScheduler.currentTime} ms")
     }
 }
