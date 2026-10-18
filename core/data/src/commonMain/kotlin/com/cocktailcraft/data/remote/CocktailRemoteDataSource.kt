@@ -13,10 +13,12 @@ import kotlin.time.Clock
  * limiter (state shared via [CocktailCacheManager]). Extracted from the
  * former CocktailRepositoryImpl god class.
  *
- * The search, filter and lookup endpoints — the ones a user can fire in
- * bursts by typing, filtering or opening cocktails — each take a rate-limit
- * slot ([acquireRateLimitSlot]) before calling the API, so no caller can
- * forget to. The one-off list.php/random.php calls are not throttled.
+ * The filter endpoints — fired in bursts by category paging and multi-filter
+ * searches — each take a rate-limit slot ([acquireRateLimitSlot]) before
+ * calling the API, so no caller can forget to. Single user-initiated calls
+ * (debounced name search, opening a cocktail) and the one-off
+ * list.php/random.php calls are not throttled, so they never wait behind
+ * the interval.
  */
 internal class CocktailRemoteDataSource(
     private val api: CocktailApi,
@@ -25,15 +27,10 @@ internal class CocktailRemoteDataSource(
     private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() }
 ) {
 
-    suspend fun searchByName(name: String): List<Cocktail> {
-        acquireRateLimitSlot()
-        return api.searchCocktailsByName(name).map(::mapToDomain)
-    }
+    suspend fun searchByName(name: String): List<Cocktail> =
+        api.searchCocktailsByName(name).map(::mapToDomain)
 
-    suspend fun getById(id: String): Cocktail? {
-        acquireRateLimitSlot()
-        return api.getCocktailById(id)?.let(::mapToDomain)
-    }
+    suspend fun getById(id: String): Cocktail? = api.getCocktailById(id)?.let(::mapToDomain)
 
     suspend fun getRandom(): Cocktail? = api.getRandomCocktail()?.let(::mapToDomain)
 

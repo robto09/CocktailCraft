@@ -30,7 +30,7 @@ class CocktailRemoteDataSourceTest {
 
         repeat(3) {
             launch {
-                remote.searchByName("a")
+                remote.filterByIngredient("Gin")
                 callTimes += testScheduler.currentTime
             }
         }
@@ -40,35 +40,38 @@ class CocktailRemoteDataSourceTest {
     }
 
     @Test
-    fun searchFilterAndLookupEndpointsShareOneLimiter() = runTest {
+    fun filterEndpointsShareOneLimiter() = runTest {
         val remote = remote()
 
         remote.filterByCategoryRaw("Cocktail")
-        remote.searchByName("Margarita")
         remote.filterByIngredient("Tequila")
         remote.filterByAlcoholic(true)
-        remote.getById("1")
 
-        assertEquals(4 * interval, testScheduler.currentTime)
+        assertEquals(2 * interval, testScheduler.currentTime)
     }
 
     @Test
     fun callsFurtherApartThanTheIntervalAreNotDelayed() = runTest {
         val remote = remote()
 
-        remote.searchByName("a")
+        remote.filterByIngredient("Gin")
         testScheduler.advanceTimeBy(interval * 5)
         val before = testScheduler.currentTime
-        remote.searchByName("b")
+        remote.filterByIngredient("Rum")
 
         assertEquals(before, testScheduler.currentTime)
     }
 
     @Test
-    fun listEndpointsAreNotThrottled() = runTest {
+    fun userInitiatedAndListEndpointsAreNotThrottled() = runTest {
+        // Name search (already debounced) and opening a cocktail must never
+        // wait behind a category page's slot.
         val remote = remote()
 
+        remote.filterByCategoryRaw("Cocktail")
         remote.searchByName("a")
+        remote.getById("1")
+        remote.searchByName("b")
         remote.getCategories()
         remote.getIngredients()
         remote.getRandom()
