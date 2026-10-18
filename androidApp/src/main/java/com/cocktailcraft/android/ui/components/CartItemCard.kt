@@ -34,8 +34,6 @@ import com.cocktailcraft.resources.cart_decrease_quantity_a11y
 import com.cocktailcraft.resources.cart_increase_quantity_a11y
 import com.cocktailcraft.resources.cart_quantity_label
 import com.cocktailcraft.resources.cart_remove_item_a11y
-import java.text.NumberFormat
-import java.util.Locale
 
 /**
  * A reusable card component to display items in the shopping cart.
@@ -77,7 +75,7 @@ fun CartItemCard(
     maxLines: Int = 1,
     onClick: (() -> Unit)? = null
 ) {
-    val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
+    val currencyFormatter = rememberCurrencyFormatter()
 
     Card(
         modifier = Modifier

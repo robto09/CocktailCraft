@@ -91,6 +91,8 @@ kotlin {
 
                 // initKoin/KoinHelper assemble the per-layer Koin modules
                 implementation(libs.koin.core)
+                // configureLogging sets the global Kermit floor at app init
+                implementation(libs.kermit)
             }
         }
 

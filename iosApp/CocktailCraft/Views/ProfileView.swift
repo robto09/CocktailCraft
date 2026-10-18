@@ -123,6 +123,9 @@ struct ProfileView: View {
             Text(L(\.logout_confirm))
         }
         .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
+        // One-off outcomes, e.g. a successful password change (which used to
+        // arrive as an alert on the error channel)
+        .sharedEventToast(viewModel.event, clear: { viewModel.clearEvent() })
     }
 
     // MARK: - Profile Header Card

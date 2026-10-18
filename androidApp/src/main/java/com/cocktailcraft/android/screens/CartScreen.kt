@@ -10,34 +10,32 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.CartItemCard
 import com.cocktailcraft.android.ui.components.CartLoadingShimmer
 import com.cocktailcraft.android.ui.components.ConfirmationDialog
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
+import com.cocktailcraft.android.ui.components.ErrorDialog
+import com.cocktailcraft.android.ui.components.ErrorStateView
+import com.cocktailcraft.android.ui.components.ErrorToastEffect
 import com.cocktailcraft.android.ui.components.OrderSummaryCard
 import com.cocktailcraft.android.ui.components.PrimaryButton
+import com.cocktailcraft.android.ui.components.rememberCurrencyFormatter
 import com.cocktailcraft.android.util.rememberHapticHandler
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.android.util.toFavoriteIdSet
@@ -49,17 +47,13 @@ import com.cocktailcraft.resources.cart_empty_message
 import com.cocktailcraft.resources.cart_empty_title
 import com.cocktailcraft.resources.cart_place_order
 import com.cocktailcraft.resources.cart_start_shopping
-import com.cocktailcraft.resources.cart_try_again
 import com.cocktailcraft.resources.confirm_order_message
 import com.cocktailcraft.resources.confirm_order_title
-import com.cocktailcraft.resources.error
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.viewmodel.state.CartUiState
-import java.text.NumberFormat
-import java.util.Locale
 import kotlinx.coroutines.launch
 
 @Composable
@@ -72,17 +66,37 @@ fun CartScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val orderState by orderViewModel.uiState.collectAsStateWithLifecycle()
     val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
+    val favoritesError by favoritesViewModel.error.collectAsStateWithLifecycle()
     val favorites = favoritesState.favorites
     // O(1) membership per row instead of favorites.any {} per visible item (AN-3)
     val favoriteIds = remember(favorites) { favorites.toFavoriteIdSet() }
     val scope = rememberCoroutineScope()
 
+    // A failed checkout, kept here (and taken off the order ViewModel) so it
+    // is shown on the cart it belongs to, not later on the Orders tab
+    var orderError by remember { mutableStateOf<ErrorHandler.UserFriendlyError?>(null) }
+
+    // Failures with the cart still on screen (a quantity change or removal
+    // that was rolled back, a favorite toggle from a row) are toasts
+    ErrorToastEffect(
+        error = error.takeIf { state.cartItems.isNotEmpty() },
+        onConsumed = { viewModel.clearError() }
+    )
+    ErrorToastEffect(error = favoritesError, onConsumed = { favoritesViewModel.clearError() })
+
+    orderError?.let { failure ->
+        ErrorDialog(error = failure, onDismiss = { orderError = null })
+    }
+
     CartContent(
         state = state,
         error = error,
         favoriteIds = favoriteIds,
+        isPlacingOrder = orderState.isPlacingOrder,
         onStartShopping = onStartShopping,
+        onRetry = { viewModel.refresh() },
         onIncreaseQuantity = { item -> scope.launch { viewModel.updateQuantity(item.cocktail.id, item.quantity + 1) } },
         onDecreaseQuantity = { item ->
             scope.launch {
@@ -96,16 +110,23 @@ fun CartScreen(
         onRemove = { item -> scope.launch { viewModel.removeFromCart(item.cocktail.id) } },
         onToggleFavorite = { item -> scope.launch { favoritesViewModel.toggleFavorite(item.cocktail) } },
         onConfirmOrder = {
-            // Navigate only after the order is persisted — this scope dies with
+            // Navigate only once the order is persisted — this scope dies with
             // the screen, so leaving early would cancel the work. placeOrder
-            // empties the cart in the same transaction (and leaves it alone if
-            // the order fails); a failure surfaces on the order list.
+            // empties the cart in the same transaction and leaves it alone if
+            // the order fails; it also ignores a second tap while in flight.
             scope.launch {
-                orderViewModel.placeOrder(
+                val placed = orderViewModel.placeOrder(
                     cartItems = state.cartItems,
                     totalPrice = state.finalTotal // subtotal + DeliveryPolicy fee
                 )
-                navigationManager.navigateToOrderList()
+                if (placed) {
+                    navigationManager.navigateToOrderList()
+                } else {
+                    orderViewModel.error.value?.let { failure ->
+                        orderError = failure
+                        orderViewModel.clearError()
+                    }
+                }
             }
         }
     )
@@ -120,7 +141,9 @@ private const val LARGE_FONT_SCALE = 1.3f
 
 /**
  * Stateless cart content: renders [state] and reports every intent upward,
- * so it can be previewed/screenshot-tested without a ViewModel.
+ * so it can be previewed/screenshot-tested without a ViewModel. [error] is
+ * rendered full-screen only when there is no cart to show; over a cart it
+ * is the caller's toast.
  */
 @Composable
 internal fun CartContent(
@@ -132,16 +155,18 @@ internal fun CartContent(
     onDecreaseQuantity: (CocktailCartItem) -> Unit,
     onRemove: (CocktailCartItem) -> Unit,
     onToggleFavorite: (CocktailCartItem) -> Unit,
-    onConfirmOrder: () -> Unit
+    onConfirmOrder: () -> Unit,
+    isPlacingOrder: Boolean = false,
+    onRetry: () -> Unit = {}
 ) {
     val isLoading = state.isLoading
     val cartItems = state.cartItems
     val totalPrice = state.totalPrice
     val hapticHandler = rememberHapticHandler()
 
-    val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.US)
+    val currencyFormatter = rememberCurrencyFormatter()
 
-    var showPlaceOrderDialog by remember { mutableStateOf(false) }
+    var showPlaceOrderDialog by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -154,15 +179,9 @@ internal fun CartContent(
             CartLoadingShimmer()
         }
 
-        // Show error state
-        if (!isLoading && error != null) {
-            EmptyStateComponent(
-                title = stringResource(MR.strings.error),
-                message = error.toString(),
-                actionButtonText = stringResource(MR.strings.cart_try_again),
-                onActionButtonClick = { /* Add retry logic here */ },
-                icon = Icons.Filled.Warning
-            )
+        // Nothing to show but the failure: full-screen error with Retry
+        if (!isLoading && error != null && cartItems.isEmpty()) {
+            ErrorStateView(error = error, onRetry = onRetry)
         }
         // Show empty cart state
         else if (!isLoading && cartItems.isEmpty()) {
@@ -193,13 +212,15 @@ internal fun CartContent(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Checkout Button (confirm haptic, parity with iOS)
+                    // Checkout Button (confirm haptic, parity with iOS). Shows
+                    // progress and takes no taps while the order is placed.
                     PrimaryButton(
                         text = stringResource(MR.strings.cart_place_order),
                         onClick = {
                             hapticHandler.performConfirm()
                             showPlaceOrderDialog = true
                         },
+                        isLoading = isPlacingOrder,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -213,7 +234,9 @@ internal fun CartContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 8.dp)
             ) {
-                itemsIndexed(cartItems) { _, item ->
+                // Keyed by cocktail (one row per cocktail), so a removal
+                // doesn't rebind every following row to the wrong item
+                items(cartItems, key = { it.cocktail.id }) { item ->
                     CartItemCard(
                         item = item,
                         onIncreaseQuantity = { onIncreaseQuantity(item) },
@@ -244,9 +267,8 @@ internal fun CartContent(
         dismissButtonText = stringResource(MR.strings.cancel),
         onConfirm = {
             showPlaceOrderDialog = false
-            onConfirmOrder()
+            if (!isPlacingOrder) onConfirmOrder()
         },
         onDismiss = { showPlaceOrderDialog = false }
     )
 }
-

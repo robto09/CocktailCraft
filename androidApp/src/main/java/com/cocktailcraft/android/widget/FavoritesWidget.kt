@@ -23,6 +23,7 @@ import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.background
 import androidx.glance.currentState
@@ -56,10 +57,12 @@ import com.cocktailcraft.resources.widget_no_favorites_icon
 import com.cocktailcraft.resources.widget_refresh_icon
 import com.cocktailcraft.resources.widget_tap_refresh_to_retry
 import com.cocktailcraft.resources.widget_view_all_favorites
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -72,6 +75,16 @@ class FavoritesWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
     
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        // A widget with no list yet (just placed, or another instance of an
+        // already-placed widget) loads it now rather than waiting up to a
+        // full period for the periodic refresh.
+        val prefs = getAppWidgetState<Preferences>(context, id)
+        if (prefs[FavoritesWidgetKeys.FAVORITES_LIST] == null &&
+            prefs[FavoritesWidgetKeys.ERROR] != true &&
+            prefs[FavoritesWidgetKeys.IS_LOADING] != "true"
+        ) {
+            WidgetUpdateWorker.requestFavoritesRefresh(context)
+        }
         provideContent {
             CocktailWidgetTheme {
                 FavoritesContent()
@@ -379,7 +392,9 @@ object FavoritesWidgetKeys {
 /**
  * Action callback to refresh favorites.
  */
-class RefreshFavoritesAction : ActionCallback {
+class RefreshFavoritesAction : ActionCallback, KoinComponent {
+    private val dataProvider: WidgetDataProvider by inject()
+
     override suspend fun onAction(
         context: Context,
         glanceId: GlanceId,
@@ -392,38 +407,21 @@ class RefreshFavoritesAction : ActionCallback {
         }
         FavoritesWidget().update(context, glanceId)
 
-        // Fetch favorites
-        withContext(Dispatchers.IO) {
-            try {
-                val dataProvider = WidgetDataProvider.getInstance()
-                val favorites = dataProvider.getFavoriteCocktails()
-
-                val favoriteItems = favorites.map { cocktail ->
-                    FavoriteItem(
-                        id = cocktail.id,
-                        name = cocktail.name,
-                        category = cocktail.category ?: "",
-                        imageUrl = cocktail.imageUrl ?: ""
-                    )
-                }
-
-                val favoritesJson = FavoriteItem.toJsonArray(favoriteItems)
-
-                updateAppWidgetState(context, glanceId) { prefs ->
-                    prefs[FavoritesWidgetKeys.IS_LOADING] = "false"
-                    prefs[FavoritesWidgetKeys.FAVORITES_LIST] = favoritesJson
-                    prefs[FavoritesWidgetKeys.FAVORITES_COUNT] = favorites.size.toString()
-                    prefs.remove(FavoritesWidgetKeys.ERROR)
-                }
-            } catch (e: Exception) {
-                updateAppWidgetState(context, glanceId) { prefs ->
-                    prefs[FavoritesWidgetKeys.IS_LOADING] = "false"
-                    prefs[FavoritesWidgetKeys.ERROR] = true
-                }
+        // Same path as the background refresh; an explicit tap shows the
+        // error state when the favorites could not be read
+        try {
+            refreshFavoritesWidgets(
+                context, dataProvider, listOf(glanceId), showErrorOnFailure = true
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            updateAppWidgetState(context, glanceId) { prefs ->
+                prefs[FavoritesWidgetKeys.IS_LOADING] = "false"
+                prefs[FavoritesWidgetKeys.ERROR] = true
             }
+            FavoritesWidget().update(context, glanceId)
         }
-
-        FavoritesWidget().update(context, glanceId)
     }
 }
 
@@ -433,12 +431,14 @@ class RefreshFavoritesAction : ActionCallback {
 class FavoritesWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = FavoritesWidget()
 
-    // Widget refresh lifecycle (AN-2): start the shared hourly worker when the
-    // first widget is placed; tear it down only when no widget of either type
-    // remains (both widgets share one worker).
+    // Widget refresh lifecycle (AN-2): the first widget placed starts the
+    // shared periodic refresh and loads its content right away; the refresh
+    // is torn down only when no widget of either type remains (both widgets
+    // share it). The app itself never schedules widget work.
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
-        WidgetUpdateWorker.schedule(context)
+        WidgetUpdateWorker.schedulePeriodicRefresh(context)
+        WidgetUpdateWorker.requestFavoritesRefresh(context)
     }
 
     override fun onDisabled(context: Context) {

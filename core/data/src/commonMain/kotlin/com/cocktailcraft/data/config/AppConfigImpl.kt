@@ -26,8 +26,9 @@ class AppConfigImpl(
 
     override val cocktailsImagePath: String = "media/k/drinks"
 
-    // Timeouts for network requests - generous defaults
-    override val networkTimeoutMs: Long = 30000 // 30 seconds
+    // Budget for a whole request and for each socket read. NetworkModule
+    // caps the connect phase lower (CONNECT_TIMEOUT_MS, 10 seconds).
+    override val networkTimeoutMs: Long = 20_000 // 20 seconds
 
     // Number of retries for network operations (consumed by NetworkModule's
     // HttpRequestRetry — the single retry layer, SH-7/AR-4)

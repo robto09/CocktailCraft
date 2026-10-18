@@ -131,12 +131,14 @@ object ErrorHandler {
         recoveryAction: RecoveryAction? = null
     ): UserFriendlyError {
         return when {
-            // Errors that already carry a typed domain code. Their message is
-            // raw data-layer text: missing -> the caller's default, blank ->
-            // the category's recovery suggestion.
+            // Errors that already carry a typed domain code. Localized copy
+            // from the producer wins; otherwise the message is raw data-layer
+            // text: missing -> the caller's default, blank -> the category's
+            // recovery suggestion.
             exception is DomainException -> errorFromCode(
                 code = exception.code,
-                message = exception.message.let { if (it == null) defaultMessage else rawMessage(it) },
+                message = exception.displayMessage
+                    ?: exception.message.let { if (it == null) defaultMessage else rawMessage(it) },
                 recoveryAction = recoveryAction,
                 originalException = exception
             )

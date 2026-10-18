@@ -5,6 +5,7 @@ import app.cash.turbine.test
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.createInMemorySqlDriver
@@ -32,7 +33,7 @@ class OrderRepositoryImplTest {
 
     private fun order(
         id: String,
-        status: String = "Processing",
+        status: OrderStatus = OrderStatus.PROCESSING,
         items: List<OrderItem> = listOf(OrderItem(name = "Margarita", quantity = 1, price = 9.5))
     ) = Order(
         id = id,
@@ -132,7 +133,7 @@ class OrderRepositoryImplTest {
             assertEquals(listOf("ORD-1"), awaitItem().map { it.id })
 
             repo.cancelOrder("ORD-1").getOrThrow()
-            assertEquals(listOf("Cancelled"), awaitItem().map { it.status })
+            assertEquals(listOf(OrderStatus.CANCELLED), awaitItem().map { it.status })
 
             repo.deleteOrder("ORD-1").getOrThrow()
             assertEquals(emptyList(), awaitItem())
@@ -143,9 +144,9 @@ class OrderRepositoryImplTest {
     @Test
     fun cancelOrderOnlyCancelsOpenOrders() = runTest {
         val repo = repository()
-        repo.placeOrder(order(id = "processing", status = "Processing")).getOrThrow()
-        repo.placeOrder(order(id = "pending", status = "Pending")).getOrThrow()
-        repo.placeOrder(order(id = "shipped", status = "Shipped")).getOrThrow()
+        repo.placeOrder(order(id = "processing", status = OrderStatus.PROCESSING)).getOrThrow()
+        repo.placeOrder(order(id = "pending", status = OrderStatus.PENDING)).getOrThrow()
+        repo.placeOrder(order(id = "shipped", status = OrderStatus.SHIPPED)).getOrThrow()
 
         assertTrue(repo.cancelOrder("processing").getOrThrow())
         assertTrue(repo.cancelOrder("pending").getOrThrow())
@@ -153,7 +154,7 @@ class OrderRepositoryImplTest {
         assertFalse(repo.cancelOrder("missing").getOrThrow())
 
         assertEquals(
-            listOf("Cancelled", "Cancelled", "Shipped"),
+            listOf(OrderStatus.CANCELLED, OrderStatus.CANCELLED, OrderStatus.SHIPPED),
             repo.getOrders().getOrThrow().map { it.status }
         )
     }
@@ -162,9 +163,28 @@ class OrderRepositoryImplTest {
     fun updateOrderStatusPersists() = runTest {
         repository().placeOrder(order(id = "ORD-1")).getOrThrow()
 
-        repository().updateOrderStatus("ORD-1", "Delivered").getOrThrow()
+        repository().updateOrderStatus("ORD-1", OrderStatus.DELIVERED).getOrThrow()
 
-        assertEquals("Delivered", repository().getOrderById("ORD-1").getOrThrow()?.status)
+        assertEquals(OrderStatus.DELIVERED, repository().getOrderById("ORD-1").getOrThrow()?.status)
+    }
+
+    @Test
+    fun statusColumnKeepsThePreEnumStrings() = runTest {
+        // Rows written while status was a raw String hold "Processing" etc.;
+        // they must read back as the matching enum, and writes must keep
+        // storing those same strings.
+        val queries = localDatabase.get().customerOrderQueries
+        queries.insertOrder(id = "old", date = "2026-01-01", total = 9.5, status = "Processing")
+        queries.insertOrder(id = "odd-case", date = "2026-01-01", total = 9.5, status = "pending")
+
+        val repo = repository()
+        assertEquals(OrderStatus.PROCESSING, repo.getOrderById("old").getOrThrow()?.status)
+        assertEquals(OrderStatus.PENDING, repo.getOrderById("odd-case").getOrThrow()?.status)
+
+        assertTrue(repo.cancelOrder("old").getOrThrow())
+        assertEquals("Cancelled", queries.selectStatus("old").executeAsOne())
+        repo.updateOrderStatus("odd-case", OrderStatus.SHIPPED).getOrThrow()
+        assertEquals("Shipped", queries.selectStatus("odd-case").executeAsOne())
     }
 
     @Test

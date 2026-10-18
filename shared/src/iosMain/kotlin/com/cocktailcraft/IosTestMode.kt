@@ -44,7 +44,9 @@ import platform.Foundation.NSUserDefaults
  * production code. Swift calls this instead of doInitKoin() when the
  * process runs with COCKTAILCRAFT_TEST_MODE (see KoinInitializer).
  */
-fun doInitKoinForTesting(): KoinApplication = initKoin(overrides = listOf(iosTestModeModule()))
+// Test mode only exists in Debug builds, so it keeps Debug logging.
+fun doInitKoinForTesting(): KoinApplication =
+    initKoin(isDebug = true, overrides = listOf(iosTestModeModule()))
 
 internal fun iosTestModeModule(): Module = module {
     single<Settings> { freshUserDefaults(TEST_SETTINGS_SUITE) }

@@ -8,10 +8,11 @@ import Observation
  * Every wrapper does the same things; they live here exactly once:
  *  - seed `state` synchronously from the shared uiState StateFlow so the
  *    first frame renders current data,
- *  - mirror the uiState and the base-class error flows into
- *    Observation-tracked properties via SKIE's AsyncSequence bridging,
- *  - forward `clearError()` (the error is the one consumable one-shot
- *    channel; views clear it once shown),
+ *  - mirror the uiState, the base-class error flow and its one-shot
+ *    `events` flow into Observation-tracked properties via SKIE's
+ *    AsyncSequence bridging,
+ *  - forward `clearError()` (the error is consumable; views clear it once
+ *    shown) and offer `clearEvent()` for the mirrored event,
  *  - cancel the observation tasks on deinit, and clear a factory-scoped
  *    shared instance the wrapper owns.
  *
@@ -27,6 +28,9 @@ class SharedViewModelWrapper<UiState: AnyObject> {
     private(set) var state: UiState
     // The single error channel from the shared ViewModel base class
     var error: ErrorHandler.UserFriendlyError? = nil
+    // The latest one-shot outcome from the shared `events` flow (e.g.
+    // "password changed"), held until a view shows it and calls clearEvent()
+    var event: UiEvent? = nil
 
     @ObservationIgnored private let baseViewModel: SharedViewModel
     // Set only for a Koin `factory` instance this wrapper owns
@@ -47,6 +51,7 @@ class SharedViewModelWrapper<UiState: AnyObject> {
         self.state = uiState.value
 
         let errorFlow = viewModel.error
+        let eventFlow = viewModel.events
 
         // The Tasks capture the flows, not the wrapper — [weak self] breaks
         // the wrapper <-> task retain cycle so deinit can run and cancel them.
@@ -60,6 +65,12 @@ class SharedViewModelWrapper<UiState: AnyObject> {
         observationTasks.append(Task { [weak self] in
             for await value in errorFlow {
                 self?.error = value
+            }
+        })
+
+        observationTasks.append(Task { [weak self] in
+            for await value in eventFlow {
+                self?.event = value
             }
         })
     }
@@ -81,6 +92,12 @@ class SharedViewModelWrapper<UiState: AnyObject> {
 
     func clearError() {
         baseViewModel.clearError()
+    }
+
+    /// Mark the mirrored `event` as shown (it is Swift-side only: the shared
+    /// events flow has no replay, so there is nothing to clear there).
+    func clearEvent() {
+        event = nil
     }
 
     // MARK: - Forwarded-call error policy

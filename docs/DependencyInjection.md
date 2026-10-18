@@ -32,7 +32,7 @@ val appModule = listOf(
 // platformModule() is added separately at Koin startup (see PlatformModule.kt)
 ```
 
-androidApp starts Koin with `appModule + platformModule() + widgetModule`; iOS calls `doInitKoin()` (`KoinIOS.kt`), which runs `initKoin()` with `appModule + platformModule()`.
+Both apps start Koin through `initKoin(isDebug)` (`KoinInit.kt`), which also sets the Kermit log floor (Warn in release) and starts the NetworkMonitor. androidApp calls it with `BuildConfig.DEBUG` and adds `widgetModule` to `appModule + platformModule()`; iOS calls `doInitKoin(isDebug:)` (`KoinIOS.kt`) with its `#if DEBUG` flag.
 
 ### 2. Network Module (`:core:data`, `NetworkModule.kt`)
 

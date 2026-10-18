@@ -5,7 +5,7 @@ import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.util.Result
-import com.cocktailcraft.domain.util.getOrDefault
+import com.cocktailcraft.util.runCatchingNonCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlin.native.HiddenFromObjC
 
@@ -40,10 +40,8 @@ class ManageCartUseCase(
      */
     private suspend fun hydrated(cocktail: Cocktail): Cocktail {
         if (cocktail.hasFullDetails) return cocktail
-        return try {
+        return runCatchingNonCancellation(onFailure = { cocktail }) {
             detailRepository.getCocktailById(cocktail.id).getOrNull() ?: cocktail
-        } catch (e: Exception) {
-            cocktail
         }
     }
 

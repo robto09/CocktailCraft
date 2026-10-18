@@ -1,6 +1,5 @@
 package com.cocktailcraft.android.screens
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -74,7 +73,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.cocktailcraft.android.BuildConfig
 import com.cocktailcraft.android.navigation.Screen
 import com.cocktailcraft.android.ui.components.AdvancedSearchBottomSheet
 import com.cocktailcraft.android.ui.components.AnimatedCocktailList
@@ -82,6 +80,7 @@ import com.cocktailcraft.android.ui.components.CategoryFilterRow
 import com.cocktailcraft.android.ui.components.CocktailLoadingShimmer
 import com.cocktailcraft.android.ui.components.CocktailSearchBar
 import com.cocktailcraft.android.ui.components.EmptySearchResultsMessage
+import com.cocktailcraft.android.ui.components.ErrorToastEffect
 import com.cocktailcraft.android.ui.components.NetworkErrorStateDisplay
 import com.cocktailcraft.android.ui.components.SearchFilterChips
 import com.cocktailcraft.android.ui.preview.PreviewData
@@ -97,7 +96,6 @@ import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.refresh
-import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
 import com.cocktailcraft.viewmodel.state.HomeUiState
 import kotlin.math.abs
@@ -107,7 +105,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     viewModel: SharedHomeViewModel,
-    favoritesViewModel: SharedFavoritesViewModel,
     onAddToCart: (Cocktail) -> Unit,
     onCocktailClick: (Cocktail) -> Unit
 ) {
@@ -150,15 +147,8 @@ fun HomeScreen(
     
     // Effect to load cocktails by category when selected category changes
     LaunchedEffect(selectedCategory) {
-        if (BuildConfig.DEBUG) {
-            Log.d("HomeScreen", "LaunchedEffect(selectedCategory): category=$selectedCategory, isSearchActive=$isSearchActive, isFirst=$isFirstComposition")
-        }
-
         // Skip loading on first composition if we already have data
         if (isFirstComposition && cocktails.isNotEmpty()) {
-            if (BuildConfig.DEBUG) {
-                Log.d("HomeScreen", "Skipping load on first composition - already have ${cocktails.size} cocktails")
-            }
             isFirstComposition = false
             return@LaunchedEffect
         }
@@ -167,23 +157,18 @@ fun HomeScreen(
 
         // Only load if not in search mode and category has changed
         if (!isSearchActive) {
-            if (BuildConfig.DEBUG) {
-                Log.d("HomeScreen", "Loading cocktails for category: $selectedCategory")
-            }
             viewModel.loadCocktailsByCategory(selectedCategory)
         }
     }
 
-    // Clear stale errors once data is on screen — keyed on the error rather
-    // than the list, so it doesn't re-run on every list mutation (AN-9).
-    LaunchedEffect(errorMessage) {
-        if (BuildConfig.DEBUG) {
-            Log.d("HomeScreen", "LaunchedEffect(errorMessage): count=${cocktails.size}, error='$errorMessage'")
-        }
-        if (cocktails.isNotEmpty() && errorMessage.isNotBlank()) {
-            viewModel.clearError()
-        }
-    }
+    // With cocktails on screen, a failure (load more, filters, a category
+    // switch, a favorite toggle) is a toast — with Retry when the error
+    // carries one — instead of being cleared unseen. With nothing on screen
+    // it stays in place for the full-screen error state below.
+    ErrorToastEffect(
+        error = error.takeIf { cocktails.isNotEmpty() },
+        onConsumed = { viewModel.clearError() }
+    )
 
     // Load the shared filter-option lists (categories / ingredients)
     // into the ViewModel state once; the sheet and category row read them.
@@ -206,8 +191,10 @@ fun HomeScreen(
         onRetry = { viewModel.retry() },
         onCocktailClick = onCocktailClick,
         onAddToCart = onAddToCart,
+        // Through the Home ViewModel (as on iOS), so a failed toggle reports
+        // on this screen's error channel rather than surfacing on Favorites
         onToggleFavorite = { cocktailToToggle ->
-            scope.launch { favoritesViewModel.toggleFavorite(cocktailToToggle) }
+            scope.launch { viewModel.toggleFavorite(cocktailToToggle) }
         },
         onLoadMore = {
             scope.launch { viewModel.loadMoreCocktails() }
@@ -254,8 +241,8 @@ internal fun HomeContent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // For now, we'll skip the error banner since we're using legacy error handling
-        // We'll implement it in the future when we fully migrate to the new error system
+        // Errors over a loaded list are toasts (HomeScreen); the full-screen
+        // error state below covers a load with nothing to show.
 
         // Search Bar with Advanced Search Button
         HomeSearchBarSection(

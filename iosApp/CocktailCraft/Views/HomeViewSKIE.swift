@@ -14,6 +14,7 @@ struct HomeViewSKIE: View {
     @State private var selectedCategory: String? = nil
     @State private var showingToast = false
     @State private var toastMessage = ""
+    @State private var toastType: Toast.ToastType = .success
     @Environment(\.isDarkMode) private var isDarkMode
     @Environment(\.appearance) private var appearance
 
@@ -70,7 +71,7 @@ struct HomeViewSKIE: View {
                 await viewModel.loadCocktails()
             }
         }
-        .toast(isShowing: $showingToast, message: toastMessage, type: .success, duration: 2)
+        .toast(isShowing: $showingToast, message: toastMessage, type: toastType, duration: 2)
     }
 
     // MARK: - Sections
@@ -227,9 +228,14 @@ struct HomeViewSKIE: View {
                                 // Main-actor Task: the whole flow (VM call +
                                 // toast state) runs on main, without the old
                                 // mid-task MainActor.run hop.
+                                // Only a real add is confirmed; a failed one
+                                // says so instead.
                                 Task { @MainActor in
-                                    await viewModel.addToCart(cocktail)
-                                    toastMessage = L(\.added_to_cart, cocktail.name)
+                                    let added = await viewModel.addToCart(cocktail)
+                                    toastMessage = added
+                                        ? L(\.added_to_cart, cocktail.name)
+                                        : L(\.error_add_item_to_cart_failed)
+                                    toastType = added ? .success : .error
                                     withAnimation {
                                         showingToast = true
                                     }

@@ -35,10 +35,10 @@ import com.cocktailcraft.resources.error_update_failed_title
 import com.cocktailcraft.resources.error_update_profile_failed
 import com.cocktailcraft.resources.error_update_profile_info_failed
 import com.cocktailcraft.resources.password_changed_message
-import com.cocktailcraft.resources.password_changed_title
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.ProfileUiState
 import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -97,6 +97,7 @@ class SharedProfileViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun signIn(email: String, password: String): Boolean {
+        clearError()
         // Sign-in stays lenient on purpose: accounts created under older,
         // looser rules must still be able to authenticate. Strict format
         // rules apply where the email is first stored (signUp/updateProfile).
@@ -149,6 +150,7 @@ class SharedProfileViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun signUp(name: String, email: String, password: String): Boolean {
+        clearError()
         if (name.isBlank()) {
             setError(
                 MR.strings.error_invalid_name_title,
@@ -206,7 +208,7 @@ class SharedProfileViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun signOut(): Boolean {
-        
+        clearError()
         return try {
             val success = manageProfileUseCase.signOut().getOrThrow()
             if (success) {
@@ -231,6 +233,7 @@ class SharedProfileViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun updateProfile(name: String, email: String): Boolean {
+        clearError()
         if (name.isBlank()) {
             setError(
                 MR.strings.error_invalid_name_title,
@@ -273,7 +276,7 @@ class SharedProfileViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun updateAddress(address: Address): Boolean {
-        
+        clearError()
         return try {
             val success = manageProfileUseCase.updateUserAddress(address).getOrThrow()
             if (success) {
@@ -293,10 +296,12 @@ class SharedProfileViewModel internal constructor(
     }
     
     /**
-     * Change user password.
+     * Change user password. Success is announced on [events] (it used to be
+     * pushed through the error channel, so it rendered as an error alert).
      * SKIE will convert this to Swift async function.
      */
     suspend fun changePassword(oldPassword: String, newPassword: String): Boolean {
+        clearError()
         // The old password may predate the current policy — only the new one
         // has to meet it.
         if (oldPassword.isBlank()) {
@@ -321,11 +326,7 @@ class SharedProfileViewModel internal constructor(
         return try {
             val success = manageProfileUseCase.changePassword(oldPassword, newPassword).getOrThrow()
             if (success) {
-                setError(
-                    MR.strings.password_changed_title,
-                    MR.strings.password_changed_message,
-                    ErrorHandler.ErrorCategory.UNKNOWN
-                )
+                sendEvent(UiEvent.Success(MR.strings.password_changed_message.desc()))
             } else {
                 setError(
                     MR.strings.error_change_failed_title,

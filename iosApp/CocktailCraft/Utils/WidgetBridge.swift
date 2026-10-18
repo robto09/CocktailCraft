@@ -38,10 +38,24 @@ enum WidgetDeepLink {
         return components.url
     }
 
+    /// The cocktail id from a widget deep link, or nil when the URL is not
+    /// one. Any app or web page can open the custom scheme, so only
+    /// TheCocktailDB-style ids pass: 1-10 ASCII digits as the sole path
+    /// segment (matching Android's isValidCocktailId). Anything else is
+    /// ignored and the app stays where it is.
     static func cocktailId(from url: URL) -> String? {
         guard url.scheme == scheme, url.host == cocktailHost else { return nil }
-        let id = url.lastPathComponent
-        return id.isEmpty || id == "/" ? nil : id
+        let segments = url.pathComponents.filter { $0 != "/" }
+        guard segments.count == 1, let id = segments.first, isValidCocktailId(id) else { return nil }
+        return id
+    }
+
+    static func isValidCocktailId(_ id: String) -> Bool {
+        // ASCII 0-9 only: isNumber would also accept other scripts' digits,
+        // and a Character range would admit "1" plus a combining mark.
+        (1...10).contains(id.count) && id.allSatisfy { char in
+            char.asciiValue.map { (48...57).contains($0) } ?? false
+        }
     }
 }
 

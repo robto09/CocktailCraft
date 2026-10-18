@@ -144,7 +144,14 @@ class KoinInitializer {
             _ = shared.doInitKoinForTesting()
             #endif
         } else {
-            _ = shared.doInitKoin()
+            // Release builds pass false so shared code keeps only
+            // warning/error logs.
+            #if DEBUG
+            let isDebug = true
+            #else
+            let isDebug = false
+            #endif
+            _ = shared.doInitKoin(isDebug: isDebug)
         }
     }
 
