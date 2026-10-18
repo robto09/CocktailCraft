@@ -13,8 +13,8 @@ import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.createTestLocalDatabase
+import com.cocktailcraft.testutil.testCartRepository
 import com.cocktailcraft.testutil.testCocktail
-import com.cocktailcraft.testutil.testJson
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -31,7 +31,7 @@ class OrderRepositoryImplTest {
     // A new repository over the same database simulates an app relaunch.
     private fun repository() = OrderRepositoryImpl(localDatabase)
 
-    private fun cart() = CartRepositoryImpl(localDatabase, testJson)
+    private fun cart() = testCartRepository(localDatabase)
 
     private fun order(
         id: String,

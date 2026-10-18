@@ -1,11 +1,9 @@
 package com.cocktailcraft.data.cache
 
-import app.cash.sqldelight.db.AfterVersion
-import app.cash.sqldelight.db.QueryResult
-import app.cash.sqldelight.db.SqlDriver
-import app.cash.sqldelight.db.SqlSchema
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
+import com.cocktailcraft.data.local.CocktailCodec
+import com.cocktailcraft.testutil.LegacySchema
 import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.testutil.testJson
@@ -14,46 +12,37 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Clock
 
 /**
  * Migration 3.sqm (version 3 -> 4) adds category_page to an existing
  * database without touching the rows already in it. verifySqlDelightMigration
  * checks the resulting schema against the 4.db snapshot; this checks the
- * upgrade path at runtime.
+ * upgrade path at runtime, through every later migration too.
  */
 class CategoryPageMigrationTest {
 
-    /**
-     * The version 3 schema: today's schema minus category_page, which is
-     * all migration 3.sqm adds.
-     */
-    private object Version3Schema : SqlSchema<QueryResult.Value<Unit>> {
-        override val version: Long = 3
-
-        override fun create(driver: SqlDriver): QueryResult.Value<Unit> {
-            CocktailCraftDatabase.Schema.create(driver)
-            driver.execute(null, "DROP TABLE category_page", 0)
-            return QueryResult.Unit
-        }
-
-        override fun migrate(
-            driver: SqlDriver,
-            oldVersion: Long,
-            newVersion: Long,
-            vararg callbacks: AfterVersion
-        ): QueryResult.Value<Unit> = error("not used")
-    }
-
     @Test
     fun upgradingFromVersion3AddsCategoryPagesAndKeepsCachedCocktails() = runTest {
-        val driver = createInMemorySqlDriver(Version3Schema)
-        val config = AppConfigImpl()
-        // Cached by the previous app version
-        CocktailCache(CocktailCraftDatabase(driver), MapSettings(), testJson, config)
-            .cacheCocktails(listOf(testCocktail("1", name = "Mojito"), testCocktail("2", name = "Aviation")))
+        val driver = createInMemorySqlDriver(LegacySchema.V3)
+        val now = Clock.System.now().toEpochMilliseconds()
+        // Cached by a version 3 app
+        listOf(testCocktail("1", name = "Mojito"), testCocktail("2", name = "Aviation")).forEach { cocktail ->
+            driver.execute(
+                null,
+                "INSERT INTO cached_cocktail(id, category, payload, cached_at, last_accessed) VALUES (?, ?, ?, ?, ?)",
+                5
+            ) {
+                bindString(0, cocktail.id)
+                bindString(1, cocktail.category)
+                bindString(2, CocktailCodec(testJson).encode(cocktail))
+                bindLong(3, now)
+                bindLong(4, now)
+            }
+        }
 
-        CocktailCraftDatabase.Schema.migrate(driver, oldVersion = 3, newVersion = 4)
-        val cache = CocktailCache(CocktailCraftDatabase(driver), MapSettings(), testJson, config)
+        CocktailCraftDatabase.Schema.migrate(driver, oldVersion = 3, newVersion = CocktailCraftDatabase.Schema.version)
+        val cache = CocktailCache(CocktailCraftDatabase(driver), MapSettings(), testJson, AppConfigImpl())
 
         assertEquals(
             listOf("2", "1"),

@@ -64,9 +64,10 @@ class CocktailCacheTest {
             id = cocktail.id,
             category = cocktail.category,
             payload = CocktailCodec(json).encode(cocktail),
-            cached_at = cachedAt,
-            last_accessed = lastAccessed
+            full_details = if (cocktail.hasFullDetails) 1 else 0,
+            cached_at = cachedAt
         )
+        db.cachedCocktailQueries.touch(id = cocktail.id, lastAccessed = lastAccessed)
     }
 
     private fun rowCount(db: CocktailCraftDatabase) = db.cachedCocktailQueries.count().executeAsOne()
@@ -414,11 +415,24 @@ class CocktailCacheTest {
     }
 
     @Test
-    fun categoryPageWithAnEvictedCocktailIsNoLongerFresh() = runTest {
+    fun aStoredCategoryPageIsNeverEvicted() = runTest {
         val cache = cache(createTestDatabase(), appConfig = smallConfig(cap = 2))
         cache.cacheCategoryPage("Cocktail", listOf(testCocktail("1"), testCocktail("2")), fetchedAtMs = 42L)
 
-        cache.cacheCocktail(testCocktail("other", category = "Shot")) // evicts id 1
+        cache.cacheCocktails(listOf(testCocktail("other", category = "Shot"), testCocktail("another")))
+
+        assertEquals(listOf("1", "2"), cache.observeCategoryPage("Cocktail").first().map { it.id })
+        assertEquals(42L, cache.categoryPageFetchedAt("Cocktail"), "the page still holds every listed cocktail")
+        assertEquals(4, cache.getCachedCocktailCount(), "unpinned rows over the cap go first")
+    }
+
+    @Test
+    fun aCategoryPageMissingAListedCocktailIsNoLongerFresh() = runTest {
+        val db = createTestDatabase()
+        val cache = cache(db)
+        cache.cacheCategoryPage("Cocktail", listOf(testCocktail("1"), testCocktail("2")), fetchedAtMs = 42L)
+
+        db.cachedCocktailQueries.deleteById("1")
 
         assertEquals(listOf("2"), cache.observeCategoryPage("Cocktail").first().map { it.id })
         assertNull(cache.categoryPageFetchedAt("Cocktail"), "the page no longer holds every listed cocktail")
@@ -460,18 +474,19 @@ class CocktailCacheTest {
     }
 
     @Test
-    fun recentlyViewedPersistsAcrossInstancesAndSurvivesCacheEviction() = runTest {
+    fun recentlyViewedPersistsAcrossInstancesAndPinsItsCocktails() = runTest {
         val db = createTestDatabase()
         val cache = cache(db, appConfig = smallConfig(2))
 
         cache.addToRecentlyViewed(testCocktail("1"))
         cache.addToRecentlyViewed(testCocktail("2"))
-        cache.cacheCocktails(listOf(testCocktail("3"), testCocktail("4")))
+        cache.cacheCocktails(listOf(testCocktail("3"), testCocktail("4"), testCocktail("5")))
 
         val reloaded = cache(db, appConfig = smallConfig(2))
-        // 1 and 2 were evicted from the offline cache but are still recent
-        assertNull(reloaded.getCachedCocktail("1"))
+        // Past the cap, but recently viewed: neither list nor cocktails lose them
         assertEquals(listOf("2", "1"), reloaded.getRecentlyViewedCocktails().map { it.id })
+        assertNotNull(reloaded.getCachedCocktail("1"))
+        assertNull(reloaded.getCachedCocktail("3"), "the least recently used unpinned row is evicted")
     }
 
     @Test

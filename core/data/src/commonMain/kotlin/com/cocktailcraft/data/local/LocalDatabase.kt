@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -33,7 +34,8 @@ import kotlinx.coroutines.withContext
  * opens it, and imports its own legacy Settings keys, independently.
  */
 internal class LocalDatabase(
-    private val database: Lazy<CocktailCraftDatabase>,
+    // Also read by CocktailCache's test fixtures over the same database
+    internal val database: Lazy<CocktailCraftDatabase>,
     private val legacyImport: LegacySettingsImport,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
@@ -73,8 +75,9 @@ internal class LocalDatabase(
 
     /**
      * Emits the rows of [query], mapped by [transform], and again after every
-     * write to the tables the query reads. Querying and mapping (JSON decoding
-     * included) run on [dispatcher], the calling repository's IO dispatcher.
+     * write to the tables the query reads that changes the result. Querying
+     * and mapping (JSON decoding included) run on [dispatcher], the calling
+     * repository's IO dispatcher.
      *
      * A failing query is logged and ends the stream, so collectors keep their
      * last state instead of crashing the scope they collect in.
@@ -87,5 +90,7 @@ internal class LocalDatabase(
         flow { emitAll(get().query().asFlow().mapToList(dispatcher)) }
             .map(transform)
             .flowOn(dispatcher)
+            // Queries joining cached_cocktail re-run on every catalog write
+            .distinctUntilChanged()
             .catch { e -> Logger.e(e) { "Local database query failed: ${e.message}" } }
 }

@@ -2,38 +2,42 @@
 -- (N = current version, starting at 1) and regenerate the snapshot with
 -- `./gradlew :core:data:generateCommonMainCocktailCraftDatabaseSchema`.
 --
--- Recently viewed cocktails (capped by CocktailCache). Kept apart from
--- cached_cocktail so evicting a cocktail from the offline cache does not drop
--- it from the recently viewed list that Home and the Android widgets read.
+-- Recently viewed cocktails (capped by CocktailCache), by id. The cocktail
+-- itself is the cached_cocktail row, which a recently viewed entry pins, so
+-- evicting from the offline cache never drops it from the list Home and the
+-- widgets read. Until version 6 (migrations/5.sqm) each entry kept its own
+-- JSON copy.
 --
 --   viewed_at  epoch millis of the last view; CocktailCache keeps it strictly
 --              increasing so the list order is stable.
 CREATE TABLE recently_viewed_cocktail (
-    id TEXT NOT NULL PRIMARY KEY,
-    payload TEXT NOT NULL,
+    cocktail_id TEXT NOT NULL PRIMARY KEY,
     viewed_at INTEGER NOT NULL
 );
 
 upsert:
-INSERT OR REPLACE INTO recently_viewed_cocktail(id, payload, viewed_at)
-VALUES (?, ?, ?);
+INSERT OR REPLACE INTO recently_viewed_cocktail(cocktail_id, viewed_at)
+VALUES (?, ?);
 
 -- One-time import from the old Settings cache: never overwrite newer rows.
 insertIfAbsent:
-INSERT OR IGNORE INTO recently_viewed_cocktail(id, payload, viewed_at)
-VALUES (?, ?, ?);
+INSERT OR IGNORE INTO recently_viewed_cocktail(cocktail_id, viewed_at)
+VALUES (?, ?);
 
 selectMostRecentFirst:
-SELECT id, payload FROM recently_viewed_cocktail ORDER BY viewed_at DESC;
+SELECT recently_viewed_cocktail.cocktail_id, cached_cocktail.payload, cached_cocktail.full_details
+FROM recently_viewed_cocktail
+JOIN cached_cocktail ON cached_cocktail.id = recently_viewed_cocktail.cocktail_id
+ORDER BY recently_viewed_cocktail.viewed_at DESC;
 
 maxViewedAt:
 SELECT MAX(viewed_at) AS value FROM recently_viewed_cocktail;
 
 deleteById:
-DELETE FROM recently_viewed_cocktail WHERE id = ?;
+DELETE FROM recently_viewed_cocktail WHERE cocktail_id = ?;
 
 trimToCapacity:
 DELETE FROM recently_viewed_cocktail
-WHERE id NOT IN (
-    SELECT id FROM recently_viewed_cocktail ORDER BY viewed_at DESC LIMIT :capacity
+WHERE cocktail_id NOT IN (
+    SELECT cocktail_id FROM recently_viewed_cocktail ORDER BY viewed_at DESC LIMIT :capacity
 );

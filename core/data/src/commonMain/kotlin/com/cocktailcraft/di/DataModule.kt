@@ -166,6 +166,7 @@ val dataModule = module {
     single<CartRepository> {
         CartRepositoryImpl(
             localDatabase = get(),
+            cocktailCache = get(),
             json = get(),
             ioDispatcher = get(named("ioDispatcher"))
         )

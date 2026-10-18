@@ -1,7 +1,9 @@
 package com.cocktailcraft.testutil
 
 import app.cash.sqldelight.db.SqlDriver
+import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
+import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.local.CocktailEntity
 import com.cocktailcraft.data.local.LegacyCartItem
 import com.cocktailcraft.data.local.LegacyOrder
@@ -9,6 +11,7 @@ import com.cocktailcraft.data.local.LegacyOrderItem
 import com.cocktailcraft.data.local.LegacySettingsImport
 import com.cocktailcraft.data.local.LocalDatabase
 import com.cocktailcraft.data.local.toEntity
+import com.cocktailcraft.data.repository.CartRepositoryImpl
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
@@ -43,6 +46,14 @@ internal fun createTestLocalDatabase(
     settings: Settings = MapSettings(),
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ): LocalDatabase = LocalDatabase(database, LegacySettingsImport(settings, testJson), ioDispatcher)
+
+/** A [CocktailCache] over the same database as this [LocalDatabase]. */
+internal fun LocalDatabase.testCache(): CocktailCache =
+    CocktailCache(database, MapSettings(), testJson, AppConfigImpl())
+
+/** The cart over [local], with the cocktail cache its lines refer to. */
+internal fun testCartRepository(local: LocalDatabase): CartRepositoryImpl =
+    CartRepositoryImpl(local, local.testCache(), testJson)
 
 // Settings blobs as older versions wrote them (with cents, not the even
 // older dollars: those fixtures are spelled out as JSON where tested)

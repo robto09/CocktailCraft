@@ -100,7 +100,6 @@
     <ID>SwallowedException:LegacySettingsImport.kt$LegacySettingsImport$e: Exception</ID>
     <ID>SwallowedException:NetworkMonitor.kt$AndroidNetworkMonitor$e: Exception</ID>
     <ID>TooGenericExceptionCaught:AuthRepositoryImpl.kt$AuthRepositoryImpl$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:CartRepositoryImpl.kt$CartRepositoryImpl$e: Exception</ID>
     <ID>TooGenericExceptionCaught:CocktailCache.kt$CocktailCache$e: Exception</ID>
     <ID>TooGenericExceptionCaught:CocktailFavoritesRepositoryImpl.kt$CocktailFavoritesRepositoryImpl$e: Exception</ID>
     <ID>TooGenericExceptionCaught:LegacySettingsImport.kt$LegacySettingsImport$e: Exception</ID>

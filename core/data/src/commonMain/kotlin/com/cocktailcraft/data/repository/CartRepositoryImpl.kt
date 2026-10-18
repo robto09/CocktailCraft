@@ -1,10 +1,11 @@
 package com.cocktailcraft.data.repository
 
-import co.touchlab.kermit.Logger
+import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.local.CocktailCodec
 import com.cocktailcraft.data.local.LocalDatabase
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.runCatchingResult
@@ -21,25 +22,26 @@ import com.cocktailcraft.data.cache.db.cartItem.SelectAll as CartItemRow
  * [observeCartItems] re-emits after every write, including the clear that
  * [com.cocktailcraft.domain.repository.OrderRepository.placeOrderAndClearCart]
  * does in the same transaction as the order insert.
+ *
+ * A line refers to the cocktail's cached_cocktail row ([CocktailCache]),
+ * which it pins, and keeps only the unit price it was added at.
  */
 internal class CartRepositoryImpl(
     private val localDatabase: LocalDatabase,
-    private val json: Json,
+    private val cocktailCache: CocktailCache,
+    json: Json,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : CartRepository {
 
     private val codec = CocktailCodec(json)
 
-    private fun toCartItem(row: CartItemRow): CocktailCartItem? =
-        try {
-            CocktailCartItem(
-                cocktail = codec.decode(row.payload),
-                quantity = row.quantity.toInt()
-            )
-        } catch (e: Exception) {
-            Logger.w(e) { "Skipping unreadable cart item ${row.cocktail_id}" }
-            null
-        }
+    private fun toCartItem(row: CartItemRow): CocktailCartItem? {
+        val cocktail = codec.decodeOrNull(row.payload, row.full_details != 0L) ?: return null
+        return CocktailCartItem(
+            cocktail = row.price_cents?.let { cocktail.copy(price = Money(it)) } ?: cocktail,
+            quantity = row.quantity.toInt()
+        )
+    }
 
     private fun CocktailCraftDatabase.readItems(): List<CocktailCartItem> =
         cartItemQueries.selectAll().executeAsList().mapNotNull(::toCartItem)
@@ -55,19 +57,17 @@ internal class CartRepositoryImpl(
         }
     }
 
-    override suspend fun addToCart(cartItem: CocktailCartItem): Result<Unit> = withContext(ioDispatcher) {
-        runCatchingResult("Failed to add to cart") {
-            val db = localDatabase.get()
-            db.transaction { db.add(cartItem, codec) }
-            Result.Success(Unit)
-        }
-    }
+    override suspend fun addToCart(cartItem: CocktailCartItem): Result<Unit> = addAll(listOf(cartItem))
 
     // One transaction: a failure part-way adds none of them (reorder)
-    override suspend fun addAllToCart(cartItems: List<CocktailCartItem>): Result<Unit> = withContext(ioDispatcher) {
+    override suspend fun addAllToCart(cartItems: List<CocktailCartItem>): Result<Unit> = addAll(cartItems)
+
+    private suspend fun addAll(cartItems: List<CocktailCartItem>): Result<Unit> = withContext(ioDispatcher) {
         runCatchingResult("Failed to add to cart") {
-            val db = localDatabase.get()
-            db.transaction { cartItems.forEach { db.add(it, codec) } }
+            localDatabase.get()
+            cocktailCache.storeAndReference(cartItems.map { it.cocktail }) {
+                cartItems.forEach { add(it) }
+            }
             Result.Success(Unit)
         }
     }
@@ -101,17 +101,17 @@ internal class CartRepositoryImpl(
 
 /**
  * Adds [cartItem]; call inside a transaction. An item already in the cart
- * keeps its stored cocktail and position; only the quantity grows.
+ * keeps its price and position; only the quantity grows.
  */
-private fun CocktailCraftDatabase.add(cartItem: CocktailCartItem, codec: CocktailCodec) {
+private fun CocktailCraftDatabase.add(cartItem: CocktailCartItem) {
     val id = cartItem.cocktail.id
     if (cartItemQueries.exists(id).executeAsOne() > 0L) {
         cartItemQueries.addQuantity(delta = cartItem.quantity.toLong(), cocktailId = id)
     } else {
         cartItemQueries.insert(
             cocktailId = id,
-            payload = codec.encode(cartItem.cocktail),
-            quantity = cartItem.quantity.toLong()
+            quantity = cartItem.quantity.toLong(),
+            priceCents = cartItem.cocktail.price.cents
         )
     }
 }

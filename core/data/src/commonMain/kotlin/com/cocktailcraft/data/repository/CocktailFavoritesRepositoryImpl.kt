@@ -27,18 +27,20 @@ import com.cocktailcraft.data.cache.db.favoriteCocktail.SelectAll as FavoriteRow
  * Favorites in the favorite_cocktail table (see FavoriteCocktail.sq),
  * extracted from the former CocktailRepositoryImpl god class.
  *
- * Each favorite stores the full cocktail, so favorites are available offline
- * whatever the offline cache evicts (SH-4), and [observeFavorites] re-emits
- * after every add, remove or in-place upgrade from any screen.
+ * A favorite refers to the cocktail's cached_cocktail row ([CocktailCache]),
+ * which it pins, so favorites are available offline whatever else the cache
+ * evicts (SH-4) and show the latest details. [observeFavorites] re-emits
+ * after every add or remove from any screen, and whenever a favorite's
+ * cocktail is refreshed.
  *
- * Favorites imported from the old id-only Settings list have no stored
+ * Favorites imported from the old id-only Settings list may have no stored
  * cocktail yet; they are resolved (offline cache first, then the API while
  * online) when favorites are first observed or loaded, and stay hidden until
  * then — as unresolvable ids always were.
  */
 internal class CocktailFavoritesRepositoryImpl(
     private val localDatabase: LocalDatabase,
-    private val json: Json,
+    json: Json,
     private val cocktailCache: CocktailCache,
     private val remote: CocktailRemoteDataSource,
     private val offlineRepository: CocktailOfflineRepository,
@@ -51,22 +53,15 @@ internal class CocktailFavoritesRepositoryImpl(
 
     private val codec = CocktailCodec(json)
 
-    private fun encode(cocktail: Cocktail): String = codec.encode(cocktail)
-
     private fun decodeOrNull(row: FavoriteRow): Cocktail? {
         val payload = row.payload ?: return null
-        return try {
-            codec.decode(payload)
-        } catch (e: Exception) {
-            Logger.w(e) { "Unreadable stored favorite ${row.id}, will re-resolve it" }
-            null
-        }
+        return codec.decodeOrNull(payload, row.full_details != 0L)
     }
 
     override fun observeFavorites(): Flow<List<Cocktail>> = channelFlow {
         // Resolve alongside, not before, the first emission: stored favorites
         // show immediately, and each resolved one arrives as a later emission
-        // once its payload is written.
+        // once its cocktail is stored.
         launch {
             try {
                 resolveMissingFavorites()
@@ -82,35 +77,31 @@ internal class CocktailFavoritesRepositoryImpl(
     }
 
     /**
-     * Fills in favorites without a (readable) stored cocktail. A favorite
-     * that can't be resolved now — offline and not cached, or the lookup
-     * failed — is left as is and retried next time.
+     * Stores the cocktail of favorites without a (readable) stored one. A
+     * favorite that can't be resolved now — offline and not cached, or the
+     * lookup failed — is left as is and retried next time.
      */
     private suspend fun resolveMissingFavorites() = resolveMutex.withLock {
         val db = localDatabase.get()
         val missing = withContext(ioDispatcher) {
             db.favoriteCocktailQueries.selectAll().executeAsList()
                 .filter { decodeOrNull(it) == null }
-                .map { it.id }
+                .map { it.cocktail_id }
         }
         if (missing.isEmpty()) return@withLock
 
         val offline = offlineRepository.isOffline()
         for (id in missing) {
-            val cocktail = try {
-                cocktailCache.getCachedCocktail(id)
-                    ?: if (offline) null else remote.getById(id)?.also { cocktailCache.cacheCocktail(it) }
+            try {
+                // A cached cocktail is already the favorite's row; otherwise
+                // storing the fetched one resolves it.
+                if (cocktailCache.getCachedCocktail(id) == null && !offline) {
+                    remote.getById(id)?.let { cocktailCache.cacheCocktail(it) }
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Logger.w(e) { "Could not resolve favorite $id: ${e.message}" }
-                null
-            }
-            if (cocktail != null) {
-                // A no-op if the favorite was removed in the meantime.
-                withContext(ioDispatcher) {
-                    db.favoriteCocktailQueries.updatePayload(payload = encode(cocktail), id = id)
-                }
             }
         }
     }
@@ -124,20 +115,17 @@ internal class CocktailFavoritesRepositoryImpl(
     }
 
     /**
-     * Adds [cocktail], or upgrades the stored copy in place if it is already
-     * a favorite (the persist-then-hydrate path in ManageFavoritesUseCase).
-     * Observers see it as soon as the row is written.
+     * Adds [cocktail], storing it unless a better record is stored; adding
+     * a favorite again with full details upgrades a partial stored record
+     * (the persist-then-hydrate path in ManageFavoritesUseCase). Observers
+     * see it as soon as the row is written.
      */
     override suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> = withContext(ioDispatcher) {
         runCatchingResult("Failed to add to favorites") {
-            val db = localDatabase.get()
-            val payload = encode(cocktail)
-            db.transaction {
-                db.favoriteCocktailQueries.insertIfAbsent(id = cocktail.id, payload = payload)
-                db.favoriteCocktailQueries.updatePayload(payload = payload, id = cocktail.id)
+            localDatabase.get()
+            cocktailCache.storeAndReference(listOf(cocktail)) {
+                favoriteCocktailQueries.insertIfAbsent(cocktailId = cocktail.id)
             }
-            // Also cache it, so the detail screen opens offline too.
-            cocktailCache.cacheCocktail(cocktail)
             Result.Success(Unit)
         }
     }

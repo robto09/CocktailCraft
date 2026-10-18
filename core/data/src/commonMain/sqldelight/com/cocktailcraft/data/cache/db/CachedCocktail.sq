@@ -2,86 +2,157 @@
 -- (N = current version, starting at 1) and regenerate the snapshot with
 -- `./gradlew :core:data:generateCommonMainCocktailCraftDatabaseSchema`.
 --
--- One row per cached cocktail. The full Cocktail is stored as JSON in
--- `payload`; the other columns exist so the cache can query, expire and evict
--- without decoding every row.
+-- One row per cocktail: the single copy of every cocktail the app stores.
+-- Category pages, favorites, the cart and the recently viewed list refer to
+-- these rows by id (see the matching .sq files), so a detail refresh updates
+-- them all at once. The cocktail is stored as JSON in `payload`
+-- (CocktailEntity); the other columns exist so the cache can query, expire
+-- and evict without decoding every row.
 --
---   category       Cocktail.category, with blank values stored as NULL
---                  (entries cached before category stamping existed)
---   cached_at      epoch millis of the last write; drives the 24h TTL
---   last_accessed  epoch millis of the last read or write; drives LRU
---                  eviction. CocktailCache keeps it strictly increasing so
---                  rows written in the same millisecond keep a stable order.
+--   category      Cocktail.category, with blank values stored as NULL
+--                 (entries cached before category stamping existed)
+--   full_details  1 for a full record (lookup.php, search.php), 0 for a list
+--                 endpoint's partial one (id, name, thumbnail). Added in
+--                 version 6 (migrations/5.sqm); payloads used to mark partial
+--                 records with placeholder text instead.
+--   cached_at     epoch millis of the last write of the record; drives the
+--                 24h TTL and the detail refresh's freshness check
+--
+-- How recently each row was used lives in cocktail_access, not here, so
+-- recording a read doesn't count as a write to this table: every query that
+-- reads it (category pages, favorites, the cart) would otherwise re-run.
 CREATE TABLE cached_cocktail (
     id TEXT NOT NULL PRIMARY KEY,
     category TEXT,
     payload TEXT NOT NULL,
-    cached_at INTEGER NOT NULL,
-    last_accessed INTEGER NOT NULL
+    full_details INTEGER NOT NULL,
+    cached_at INTEGER NOT NULL
 );
 
 CREATE INDEX cached_cocktail_category ON cached_cocktail(category);
-
-CREATE INDEX cached_cocktail_last_accessed ON cached_cocktail(last_accessed);
 
 -- The TTL sweep (deleteCachedBefore) runs on every list read while online.
 -- Added in version 3 (migrations/2.sqm).
 CREATE INDEX cached_cocktail_cached_at ON cached_cocktail(cached_at);
 
+-- epoch millis of the last read or write of each cached_cocktail row; drives
+-- LRU eviction. CocktailCache keeps it strictly increasing so rows written in
+-- the same millisecond keep a stable order. Added in version 6
+-- (migrations/5.sqm), moved out of cached_cocktail.last_accessed.
+CREATE TABLE cocktail_access (
+    id TEXT NOT NULL PRIMARY KEY,
+    last_accessed INTEGER NOT NULL
+);
+
+CREATE INDEX cocktail_access_last_accessed ON cocktail_access(last_accessed);
+
+-- An evicted or expired cocktail takes its access stamp with it. (INSERT OR
+-- REPLACE doesn't fire this: SQLite runs delete triggers for REPLACE only
+-- with recursive_triggers on.)
+CREATE TRIGGER cached_cocktail_delete_access
+AFTER DELETE ON cached_cocktail
+BEGIN
+    DELETE FROM cocktail_access WHERE id = old.id;
+END;
+
 -- INSERT OR REPLACE rather than ON CONFLICT DO UPDATE: upsert syntax needs
 -- SQLite 3.24, newer than the framework SQLite on minSdk 24 devices.
 upsert:
-INSERT OR REPLACE INTO cached_cocktail(id, category, payload, cached_at, last_accessed)
+INSERT OR REPLACE INTO cached_cocktail(id, category, payload, full_details, cached_at)
 VALUES (?, ?, ?, ?, ?);
 
--- Used by the one-time import from the old Settings cache: rows already in the
--- database are newer than the legacy blob and must win.
+-- Used by the one-time imports from the old Settings stores: rows already in
+-- the database are newer than the legacy blob and must win.
 insertIfAbsent:
-INSERT OR IGNORE INTO cached_cocktail(id, category, payload, cached_at, last_accessed)
+INSERT OR IGNORE INTO cached_cocktail(id, category, payload, full_details, cached_at)
 VALUES (?, ?, ?, ?, ?);
+
+-- A full record for a row that only holds a partial one (legacy imports).
+upgradeToFull:
+UPDATE cached_cocktail SET payload = :payload, full_details = 1
+WHERE id = :id AND full_details = 0;
+
+-- Gives a row stored without a category the one a later record knew.
+fillCategory:
+UPDATE cached_cocktail SET category = :category WHERE id = :id AND category IS NULL;
 
 selectById:
-SELECT payload, cached_at FROM cached_cocktail WHERE id = ?;
+SELECT payload, full_details, cached_at FROM cached_cocktail WHERE id = ?;
 
--- Batch lookup. Callers chunk :ids to stay under SQLite's bound-parameter
--- limit (999 on older framework SQLite).
-selectByIds:
-SELECT id, payload FROM cached_cocktail WHERE id IN :ids;
+-- What upsertCocktails needs to merge incoming records into stored ones.
+-- Callers chunk :ids to stay under SQLite's bound-parameter limit (999 on
+-- older framework SQLite).
+selectStored:
+SELECT id, category, payload, full_details FROM cached_cocktail WHERE id IN :ids;
 
 exists:
 SELECT COUNT(*) FROM cached_cocktail WHERE id = ?;
 
-touch:
-UPDATE cached_cocktail SET last_accessed = :lastAccessed WHERE id = :id;
-
+-- Least recently used first
 selectAll:
-SELECT id, payload FROM cached_cocktail ORDER BY last_accessed;
+SELECT cached_cocktail.id, cached_cocktail.payload, cached_cocktail.full_details
+FROM cached_cocktail
+LEFT JOIN cocktail_access ON cocktail_access.id = cached_cocktail.id
+ORDER BY cocktail_access.last_accessed;
 
 selectByCategory:
-SELECT id, payload FROM cached_cocktail
-WHERE category = :category
-ORDER BY last_accessed;
+SELECT id, payload, full_details FROM cached_cocktail
+WHERE category = :category;
 
 selectByCategoryOrUncategorized:
-SELECT id, payload FROM cached_cocktail
-WHERE category = :category OR category IS NULL
-ORDER BY last_accessed;
+SELECT id, payload, full_details FROM cached_cocktail
+WHERE category = :category OR category IS NULL;
 
 count:
 SELECT COUNT(*) FROM cached_cocktail;
 
-maxLastAccessed:
-SELECT MAX(last_accessed) AS value FROM cached_cocktail;
-
 deleteById:
 DELETE FROM cached_cocktail WHERE id = ?;
 
-deleteCachedBefore:
-DELETE FROM cached_cocktail WHERE cached_at < :cutoff;
+-- Rows something refers to are pinned: neither TTL expiry nor LRU eviction
+-- drops a cocktail a stored category page lists, or one in anyone's
+-- favorites, cart or recently viewed list. (Pinned rows still refresh: a
+-- page or detail fetch rewrites them.) The NOT IN clauses below spell that
+-- out for each statement that deletes rows.
 
--- LRU eviction: keep only the :capacity most recently accessed rows.
+-- TTL expiry of one row (a point read), unless pinned.
+deleteIfExpired:
+DELETE FROM cached_cocktail
+WHERE id = :id AND cached_at < :cutoff
+  AND id NOT IN (SELECT cocktail_id FROM category_page)
+  AND id NOT IN (SELECT cocktail_id FROM favorite_cocktail)
+  AND id NOT IN (SELECT cocktail_id FROM cart_item)
+  AND id NOT IN (SELECT cocktail_id FROM recently_viewed_cocktail);
+
+-- TTL expiry, unless pinned.
+deleteCachedBefore:
+DELETE FROM cached_cocktail
+WHERE cached_at < :cutoff
+  AND id NOT IN (SELECT cocktail_id FROM category_page)
+  AND id NOT IN (SELECT cocktail_id FROM favorite_cocktail)
+  AND id NOT IN (SELECT cocktail_id FROM cart_item)
+  AND id NOT IN (SELECT cocktail_id FROM recently_viewed_cocktail);
+
+-- LRU eviction: keep the :capacity most recently used rows, and every
+-- pinned one whatever its age.
 trimToCapacity:
 DELETE FROM cached_cocktail
 WHERE id NOT IN (
-    SELECT id FROM cached_cocktail ORDER BY last_accessed DESC LIMIT :capacity
-);
+    SELECT id FROM cocktail_access ORDER BY last_accessed DESC LIMIT :capacity
+)
+  AND id NOT IN (SELECT cocktail_id FROM category_page)
+  AND id NOT IN (SELECT cocktail_id FROM favorite_cocktail)
+  AND id NOT IN (SELECT cocktail_id FROM cart_item)
+  AND id NOT IN (SELECT cocktail_id FROM recently_viewed_cocktail);
+
+-- Access stamps (cocktail_access)
+
+touch:
+INSERT OR REPLACE INTO cocktail_access(id, last_accessed) VALUES (:id, :lastAccessed);
+
+-- Legacy imports: rows already used keep their stamp.
+touchIfAbsent:
+INSERT OR IGNORE INTO cocktail_access(id, last_accessed) VALUES (:id, :lastAccessed);
+
+maxLastAccessed:
+SELECT MAX(last_accessed) AS value FROM cocktail_access;

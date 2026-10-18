@@ -2,36 +2,48 @@
 -- (N = current version, starting at 1) and regenerate the snapshot with
 -- `./gradlew :core:data:generateCommonMainCocktailCraftDatabaseSchema`.
 --
--- The shopping cart (CartRepositoryImpl), one row per cocktail.
+-- The shopping cart (CartRepositoryImpl), one row per cocktail. The cocktail
+-- itself is the cached_cocktail row, which a cart line pins (the offline
+-- cache never evicts or expires it), so the cart shows the current details.
+-- Until version 6 (migrations/5.sqm) each line kept its own JSON copy.
 --
---   payload   the Cocktail as JSON, a snapshot taken when it was added. The
---             cart is not tied to cached_cocktail, so cache eviction never
---             empties it.
---   position  insertion order (1-based, increasing); the cart lists in this
---             order, and changing a quantity keeps an item in place.
+--   price_cents  the unit price when the cocktail was added, in whole US
+--                cents: the amount the user agreed to stays what the line
+--                charges, whatever a later catalog refresh says, and a
+--                reorder that couldn't look its cocktail up keeps the price
+--                paid. NULL for lines added before version 6, which charge
+--                the stored cocktail's price as before.
+--   position     insertion order (1-based, increasing); the cart lists in
+--                this order, and changing a quantity keeps an item in place.
 CREATE TABLE cart_item (
     cocktail_id TEXT NOT NULL PRIMARY KEY,
-    payload TEXT NOT NULL,
     quantity INTEGER NOT NULL,
-    position INTEGER NOT NULL
+    position INTEGER NOT NULL,
+    price_cents INTEGER
 );
 
+-- Lines whose cocktail isn't stored (only possible if the row was lost) are
+-- left out rather than shown blank.
 selectAll:
-SELECT cocktail_id, payload, quantity FROM cart_item ORDER BY position;
+SELECT cart_item.cocktail_id, cart_item.quantity, cart_item.price_cents,
+       cached_cocktail.payload, cached_cocktail.full_details
+FROM cart_item
+JOIN cached_cocktail ON cached_cocktail.id = cart_item.cocktail_id
+ORDER BY cart_item.position;
 
 exists:
 SELECT COUNT(*) FROM cart_item WHERE cocktail_id = ?;
 
 -- Appends a new item at the end of the cart.
 insert:
-INSERT INTO cart_item(cocktail_id, payload, quantity, position)
-VALUES (:cocktailId, :payload, :quantity, (SELECT COALESCE(MAX(position), 0) + 1 FROM cart_item));
+INSERT INTO cart_item(cocktail_id, quantity, position, price_cents)
+VALUES (:cocktailId, :quantity, (SELECT COALESCE(MAX(position), 0) + 1 FROM cart_item), :priceCents);
 
 -- Used by the one-time import from Settings (LegacySettingsImport): items
 -- already in the database are newer than the legacy blob and must win.
 insertIfAbsent:
-INSERT OR IGNORE INTO cart_item(cocktail_id, payload, quantity, position)
-VALUES (:cocktailId, :payload, :quantity, (SELECT COALESCE(MAX(position), 0) + 1 FROM cart_item));
+INSERT OR IGNORE INTO cart_item(cocktail_id, quantity, position, price_cents)
+VALUES (:cocktailId, :quantity, (SELECT COALESCE(MAX(position), 0) + 1 FROM cart_item), :priceCents);
 
 addQuantity:
 UPDATE cart_item SET quantity = quantity + :delta WHERE cocktail_id = :cocktailId;

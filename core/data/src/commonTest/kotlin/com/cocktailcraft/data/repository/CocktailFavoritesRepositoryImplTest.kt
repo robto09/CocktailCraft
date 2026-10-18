@@ -9,6 +9,7 @@ import com.cocktailcraft.data.local.LegacySettingsImport
 import com.cocktailcraft.data.remote.ApiRateLimiter
 import com.cocktailcraft.data.remote.CocktailDto
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
+import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrThrow
@@ -16,6 +17,7 @@ import com.cocktailcraft.testutil.FakeCocktailApi
 import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.createTestLocalDatabase
+import com.cocktailcraft.testutil.partialCocktail
 import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.testutil.testJson
 import com.russhwolf.settings.MapSettings
@@ -81,7 +83,7 @@ class CocktailFavoritesRepositoryImplTest {
 
         // Adding twice must not duplicate the entry
         repo.addToFavorites(cocktail)
-        assertEquals(listOf("11007"), db.favoriteCocktailQueries.selectAll().executeAsList().map { it.id })
+        assertEquals(listOf("11007"), db.favoriteCocktailQueries.selectAll().executeAsList().map { it.cocktail_id })
 
         // A fresh repository over the same database (an app relaunch) sees it
         assertEquals(listOf(cocktail), repository(db = db).getFavoriteCocktails().getOrThrow())
@@ -150,7 +152,7 @@ class CocktailFavoritesRepositoryImplTest {
         val db = createTestDatabase()
         val repo = repository(db = db)
 
-        repo.addToFavorites(testCocktail("11007", name = "Shallow Margarita"))
+        repo.addToFavorites(partialCocktail("11007", name = "Shallow Margarita"))
         repo.addToFavorites(testCocktail("1", name = "Mojito"))
         repo.addToFavorites(testCocktail("11007", name = "Full Margarita"))
 
@@ -159,16 +161,35 @@ class CocktailFavoritesRepositoryImplTest {
     }
 
     @Test
-    fun favoritesStayAvailableOfflineEvenWhenEvictedFromTheCache() = runTest {
-        // SH-4: favorites carry their own copy of the cocktail, so an offline
-        // favorite survives the offline cache evicting it.
+    fun favoritesStayAvailableOfflineWhateverTheCacheEvicts() = runTest {
+        // SH-4: a favorite pins its cocktail, so an offline favorite survives
+        // the offline cache filling up past its cap
         val db = createTestDatabase()
-        val repo = repository(api = FakeCocktailApi(), db = db, online = false)
+        val policy = OfflineModePolicy(FakeNetworkMonitor(false))
+        val oneRowCap = object : AppConfig by config {
+            override val maxOfflineCocktails: Int = 1
+        }
+        val cache = CocktailCache(db, MapSettings(), testJson, oneRowCap, offlineModePolicy = policy)
+        val repo = repository(api = FakeCocktailApi(), db = db, online = false, cache = cache)
 
         repo.addToFavorites(testCocktail("42", name = "Negroni"))
-        db.cachedCocktailQueries.deleteById("42")
+        cache.cacheCocktails((1..5).map { testCocktail("$it") })
 
         assertEquals(listOf("Negroni"), names(repo.getFavoriteCocktails()))
+        assertEquals("Negroni", cache.getCachedCocktail("42")?.name)
+    }
+
+    @Test
+    fun aDetailRefreshShowsUpInTheFavorites() = runTest {
+        // One copy of each cocktail: refreshing it updates the favorite too
+        val db = createTestDatabase()
+        val cache = CocktailCache(db, MapSettings(), testJson, config)
+        val repo = repository(db = db, cache = cache)
+        repo.addToFavorites(testCocktail("42", name = "Negroni"))
+
+        cache.cacheCocktail(testCocktail("42", name = "Negroni Sbagliato"))
+
+        assertEquals(listOf("Negroni Sbagliato"), names(repo.getFavoriteCocktails()))
     }
 
     @Test
