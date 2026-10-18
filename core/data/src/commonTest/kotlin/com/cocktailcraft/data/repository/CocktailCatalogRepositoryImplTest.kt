@@ -64,9 +64,15 @@ class CocktailCatalogRepositoryImplTest {
         return fixture
     }
 
-    /** A second fetcher over the same database: the app after a restart (empty page index). */
+    /**
+     * A new repository and fetcher over the same database, on the same
+     * clock: the app after a restart (nothing carried over in memory).
+     */
     private fun Fixture.restarted(): CocktailCatalogRepositoryImpl =
-        CocktailCatalogRepositoryImpl(remote, CocktailCategoryFetcher(remote, cache, offline))
+        CocktailCatalogRepositoryImpl(
+            remote,
+            CocktailCategoryFetcher(remote, cache, offline, nowMs = { nowMs })
+        )
 
     private fun drink(id: String, name: String, category: String = "Cocktail") = CocktailDto(
         id = id,
@@ -265,10 +271,49 @@ class CocktailCatalogRepositoryImplTest {
 
         assertEquals(listOf("2", "3"), fixture.catalog.observeCategory("Cocktail").first().ids())
         assertEquals(
-            listOf("2", "3"),
-            fixture.restarted().observeCategory("Cocktail").first().ids(),
-            "after a restart the page comes from the category column, which must keep the category"
+            "Cocktail",
+            fixture.cache.getCachedCocktail("2")?.category,
+            "the row keeps its category for the category-column fallback"
         )
+    }
+
+    @Test
+    fun pageOrderIsPersistedAcrossARestart() = runTest {
+        // The API's order, deliberately not alphabetical
+        val api = FakeCocktailApi(listOf(drink("z", "Zombie"), drink("a", "Aviation"), drink("m", "Mojito")))
+        val fixture = fixture(api)
+        fixture.catalog.refreshCategory("Cocktail")
+
+        assertEquals(listOf("z", "a", "m"), fixture.restarted().observeCategory("Cocktail").first().ids())
+    }
+
+    @Test
+    fun refetchedPageReplacesTheStoredPage() = runTest {
+        val fixture = fixture()
+        fixture.catalog.refreshCategory("Cocktail")
+
+        fixture.api.drinks = listOf(drink("3", "Virgin Mojito"), drink("4", "Zombie"))
+        fixture.catalog.refreshCategory("Cocktail", force = true)
+
+        assertEquals(
+            listOf("3", "4"),
+            fixture.catalog.observeCategory("Cocktail").first().ids(),
+            "a cocktail the API no longer lists drops off the page"
+        )
+    }
+
+    @Test
+    fun freshnessSurvivesANewRepositoryInstance() = runTest {
+        val fixture = fixture()
+        fixture.catalog.refreshCategory("Cocktail")
+
+        val restarted = fixture.restarted()
+        restarted.refreshCategory("Cocktail")
+        assertEquals(1, fixture.api.categoryRequests, "the stored fetch time still counts as fresh")
+
+        fixture.nowMs += CatalogRefreshPolicy.FRESHNESS_MS
+        restarted.refreshCategory("Cocktail")
+        assertEquals(2, fixture.api.categoryRequests, "and goes stale on the same clock")
     }
 
     @Test
@@ -280,7 +325,7 @@ class CocktailCatalogRepositoryImplTest {
         val restarted = fixture.restarted()
 
         assertEquals(listOf("2", "3"), restarted.observeCategory("Cocktail").first().ids())
-        assertIs<Result.Error>(restarted.refreshCategory("Cocktail"), "offline: nothing refreshed")
+        assertIs<Result.Error>(restarted.refreshCategory("Cocktail", force = true), "offline: nothing refreshed")
         assertEquals(1, fixture.api.categoryRequests)
     }
 }

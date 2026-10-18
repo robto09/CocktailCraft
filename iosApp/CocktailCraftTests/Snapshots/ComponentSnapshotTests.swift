@@ -181,6 +181,27 @@ final class ComponentSnapshotTests: SnapshotTestCase {
         })
     }
 
+    func testToastWithUndo() {
+        assertSnapshots(of: Toast(
+            message: "Removed Margarita from cart",
+            type: .success,
+            actionLabel: "Undo",
+            onAction: {}
+        ))
+    }
+
+    // MARK: - Orders
+
+    func testOrderDetailContent() {
+        assertSnapshots(of: OrderDetailContent(
+            order: SnapshotFixtures.order,
+            subtotal: 34,
+            deliveryFee: 5.99,
+            deliveryEstimate: "15-25 minutes",
+            canCancel: true
+        ))
+    }
+
     // MARK: - Profile and reviews
 
     func testSettingsRows() {

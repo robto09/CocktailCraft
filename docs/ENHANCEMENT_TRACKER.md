@@ -316,6 +316,10 @@ Re-verified against `dev` after the phase-4 merge (2ee7b44) — all items confir
 
 **Approach:** Longer-term, one cache abstraction with one TTL policy and one invalidation entry point. Short-term: document the eviction matrix and make every `clearCache` path purge both (pairs with SH-3, AR-7).
 
+**Resolution:** The in-memory layer is gone. The SQLDelight database is the single source of truth for the catalog: category pages and cocktail details are observed as flows from `cached_cocktail` (cocktails) and `category_page` (page membership, order and fetch time, added in migration `3.sqm`), and the repositories' `refresh` functions write network results into it, stale-while-revalidate. The rate limiter moved to `data/remote/ApiRateLimiter.kt`.
+
+**Where it lives now:** `core/data/.../data/cache/CocktailCache.kt`, `data/repository/CocktailCategoryFetcher.kt`, `data/repository/CocktailDetailRepositoryImpl.kt`, `sqldelight/.../db/CategoryPage.sq`.
+
 ### SH-12. Trim ErrorHandler string-matching; expand Turbine tests
 **Status:** ✅ Done · **Severity:** Low
 

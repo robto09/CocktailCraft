@@ -54,9 +54,6 @@ SELECT COUNT(*) FROM cached_cocktail WHERE id = ?;
 touch:
 UPDATE cached_cocktail SET last_accessed = :lastAccessed WHERE id = :id;
 
-touchByIds:
-UPDATE cached_cocktail SET last_accessed = :lastAccessed WHERE id IN :ids;
-
 selectAll:
 SELECT id, payload FROM cached_cocktail ORDER BY last_accessed;
 

@@ -53,6 +53,12 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
         await run { try await sharedViewModel.toggleFavorite() }
     }
 
+    /// Adds the shown cocktail to the cart. The outcome ("Added … to cart"
+    /// only on success, else the failure) arrives on the mirrored `event`.
+    func addToCart() async {
+        await run { _ = try await sharedViewModel.addToCart() }
+    }
+
     // MARK: - Helper Methods for SwiftUI
 
     func formatPrice() -> String {

@@ -15,7 +15,8 @@ val presentationModule = module {
     viewModel {
         com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel(
             getCocktailDetailUseCase = get(),
-            manageFavoritesUseCase = get()
+            manageFavoritesUseCase = get(),
+            manageCartUseCase = get()
         )
     }
     viewModel { com.cocktailcraft.viewmodel.SharedReviewViewModel(manageReviewsUseCase = get()) }

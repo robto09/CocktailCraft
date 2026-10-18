@@ -1,7 +1,6 @@
 package com.cocktailcraft.data.repository
 
 import co.touchlab.kermit.Logger
-import com.cocktailcraft.data.cache.CategoryPageIndex
 import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.domain.model.Cocktail
@@ -11,12 +10,8 @@ import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.onError
 import com.cocktailcraft.util.runCatchingResult
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 
 /**
@@ -26,8 +21,9 @@ import kotlin.time.Clock
  * ([CocktailSearchRepositoryImpl.filterByCategory]).
  *
  * The database is the single source of truth: [refresh] writes the fetched
- * page into cached_cocktail and records its ids in [CategoryPageIndex];
- * [observe] emits the page from the database again after every write.
+ * cocktails into cached_cocktail and the page (ids, order, fetch time) into
+ * category_page; [observe] emits the page from the database again after
+ * every write. Both survive a restart.
  *
  * API Limitations & Workarounds:
  * - Filter endpoints (filter.php) only return partial data (id, name, thumbnail)
@@ -39,7 +35,6 @@ internal class CocktailCategoryFetcher(
     private val remote: CocktailRemoteDataSource,
     private val cocktailCache: CocktailCache,
     private val offlineRepository: CocktailOfflineRepository,
-    private val pageIndex: CategoryPageIndex = CategoryPageIndex(),
     // Injectable for tests: coroutine virtual time does not move Clock.System.
     private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() }
 ) {
@@ -50,26 +45,17 @@ internal class CocktailCategoryFetcher(
     /**
      * The cocktails of [category] as stored in the database, emitted right
      * away and again whenever the stored rows change. Once the category has
-     * been fetched in this process the page lists exactly the fetched ids,
-     * in the API's (alphabetical) order. Before that it lists the rows whose
+     * been fetched the page lists exactly the fetched cocktails, in the API's
+     * (alphabetical) order. Before that it lists the cached cocktails whose
      * category matches, by name; for the default category, entries cached
-     * before category stamping existed stand in when nothing else matches, so
-     * they aren't stranded offline.
+     * before category stamping existed stand in when nothing else matches,
+     * so they aren't stranded offline.
      */
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun observe(category: String): Flow<List<Cocktail>> =
-        pageIndex.observeIds(category)
-            .flatMapLatest { ids ->
-                if (ids == null) {
-                    cocktailCache.observeCocktailsByCategory(
-                        category = category,
-                        includeUncategorized = category == CocktailCategories.DEFAULT
-                    )
-                } else {
-                    cocktailCache.observeCocktailsByIds(ids).map { byId -> ids.mapNotNull(byId::get) }
-                }
-            }
-            .distinctUntilChanged()
+        cocktailCache.observeCategoryPage(
+            category = category,
+            includeUncategorized = category == CocktailCategories.DEFAULT
+        )
 
     /** The page as currently stored (see [observe]). */
     suspend fun snapshot(category: String): List<Cocktail> = observe(category).first()
@@ -95,9 +81,9 @@ internal class CocktailCategoryFetcher(
             .onError { message, _ -> Logger.w { "Refreshing category $category failed: $message" } }
     }
 
-    private fun isFresh(category: String): Boolean {
-        val page = pageIndex.page(category) ?: return false
-        return nowMs() - page.fetchedAtMs < CatalogRefreshPolicy.FRESHNESS_MS
+    private suspend fun isFresh(category: String): Boolean {
+        val fetchedAt = cocktailCache.categoryPageFetchedAt(category) ?: return false
+        return nowMs() - fetchedAt < CatalogRefreshPolicy.FRESHNESS_MS
     }
 
     private suspend fun fetchIntoCache(category: String): Result<Unit> =
@@ -113,10 +99,7 @@ internal class CocktailCategoryFetcher(
                 // by; the offline fallback finds rows by that column.
                 if (cocktail.category.isNullOrBlank()) cocktail.copy(category = category) else cocktail
             }
-            // Rows first, then the index: the page never lists ids whose
-            // rows aren't written yet.
-            cocktailCache.cacheCocktails(cocktails)
-            pageIndex.put(category, cocktails.map { it.id }, nowMs())
+            cocktailCache.cacheCategoryPage(category, cocktails, fetchedAtMs = nowMs())
             Result.Success(Unit)
         }
 }

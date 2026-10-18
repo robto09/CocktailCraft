@@ -220,6 +220,17 @@ enum SnapshotFixtures {
 
     static let cartItem = CocktailCartItem(cocktail: margarita, quantity: 2)
 
+    static let order = Order(
+        id: "ORD-42052",
+        date: "2026-07-02",
+        items: [
+            OrderItem(name: "Margarita", quantity: 2, price: 12.5),
+            OrderItem(name: "Mojito", quantity: 1, price: 9)
+        ],
+        total: 39.99,
+        status: .processing
+    )
+
     static let categories = ["Cocktail", "Ordinary Drink", "Shot", "Punch / Party Drink"]
 
     static let activeFilters = SearchFilters(

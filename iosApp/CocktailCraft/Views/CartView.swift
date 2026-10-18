@@ -105,6 +105,14 @@ struct CartView: View {
                 secondaryButton: .cancel()
             )
         }
+        // "Removed … from cart" with Undo, after a removal or a decrement to
+        // zero here. Only events that carry an action: the cart's
+        // add-to-cart outcomes belong to the screen that added (Home and
+        // Favorites toast those themselves).
+        .sharedEventToast(
+            cartViewModel.event.flatMap { $0.action != nil ? $0 : nil },
+            clear: { cartViewModel.clearEvent() }
+        )
         .sharedErrorAlert(cartViewModel.error, clear: { cartViewModel.clearError() })
         .sharedErrorAlert(orderViewModel.error, clear: { orderViewModel.clearError() })
     }

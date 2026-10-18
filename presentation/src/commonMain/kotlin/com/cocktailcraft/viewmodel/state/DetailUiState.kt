@@ -9,7 +9,9 @@ data class DetailUiState(
     val cocktail: Cocktail? = null,
     val isFavorite: Boolean = false,
     val relatedCocktails: List<Cocktail> = emptyList(),
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    // An add-to-cart from this screen is in flight (the button shows busy)
+    val isAddingToCart: Boolean = false
 ) {
     /**
      * Plain-text share payload for the loaded cocktail ("" until loaded).

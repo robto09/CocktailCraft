@@ -26,6 +26,19 @@ final class OrderViewModelSKIE: SharedViewModelWrapper<OrderUiState> {
         await run { try await sharedViewModel.loadOrders() }
     }
 
+    /// Loads the order the detail screen shows into `state.selectedOrder`
+    /// (nil when it doesn't exist; a failed lookup surfaces on `error`).
+    func loadOrderDetail(_ orderId: String) async {
+        await run { try await sharedViewModel.loadOrderDetail(orderId: orderId) }
+    }
+
+    /// Cancels the order; success is announced on the mirrored `event`
+    /// ("Order cancelled"), failure on `error`.
+    @discardableResult
+    func cancelOrder(_ orderId: String) async -> Bool {
+        await run(fallback: false) { try await sharedViewModel.cancelOrder(orderId: orderId).boolValue }
+    }
+
     /// Returns whether the order was placed, so the caller can navigate on
     /// success; failures surface on the mirrored `error`.
     func placeOrder(cartItems: [CocktailCartItem], totalPrice: Double) async -> Bool {

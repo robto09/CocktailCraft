@@ -65,7 +65,9 @@ fun FavoritesScreen(
         onRefresh = { favoritesViewModel.refresh() },
         onBrowseProducts = onBrowseProducts,
         onAddToCart = onAddToCart,
-        onToggleFavorite = { cocktail -> scope.launch { favoritesViewModel.toggleFavorite(cocktail) } },
+        // Every heart here is filled: a tap unfavorites, with an Undo toast
+        // (shown by MainScreen, which collects the favorites' events)
+        onToggleFavorite = { cocktail -> scope.launch { favoritesViewModel.removeFavorite(cocktail) } },
         onCocktailClick = onCocktailClick
     )
 }

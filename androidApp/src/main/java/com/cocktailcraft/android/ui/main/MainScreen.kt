@@ -55,14 +55,16 @@ import com.cocktailcraft.android.navigation.CocktailDetailRoute
 import com.cocktailcraft.android.navigation.FavoritesRoute
 import com.cocktailcraft.android.navigation.HomeRoute
 import com.cocktailcraft.android.navigation.NavigationManager
+import com.cocktailcraft.android.navigation.OrderDetailRoute
 import com.cocktailcraft.android.navigation.OrderListRoute
 import com.cocktailcraft.android.navigation.ProfileRoute
-import com.cocktailcraft.android.navigation.isValidCocktailId
 import com.cocktailcraft.android.navigation.Screen
+import com.cocktailcraft.android.navigation.isValidCocktailId
 import com.cocktailcraft.android.screens.CartScreen
 import com.cocktailcraft.android.screens.CocktailDetailScreen
 import com.cocktailcraft.android.screens.FavoritesScreen
 import com.cocktailcraft.android.screens.HomeScreen
+import com.cocktailcraft.android.screens.OrderDetailScreen
 import com.cocktailcraft.android.screens.OrderListScreen
 import com.cocktailcraft.android.screens.ProfileScreen
 import com.cocktailcraft.android.ui.components.AppTopBar
@@ -166,8 +168,12 @@ fun MainScreen() {
     }
 
     CompositionLocalProvider(LocalToastHostState provides snackbarHostState) {
-        // The one collector of the cart's events (add-to-cart outcomes)
+        // The one collector of the cart's events (add-to-cart outcomes, and
+        // the Undo after a removal) and of the favorites' (the Undo after
+        // unfavoriting on the Favorites tab). The detail screens toast their
+        // own ViewModels' events.
         UiEventToasts(sharedCartViewModel.events)
+        UiEventToasts(sharedFavoritesViewModel.events)
 
         NavHost(
             navController = navController,
@@ -227,6 +233,15 @@ fun MainScreen() {
                         navigationManager = navigationManager
                     )
                 }
+            }
+            // Like the cocktail detail: its own Scaffold + AppTopBar, no tab chrome
+            composable<OrderDetailRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<OrderDetailRoute>()
+                OrderDetailScreen(
+                    orderId = route.orderId,
+                    orderViewModel = sharedOrderViewModel,
+                    onBackClick = { navigationManager.navigateBack() }
+                )
             }
             // No TabScaffold: the detail screen runs its own Scaffold + AppTopBar,
             // which own the system-bar insets (AN-6).

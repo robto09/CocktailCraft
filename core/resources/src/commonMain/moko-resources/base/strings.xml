@@ -40,6 +40,8 @@
     <string name="dialog_confirm">Confirm</string>
     <string name="dialog_dismiss">Dismiss</string>
     <string name="dialog_try_again">Try Again</string>
+    <!-- Toast action that restores what the last action removed -->
+    <string name="undo">Undo</string>
 
     <!-- Authentication -->
     <string name="sign_in">Sign In</string>
@@ -211,6 +213,8 @@
     <string name="favorites_empty_message">Add cocktails to your favorites to see them here</string>
     <string name="no_favorites">No favorites yet</string>
     <string name="favorites_empty_message_ios">Start adding cocktails to your favorites</string>
+    <string name="favorite_removed">Removed %1$s from favorites</string>
+    <string name="favorites_cleared">Favorites cleared</string>
 
     <!-- Cart -->
     <string name="cart_empty_title">Your cart is empty</string>
@@ -229,6 +233,8 @@
     <string name="cart_remove_item_a11y">Remove %1$s from cart</string>
     <string name="add_to_cart_item_a11y">Add %1$s to cart</string>
     <string name="checkout_processing">Processing...</string>
+    <string name="cart_item_removed">Removed %1$s from cart</string>
+    <string name="cart_cleared">Cart cleared</string>
 
     <!-- Cocktail detail -->
     <string name="how_to_prepare">Preparation</string>
@@ -254,6 +260,7 @@
     <string name="detail_loading">Loading cocktail details...</string>
     <string name="detail_not_found_title">Cocktail not found</string>
     <string name="detail_not_found_message">The requested cocktail could not be loaded</string>
+    <string name="detail_add_to_cart">Add to Cart</string>
 
     <!-- Offline -->
     <string name="error_no_cached_cocktails">No cached cocktails available. Connect to the internet to download cocktails.</string>
@@ -278,6 +285,22 @@
     <string name="delivery_estimate_no_items">No items</string>
     <string name="delivery_estimate_minutes">%1$d-%2$d minutes</string>
     <string name="delivery_estimate_processing_soon">Processing will begin shortly</string>
+
+    <!-- Order detail -->
+    <string name="order_detail_title">Order Details</string>
+    <string name="order_view_details_a11y">View order details</string>
+    <string name="order_detail_placed_on">Placed on %1$s</string>
+    <string name="order_detail_status">Status</string>
+    <string name="order_detail_delivery">Delivery</string>
+    <string name="order_detail_items">Items</string>
+    <string name="order_detail_item_each">%1$s each</string>
+    <string name="order_detail_not_found_title">Order not found</string>
+    <string name="order_detail_not_found_message">This order is no longer available</string>
+    <string name="order_cancel">Cancel Order</string>
+    <string name="order_cancel_confirm_title">Cancel this order?</string>
+    <string name="order_cancel_confirm_message">Order #%1$s will be cancelled. This can\'t be undone.</string>
+    <string name="order_cancel_keep">Keep Order</string>
+    <string name="order_cancelled_message">Order cancelled</string>
 
     <!-- Reviews -->
     <string name="review_your_name">Your Name</string>

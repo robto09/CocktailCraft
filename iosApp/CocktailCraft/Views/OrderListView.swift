@@ -6,6 +6,8 @@ struct OrderListView: View {
     @State private var model = ViewModelHolder(OrderViewModelSKIE.init)
     private var viewModel: OrderViewModelSKIE { model.wrapper }
     @State private var hasLoaded = false
+    // The order whose detail screen is pushed (nil on the list itself)
+    @State private var selectedOrder: OrderDetailRoute?
     // Tab switches route through the app-level router (same pattern as
     // CartView/ProfileView) so "Browse Cocktails" can land on Home.
     @Environment(AppRouter.self) private var router
@@ -27,7 +29,12 @@ struct OrderListView: View {
                 await viewModel.loadOrders()
                 if !Task.isCancelled { hasLoaded = true }
             }
-            .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
+            .navigationDestination(item: $selectedOrder) { route in
+                OrderDetailView(orderId: route.orderId, viewModel: viewModel)
+            }
+            // While a detail screen is pushed, it alerts the (shared) error
+            // itself; presenting it from here too would double up
+            .sharedErrorAlert(selectedOrder == nil ? viewModel.error : nil, clear: { viewModel.clearError() })
     }
 
     @ViewBuilder
@@ -65,7 +72,15 @@ struct OrderListView: View {
         ScrollView {
             LazyVStack(spacing: AppTheme.Spacing.lg) {
                 ForEach(Array(viewModel.state.orders), id: \.id) { order in
-                    orderCard(order: order)
+                    // The whole card opens the order's details
+                    Button {
+                        selectedOrder = OrderDetailRoute(orderId: order.id)
+                    } label: {
+                        orderCard(order: order)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(L(\.order_view_details_a11y))
+                    .accessibilityIdentifier("orders.card")
                 }
             }
             .padding(AppTheme.Spacing.lg)
@@ -120,29 +135,13 @@ struct OrderListView: View {
             .font(.callout.weight(.bold))
             .accessibilityElement(children: .combine)
 
-            HStack(spacing: AppTheme.Spacing.sm) {
-                Circle()
-                    .fill(statusColor(order.status))
-                    .frame(width: 10, height: 10)
-                // Localized label from the shared OrderStatus, as on Android
-                Text(order.status.displayName.localized())
-                    .font(.subheadline)
-                    .foregroundColor(statusColor(order.status))
-            }
-            .padding(.top, AppTheme.Spacing.md)
-            .accessibilityElement(children: .combine)
+            OrderStatusIndicator(status: order.status)
+                .padding(.top, AppTheme.Spacing.md)
+                .accessibilityElement(children: .combine)
         }
         .padding(AppTheme.Spacing.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .cardStyle()
-    }
-
-    private func statusColor(_ status: OrderStatus) -> Color {
-        switch status {
-        case .delivered: return AppColors.success
-        case .pending, .processing, .shipped: return AppColors.warning
-        case .cancelled: return AppColors.gray
-        }
     }
 }
 

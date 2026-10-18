@@ -25,6 +25,13 @@ class NavigationManager(private val navController: NavController) {
     }
 
     /**
+     * Navigate to an order's detail screen (pushed above the Orders tab)
+     */
+    fun navigateToOrderDetail(orderId: String) {
+        navController.navigate(OrderDetailRoute(orderId))
+    }
+
+    /**
      * Navigate to the cart screen
      */
     fun navigateToCart() {
@@ -47,13 +54,6 @@ class NavigationManager(private val navController: NavController) {
      */
     fun navigateToFavorites() {
         navigateToTopLevelDestination(FavoritesRoute)
-    }
-
-    /**
-     * Navigate to the profile screen
-     */
-    fun navigateToProfile() {
-        navigateToTopLevelDestination(ProfileRoute)
     }
 
     /**

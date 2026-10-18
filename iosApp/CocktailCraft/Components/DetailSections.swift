@@ -16,10 +16,9 @@ extension CocktailDetailView {
 
     func mainInfoCard(_ cocktail: Cocktail) -> some View {
         // Laid out like Android's DetailMainInfoCard: name, alcoholic/category
-        // line, price, preparation. Only API data (no rating or stock, which the
-        // API doesn't have); adding to cart happens from the Home and Favorites
-        // cards. Its rounded top overlaps the header image; see
-        // CocktailDetailView.
+        // line, price, Add to Cart, preparation. Only API data (no rating or
+        // stock, which the API doesn't have). Its rounded top overlaps the
+        // header image; see CocktailDetailView.
         VStack(alignment: .leading, spacing: 0) {
             Text(cocktail.name)
                 .font(.title.weight(.bold))
@@ -41,6 +40,18 @@ extension CocktailDetailView {
                 // audit's human-readable label check)
                 .accessibilityLabel(L(\.detail_price_a11y, viewModel.formatPrice()))
                 .padding(.top, AppTheme.Spacing.sm)
+
+            // Confirmed (or reported) by the detail ViewModel's event toast
+            PrimaryButton(
+                title: L(\.detail_add_to_cart),
+                icon: "cart.fill",
+                isLoading: viewModel.state.isAddingToCart,
+                action: {
+                    Task { await viewModel.addToCart() }
+                }
+            )
+            .accessibilityIdentifier("detail.addToCartButton")
+            .padding(.top, AppTheme.Spacing.md)
 
             if let instructions = cocktail.instructions, !instructions.isEmpty {
                 Text(L(\.how_to_prepare))

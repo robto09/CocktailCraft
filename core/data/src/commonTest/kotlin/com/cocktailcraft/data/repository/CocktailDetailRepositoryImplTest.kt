@@ -172,7 +172,8 @@ class CocktailDetailRepositoryImplTest {
         fixture.detail.refreshCocktail("1")
         assertEquals(0, api.lookupRequests, "a fresh full copy is not refetched")
 
-        fixture.nowMs += CatalogRefreshPolicy.FRESHNESS_MS
+        // Past the window even allowing for the real-clock write stamp
+        fixture.nowMs += CatalogRefreshPolicy.FRESHNESS_MS + 60_000
         fixture.detail.refreshCocktail("1")
         assertEquals(1, api.lookupRequests, "a stale copy is refetched")
         assertEquals("Remote Margarita", fixture.cache.getCachedCocktail("1")?.name)
