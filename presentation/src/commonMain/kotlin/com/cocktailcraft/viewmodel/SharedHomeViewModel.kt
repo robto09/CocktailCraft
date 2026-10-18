@@ -27,6 +27,7 @@ import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.viewmodel.state.HomeUiState
 import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -69,6 +70,12 @@ class SharedHomeViewModel internal constructor(
     // down (cache fallback). Lets the restore handler refresh content that a
     // normal reconnect would otherwise leave stale.
     private var lastLoadWasOffline = false
+
+    // Observes the selected category's stored page while the category
+    // listing is on screen (not search results), so a refresh — or a
+    // detail lookup upgrading a placeholder — reaches the list through the
+    // database flow. Restarted per load; stopped while search/filters show.
+    private var categoryJob: Job? = null
 
     init {
         initialize()
@@ -143,6 +150,16 @@ class SharedHomeViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun loadCocktailsByCategory(category: String?) {
+        loadCategory(category, forceRefresh = false)
+    }
+
+    /**
+     * Shows the stored page of [category] right away and refreshes it from
+     * the network: when stale, or always with [forceRefresh] (retry, network
+     * restore). A failed refresh keeps the stored page; the error only
+     * surfaces when there is nothing to show.
+     */
+    private suspend fun loadCategory(category: String?, forceRefresh: Boolean) {
         val targetCategory = category ?: CocktailCategories.DEFAULT
 
         // Offline-ness of this load is decided when the fetch STARTS — the
@@ -158,9 +175,10 @@ class SharedHomeViewModel internal constructor(
             hasMoreData = true
         ) }
         clearError()
+        observeCategory(targetCategory)
 
         try {
-            val cocktailList = loadCocktailsByCategoryUseCase(targetCategory).getOrThrow()
+            val cocktailList = loadCocktailsByCategoryUseCase(targetCategory, forceRefresh).getOrThrow()
             val paginatedList = cocktailList.take(PAGE_SIZE)
             _uiState.update { it.copy(
                 cocktails = paginatedList,
@@ -176,12 +194,48 @@ class SharedHomeViewModel internal constructor(
                     e,
                     MR.strings.error_load_cocktails_failed,
                     recoveryAction = ErrorHandler.RecoveryAction(MR.strings.common_retry.desc()) {
-                        viewModelScope.launch { loadCocktailsByCategory(category) }
+                        viewModelScope.launch { loadCategory(category, forceRefresh = true) }
                     }
                 )
             }
             // Try cached data before showing error
             tryLoadCachedData(targetCategory, e, startedOffline)
+        }
+    }
+
+    /**
+     * (Re)start observing [category]'s stored page. Emissions update the
+     * listing in place: the shown page keeps the user's sort order while its
+     * cocktails stay the same, and is replaced (API order) once a refresh
+     * changes which cocktails it lists. Empty emissions are skipped — an
+     * empty or failed load is published, with its error or offline fallback,
+     * by [loadCategory] itself.
+     */
+    private fun observeCategory(category: String) {
+        categoryJob?.cancel()
+        categoryJob = viewModelScope.launch {
+            loadCocktailsByCategoryUseCase.observe(category).collect { stored ->
+                if (stored.isNotEmpty()) publishCategoryPage(stored)
+            }
+        }
+    }
+
+    private fun stopObservingCategory() {
+        categoryJob?.cancel()
+        categoryJob = null
+    }
+
+    private fun publishCategoryPage(stored: List<Cocktail>) {
+        _uiState.update { state ->
+            val visible = stored.take(state.currentPage * PAGE_SIZE)
+            val shownIds = state.cocktails.mapTo(HashSet()) { it.id }
+            val cocktails = if (shownIds == visible.mapTo(HashSet()) { it.id }) {
+                val latest = visible.associateBy { it.id }
+                state.cocktails.map { latest.getValue(it.id) }
+            } else {
+                visible
+            }
+            state.copy(cocktails = cocktails, hasMoreData = visible.size < stored.size)
         }
     }
 
@@ -275,6 +329,9 @@ class SharedHomeViewModel internal constructor(
      * SKIE will convert this to Swift async function.
      */
     suspend fun applyFilters(filters: SearchFilters) {
+        // Search results replace the category listing; its stored page must
+        // no longer write into the list.
+        stopObservingCategory()
         _uiState.update { it.copy(searchFilters = filters, isLoading = true) }
         clearError()
 
@@ -425,7 +482,9 @@ class SharedHomeViewModel internal constructor(
             if (state.isSearchActive && state.searchQuery.isNotEmpty()) {
                 searchCocktails(state.searchQuery)
             } else {
-                loadCocktails()
+                // An explicit retry (or network restore) refetches even a
+                // page that is still fresh.
+                loadCategory(state.selectedCategory ?: CocktailCategories.DEFAULT, forceRefresh = true)
             }
         }
     }

@@ -542,6 +542,96 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         assertEquals(listOf("1"), vm.uiState.value.cocktails.map { it.id })
     }
 
+    // --- Database-backed category page: stale-while-revalidate ---
+
+    @Test
+    fun storedPageShowsWhileTheRefreshIsInFlight() = runTest {
+        val harness = Harness()
+        harness.catalog.store("Cocktail", listOf(testCocktail("cached")))
+        harness.all = listOf(testCocktail("fresh"))
+        harness.catalog.refreshDelayMs = 1_000
+        val vm = harness.viewModel()
+        advanceTimeBy(500)
+
+        assertEquals(listOf("cached"), vm.uiState.value.cocktails.map { it.id }, "cached rows show right away")
+        assertTrue(vm.uiState.value.isLoading, "the refresh is still running")
+
+        advanceUntilIdle()
+
+        assertEquals(listOf("fresh"), vm.uiState.value.cocktails.map { it.id }, "the refresh lands through the flow")
+        assertFalse(vm.uiState.value.isLoading)
+    }
+
+    @Test
+    fun failedRefreshKeepsTheStoredPageWithoutAnError() = runTest {
+        val harness = Harness()
+        harness.catalog.store("Cocktail", listOf(testCocktail("cached")))
+        harness.errorMessage = "api down"
+
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        assertEquals(listOf("cached"), vm.uiState.value.cocktails.map { it.id })
+        assertNull(vm.error.value, "with content on screen a failed refresh is not an error state")
+        assertFalse(vm.uiState.value.isLoading)
+    }
+
+    @Test
+    fun storedChangesReachTheListAndKeepTheSortOrder() = runTest {
+        val harness = Harness()
+        harness.all = listOf(
+            testCocktail("1", price = 30.0),
+            testCocktail("2", price = 10.0)
+        )
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+        vm.sortByPrice(ascending = true)
+        assertEquals(listOf("2", "1"), vm.uiState.value.cocktails.map { it.id })
+
+        // e.g. a detail lookup upgrading id 1 in the database
+        harness.catalog.store(
+            "Cocktail",
+            listOf(
+                testCocktail("1", name = "Upgraded", price = 30.0),
+                testCocktail("2", price = 10.0)
+            )
+        )
+        advanceUntilIdle()
+
+        assertEquals(listOf("2", "1"), vm.uiState.value.cocktails.map { it.id }, "same cocktails: keep the sort")
+        assertEquals("Upgraded", vm.uiState.value.cocktails.last().name)
+    }
+
+    @Test
+    fun retryForcesARefreshWhileLoadsOnlyRefreshWhenStale() = runTest {
+        val harness = Harness()
+        harness.all = listOf(testCocktail("1"))
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        vm.retry()
+        advanceUntilIdle()
+
+        assertEquals(listOf("Cocktail" to false, "Cocktail" to true), harness.catalog.refreshCalls)
+    }
+
+    @Test
+    fun storedPageChangesDoNotOverwriteSearchResults() = runTest {
+        val harness = Harness()
+        harness.all = listOf(
+            testCocktail("1", name = "Margarita"),
+            testCocktail("2", name = "Mojito")
+        )
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        vm.searchCocktails("marg")
+        harness.catalog.store("Cocktail", listOf(testCocktail("3")))
+        advanceUntilIdle()
+
+        assertEquals(listOf("1"), vm.uiState.value.cocktails.map { it.id })
+    }
+
     private fun SharedHomeViewModel.isFavorite(cocktailId: String): Boolean =
         uiState.value.favorites.any { it.id == cocktailId }
 }

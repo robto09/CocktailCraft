@@ -193,6 +193,54 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
         assertTrue(harness.favorites.stored.isEmpty())
     }
 
+    // --- Stale-while-revalidate through the stored cocktail's flow ---
+
+    @Test
+    fun backgroundRevalidationReachesTheScreenThroughTheFlow() = runTest {
+        val harness = Harness()
+        harness.detail.byId["1"] = testCocktail("1", name = "Cached Martini")
+        harness.detail.remote["1"] = testCocktail("1", name = "Fresh Martini")
+        val vm = harness.viewModel()
+
+        vm.loadCocktail("1")
+        advanceUntilIdle()
+
+        assertEquals("Fresh Martini", vm.uiState.value.cocktail?.name)
+        assertEquals(listOf("1" to false), harness.detail.refreshCalls, "only refetched when stale")
+    }
+
+    @Test
+    fun failedBackgroundRevalidationKeepsTheCachedCopySilently() = runTest {
+        val harness = Harness()
+        harness.detail.byId["1"] = testCocktail("1", name = "Cached Martini")
+        harness.detail.refreshError = "offline"
+        val vm = harness.viewModel()
+
+        vm.loadCocktail("1")
+        advanceUntilIdle()
+
+        assertEquals("Cached Martini", vm.uiState.value.cocktail?.name)
+        assertNull(vm.error.value)
+    }
+
+    @Test
+    fun explicitRefreshPublishesTheFetchedCopyAndReportsFailures() = runTest {
+        val harness = Harness()
+        harness.detail.byId["1"] = testCocktail("1", name = "Cached Martini")
+        val vm = harness.viewModel()
+        vm.loadCocktail("1")
+        advanceUntilIdle()
+
+        harness.detail.remote["1"] = testCocktail("1", name = "Fresh Martini")
+        vm.refreshCocktail()
+        assertEquals("Fresh Martini", vm.uiState.value.cocktail?.name)
+
+        harness.detail.refreshError = "offline"
+        vm.refreshCocktail()
+        assertNotNull(vm.error.value, "a failed explicit refresh is reported")
+        assertEquals("Fresh Martini", vm.uiState.value.cocktail?.name, "the stored copy stays on screen")
+    }
+
     @Test
     fun toggleFavoriteWithoutLoadedCocktailIsNoOp() = runTest {
         val harness = Harness()
