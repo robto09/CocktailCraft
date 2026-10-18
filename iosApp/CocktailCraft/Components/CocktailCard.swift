@@ -6,6 +6,9 @@ import shared
 struct CocktailCard: View {
     let cocktail: Cocktail
     var isFavorite: Bool = false
+    /// The user's review average, when they have reviewed this cocktail
+    /// (Home only; the API itself has no ratings to show)
+    var reviewRating: CocktailRatingSummary? = nil
     var onFavoriteToggle: (() -> Void)? = nil
     var onAddToCart: (() -> Void)? = nil
     var onCardTap: (() -> Void)? = nil
@@ -120,6 +123,21 @@ struct CocktailCard: View {
                 .multilineTextAlignment(.leading)
                 .accessibilityHidden(true)
 
+            // "4.5 ★★★★½ (2 reviews)", as Android's RatingDisplay; read in
+            // the card summary
+            if let reviewRating {
+                HStack(spacing: 4) {
+                    Text(reviewRating.rating.formatted(.number.precision(.fractionLength(1))))
+                        .fontWeight(.bold)
+                    StarRatingView(rating: reviewRating.rating)
+                    Text(L(\.review_count, count: Int(reviewRating.count)))
+                }
+                .font(.caption)
+                .foregroundColor(AppColors.textSecondary(appearance))
+                .lineLimit(1)
+                .accessibilityHidden(true)
+            }
+
             // Pushes the price row to the bottom beside the image; in the
             // stacked (accessibility size) layout there is nothing to align
             if dynamicTypeSize.isAccessibilitySize {
@@ -192,6 +210,10 @@ struct CocktailCard: View {
             parts.append(subtitleText)
         }
         parts.append(getIngredientsText())
+        if let reviewRating {
+            parts.append(L(\.review_stars_a11y, StarRatingView.spokenRating(reviewRating.rating), 5))
+            parts.append(L(\.review_count, count: Int(reviewRating.count)))
+        }
         parts.append((cocktail.price ?? 12.99).asPrice)
         if isOutOfStock {
             parts.append(L(\.list_out_of_stock))

@@ -15,6 +15,28 @@ final class ComponentSnapshotTests: SnapshotTestCase {
         })
     }
 
+    func testCocktailCardWithReviewRating() {
+        assertSnapshots(of: CocktailCard(
+            cocktail: SnapshotFixtures.margarita,
+            reviewRating: CocktailRatingSummary(rating: 4.5, count: 2),
+            onFavoriteToggle: {},
+            onAddToCart: {}
+        ))
+    }
+
+    // MARK: - Home
+
+    func testRecentlyViewedRow() {
+        assertSnapshots(of: NavigationStack {
+            RecentlyViewedRow(
+                cocktails: [SnapshotFixtures.mojito, SnapshotFixtures.outOfStock, SnapshotFixtures.margarita],
+                horizontalBleed: 16
+            )
+            .padding(.horizontal, 16)
+            .toolbar(.hidden, for: .navigationBar)
+        }, height: 230)
+    }
+
     func testCartItemCard() {
         assertSnapshots(of: CartItemCard(
             item: SnapshotFixtures.cartItem,
