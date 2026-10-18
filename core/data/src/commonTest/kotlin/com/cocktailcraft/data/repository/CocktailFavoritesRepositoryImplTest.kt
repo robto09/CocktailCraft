@@ -23,11 +23,14 @@ import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.testutil.testJson
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class CocktailFavoritesRepositoryImplTest {
@@ -36,7 +39,7 @@ class CocktailFavoritesRepositoryImplTest {
 
     // Mirrors the DataModule wiring: remote source + focused offline repo
     // backing the favorites impl, all over one database.
-    private fun repository(
+    private fun TestScope.repository(
         api: FakeCocktailApi = FakeCocktailApi(),
         db: CocktailCraftDatabase = createTestDatabase(),
         settings: Settings = MapSettings(),
@@ -55,7 +58,8 @@ class CocktailFavoritesRepositoryImplTest {
             json = testJson,
             cocktailCache = cocktailCache,
             remote = remote,
-            offlineRepository = offline
+            offlineRepository = offline,
+            appScope = backgroundScope
         )
     }
 
@@ -219,6 +223,19 @@ class CocktailFavoritesRepositoryImplTest {
             assertEquals(emptyList(), awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun everyObserverSharesOneFavoritesStream() = runTest {
+        // Home, Favorites and the detail screen observe at once: one query
+        // and one decode per change for all of them, not one each
+        val repo = repository()
+        repo.addToFavorites(testCocktail("42", name = "Negroni")).getOrThrow()
+
+        val first = repo.observeFavorites().first { it.isNotEmpty() }
+        val second = repo.observeFavorites().first { it.isNotEmpty() }
+
+        assertSame(first, second, "the second observer gets the shared stream's list")
     }
 
     @Test

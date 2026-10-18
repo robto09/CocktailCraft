@@ -22,6 +22,7 @@ import com.cocktailcraft.testutil.createTestLocalDatabase
 import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.testutil.testJson
 import com.russhwolf.settings.MapSettings
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,7 +38,7 @@ import kotlin.test.assertTrue
 class UserDataScopingTest {
 
     /** The data layer as DataModule wires it, over one database. */
-    private class App(db: CocktailCraftDatabase = createTestDatabase()) {
+    private class App(appScope: CoroutineScope, db: CocktailCraftDatabase = createTestDatabase()) {
         private val accounts = AuthRepositoryImpl(MapSettings(), testJson)
         private val session = UserSession(accounts)
         private val local = createTestLocalDatabase(db, owner = session)
@@ -51,7 +52,8 @@ class UserDataScopingTest {
             json = testJson,
             cocktailCache = cache,
             remote = CocktailRemoteDataSource(FakeCocktailApi(), ApiRateLimiter()),
-            offlineRepository = offline
+            offlineRepository = offline,
+            appScope = appScope
         )
         val orders = OrderRepositoryImpl(local)
         val reviews = ReviewRepositoryImpl(local)
@@ -75,7 +77,7 @@ class UserDataScopingTest {
 
     @Test
     fun aSignedOutGuestSeesNoneOfTheUsersData() = runTest {
-        val app = App()
+        val app = App(backgroundScope)
         app.auth.signUp("ana@example.com", "secret123").getOrThrow()
         app.addData("ana")
 
@@ -90,7 +92,7 @@ class UserDataScopingTest {
 
     @Test
     fun nobodyElseCanChangeAUsersOrdersOrReviews() = runTest {
-        val app = App()
+        val app = App(backgroundScope)
         app.auth.signUp("ana@example.com", "secret123").getOrThrow()
         app.addData("ana")
         app.auth.signOut().getOrThrow()
@@ -108,7 +110,7 @@ class UserDataScopingTest {
 
     @Test
     fun switchingAccountsShowsEachUserOnlyTheirOwnData() = runTest {
-        val app = App()
+        val app = App(backgroundScope)
         app.auth.signUp("ana@example.com", "secret123").getOrThrow()
         app.addData("ana")
         app.auth.signOut().getOrThrow()
@@ -130,7 +132,7 @@ class UserDataScopingTest {
 
     @Test
     fun signingInMergesTheGuestsCartFavoritesAndViewsIntoTheAccount() = runTest {
-        val app = App()
+        val app = App(backgroundScope)
         app.auth.signUp("ana@example.com", "secret123").getOrThrow()
         app.cart.addToCart(CocktailCartItem(testCocktail("1", price = Money(900)), 1)).getOrThrow()
         app.favorites.addToFavorites(testCocktail("3")).getOrThrow()
@@ -168,7 +170,7 @@ class UserDataScopingTest {
 
     @Test
     fun switchingFromOneAccountToAnotherMergesNothing() = runTest {
-        val app = App()
+        val app = App(backgroundScope)
         app.auth.signUp("ben@example.com", "secret123").getOrThrow()
         app.auth.signOut().getOrThrow()
         app.auth.signUp("ana@example.com", "secret123").getOrThrow()
@@ -183,7 +185,7 @@ class UserDataScopingTest {
 
     @Test
     fun aFailedSignInChangesNothing() = runTest {
-        val app = App()
+        val app = App(backgroundScope)
         app.addData("guest")
 
         assertFalse(app.auth.signIn("nobody@example.com", "secret123").getOrThrow())
@@ -194,7 +196,7 @@ class UserDataScopingTest {
 
     @Test
     fun observersSwitchToTheNewOwnersData() = runTest {
-        val app = App()
+        val app = App(backgroundScope)
         app.auth.signUp("ana@example.com", "secret123").getOrThrow()
         app.cart.addToCart(CocktailCartItem(testCocktail("ana"), 1)).getOrThrow()
         app.auth.signOut().getOrThrow()
@@ -214,7 +216,7 @@ class UserDataScopingTest {
     @Test
     fun theGuestsPinnedCocktailsStayCachedForThem() = runTest {
         // Another owner's favorites keep pinning their cocktails while signed out
-        val app = App()
+        val app = App(backgroundScope)
         app.auth.signUp("ana@example.com", "secret123").getOrThrow()
         app.favorites.addToFavorites(testCocktail("fav")).getOrThrow()
         app.auth.signOut().getOrThrow()

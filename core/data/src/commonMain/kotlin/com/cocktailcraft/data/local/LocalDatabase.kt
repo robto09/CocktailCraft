@@ -78,6 +78,10 @@ internal class LocalDatabase(
     /** Whose rows reads and writes go to now: a user id, or OwnerIds.GUEST. */
     suspend fun ownerId(): String = owner.ownerId()
 
+    /** [ownerId], and again whenever it changes. */
+    val ownerIds: Flow<String>
+        get() = owner.ownerIds
+
     /** Moves the guest's cart, favorites and recently viewed list to [accountId] (see mergeGuestUserData). */
     suspend fun mergeGuestInto(accountId: String) {
         val db = get()

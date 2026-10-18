@@ -164,7 +164,8 @@ class SingleCocktailCopyMigrationTest {
             json = testJson,
             cocktailCache = cache,
             remote = CocktailRemoteDataSource(FakeCocktailApi(), ApiRateLimiter()),
-            offlineRepository = CocktailOfflineRepositoryImpl(policy, cache)
+            offlineRepository = CocktailOfflineRepositoryImpl(policy, cache),
+            appScope = backgroundScope
         )
 
         assertEquals(listOf("Aviation", "B-52"), favorites.getFavoriteCocktails().getOrThrow().map { it.name })

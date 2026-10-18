@@ -13,10 +13,14 @@ import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.util.runCatchingResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -48,6 +52,8 @@ internal class CocktailFavoritesRepositoryImpl(
     private val cocktailCache: CocktailCache,
     private val remote: CocktailRemoteDataSource,
     private val offlineRepository: CocktailOfflineRepository,
+    // App-wide scope the shared favorites stream runs in
+    appScope: CoroutineScope,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : CocktailFavoritesRepository {
 
@@ -62,17 +68,28 @@ internal class CocktailFavoritesRepositoryImpl(
         return codec.decodeOrNull(payload, row.full_details != 0L)
     }
 
-    override fun observeFavorites(): Flow<List<Cocktail>> = channelFlow {
+    /**
+     * The current owner's favorites, shared by every observer (Home,
+     * Favorites, the detail screen, the widget bridge): one database query
+     * and one decode per change however many collect, and one resolution
+     * pass per owner. It runs in the app scope while anyone collects and
+     * for 5 seconds after (a screen rotation or a quick back-and-forth
+     * keeps it), then stops; the last list is replayed to a new collector
+     * only while it runs, so nobody starts from a stale list.
+     */
+    private val sharedFavorites: SharedFlow<List<Cocktail>> = channelFlow {
         // Resolve alongside, not before, the first emission: stored favorites
         // show immediately, and each resolved one arrives as a later emission
-        // once its cocktail is stored.
+        // once its cocktail is stored. Again for each new owner.
         launch {
-            try {
-                resolveMissingFavorites()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Logger.e(e) { "Failed to resolve favorites: ${e.message}" }
+            localDatabase.ownerIds.collect {
+                try {
+                    resolveMissingFavorites()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Logger.e(e) { "Failed to resolve favorites: ${e.message}" }
+                }
             }
         }
         localDatabase.observeStateful(ioDispatcher, { ownerId -> favoriteCocktailQueries.selectAll(ownerId) }) {
@@ -83,7 +100,13 @@ internal class CocktailFavoritesRepositoryImpl(
                 }
             }
         }.collect { send(it) }
-    }
+    }.shareIn(
+        scope = appScope,
+        started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000, replayExpirationMillis = 0),
+        replay = 1
+    )
+
+    override fun observeFavorites(): Flow<List<Cocktail>> = sharedFavorites
 
     /**
      * Stores the cocktail of favorites without a (readable) stored one. A

@@ -131,6 +131,7 @@ val dataModule = module {
             cocktailCache = get(),
             remote = get(),
             offlineRepository = get(),
+            appScope = get(named("appScope")),
             ioDispatcher = get(named("ioDispatcher"))
         )
     }
