@@ -108,10 +108,6 @@ internal fun buildHttpClient(
                 Logger.d { "Network error detail: ${exception.message}" }
             }
         }
-
-        engine {
-            // Engine-specific config
-        }
     }
     return engine?.let { HttpClient(it, configuration) } ?: HttpClient(configuration)
 }
@@ -123,7 +119,9 @@ internal fun buildHttpClient(
 val networkModule = module {
     // HTTP Client
     single {
-        buildHttpClient(json = get(), config = get())
+        // Android binds an OkHttp engine over the app-wide OkHttpClient
+        // (dataPlatformModule); elsewhere Ktor picks the platform default.
+        buildHttpClient(json = get(), config = get(), engine = getOrNull())
     }
 
     // API

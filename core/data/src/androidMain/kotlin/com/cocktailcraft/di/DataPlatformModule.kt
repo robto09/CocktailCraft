@@ -16,6 +16,9 @@ import com.cocktailcraft.util.AndroidNetworkMonitor
 import com.cocktailcraft.util.NetworkMonitor
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.SharedPreferencesSettings
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.okhttp.OkHttp
+import okhttp3.OkHttpClient
 import org.koin.dsl.module
 import java.io.IOException
 import java.security.GeneralSecurityException
@@ -53,6 +56,17 @@ actual fun dataPlatformModule() = module {
 
     // Network monitoring
     single<NetworkMonitor> { AndroidNetworkMonitor(get<Context>()) }
+
+    // The app's one OkHttpClient. Ktor's engine (below) and androidApp's Coil
+    // ImageLoader both derive from it via newBuilder(), sharing its
+    // connection pool and TLS sessions — TheCocktailDB serves the API and the
+    // images from the same host. Certificate pinning is unaffected: it lives
+    // in network_security_config.xml, enforced by the platform trust manager
+    // OkHttp uses, not in an OkHttp CertificatePinner.
+    single<OkHttpClient> { OkHttpClient.Builder().build() }
+
+    // Picked up by networkModule; timeouts come from its HttpTimeout config
+    single<HttpClientEngine> { OkHttp.create { preconfigured = get<OkHttpClient>() } }
 
     // SQLite driver for the app database (offline cocktail cache, cart,
     // orders, favorites, reviews); it runs the .sqm migrations when an older

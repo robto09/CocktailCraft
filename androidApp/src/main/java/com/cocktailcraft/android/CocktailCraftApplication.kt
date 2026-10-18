@@ -1,13 +1,17 @@
 package com.cocktailcraft.android
 
 import android.app.Application
+import coil.ImageLoader
+import coil.ImageLoaderFactory
 import com.cocktailcraft.android.di.widgetModule
+import com.cocktailcraft.android.util.ImageLoaderSingleton
 import com.cocktailcraft.initKoin
+import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.logger.Level
 
-class CocktailCraftApplication : Application() {
+class CocktailCraftApplication : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
@@ -24,4 +28,10 @@ class CocktailCraftApplication : Application() {
         // Widget refresh is scheduled by the widget receivers (onEnabled),
         // never at launch: no widgets placed means no background work.
     }
+
+    // Coil asks for its singleton loader on first image load (any thread,
+    // once). Built over the OkHttpClient the Ktor engine shares
+    // (dataPlatformModule), so the app runs one HTTP stack.
+    override fun newImageLoader(): ImageLoader =
+        ImageLoaderSingleton.create(this, okHttpClient = get())
 }
