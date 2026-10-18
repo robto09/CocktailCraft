@@ -33,7 +33,9 @@ import com.cocktailcraft.resources.error_update_profile_failed
 import com.cocktailcraft.resources.error_update_profile_info_failed
 import com.cocktailcraft.resources.password_changed_message
 import com.cocktailcraft.util.ErrorHandler
+import com.cocktailcraft.util.runCatchingNonCancellation
 import com.cocktailcraft.viewmodel.state.ProfileUiState
+import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
@@ -57,23 +59,20 @@ class SharedProfileViewModel internal constructor(
     init {
         initialize()
     }
-    
+
     private fun initialize() {
         viewModelScope.launch {
             // Check if user is already signed in
             checkAuthStatus()
-            
+
             // Load user preferences
             loadUserPreferences()
         }
     }
-    
-    /**
-     * Check current authentication status.
-     * SKIE will convert this to Swift async function.
-     */
-    suspend fun checkAuthStatus() {
-        try {
+
+    /** Check current authentication status. */
+    private suspend fun checkAuthStatus() {
+        runCatchingNonCancellation(onFailure = { handleException(it, MR.strings.error_check_auth_failed) }) {
             val signedIn = manageProfileUseCase.isUserSignedIn().getOrThrow()
             _uiState.update { it.copy(
                 isLoggedIn = signedIn,
@@ -84,43 +83,38 @@ class SharedProfileViewModel internal constructor(
             } else {
                 _uiState.update { it.copy(user = null) }
             }
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_check_auth_failed)
         }
     }
-    
+
     /**
      * Sign in with email and password.
      * SKIE will convert this to Swift async function.
      */
-    suspend fun signIn(email: String, password: String): Boolean {
+    @Throws(Exception::class)
+    suspend fun signIn(email: String, password: String): Boolean =
+        runInViewModelScope { attemptSignIn(email, password) }
+
+    private suspend fun attemptSignIn(email: String, password: String): Boolean {
         clearError()
-        // Sign-in stays lenient on purpose: accounts created under older,
-        // looser rules must still be able to authenticate. Strict format
-        // rules apply where the email is first stored (signUp/updateProfile).
-        if (email.isBlank() || !email.contains('@')) {
-            setError(
-                MR.strings.error_invalid_email_title,
-                MR.strings.error_invalid_email_message,
-                ErrorHandler.ErrorCategory.DATA
-            )
-            return false
+        val inputValid = when {
+            // Sign-in stays lenient on purpose: accounts created under older,
+            // looser rules must still be able to authenticate. Strict format
+            // rules apply where the email is first stored (signUp/updateProfile).
+            email.isBlank() || !email.contains('@') -> rejectInvalidEmail()
+            // Like the email gate above: existing accounts may hold passwords
+            // set under an older policy, so sign-in only rejects empty input.
+            password.isBlank() -> rejectPassword(MR.strings.error_password_required.desc())
+            else -> true
         }
-        
-        // Like the email gate above: existing accounts may hold passwords set
-        // under an older policy, so sign-in only rejects empty input.
-        if (password.isBlank()) {
-            setError(
-                MR.strings.error_invalid_password_title,
-                MR.strings.error_password_required,
-                ErrorHandler.ErrorCategory.DATA
-            )
-            return false
-        }
+        if (!inputValid) return false
 
         _uiState.update { it.copy(isAuthenticating = true, isLoading = true) }
 
-        return try {
+        return runCatchingNonCancellation(onFailure = {
+            handleException(it, MR.strings.error_sign_in_failed)
+            _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
+            false
+        }) {
             val success = manageProfileUseCase.signIn(email, password).getOrThrow()
             if (success) {
                 _uiState.update { it.copy(authStatus = "Sign In Successful") }
@@ -135,53 +129,34 @@ class SharedProfileViewModel internal constructor(
             }
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
             success
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_sign_in_failed)
-            _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
-            false
         }
     }
-    
+
     /**
      * Sign up with name, email and password.
      * SKIE will convert this to Swift async function.
      */
-    suspend fun signUp(name: String, email: String, password: String): Boolean {
+    @Throws(Exception::class)
+    suspend fun signUp(name: String, email: String, password: String): Boolean =
+        runInViewModelScope { attemptSignUp(name, email, password) }
+
+    private suspend fun attemptSignUp(name: String, email: String, password: String): Boolean {
         clearError()
-        if (name.isBlank()) {
-            setError(
-                MR.strings.error_invalid_name_title,
-                MR.strings.error_name_required,
-                ErrorHandler.ErrorCategory.DATA
-            )
-            return false
-        }
-        
-        if (!isValidEmail(email)) {
-            setError(
-                MR.strings.error_invalid_email_title,
-                MR.strings.error_invalid_email_message,
-                ErrorHandler.ErrorCategory.DATA
-            )
-            return false
-        }
-        
-        if (!meetsPasswordPolicy(password)) {
-            setError(
-                MR.strings.error_invalid_password_title,
-                passwordPolicyMessage(),
-                ErrorHandler.ErrorCategory.DATA
-            )
-            return false
-        }
+        val inputValid = profileInputValid(name, email) &&
+            (meetsPasswordPolicy(password) || rejectPassword(passwordPolicyMessage()))
+        if (!inputValid) return false
 
         _uiState.update { it.copy(isAuthenticating = true, isLoading = true) }
 
-        return try {
+        return runCatchingNonCancellation(onFailure = {
+            handleException(it, MR.strings.error_create_account_failed)
+            _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
+            false
+        }) {
             val success = manageProfileUseCase.signUp(email, password).getOrThrow()
             if (success) {
                 _uiState.update { it.copy(authStatus = "Sign Up Successful") }
-                updateProfile(name, email)
+                saveProfile(name, email)
                 checkAuthStatus()
             } else {
                 _uiState.update { it.copy(authStatus = "Sign Up Failed") }
@@ -193,20 +168,22 @@ class SharedProfileViewModel internal constructor(
             }
             _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
             success
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_create_account_failed)
-            _uiState.update { it.copy(isAuthenticating = false, isLoading = false) }
-            false
         }
     }
-    
+
     /**
      * Sign out current user.
      * SKIE will convert this to Swift async function.
      */
-    suspend fun signOut(): Boolean {
+    @Throws(Exception::class)
+    suspend fun signOut(): Boolean = runInViewModelScope { attemptSignOut() }
+
+    private suspend fun attemptSignOut(): Boolean {
         clearError()
-        return try {
+        return runCatchingNonCancellation(onFailure = {
+            handleException(it, MR.strings.error_sign_out_failed)
+            false
+        }) {
             val success = manageProfileUseCase.signOut().getOrThrow()
             if (success) {
                 _uiState.update { it.copy(user = null, isLoggedIn = false, authStatus = "Signed Out") }
@@ -219,38 +196,24 @@ class SharedProfileViewModel internal constructor(
                 )
             }
             success
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_sign_out_failed)
-            false
         }
     }
-    
+
     /**
      * Update user profile information.
      * SKIE will convert this to Swift async function.
      */
-    suspend fun updateProfile(name: String, email: String): Boolean {
+    @Throws(Exception::class)
+    suspend fun updateProfile(name: String, email: String): Boolean = runInViewModelScope { saveProfile(name, email) }
+
+    private suspend fun saveProfile(name: String, email: String): Boolean {
         clearError()
-        if (name.isBlank()) {
-            setError(
-                MR.strings.error_invalid_name_title,
-                MR.strings.error_name_required,
-                ErrorHandler.ErrorCategory.DATA
-            )
-            return false
-        }
-        
-        if (!isValidEmail(email)) {
-            setError(
-                MR.strings.error_invalid_email_title,
-                MR.strings.error_invalid_email_message,
-                ErrorHandler.ErrorCategory.DATA
-            )
-            return false
-        }
-        
-        
-        return try {
+        if (!profileInputValid(name, email)) return false
+
+        return runCatchingNonCancellation(onFailure = {
+            handleException(it, MR.strings.error_update_profile_failed)
+            false
+        }) {
             val nameSuccess = manageProfileUseCase.updateUserName(name).getOrThrow()
             if (nameSuccess) {
                 loadCurrentUser()
@@ -262,41 +225,33 @@ class SharedProfileViewModel internal constructor(
                 )
             }
             nameSuccess
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_update_profile_failed)
-            false
         }
     }
-    
+
     /**
      * Change user password. Success is announced on [events] (it used to be
      * pushed through the error channel, so it rendered as an error alert).
      * SKIE will convert this to Swift async function.
      */
-    suspend fun changePassword(oldPassword: String, newPassword: String): Boolean {
+    @Throws(Exception::class)
+    suspend fun changePassword(oldPassword: String, newPassword: String): Boolean =
+        runInViewModelScope { savePassword(oldPassword, newPassword) }
+
+    private suspend fun savePassword(oldPassword: String, newPassword: String): Boolean {
         clearError()
-        // The old password may predate the current policy — only the new one
-        // has to meet it.
-        if (oldPassword.isBlank()) {
-            setError(
-                MR.strings.error_invalid_password_title,
-                MR.strings.error_current_password_required,
-                ErrorHandler.ErrorCategory.DATA
-            )
-            return false
+        val inputValid = when {
+            // The old password may predate the current policy — only the new
+            // one has to meet it.
+            oldPassword.isBlank() -> rejectPassword(MR.strings.error_current_password_required.desc())
+            !meetsPasswordPolicy(newPassword) -> rejectPassword(passwordPolicyMessage())
+            else -> true
         }
+        if (!inputValid) return false
 
-        if (!meetsPasswordPolicy(newPassword)) {
-            setError(
-                MR.strings.error_invalid_password_title,
-                passwordPolicyMessage(),
-                ErrorHandler.ErrorCategory.DATA
-            )
-            return false
-        }
-
-
-        return try {
+        return runCatchingNonCancellation(onFailure = {
+            handleException(it, MR.strings.error_change_password_failed)
+            false
+        }) {
             val success = manageProfileUseCase.changePassword(oldPassword, newPassword).getOrThrow()
             if (success) {
                 sendEvent(UiEvent.Success(MR.strings.password_changed_message.desc()))
@@ -308,12 +263,9 @@ class SharedProfileViewModel internal constructor(
                 )
             }
             success
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_change_password_failed)
-            false
         }
     }
-    
+
     // MARK: - Synchronous Helper Methods
 
     /**
@@ -345,25 +297,42 @@ class SharedProfileViewModel internal constructor(
             loadUserPreferences()
         }
     }
-    
+
     // MARK: - Private Helper Methods
-    
+
     private suspend fun loadCurrentUser() {
-        try {
+        // Silent fail for user loading
+        runCatchingNonCancellation(onFailure = {}) {
             val loadedUser = manageProfileUseCase.getCurrentUser().getOrThrow()
             _uiState.update { it.copy(user = loadedUser) }
-        } catch (e: Exception) {
-            // Silent fail for user loading
         }
     }
 
     private suspend fun loadUserPreferences() {
-        try {
+        // Silent fail for preferences loading
+        runCatchingNonCancellation(onFailure = {}) {
             val prefs = manageProfileUseCase.getUserPreferences().getOrDefault(UserPreferences())
             _uiState.update { it.copy(preferences = prefs) }
-        } catch (e: Exception) {
-            // Silent fail for preferences loading
         }
+    }
+
+    /** A name and an email as stored on sign-up/profile edits; reports the first problem. */
+    private fun profileInputValid(name: String, email: String): Boolean = when {
+        name.isBlank() -> rejectInput(MR.strings.error_invalid_name_title, MR.strings.error_name_required.desc())
+        !isValidEmail(email) -> rejectInvalidEmail()
+        else -> true
+    }
+
+    private fun rejectInvalidEmail(): Boolean =
+        rejectInput(MR.strings.error_invalid_email_title, MR.strings.error_invalid_email_message.desc())
+
+    private fun rejectPassword(message: StringDesc): Boolean =
+        rejectInput(MR.strings.error_invalid_password_title, message)
+
+    /** Reports invalid form input on [error]; always false, for the validators above. */
+    private fun rejectInput(title: StringResource, message: StringDesc): Boolean {
+        setError(title, message, ErrorHandler.ErrorCategory.DATA)
+        return false
     }
 
     private fun passwordPolicyMessage(): StringDesc =

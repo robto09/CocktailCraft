@@ -93,6 +93,7 @@ class SharedFavoritesViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
         repository.failingMutations = 1
         vm.toggleFavorite(testCocktail("42"))
+        advanceUntilIdle()
         assertNotNull(vm.error.value)
 
         vm.toggleFavorite(testCocktail("42"))

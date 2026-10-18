@@ -256,9 +256,7 @@ struct ProfileView: View {
                     icon: "calendar",
                     isChecked: themeViewModel.state.isSystemTheme,
                     onToggle: { target in
-                        Task {
-                            await themeViewModel.setFollowSystemTheme(target)
-                        }
+                        themeViewModel.setFollowSystemTheme(target)
                     }
                 )
 
@@ -272,9 +270,7 @@ struct ProfileView: View {
                     isChecked: themeViewModel.state.isDarkMode,
                     onToggle: { target in
                         if !themeViewModel.state.isSystemTheme {
-                            Task {
-                                await themeViewModel.setDarkMode(target)
-                            }
+                            themeViewModel.setDarkMode(target)
                         }
                     },
                     enabled: !themeViewModel.state.isSystemTheme

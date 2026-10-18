@@ -106,6 +106,7 @@ class SharedCartViewModelTest : MainDispatcherTest() {
 
         repository.failNextMutation = true
         vm.removeFromCart("1")
+        advanceUntilIdle()
 
         assertEquals(1, vm.quantityOf("1"), "failed removal must be reverted")
         assertNotNull(vm.error.value)
@@ -120,9 +121,11 @@ class SharedCartViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
         repository.failNextMutation = true
         vm.updateQuantity("1", 2)
+        advanceUntilIdle()
         assertNotNull(vm.error.value)
 
         vm.updateQuantity("1", 2)
+        advanceUntilIdle()
 
         assertNull(vm.error.value, "a successful retry must clear the earlier error")
         assertEquals(2, vm.quantityOf("1"))
@@ -180,6 +183,7 @@ class SharedCartViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         vm.clearCart()
+        advanceUntilIdle()
 
         assertTrue(vm.uiState.value.cartItems.isEmpty())
         assertEquals(Money.ZERO, vm.uiState.value.totalPrice)

@@ -16,18 +16,14 @@ struct SettingsView: View {
                     Toggle(L(\.dark_mode), isOn: Binding(
                         get: { themeViewModel.state.isDarkMode },
                         set: { enabled in
-                            Task {
-                                await themeViewModel.setDarkMode(enabled)
-                            }
+                            themeViewModel.setDarkMode(enabled)
                         }
                     ))
                     
                     Toggle(L(\.follow_system_theme), isOn: Binding(
                         get: { themeViewModel.state.isSystemTheme },
                         set: { enabled in
-                            Task {
-                                await themeViewModel.setFollowSystemTheme(enabled)
-                            }
+                            themeViewModel.setFollowSystemTheme(enabled)
                         }
                     ))
                     
@@ -35,9 +31,7 @@ struct SettingsView: View {
                         Picker(L(\.accent_color), selection: Binding(
                             get: { themeViewModel.state.accentColor },
                             set: { newColor in
-                                Task {
-                                    await themeViewModel.setAccentColor(newColor)
-                                }
+                                themeViewModel.setAccentColor(newColor)
                             }
                         )) {
                             ForEach(themeViewModel.availableAccentColors, id: \.self) { color in
@@ -51,9 +45,7 @@ struct SettingsView: View {
                         Picker(L(\.font_size), selection: Binding(
                             get: { themeViewModel.state.fontSize },
                             set: { newSize in
-                                Task {
-                                    await themeViewModel.setFontSize(newSize)
-                                }
+                                themeViewModel.setFontSize(newSize)
                             }
                         )) {
                             ForEach(themeViewModel.availableFontSizes, id: \.self) { size in
@@ -66,18 +58,14 @@ struct SettingsView: View {
                     Toggle(L(\.high_contrast), isOn: Binding(
                         get: { themeViewModel.state.isHighContrast },
                         set: { enabled in
-                            Task {
-                                await themeViewModel.setHighContrast(enabled)
-                            }
+                            themeViewModel.setHighContrast(enabled)
                         }
                     ))
                     
                     Toggle(L(\.reduced_motion), isOn: Binding(
                         get: { themeViewModel.state.isReducedMotion },
                         set: { enabled in
-                            Task {
-                                await themeViewModel.setReducedMotion(enabled)
-                            }
+                            themeViewModel.setReducedMotion(enabled)
                         }
                     ))
                 }
@@ -94,9 +82,7 @@ struct SettingsView: View {
                         titleVisibility: .visible
                     ) {
                         Button(L(\.settings_reset_to_defaults), role: .destructive) {
-                            Task {
-                                await themeViewModel.resetToDefaults()
-                            }
+                            themeViewModel.resetToDefaults()
                         }
                         Button(L(\.cancel), role: .cancel) {}
                     }

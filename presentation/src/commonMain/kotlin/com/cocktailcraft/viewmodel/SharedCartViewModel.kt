@@ -16,7 +16,7 @@ import com.cocktailcraft.resources.error_clear_cart_failed
 import com.cocktailcraft.resources.error_refresh_cart_failed
 import com.cocktailcraft.resources.error_remove_item_from_cart_failed
 import com.cocktailcraft.resources.error_update_quantity_failed
-import com.cocktailcraft.util.runCatchingNonCancellation
+import com.cocktailcraft.util.runCatchingResult
 import com.cocktailcraft.viewmodel.state.CartUiState
 import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
@@ -64,23 +64,26 @@ class SharedCartViewModel internal constructor(
      * the cart's error channel, where it would surface later on the Cart tab.
      * SKIE will convert this to Swift async function.
      */
-    suspend fun addToCart(cocktail: Cocktail, quantity: Int = 1): Boolean =
+    @Throws(Exception::class)
+    suspend fun addToCart(cocktail: Cocktail, quantity: Int = 1): Boolean = runInViewModelScope {
         manageCartUseCase.addToCartAnnounced(cocktail, quantity, ::sendEvent)
+    }
 
     /**
      * Remove an item from the cart by cocktail ID. A successful removal is
      * announced on [events] with an Undo action that puts the item back with
      * the quantity it had.
-     * SKIE will convert this to Swift async function.
      */
-    suspend fun removeFromCart(cocktailId: String) {
+    fun removeFromCart(cocktailId: String) {
         clearError()
         val previous = _uiState.value.cartItems
         val removed = previous.find { it.cocktail.id == cocktailId }
         // Optimistic: reflect the removal immediately, revert if it fails
         applyItems(previous.filterNot { it.cocktail.id == cocktailId })
-        try {
-            val result = manageCartUseCase.removeFromCart(cocktailId)
+        viewModelScope.launch {
+            val result = runCatchingResult("Failed to remove cart item") {
+                manageCartUseCase.removeFromCart(cocktailId)
+            }
             if (result is Result.Error) {
                 applyItems(previous)
                 setError(MR.strings.error_cart_title, MR.strings.error_remove_item_from_cart_failed)
@@ -92,9 +95,6 @@ class SharedCartViewModel internal constructor(
                     )
                 )
             }
-        } catch (e: Exception) {
-            applyItems(previous)
-            handleException(e, MR.strings.error_remove_item_from_cart_failed)
         }
     }
 
@@ -109,7 +109,7 @@ class SharedCartViewModel internal constructor(
         clearError()
         for (item in items) {
             val inCart = _uiState.value.cartItems.any { it.cocktail.id == item.cocktail.id }
-            val result = runCatchingNonCancellation(onFailure = { Result.Error(it.message.orEmpty()) }) {
+            val result = runCatchingResult("Failed to restore cart item") {
                 if (inCart) {
                     manageCartUseCase.updateQuantity(item.cocktail.id, item.quantity)
                 } else {
@@ -126,9 +126,8 @@ class SharedCartViewModel internal constructor(
     /**
      * Update the quantity of an item in the cart; zero or less removes it
      * (see [removeFromCart], which offers Undo).
-     * SKIE will convert this to Swift async function.
      */
-    suspend fun updateQuantity(cocktailId: String, quantity: Int) {
+    fun updateQuantity(cocktailId: String, quantity: Int) {
         if (quantity <= 0) return removeFromCart(cocktailId)
         clearError()
         val previous = _uiState.value.cartItems
@@ -136,23 +135,19 @@ class SharedCartViewModel internal constructor(
         applyItems(previous.map {
             if (it.cocktail.id == cocktailId) it.copy(quantity = quantity) else it
         })
-        try {
-            val result = manageCartUseCase.updateQuantity(cocktailId, quantity)
+        viewModelScope.launch {
+            val result = runCatchingResult("Failed to update quantity") {
+                manageCartUseCase.updateQuantity(cocktailId, quantity)
+            }
             if (result is Result.Error) {
                 applyItems(previous)
                 setError(MR.strings.error_cart_title, MR.strings.error_update_quantity_failed)
             }
-        } catch (e: Exception) {
-            applyItems(previous)
-            handleException(e, MR.strings.error_update_quantity_failed)
         }
     }
 
-    /**
-     * Increment the quantity of an item.
-     * SKIE will convert this to Swift async function.
-     */
-    suspend fun incrementQuantity(cocktailId: String) {
+    /** Increment the quantity of an item. */
+    fun incrementQuantity(cocktailId: String) {
         val currentItem = _uiState.value.cartItems.find { it.cocktail.id == cocktailId }
         if (currentItem != null) {
             updateQuantity(cocktailId, currentItem.quantity + 1)
@@ -160,7 +155,7 @@ class SharedCartViewModel internal constructor(
     }
 
     /** Decrement the quantity of an item; at one it is removed (with Undo). */
-    suspend fun decrementQuantity(cocktailId: String) {
+    fun decrementQuantity(cocktailId: String) {
         val currentItem = _uiState.value.cartItems.find { it.cocktail.id == cocktailId }
         if (currentItem != null && currentItem.quantity > 1) {
             updateQuantity(cocktailId, currentItem.quantity - 1)
@@ -173,13 +168,12 @@ class SharedCartViewModel internal constructor(
      * Clear all items from the cart. A failed clear leaves the cart as it
      * was and reports the error; a successful one is announced on [events]
      * with an Undo action that restores every item, in order.
-     * SKIE will convert this to Swift async function.
      */
-    suspend fun clearCart() {
+    fun clearCart() {
         clearError()
         val previous = _uiState.value.cartItems
-        try {
-            val result = manageCartUseCase.clearCart()
+        viewModelScope.launch {
+            val result = runCatchingResult("Failed to clear cart") { manageCartUseCase.clearCart() }
             if (result is Result.Success) {
                 _uiState.update { it.copy(cartItems = emptyList(), itemCount = 0, totalPrice = Money.ZERO) }
                 if (previous.isNotEmpty()) {
@@ -193,8 +187,6 @@ class SharedCartViewModel internal constructor(
             } else {
                 result.getOrReport(Unit, MR.strings.error_clear_cart_failed)
             }
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_clear_cart_failed)
         }
     }
 
@@ -205,7 +197,8 @@ class SharedCartViewModel internal constructor(
     fun refresh() {
         clearError()
         viewModelScope.launch {
-            applyItems(manageCartUseCase.getCartItems().getOrReport(_uiState.value.cartItems, MR.strings.error_refresh_cart_failed))
+            val items = runCatchingResult("Failed to refresh cart") { manageCartUseCase.getCartItems() }
+            applyItems(items.getOrReport(_uiState.value.cartItems, MR.strings.error_refresh_cart_failed))
         }
     }
 }

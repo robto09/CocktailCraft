@@ -141,16 +141,16 @@ fun ProfileScreen(
         isValidEmail = profileViewModel::isValidEmail,
         meetsPasswordPolicy = profileViewModel::meetsPasswordPolicy,
         onConfirmLogout = {
-            // Navigate only after sign-out completes — leaving the
-            // screen would cancel this composition-scoped coroutine.
+            // Navigate only after sign-out completes (the sign-out itself
+            // runs on the profile ViewModel's scope)
             scope.launch {
                 profileViewModel.signOut()
                 navigationManager.navigateToHome()
             }
         },
         onOrderHistoryClick = { navigationManager.navigateToOrderList() },
-        onSetFollowSystemTheme = { enabled -> scope.launch { themeViewModel.setFollowSystemTheme(enabled) } },
-        onSetDarkMode = { enabled -> scope.launch { themeViewModel.setDarkMode(enabled) } },
+        onSetFollowSystemTheme = { enabled -> themeViewModel.setFollowSystemTheme(enabled) },
+        onSetDarkMode = { enabled -> themeViewModel.setDarkMode(enabled) },
         onDismissError = { profileViewModel.clearError() }
     )
 }

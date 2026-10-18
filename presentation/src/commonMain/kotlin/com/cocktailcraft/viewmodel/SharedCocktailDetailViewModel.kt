@@ -12,6 +12,8 @@ import com.cocktailcraft.resources.error_load_cocktail_details_failed
 import com.cocktailcraft.resources.error_refresh_cocktail_details_failed
 import com.cocktailcraft.resources.error_update_favorites_failed
 import com.cocktailcraft.resources.favorite_removed
+import com.cocktailcraft.util.runCatchingNonCancellation
+import com.cocktailcraft.util.runCatchingResult
 import com.cocktailcraft.viewmodel.state.DetailUiState
 import dev.icerock.moko.resources.format
 import kotlinx.coroutines.Job
@@ -43,34 +45,38 @@ class SharedCocktailDetailViewModel internal constructor(
     /**
      * Load cocktail details by ID: the stored copy right away when it has
      * full details (fetched otherwise), then revalidated in the background
-     * when stale.
+     * when stale. Returns once the cocktail is shown (or the load failed),
+     * so the screen can tell "not loaded yet" from "not found".
      * SKIE will convert this to Swift async function.
      */
+    @Throws(Exception::class)
     suspend fun loadCocktail(cocktailId: String) {
+        runInViewModelScope { load(cocktailId) }
+    }
+
+    private suspend fun load(cocktailId: String) {
         _uiState.update { it.copy(isLoading = true) }
         clearError()
         observeCocktail(cocktailId)
 
-        try {
+        runCatchingNonCancellation(onFailure = { handleException(it, MR.strings.error_load_cocktail_details_failed) }) {
             val loadedCocktail = getCocktailDetailUseCase(cocktailId).getOrThrow()
             publishCocktail(loadedCocktail)
             if (loadedCocktail != null) {
                 viewModelScope.launch {
-                    try {
+                    // Silent: the heart just keeps its last known state
+                    runCatchingNonCancellation(onFailure = {}) {
                         val fav = getCocktailDetailUseCase.isFavorite(cocktailId)
                         _uiState.update { it.copy(isFavorite = fav) }
-                    } catch (e: Exception) { /* Silent fail */ }
+                    }
                 }
                 // Stale-while-revalidate: the stored copy stays on screen;
                 // a failure is silent (the explicit refresh reports errors).
                 viewModelScope.launch { getCocktailDetailUseCase.refreshIfStale(cocktailId) }
                 loadRelatedCocktails(loadedCocktail)
             }
-            _uiState.update { it.copy(isLoading = false) }
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_load_cocktail_details_failed)
-            _uiState.update { it.copy(isLoading = false) }
         }
+        _uiState.update { it.copy(isLoading = false) }
     }
 
     /**
@@ -78,25 +84,27 @@ class SharedCocktailDetailViewModel internal constructor(
      * on tap, not after the persist/hydration round trip — and is reconciled
      * against the toggle result (reverting, with a surfaced error, on failure).
      * Unfavoriting is announced on [events] with an Undo action.
-     * SKIE will convert this to Swift async function.
      */
-    suspend fun toggleFavorite() {
+    fun toggleFavorite() {
         val currentCocktail = _uiState.value.cocktail ?: return
         clearError()
         val wasFavorite = _uiState.value.isFavorite
         _uiState.update { it.copy(isFavorite = !wasFavorite) }
 
-        val reconciled = manageFavoritesUseCase.toggle(currentCocktail)
-            .getOrReport(default = wasFavorite, fallbackMessage = MR.strings.error_update_favorites_failed)
-        _uiState.update { it.copy(isFavorite = reconciled) }
+        viewModelScope.launch {
+            val reconciled = runCatchingResult("Failed to toggle favorite") {
+                manageFavoritesUseCase.toggle(currentCocktail)
+            }.getOrReport(default = wasFavorite, fallbackMessage = MR.strings.error_update_favorites_failed)
+            _uiState.update { it.copy(isFavorite = reconciled) }
 
-        if (wasFavorite && !reconciled) {
-            sendEvent(
-                UiEvent.Success(
-                    message = MR.strings.favorite_removed.format(currentCocktail.name),
-                    action = undoAction { refavorite(currentCocktail) }
+            if (wasFavorite && !reconciled) {
+                sendEvent(
+                    UiEvent.Success(
+                        message = MR.strings.favorite_removed.format(currentCocktail.name),
+                        action = undoAction { refavorite(currentCocktail) }
+                    )
                 )
-            )
+            }
         }
     }
 
@@ -105,14 +113,9 @@ class SharedCocktailDetailViewModel internal constructor(
         clearError()
         val isShown = _uiState.value.cocktail?.id == cocktail.id
         if (isShown) _uiState.update { it.copy(isFavorite = true) }
-        val added = try {
-            val result = manageFavoritesUseCase.addToFavorites(cocktail)
-            result.getOrReport(Unit, MR.strings.error_update_favorites_failed)
-            result !is Result.Error
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_update_favorites_failed)
-            false
-        }
+        val result = runCatchingResult("Failed to add favorite") { manageFavoritesUseCase.addToFavorites(cocktail) }
+        result.getOrReport(Unit, MR.strings.error_update_favorites_failed)
+        val added = result !is Result.Error
         if (isShown && !added) _uiState.update { it.copy(isFavorite = false) }
     }
 
@@ -120,29 +123,26 @@ class SharedCocktailDetailViewModel internal constructor(
      * Add the loaded cocktail to the cart. Like add-to-cart on Home and
      * Favorites, the outcome is announced on [events] — "Added <name> to
      * cart" only on success, else the failure. A tap while an add is in
-     * flight is ignored. Returns whether it was added.
-     * SKIE will convert this to Swift async function.
+     * flight is ignored.
      */
-    suspend fun addToCart(): Boolean {
+    fun addToCart() {
         val cocktail = _uiState.value.cocktail
-        if (cocktail == null || _uiState.value.isAddingToCart) return false
+        if (cocktail == null || _uiState.value.isAddingToCart) return
         _uiState.update { it.copy(isAddingToCart = true) }
-        val added = try {
+        viewModelScope.launch {
+            // Never throws but for cancellation: a failure is announced
             manageCartUseCase.addToCartAnnounced(cocktail, quantity = 1, announce = ::sendEvent)
-        } finally {
             _uiState.update { it.copy(isAddingToCart = false) }
         }
-        return added
     }
 
     // MARK: - Private Helper Methods
 
     private suspend fun loadRelatedCocktails(cocktail: Cocktail) {
-        try {
+        // Silent fail for related cocktails
+        runCatchingNonCancellation(onFailure = {}) {
             val related = getCocktailDetailUseCase.getRelatedCocktails(cocktail)
             _uiState.update { it.copy(relatedCocktails = related) }
-        } catch (e: Exception) {
-            // Silent fail for related cocktails
         }
     }
 
@@ -170,30 +170,28 @@ class SharedCocktailDetailViewModel internal constructor(
     fun refresh() {
         val currentCocktail = _uiState.value.cocktail
         if (currentCocktail != null) {
-            viewModelScope.launch {
-                loadCocktail(currentCocktail.id)
-            }
+            viewModelScope.launch { load(currentCocktail.id) }
         }
     }
 
     /**
      * Force-refresh the current cocktail from the network, bypassing the
      * repository cache, and update the UI state with the fresh copy.
-     * SKIE will convert this to a Swift async function.
      */
-    suspend fun refreshCocktail() {
+    fun refreshCocktail() {
         val cocktailId = _uiState.value.cocktail?.id ?: return
         clearError()
         _uiState.update { it.copy(isLoading = true) }
 
-        try {
-            val refreshed = getCocktailDetailUseCase.refresh(cocktailId).getOrThrow()
-            if (refreshed != null) {
-                publishCocktail(refreshed)
+        viewModelScope.launch {
+            runCatchingNonCancellation(
+                onFailure = { handleException(it, MR.strings.error_refresh_cocktail_details_failed) }
+            ) {
+                val refreshed = getCocktailDetailUseCase.refresh(cocktailId).getOrThrow()
+                if (refreshed != null) {
+                    publishCocktail(refreshed)
+                }
             }
-            _uiState.update { it.copy(isLoading = false) }
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_refresh_cocktail_details_failed)
             _uiState.update { it.copy(isLoading = false) }
         }
     }

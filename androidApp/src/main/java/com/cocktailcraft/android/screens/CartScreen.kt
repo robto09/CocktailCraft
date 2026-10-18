@@ -97,23 +97,17 @@ fun CartScreen(
         isPlacingOrder = orderState.isPlacingOrder,
         onStartShopping = onStartShopping,
         onRetry = { viewModel.refresh() },
-        onIncreaseQuantity = { item -> scope.launch { viewModel.updateQuantity(item.cocktail.id, item.quantity + 1) } },
-        onDecreaseQuantity = { item ->
-            scope.launch {
-                if (item.quantity > 1) {
-                    viewModel.updateQuantity(item.cocktail.id, item.quantity - 1)
-                } else {
-                    viewModel.removeFromCart(item.cocktail.id)
-                }
-            }
-        },
-        onRemove = { item -> scope.launch { viewModel.removeFromCart(item.cocktail.id) } },
-        onToggleFavorite = { item -> scope.launch { favoritesViewModel.toggleFavorite(item.cocktail) } },
+        onIncreaseQuantity = { item -> viewModel.incrementQuantity(item.cocktail.id) },
+        // At one, removes the item (with Undo)
+        onDecreaseQuantity = { item -> viewModel.decrementQuantity(item.cocktail.id) },
+        onRemove = { item -> viewModel.removeFromCart(item.cocktail.id) },
+        onToggleFavorite = { item -> favoritesViewModel.toggleFavorite(item.cocktail) },
         onConfirmOrder = {
-            // Navigate only once the order is persisted — this scope dies with
-            // the screen, so leaving early would cancel the work. placeOrder
-            // empties the cart in the same transaction and leaves it alone if
-            // the order fails; it also ignores a second tap while in flight.
+            // Navigate only once the order is persisted. The order itself
+            // runs on the order ViewModel's scope, so leaving early only
+            // skips the navigation. placeOrder empties the cart in the same
+            // transaction and leaves it alone if the order fails; it also
+            // ignores a second tap while in flight.
             scope.launch {
                 // The use case computes the total from the items and DeliveryPolicy
                 val placed = orderViewModel.placeOrder(cartItems = state.cartItems)

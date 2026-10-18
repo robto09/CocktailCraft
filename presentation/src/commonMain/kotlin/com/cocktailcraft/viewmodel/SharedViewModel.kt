@@ -12,6 +12,7 @@ import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,22 @@ import kotlinx.coroutines.launch
  * multiplatform androidx [ViewModel] (Main-dispatched viewModelScope, cleared
  * automatically when owned by a ViewModelStore).
  * Dependencies are constructor-injected so subclasses can be built without a Koin container.
+ *
+ * Actions run on viewModelScope, never in the caller's coroutine, so a
+ * screen that goes away (a Compose scope left, a Swift Task cancelled) can
+ * not abort a write or a refresh halfway:
+ *  - most are plain functions that launch their work and report back
+ *    through uiState, [error] and [events];
+ *  - an action stays `suspend` only when its caller has to wait for it — a
+ *    result to branch on (dismiss a sheet, navigate, toast an outcome) or
+ *    the end of a pull-to-refresh. It runs through [runInViewModelScope],
+ *    so cancelling the caller only stops the waiting, and it is
+ *    `@Throws(Exception::class)`: Swift calls it, and without the
+ *    annotation an exception escaping to Swift terminates the app.
+ *
+ * Koin `single`-scoped subclasses are never cleared (nothing routes them
+ * through a ViewModelStore), so never put teardown in onCleared() expecting
+ * it to run for a singleton (see PresentationModule's scoping notes, SH-9).
  */
 abstract class SharedViewModel : ViewModel() {
 
@@ -153,13 +170,11 @@ abstract class SharedViewModel : ViewModel() {
     }
 
     /**
-     * Public so manually-owned instances (iOS factory-scoped wrappers) can
-     * clear themselves; store-owned instances are cleared by the platform.
-     * Koin `single`-scoped ViewModels are NEITHER — nothing ever calls
-     * onCleared() on them, so never put teardown logic here expecting it to
-     * run for a singleton (see PresentationModule's ViewModel scoping notes, SH-9).
+     * Runs [block] on viewModelScope and waits for its result: the body of
+     * every `suspend` action (see the class notes). Cancelling the caller
+     * only stops it waiting; the work itself finishes, and is cancelled only
+     * with the ViewModel.
      */
-    public override fun onCleared() {
-        super.onCleared()
-    }
+    protected suspend fun <T> runInViewModelScope(block: suspend () -> T): T =
+        viewModelScope.async { block() }.await()
 }

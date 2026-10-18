@@ -38,24 +38,16 @@ struct CartView: View {
                                     item: item,
                                     isFavorite: favoriteIds.contains(item.cocktail.id),
                                     onIncrementQuantity: {
-                                        Task {
-                                            await cartViewModel.incrementQuantity(item.cocktail.id)
-                                        }
+                                        cartViewModel.incrementQuantity(item.cocktail.id)
                                     },
                                     onDecrementQuantity: {
-                                        Task {
-                                            await cartViewModel.decrementQuantity(item.cocktail.id)
-                                        }
+                                        cartViewModel.decrementQuantity(item.cocktail.id)
                                     },
                                     onRemoveFromCart: {
-                                        Task {
-                                            await cartViewModel.removeFromCart(item.cocktail.id)
-                                        }
+                                        cartViewModel.removeFromCart(item.cocktail.id)
                                     },
                                     onToggleFavorite: {
-                                        Task {
-                                            await favoritesViewModel.toggleFavorite(item.cocktail)
-                                        }
+                                        favoritesViewModel.toggleFavorite(item.cocktail)
                                     }
                                 )
                                 .padding(.horizontal, AppTheme.Spacing.lg)

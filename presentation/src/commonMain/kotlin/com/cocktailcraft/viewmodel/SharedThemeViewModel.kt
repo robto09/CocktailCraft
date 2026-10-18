@@ -29,7 +29,9 @@ import com.cocktailcraft.resources.font_size_medium
 import com.cocktailcraft.resources.font_size_small
 import com.cocktailcraft.resources.font_size_xlarge
 import com.cocktailcraft.util.ErrorHandler
+import com.cocktailcraft.util.runCatchingNonCancellation
 import com.cocktailcraft.viewmodel.state.ThemeUiState
+import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.Raw
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
@@ -70,22 +72,19 @@ class SharedThemeViewModel internal constructor(
 
     /**
      * Set the theme mode. The single mutation point for theme selection.
-     * SKIE will convert this to Swift async function.
+     * Like every setter here it applies at once and saves on viewModelScope;
+     * a failed save is reported on [error].
      */
-    suspend fun setThemeMode(mode: ThemeMode) {
-        try {
-            _uiState.update { it.copy(themeMode = mode) }
-            savePreferences()
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_update_theme_mode_failed)
-        }
+    fun setThemeMode(mode: ThemeMode) {
+        _uiState.update { it.copy(themeMode = mode) }
+        persist(MR.strings.error_update_theme_mode_failed)
     }
 
     /**
      * Value-based dark mode setter: enabling/disabling always leaves
      * system-following off, because the user expressed an explicit choice.
      */
-    suspend fun setDarkMode(enabled: Boolean) {
+    fun setDarkMode(enabled: Boolean) {
         setThemeMode(if (enabled) ThemeMode.DARK else ThemeMode.LIGHT)
     }
 
@@ -93,7 +92,7 @@ class SharedThemeViewModel internal constructor(
      * Value-based system-following setter. Turning it off falls back to the
      * last persisted explicit choice.
      */
-    suspend fun setFollowSystemTheme(enabled: Boolean) {
+    fun setFollowSystemTheme(enabled: Boolean) {
         setThemeMode(
             when {
                 enabled -> ThemeMode.SYSTEM
@@ -103,49 +102,29 @@ class SharedThemeViewModel internal constructor(
         )
     }
 
-    suspend fun setAccentColor(color: String) {
-        try {
-            _uiState.update { it.copy(accentColor = color) }
-            savePreferences()
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_update_accent_color_failed)
-        }
+    fun setAccentColor(color: String) {
+        _uiState.update { it.copy(accentColor = color) }
+        persist(MR.strings.error_update_accent_color_failed)
     }
 
-    suspend fun setFontSize(size: String) {
-        try {
-            _uiState.update { it.copy(fontSize = size) }
-            savePreferences()
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_update_font_size_failed)
-        }
+    fun setFontSize(size: String) {
+        _uiState.update { it.copy(fontSize = size) }
+        persist(MR.strings.error_update_font_size_failed)
     }
 
-    suspend fun setHighContrast(enabled: Boolean) {
-        try {
-            _uiState.update { it.copy(isHighContrast = enabled) }
-            savePreferences()
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_update_high_contrast_failed)
-        }
+    fun setHighContrast(enabled: Boolean) {
+        _uiState.update { it.copy(isHighContrast = enabled) }
+        persist(MR.strings.error_update_high_contrast_failed)
     }
 
-    suspend fun setReducedMotion(enabled: Boolean) {
-        try {
-            _uiState.update { it.copy(isReducedMotion = enabled) }
-            savePreferences()
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_update_reduced_motion_failed)
-        }
+    fun setReducedMotion(enabled: Boolean) {
+        _uiState.update { it.copy(isReducedMotion = enabled) }
+        persist(MR.strings.error_update_reduced_motion_failed)
     }
 
-    suspend fun resetToDefaults() {
-        try {
-            _uiState.update { ThemeUiState() }
-            savePreferences()
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_reset_theme_failed)
-        }
+    fun resetToDefaults() {
+        _uiState.update { ThemeUiState() }
+        persist(MR.strings.error_reset_theme_failed)
     }
 
     // MARK: - Synchronous Helper Methods
@@ -182,7 +161,8 @@ class SharedThemeViewModel internal constructor(
     // MARK: - Private Helper Methods
 
     private suspend fun loadUserPreferences() {
-        try {
+        // Silent fail for preferences loading
+        runCatchingNonCancellation(onFailure = {}) {
             val preferences = manageProfileUseCase.getUserPreferences().getOrDefault(UserPreferences())
             _uiState.update { it.copy(
                 userPreferences = preferences,
@@ -196,13 +176,20 @@ class SharedThemeViewModel internal constructor(
                 isHighContrast = preferences.isHighContrast,
                 isReducedMotion = preferences.isReducedMotion
             ) }
-        } catch (e: Exception) {
-            // Silent fail for preferences loading
         }
     }
 
-    private suspend fun savePreferences() {
-        try {
+    /**
+     * Save the current state as the user's preferences, on viewModelScope
+     * so leaving the screen can't drop the write. [failureMessage] names
+     * the setting for an unexpected failure.
+     */
+    private fun persist(failureMessage: StringResource) {
+        viewModelScope.launch { savePreferences(failureMessage) }
+    }
+
+    private suspend fun savePreferences(failureMessage: StringResource) {
+        runCatchingNonCancellation(onFailure = { handleException(it, failureMessage) }) {
             val state = _uiState.value
             val updatedPreferences = state.userPreferences.copy(
                 // Under SYSTEM, keep the last explicit choice so turning
@@ -229,8 +216,6 @@ class SharedThemeViewModel internal constructor(
                     ErrorHandler.ErrorCategory.SERVER
                 )
             }
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_save_theme_failed)
         }
     }
 }

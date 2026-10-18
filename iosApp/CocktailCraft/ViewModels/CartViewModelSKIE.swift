@@ -34,17 +34,19 @@ final class CartViewModelSKIE: SharedViewModelWrapper<CartUiState> {
         }
     }
 
-    func decrementQuantity(_ cocktailId: String) async {
-        // Optimistic apply/revert lives in the shared ViewModel
-        await run { try await sharedViewModel.decrementQuantity(cocktailId: cocktailId) }
+    // Fire-and-forget: the shared ViewModel applies the change at once
+    // (optimistically, reverted on failure) and saves it on its own scope
+
+    func decrementQuantity(_ cocktailId: String) {
+        sharedViewModel.decrementQuantity(cocktailId: cocktailId)
     }
 
-    func incrementQuantity(_ cocktailId: String) async {
-        // Optimistic apply/revert lives in the shared ViewModel
-        await run { try await sharedViewModel.incrementQuantity(cocktailId: cocktailId) }
+    func incrementQuantity(_ cocktailId: String) {
+        sharedViewModel.incrementQuantity(cocktailId: cocktailId)
     }
 
-    func removeFromCart(_ cocktailId: String) async {
-        await run { try await sharedViewModel.removeFromCart(cocktailId: cocktailId) }
+    /// Announced on the mirrored `event` with an Undo action.
+    func removeFromCart(_ cocktailId: String) {
+        sharedViewModel.removeFromCart(cocktailId: cocktailId)
     }
 }
