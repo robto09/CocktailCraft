@@ -43,12 +43,13 @@ import com.cocktailcraft.android.screens.detail.DetailMainInfoCard
 import com.cocktailcraft.android.screens.detail.DetailRecommendationsSection
 import com.cocktailcraft.android.screens.detail.DetailReviewsSection
 import com.cocktailcraft.android.ui.components.AppTopBar
-import com.cocktailcraft.android.ui.components.DetailHeaderImage
 import com.cocktailcraft.android.ui.components.CocktailDetailShimmer
+import com.cocktailcraft.android.ui.components.DetailHeaderImage
 import com.cocktailcraft.android.ui.components.ErrorStateView
 import com.cocktailcraft.android.ui.components.ErrorToastEffect
 import com.cocktailcraft.android.ui.components.LocalToastHostState
 import com.cocktailcraft.android.ui.components.ToastSnackbarHost
+import com.cocktailcraft.android.ui.components.UiEventToasts
 import com.cocktailcraft.android.ui.components.WriteReviewSheet
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.rememberHapticHandler
@@ -117,6 +118,9 @@ fun CocktailDetailScreen(
     val isFavorite = detailState.cocktail?.let { it.id in favoriteIds } ?: false
 
     CompositionLocalProvider(LocalToastHostState provides toastHostState) {
+        // Add-to-cart outcomes and the Undo after unfavoriting
+        UiEventToasts(detailViewModel.events)
+
         // With the cocktail on screen, a failed refresh or favorite toggle is a
         // toast; a failed initial load is the full-screen error state instead
         // (iOS does the same with its alert).
@@ -149,6 +153,10 @@ fun CocktailDetailScreen(
                     detailViewModel.refreshCocktail()
                 }
             },
+            // Confirmed (or reported) by a toast from the detail events
+            onAddToCart = {
+                coroutineScope.launch { detailViewModel.addToCart() }
+            },
             onRecommendationClick = { recommendation ->
                 navigationManager.navigateToCocktailDetail(recommendation.id)
             },
@@ -169,8 +177,7 @@ fun CocktailDetailScreen(
 /**
  * Stateless detail content: renders the detail/review state and reports
  * every intent upward, so it can be previewed/screenshot-tested without
- * ViewModels. Owns only UI-local state (review sheet, haptics). Adding to
- * cart happens from the Home and Favorites cards, not here.
+ * ViewModels. Owns only UI-local state (review sheet, haptics).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -191,6 +198,7 @@ internal fun CocktailDetailContent(
     hasLoaded: Boolean = true,
     error: ErrorHandler.UserFriendlyError? = null,
     onRetry: () -> Unit = {},
+    onAddToCart: () -> Unit = {},
     toastHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     // Single source of truth for the cocktail; the branches mirror iOS's
@@ -301,7 +309,12 @@ internal fun CocktailDetailContent(
                     item {
                         DetailMainInfoCard(
                             cocktail = cocktailData,
-                            onRefreshDetails = onRefreshDetails
+                            onRefreshDetails = onRefreshDetails,
+                            onAddToCart = {
+                                hapticHandler.performClick()
+                                onAddToCart()
+                            },
+                            isAddingToCart = detailState.isAddingToCart
                         )
                     }
 

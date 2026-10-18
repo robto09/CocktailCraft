@@ -57,8 +57,8 @@ import com.cocktailcraft.android.navigation.HomeRoute
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.navigation.OrderListRoute
 import com.cocktailcraft.android.navigation.ProfileRoute
-import com.cocktailcraft.android.navigation.isValidCocktailId
 import com.cocktailcraft.android.navigation.Screen
+import com.cocktailcraft.android.navigation.isValidCocktailId
 import com.cocktailcraft.android.screens.CartScreen
 import com.cocktailcraft.android.screens.CocktailDetailScreen
 import com.cocktailcraft.android.screens.FavoritesScreen
@@ -166,8 +166,12 @@ fun MainScreen() {
     }
 
     CompositionLocalProvider(LocalToastHostState provides snackbarHostState) {
-        // The one collector of the cart's events (add-to-cart outcomes)
+        // The one collector of the cart's events (add-to-cart outcomes, and
+        // the Undo after a removal) and of the favorites' (the Undo after
+        // unfavoriting on the Favorites tab). The detail screens toast their
+        // own ViewModels' events.
         UiEventToasts(sharedCartViewModel.events)
+        UiEventToasts(sharedFavoritesViewModel.events)
 
         NavHost(
             navController = navController,

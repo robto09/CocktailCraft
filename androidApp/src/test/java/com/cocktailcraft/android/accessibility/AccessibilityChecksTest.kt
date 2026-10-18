@@ -16,6 +16,7 @@ import com.cocktailcraft.android.screens.detail.DetailChipsSection
 import com.cocktailcraft.android.screens.detail.DetailMainInfoCard
 import com.cocktailcraft.android.screens.detail.DetailReviewsSection
 import com.cocktailcraft.android.ui.components.SearchFilterChips
+import com.cocktailcraft.android.ui.components.SuccessToast
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.domain.model.SearchFilters
@@ -119,7 +120,8 @@ class AccessibilityChecksTest(private val fontScale: Float) {
         Column(modifier = Modifier.padding(top = 20.dp)) {
             DetailMainInfoCard(
                 cocktail = PreviewData.cocktail,
-                onRefreshDetails = {}
+                onRefreshDetails = {},
+                onAddToCart = {}
             )
             DetailChipsSection(
                 category = PreviewData.cocktail.category,
@@ -128,6 +130,11 @@ class AccessibilityChecksTest(private val fontScale: Float) {
             )
             DetailReviewsSection(reviews = PreviewData.reviews, onWriteReviewClick = {})
         }
+    }
+
+    @Test
+    fun undoToast() = check {
+        SuccessToast(message = "Removed Margarita from cart", actionLabel = "Undo", onAction = {})
     }
 
     @Test
