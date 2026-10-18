@@ -340,7 +340,7 @@ For details about the iOS migration, SKIE implementation, and native Swift async
 ### Error Handling
 - **ErrorUtils**: Centralized error handling and categorization
 - **SharedViewModel**: Common error handling for all ViewModels
-- **ErrorDialog & ErrorBanner**: User-friendly error display components
+- **ErrorDialog**: User-friendly error display component
 - **Recovery Actions**: Actionable error messages with recovery options
 - **Localized copy**: Error titles, messages and actions are shared `StringDesc`s, resolved for the user's locale by each platform (see [Localization](#localization))
 

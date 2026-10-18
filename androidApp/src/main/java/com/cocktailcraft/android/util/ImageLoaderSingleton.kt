@@ -2,7 +2,6 @@ package com.cocktailcraft.android.util
 
 import android.content.Context
 import coil.ImageLoader
-import coil.annotation.ExperimentalCoilApi
 import coil.disk.DiskCache
 import coil.imageLoader
 import coil.memory.MemoryCache
@@ -75,15 +74,5 @@ object ImageLoaderSingleton {
             .logger(if (BuildConfig.DEBUG) DebugLogger() else null)
             .crossfade(true)
             .build()
-    }
-
-    /**
-     * Clear all caches (memory and disk).
-     */
-    @OptIn(ExperimentalCoilApi::class)
-    fun clearCache(context: Context) {
-        val loader = getImageLoader(context)
-        loader.memoryCache?.clear()
-        loader.diskCache?.clear()
     }
 }

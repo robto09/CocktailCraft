@@ -32,28 +32,10 @@ class NavigationManager(private val navController: NavController) {
     }
 
     /**
-     * Navigate to the cart screen
-     */
-    fun navigateToCart() {
-        // Cart is a bottom-nav tab: a plain navigate() here would stack an extra
-        // CartRoute entry above Home instead of switching tabs, and popping that
-        // entry with popUpTo(saveState = true) is what poisons Home restoration
-        // (see navigateToTopLevelDestination).
-        navigateToTopLevelDestination(CartRoute)
-    }
-
-    /**
      * Navigate to the home screen
      */
     fun navigateToHome() {
         navigateToTopLevelDestination(HomeRoute)
-    }
-
-    /**
-     * Navigate to the favorites screen
-     */
-    fun navigateToFavorites() {
-        navigateToTopLevelDestination(FavoritesRoute)
     }
 
     /**

@@ -19,14 +19,6 @@ import androidx.compose.ui.platform.LocalView
 object HapticUtils {
     
     /**
-     * Performs a light click haptic feedback.
-     * Best for: toggle actions, button presses, selections
-     */
-    fun View.performClickHaptic() {
-        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-    }
-    
-    /**
      * Performs a medium/confirm haptic feedback.
      * Best for: successful actions, adding to favorites
      */
@@ -48,14 +40,6 @@ object HapticUtils {
         } else {
             performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
         }
-    }
-    
-    /**
-     * Performs a long press haptic feedback.
-     * Best for: heavy confirmation actions
-     */
-    fun View.performLongPressHaptic() {
-        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
     }
 }
 
@@ -100,24 +84,10 @@ class HapticHandler(
     }
     
     /**
-     * Performs a long press haptic feedback.
-     */
-    fun performLongPress() {
-        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-    }
-    
-    /**
      * Performs a confirm haptic feedback (for successful actions).
      */
     fun performConfirm() {
         with(HapticUtils) { view.performConfirmHaptic() }
-    }
-    
-    /**
-     * Performs a reject haptic feedback (for errors or removals).
-     */
-    fun performReject() {
-        with(HapticUtils) { view.performRejectHaptic() }
     }
 }
 

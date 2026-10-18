@@ -16,7 +16,6 @@ import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.components.DetailInfoCard
 import com.cocktailcraft.android.ui.components.OrderCard
 import com.cocktailcraft.android.ui.components.OrderSummaryCard
-import com.cocktailcraft.android.ui.components.SettingsCard
 import com.cocktailcraft.android.ui.components.SettingsItem
 import com.cocktailcraft.domain.model.Money
 import org.junit.Test
@@ -88,31 +87,26 @@ class CardScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
     }
 
     @Test
-    fun settingsCard() = snapshot("SettingsCard") {
-        SettingsCard(
-            title = "Account Settings",
-            content = {
-                Column {
-                    SettingsItem(icon = Icons.Default.Person, title = "Edit Profile", onClick = {})
-                    SettingsItem(icon = Icons.Default.Lock, title = "Change Password", onClick = {})
-                    AnimatedThemeToggleRow(
-                        title = "Dark Mode",
-                        subtitle = "On",
-                        icon = Icons.Default.DarkMode,
-                        isChecked = true,
-                        onToggle = {}
-                    )
-                    AnimatedThemeToggleRow(
-                        title = "Dark Mode",
-                        subtitle = "Controlled by system",
-                        icon = Icons.Default.DarkMode,
-                        isChecked = false,
-                        onToggle = {},
-                        enabled = false
-                    )
-                }
-            }
-        )
+    fun settingsRows() = snapshot("SettingsRows") {
+        Column {
+            SettingsItem(icon = Icons.Default.Person, title = "Edit Profile", onClick = {})
+            SettingsItem(icon = Icons.Default.Lock, title = "Change Password", onClick = {})
+            AnimatedThemeToggleRow(
+                title = "Dark Mode",
+                subtitle = "On",
+                icon = Icons.Default.DarkMode,
+                isChecked = true,
+                onToggle = {}
+            )
+            AnimatedThemeToggleRow(
+                title = "Dark Mode",
+                subtitle = "Controlled by system",
+                icon = Icons.Default.DarkMode,
+                isChecked = false,
+                onToggle = {},
+                enabled = false
+            )
+        }
     }
 
     companion object {

@@ -6,12 +6,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.ui.components.AnimatedButton
 import com.cocktailcraft.android.ui.components.AnimatedIconButton
-import com.cocktailcraft.android.ui.components.AnimatedTextButton
 import com.cocktailcraft.android.ui.components.PrimaryButton
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,17 +31,12 @@ class ButtonScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
     }
 
     @Test
-    fun animatedButtons() = snapshot("AnimatedButtons") {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            AnimatedButton(onClick = {}) { Text("Add to Cart") }
-            AnimatedButton(onClick = {}, enabled = false) { Text("Add to Cart") }
-            AnimatedTextButton(text = "See all", onClick = {})
-            AnimatedIconButton(
-                onClick = {},
-                icon = Icons.Default.Favorite,
-                contentDescription = null
-            )
-        }
+    fun animatedIconButton() = snapshot("AnimatedIconButton") {
+        AnimatedIconButton(
+            onClick = {},
+            icon = Icons.Default.Favorite,
+            contentDescription = null
+        )
     }
 
     companion object {
