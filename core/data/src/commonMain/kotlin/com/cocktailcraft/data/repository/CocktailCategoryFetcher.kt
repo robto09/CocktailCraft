@@ -8,6 +8,8 @@ import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCategories
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.time.Clock
 
 /**
@@ -30,6 +32,17 @@ internal class CocktailCategoryFetcher(
     private val offlineRepository: CocktailOfflineRepository
 ) {
 
+    // One lock per category: concurrent fetches of the same category (the
+    // home screen and a filter opening together, a double refresh) queue
+    // behind the first, then find its result in the fresh category cache
+    // instead of each issuing the same request. Different categories still
+    // fetch in parallel. The map only ever holds the handful of categories.
+    private val categoryLocksGuard = Mutex()
+    private val categoryLocks = mutableMapOf<String, Mutex>()
+
+    private suspend fun lockFor(category: String): Mutex =
+        categoryLocksGuard.withLock { categoryLocks.getOrPut(category) { Mutex() } }
+
     /**
      * Fetch cocktails for [category], preferring fresh category cache, then
      * cached fallbacks when the API fails. A genuine failure with no cached
@@ -41,8 +54,14 @@ internal class CocktailCategoryFetcher(
      * [Cocktail.dateAdded], but that is construction time, not API data: fresh
      * placeholders sorted above cached records, so the same category listed
      * in a different order on every device.
+     *
+     * Concurrent calls for the same category share one request (see
+     * [categoryLocks]).
      */
-    suspend fun fetchCocktailsByCategory(category: String): List<Cocktail> {
+    suspend fun fetchCocktailsByCategory(category: String): List<Cocktail> =
+        lockFor(category).withLock { fetchUnderLock(category) }
+
+    private suspend fun fetchUnderLock(category: String): List<Cocktail> {
         // First check category-specific cache
         val categoryCachedCocktails = cacheManager.getCategoryCache(category)
         val categoryLastFetch = cacheManager.getCategoryLastFetchTime(category)

@@ -4,6 +4,7 @@ import com.cocktailcraft.data.remote.CategoryDto
 import com.cocktailcraft.data.remote.CocktailApi
 import com.cocktailcraft.data.remote.CocktailDto
 import com.cocktailcraft.data.remote.IngredientDto
+import kotlinx.coroutines.delay
 
 /**
  * In-memory [CocktailApi] for the data-layer repository tests. Lives with the
@@ -44,7 +45,16 @@ internal class FakeCocktailApi(var drinks: List<CocktailDto> = emptyList()) : Co
      */
     var categoryFilterReturnsPartialDtos = false
 
+    /** filter.php?c= calls served so far, to assert request deduplication. */
+    var categoryRequests = 0
+        private set
+
+    /** When > 0, filter.php?c= suspends this long first (a slow network). */
+    var categoryDelayMs = 0L
+
     override suspend fun filterByCategory(category: String): List<CocktailDto> {
+        categoryRequests++
+        if (categoryDelayMs > 0) delay(categoryDelayMs)
         categoryEndpointError?.let { throw it }
         val matches = drinks.filter { it.category == category }
         return if (categoryFilterReturnsPartialDtos) {

@@ -15,6 +15,8 @@ import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.testCocktail
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -242,6 +244,27 @@ class CocktailSearchRepositoryImplTest {
         assertEquals(setOf("2", "3"), cocktails.map { it.id }.toSet())
         assertTrue(cocktails.all { it.category == "Cocktail" },
             "partial filter.php records must be stamped with the category they were fetched by")
+    }
+
+    @Test
+    fun concurrentFetchesOfTheSameCategoryShareOneRequest() = runTest {
+        val api = FakeCocktailApi(drinks = sampleDrinks()).apply { categoryDelayMs = 500 }
+        val repo = repository(api = api)
+
+        val results = List(3) { async { repo.filterByCategory("Cocktail") } }.awaitAll()
+
+        assertEquals(1, api.categoryRequests, "followers must reuse the in-flight fetch's result")
+        results.forEach { assertEquals(listOf("2", "3"), (it as Result.Success).data.map { c -> c.id }) }
+    }
+
+    @Test
+    fun differentCategoriesStillFetchIndependently() = runTest {
+        val api = FakeCocktailApi(drinks = sampleDrinks())
+        val repo = repository(api = api)
+
+        listOf("Cocktail", "Ordinary Drink").map { async { repo.filterByCategory(it) } }.awaitAll()
+
+        assertEquals(2, api.categoryRequests)
     }
 
     @Test
