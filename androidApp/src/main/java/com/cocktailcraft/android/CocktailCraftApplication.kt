@@ -2,14 +2,11 @@ package com.cocktailcraft.android
 
 import android.app.Application
 import android.os.Looper
-import com.cocktailcraft.di.appModule
-import com.cocktailcraft.di.platformModule
 import com.cocktailcraft.android.di.widgetModule
 import com.cocktailcraft.android.widget.WidgetUpdateWorker
-import com.cocktailcraft.util.NetworkMonitor
+import com.cocktailcraft.initKoin
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
-import org.koin.core.context.startKoin
 import org.koin.core.logger.Level
 
 class CocktailCraftApplication : Application() {
@@ -17,15 +14,14 @@ class CocktailCraftApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        val koinApp = startKoin {
+        // Shared app init: sets the log floor from this build's flag (release
+        // keeps only warnings/errors), starts Koin with the shared modules and
+        // starts process-wide connectivity monitoring (SH-2).
+        initKoin(isDebug = BuildConfig.DEBUG) {
             androidLogger(if (BuildConfig.DEBUG) Level.INFO else Level.ERROR)
             androidContext(this@CocktailCraftApplication)
-            modules(appModule + platformModule() + widgetModule)
+            modules(widgetModule)
         }
-
-        // Process-wide connectivity monitoring starts once here. ViewModels
-        // only observe isOnline; they never start/stop the monitor (SH-2).
-        koinApp.koin.get<NetworkMonitor>().startMonitoring()
 
         // WorkManager scheduling touches its database — keep that off the
         // cold-start critical path and run it when the main thread first goes

@@ -100,7 +100,12 @@ internal fun buildHttpClient(
 
         HttpResponseValidator {
             handleResponseExceptionWithRequest { exception, _ ->
-                Logger.w { "Network error: ${exception.message}" }
+                // Ktor's messages embed the full request URL (search
+                // queries), so release builds — whose floor is Warn — get
+                // only the status or exception type; the detail is debug-only.
+                val status = (exception as? ResponseException)?.response?.status?.value
+                Logger.w { "Network error: ${status?.let { "HTTP $it" } ?: exception::class.simpleName}" }
+                Logger.d { "Network error detail: ${exception.message}" }
             }
         }
 
