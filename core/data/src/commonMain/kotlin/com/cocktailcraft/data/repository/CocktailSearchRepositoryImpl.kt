@@ -105,8 +105,11 @@ internal class CocktailSearchRepositoryImpl(
                 acc.filter { it.id in ids }
             }
 
-            // Cache the results for offline access
-            cocktailCache.cacheCocktails(result)
+            // Cache the full records (name search) for offline access. The
+            // filter.php ones are partial: nothing an offline search could
+            // match beyond the name, and hundreds of them per filter used to
+            // push category pages and full details out of the cache.
+            cocktailCache.cacheCocktails(result.filter { it.hasFullDetails })
 
             Result.Success(result)
         }

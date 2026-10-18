@@ -6,6 +6,7 @@ import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.remote.ApiRateLimiter
 import com.cocktailcraft.data.remote.CocktailDto
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
+import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.CocktailCategories
 import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.SearchFilters
@@ -27,6 +28,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CocktailSearchRepositoryImplTest {
@@ -47,7 +49,8 @@ class CocktailSearchRepositoryImplTest {
         api: FakeCocktailApi = FakeCocktailApi(),
         settings: Settings = MapSettings(),
         online: Boolean = true,
-        dispatcher: CoroutineDispatcher? = null
+        dispatcher: CoroutineDispatcher? = null,
+        appConfig: AppConfig = config
     ): Fixture {
         val networkMonitor = FakeNetworkMonitor(online)
         val policy = OfflineModePolicy(networkMonitor)
@@ -55,7 +58,7 @@ class CocktailSearchRepositoryImplTest {
             createTestDatabase(),
             settings,
             Json { ignoreUnknownKeys = true },
-            config,
+            appConfig,
             ioDispatcher = dispatcher ?: Dispatchers.IO,
             offlineModePolicy = policy
         )
@@ -202,6 +205,27 @@ class CocktailSearchRepositoryImplTest {
 
         assertEquals(listOf("5"), (result as Result.Success).data.map { it.id })
         assertEquals(2_000L, testScheduler.currentTime, "both calls in flight together, not one after the other")
+    }
+
+    @Test
+    fun advancedSearchKeepsItsPartialResultsOutOfTheCacheAndTheCategoryPagesIn() = runTest {
+        // An alcoholic filter lists hundreds of drinks, far past the cap
+        val manyDrinks = (100..399).map { drinkDto("$it", "Drink $it", "Ordinary Drink", "Alcoholic", "Glass", "Rum") }
+        val api = FakeCocktailApi(drinks = sampleDrinks() + manyDrinks)
+        val fiveRowCap = object : AppConfig by config {
+            override val maxOfflineCocktails: Int = 5
+        }
+        val fixture = fixture(api = api, appConfig = fiveRowCap)
+        fixture.search.filterByCategory("Cocktail")
+
+        val result = fixture.search.advancedSearch(SearchFilters(alcoholic = true))
+
+        assertEquals(303, (result as Result.Success).data.size)
+        assertNull(fixture.cache.getCachedCocktail("100"), "filter.php's partial records aren't cached")
+        // The stored page is whole and fresh: served without a refetch
+        val page = fixture.search.filterByCategory("Cocktail") as Result.Success
+        assertEquals(listOf("2", "3"), page.data.map { it.id })
+        assertEquals(1, api.categoryRequests)
     }
 
     @Test
