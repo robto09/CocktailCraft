@@ -51,7 +51,8 @@ class KmpLibraryConventionPlugin : Plugin<Project> {
 
             // The deployment target lives in iosApp/project.yml; only the
             // :shared umbrella turns these into a framework.
-            iosX64()
+            // No iosX64(): Apple-silicon simulators and devices only, so an
+            // Intel Mac cannot build the app for its (x86_64) simulator.
             iosArm64()
             iosSimulatorArm64()
         }
