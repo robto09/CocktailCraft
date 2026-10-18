@@ -1,4 +1,4 @@
-package com.cocktailcraft.domain.model
+package com.cocktailcraft.format
 
 import platform.Foundation.NSDecimalNumber
 import platform.Foundation.NSLocale
@@ -22,9 +22,9 @@ private fun usdFormatter(locale: NSLocale): NSNumberFormatter {
         numberStyle = NSNumberFormatterCurrencyStyle
         currencyCode = "USD"
         this.locale = locale
-        // Plain "$" in every region, as the iOS app always showed: outside
-        // the US the locale would otherwise write "US$8.24"
-        currencySymbol = "$"
+        // Plain "$" in every region: outside the US the locale would
+        // otherwise write "US$8.24"
+        currencySymbol = UsdSymbol
     }
     UsdFormatterCache.localeIdentifier = identifier
     UsdFormatterCache.formatter = formatter
@@ -39,5 +39,5 @@ internal actual fun formatUsd(cents: Long, languageTag: String?): String {
         exponent = -2,
         isNegative = cents < 0
     )
-    return usdFormatter(locale).stringFromNumber(amount) ?: "$" + amount.stringValue
+    return usdFormatter(locale).stringFromNumber(amount) ?: UsdSymbol + amount.stringValue
 }
