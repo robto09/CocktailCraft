@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -25,17 +24,16 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
+import com.cocktailcraft.android.ui.components.ErrorStateView
+import com.cocktailcraft.android.ui.components.ErrorToastEffect
 import com.cocktailcraft.android.ui.components.OrderCard
 import com.cocktailcraft.android.ui.components.OrderListLoadingShimmer
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.refreshAccessibilityAction
-import com.cocktailcraft.android.util.resolve
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.refresh
 import com.cocktailcraft.resources.browse_cocktails
-import com.cocktailcraft.resources.cart_try_again
-import com.cocktailcraft.resources.error
 import com.cocktailcraft.resources.order_list_empty_message
 import com.cocktailcraft.resources.order_list_empty_title
 import com.cocktailcraft.util.ErrorHandler
@@ -58,6 +56,13 @@ fun OrderListScreen(
         orderViewModel.loadOrders()
     }
 
+    // With orders on screen a failed reload is a toast, the list stays put;
+    // with none it stays for the full-screen error state
+    ErrorToastEffect(
+        error = error.takeIf { state.orders.isNotEmpty() },
+        onConsumed = { orderViewModel.clearError() }
+    )
+
     OrderListContent(
         state = state,
         error = error,
@@ -69,6 +74,7 @@ fun OrderListScreen(
 /**
  * Stateless order-list content: renders [state] and reports every intent
  * upward, so it can be previewed/screenshot-tested without a ViewModel.
+ * [error] is rendered full-screen only when there are no orders to show.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,14 +96,9 @@ internal fun OrderListContent(
             OrderListLoadingShimmer()
         }
 
-        if (!isLoading && error != null) {
-            EmptyStateComponent(
-                title = stringResource(MR.strings.error),
-                message = error.message.resolve(),
-                actionButtonText = stringResource(MR.strings.cart_try_again),
-                onActionButtonClick = onReload,
-                icon = Icons.Filled.Warning
-            )
+        // Retry reloads, and the reload clears the error when it starts
+        if (!isLoading && error != null && state.orders.isEmpty()) {
+            ErrorStateView(error = error, onRetry = onReload)
         } else if (!isLoading && state.orders.isEmpty()) {
             EmptyStateComponent(
                 title = stringResource(MR.strings.order_list_empty_title),
