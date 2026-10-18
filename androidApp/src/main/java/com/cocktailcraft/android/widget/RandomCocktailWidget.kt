@@ -24,6 +24,7 @@ import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.appwidget.updateAll
 import androidx.glance.background
@@ -56,10 +57,12 @@ import com.cocktailcraft.resources.widget_refresh_icon
 import com.cocktailcraft.resources.widget_tap_refresh_to_discover
 import com.cocktailcraft.resources.widget_tap_refresh_to_retry
 import com.cocktailcraft.resources.widget_tropical_drink_icon
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 /**
  * Random Cocktail Widget that displays a random cocktail from the API.
@@ -70,6 +73,16 @@ class RandomCocktailWidget : GlanceAppWidget() {
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
     
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        // A widget with nothing loaded yet (just placed, or another instance
+        // of an already-placed widget) fetches now rather than waiting up to
+        // a full period for the periodic refresh.
+        val prefs = getAppWidgetState<Preferences>(context, id)
+        if (prefs[RandomCocktailKeys.ID] == null &&
+            prefs[RandomCocktailKeys.ERROR] != true &&
+            prefs[RandomCocktailKeys.IS_LOADING] != "true"
+        ) {
+            WidgetUpdateWorker.requestRandomCocktailRefresh(context)
+        }
         provideContent {
             CocktailWidgetTheme {
                 RandomCocktailContent()
@@ -297,7 +310,9 @@ object RandomCocktailKeys {
 /**
  * Action callback to refresh the random cocktail.
  */
-class RefreshRandomCocktailAction : ActionCallback {
+class RefreshRandomCocktailAction : ActionCallback, KoinComponent {
+    private val dataProvider: WidgetDataProvider by inject()
+
     override suspend fun onAction(
         context: Context,
         glanceId: GlanceId,
@@ -310,32 +325,21 @@ class RefreshRandomCocktailAction : ActionCallback {
         }
         RandomCocktailWidget().update(context, glanceId)
 
-        // Fetch new cocktail
-        withContext(Dispatchers.IO) {
-            try {
-                val dataProvider = WidgetDataProvider.getInstance()
-                val cocktail = dataProvider.getRandomCocktail()
-
-                updateAppWidgetState(context, glanceId) { prefs ->
-                    prefs[RandomCocktailKeys.IS_LOADING] = "false"
-                    if (cocktail != null) {
-                        prefs[RandomCocktailKeys.ID] = cocktail.id
-                        prefs[RandomCocktailKeys.NAME] = cocktail.name
-                        prefs[RandomCocktailKeys.CATEGORY] = cocktail.category ?: ""
-                        prefs.remove(RandomCocktailKeys.ERROR)
-                    } else {
-                        prefs[RandomCocktailKeys.ERROR] = true
-                    }
-                }
-            } catch (e: Exception) {
-                updateAppWidgetState(context, glanceId) { prefs ->
-                    prefs[RandomCocktailKeys.IS_LOADING] = "false"
-                    prefs[RandomCocktailKeys.ERROR] = true
-                }
+        // Same path as the background refresh; an explicit tap shows the
+        // error state when nothing could be loaded
+        try {
+            refreshRandomCocktailWidgets(
+                context, dataProvider, listOf(glanceId), showErrorOnFailure = true
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            updateAppWidgetState(context, glanceId) { prefs ->
+                prefs[RandomCocktailKeys.IS_LOADING] = "false"
+                prefs[RandomCocktailKeys.ERROR] = true
             }
+            RandomCocktailWidget().update(context, glanceId)
         }
-
-        RandomCocktailWidget().update(context, glanceId)
     }
 }
 
@@ -345,12 +349,14 @@ class RefreshRandomCocktailAction : ActionCallback {
 class RandomCocktailWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = RandomCocktailWidget()
 
-    // Widget refresh lifecycle (AN-2): start the shared hourly worker when the
-    // first widget is placed; tear it down only when no widget of either type
-    // remains (both widgets share one worker).
+    // Widget refresh lifecycle (AN-2): the first widget placed starts the
+    // shared periodic refresh and loads its content right away; the refresh
+    // is torn down only when no widget of either type remains (both widgets
+    // share it). The app itself never schedules widget work.
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
-        WidgetUpdateWorker.schedule(context)
+        WidgetUpdateWorker.schedulePeriodicRefresh(context)
+        WidgetUpdateWorker.requestRandomCocktailRefresh(context)
     }
 
     override fun onDisabled(context: Context) {

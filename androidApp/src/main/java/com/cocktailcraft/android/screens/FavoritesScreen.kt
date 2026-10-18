@@ -7,10 +7,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -26,18 +25,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.components.CocktailLoadingShimmer
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
+import com.cocktailcraft.android.ui.components.ErrorStateView
+import com.cocktailcraft.android.ui.components.ErrorToastEffect
 import com.cocktailcraft.android.util.refreshAccessibilityAction
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.refresh
 import com.cocktailcraft.resources.browse_cocktails
-import com.cocktailcraft.resources.cart_try_again
-import com.cocktailcraft.resources.error
 import com.cocktailcraft.resources.favorites_empty_message
 import com.cocktailcraft.resources.no_favorites
 import com.cocktailcraft.util.ErrorHandler
-import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.state.FavoritesUiState
 import kotlinx.coroutines.launch
@@ -45,14 +43,21 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoritesScreen(
-    cartViewModel: SharedCartViewModel,
     favoritesViewModel: SharedFavoritesViewModel,
     onBrowseProducts: () -> Unit,
-    onAddToCart: (Cocktail) -> Unit
+    onAddToCart: (Cocktail) -> Unit,
+    onCocktailClick: (Cocktail) -> Unit
 ) {
     val state by favoritesViewModel.uiState.collectAsStateWithLifecycle()
     val error by favoritesViewModel.error.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+
+    // With favorites on screen a failure (e.g. a toggle) is a toast; with
+    // none it stays for the full-screen error state
+    ErrorToastEffect(
+        error = error.takeIf { state.favorites.isNotEmpty() },
+        onConsumed = { favoritesViewModel.clearError() }
+    )
 
     FavoritesContent(
         state = state,
@@ -60,13 +65,15 @@ fun FavoritesScreen(
         onRefresh = { favoritesViewModel.refresh() },
         onBrowseProducts = onBrowseProducts,
         onAddToCart = onAddToCart,
-        onToggleFavorite = { cocktail -> scope.launch { favoritesViewModel.toggleFavorite(cocktail) } }
+        onToggleFavorite = { cocktail -> scope.launch { favoritesViewModel.toggleFavorite(cocktail) } },
+        onCocktailClick = onCocktailClick
     )
 }
 
 /**
  * Stateless favorites content: renders [state] and reports every intent
  * upward, so it can be previewed/screenshot-tested without a ViewModel.
+ * [error] is rendered full-screen only when there are no favorites to show.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,7 +83,8 @@ internal fun FavoritesContent(
     onRefresh: () -> Unit,
     onBrowseProducts: () -> Unit,
     onAddToCart: (Cocktail) -> Unit,
-    onToggleFavorite: (Cocktail) -> Unit
+    onToggleFavorite: (Cocktail) -> Unit,
+    onCocktailClick: (Cocktail) -> Unit = {}
 ) {
     val isLoading = state.isLoading
     val favorites = state.favorites
@@ -91,15 +99,9 @@ internal fun FavoritesContent(
             CocktailLoadingShimmer(showHeader = false)
         }
 
-        // Show error state
-        if (!isLoading && error != null) {
-            EmptyStateComponent(
-                title = stringResource(MR.strings.error),
-                message = error.toString(),
-                actionButtonText = stringResource(MR.strings.cart_try_again),
-                onActionButtonClick = { /* Add retry logic here */ },
-                icon = Icons.Filled.Warning
-            )
+        // Nothing to show but the failure: full-screen error with Retry
+        if (!isLoading && error != null && favorites.isEmpty()) {
+            ErrorStateView(error = error, onRetry = onRefresh)
         }
         // Show empty favorites state
         else if (!isLoading && favorites.isEmpty()) {
@@ -138,10 +140,12 @@ internal fun FavoritesContent(
                 contentPadding = PaddingValues(vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                itemsIndexed(favorites) { _, cocktail ->
+                // Keyed by id, so unfavoriting a card doesn't rebind the
+                // following rows to the wrong cocktail
+                items(favorites, key = { it.id }) { cocktail ->
                     CocktailItem(
                         cocktail = cocktail,
-                        onClick = { /* Navigate to detail */ },
+                        onClick = { onCocktailClick(cocktail) },
                         // onAddToCart both mutates the cart and confirms via
                         // snackbar (MainScreen); the extra local addToCart here
                         // was double-adding every item.

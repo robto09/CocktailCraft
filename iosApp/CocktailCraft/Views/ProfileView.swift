@@ -2,7 +2,9 @@ import SwiftUI
 import shared
 
 struct ProfileView: View {
-    @State private var viewModel = ProfileViewModelSKIE()
+    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    @State private var model = ViewModelHolder(ProfileViewModelSKIE.init)
+    private var viewModel: ProfileViewModelSKIE { model.wrapper }
     private let themeViewModel = ThemeViewModelSKIE.shared
     @State private var showingSettings = false
     @State private var showingEditProfile = false
@@ -12,6 +14,7 @@ struct ProfileView: View {
     @State private var showingLogoutAlert = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.isDarkMode) var isDarkMode
+    @Environment(\.appearance) var appearance
 
     // Optional binding for tab selection to enable navigation to Orders tab
     @Environment(AppRouter.self) private var router
@@ -120,6 +123,9 @@ struct ProfileView: View {
             Text(L(\.logout_confirm))
         }
         .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
+        // One-off outcomes, e.g. a successful password change (which used to
+        // arrive as an alert on the error channel)
+        .sharedEventToast(viewModel.event, clear: { viewModel.clearEvent() })
     }
 
     // MARK: - Profile Header Card
@@ -131,13 +137,13 @@ struct ProfileView: View {
                 // Profile Picture
                 ZStack {
                     Circle()
-                        .fill(AppColors.primary(isDarkMode: isDarkMode).opacity(0.2))
+                        .fill(AppColors.primary(appearance).opacity(0.2))
                         .frame(width: 80, height: 80)
 
                     Text(viewModel.userName.prefix(1).uppercased())
                         .font(.largeTitle)
                         .fontWeight(.bold)
-                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.primary(appearance))
                 }
                 // Decorative initial: the name follows
                 .accessibilityHidden(true)
@@ -161,7 +167,7 @@ struct ProfileView: View {
                 VStack(spacing: 12) {
                     Text(L(\.profile_sign_in_prompt))
                         .font(.body)
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.textSecondary(appearance))
                         .padding(.top, 8)
 
                     Button(L(\.sign_in)) {
@@ -306,7 +312,7 @@ struct ProfileView: View {
                     .fontWeight(.medium)
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
-                Text(L(\.profile_version_format, "1.0.0"))
+                Text(L(\.profile_version_format, Bundle.main.appVersion))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
 

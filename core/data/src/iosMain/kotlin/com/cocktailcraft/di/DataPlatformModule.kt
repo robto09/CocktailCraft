@@ -4,6 +4,7 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
+import com.cocktailcraft.data.security.LazySettings
 import com.cocktailcraft.data.security.migrateAuthStorage
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.util.IOSNetworkMonitor
@@ -28,20 +29,25 @@ actual fun dataPlatformModule() = module {
     // Keychain-backed store for credentials and profile PII — encrypted at
     // rest by the OS and absent from unencrypted backups, unlike the plist
     // behind NSUserDefaults.
+    // Opened lazily (LazySettings), as on Android: the Keychain reads and
+    // the migration run on first access — on AuthRepositoryImpl's io
+    // dispatcher — not when the theme ViewModel's graph resolves at launch.
     single<Settings>(secureSettingsQualifier) {
-        val defaults = get<Settings>()
-        val secure = KeychainSettings(service = "com.cocktailcraft.auth")
-        // Keychain items outlive app uninstalls but NSUserDefaults does not:
-        // a missing marker means this is a fresh install, so drop any stale
-        // auth data instead of silently restoring the previous session —
-        // matching Android, where uninstall wipes everything.
-        if (!defaults.hasKey(KEYCHAIN_INSTALL_MARKER)) {
-            secure.clear()
-            defaults.putBoolean(KEYCHAIN_INSTALL_MARKER, true)
-        }
-        secure.also {
-            // Move auth data written by older versions out of NSUserDefaults.
-            migrateAuthStorage(from = defaults, to = it)
+        LazySettings {
+            val defaults = get<Settings>()
+            val secure = KeychainSettings(service = "com.cocktailcraft.auth")
+            // Keychain items outlive app uninstalls but NSUserDefaults does not:
+            // a missing marker means this is a fresh install, so drop any stale
+            // auth data instead of silently restoring the previous session —
+            // matching Android, where uninstall wipes everything.
+            if (!defaults.hasKey(KEYCHAIN_INSTALL_MARKER)) {
+                secure.clear()
+                defaults.putBoolean(KEYCHAIN_INSTALL_MARKER, true)
+            }
+            secure.also {
+                // Move auth data written by older versions out of NSUserDefaults.
+                migrateAuthStorage(from = defaults, to = it)
+            }
         }
     }
 

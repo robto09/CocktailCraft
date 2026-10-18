@@ -28,7 +28,6 @@ import com.cocktailcraft.resources.order_subtotal
 import com.cocktailcraft.resources.order_summary_title
 import com.cocktailcraft.resources.total
 import java.text.NumberFormat
-import java.util.Locale
 
 /**
  * A reusable order summary card component.
@@ -47,7 +46,7 @@ fun OrderSummaryCard(
     deliveryFee: Double = 5.99,
     total: Double? = null,
     modifier: Modifier = Modifier,
-    currencyFormatter: NumberFormat = NumberFormat.getCurrencyInstance(Locale.US),
+    currencyFormatter: NumberFormat = rememberCurrencyFormatter(),
     showDeliveryFee: Boolean = true,
     additionalItems: List<Pair<String, Double>>? = null
 ) {

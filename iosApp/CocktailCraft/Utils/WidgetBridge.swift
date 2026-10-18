@@ -38,10 +38,24 @@ enum WidgetDeepLink {
         return components.url
     }
 
+    /// The cocktail id from a widget deep link, or nil when the URL is not
+    /// one. Any app or web page can open the custom scheme, so only
+    /// TheCocktailDB-style ids pass: 1-10 ASCII digits as the sole path
+    /// segment (matching Android's isValidCocktailId). Anything else is
+    /// ignored and the app stays where it is.
     static func cocktailId(from url: URL) -> String? {
         guard url.scheme == scheme, url.host == cocktailHost else { return nil }
-        let id = url.lastPathComponent
-        return id.isEmpty || id == "/" ? nil : id
+        let segments = url.pathComponents.filter { $0 != "/" }
+        guard segments.count == 1, let id = segments.first, isValidCocktailId(id) else { return nil }
+        return id
+    }
+
+    static func isValidCocktailId(_ id: String) -> Bool {
+        // ASCII 0-9 only: isNumber would also accept other scripts' digits,
+        // and a Character range would admit "1" plus a combining mark.
+        (1...10).contains(id.count) && id.allSatisfy { char in
+            char.asciiValue.map { (48...57).contains($0) } ?? false
+        }
     }
 }
 
@@ -87,6 +101,66 @@ enum WidgetSnapshotStore {
         guard let url = fileURL,
               let data = try? Data(contentsOf: url) else { return nil }
         return try? JSONDecoder().decode(WidgetFavoritesSnapshot.self, from: data)
+    }
+}
+
+/// One cocktail the Random Cocktail widget can show. The thumbnail travels
+/// with it (TheCocktailDB's ~100px preview, a few KB) because the widget
+/// extension does no networking of its own.
+struct WidgetRandomCocktail: Codable, Identifiable {
+    let id: String
+    let name: String
+    let category: String?
+    let thumbnail: Data?
+}
+
+/// The pool the Random Cocktail widget rotates through: a fresh random pick
+/// when the app was last online, then the user's recently viewed cocktails
+/// (so it stays populated offline, like Android's widget).
+struct WidgetRandomCocktailSnapshot: Codable {
+    let cocktails: [WidgetRandomCocktail]
+    let updatedAt: Date
+}
+
+/// Reads/writes the Random Cocktail pool in the shared App Group container,
+/// next to the favorites snapshot.
+enum WidgetRandomSnapshotStore {
+    private static let filename = "widget-random-snapshot.json"
+
+    private static var fileURL: URL? {
+        FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: WidgetSnapshotStore.appGroupId)?
+            .appendingPathComponent(filename)
+    }
+
+    static func write(_ snapshot: WidgetRandomCocktailSnapshot) {
+        guard let url = fileURL else { return }
+        do {
+            let data = try JSONEncoder().encode(snapshot)
+            try data.write(to: url, options: .atomic)
+        } catch {
+            #if DEBUG
+            print("WidgetRandomSnapshotStore: write failed: \(error)")
+            #endif
+        }
+    }
+
+    static func read() -> WidgetRandomCocktailSnapshot? {
+        guard let url = fileURL,
+              let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(WidgetRandomCocktailSnapshot.self, from: data)
+    }
+
+    /// The pool entry to show at `date`: the first (freshest) one when the
+    /// snapshot is new, then the next one every `rotation` (the widget's
+    /// refresh interval), so the widget keeps changing between app launches
+    /// without any network access.
+    static func cocktail(in snapshot: WidgetRandomCocktailSnapshot?,
+                         at date: Date,
+                         rotation: TimeInterval) -> WidgetRandomCocktail? {
+        guard let snapshot, !snapshot.cocktails.isEmpty, rotation > 0 else { return nil }
+        let slot = max(0, Int(date.timeIntervalSince(snapshot.updatedAt) / rotation))
+        return snapshot.cocktails[slot % snapshot.cocktails.count]
     }
 }
 

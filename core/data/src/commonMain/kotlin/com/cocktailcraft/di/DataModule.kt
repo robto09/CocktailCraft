@@ -115,7 +115,7 @@ val dataModule = module {
         )
     }
 
-    // Category fetch-and-cache path shared by the search and catalog repositories
+    // Category fetch-and-cache path behind the search repository's category filter
     single {
         CocktailCategoryFetcher(
             remote = get(),
@@ -144,10 +144,7 @@ val dataModule = module {
     }
 
     single<CocktailCatalogRepository> {
-        CocktailCatalogRepositoryImpl(
-            remote = get(),
-            categoryFetcher = get()
-        )
+        CocktailCatalogRepositoryImpl(remote = get())
     }
 
     single<CartRepository> {

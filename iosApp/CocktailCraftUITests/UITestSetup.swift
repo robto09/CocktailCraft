@@ -8,9 +8,11 @@ import XCTest
  * buttons and navigation-bar titles remain label-matched: SwiftUI offers
  * no per-tabItem identifier hook, and chrome titles are structural.
  *
- * These are smoke tests against live data — they assert structure that is
- * state-independent (tabs, screen chrome, empty-state-or-content) rather
- * than flows that need a seeded cart/favorites store.
+ * The app runs in test mode (COCKTAILCRAFT_TEST_MODE, see makeApp()): an
+ * empty in-memory database and fresh settings on every launch, and fixed
+ * fixture cocktails instead of the live TheCocktailDB API — so every test
+ * starts from an empty cart/favorites store, never touches the simulator's
+ * real app data, and doesn't depend on the network.
  */
 class UITestSetup: XCTestCase {
 
@@ -18,12 +20,20 @@ class UITestSetup: XCTestCase {
 
     override func setUpWithError() throws {
         continueAfterFailure = false
-        app = XCUIApplication()
+        app = makeApp()
         app.launch()
     }
 
     override func tearDownWithError() throws {
         app = nil
+    }
+
+    /// The app under test, set up for test mode. Subclasses that need more
+    /// launch environment add it to the returned app before launching.
+    func makeApp() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment["COCKTAILCRAFT_TEST_MODE"] = "1"
+        return app
     }
 
     // MARK: - Helper Methods

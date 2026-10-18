@@ -10,8 +10,12 @@ import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
@@ -23,12 +27,30 @@ import kotlinx.coroutines.flow.asStateFlow
 abstract class SharedViewModel : ViewModel() {
 
     // The single error channel, observed by both platforms for error UI.
-    // It is the codebase's one-shot pattern: a consumable StateFlow (survives
-    // a moment with no collector) that the UI clears with clearError() once
-    // shown. Everything else a screen renders lives in the subclass's single
-    // uiState — there is deliberately no parallel isLoading flow here.
+    // A consumable StateFlow (survives a moment with no collector) that the
+    // UI clears with clearError() once shown. Every load/action also clears
+    // it when it starts, so a failure never outlives the next attempt — the
+    // Koin-single ViewModels would otherwise carry one failure for the whole
+    // session. Everything else a screen renders lives in the subclass's
+    // single uiState — there is deliberately no parallel isLoading flow here.
     private val _error = MutableStateFlow<ErrorHandler.UserFriendlyError?>(null)
     val error: StateFlow<ErrorHandler.UserFriendlyError?> = _error.asStateFlow()
+
+    // One-off outcomes for toasts/snackbars (see [UiEvent]). Broadcast with
+    // no replay: whoever is collecting when the event fires shows it, and an
+    // event nobody is listening for is dropped rather than replayed onto a
+    // later screen. Anything that must not be missed belongs in uiState or
+    // [error] instead. The small buffer keeps [sendEvent] non-suspending.
+    private val _events = MutableSharedFlow<UiEvent>(
+        extraBufferCapacity = 8,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val events: SharedFlow<UiEvent> = _events.asSharedFlow()
+
+    /** Announce a one-off outcome on [events]. */
+    protected fun sendEvent(event: UiEvent) {
+        _events.tryEmit(event)
+    }
 
     /**
      * Handle an exception and convert it to a user-friendly error.
@@ -85,7 +107,8 @@ abstract class SharedViewModel : ViewModel() {
     ) = setError(title, message.desc(), category, recoveryAction)
 
     /**
-     * Clear the current error
+     * Clear the current error. The UI calls this once the error is shown;
+     * subclasses call it at the start of every load/action.
      */
     fun clearError() {
         _error.value = null

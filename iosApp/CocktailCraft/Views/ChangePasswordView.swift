@@ -2,6 +2,9 @@ import SwiftUI
 
 struct ChangePasswordView: View {
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
+    // 60pt header icon at the default text size, scaling with Dynamic Type
+    @ScaledMetric(relativeTo: .largeTitle) private var headerIconSize: CGFloat = 60
     @State private var currentPassword = ""
     @State private var newPassword = ""
     @State private var isCurrentPasswordVisible = false
@@ -23,12 +26,12 @@ struct ChangePasswordView: View {
                 // Header
                 VStack(spacing: 8) {
                     Image(systemName: "lock.rotation")
-                        .font(.system(size: 60))
-                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                        .font(.system(size: headerIconSize))
+                        .foregroundColor(AppColors.primary(appearance))
 
                     Text(L(\.change_password_subtitle))
                         .font(.body)
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.textSecondary(appearance))
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 32)
@@ -55,7 +58,7 @@ struct ChangePasswordView: View {
                                 isCurrentPasswordVisible.toggle()
                             }) {
                                 Image(systemName: isCurrentPasswordVisible ? "eye.slash" : "eye")
-                                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                                    .foregroundColor(AppColors.textSecondary(appearance))
                                     .minimumHitTarget()
                             }
                             .accessibilityLabel(isCurrentPasswordVisible ? L(\.hide_password) : L(\.show_password))
@@ -84,7 +87,7 @@ struct ChangePasswordView: View {
                                 isNewPasswordVisible.toggle()
                             }) {
                                 Image(systemName: isNewPasswordVisible ? "eye.slash" : "eye")
-                                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                                    .foregroundColor(AppColors.textSecondary(appearance))
                                     .minimumHitTarget()
                             }
                             .accessibilityLabel(isNewPasswordVisible ? L(\.hide_password) : L(\.show_password))

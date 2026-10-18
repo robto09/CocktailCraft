@@ -190,6 +190,8 @@ targets:
         # bypass the certificate pinning the app enforces. Keep in sync with
         # CocktailCraft/Info.plist and the Android
         # network_security_config.xml (same Cloudflare CA pool).
+        # REVIEW BY 2027-07-08 (Android's pin-set expiration): ATS pins never
+        # expire, so refresh this set with the app's before that date.
         NSAppTransportSecurity:
           NSPinnedDomains:
             thecocktaildb.com:
@@ -269,6 +271,11 @@ schemes:
       # Pinned so snapshot tests (prices, copy) don't follow the host locale
       language: en
       region: US
+      # The unit-test host app starts Koin in test mode (in-memory database,
+      # throwaway settings, fixture network; see KoinInitializer.isTestMode).
+      # UI tests set the same variable in UITestSetup's launch environment.
+      environmentVariables:
+        COCKTAILCRAFT_TEST_MODE: "1"
       targets:
         - CocktailCraftTests
         - CocktailCraftUITests

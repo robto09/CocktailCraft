@@ -17,6 +17,7 @@ struct CocktailCard: View {
     }
     
     @Environment(\.isDarkMode) var isDarkMode
+    @Environment(\.appearance) var appearance
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
@@ -105,7 +106,7 @@ struct CocktailCard: View {
             // Category Info (Alcoholic • Category)
             Text(subtitleText)
                 .font(.subheadline)
-                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                .foregroundColor(AppColors.textSecondary(appearance))
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityHidden(true)
@@ -114,7 +115,7 @@ struct CocktailCard: View {
             Text(getIngredientsText())
                 .font(.caption)
                 .italic()
-                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                .foregroundColor(AppColors.textSecondary(appearance))
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                 .multilineTextAlignment(.leading)
                 .accessibilityHidden(true)
@@ -131,7 +132,7 @@ struct CocktailCard: View {
             HStack(alignment: .center) {
                 Text((cocktail.price ?? 12.99).asPrice)
                     .font(.headline.weight(.bold))
-                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.primary(appearance))
                     .lineLimit(1)
                     .fixedSize()
                     .accessibilityHidden(true)
@@ -170,7 +171,7 @@ struct CocktailCard: View {
                             // Plain filled cart, Android's icon
                             Image(systemName: "cart.fill")
                                 .font(.title3)
-                                .foregroundColor(isOutOfStock ? AppColors.gray : AppColors.primary(isDarkMode: isDarkMode))
+                                .foregroundColor(isOutOfStock ? AppColors.gray : AppColors.primary(appearance))
                                 .minimumHitTarget()
                         }
                         .disabled(isOutOfStock)

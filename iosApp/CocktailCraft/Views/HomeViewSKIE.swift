@@ -6,20 +6,24 @@ import shared
 /// sheet live in Components/; this view owns the state wiring and the
 /// loading/empty/content branching.
 struct HomeViewSKIE: View {
-    @State private var viewModel = HomeViewModelSKIE()
+    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    @State private var model = ViewModelHolder(HomeViewModelSKIE.init)
+    private var viewModel: HomeViewModelSKIE { model.wrapper }
     @State private var searchText = ""
     @State private var showingAdvancedSearch = false
     @State private var selectedCategory: String? = nil
     @State private var showingToast = false
     @State private var toastMessage = ""
+    @State private var toastType: Toast.ToastType = .success
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     // Theme-derived colors (the old hardcoded hex values bypassed AppTheme,
     // so Home ignored dark mode)
-    private var primaryColor: Color { AppColors.primary(isDarkMode: isDarkMode) }
+    private var primaryColor: Color { AppColors.primary(appearance) }
     private var backgroundColor: Color { AppColors.background(isDarkMode: isDarkMode) }
     private var surfaceColor: Color { AppColors.surface(isDarkMode: isDarkMode) }
-    private var textSecondary: Color { AppColors.textSecondary(isDarkMode: isDarkMode) }
+    private var textSecondary: Color { AppColors.textSecondary(appearance) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -67,7 +71,7 @@ struct HomeViewSKIE: View {
                 await viewModel.loadCocktails()
             }
         }
-        .toast(isShowing: $showingToast, message: toastMessage, type: .success, duration: 2)
+        .toast(isShowing: $showingToast, message: toastMessage, type: toastType, duration: 2)
     }
 
     // MARK: - Sections
@@ -224,9 +228,14 @@ struct HomeViewSKIE: View {
                                 // Main-actor Task: the whole flow (VM call +
                                 // toast state) runs on main, without the old
                                 // mid-task MainActor.run hop.
+                                // Only a real add is confirmed; a failed one
+                                // says so instead.
                                 Task { @MainActor in
-                                    await viewModel.addToCart(cocktail)
-                                    toastMessage = L(\.added_to_cart, cocktail.name)
+                                    let added = await viewModel.addToCart(cocktail)
+                                    toastMessage = added
+                                        ? L(\.added_to_cart, cocktail.name)
+                                        : L(\.error_add_item_to_cart_failed)
+                                    toastType = added ? .success : .error
                                     withAnimation {
                                         showingToast = true
                                     }

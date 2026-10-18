@@ -9,7 +9,7 @@ import com.cocktailcraft.domain.usecase.SearchCocktailsUseCase
 import com.cocktailcraft.domain.usecase.SortCocktailsUseCase
 import com.cocktailcraft.testutil.FakeCatalogRepository
 import com.cocktailcraft.testutil.FakeDetailRepository
-import com.cocktailcraft.testutil.FakeFavoritesRepository
+import com.cocktailcraft.testutil.FlakyFavoritesRepository
 import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.FakeOfflineRepository
 import com.cocktailcraft.testutil.FakeSearchRepository
@@ -34,7 +34,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         val search = FakeSearchRepository()
         val catalog = FakeCatalogRepository()
         val detail = FakeDetailRepository()
-        val favorites = FakeFavoritesRepository()
+        val favorites = FlakyFavoritesRepository()
         val offline = FakeOfflineRepository()
         val network = FakeNetworkMonitor()
 
@@ -471,6 +471,41 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
 
         assertEquals("mojito", vm.uiState.value.searchQuery)
         assertEquals(SearchFilters(query = "mojito", category = "Cocktail"), vm.uiState.value.searchFilters)
+        assertEquals(listOf("1"), vm.uiState.value.cocktails.map { it.id })
+    }
+
+    @Test
+    fun toggleFavoriteFailureIsReportedNotDropped() = runTest {
+        val harness = Harness()
+        val cocktail = testCocktail("1")
+        harness.search.all = listOf(cocktail)
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        harness.favorites.failingMutations = 1
+        vm.toggleFavorite(cocktail)
+        advanceUntilIdle()
+
+        assertNotNull(vm.error.value, "a Result.Error from toggle must reach the error channel")
+        assertFalse(vm.isFavorite("1"))
+        assertEquals(listOf("1"), vm.uiState.value.cocktails.map { it.id }, "the list stays on screen")
+    }
+
+    @Test
+    fun filterFailureThenSuccessfulRetryClearsTheError() = runTest {
+        val harness = Harness()
+        harness.search.all = listOf(testCocktail("1", name = "Margarita"))
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        harness.search.errorMessage = "api down"
+        vm.applyFilters(SearchFilters(query = "marg"))
+        assertNotNull(vm.error.value)
+
+        harness.search.errorMessage = null
+        vm.applyFilters(SearchFilters(query = "marg"))
+
+        assertNull(vm.error.value, "the next attempt must clear the earlier failure")
         assertEquals(listOf("1"), vm.uiState.value.cocktails.map { it.id })
     }
 

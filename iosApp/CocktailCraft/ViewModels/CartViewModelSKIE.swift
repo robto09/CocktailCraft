@@ -24,8 +24,14 @@ final class CartViewModelSKIE: SharedViewModelWrapper<CartUiState> {
 
     // MARK: - Public Methods (using SKIE async/await)
 
-    func addToCart(_ cocktail: Cocktail, quantity: Int = 1) async {
-        await run { try await sharedViewModel.addToCart(cocktail: cocktail, quantity: Int32(quantity)) }
+    /// Returns whether the cocktail was added, so callers confirm only a
+    /// real add (the shared ViewModel announces the outcome on `events`
+    /// too, not on the cart's error channel).
+    @discardableResult
+    func addToCart(_ cocktail: Cocktail, quantity: Int = 1) async -> Bool {
+        await run(fallback: false) {
+            try await sharedViewModel.addToCart(cocktail: cocktail, quantity: Int32(quantity)).boolValue
+        }
     }
 
     func decrementQuantity(_ cocktailId: String) async {

@@ -1,9 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Check back soon" : {
-
-    },
     "Discover a new cocktail every few hours." : {
 
     },
@@ -20,6 +17,9 @@
 
     },
     "Open CocktailCraft to add some" : {
+
+    },
+    "Open CocktailCraft to discover some" : {
 
     },
     "Random Cocktail" : {

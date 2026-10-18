@@ -2,6 +2,9 @@ import SwiftUI
 
 struct SignUpView: View {
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
+    // 60pt header icon at the default text size, scaling with Dynamic Type
+    @ScaledMetric(relativeTo: .largeTitle) private var headerIconSize: CGFloat = 60
     @State private var name = ""
     @State private var email = ""
     @State private var password = ""
@@ -23,12 +26,12 @@ struct SignUpView: View {
                 // Header
                 VStack(spacing: 8) {
                     Image(systemName: "person.badge.plus")
-                        .font(.system(size: 60))
-                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                        .font(.system(size: headerIconSize))
+                        .foregroundColor(AppColors.primary(appearance))
 
                     Text(L(\.sign_up_subtitle))
                         .font(.body)
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.textSecondary(appearance))
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 32)
@@ -84,7 +87,7 @@ struct SignUpView: View {
                                 isPasswordVisible.toggle()
                             }) {
                                 Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
-                                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                                    .foregroundColor(AppColors.textSecondary(appearance))
                                     .minimumHitTarget()
                             }
                             .accessibilityLabel(isPasswordVisible ? L(\.hide_password) : L(\.show_password))

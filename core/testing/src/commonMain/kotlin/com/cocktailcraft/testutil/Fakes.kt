@@ -90,7 +90,13 @@ class FakeCartRepository : CartRepository {
 class FakeDetailRepository(
     val byId: MutableMap<String, Cocktail> = mutableMapOf()
 ) : CocktailDetailRepository {
-    override suspend fun getCocktailById(id: String): Result<Cocktail?> = Result.Success(byId[id])
+    /** When set, getCocktailById throws it (e.g. a CancellationException). */
+    var throwOnLookup: Exception? = null
+
+    override suspend fun getCocktailById(id: String): Result<Cocktail?> {
+        throwOnLookup?.let { throw it }
+        return Result.Success(byId[id])
+    }
     override suspend fun refreshCocktailById(id: String): Result<Cocktail?> = Result.Success(byId[id])
     override suspend fun getRandomCocktail(): Result<Cocktail?> = Result.Success(byId.values.firstOrNull())
     override fun getCocktailImageUrl(cocktail: Cocktail): String = cocktail.imageUrl.orEmpty()
@@ -102,9 +108,16 @@ class FakeFavoritesRepository : CocktailFavoritesRepository {
     /** Snapshot of currently stored favorites (kept for existing assertions). */
     val stored: List<Cocktail> get() = favorites.value
 
+    /** How often the full list was loaded — point lookups must not need it. */
+    var getFavoriteCocktailsCalls = 0
+        private set
+
     override fun observeFavorites(): Flow<List<Cocktail>> = favorites
 
-    override suspend fun getFavoriteCocktails(): Result<List<Cocktail>> = Result.Success(favorites.value)
+    override suspend fun getFavoriteCocktails(): Result<List<Cocktail>> {
+        getFavoriteCocktailsCalls++
+        return Result.Success(favorites.value)
+    }
 
     override suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> {
         // Mirrors the real impl: a re-add of an existing id upgrades that
@@ -190,7 +203,6 @@ class FakeCatalogRepository(var all: List<Cocktail> = emptyList()) : CocktailCat
         Result.Success(all.mapNotNull { it.category }.distinct())
 
     override suspend fun getIngredients(): Result<List<String>> = Result.Success(emptyList())
-    override suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>> = Result.Success(all)
 }
 
 class FakeOfflineRepository : CocktailOfflineRepository {

@@ -3,13 +3,17 @@ import SwiftUI
 import shared
 
 struct FavoritesView: View {
-    @State private var viewModel = FavoritesViewModelSKIE()
+    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    @State private var model = ViewModelHolder(FavoritesViewModelSKIE.init)
+    private var viewModel: FavoritesViewModelSKIE { model.wrapper }
     @Environment(CartViewModelSKIE.self) private var cartViewModel
+    @Environment(AppRouter.self) private var router
     /// Ids mid-unfavorite: their heart renders deselected for a beat before
     /// the card animates out, instead of the card vanishing on tap.
     @State private var removingIds: Set<String> = []
     @State private var showingToast = false
     @State private var toastMessage = ""
+    @State private var toastType: Toast.ToastType = .success
     @Environment(\.isDarkMode) private var isDarkMode
 
     var body: some View {
@@ -29,15 +33,18 @@ struct FavoritesView: View {
         .task {
             await viewModel.loadFavorites()
         }
-        .toast(isShowing: $showingToast, message: toastMessage, type: .success, duration: 2)
+        .toast(isShowing: $showingToast, message: toastMessage, type: toastType, duration: 2)
         .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
     }
     
+    /// "Browse Cocktails" goes to Home, as on Android.
     private var emptyStateView: some View {
         EmptyStateView(
             icon: "heart",
             title: L(\.no_favorites),
-            message: L(\.favorites_empty_message_ios)
+            message: L(\.favorites_empty_message_ios),
+            actionTitle: L(\.browse_cocktails),
+            action: { router.selectedTab = .home }
         )
     }
     
@@ -74,9 +81,13 @@ struct FavoritesView: View {
                 // Add-to-cart with toast confirmation, matching Home and the
                 // Android Favorites list (which had this button all along)
                 onAddToCart: {
+                    // Only a real add is confirmed; a failed one says so instead
                     Task { @MainActor in
-                        await cartViewModel.addToCart(cocktail)
-                        toastMessage = L(\.added_to_cart, cocktail.name)
+                        let added = await cartViewModel.addToCart(cocktail)
+                        toastMessage = added
+                            ? L(\.added_to_cart, cocktail.name)
+                            : L(\.error_add_item_to_cart_failed)
+                        toastType = added ? .success : .error
                         withAnimation {
                             showingToast = true
                         }

@@ -26,6 +26,27 @@ final class WidgetDeepLinkTests: XCTestCase {
         XCTAssertNil(WidgetDeepLink.cocktailId(from: try XCTUnwrap(URL(string: "cocktailcraft://cocktail"))))
         XCTAssertNil(WidgetDeepLink.cocktailId(from: try XCTUnwrap(URL(string: "cocktailcraft://cocktail/"))))
     }
+
+    func testNonNumericOrOverlongIdIsRejected() throws {
+        let rejected = [
+            "cocktailcraft://cocktail/abc",
+            "cocktailcraft://cocktail/11007a",
+            "cocktailcraft://cocktail/12345678901", // 11 digits
+            "cocktailcraft://cocktail/-1",
+            "cocktailcraft://cocktail/11007/extra",
+            "cocktailcraft://cocktail/..%2Fprofile",
+            "cocktailcraft://cocktail/%EF%BC%91%EF%BC%92" // full-width digits
+        ]
+        for string in rejected {
+            let url = try XCTUnwrap(URL(string: string), string)
+            XCTAssertNil(WidgetDeepLink.cocktailId(from: url), string)
+        }
+    }
+
+    func testTenDigitIdIsAccepted() throws {
+        let url = try XCTUnwrap(URL(string: "cocktailcraft://cocktail/1234567890"))
+        XCTAssertEqual(WidgetDeepLink.cocktailId(from: url), "1234567890")
+    }
 }
 
 /// Snapshot round-trip through the real App Group container. The container
@@ -69,9 +90,9 @@ final class WidgetSnapshotStoreTests: XCTestCase {
             updatedAt: Date()
         )
 
-        // The test host's WidgetDataBridge writes one launch-time snapshot
-        // from an async Task; retry once so that single concurrent write
-        // cannot flake the round-trip.
+        // The test host runs in test mode, which doesn't start
+        // WidgetDataBridge; retry once anyway, so a host that does (writing
+        // its launch-time snapshot from an async Task) cannot flake this.
         var restored: WidgetFavoritesSnapshot?
         for _ in 0..<2 {
             WidgetSnapshotStore.write(written)
@@ -89,5 +110,45 @@ final class WidgetSnapshotStoreTests: XCTestCase {
         XCTAssertEqual(snapshot.updatedAt.timeIntervalSince1970,
                        written.updatedAt.timeIntervalSince1970,
                        accuracy: 0.001)
+    }
+}
+
+/// Which pool entry the Random Cocktail widget shows over time.
+final class WidgetRandomPoolRotationTests: XCTestCase {
+
+    private let fourHours: TimeInterval = 4 * 3600
+    private let written = Date(timeIntervalSince1970: 1_800_000_000)
+
+    private func snapshot(_ ids: [String]) -> WidgetRandomCocktailSnapshot {
+        WidgetRandomCocktailSnapshot(
+            cocktails: ids.map { WidgetRandomCocktail(id: $0, name: $0, category: nil, thumbnail: nil) },
+            updatedAt: written
+        )
+    }
+
+    private func pick(_ snapshot: WidgetRandomCocktailSnapshot?, after interval: TimeInterval) -> String? {
+        WidgetRandomSnapshotStore.cocktail(in: snapshot, at: written.addingTimeInterval(interval),
+                                           rotation: fourHours)?.id
+    }
+
+    func testFreshSnapshotShowsItsFirstCocktail() {
+        XCTAssertEqual(pick(snapshot(["random", "recent-1"]), after: 0), "random")
+        XCTAssertEqual(pick(snapshot(["random", "recent-1"]), after: fourHours - 1), "random")
+    }
+
+    func testPickAdvancesEveryRotationAndWrapsAround() {
+        let pool = snapshot(["a", "b", "c"])
+        XCTAssertEqual(pick(pool, after: fourHours), "b")
+        XCTAssertEqual(pick(pool, after: 2 * fourHours), "c")
+        XCTAssertEqual(pick(pool, after: 3 * fourHours), "a")
+    }
+
+    func testEmptyOrMissingPoolHasNoPick() {
+        XCTAssertNil(pick(snapshot([]), after: 0))
+        XCTAssertNil(pick(nil, after: 0))
+    }
+
+    func testClockBeforeTheSnapshotStillShowsTheFirstCocktail() {
+        XCTAssertEqual(pick(snapshot(["a", "b"]), after: -fourHours), "a")
     }
 }

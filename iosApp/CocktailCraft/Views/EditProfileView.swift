@@ -2,6 +2,9 @@ import SwiftUI
 
 struct EditProfileView: View {
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
+    // 60pt header icon at the default text size, scaling with Dynamic Type
+    @ScaledMetric(relativeTo: .largeTitle) private var headerIconSize: CGFloat = 60
     @State private var name: String
     @State private var email: String
     @State private var isLoading = false
@@ -34,12 +37,12 @@ struct EditProfileView: View {
                 // Header
                 VStack(spacing: 8) {
                     Image(systemName: "person.crop.circle.badge.checkmark")
-                        .font(.system(size: 60))
-                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                        .font(.system(size: headerIconSize))
+                        .foregroundColor(AppColors.primary(appearance))
 
                     Text(L(\.edit_profile_subtitle))
                         .font(.body)
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.textSecondary(appearance))
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 32)

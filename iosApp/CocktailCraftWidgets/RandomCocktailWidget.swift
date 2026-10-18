@@ -1,10 +1,13 @@
 import WidgetKit
 import SwiftUI
 
-/// "Cocktail of the hour": fetches a random cocktail straight from
-/// TheCocktailDB (the API is public, so the extension needs no app data)
-/// and deep-links to its detail screen on tap. Mirrors Android's
-/// RandomCocktailWidget.
+/// "Cocktail of the hour": rotates through the pool the app writes into the
+/// App Group container (WidgetRandomSnapshotStore) — a fresh random pick
+/// from the app's last online session, then recently viewed cocktails — and
+/// deep-links to the shown cocktail's detail screen on tap. Like the
+/// favorites widget it does no networking, so it keeps working offline.
+/// Mirrors Android's RandomCocktailWidget (random pick, recently viewed as
+/// the offline fallback).
 struct RandomCocktailWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: WidgetKind.randomCocktail, provider: RandomCocktailProvider()) { entry in
@@ -20,87 +23,48 @@ struct RandomCocktailWidget: Widget {
 
 struct RandomCocktailEntry: TimelineEntry {
     let date: Date
-    let cocktail: RandomWidgetCocktail?
-}
-
-struct RandomWidgetCocktail {
-    let id: String
-    let name: String
-    let category: String?
-    let imageData: Data?
+    let cocktail: WidgetRandomCocktail?
 }
 
 struct RandomCocktailProvider: TimelineProvider {
-    private static let randomEndpoint = URL(string: "https://www.thecocktaildb.com/api/json/v1/1/random.php")!
+    /// A new pick from the pool every 4 hours.
+    static let refreshInterval: TimeInterval = 4 * 3600
 
     func placeholder(in context: Context) -> RandomCocktailEntry {
         RandomCocktailEntry(
             date: Date(),
-            cocktail: RandomWidgetCocktail(id: "11007", name: "Margarita", category: "Ordinary Drink", imageData: nil)
+            cocktail: WidgetRandomCocktail(id: "11007", name: "Margarita", category: "Ordinary Drink", thumbnail: nil)
         )
     }
 
     func getSnapshot(in context: Context, completion: @escaping (RandomCocktailEntry) -> Void) {
         if context.isPreview {
             completion(placeholder(in: context))
-            return
+        } else {
+            completion(entry(at: Date()))
         }
-        Task { completion(await fetchEntry()) }
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<RandomCocktailEntry>) -> Void) {
-        Task {
-            let entry = await fetchEntry()
-            // A fresh pick every ~4 hours; on failure retry sooner.
-            let refresh = Calendar.current.date(
-                byAdding: .hour,
-                value: entry.cocktail == nil ? 1 : 4,
-                to: entry.date
-            ) ?? entry.date.addingTimeInterval(4 * 3600)
-            completion(Timeline(entries: [entry], policy: .after(refresh)))
-        }
+        // The app reloads this timeline when it first fills an empty pool;
+        // otherwise the widget advances through the pool on its own.
+        let now = Date()
+        completion(Timeline(
+            entries: [entry(at: now)],
+            policy: .after(now.addingTimeInterval(Self.refreshInterval))
+        ))
     }
 
-    private func fetchEntry() async -> RandomCocktailEntry {
-        do {
-            let (data, _) = try await URLSession.shared.data(from: Self.randomEndpoint)
-            let response = try JSONDecoder().decode(RandomDrinkResponse.self, from: data)
-            guard let drink = response.drinks.first else {
-                return RandomCocktailEntry(date: Date(), cocktail: nil)
-            }
-
-            // The /preview variant is ~100x100 — plenty for a widget and
-            // safely inside the extension's memory budget.
-            var imageData: Data? = nil
-            if let thumb = drink.strDrinkThumb,
-               let imageUrl = URL(string: thumb + "/preview") {
-                imageData = try? await URLSession.shared.data(from: imageUrl).0
-            }
-
-            return RandomCocktailEntry(
-                date: Date(),
-                cocktail: RandomWidgetCocktail(
-                    id: drink.idDrink,
-                    name: drink.strDrink,
-                    category: drink.strCategory,
-                    imageData: imageData
-                )
+    private func entry(at date: Date) -> RandomCocktailEntry {
+        RandomCocktailEntry(
+            date: date,
+            cocktail: WidgetRandomSnapshotStore.cocktail(
+                in: WidgetRandomSnapshotStore.read(),
+                at: date,
+                rotation: Self.refreshInterval
             )
-        } catch {
-            return RandomCocktailEntry(date: Date(), cocktail: nil)
-        }
+        )
     }
-}
-
-private struct RandomDrinkResponse: Decodable {
-    struct Drink: Decodable {
-        let idDrink: String
-        let strDrink: String
-        let strCategory: String?
-        let strDrinkThumb: String?
-    }
-
-    let drinks: [Drink]
 }
 
 struct RandomCocktailWidgetView: View {
@@ -124,6 +88,8 @@ struct RandomCocktailWidgetView: View {
                 }
             }
         } else {
+            // Nothing written yet (the app hasn't run, or has never been
+            // online nor shown a cocktail): point the user at the app
             VStack(spacing: 4) {
                 Image(systemName: "wineglass")
                     .font(.title3)
@@ -131,16 +97,17 @@ struct RandomCocktailWidgetView: View {
                 Text(String(localized: "No cocktail right now"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text(String(localized: "Check back soon"))
+                Text(String(localized: "Open CocktailCraft to discover some"))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
+            .multilineTextAlignment(.center)
         }
     }
 
-    private func thumbnail(_ cocktail: RandomWidgetCocktail, size: CGFloat) -> some View {
+    private func thumbnail(_ cocktail: WidgetRandomCocktail, size: CGFloat) -> some View {
         Group {
-            if let data = cocktail.imageData, let image = UIImage(data: data) {
+            if let data = cocktail.thumbnail, let image = UIImage(data: data) {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -157,7 +124,7 @@ struct RandomCocktailWidgetView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
-    private func info(_ cocktail: RandomWidgetCocktail) -> some View {
+    private func info(_ cocktail: WidgetRandomCocktail) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(String(localized: "Try something new"))
                 .font(.caption2)

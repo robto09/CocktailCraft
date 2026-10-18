@@ -91,7 +91,23 @@ kotlin {
 
                 // initKoin/KoinHelper assemble the per-layer Koin modules
                 implementation(libs.koin.core)
+                // configureLogging sets the global Kermit floor at app init
+                implementation(libs.kermit)
             }
+        }
+
+        // iOS test mode and Debug hooks (iosMain/IosTestMode.kt, KoinIOS.kt):
+        // the stand-in storage (an in-memory database, throwaway
+        // NSUserDefaults suites) and the MockEngine HTTP client that
+        // doInitKoinForTesting() binds over the platform ones, plus the
+        // HttpSend hook behind the Debug "simulate network failure" toggle
+        iosMain.dependencies {
+            implementation(libs.multiplatform.settings.core)
+            implementation(libs.sqldelight.native.driver)
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.mock)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
         }
 
         val commonTest by getting {
