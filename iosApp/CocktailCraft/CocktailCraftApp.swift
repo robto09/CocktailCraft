@@ -102,7 +102,8 @@ struct CocktailCraftApp: App {
                 .init(
                     title: "CocktailCraft Info",
                     infos: [
-                        .init(title: "App Version", subtitle: "1.0"),
+                        .init(title: "App Version",
+                              subtitle: "\(Bundle.main.appVersion) (\(Bundle.main.buildNumber))"),
                         .init(title: "API", subtitle: "TheCocktailDB (Free Tier)"),
                         .init(title: "Platform", subtitle: "iOS (Kotlin Multiplatform)"),
                         .init(title: "Architecture", subtitle: "MVVM + Clean Architecture"),
@@ -150,6 +151,20 @@ extension UIWindow {
     }
 }
 #endif
+
+// MARK: - App Version
+
+extension Bundle {
+    /// Marketing version ("1.0"), from MARKETING_VERSION in project.yml.
+    var appVersion: String {
+        infoDictionary?["CFBundleShortVersionString"] as? String ?? L(\.common_unknown)
+    }
+
+    /// Build number ("1"), from CURRENT_PROJECT_VERSION in project.yml.
+    var buildNumber: String {
+        infoDictionary?["CFBundleVersion"] as? String ?? L(\.common_unknown)
+    }
+}
 
 // MARK: - Global Koin Helper Functions
 // Using global functions to avoid namespace conflicts

@@ -309,7 +309,7 @@ struct ProfileView: View {
                     .fontWeight(.medium)
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
-                Text(L(\.profile_version_format, "1.0.0"))
+                Text(L(\.profile_version_format, Bundle.main.appVersion))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
 
