@@ -23,11 +23,6 @@ This directory contains the technical documentation for CocktailCraft, a Kotlin 
 - **[DebugSwift](DebugSwift.md)**: iOS in-app debugging tool integration and QA usage
 - **[iOS Setup Instructions](../iosApp/iOS_Setup_Instructions.md)**: Complete iOS development environment setup
 
-## Historical Records
-
-- **[Enhancement Tracker](ENHANCEMENT_TRACKER.md)**: Historical record of the enhancement batch work items
-- **[Improvement Plan](IMPROVEMENT_PLAN.md)**: Historical improvement planning document
-
 ## Architecture Diagrams
 
 Mermaid diagrams under [`images/mermaid/`](images/mermaid/):
