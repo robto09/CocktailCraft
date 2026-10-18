@@ -130,11 +130,6 @@ kotlin {
                 implementation(libs.androidx.test.core)
                 implementation(libs.androidx.test.ext.junit)
 
-                // JUnit Jupiter for modern testing (Android only)
-                implementation(libs.junit.jupiter.api)
-                implementation(libs.junit.jupiter.engine)
-                implementation(libs.junit.jupiter.params)
-
                 // SharedStringsTest maps a Ktor IOException to its copy
                 implementation(libs.ktor.client.core)
             }

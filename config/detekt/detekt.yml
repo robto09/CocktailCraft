@@ -1,0 +1,55 @@
+# Overrides on top of detekt's default config (buildUponDefaultConfig = true in
+# build-logic's DetektConventionPlugin). Everything not listed here keeps the
+# detekt / detekt-formatting / Compose-rules defaults. Pre-existing findings
+# are in each module's detekt-baseline.xml — see README "Static analysis".
+
+complexity:
+  LongMethod:
+    # Composable bodies are mostly layout declarations
+    ignoreAnnotated: ['Composable']
+  LongParameterList:
+    # Composables take modifiers, state and callbacks as parameters by design
+    ignoreAnnotated: ['Composable']
+    ignoreDefaultParameters: true
+
+naming:
+  FunctionNaming:
+    # Composables are PascalCase
+    ignoreAnnotated: ['Composable']
+  TopLevelPropertyNaming:
+    # Compose CompositionLocals and colors are PascalCase top-level vals
+    constantPattern: '[A-Z][A-Za-z0-9]*'
+
+style:
+  MagicNumber:
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/androidHostTest/**'
+      - '**/iosTest/**'
+      - '**/*.kts'
+    # dp/sp/alpha literals in UI code
+    ignoreAnnotated: ['Composable', 'Preview']
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+  MaxLineLength:
+    maxLineLength: 120
+  UnusedPrivateMember:
+    # @Preview functions are only called by the IDE
+    ignoreAnnotated: ['Preview']
+
+formatting:
+  # The ktlint rules below duplicate detekt's own, which stay on
+  # Covered by naming>FunctionNaming above, which can skip @Composable
+  FunctionNaming:
+    active: false
+  # style>MaxLineLength
+  MaximumLineLength:
+    active: false
+  # style>WildcardImport
+  NoWildcardImports:
+    active: false
+  # style>NewLineAtEndOfFile
+  FinalNewline:
+    active: false

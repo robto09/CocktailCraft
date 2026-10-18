@@ -7,35 +7,41 @@
 compileSdk = "36"
 jvmTarget = "17"
 agp = "9.2.1"
-androidxBenchmark = "1.5.0-alpha07"
+androidxBenchmark = "1.5.0"
 androidxProfileinstaller = "1.4.1"
-uiautomator = "2.3.0"
+uiautomator = "2.4.0"
 androidxActivityCompose = "1.13.0"
-androidxAppCompat = "1.6.1"
+androidxAppCompat = "1.8.0"
 androidxArchCoreTesting = "2.2.0"
 androidxComposeBom = "2026.06.01"
 androidxEspresso = "3.7.0"
-androidxGlance = "1.1.1"
+androidxGlance = "1.2.0"
 androidxLifecycle = "2.10.0"
 androidxNavigation = "2.9.8"
-androidxNavigationTesting = "2.9.8"
+# Pre-release on purpose for now: 1.1.0 (stable) deprecates the whole
+# library, so moving off it is its own migration of the auth store
+# (core/data), not a version bump.
 androidxSecurityCrypto = "1.1.0-alpha06"
 androidxTest = "1.7.0"
 androidxTestExtJunit = "1.3.0"
-androidxTestRunner = "1.7.0"
-androidxWork = "2.9.0"
+androidxWork = "2.12.0"
 coil = "2.7.0"
+# Static analysis (build-logic DetektConventionPlugin). detekt 1.23.x is the
+# stable line; composeRulesDetekt 0.4.x is the last line built for it.
+composeRulesDetekt = "0.4.28"
+detekt = "1.23.8"
 junit4 = "4.13.2"
-junitJupiter = "5.10.1"
-junitPlatform = "1.10.1"
-kermit = "2.1.0"
+# JUnit 5 line; 6.x is a major migration
+junitJupiter = "5.14.4"
+junitPlatform = "1.14.4"
+kermit = "2.2.0"
 koin = "4.2.2"
 kotlin = "2.3.21"
 kotlinxCoroutines = "1.11.0"
 kotlinxDatetime = "0.8.0"
 kotlinxSerializationJson = "1.11.0"
 ktor = "3.5.1"
-mockk = "1.13.8"
+mockk = "1.14.11"
 mokoResources = "0.27.1"
 multiplatformSettings = "1.3.0"
 placeholderCompose = "1.0.4"
@@ -50,6 +56,12 @@ turbine = "1.2.1"
 # build supplies the real plugins via `apply false`
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+# implementation, not compileOnly: only build-logic puts detekt on the classpath
+detekt-gradlePlugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+
+# detekt rule plugins (detektPlugins configuration)
+detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
+compose-rules-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref = "composeRulesDetekt" }
 
 # Kotlinx
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
@@ -112,7 +124,6 @@ compose-ui-core = { module = "androidx.compose.ui:ui" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-ui-toolingPreview = { module = "androidx.compose.ui:ui-tooling-preview" }
 compose-foundation = { module = "androidx.compose.foundation:foundation" }
-compose-material = { module = "androidx.compose.material:material" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-materialIconsExtended = { module = "androidx.compose.material:material-icons-extended" }
 compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
@@ -147,19 +158,17 @@ androidx-profileinstaller = { module = "androidx.profileinstaller:profileinstall
 androidx-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "uiautomator" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTest" }
 androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidxTest" }
-androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTest" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
 androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidxEspresso" }
-androidx-navigation-testing = { module = "androidx.navigation:navigation-testing", version.ref = "androidxNavigationTesting" }
+androidx-navigation-testing = { module = "androidx.navigation:navigation-testing", version.ref = "androidxNavigation" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 baselineprofile = { id = "androidx.baselineprofile", version.ref = "androidxBenchmark" }
-android-library = { id = "com.android.library", version.ref = "agp" }
 android-kotlinMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 skie = { id = "co.touchlab.skie", version.ref = "skie" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }

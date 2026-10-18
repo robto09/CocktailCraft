@@ -89,7 +89,10 @@ iosApp/CocktailCraft.xcworkspace/
 .DS_Store
 Thumbs.db
 
-.claude/
+# Claude Code: shared config (.claude/settings.json, agents, commands) is
+# committed; per-user settings and agent worktrees are not
+.claude/worktrees/
+.claude/settings.local.json
 
 # Prebuilt iOS framework — build artifact, never commit
 shared/shared.xcframework/

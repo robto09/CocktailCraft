@@ -4,6 +4,13 @@ options:
   deploymentTarget:
     iOS: "17.0"
 
+settings:
+  base:
+    # The Kotlin framework has no x86_64 simulator slice (no iosX64 target in
+    # build-logic), so simulator builds are Apple-silicon only. Without this,
+    # Release simulator builds (ONLY_ACTIVE_ARCH=NO) also try to link x86_64.
+    EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
+
 # Third-party Swift packages (SPM). Package.resolved is committed under
 # CocktailCraft.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/ so every
 # checkout resolves the same versions. Keep this map alphabetical.
@@ -54,11 +61,30 @@ targets:
             -Pmoko.resources.ARCHS="$ARCHS" \
             -Pmoko.resources.BUILT_PRODUCTS_DIR="$BUILT_PRODUCTS_DIR" \
             -Pmoko.resources.CONTENTS_FOLDER_PATH="$CONTENTS_FOLDER_PATH"
+    # Advisory only: lints all four targets with iosApp/.swiftlint.yml when
+    # SwiftLint is installed (brew install swiftlint), reporting findings as
+    # warnings. Never fails the build; skipped silently without SwiftLint.
+    postCompileScripts:
+      - name: SwiftLint
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
+        script: |
+          export PATH="$PATH:/opt/homebrew/bin:/usr/local/bin"
+          if which swiftlint >/dev/null 2>&1; then
+            cd "$SRCROOT"
+            swiftlint lint --quiet 2>&1 | sed 's/: error: /: warning: /'
+          else
+            echo "SwiftLint not installed; skipping (brew install swiftlint)"
+          fi
+          exit 0
     # DebugSwift must never ship. SPM cannot link a package per
     # configuration, so Release drops DebugSwift.o from the link via
     # EXCLUDED_SOURCE_FILE_NAMES (below); this phase then removes the resource
-    # bundle Xcode still copies in, and fails the build if any DebugSwift
-    # symbol slipped into the binary (e.g. if Xcode renames the product).
+    # bundle Xcode still copies in, and fails the build if DebugSwift slipped
+    # in anyway (e.g. if Xcode renames the object file so the exclusion stops
+    # matching). The symbol table alone is not proof — a stripped binary has
+    # none — so it also checks the Swift/ObjC metadata strings (which survive
+    # stripping), the linked dylibs, and the bundle's files.
     # All app-side usage sits behind `#if DEBUG`.
     postBuildScripts:
       - name: Strip DebugSwift from Release
@@ -68,10 +94,26 @@ targets:
           if [ "$CONFIGURATION" = "Debug" ]; then
             exit 0
           fi
-          rm -rf "$TARGET_BUILD_DIR/$WRAPPER_NAME/DebugSwift_DebugSwift.bundle"
-          if nm "$TARGET_BUILD_DIR/$EXECUTABLE_PATH" 2>/dev/null | grep -q DebugSwift; then
-            echo "error: DebugSwift is linked into the $CONFIGURATION build"
+          APP="$TARGET_BUILD_DIR/$WRAPPER_NAME"
+          BIN="$TARGET_BUILD_DIR/$EXECUTABLE_PATH"
+          fail() {
+            echo "error: $1 (see docs/DebugSwift.md)"
             exit 1
+          }
+          rm -rf "$APP/DebugSwift_DebugSwift.bundle"
+          [ -f "$BIN" ] || fail "no app binary at $BIN to check for DebugSwift"
+          if nm "$BIN" 2>/dev/null | grep -q DebugSwift; then
+            fail "DebugSwift symbols are linked into the $CONFIGURATION build"
+          fi
+          if grep -a -q DebugSwift "$BIN"; then
+            fail "the $CONFIGURATION binary contains DebugSwift type names or strings"
+          fi
+          if otool -L "$BIN" | grep -qi debugswift; then
+            fail "the $CONFIGURATION binary links a DebugSwift library"
+          fi
+          LEFTOVER=$(find "$APP" -iname '*debugswift*' | head -n 1)
+          if [ -n "$LEFTOVER" ]; then
+            fail "DebugSwift file in the $CONFIGURATION bundle: ${LEFTOVER#$APP/}"
           fi
     dependencies:
       - target: CocktailCraftWidgets
@@ -137,6 +179,10 @@ targets:
       path: CocktailCraftWidgets/Info.plist
       properties:
         CFBundleDisplayName: CocktailCraft
+        # From the target's settings below (set by scripts/bump-version.sh),
+        # so the extension's version always matches the app's
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
         # ATS pinning is per-bundle: without this mirror of the app's pin

@@ -5,7 +5,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 
 ### Platform Status
 - **Android**: ✅ Fully functional and production-ready
-- **iOS**: ✅ Fully functional — complete SKIE integration (100%) with native Swift async/await patterns
+- **iOS**: ✅ Fully functional — SwiftUI on the shared ViewModels, bridged to Swift async/await by SKIE
 
 <p align="center">
   <img src="docs/images/Screenshot_20250419_014459.png" alt="Android home screen" width="45%">
@@ -20,16 +20,15 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Order Management**: Place orders and track order history
 - **Favorites**: Save and manage favorite cocktails
 - **Reviews**: Read and submit reviews for cocktails
-- **Personalized Recommendations**: "You might also like" suggestions based on viewing history and preferences
+- **Related Cocktails**: "You might also like" picks on the detail screen — a random selection from the same category
 - **Dark Mode Support**: Adaptive UI that supports both light and dark themes with smooth transitions
 - **Offline Mode**: Browse recently viewed cocktails and favorites without internet connection
-- **Background Sync**: Automatic data synchronization when app is backgrounded for fresh content on launch
-- **Home Screen Widgets**: Android and iOS (WidgetKit) widgets with deep links into the app
-- **Localization**: One shared set of UI strings for both platforms (moko-resources in `:core:resources`) with locale-aware prices
+- **Home Screen Widgets**: Android and iOS (WidgetKit) widgets with deep links into the app; on Android, WorkManager refreshes them periodically (there is no other background sync on either platform)
+- **Localization**: One shared set of UI strings for both platforms (moko-resources in `:core:resources`); prices are US dollars only for now
 - **Robust Error Handling**: User-friendly error messages with recovery options
 - **Polished Animations**: Enhanced user experience with smooth animations and micro-interactions
 - **Cross-Platform**: Same codebase for both Android and iOS platforms with platform-specific UI components
-- **Native iOS Integration**: Complete SKIE integration (100%) with Swift async/await and modern SwiftUI reusable components
+- **Native iOS UI**: SwiftUI screens and reusable components; SKIE exposes the shared Flows and suspend functions to Swift as AsyncSequence and async
 
 ## Architecture
 The application follows the **Clean Architecture** pattern with **MVVM** (Model-View-ViewModel) for presentation, reactive state management, and a modular **Dependency Injection** system:
@@ -402,8 +401,10 @@ Translate the native leftovers below as well.
   (their iOS counterparts are the widget's `configurationDisplayName`s).
 - The Debug-only DebugSwift menu labels, which never ship.
 
-Prices stay locale-aware and are formatted per platform, not through strings
-(IO-6).
+Prices are formatted per platform, not through translatable strings (IO-6),
+and are US dollars only for now: Android formats them with `Locale.US`, iOS
+formats USD in the device locale's number style (`Double.asPrice`), and the
+shared `*_price_format` strings hard-code `$`.
 
 ## Test Coverage
 The application includes comprehensive test coverage:
@@ -440,16 +441,17 @@ The application includes comprehensive test coverage:
    - See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) for detailed setup
 
 ## Development Setup
-- **Android Studio**: Latest version recommended (Flamingo or newer)
+- **Android Studio**: a release that supports AGP 9.2 (the version in `libraries.toml`) — see the [AGP/Android Studio compatibility table](https://developer.android.com/build/releases/gradle-plugin#android_gradle_plugin_and_android_studio_compatibility)
 - **JDK**: Version 17 or higher
-- **Xcode**: Latest version (for iOS development)
+- **Xcode**: Latest version (for iOS development), plus [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
+- **Mac**: Apple silicon for iOS work — the Kotlin framework is built for arm64 simulators and devices only (no Intel `x86_64` simulator)
 - **Gradle**: Managed by the project
 - **Git**: For version control
 
 ## Troubleshooting
 - **Build Issues**: Try cleaning and rebuilding the project
 - **KMP Plugin Issues**: Make sure the Kotlin Multiplatform plugin is up to date
-- **iOS Builds**: ✅ **Working with SKIE integration!** See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) and the [SKIE Full Migration Guide](docs/SKIE_FULL_MIGRATION_GUIDE.md) for details
+- **iOS Builds**: See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) and the [SKIE Full Migration Guide](docs/SKIE_FULL_MIGRATION_GUIDE.md) for details
 - **iOS Build Warnings**: Non-blocking warnings exist (see iOS documentation for details)
 - **Dependency Resolution**: Check Gradle settings and the `libraries.toml` version catalog
 
@@ -457,7 +459,6 @@ The application includes comprehensive test coverage:
 
 ### 📚 **Core Documentation**
 - [Documentation Index](docs/README.md) - Index of all project documentation
-- [iOS Background Sync Implementation](docs/ios-background-sync.md) - Comprehensive guide to the background sync feature
 - [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) - Complete iOS development setup
 - [SKIE Full Migration Guide](docs/SKIE_FULL_MIGRATION_GUIDE.md) - iOS compatibility and SKIE integration details
 
@@ -465,10 +466,42 @@ The application includes comprehensive test coverage:
 - [DebugSwift Guide](docs/DebugSwift.md) - iOS debugging tool integration and usage for QA testing
 
 ### 🔧 **Technical Guides**
-- **Background Sync**: Automatic data synchronization for iOS with BGTaskScheduler integration
-- **SKIE Integration**: 100% native Swift async/await patterns for seamless iOS development
+- **SKIE Integration**: Shared Flows and suspend functions consumed from Swift as AsyncSequence and async
 - **Architecture**: Clean Architecture with MVVM pattern and dependency injection
 - **Cross-Platform**: Shared business logic with platform-specific UI implementations
+
+## Static analysis
+
+All checks are local (there is no CI). Findings that predate a tool are
+recorded in baselines, so the commands below pass today and report only new
+issues.
+
+```bash
+./gradlew detekt            # detekt + ktlint (detekt-formatting) + Compose rules, every module
+./gradlew :core:data:detekt # one module
+./gradlew detektBaseline    # re-record the baselines (only to accept existing findings)
+cd iosApp && swiftlint lint # SwiftLint (brew install swiftlint)
+```
+
+- **Kotlin**: applied to every module by the `cocktailcraft.detekt` convention
+  plugin in `build-logic/`, with the shared config in `config/detekt/detekt.yml`
+  and a `detekt-baseline.xml` per module; HTML reports land in
+  `<module>/build/reports/detekt/`. `detekt` is also part of `./gradlew check`.
+  It never rewrites code (ktlint runs check-only; formatting follows
+  `.editorconfig`).
+- **Swift**: `iosApp/.swiftlint.yml`. The app target has an advisory SwiftLint
+  build phase that runs only when SwiftLint is installed and reports findings
+  as warnings, never failing the build. To see only new findings, record a
+  baseline (SwiftLint 0.55+): `swiftlint lint --write-baseline .swiftlint-baseline.json`,
+  then `swiftlint lint --baseline .swiftlint-baseline.json`.
+
+## Versioning
+
+`gradle.properties` (`appVersionName`/`appVersionCode`) is the single source of
+the app version. Bump it with `scripts/bump-version.sh <versionName> <versionCode>`
+(e.g. `scripts/bump-version.sh 1.1 2`), which also updates both iOS targets in
+`iosApp/project.yml` and the committed Xcode project, and fails if any of
+those edits did not land.
 
 ## Contributing
 Contributions are welcome! Please follow the standard GitHub flow:
