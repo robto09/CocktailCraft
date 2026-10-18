@@ -1,10 +1,12 @@
 package com.cocktailcraft.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.error_generic
+import com.cocktailcraft.resources.undo
 import com.cocktailcraft.util.ErrorHandler
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.StringDesc
@@ -17,6 +19,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * Base ViewModel class for multiplatform ViewModels, on top of the official
@@ -51,6 +54,16 @@ abstract class SharedViewModel : ViewModel() {
     protected fun sendEvent(event: UiEvent) {
         _events.tryEmit(event)
     }
+
+    /**
+     * An Undo button for a toast: [undo] runs once, on viewModelScope, when
+     * the user taps it — so a Koin-single ViewModel restores the item even
+     * if the screen that showed the toast is gone by then.
+     */
+    protected fun undoAction(undo: suspend () -> Unit): UiEventAction =
+        UiEventAction(MR.strings.undo.desc()) {
+            viewModelScope.launch { undo() }
+        }
 
     /**
      * Handle an exception and convert it to a user-friendly error.

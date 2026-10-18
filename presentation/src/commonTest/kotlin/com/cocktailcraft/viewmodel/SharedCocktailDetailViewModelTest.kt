@@ -1,11 +1,17 @@
 package com.cocktailcraft.viewmodel
 
+import app.cash.turbine.test
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.usecase.GetCocktailDetailUseCase
+import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
 import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.added_to_cart
+import com.cocktailcraft.resources.favorite_removed
+import com.cocktailcraft.testutil.FakeCartRepository
 import com.cocktailcraft.testutil.FakeDetailRepository
 import com.cocktailcraft.testutil.FakeFavoritesRepository
 import com.cocktailcraft.testutil.FakeSearchRepository
@@ -13,15 +19,17 @@ import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
 import dev.icerock.moko.resources.desc.Raw
 import dev.icerock.moko.resources.desc.StringDesc
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import dev.icerock.moko.resources.format
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /** A detail source that always fails, for error-path tests. */
 private class FailingDetailRepository(
@@ -41,12 +49,105 @@ class SharedCocktailDetailViewModelTest : MainDispatcherTest() {
         val detail = FakeDetailRepository()
         val favorites = FakeFavoritesRepository()
         val search = FakeSearchRepository()
+        val cart = FakeCartRepository()
 
         fun viewModel(detailRepository: CocktailDetailRepository = detail) = SharedCocktailDetailViewModel(
             getCocktailDetailUseCase = GetCocktailDetailUseCase(detailRepository, favorites, search),
-            manageFavoritesUseCase = ManageFavoritesUseCase(favorites, detailRepository)
+            manageFavoritesUseCase = ManageFavoritesUseCase(favorites, detailRepository),
+            manageCartUseCase = ManageCartUseCase(cart, detailRepository)
         )
     }
+
+    @Test
+    fun unfavoritingOffersUndoThatFavoritesItAgain() = runTest {
+        val harness = Harness()
+        harness.detail.byId["1"] = testCocktail("1", name = "Martini")
+        harness.favorites.addToFavorites(testCocktail("1", name = "Martini"))
+        val vm = harness.viewModel()
+        vm.loadCocktail("1")
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.isFavorite)
+
+        val event = assertIs<UiEvent.Success>(vm.eventFrom { vm.toggleFavorite() })
+        assertEquals(MR.strings.favorite_removed.format("Martini"), event.message)
+        assertFalse(vm.uiState.value.isFavorite)
+        assertTrue(harness.favorites.stored.isEmpty())
+
+        assertNotNull(event.action).perform()
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.isFavorite)
+        assertEquals(listOf("1"), harness.favorites.stored.map { it.id })
+    }
+
+    @Test
+    fun favoritingOffersNoUndo() = runTest {
+        val harness = Harness()
+        harness.detail.byId["1"] = testCocktail("1")
+        val vm = harness.viewModel()
+        vm.loadCocktail("1")
+        advanceUntilIdle()
+
+        vm.events.test {
+            vm.toggleFavorite()
+            expectNoEvents()
+        }
+        assertTrue(vm.uiState.value.isFavorite)
+    }
+
+    @Test
+    fun addToCartAddsTheCocktailAndAnnouncesIt() = runTest {
+        val harness = Harness()
+        harness.detail.byId["1"] = testCocktail("1", name = "Martini")
+        val vm = harness.viewModel()
+        vm.loadCocktail("1")
+        advanceUntilIdle()
+
+        var added = false
+        val event = assertIs<UiEvent.Success>(vm.eventFrom { added = vm.addToCart() })
+
+        assertTrue(added)
+        assertEquals(MR.strings.added_to_cart.format("Martini"), event.message)
+        assertEquals(listOf("1" to 1), harness.cart.cartContents())
+        assertFalse(vm.uiState.value.isAddingToCart)
+        assertNull(vm.error.value)
+    }
+
+    @Test
+    fun failedAddToCartAnnouncesTheFailureNotASuccess() = runTest {
+        val harness = Harness()
+        harness.detail.byId["1"] = testCocktail("1")
+        val vm = harness.viewModel()
+        vm.loadCocktail("1")
+        advanceUntilIdle()
+        harness.cart.failNextMutation = true
+
+        var added = true
+        val event = assertIs<UiEvent.Failure>(vm.eventFrom { added = vm.addToCart() })
+
+        assertFalse(added)
+        assertEquals(StringDesc.Raw("add failed"), event.message)
+        assertTrue(harness.cart.cartContents().isEmpty())
+        assertFalse(vm.uiState.value.isAddingToCart)
+        // Toasted on this screen, not parked on the detail error channel
+        assertNull(vm.error.value)
+    }
+
+    @Test
+    fun addToCartWithoutLoadedCocktailIsNoOp() = runTest {
+        val harness = Harness()
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        vm.events.test {
+            assertFalse(vm.addToCart())
+            expectNoEvents()
+        }
+        assertTrue(harness.cart.cartContents().isEmpty())
+    }
+
+    private suspend fun FakeCartRepository.cartContents(): List<Pair<String, Int>> =
+        (getCartItems() as Result.Success).data.map { it.cocktail.id to it.quantity }
 
     @Test
     fun loadCocktailPopulatesDetailState() = runTest {
