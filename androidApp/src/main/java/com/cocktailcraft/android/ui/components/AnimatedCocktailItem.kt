@@ -60,6 +60,7 @@ import com.cocktailcraft.resources.list_out_of_stock
 import com.cocktailcraft.resources.list_price_format
 import com.cocktailcraft.resources.list_tap_to_view_ingredients
 import com.cocktailcraft.resources.list_view_details_label
+import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
 
 /**
  * An enhanced version of CocktailItem with animations
@@ -71,7 +72,8 @@ fun AnimatedCocktailItem(
     onAddToCart: (Cocktail) -> Unit,
     isFavorite: Boolean = false,
     onToggleFavorite: (Cocktail) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    reviewRating: CocktailRatingSummary? = null
 ) {
     // Animation states
     var isHovered by remember { mutableStateOf(false) }
@@ -108,20 +110,24 @@ fun AnimatedCocktailItem(
             cocktail = cocktail,
             isFavorite = isFavorite,
             onAddToCart = onAddToCart,
-            onToggleFavorite = onToggleFavorite
+            onToggleFavorite = onToggleFavorite,
+            reviewRating = reviewRating
         )
     }
 }
 
 /**
- * Extracted content of the cocktail item to avoid duplication
+ * Extracted content of the cocktail item to avoid duplication.
+ * [reviewRating], when the user has reviewed the cocktail, shows their
+ * average under the ingredients (the API itself has no ratings to show).
  */
 @Composable
 fun CocktailItemContent(
     cocktail: Cocktail,
     isFavorite: Boolean,
     onAddToCart: (Cocktail) -> Unit,
-    onToggleFavorite: (Cocktail) -> Unit
+    onToggleFavorite: (Cocktail) -> Unit,
+    reviewRating: CocktailRatingSummary? = null
 ) {
     // Haptic feedback handler for favorite toggle
     val hapticHandler = rememberHapticHandler()
@@ -220,6 +226,17 @@ fun CocktailItemContent(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+
+            if (reviewRating != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                RatingDisplay(
+                    rating = reviewRating.rating,
+                    reviewCount = reviewRating.count,
+                    starSize = 14,
+                    ratingTextSize = 12,
+                    reviewCountTextSize = 12
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
