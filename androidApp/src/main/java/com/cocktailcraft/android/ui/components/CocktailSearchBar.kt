@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.stringResource
@@ -59,6 +60,7 @@ import com.cocktailcraft.resources.search_cocktails_placeholder
  * @param inactiveFilterButtonColor The background color for the filter button when inactive
  * @param activeFilterIconTint The tint color for the filter icon when active
  * @param inactiveFilterIconTint The tint color for the filter icon when inactive
+ * @param trailingContent Extra controls after the filter button (Home's sort button), 8dp apart
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,7 +80,8 @@ fun CocktailSearchBar(
     // solid orange with a white funnel while filters are applied
     inactiveFilterButtonColor: Color = CocktailCraftTheme.extendedColors.surfaceRaised,
     activeFilterIconTint: Color = MaterialTheme.colorScheme.onPrimary,
-    inactiveFilterIconTint: Color = MaterialTheme.colorScheme.primary
+    inactiveFilterIconTint: Color = MaterialTheme.colorScheme.primary,
+    trailingContent: (@Composable () -> Unit)? = null
 ) {
     Row(
         modifier = modifier
@@ -119,7 +122,9 @@ fun CocktailSearchBar(
                     singleLine = true,
                     visualTransformation = VisualTransformation.None,
                     interactionSource = interactionSource,
-                    placeholder = { Text(placeholder) },
+                    // One line: beside the filter (and Home's sort) button a
+                    // narrow phone would otherwise wrap it
+                    placeholder = { Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     leadingIcon = {
                         // Decorative: the field's placeholder/label names it
                         Icon(Icons.Filled.Search, contentDescription = null)
@@ -179,6 +184,11 @@ fun CocktailSearchBar(
                 contentDescription = stringResource(MR.strings.search_advanced_search),
                 tint = if (isHighlighted) activeFilterIconTint else inactiveFilterIconTint
             )
+        }
+
+        if (trailingContent != null) {
+            Spacer(modifier = Modifier.width(8.dp))
+            trailingContent()
         }
     }
 }

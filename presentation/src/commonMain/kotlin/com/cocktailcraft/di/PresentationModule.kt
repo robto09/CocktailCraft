@@ -44,7 +44,8 @@ val presentationModule = module {
             offlineRepository = get(),
             getCocktailDetailUseCase = get(),
             catalogRepository = get(),
-            networkMonitor = get()
+            networkMonitor = get(),
+            manageReviewsUseCase = get()
         )
     }
     single { com.cocktailcraft.viewmodel.SharedCartViewModel(manageCartUseCase = get()) }

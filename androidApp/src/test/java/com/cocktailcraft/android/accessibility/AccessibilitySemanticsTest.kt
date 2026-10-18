@@ -34,11 +34,14 @@ import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.CartItemCard
 import com.cocktailcraft.android.ui.components.CocktailItem
 import com.cocktailcraft.android.ui.components.FilterSection
+import com.cocktailcraft.android.ui.components.HomeSortButton
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
 import com.cocktailcraft.android.ui.components.RatingDisplay
+import com.cocktailcraft.android.ui.components.RecentlyViewedRow
 import com.cocktailcraft.android.ui.components.SectionHeader
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
+import com.cocktailcraft.viewmodel.state.HomeSortOption
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -110,6 +113,37 @@ class AccessibilitySemanticsTest {
         composeRule.onNodeWithContentDescription("Remove Margarita from cart").assert(hasClickAction())
         composeRule.onNodeWithContentDescription("Quantity: 2").assert(isPoliteLiveRegion)
         composeRule.onNodeWithContentDescription("Favorite").assertIsOff()
+    }
+
+    @Test
+    fun sortButton_isLabeledWithItsCurrentValueAndOffersRadioOptions() {
+        var picked: HomeSortOption? = null
+        setContent { HomeSortButton(selected = HomeSortOption.PRICE_ASC, onSelect = { picked = it }) }
+
+        composeRule.onNodeWithContentDescription("Sort cocktails")
+            .assert(hasClickAction())
+            .assert(hasStateDescription("Sorted by Price: low to high"))
+            .performClick()
+
+        composeRule.onNodeWithText("Sort by").assert(isHeading())
+        composeRule.onNode(hasText("Price: low to high") and hasRole(Role.RadioButton), useUnmergedTree = false)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, true))
+        composeRule.onNode(hasText("Rating") and hasRole(Role.RadioButton))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, false))
+            .performClick()
+        assertEquals(HomeSortOption.RATING, picked)
+    }
+
+    @Test
+    fun recentlyViewedRow_hasAHeadingAndOneLabeledStopPerCocktail() {
+        var opened: String? = null
+        setContent { RecentlyViewedRow(cocktails = PreviewData.cocktails, onCocktailClick = { opened = it.id }) }
+
+        composeRule.onNodeWithText("Recently viewed").assert(isHeading())
+        composeRule.onNode(hasClickLabel("View ${PreviewData.cocktail.name} details"))
+            .assert(hasText(PreviewData.cocktail.name))
+            .performClick()
+        assertEquals(PreviewData.cocktail.id, opened)
     }
 
     @Test

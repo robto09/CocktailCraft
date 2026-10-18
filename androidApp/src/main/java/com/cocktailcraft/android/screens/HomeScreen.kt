@@ -71,6 +71,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.cocktailcraft.android.navigation.Screen
@@ -81,7 +82,9 @@ import com.cocktailcraft.android.ui.components.CocktailLoadingShimmer
 import com.cocktailcraft.android.ui.components.CocktailSearchBar
 import com.cocktailcraft.android.ui.components.EmptySearchResultsMessage
 import com.cocktailcraft.android.ui.components.ErrorToastEffect
+import com.cocktailcraft.android.ui.components.HomeSortButton
 import com.cocktailcraft.android.ui.components.NetworkErrorStateDisplay
+import com.cocktailcraft.android.ui.components.RecentlyViewedRow
 import com.cocktailcraft.android.ui.components.SearchFilterChips
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
@@ -97,10 +100,12 @@ import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.refresh
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
+import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
+import com.cocktailcraft.viewmodel.state.HomeSortOption
 import com.cocktailcraft.viewmodel.state.HomeUiState
-import kotlin.math.abs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 @Composable
 fun HomeScreen(
@@ -144,6 +149,23 @@ fun HomeScreen(
         }
     }
     LaunchedEffect(searchQuery) { savedSearchQuery = searchQuery }
+
+    // The sort choice gets the same process-death shadow (saved by name).
+    var savedSortOption by rememberSaveable { mutableStateOf(HomeSortOption.DEFAULT.name) }
+    LaunchedEffect(Unit) {
+        val restored = HomeSortOption.entries.firstOrNull { it.name == savedSortOption }
+        if (restored != null && restored != HomeSortOption.DEFAULT && state.sortOption == HomeSortOption.DEFAULT) {
+            viewModel.setSortOption(restored)
+        }
+    }
+    LaunchedEffect(state.sortOption) { savedSortOption = state.sortOption.name }
+
+    // Recently viewed has no change flow: re-read it whenever Home resumes,
+    // e.g. coming back from a cocktail's detail page
+    LifecycleResumeEffect(viewModel) {
+        viewModel.refreshRecentlyViewed()
+        onPauseOrDispose { }
+    }
     
     // Effect to load cocktails by category when selected category changes
     LaunchedEffect(selectedCategory) {
@@ -188,6 +210,7 @@ fun HomeScreen(
         onSetAdvancedSearchActive = { viewModel.toggleAdvancedSearchMode(it) },
         onApplyFilters = { filters -> scope.launch { viewModel.applyFilters(filters) } },
         onClearSearchFilters = { viewModel.clearSearchFilters() },
+        onSortChange = { viewModel.setSortOption(it) },
         onRetry = { viewModel.retry() },
         onCocktailClick = onCocktailClick,
         onAddToCart = onAddToCart,
@@ -219,6 +242,7 @@ internal fun HomeContent(
     onSetAdvancedSearchActive: (Boolean) -> Unit,
     onApplyFilters: (SearchFilters) -> Unit,
     onClearSearchFilters: () -> Unit,
+    onSortChange: (HomeSortOption) -> Unit,
     onRetry: () -> Unit,
     onCocktailClick: (Cocktail) -> Unit,
     onAddToCart: (Cocktail) -> Unit,
@@ -249,9 +273,11 @@ internal fun HomeContent(
             searchQuery = searchQuery,
             isAdvancedSearchActive = isAdvancedSearchActive,
             hasActiveFilters = searchFilters.hasActiveFilters(),
+            sortOption = state.sortOption,
             onSearchQueryChange = onSearchQueryChange,
             onClearSearch = onExitSearch,
-            onToggleAdvancedSearch = { onSetAdvancedSearchActive(!isAdvancedSearchActive) }
+            onToggleAdvancedSearch = { onSetAdvancedSearchActive(!isAdvancedSearchActive) },
+            onSortChange = onSortChange
         )
 
         // Active filters display
@@ -305,6 +331,8 @@ internal fun HomeContent(
             hasMoreData = hasMoreData,
             favorites = favorites,
             isNetworkAvailable = isNetworkAvailable,
+            recentlyViewed = if (state.showRecentlyViewed) state.recentlyViewed else emptyList(),
+            ratingSummaries = state.ratingSummaries,
             onRetry = onRetry,
             onClearSearch = onExitSearch,
             onClearCategory = {
@@ -325,15 +353,17 @@ internal fun HomeContent(
     }
 }
 
-// Search Bar with Advanced Search Button
+// Search Bar with the Advanced Search and Sort buttons
 @Composable
-private fun HomeSearchBarSection(
+internal fun HomeSearchBarSection(
     searchQuery: String,
     isAdvancedSearchActive: Boolean,
     hasActiveFilters: Boolean,
+    sortOption: HomeSortOption,
     onSearchQueryChange: (String) -> Unit,
     onClearSearch: () -> Unit,
-    onToggleAdvancedSearch: () -> Unit
+    onToggleAdvancedSearch: () -> Unit,
+    onSortChange: (HomeSortOption) -> Unit
 ) {
     CocktailSearchBar(
         searchQuery = searchQuery,
@@ -341,7 +371,8 @@ private fun HomeSearchBarSection(
         hasActiveFilters = hasActiveFilters,
         onSearchQueryChange = onSearchQueryChange,
         onClearSearch = onClearSearch,
-        onToggleAdvancedSearch = onToggleAdvancedSearch
+        onToggleAdvancedSearch = onToggleAdvancedSearch,
+        trailingContent = { HomeSortButton(selected = sortOption, onSelect = onSortChange) }
     )
 }
 
@@ -426,6 +457,9 @@ internal fun HomeContentSection(
     hasMoreData: Boolean,
     favorites: List<Cocktail>,
     isNetworkAvailable: Boolean,
+    // Shown above the list when non-empty; the caller applies the visibility rules
+    recentlyViewed: List<Cocktail> = emptyList(),
+    ratingSummaries: Map<String, CocktailRatingSummary> = emptyMap(),
     onRetry: () -> Unit,
     onClearSearch: () -> Unit,
     onClearCategory: () -> Unit,
@@ -494,7 +528,21 @@ internal fun HomeContentSection(
                 onCocktailClick = onCocktailClick,
                 onAddToCart = onAddToCart,
                 onToggleFavorite = onToggleFavorite,
-                onLoadMore = onLoadMore
+                onLoadMore = onLoadMore,
+                ratingSummaries = ratingSummaries,
+                leadingContent = if (recentlyViewed.isEmpty()) {
+                    null
+                } else {
+                    {
+                        RecentlyViewedRow(
+                            cocktails = recentlyViewed,
+                            onCocktailClick = onCocktailClick,
+                            modifier = Modifier.padding(bottom = Spacing.sm),
+                            // AnimatedCocktailList's default 16dp content padding
+                            horizontalBleed = 16.dp
+                        )
+                    }
+                }
             )
         }
     }
@@ -510,9 +558,11 @@ private fun HomeSearchBarSectionPreview() {
             searchQuery = "Margarita",
             isAdvancedSearchActive = false,
             hasActiveFilters = true,
+            sortOption = HomeSortOption.PRICE_ASC,
             onSearchQueryChange = {},
             onClearSearch = {},
-            onToggleAdvancedSearch = {}
+            onToggleAdvancedSearch = {},
+            onSortChange = {}
         )
     }
 }
@@ -525,9 +575,11 @@ private fun HomeSearchBarSectionDarkPreview() {
             searchQuery = "",
             isAdvancedSearchActive = false,
             hasActiveFilters = false,
+            sortOption = HomeSortOption.DEFAULT,
             onSearchQueryChange = {},
             onClearSearch = {},
-            onToggleAdvancedSearch = {}
+            onToggleAdvancedSearch = {},
+            onSortChange = {}
         )
     }
 }

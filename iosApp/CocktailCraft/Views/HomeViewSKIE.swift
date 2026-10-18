@@ -50,6 +50,13 @@ struct HomeViewSKIE: View {
             }
         }
         .brandedNavigationBar(title: L(\.app_title))
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                HomeSortMenu(selection: viewModel.state.sortOption) { option in
+                    viewModel.setSortOption(option)
+                }
+            }
+        }
         .navigationDestination(for: String.self) { cocktailId in
             CocktailDetailView(cocktailId: cocktailId)
         }
@@ -64,6 +71,11 @@ struct HomeViewSKIE: View {
             // last-completed-wins results, and an empty query restores the
             // category listing (IO-1).
             viewModel.updateSearchQuery(newValue)
+        }
+        .onAppear {
+            // Also on the way back from a detail page, which may have added
+            // to Recently viewed
+            viewModel.refreshRecentlyViewed()
         }
         .task {
             // Initial load when view appears
@@ -211,6 +223,16 @@ struct HomeViewSKIE: View {
         let nearEndIds = Set(viewModel.state.cocktails.suffix(5).map(\.id))
         return ScrollView {
             LazyVStack(spacing: 12) {
+                // Hidden while a search query is active (shared rule)
+                if viewModel.state.showRecentlyViewed {
+                    RecentlyViewedRow(
+                        cocktails: viewModel.state.recentlyViewed,
+                        // The list's own horizontal padding
+                        horizontalBleed: 16
+                    )
+                    .padding(.bottom, 4)
+                }
+
                 ForEach(viewModel.state.cocktails, id: \.id) { cocktail in
                     // Value-based link: the destination (and its
                     // factory-scoped detail ViewModel) is only built
@@ -219,6 +241,7 @@ struct HomeViewSKIE: View {
                         CocktailCard(
                             cocktail: cocktail,
                             isFavorite: favoriteIds.contains(cocktail.id),
+                            reviewRating: viewModel.state.ratingSummaries[cocktail.id],
                             onFavoriteToggle: {
                                 Task {
                                     await viewModel.toggleFavorite(cocktail)

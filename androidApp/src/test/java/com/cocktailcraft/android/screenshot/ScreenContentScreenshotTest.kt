@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.screens.AccountSettingsCard
 import com.cocktailcraft.android.screens.AppSettingsCard
 import com.cocktailcraft.android.screens.HomeContentSection
+import com.cocktailcraft.android.screens.HomeSearchBarSection
 import com.cocktailcraft.android.screens.ProfileHeaderCard
 import com.cocktailcraft.android.screens.detail.DetailChipsSection
 import com.cocktailcraft.android.screens.detail.DetailIngredientsSection
@@ -15,6 +16,8 @@ import com.cocktailcraft.android.screens.detail.DetailMainInfoCard
 import com.cocktailcraft.android.screens.detail.DetailRecommendationsSection
 import com.cocktailcraft.android.screens.detail.DetailReviewsSection
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
+import com.cocktailcraft.viewmodel.state.HomeSortOption
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
@@ -47,6 +50,43 @@ class ScreenContentScreenshotTest(variant: ThemeVariant) : ScreenshotTest(varian
             errorMessage = "No internet connection",
             isNetworkAvailable = false
         )
+    }
+
+    @Test
+    fun homeRecentlyViewed() = snapshot("Home_recentlyViewed") {
+        // The row above the list, and a reviewed cocktail's average on its card
+        HomeContent(
+            cocktails = ScreenshotFixtures.cocktails,
+            recentlyViewed = ScreenshotFixtures.cocktails.reversed(),
+            ratingSummaries = mapOf(ScreenshotFixtures.cocktail.id to CocktailRatingSummary(4.5f, 2))
+        )
+    }
+
+    @Test
+    fun homeSearchBarSort() = snapshot("Home_searchBarSort") {
+        // At rest (Default), then highlighted for a chosen sort
+        Column {
+            HomeSearchBarSection(
+                searchQuery = "",
+                isAdvancedSearchActive = false,
+                hasActiveFilters = false,
+                sortOption = HomeSortOption.DEFAULT,
+                onSearchQueryChange = {},
+                onClearSearch = {},
+                onToggleAdvancedSearch = {},
+                onSortChange = {}
+            )
+            HomeSearchBarSection(
+                searchQuery = "Margarita",
+                isAdvancedSearchActive = false,
+                hasActiveFilters = false,
+                sortOption = HomeSortOption.PRICE_ASC,
+                onSearchQueryChange = {},
+                onClearSearch = {},
+                onToggleAdvancedSearch = {},
+                onSortChange = {}
+            )
+        }
     }
 
     // ---- Detail ----
@@ -142,7 +182,9 @@ private fun HomeContent(
     searchQuery: String = "",
     isSearchActive: Boolean = false,
     errorMessage: String = "",
-    isNetworkAvailable: Boolean = true
+    isNetworkAvailable: Boolean = true,
+    recentlyViewed: List<Cocktail> = emptyList(),
+    ratingSummaries: Map<String, CocktailRatingSummary> = emptyMap()
 ) {
     HomeContentSection(
         isLoading = false,
@@ -156,6 +198,8 @@ private fun HomeContent(
         hasMoreData = false,
         favorites = listOf(ScreenshotFixtures.cocktail),
         isNetworkAvailable = isNetworkAvailable,
+        recentlyViewed = recentlyViewed,
+        ratingSummaries = ratingSummaries,
         onRetry = {},
         onClearSearch = {},
         onClearCategory = {},
