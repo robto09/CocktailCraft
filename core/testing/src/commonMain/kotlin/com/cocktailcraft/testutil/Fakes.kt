@@ -108,9 +108,16 @@ class FakeFavoritesRepository : CocktailFavoritesRepository {
     /** Snapshot of currently stored favorites (kept for existing assertions). */
     val stored: List<Cocktail> get() = favorites.value
 
+    /** How often the full list was loaded — point lookups must not need it. */
+    var getFavoriteCocktailsCalls = 0
+        private set
+
     override fun observeFavorites(): Flow<List<Cocktail>> = favorites
 
-    override suspend fun getFavoriteCocktails(): Result<List<Cocktail>> = Result.Success(favorites.value)
+    override suspend fun getFavoriteCocktails(): Result<List<Cocktail>> {
+        getFavoriteCocktailsCalls++
+        return Result.Success(favorites.value)
+    }
 
     override suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> {
         // Mirrors the real impl: a re-add of an existing id upgrades that

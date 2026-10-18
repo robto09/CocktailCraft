@@ -21,9 +21,9 @@ class GetCocktailDetailUseCase(
     }
 
     suspend fun isFavorite(cocktailId: String): Boolean {
+        // Point lookup, not a load (and decode) of every stored favorite
         return runCatchingNonCancellation(onFailure = { false }) {
-            val favorites = favoritesRepository.getFavoriteCocktails().getOrDefault(emptyList())
-            favorites.any { it.id == cocktailId }
+            favoritesRepository.isCocktailFavorite(cocktailId).getOrDefault(false)
         }
     }
 
