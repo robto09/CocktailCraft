@@ -31,6 +31,9 @@ import org.koin.dsl.module
 internal fun shouldRetryResponse(statusCode: Int): Boolean =
     statusCode in 500..599 || statusCode == 429
 
+/** Upper bound for establishing a connection (TCP + TLS). */
+internal const val CONNECT_TIMEOUT_MS = 10_000L
+
 /**
  * Builds the shared [HttpClient] with the full production plugin stack.
  * Extracted from the Koin single (AR-5) so tests can inject a MockEngine while
@@ -52,7 +55,9 @@ internal fun buildHttpClient(
         }
 
         install(io.ktor.client.plugins.HttpTimeout) {
-            connectTimeoutMillis = config.networkTimeoutMs
+            // Fail fast on an unreachable host; the whole request and each
+            // socket read get AppConfig's budget.
+            connectTimeoutMillis = minOf(CONNECT_TIMEOUT_MS, config.networkTimeoutMs)
             requestTimeoutMillis = config.networkTimeoutMs
             socketTimeoutMillis = config.networkTimeoutMs
         }
@@ -100,12 +105,13 @@ internal fun buildHttpClient(
 
         HttpResponseValidator {
             handleResponseExceptionWithRequest { exception, _ ->
-                Logger.w { "Network error: ${exception.message}" }
+                // Ktor's messages embed the full request URL (search
+                // queries), so release builds — whose floor is Warn — get
+                // only the status or exception type; the detail is debug-only.
+                val status = (exception as? ResponseException)?.response?.status?.value
+                Logger.w { "Network error: ${status?.let { "HTTP $it" } ?: exception::class.simpleName}" }
+                Logger.d { "Network error detail: ${exception.message}" }
             }
-        }
-
-        engine {
-            // Engine-specific config
         }
     }
     return engine?.let { HttpClient(it, configuration) } ?: HttpClient(configuration)
@@ -118,7 +124,9 @@ internal fun buildHttpClient(
 val networkModule = module {
     // HTTP Client
     single {
-        buildHttpClient(json = get(), config = get())
+        // Android binds an OkHttp engine over the app-wide OkHttpClient
+        // (dataPlatformModule); elsewhere Ktor picks the platform default.
+        buildHttpClient(json = get(), config = get(), engine = getOrNull())
     }
 
     // API

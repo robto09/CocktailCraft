@@ -19,7 +19,11 @@ import org.koin.core.KoinApplication
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 
-fun doInitKoin(): KoinApplication = initKoin {}
+/**
+ * iOS app init. [isDebug] is the app's own `#if DEBUG` — release builds keep
+ * only warning/error logs (see configureLogging).
+ */
+fun doInitKoin(isDebug: Boolean): KoinApplication = initKoin(isDebug) {}
 
 /**
  * Helper class to provide dependencies to iOS without using reified generics.

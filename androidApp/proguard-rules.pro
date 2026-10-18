@@ -4,6 +4,15 @@
 # ship consumer R8 rules in their AARs/JARs, so they need nothing here.
 # Koin 4's constructor DSL resolves via lambdas, not reflection — no rules.
 
+# --- Logging ---
+# Release builds keep no Verbose/Debug logcat output: Kermit's floor is Warn
+# in release (configureLogging), and this strips any direct Log.v/Log.d call
+# sites too — including their message-building code.
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+}
+
 # --- Room (via WorkManager) ---
 # WorkDatabase_Impl is created reflectively (Class.forName + newInstance).
 # R8 full mode (AGP 9 default) does not keep constructors for classes kept

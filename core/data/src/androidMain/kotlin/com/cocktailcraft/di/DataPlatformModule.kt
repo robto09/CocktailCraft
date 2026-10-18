@@ -10,11 +10,15 @@ import com.cocktailcraft.domain.config.AppConfig
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.cocktailcraft.data.security.LazySettings
 import com.cocktailcraft.data.security.migrateAuthStorage
 import com.cocktailcraft.util.AndroidNetworkMonitor
 import com.cocktailcraft.util.NetworkMonitor
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.SharedPreferencesSettings
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.okhttp.OkHttp
+import okhttp3.OkHttpClient
 import org.koin.dsl.module
 import java.io.IOException
 import java.security.GeneralSecurityException
@@ -36,15 +40,33 @@ actual fun dataPlatformModule() = module {
     // Keystore-encrypted store for credentials and profile PII. The backup
     // rules exclude its file (cocktailcraft_secure_prefs.xml): the master key
     // never leaves the device, so a restored copy would be unreadable.
+    // Opened lazily (LazySettings): resolving this sits on the first frame's
+    // injection path, but the MasterKey/Tink/disk work and the migration
+    // only run on first access, which AuthRepositoryImpl makes on its io
+    // dispatcher.
     single<Settings>(secureSettingsQualifier) {
-        SharedPreferencesSettings(createSecurePrefs(get<Context>())).also { secure ->
-            // Move auth data written by older versions out of the plain store.
-            migrateAuthStorage(from = get(), to = secure)
+        val context = get<Context>()
+        LazySettings {
+            SharedPreferencesSettings(createSecurePrefs(context)).also { secure ->
+                // Move auth data written by older versions out of the plain store.
+                migrateAuthStorage(from = get(), to = secure)
+            }
         }
     }
 
     // Network monitoring
     single<NetworkMonitor> { AndroidNetworkMonitor(get<Context>()) }
+
+    // The app's one OkHttpClient. Ktor's engine (below) and androidApp's Coil
+    // ImageLoader both derive from it via newBuilder(), sharing its
+    // connection pool and TLS sessions — TheCocktailDB serves the API and the
+    // images from the same host. Certificate pinning is unaffected: it lives
+    // in network_security_config.xml, enforced by the platform trust manager
+    // OkHttp uses, not in an OkHttp CertificatePinner.
+    single<OkHttpClient> { OkHttpClient.Builder().build() }
+
+    // Picked up by networkModule; timeouts come from its HttpTimeout config
+    single<HttpClientEngine> { OkHttp.create { preconfigured = get<OkHttpClient>() } }
 
     // SQLite driver for the app database (offline cocktail cache, cart,
     // orders, favorites, reviews); it runs the .sqm migrations when an older

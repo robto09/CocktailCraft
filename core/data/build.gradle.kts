@@ -56,7 +56,9 @@ kotlin {
         }
 
         androidMain.dependencies {
-            implementation(libs.ktor.client.android)
+            // OkHttp engine: its client is shared with Coil (one connection
+            // pool and TLS session cache for the API and image traffic)
+            implementation(libs.ktor.client.okhttp)
             // Keystore-backed EncryptedSharedPreferences for the auth store
             implementation(libs.androidx.security.crypto)
             implementation(libs.sqldelight.android.driver)

@@ -132,8 +132,14 @@ class KoinInitializer {
     func initialize() {
         // Start Koin with all modules using SKIE generated function.
         // Swift never touches the Koin container directly — everything is
-        // resolved through the shared KoinHelper below.
-        _ = shared.doInitKoin()
+        // resolved through the shared KoinHelper below. Release builds pass
+        // false so shared code keeps only warning/error logs.
+        #if DEBUG
+        let isDebug = true
+        #else
+        let isDebug = false
+        #endif
+        _ = shared.doInitKoin(isDebug: isDebug)
     }
 }
 
