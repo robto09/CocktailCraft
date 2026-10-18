@@ -18,6 +18,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,9 +91,6 @@ fun AnimatedCocktailList(
     ratingSummaries: Map<String, CocktailRatingSummary> = emptyMap(),
     leadingContent: (@Composable () -> Unit)? = null
 ) {
-    // Remember scroll state for optimizations
-    val listState = rememberLazyListState()
-
     // animateItem()'s default springs, or none under Reduce Motion
     val reducedMotion = LocalReducedMotion.current
     val fadeSpec: FiniteAnimationSpec<Float>? =
@@ -109,109 +107,142 @@ fun AnimatedCocktailList(
     // O(1) membership per row instead of favorites.any {} per visible item (AN-3)
     val favoriteIds = remember(favorites) { favorites.toFavoriteIdSet() }
 
-    // Detect when we're near the bottom to load more items
-    listState.OnBottomReached(buffer = 5) {
-        // Only load more if not already loading and not searching
-        if (!isLoadingMore && !isSearchActive) {
-            onLoadMore()
-        }
-    }
+    // A category switch replaces every row: animateItem() would fade the old
+    // rows out on top of the new ones fading in, a double-exposed flash. Start
+    // a fresh list for a replacement instead (which also scrolls back to the
+    // top); reorders and appended pages share rows and keep their animations.
+    val listGeneration = rememberListGeneration(distinctCocktails)
 
-    // Main content with optimized list rendering
-    LazyColumn(
-        state = listState,
-        modifier = modifier
-            .fillMaxSize()
-            .testTag("home_cocktail_list"),
-        verticalArrangement = Arrangement.spacedBy(itemSpacing.dp),
-        contentPadding = contentPadding
-    ) {
-        if (leadingContent != null) {
-            item(key = "leading") { leadingContent() }
-        }
+    key(listGeneration) {
+        // Remember scroll state for optimizations
+        val listState = rememberLazyListState()
 
-        // Header item
-        item(key = "header") {
-            Text(
-                text = when {
-                    isSearchActive -> stringResource(MR.strings.list_search_results)
-                    selectedCategory != null -> stringResource(MR.strings.list_category_cocktails, selectedCategory)
-                    else -> stringResource(MR.strings.list_all_cocktails)
-                },
-                fontSize = headerFontSize.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier
-                    .padding(bottom = 8.dp)
-                    .semantics { heading() }
-            )
-        }
-
-        // Cocktail items — animateItem() fades new items in and animates
-        // position changes when the list shifts. Keys must carry only the
-        // cocktail's identity: embedding the index would rename every
-        // surviving key on any shift and turn moves into remove+insert
-        // (no placement animation, all item state discarded).
-        itemsIndexed(
-            items = distinctCocktails,
-            key = { _, cocktail -> "cocktail_${cocktail.id}" }
-        ) { _, cocktail ->
-            Box(
-                modifier = Modifier
-                    .animateItem(fadeInSpec = fadeSpec, placementSpec = placementSpec, fadeOutSpec = fadeSpec)
-                    // Shared tag on every row: UiAutomator By.res matching only
-                    // needs "a" list item, not a specific one.
-                    .testTag("cocktail_list_item")
-            ) {
-                AnimatedCocktailItem(
-                    cocktail = cocktail,
-                    onClick = {
-                        onCocktailClick(cocktail)
-                    },
-                    onAddToCart = {
-                        onAddToCart(it)
-                    },
-                    isFavorite = cocktail.id in favoriteIds,
-                    onToggleFavorite = { cocktailToToggle ->
-                        onToggleFavorite(cocktailToToggle)
-                    },
-                    reviewRating = ratingSummaries[cocktail.id]
-                )
+        // Detect when we're near the bottom to load more items
+        listState.OnBottomReached(buffer = 5) {
+            // Only load more if not already loading and not searching
+            if (!isLoadingMore && !isSearchActive) {
+                onLoadMore()
             }
         }
 
-        // Show loading indicator at the bottom when loading more items
-        if (isLoadingMore) {
-            item(key = "loading_more") {
+        // Main content with optimized list rendering
+        LazyColumn(
+            state = listState,
+            modifier = modifier
+                .fillMaxSize()
+                .testTag("home_cocktail_list"),
+            verticalArrangement = Arrangement.spacedBy(itemSpacing.dp),
+            contentPadding = contentPadding
+        ) {
+            if (leadingContent != null) {
+                item(key = "leading") { leadingContent() }
+            }
+
+            // Header item
+            item(key = "header") {
+                Text(
+                    text = when {
+                        isSearchActive -> stringResource(MR.strings.list_search_results)
+                        selectedCategory != null -> stringResource(MR.strings.list_category_cocktails, selectedCategory)
+                        else -> stringResource(MR.strings.list_all_cocktails)
+                    },
+                    fontSize = headerFontSize.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .padding(bottom = 8.dp)
+                        .semantics { heading() }
+                )
+            }
+
+            // Cocktail items — animateItem() fades new items in and animates
+            // position changes when the list shifts. Keys must carry only the
+            // cocktail's identity: embedding the index would rename every
+            // surviving key on any shift and turn moves into remove+insert
+            // (no placement animation, all item state discarded).
+            itemsIndexed(
+                items = distinctCocktails,
+                key = { _, cocktail -> "cocktail_${cocktail.id}" }
+            ) { _, cocktail ->
                 Box(
                     modifier = Modifier
                         .animateItem(fadeInSpec = fadeSpec, placementSpec = placementSpec, fadeOutSpec = fadeSpec)
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
+                        // Shared tag on every row: UiAutomator By.res matching only
+                        // needs "a" list item, not a specific one.
+                        .testTag("cocktail_list_item")
                 ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(loadingIndicatorSize.dp),
-                        color = MaterialTheme.colorScheme.primary
+                    AnimatedCocktailItem(
+                        cocktail = cocktail,
+                        onClick = {
+                            onCocktailClick(cocktail)
+                        },
+                        onAddToCart = {
+                            onAddToCart(it)
+                        },
+                        isFavorite = cocktail.id in favoriteIds,
+                        onToggleFavorite = { cocktailToToggle ->
+                            onToggleFavorite(cocktailToToggle)
+                        },
+                        reviewRating = ratingSummaries[cocktail.id]
+                    )
+                }
+            }
+
+            // Show loading indicator at the bottom when loading more items
+            if (isLoadingMore) {
+                item(key = "loading_more") {
+                    Box(
+                        modifier = Modifier
+                            .animateItem(fadeInSpec = fadeSpec, placementSpec = placementSpec, fadeOutSpec = fadeSpec)
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(loadingIndicatorSize.dp),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
+            // Show end of list message when no more data
+            if (!hasMoreData && !isSearchActive && cocktails.isNotEmpty()) {
+                item(key = "end_of_list") {
+                    Text(
+                        text = stringResource(MR.strings.list_end_of_list_message),
+                        modifier = Modifier
+                            .animateItem(fadeInSpec = fadeSpec, placementSpec = placementSpec, fadeOutSpec = fadeSpec)
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = endOfListMessageFontSize.sp
                     )
                 }
             }
         }
+    }
+}
 
-        // Show end of list message when no more data
-        if (!hasMoreData && !isSearchActive && cocktails.isNotEmpty()) {
-            item(key = "end_of_list") {
-                Text(
-                    text = stringResource(MR.strings.list_end_of_list_message),
-                    modifier = Modifier
-                        .animateItem(fadeInSpec = fadeSpec, placementSpec = placementSpec, fadeOutSpec = fadeSpec)
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = endOfListMessageFontSize.sp
-                )
-            }
-        }
+/**
+ * Bumps each time [cocktails] shares no cocktail with the previous list, so
+ * the caller can treat a wholesale replacement as a new list.
+ */
+@Composable
+private fun rememberListGeneration(cocktails: List<Cocktail>): Int {
+    val tracker = remember { ListGenerationTracker() }
+    return remember(cocktails) { tracker.update(cocktails) }
+}
+
+private class ListGenerationTracker {
+    private var ids: Set<String> = emptySet()
+    private var generation = 0
+
+    fun update(cocktails: List<Cocktail>): Int {
+        val newIds = cocktails.mapTo(HashSet()) { it.id }
+        if (ids.isNotEmpty() && newIds.isNotEmpty() && ids.none { it in newIds }) generation++
+        ids = newIds
+        return generation
     }
 }
