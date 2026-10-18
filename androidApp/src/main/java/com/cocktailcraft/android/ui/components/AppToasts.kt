@@ -67,6 +67,21 @@ suspend fun SnackbarHostState.showSuccessToast(message: String) {
     }
 }
 
+/**
+ * A success toast with an action (Undo). It stays up for the long snackbar
+ * duration, which SnackbarHost stretches further to the user's accessibility
+ * timeout, so the action can be reached with TalkBack too.
+ */
+suspend fun SnackbarHostState.showSuccessToast(message: String, actionLabel: String): SnackbarResult =
+    showSnackbar(
+        ToastVisuals(
+            message = message,
+            isError = false,
+            actionLabel = actionLabel,
+            duration = SnackbarDuration.Long
+        )
+    )
+
 /** An error toast; one with an action stays up longer, so it can be reached. */
 suspend fun SnackbarHostState.showErrorToast(message: String, actionLabel: String? = null): SnackbarResult =
     showSnackbar(
@@ -90,14 +105,19 @@ fun ToastSnackbarHost(hostState: SnackbarHostState, modifier: Modifier = Modifie
                 onAction = { data.performAction() }
             )
         } else {
-            SuccessToast(visuals.message)
+            SuccessToast(
+                message = visuals.message,
+                actionLabel = visuals.actionLabel,
+                onAction = { data.performAction() }
+            )
         }
     }
 }
 
 /**
  * Shows a shared ViewModel's one-shot [UiEvent]s as toasts while this is in
- * the composition. Collect each ViewModel's events in one place only.
+ * the composition, running an event's action (Undo) when its button is
+ * tapped. Collect each ViewModel's events in one place only.
  */
 @Composable
 fun UiEventToasts(events: Flow<UiEvent>) {
@@ -106,12 +126,24 @@ fun UiEventToasts(events: Flow<UiEvent>) {
     LaunchedEffect(events, hostState) {
         events.collect { event ->
             val message = event.message.toString(context)
+            val action = event.action
+            val actionLabel = action?.label?.toString(context)
+            // A newer removal's Undo replaces whatever toast is up, rather
+            // than queueing behind a long one (as Material snackbars do)
+            if (action != null) hostState.currentSnackbarData?.dismiss()
             // Don't hold up collection while a toast is on screen; the host queues them
             launch {
-                when (event) {
-                    is UiEvent.Success -> hostState.showSuccessToast(message)
-                    is UiEvent.Failure -> hostState.showErrorToast(message)
+                val result = when (event) {
+                    is UiEvent.Success ->
+                        if (actionLabel != null) {
+                            hostState.showSuccessToast(message, actionLabel)
+                        } else {
+                            hostState.showSuccessToast(message)
+                            null
+                        }
+                    is UiEvent.Failure -> hostState.showErrorToast(message, actionLabel)
                 }
+                if (result == SnackbarResult.ActionPerformed) action?.perform()
             }
         }
     }

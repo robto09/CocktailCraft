@@ -31,11 +31,12 @@ import com.cocktailcraft.android.ui.components.OrderListLoadingShimmer
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.refreshAccessibilityAction
 import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.refresh
 import com.cocktailcraft.resources.browse_cocktails
 import com.cocktailcraft.resources.order_list_empty_message
 import com.cocktailcraft.resources.order_list_empty_title
+import com.cocktailcraft.resources.refresh
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.viewmodel.state.OrderUiState
@@ -67,7 +68,8 @@ fun OrderListScreen(
         state = state,
         error = error,
         onReload = { scope.launch { orderViewModel.loadOrders() } },
-        onBrowseCocktails = { navigationManager.navigateToHome() }
+        onBrowseCocktails = { navigationManager.navigateToHome() },
+        onOrderClick = { order -> navigationManager.navigateToOrderDetail(order.id) }
     )
 }
 
@@ -82,7 +84,8 @@ internal fun OrderListContent(
     state: OrderUiState,
     error: ErrorHandler.UserFriendlyError?,
     onReload: () -> Unit,
-    onBrowseCocktails: () -> Unit
+    onBrowseCocktails: () -> Unit,
+    onOrderClick: (Order) -> Unit = {}
 ) {
     val isLoading = state.isLoading
 
@@ -135,7 +138,7 @@ internal fun OrderListContent(
                     verticalArrangement = Arrangement.spacedBy(Spacing.lg)
                 ) {
                     items(state.orders, key = { it.id }) { order ->
-                        OrderCard(order = order)
+                        OrderCard(order = order, onClick = { onOrderClick(order) })
                     }
                 }
             }

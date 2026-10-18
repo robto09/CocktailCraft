@@ -20,6 +20,7 @@ import com.cocktailcraft.resources.error_load_orders_failed
 import com.cocktailcraft.resources.error_order_failed_title
 import com.cocktailcraft.resources.error_place_order_failed
 import com.cocktailcraft.resources.error_update_order_status_failed
+import com.cocktailcraft.resources.order_cancelled_message
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.state.OrderUiState
 import dev.icerock.moko.resources.desc.StringDesc
@@ -48,15 +49,21 @@ class SharedOrderViewModel internal constructor(
         // collecting it is the single way orders enter this ViewModel.
         viewModelScope.launch {
             orderRepository.observeOrders().collect { orderList ->
-                _uiState.update { it.copy(
-                    orders = orderList.sortedByDescending { o -> o.date },
-                    orderCount = orderList.size,
-                    totalSpent = orderList.sumOf { o -> o.total },
-                    isLoading = false
-                ) }
+                _uiState.update { it.withOrders(orderList).copy(isLoading = false) }
             }
         }
     }
+
+    /**
+     * [orderList] as the list state, with the order on the detail screen
+     * replaced by its fresh copy (a cancel shows there as soon as it lands).
+     */
+    private fun OrderUiState.withOrders(orderList: List<Order>): OrderUiState = copy(
+        orders = orderList.sortedByDescending { o -> o.date },
+        orderCount = orderList.size,
+        totalSpent = orderList.sumOf { o -> o.total },
+        selectedOrder = selectedOrder?.let { selected -> orderList.find { it.id == selected.id } ?: selected }
+    )
     
     /**
      * Load orders from the repository.
@@ -67,12 +74,7 @@ class SharedOrderViewModel internal constructor(
         _uiState.update { it.copy(isLoading = true) }
         try {
             val orderList = orderRepository.getOrders().getOrThrow()
-            _uiState.update { it.copy(
-                orders = orderList.sortedByDescending { o -> o.date },
-                orderCount = orderList.size,
-                totalSpent = orderList.sumOf { o -> o.total },
-                isLoading = false
-            ) }
+            _uiState.update { it.withOrders(orderList).copy(isLoading = false) }
         } catch (e: Exception) {
             handleException(e, MR.strings.error_load_orders_failed)
             _uiState.update { it.copy(isLoading = false) }
@@ -153,6 +155,24 @@ class SharedOrderViewModel internal constructor(
     }
     
     /**
+     * Load the order the detail screen shows into [OrderUiState.selectedOrder]
+     * (null when there is no such order, or the lookup failed — which is
+     * reported on [error]). While it loads, a different previously selected
+     * order is cleared so the screen never shows the wrong one.
+     * SKIE will convert this to Swift async function.
+     */
+    suspend fun loadOrderDetail(orderId: String) {
+        _uiState.update { state ->
+            state.copy(
+                selectedOrder = state.selectedOrder?.takeIf { it.id == orderId },
+                isLoadingOrderDetail = true
+            )
+        }
+        val order = getOrderById(orderId)
+        _uiState.update { it.copy(selectedOrder = order, isLoadingOrderDetail = false) }
+    }
+
+    /**
      * Update order status.
      * SKIE will convert this to Swift async function.
      */
@@ -174,15 +194,21 @@ class SharedOrderViewModel internal constructor(
     }
     
     /**
-     * Cancel an order.
+     * Cancel an order. Success is announced on [events] ("Order cancelled")
+     * and the list and detail state pick up the new status; a failure is
+     * reported on [error]. A call while a cancel is in flight is ignored
+     * (returns false), so a double tap can't cancel twice.
      * SKIE will convert this to Swift async function.
      */
     suspend fun cancelOrder(orderId: String): Boolean {
+        if (_uiState.value.isCancellingOrder) return false
         clearError()
+        _uiState.update { it.copy(isCancellingOrder = true) }
         return try {
             val success = orderRepository.cancelOrder(orderId).getOrDefault(false)
             if (success) {
                 loadOrders()
+                sendEvent(UiEvent.Success(MR.strings.order_cancelled_message.desc()))
             } else {
                 setError(
                     MR.strings.error_cancellation_failed_title,
@@ -194,6 +220,8 @@ class SharedOrderViewModel internal constructor(
         } catch (e: Exception) {
             handleException(e, MR.strings.error_cancel_order_failed)
             false
+        } finally {
+            _uiState.update { it.copy(isCancellingOrder = false) }
         }
     }
     

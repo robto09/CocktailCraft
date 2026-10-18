@@ -11,15 +11,21 @@ import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.screens.AppSettingsCard
 import com.cocktailcraft.android.screens.CartContent
 import com.cocktailcraft.android.screens.HomeContentSection
+import com.cocktailcraft.android.screens.OrderDetailContent
 import com.cocktailcraft.android.screens.ProfileHeaderCard
 import com.cocktailcraft.android.screens.detail.DetailChipsSection
 import com.cocktailcraft.android.screens.detail.DetailMainInfoCard
 import com.cocktailcraft.android.screens.detail.DetailReviewsSection
 import com.cocktailcraft.android.ui.components.SearchFilterChips
+import com.cocktailcraft.android.ui.components.SuccessToast
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
+import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.OrderItem
+import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.viewmodel.state.CartUiState
+import com.cocktailcraft.viewmodel.state.OrderUiState
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.RoborazziATFAccessibilityCheckOptions
 import com.github.takahirom.roborazzi.RoborazziATFAccessibilityChecker
@@ -119,7 +125,8 @@ class AccessibilityChecksTest(private val fontScale: Float) {
         Column(modifier = Modifier.padding(top = 20.dp)) {
             DetailMainInfoCard(
                 cocktail = PreviewData.cocktail,
-                onRefreshDetails = {}
+                onRefreshDetails = {},
+                onAddToCart = {}
             )
             DetailChipsSection(
                 category = PreviewData.cocktail.category,
@@ -128,6 +135,28 @@ class AccessibilityChecksTest(private val fontScale: Float) {
             )
             DetailReviewsSection(reviews = PreviewData.reviews, onWriteReviewClick = {})
         }
+    }
+
+    @Test
+    fun orderDetail() = check {
+        OrderDetailContent(
+            state = OrderUiState(
+                selectedOrder = Order(
+                    id = "ORD-42052",
+                    date = "2026-07-02",
+                    items = listOf(OrderItem(name = "Margarita", quantity = 2, price = 12.5)),
+                    total = 30.99,
+                    status = OrderStatus.PENDING
+                )
+            ),
+            onBackClick = {},
+            onConfirmCancel = {}
+        )
+    }
+
+    @Test
+    fun undoToast() = check {
+        SuccessToast(message = "Removed Margarita from cart", actionLabel = "Undo", onAction = {})
     }
 
     @Test

@@ -30,6 +30,12 @@ final class FavoritesViewModelSKIE: SharedViewModelWrapper<FavoritesUiState> {
         await run { try await sharedViewModel.toggleFavorite(cocktail: cocktail) }
     }
 
+    /// Unfavorites from the Favorites list; announced on the mirrored
+    /// `event` with an Undo action.
+    func removeFavorite(_ cocktail: Cocktail) async {
+        await run { try await sharedViewModel.removeFavorite(cocktail: cocktail) }
+    }
+
     // MARK: - Helper Methods for SwiftUI
 
     func refreshFavorites() async {
