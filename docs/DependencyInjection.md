@@ -14,7 +14,7 @@ CocktailCraft uses Koin for dependency injection. Each Gradle module that owns b
 | `presentationModule` | `:presentation` | `presentation/src/commonMain/kotlin/com/cocktailcraft/di/PresentationModule.kt` |
 | `appModule`, `platformModule()`, `initKoin()` | `:shared` | `shared/src/commonMain/kotlin/com/cocktailcraft/` (`di/AppModule.kt`, `di/PlatformModule.kt`, `KoinInit.kt`) |
 
-Those source files are the source of truth; the excerpts below are representative, not exhaustive. All of these declarations are `@HiddenFromObjC` (AR-12): Swift only calls `doInitKoin()` and `KoinHelper`.
+Those source files are the source of truth; the excerpts below are representative, not exhaustive. All of these declarations are `@HiddenFromObjC`: Swift only calls `doInitKoin()` and `KoinHelper`.
 
 ## Module Structure
 
@@ -49,7 +49,7 @@ val networkModule = module {
 
 internal fun buildHttpClient(json: Json, config: AppConfig, engine: HttpClientEngine? = null): HttpClient {
     // ContentNegotiation, Logging (verbose only when AppConfig says so),
-    // HttpTimeout, and the single retry/backoff layer (SH-7): retries 5xx
+    // HttpTimeout, and the single retry/backoff layer: retries 5xx
     // and 429 with exponential delay; timeouts and 4xx are not retried.
     // expectSuccess = true. See the source for the full configuration.
 }
@@ -67,7 +67,7 @@ val dataModule = module {
     // Background dispatcher for database and Settings I/O and JSON (de)serialization
     single<CoroutineDispatcher>(named("ioDispatcher")) { Dispatchers.IO }
 
-    // Offline decision — single source of truth for "is the app offline" (AR-7)
+    // Offline decision — single source of truth for "is the app offline"
     single { OfflineModePolicy(networkMonitor = get()) }
 
     // App database over the platform's SqlDriver (cache + user data)
@@ -110,7 +110,7 @@ Note the `secureSettingsQualifier` for `AuthRepositoryImpl`: auth data uses the 
 
 ### 4. Domain Module (`:core:domain`, `DomainModule.kt`)
 
-The use cases (all `factory`). The `AppConfig` binding lives in each platform module (AR-4) — the platform knows whether this is a debug build; commonMain doesn't. A use case must earn its indirection (AR-8): pure 1:1 pass-throughs with a single consumer are collapsed onto the repository interface instead (`ManageOrdersUseCase` was removed this way).
+The use cases (all `factory`). The `AppConfig` binding lives in each platform module — the platform knows whether this is a debug build; commonMain doesn't. A use case must earn its indirection: pure 1:1 pass-throughs with a single consumer are collapsed onto the repository interface instead (`ManageOrdersUseCase` was removed this way).
 
 ```kotlin
 val domainModule = module {
@@ -142,8 +142,8 @@ val presentationModule = module {
 
     // Global-state ViewModels — `single`, shared across screens and platforms.
     // Because a Koin single is never routed through a ViewModelStore,
-    // onCleared() never runs on them (SH-9); see PresentationModule.kt for
-    // the full lifecycle notes (including the AN-4 process-death caveat).
+    // onCleared() never runs on them; see PresentationModule.kt for
+    // the full lifecycle notes (including the process-death caveat).
     single { SharedHomeViewModel(/* use cases + catalogRepository + networkMonitor */) }
     single { SharedCartViewModel(manageCartUseCase = get()) }
     single { SharedFavoritesViewModel(manageFavoritesUseCase = get()) }
@@ -195,7 +195,7 @@ Constructor injection keeps ViewModels constructible without a Koin container, w
 There is no mock-based `testModule`. Each module's `commonTest` suite uses:
 
 - **Hand-written fakes** in `:core:testing` (`core/testing/src/commonMain/kotlin/com/cocktailcraft/testutil/Fakes.kt`, a test-only module), passed directly to constructors — most tests never start Koin. Data-layer doubles that need `:core:data` internals (`FakeCocktailApi`, the `LocalDatabase` helpers) stay in `core/data/src/commonTest/.../testutil/`.
-- **`KoinDependencyGraphTest`** (`shared/src/commonTest/kotlin/com/cocktailcraft/di/`), which builds the full production graph (`appModule` + a test platform module) and resolves every repository and ViewModel, so DI wiring breaks fail in CI. Its iOS mirror, `KoinHelperTest` (`shared/src/iosTest`), resolves every `KoinHelper` getter (AR-6).
+- **`KoinDependencyGraphTest`** (`shared/src/commonTest/kotlin/com/cocktailcraft/di/`), which builds the full production graph (`appModule` + a test platform module) and resolves every repository and ViewModel, so DI wiring breaks fail the test run. Its iOS mirror, `KoinHelperTest` (`shared/src/iosTest`), resolves every `KoinHelper` getter.
 - **`DataModuleGraphTest`** (`core/data/src/commonTest/.../di/`), which checks the data layer's internal singletons (cache, `LocalDatabase`) that the umbrella-level test cannot name.
 - **`DataLayerTest`** (`presentation/src/commonTest/.../testutil/DataLayer.kt`): the Profile/Theme/Review ViewModel tests run against the real repositories, resolved through `dataModule` in an isolated `koinApplication` (`:core:data` is a test-only dependency of `:presentation`). `dataModule` is one `Module` object whose singles cache their instance until the graph closes, so the base class closes every graph after each test.
 

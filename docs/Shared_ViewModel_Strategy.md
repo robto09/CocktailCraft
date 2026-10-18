@@ -51,7 +51,7 @@ Every shared ViewModel follows the same three rules, and both platforms consume 
 ### 1. `uiState` is the single public state surface
 
 - Each ViewModel exposes exactly one `val uiState: StateFlow<XxxUiState>`, backed by a private `MutableStateFlow` and updated atomically with `update { it.copy(...) }`.
-- The `XxxUiState` classes live in `viewmodel/state/`. They are immutable, val-only data classes, declared Compose-stable in `androidApp/compose-stability-config.conf` (AN-1), so a whole state can be passed into a composable that still skips.
+- The `XxxUiState` classes live in `viewmodel/state/`. They are immutable, val-only data classes, declared Compose-stable in `androidApp/compose-stability-config.conf`, so a whole state can be passed into a composable that still skips.
 - Values a screen needs that are *derived* from state live **on the state**, not on the ViewModel: plain getters over the constructor vals (`CartUiState.deliveryFee`/`finalTotal`, `DetailUiState.shareableText`, `ThemeUiState.isDarkMode`/`themeModeDisplayName`), or fields published in the same update as their source. Every emission is therefore self-consistent, and reads are reactive on both platforms.
 - There are **no** per-field `StateFlow`s and **no** snapshot getters that read `_uiState.value` (no `isEmpty`, `hasItems`, `getFinalTotal()`, `isFavorite(id)`, …). A snapshot getter is invisible to Compose recomposition and to SwiftUI Observation, so it can silently render stale data.
 - What *may* stay on a ViewModel: constant option lists (`curatedCategories`, `availableFontSizes`) and pure helpers that take their input as a parameter and never read state (`isValidEmail(email)`, `getFontSizeDisplayName(size)`).
