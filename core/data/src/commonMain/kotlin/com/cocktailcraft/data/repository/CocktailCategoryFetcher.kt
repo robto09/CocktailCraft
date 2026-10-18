@@ -95,12 +95,16 @@ internal class CocktailCategoryFetcher(
         try {
             val basicDtos = remote.filterByCategoryRaw(category)
 
-            // Prefer full cached details over the filter endpoint's partial data
+            // Prefer full cached details over the filter endpoint's partial
+            // data, looked up for the whole page in one batch
+            val cachedDetails = cocktailCache.getCachedCocktails(
+                basicDtos.filter { it.instructions.isNullOrBlank() }.map { it.id }
+            )
             val enrichedCocktails = basicDtos.map { basicDto ->
                 val cocktail = if (!basicDto.instructions.isNullOrBlank()) {
                     remote.mapToDomain(basicDto)
                 } else {
-                    cocktailCache.getCachedCocktail(basicDto.id) ?: remote.mapToDomain(basicDto)
+                    cachedDetails[basicDto.id] ?: remote.mapToDomain(basicDto)
                 }
                 // filter.php omits the category, so stamp the one we fetched
                 // by — otherwise persisted entries are undiscoverable by
