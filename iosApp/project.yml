@@ -153,6 +153,10 @@ targets:
       path: CocktailCraftWidgets/Info.plist
       properties:
         CFBundleDisplayName: CocktailCraft
+        # From the target's settings below (set by scripts/bump-version.sh),
+        # so the extension's version always matches the app's
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
         # ATS pinning is per-bundle: without this mirror of the app's pin
