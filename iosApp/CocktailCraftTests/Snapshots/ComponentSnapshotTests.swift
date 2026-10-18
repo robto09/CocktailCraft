@@ -159,6 +159,15 @@ final class ComponentSnapshotTests: SnapshotTestCase {
         })
     }
 
+    func testToastWithUndo() {
+        assertSnapshots(of: Toast(
+            message: "Removed Margarita from cart",
+            type: .success,
+            actionLabel: "Undo",
+            onAction: {}
+        ))
+    }
+
     // MARK: - Profile and reviews
 
     func testSettingsRows() {

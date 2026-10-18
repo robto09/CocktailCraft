@@ -34,6 +34,8 @@ struct FavoritesView: View {
             await viewModel.loadFavorites()
         }
         .toast(isShowing: $showingToast, message: toastMessage, type: toastType, duration: 2)
+        // "Removed … from favorites" with Undo
+        .sharedEventToast(viewModel.event, clear: { viewModel.clearEvent() })
         .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
     }
     
@@ -99,15 +101,15 @@ struct FavoritesView: View {
     }
 
     /// Staged removal: deselect the heart immediately, give it a beat to
-    /// register, then toggle — the card animates out when the shared flow
-    /// re-emits. If the toggle fails (state rolls back), clearing the id
-    /// restores the filled heart.
+    /// register, then remove — the card animates out when the shared flow
+    /// re-emits, and an Undo toast offers it back. If the removal fails,
+    /// clearing the id restores the filled heart.
     private func unfavorite(_ cocktail: Cocktail) {
         guard !removingIds.contains(cocktail.id) else { return }
         removingIds.insert(cocktail.id)
         Task {
             try? await Task.sleep(for: .milliseconds(350))
-            await viewModel.toggleFavorite(cocktail)
+            await viewModel.removeFavorite(cocktail)
             removingIds.remove(cocktail.id)
         }
     }

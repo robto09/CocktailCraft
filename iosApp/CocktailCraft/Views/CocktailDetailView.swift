@@ -156,6 +156,9 @@ struct CocktailDetailView: View {
                 }
             )
         }
+        // Add-to-cart outcomes ("Added … to cart" only on success) and the
+        // Undo after unfavoriting
+        .sharedEventToast(viewModel.event, clear: { viewModel.clearEvent() })
         // Only action errors alert here; a failed initial load renders the
         // full-screen ErrorView (with Retry) instead of a duplicate alert
         // whose dismissal would clear the error into a "not found" dead end.
