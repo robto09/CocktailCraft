@@ -12,7 +12,6 @@
     <ID>ArgumentListWrapping:CocktailDetailRepositoryImplTest.kt$CocktailDetailRepositoryImplTest$(remoteDto("1", "Remote Margarita"))</ID>
     <ID>ArgumentListWrapping:CocktailOfflineRepositoryImplTest.kt$CocktailOfflineRepositoryImplTest$(createTestDatabase(), MapSettings(), Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)</ID>
     <ID>ArgumentListWrapping:CocktailSearchRepositoryImplTest.kt$CocktailSearchRepositoryImplTest$(cocktails.all { it.category == "Cocktail" }, "partial filter.php records must be stamped with the category they were fetched by")</ID>
-    <ID>ArgumentListWrapping:CocktailSearchRepositoryImplTest.kt$CocktailSearchRepositoryImplTest$(createTestDatabase(), settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)</ID>
     <ID>ArgumentListWrapping:CocktailSearchRepositoryImplTest.kt$CocktailSearchRepositoryImplTest$(setOf("2", "3"), (result as Result.Success).data.map { it.id }.toSet(), "an explicit fetch with an empty cache must try the network even when the monitor says offline")</ID>
     <ID>ArgumentListWrapping:CocktailSearchRepositoryImplTest.kt$CocktailSearchRepositoryImplTest$(setOf("legacy1", "legacy2"), (result as Result.Success).data.map { it.id }.toSet(), "the default offline browse must surface cached entries that predate category stamping")</ID>
     <ID>ArgumentListWrapping:LegacySettingsImportTest.kt$LegacySettingsImportTest$(id = "r1", cocktailId = "1", userName = "Robert", rating = 4.5f, comment = "Lovely and tart.", date = "2026-06-01")</ID>
@@ -66,7 +65,6 @@
     <ID>MaxLineLength:CocktailDetailRepositoryImplTest.kt$CocktailDetailRepositoryImplTest$val cache = CocktailCache(createTestDatabase(), settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)</ID>
     <ID>MaxLineLength:CocktailDetailRepositoryImplTest.kt$CocktailDetailRepositoryImplTest$val fixture = fixture(api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))), online = false)</ID>
     <ID>MaxLineLength:CocktailOfflineRepositoryImplTest.kt$CocktailOfflineRepositoryImplTest$val cache = CocktailCache(createTestDatabase(), MapSettings(), Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)</ID>
-    <ID>MaxLineLength:CocktailSearchRepositoryImplTest.kt$CocktailSearchRepositoryImplTest$val cache = CocktailCache(createTestDatabase(), settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)</ID>
     <ID>MaxLineLength:FakeCocktailApi.kt$FakeCocktailApi$/** When set, only filter.php?c= throws it — kept separate from [endpointError] so intersection tests can fail a later filter while category succeeds. */</ID>
     <ID>MaxLineLength:LegacySettingsImportTest.kt$LegacySettingsImportTest$Review(id = "r1", cocktailId = "1", userName = "Robert", rating = 4.5f, comment = "Lovely and tart.", date = "2026-06-01")</ID>
     <ID>MaxLineLength:LegacySettingsImportTest.kt$LegacySettingsImportTest$Review(id = "r2", cocktailId = "2", userName = "Ana", rating = 3.0f, comment = "A bit too minty.", date = "2026-06-03")</ID>
@@ -88,7 +86,6 @@
     <ID>PropertyWrapping:CocktailDetailRepositoryImplTest.kt$CocktailDetailRepositoryImplTest$val cache = CocktailCache(createTestDatabase(), settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)</ID>
     <ID>PropertyWrapping:CocktailDetailRepositoryImplTest.kt$CocktailDetailRepositoryImplTest$val fixture = fixture(api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))), online = false)</ID>
     <ID>PropertyWrapping:CocktailOfflineRepositoryImplTest.kt$CocktailOfflineRepositoryImplTest$val cache = CocktailCache(createTestDatabase(), MapSettings(), Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)</ID>
-    <ID>PropertyWrapping:CocktailSearchRepositoryImplTest.kt$CocktailSearchRepositoryImplTest$val cache = CocktailCache(createTestDatabase(), settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)</ID>
     <ID>ReturnCount:AuthRepositoryImpl.kt$AuthRepositoryImpl$private fun verifyCredentials(email: String, password: String): Boolean</ID>
     <ID>ReturnCount:CocktailSearchRepositoryImpl.kt$CocktailSearchRepositoryImpl$override suspend fun advancedSearch(filters: SearchFilters): Result&lt;List&lt;Cocktail&gt;&gt;</ID>
     <ID>ReturnCount:Crypto.kt$private fun String.isWellFormedUtf16(): Boolean</ID>

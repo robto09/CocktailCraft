@@ -16,8 +16,12 @@ import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.testCocktail
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -36,15 +40,29 @@ class CocktailSearchRepositoryImplTest {
 
     // Mirrors the DataModule wiring: remote source + focused offline repo +
     // the shared category fetcher backing the search impl.
+    // [dispatcher] (the test scheduler's, for tests that measure virtual
+    // time) runs the cache's and the remote source's work
     private fun fixture(
         api: FakeCocktailApi = FakeCocktailApi(),
         settings: Settings = MapSettings(),
-        online: Boolean = true
+        online: Boolean = true,
+        dispatcher: CoroutineDispatcher? = null
     ): Fixture {
         val networkMonitor = FakeNetworkMonitor(online)
         val policy = OfflineModePolicy(networkMonitor)
-        val cache = CocktailCache(createTestDatabase(), settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
-        val remote = CocktailRemoteDataSource(api, ApiRateLimiter())
+        val cache = CocktailCache(
+            createTestDatabase(),
+            settings,
+            Json { ignoreUnknownKeys = true },
+            config,
+            ioDispatcher = dispatcher ?: Dispatchers.IO,
+            offlineModePolicy = policy
+        )
+        val remote = CocktailRemoteDataSource(
+            api,
+            ApiRateLimiter(),
+            defaultDispatcher = dispatcher ?: Dispatchers.Default
+        )
         val offline = CocktailOfflineRepositoryImpl(
             offlineModePolicy = policy,
             cocktailCache = cache
@@ -168,6 +186,20 @@ class CocktailSearchRepositoryImplTest {
         val result = repo.advancedSearch(SearchFilters(category = "Cocktail", alcoholic = true))
 
         assertEquals(listOf("2"), (result as Result.Success).data.map { it.id })
+    }
+
+    @Test
+    fun advancedSearchRunsItsFilterCallsConcurrently() = runTest {
+        val api = FakeCocktailApi(drinks = sampleDrinks()).apply {
+            searchDelayMs = 2_000
+            categoryDelayMs = 2_000
+        }
+        val repo = fixture(api = api, dispatcher = StandardTestDispatcher(testScheduler)).search
+
+        val result = repo.advancedSearch(SearchFilters(query = "mojito", category = "Ordinary Drink"))
+
+        assertEquals(listOf("5"), (result as Result.Success).data.map { it.id })
+        assertEquals(2_000L, testScheduler.currentTime, "both calls in flight together, not one after the other")
     }
 
     @Test
