@@ -10,6 +10,7 @@ import com.cocktailcraft.domain.config.AppConfig
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.cocktailcraft.data.security.LazySettings
 import com.cocktailcraft.data.security.migrateAuthStorage
 import com.cocktailcraft.util.AndroidNetworkMonitor
 import com.cocktailcraft.util.NetworkMonitor
@@ -36,10 +37,17 @@ actual fun dataPlatformModule() = module {
     // Keystore-encrypted store for credentials and profile PII. The backup
     // rules exclude its file (cocktailcraft_secure_prefs.xml): the master key
     // never leaves the device, so a restored copy would be unreadable.
+    // Opened lazily (LazySettings): resolving this sits on the first frame's
+    // injection path, but the MasterKey/Tink/disk work and the migration
+    // only run on first access, which AuthRepositoryImpl makes on its io
+    // dispatcher.
     single<Settings>(secureSettingsQualifier) {
-        SharedPreferencesSettings(createSecurePrefs(get<Context>())).also { secure ->
-            // Move auth data written by older versions out of the plain store.
-            migrateAuthStorage(from = get(), to = secure)
+        val context = get<Context>()
+        LazySettings {
+            SharedPreferencesSettings(createSecurePrefs(context)).also { secure ->
+                // Move auth data written by older versions out of the plain store.
+                migrateAuthStorage(from = get(), to = secure)
+            }
         }
     }
 
