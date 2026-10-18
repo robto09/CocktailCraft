@@ -13,9 +13,10 @@ import org.koin.dsl.module
 import kotlin.native.HiddenFromObjC
 
 /**
- * Koin module for the domain layer's use cases. The shared ViewModels that
- * consume them are wired in presentationModule; the repositories they need
- * come from the data layer's modules.
+ * Koin module for the domain layer's use cases. Lives here, next to
+ * presentationModule (which wires the ViewModels that consume them), so
+ * :core:domain itself stays free of DI; the repositories come from the
+ * data layer's modules.
  */
 @HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper (AR-12)
 val domainModule = module {
@@ -32,7 +33,9 @@ val domainModule = module {
     factory { SearchCocktailsUseCase(searchRepository = get()) }
     factory { LoadCocktailsByCategoryUseCase(catalogRepository = get()) }
     factory { SortCocktailsUseCase() }
-    factory { GetCocktailDetailUseCase(detailRepository = get(), favoritesRepository = get(), searchRepository = get()) }
+    factory {
+        GetCocktailDetailUseCase(detailRepository = get(), favoritesRepository = get(), searchRepository = get())
+    }
     factory { ManageFavoritesUseCase(favoritesRepository = get(), detailRepository = get()) }
     factory { ManageCartUseCase(cartRepository = get(), detailRepository = get()) }
     factory { ManageProfileUseCase(authRepository = get()) }

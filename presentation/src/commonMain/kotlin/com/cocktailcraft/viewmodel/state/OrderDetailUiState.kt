@@ -1,8 +1,8 @@
 package com.cocktailcraft.viewmodel.state
 
-import com.cocktailcraft.domain.config.DeliveryPolicy
 import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.format.deliveryEstimateFor
 import dev.icerock.moko.resources.desc.StringDesc
 
 /**
@@ -29,9 +29,9 @@ data class OrderDetailUiState(
     val deliveryFee: Money
         get() = order?.deliveryFee ?: Money.ZERO
 
-    /** Delivery estimate for the order's status, from DeliveryPolicy. */
+    /** Delivery estimate for the order's status. */
     val deliveryEstimate: StringDesc
-        get() = DeliveryPolicy.estimatedDeliveryTimeForStatus(order?.status)
+        get() = deliveryEstimateFor(order?.status)
 
     /** Whether the screen offers "Cancel order" (shown busy while [isCancelling]). */
     val canCancel: Boolean

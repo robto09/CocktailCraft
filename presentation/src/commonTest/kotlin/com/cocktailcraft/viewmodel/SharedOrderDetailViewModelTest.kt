@@ -9,6 +9,7 @@ import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.format.deliveryEstimate
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.error_cancellation_failed_title
 import com.cocktailcraft.resources.error_reorder_failed
@@ -102,10 +103,7 @@ class SharedOrderDetailViewModelTest : MainDispatcherTest() {
         assertFalse(state.isLoading)
         assertEquals(Money(3400), state.subtotal)
         assertEquals(DeliveryPolicy.STANDARD_FEE, state.deliveryFee)
-        assertEquals(
-            DeliveryPolicy.estimatedDeliveryTimeForStatus(OrderStatus.PENDING),
-            state.deliveryEstimate
-        )
+        assertEquals(OrderStatus.PENDING.deliveryEstimate, state.deliveryEstimate)
         assertTrue(state.canCancel)
         assertNull(vm.error.value)
     }
