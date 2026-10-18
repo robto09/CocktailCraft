@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalBar
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -31,6 +30,7 @@ import com.cocktailcraft.android.util.ImageUtils
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.common_image_not_available
+import com.revenuecat.placeholder.placeholder
 
 /**
  * An optimized image component that uses our custom image loading system.
@@ -45,7 +45,7 @@ import com.cocktailcraft.resources.common_image_not_available
  * @param contentDescription Content description for accessibility
  * @param modifier Modifier for the image
  * @param contentScale Content scaling mode
- * @param showLoadingIndicator Whether to show a loading indicator
+ * @param showLoadingIndicator Whether to shimmer the image area while it loads
  * @param targetSize Target size for image resizing (null for no resizing)
  */
 @Composable
@@ -79,28 +79,26 @@ fun OptimizedImage(
             model = request,
             contentDescription = contentDescription,
             imageLoader = imageLoader,
-            modifier = Modifier.matchParentSize(),
+            // Shimmering block while loading; the image fades in over it
+            modifier = Modifier
+                .matchParentSize()
+                .placeholder(
+                    enabled = showLoadingIndicator && state is AsyncImagePainter.State.Loading
+                ),
             contentScale = contentScale,
             onState = { state = it }
         )
 
-        when {
-            state is AsyncImagePainter.State.Loading && showLoadingIndicator ->
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-
-            state is AsyncImagePainter.State.Error ->
-                Icon(
-                    imageVector = Icons.Default.LocalBar,
-                    // Decorative images (null description) stay silent on failure
-                    contentDescription = contentDescription?.let {
-                        stringResource(MR.strings.common_image_not_available)
-                    },
-                    tint = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.size(48.dp)
-                )
+        if (state is AsyncImagePainter.State.Error) {
+            Icon(
+                imageVector = Icons.Default.LocalBar,
+                // Decorative images (null description) stay silent on failure
+                contentDescription = contentDescription?.let {
+                    stringResource(MR.strings.common_image_not_available)
+                },
+                tint = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.size(48.dp)
+            )
         }
     }
 }
@@ -140,15 +138,7 @@ fun HeroOptimizedImage(
         modifier = modifier,
         contentScale = contentScale,
         loading = {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
+            Box(modifier = Modifier.fillMaxSize().placeholder())
         },
         error = {
             Box(

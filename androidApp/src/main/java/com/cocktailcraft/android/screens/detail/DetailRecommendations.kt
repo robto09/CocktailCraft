@@ -36,8 +36,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.ui.components.OptimizedImage
-import com.cocktailcraft.android.ui.components.rememberShimmerTranslate
-import com.cocktailcraft.android.ui.components.shimmerEffect
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
@@ -49,6 +47,8 @@ import com.cocktailcraft.resources.detail_loading_recommendations
 import com.cocktailcraft.resources.detail_price_format
 import com.cocktailcraft.resources.detail_you_might_also_like
 import com.cocktailcraft.resources.list_view_details_label
+import com.revenuecat.placeholder.PlaceholderSurface
+import com.revenuecat.placeholder.placeholder
 
 // Recommendations card with shimmer loading, empty and loaded states
 @Composable
@@ -114,21 +114,21 @@ internal fun DetailRecommendationsSection(
 // Shimmer placeholder row shown while recommendations load
 @Composable
 internal fun RecommendationsLoadingRow() {
-    // One transition drives all three placeholders
-    val shimmerTranslate = rememberShimmerTranslate()
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 0.dp),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.md)
-    ) {
-        items(3) {
-            // Loading shimmer
-            Box(
-                modifier = Modifier
-                    .width(140.dp)
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .shimmerEffect(shimmerTranslate)
-            )
+    // One animation clock drives all three placeholders
+    PlaceholderSurface {
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 0.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+        ) {
+            items(3) {
+                // Loading shimmer
+                Box(
+                    modifier = Modifier
+                        .width(140.dp)
+                        .height(200.dp)
+                        .placeholder(shape = RoundedCornerShape(12.dp))
+                )
+            }
         }
     }
 }

@@ -24,8 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cocktailcraft.android.ui.components.CocktailItem
+import com.cocktailcraft.android.ui.components.CocktailLoadingShimmer
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
-import com.cocktailcraft.android.ui.components.LoadingStateComponent
 import com.cocktailcraft.android.util.refreshAccessibilityAction
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
@@ -86,8 +86,10 @@ internal fun FavoritesContent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Show loading state
-        LoadingStateComponent(isLoading = isLoading)
+        // Skeleton cards while favorites load; the list has no section title
+        if (isLoading) {
+            CocktailLoadingShimmer(showHeader = false)
+        }
 
         // Show error state
         if (!isLoading && error != null) {

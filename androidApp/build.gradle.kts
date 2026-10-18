@@ -170,6 +170,9 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
 
+    // Loading skeletons; colors and Reduce Motion come from AnimatedCocktailBarTheme
+    implementation(libs.placeholder.compose)
+
     // Glance for Widgets
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)

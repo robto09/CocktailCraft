@@ -39,7 +39,7 @@ import com.cocktailcraft.android.screens.detail.DetailRecommendationsSection
 import com.cocktailcraft.android.screens.detail.DetailReviewsSection
 import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.DetailHeaderImage
-import com.cocktailcraft.android.ui.components.LoadingStateComponent
+import com.cocktailcraft.android.ui.components.CocktailDetailShimmer
 import com.cocktailcraft.android.ui.components.WriteReviewSheet
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.rememberHapticHandler
@@ -146,7 +146,7 @@ internal fun CocktailDetailContent(
     // Returns whether the review was saved; the sheet stays open otherwise
     onSubmitReview: suspend (userName: String, rating: Float, comment: String) -> Boolean
 ) {
-    // Single source of truth for the cocktail. The full-screen spinner is
+    // Single source of truth for the cocktail. The full-screen skeleton is
     // driven only by its absence: loadCocktail() publishes the cocktail before
     // its slow, network-bound related-cocktails fetch completes, so gating on
     // detailState.isLoading too would hide already-loaded content for the
@@ -180,7 +180,7 @@ internal fun CocktailDetailContent(
                 shareText = detailState.shareableText,
                 isFavorite = isFavorite,
                 onBackClick = onBackClick,
-                // Null until the cocktail loads: no actions on the spinner
+                // Null until the cocktail loads: no actions on the skeleton
                 onToggleFavorite = cocktail?.let { cocktailData ->
                     {
                         hapticHandler.performToggleFavorite(isFavorite)
@@ -190,11 +190,14 @@ internal fun CocktailDetailContent(
             )
         }
     ) { paddingValues ->
-        // Show loading indicator with animation to prevent flashing
-        LoadingStateComponent(
-            isLoading = isLoading,
-            paddingValues = paddingValues
-        )
+        // Skeleton of the detail layout, cross-faded with the content
+        AnimatedVisibility(
+            visible = isLoading,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            CocktailDetailShimmer(modifier = Modifier.padding(paddingValues))
+        }
 
         // Show content only when cocktail is loaded
         AnimatedVisibility(

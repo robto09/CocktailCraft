@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.ShoppingCart
+import com.cocktailcraft.android.screens.CartContent
+import com.cocktailcraft.android.screens.FavoritesContent
+import com.cocktailcraft.android.screens.OrderListContent
 import com.cocktailcraft.android.ui.components.CocktailLoadingShimmer
 import com.cocktailcraft.android.ui.components.EmptySearchResultsMessage
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
@@ -12,6 +15,9 @@ import com.cocktailcraft.android.ui.components.ErrorBanner
 import com.cocktailcraft.android.ui.components.NetworkErrorStateDisplay
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
 import com.cocktailcraft.util.ErrorHandler
+import com.cocktailcraft.viewmodel.state.CartUiState
+import com.cocktailcraft.viewmodel.state.FavoritesUiState
+import com.cocktailcraft.viewmodel.state.OrderUiState
 import dev.icerock.moko.resources.desc.Raw
 import dev.icerock.moko.resources.desc.StringDesc
 import org.junit.Test
@@ -108,6 +114,43 @@ class StateScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
     @Test
     fun loadingShimmer() = snapshot("LoadingShimmer") {
         CocktailLoadingShimmer(itemCount = 3)
+    }
+
+    @Test
+    fun favoritesLoading() = snapshot("FavoritesLoading") {
+        FavoritesContent(
+            state = FavoritesUiState(isLoading = true),
+            error = null,
+            onRefresh = {},
+            onBrowseProducts = {},
+            onAddToCart = {},
+            onToggleFavorite = {}
+        )
+    }
+
+    @Test
+    fun cartLoading() = snapshot("CartLoading") {
+        CartContent(
+            state = CartUiState(isLoading = true),
+            error = null,
+            favoriteIds = emptySet(),
+            onStartShopping = {},
+            onIncreaseQuantity = {},
+            onDecreaseQuantity = {},
+            onRemove = {},
+            onToggleFavorite = {},
+            onConfirmOrder = {}
+        )
+    }
+
+    @Test
+    fun ordersLoading() = snapshot("OrdersLoading") {
+        OrderListContent(
+            state = OrderUiState(isLoading = true),
+            error = null,
+            onReload = {},
+            onBrowseCocktails = {}
+        )
     }
 
     companion object {

@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -22,6 +23,10 @@ import android.app.Activity
 import android.os.Build
 import androidx.core.view.WindowCompat
 import com.cocktailcraft.designsystem.AccentColorTokens
+import com.revenuecat.placeholder.LocalPlaceholderTheme
+import com.revenuecat.placeholder.PlaceholderDefaults
+import com.revenuecat.placeholder.PlaceholderTheme
+import com.revenuecat.placeholder.Shimmer
 
 // Animation specifications
 private val ColorAnimationSpec: AnimationSpec<Color> = tween(durationMillis = 600)
@@ -132,7 +137,41 @@ fun AnimatedCocktailBarTheme(
             LocalReducedMotion provides reducedMotion,
             LocalExtendedColors provides extendedColors,
             LocalDarkTheme provides darkTheme,
+            LocalPlaceholderTheme provides cocktailPlaceholderTheme(
+                fill = neutralSubtle,
+                highlight = colorScheme.surface,
+                reducedMotion = reducedMotion
+            ),
             content = content
+        )
+    }
+}
+
+/**
+ * Defaults for every Modifier.placeholder in the app: skeleton blocks use the
+ * image-placeholder fill (neutralSubtle) with a surface-colored shimmer.
+ * Reduce Motion drops the shimmer and the fade, leaving static blocks.
+ */
+@Composable
+private fun cocktailPlaceholderTheme(
+    fill: Color,
+    highlight: Color,
+    reducedMotion: Boolean
+): PlaceholderTheme = remember(fill, highlight, reducedMotion) {
+    if (reducedMotion) {
+        PlaceholderTheme(
+            color = fill,
+            highlight = null,
+            placeholderFadeTransitionSpec = { snap() },
+            contentFadeTransitionSpec = { snap() }
+        )
+    } else {
+        PlaceholderTheme(
+            color = fill,
+            highlight = Shimmer(
+                highlightColor = highlight.copy(alpha = 0.6f),
+                animationSpec = PlaceholderDefaults.shimmer.animationSpec
+            )
         )
     }
 }
