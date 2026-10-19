@@ -4,7 +4,7 @@ Technical documentation for CocktailCraft, a Kotlin Multiplatform cocktail order
 
 ## Architecture
 
-- **[Shared ViewModel Strategy](Shared_ViewModel_Strategy.md)**: the 8 shared KMP ViewModels and their `SharedViewModel` base, the iOS SKIE wrappers, direct consumption on Android, and the SKIE configuration
+- **[Shared ViewModel Strategy](Shared_ViewModel_Strategy.md)**: the 9 shared KMP ViewModels and their `SharedViewModel` base, the state/error/events contract, the iOS SKIE wrappers, direct consumption on Android, and the SKIE configuration
 - **[Dependency Injection](DependencyInjection.md)**: Koin modules per Gradle module, the data layer (repository conventions and storage), ViewModel wiring, and DI testing
 - **Diagrams** (mermaid): [Catalog flow](images/mermaid/catalog_flow.md) · [Place order sequence](images/mermaid/sequence_diagram_place_order.md)
 

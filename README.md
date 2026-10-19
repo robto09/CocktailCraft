@@ -19,7 +19,8 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **User Authentication**: Register, sign in, and manage user profiles — accounts are device-local (stored and verified on the device; there is no server or sync)
 - **Order Management**: Place orders, track order history, open an order's details, cancel an order and reorder a past one
 - **Favorites**: Save and manage favorite cocktails
-- **Reviews**: Read and submit reviews for cocktails
+- **Reviews**: Read and submit reviews for cocktails; every review on the device is shown to everyone, and only its author can edit or delete it
+- **Per-user data**: Each account on the device, and the guest while signed out, has its own cart, favorites, recently viewed list and orders; signing in adds the guest's cart, favorites and views to the account
 - **Home Sort**: Order the Home list by name, price, rating or popularity
 - **Recently Viewed**: A row of the cocktails you opened last, at the top of Home
 - **Undo**: Removing a cart item or a favorite shows a toast with an Undo action
@@ -156,7 +157,7 @@ Every dependency, with its version and purpose, is listed in [docs/Libraries.md]
 ### Data Layer (`core/data`)
 - **Repository Implementations**: Concrete implementations of repository interfaces
 - **Remote Data Sources**: API clients and network-related code
-- **Local Data Sources**: SQLDelight database (`data/local/LocalDatabase`, `data/cache/CocktailCache`) and secure preference storage for auth
+- **Local Data Sources**: SQLDelight database (`data/local/LocalDatabase`, `data/cache/CocktailCache`), with each user's data kept under its owner (`data/local/UserDataOwnership.kt`), and an encrypted store for auth: a Tink-encrypted file with a Keystore-wrapped key on Android, the Keychain on iOS (see [Data layer](docs/DependencyInjection.md#data-layer))
 
 ### Presentation Layer
 - **Shared ViewModels** (`presentation`): Manage UI state and handle user interactions on both platforms
@@ -171,7 +172,7 @@ Every dependency, with its version and purpose, is listed in [docs/Libraries.md]
 - **CartScreen**: UI for displaying and managing cart items
 
 ### User Authentication
-- **AuthRepository**: Handles user registration, login, and session management
+- **AuthRepository**: Handles user registration, login, and session management; accounts and sign-in throttling stay on the device, and signing in or out switches whose cart, favorites and orders the app shows
 - **SharedProfileViewModel**: Manages user profile data and settings
 - **ProfileScreen**: UI for user authentication and profile management
 
@@ -351,10 +352,26 @@ cd iosApp && swiftlint lint # SwiftLint (brew install swiftlint)
   baseline (SwiftLint 0.55+): `swiftlint lint --write-baseline .swiftlint-baseline.json`,
   then `swiftlint lint --baseline .swiftlint-baseline.json`.
 
+### Continuous integration
+
+`.github/workflows/ci.yml` runs on every pull request and on pushes to `dev`
+and `main`, in two jobs. No secrets are used; release builds are unsigned.
+
+- **Linux** (Android and shared Kotlin): `detekt`, `testAndroidHostTest`,
+  `:androidApp:testDebugUnitTest` (unit, Robolectric and screenshot verify),
+  `:core:data:verifySqlDelightMigration`, `:androidApp:lintRelease` and
+  `:androidApp:assembleRelease`.
+- **macOS** (iOS): `iosSimulatorArm64Test`; checks the committed Xcode
+  project matches `xcodegen generate`; builds the app and runs the
+  `CocktailCraftTests` unit and snapshot tests (snapshots are verified only on
+  an iPhone 16 Pro iOS 18.5 simulator, skipped otherwise); builds the Release
+  configuration and fails if it contains the Debug-only test mode or QA
+  hooks. The UI tests run locally only.
+
 ## Versioning
 
 `gradle.properties` (`appVersionName`/`appVersionCode`) is the single source of
-the app version. Bump it with `scripts/bump-version.sh <versionName> <versionCode>`
+the app version, currently 0.4.0 (build 2). Bump it with `scripts/bump-version.sh <versionName> <versionCode>`
 (e.g. `scripts/bump-version.sh 1.1 2`), which also updates both iOS targets in
 `iosApp/project.yml` and the committed Xcode project, and fails if any of
 those edits did not land.

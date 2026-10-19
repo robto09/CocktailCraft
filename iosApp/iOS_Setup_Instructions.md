@@ -4,7 +4,9 @@
 - Xcode 16 or later (the project builds with the Swift 5.10 toolchain — `SWIFT_VERSION: "5.10"` in `project.yml`)
 - XcodeGen (`brew install xcodegen`)
 - A JDK 17+ — every app build runs Gradle to compile the shared Kotlin framework
-- macOS 12.0 or later
+- A Mac with Apple silicon on macOS 14.5 (Sonoma) or later: the oldest macOS Xcode 16 runs on, and the shared Kotlin framework is built for arm64 simulators and devices only
+
+The app and its widget extension target iOS 17.0 (`deploymentTarget` in `project.yml`).
 
 No CocoaPods: the shared Kotlin framework uses Kotlin's direct Xcode
 integration and the third-party Swift libraries come from Swift Package
@@ -64,6 +66,8 @@ xcodegen generate
 
 ### 5. App Transport Security (already configured)
 No ATS changes are needed — and do **not** add `NSAllowsArbitraryLoads`. The app uses the platform defaults (HTTPS only, system trust) and deliberately has no certificate pinning: TheCocktailDB is a public, unauthenticated API, and pinning the CA pool its CDN rotates on its own schedule would risk cutting the app off the network (see the comment in `CocktailCraft/Info.plist`). The widget extension does no networking (it reads App Group snapshots the app writes), so it has no ATS config of its own.
+
+The app's privacy manifest is `CocktailCraft/PrivacyInfo.xcprivacy`: no tracking and no collected data (everything the user creates stays on the device), and one required-reason API, `NSUserDefaults` for the app's own settings (`CA92.1`). Declare any new required-reason API there. The widget extension reads App Group files, not defaults, so it has no manifest.
 
 ### 6. Run the App
 1. Select a simulator or device

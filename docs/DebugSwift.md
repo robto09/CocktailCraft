@@ -247,10 +247,16 @@ xcodebuild -project CocktailCraft.xcodeproj -scheme CocktailCraft -configuration
 ### Custom Debug Actions
 Access via: **App Tab → Custom Actions → CocktailCraft Debug Tools**
 
-- **Clear Favorites** - removes all saved favorite cocktails
-- **Clear Cart** - empties the shopping cart
-- **Delete All User Data (cart, favorites, orders, reviews)** - clears the user data in the database
-- **Simulate Network Failure** / **Stop Simulating Network Failure** - makes every API request fail as a dropped connection would, until toggled off
+| Action | Debug hook (`KoinHelper`, `shared/src/iosTestMode/.../DebugTools.kt`) | What it does |
+|--------|------------------------------------------|--------------|
+| **Clear Favorites** | `debugClearFavorites()` | Removes the favorites of whoever is signed in (the guest's when signed out) |
+| **Clear Cart** | `debugClearCart()` | Empties the current user's (or the guest's) cart |
+| **Delete Every User's Data (cart, favorites, orders, reviews)** | `debugResetUserData()` | Deletes the cart, favorites, orders and reviews of every account on the device and of the guest, in one transaction. Accounts, sign-in, settings and the recently viewed lists stay |
+| **Simulate Network Failure** / **Stop Simulating Network Failure** | `debugSetSimulatedNetworkFailure(enabled:)`, `debugIsSimulatingNetworkFailure()` | Makes every API request fail as a dropped connection would (retry, then cached data or the error UI) until toggled off; the device stays online as far as `NetworkMonitor` is concerned |
+
+The hooks are compiled into Debug frameworks only (the `iosTestMode` source
+set; see `includeIosTestMode` in `shared/build.gradle.kts`), so Release
+builds contain neither the actions nor the hooks.
 
 ## QA Testing Scenarios
 

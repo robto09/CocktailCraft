@@ -16,7 +16,7 @@ Used across `:shared` and the `:core:*`/`:presentation` modules it is split into
 | Kotlinx Serialization | 1.11.0 | JSON (de)serialization |
 | Kotlinx DateTime | 0.8.0 | Date and time handling |
 | Koin | 4.2.2 | Dependency injection (`koin-core`, `koin-core-viewmodel`; `koin-android`/`koin-androidx-compose` on Android) |
-| Multiplatform Settings | 1.3.0 | Cross-platform key-value storage (auth data, in the secure store; older versions' cart/orders/favorites/reviews are read once to import them into SQLite) |
+| Multiplatform Settings | 1.3.0 | Cross-platform key-value storage (auth data, in the secure store: a Tink-encrypted file on Android, the Keychain on iOS; older versions' cart/orders/favorites/reviews are read once to import them into SQLite) |
 | SQLDelight | 2.4.1 | SQLite storage for the cocktail catalog (`cached_cocktail`, `category_page`), recently viewed, cart, orders, favorites and reviews (`android-driver` on Android, `native-driver` on iOS; the iOS app links `sqlite3` itself via `OTHER_LDFLAGS` in `iosApp/project.yml`; `coroutines-extensions` for reactive `Query.asFlow()` reads) |
 | Kermit | 2.2.0 | Multiplatform logging |
 | moko-resources | 0.27.1 | Single source for the app's strings: generates `MR.strings`/`MR.plurals`, Android string resources and the iOS strings bundle from `core/resources/src/commonMain/moko-resources` (exported to Swift; see README "Localization") |
