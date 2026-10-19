@@ -48,13 +48,11 @@ jobs:
       - name: KMP host tests
         run: ./gradlew testAndroidHostTest --console=plain
 
-      # Unit, Robolectric and Roborazzi screenshot tests; screenshots are
-      # verified against the committed baselines (roborazzi.test.verify in
-      # gradle.properties). The baselines were recorded on macOS: if Linux
-      # renders a baseline differently, re-record it here or on macOS with
-      # ./gradlew recordRoborazziDebug.
-      - name: Android unit and screenshot tests
-        run: ./gradlew :androidApp:testDebugUnitTest --console=plain
+      # Unit and Robolectric tests. The Roborazzi baselines were recorded on
+      # macOS and Linux renders text differently, so the screenshots are
+      # captured but not compared here; the macOS job verifies them.
+      - name: Android unit tests
+        run: ./gradlew :androidApp:testDebugUnitTest -Proborazzi.test.verify=false --console=plain
 
       - name: Database migrations
         run: ./gradlew :core:data:verifySqlDelightMigration --console=plain
@@ -78,7 +76,9 @@ jobs:
 
   ios:
     name: iOS (macOS)
-    runs-on: macos-15
+    # The app builds against the iOS 26 SDK (ToolbarItemPlacement.title in
+    # AppTheme.swift), which needs Xcode 26; macos-15 defaults to Xcode 16
+    runs-on: macos-26
     timeout-minutes: 90
     env:
       DERIVED_DATA: ${{ github.workspace }}/build/DerivedData
@@ -105,6 +105,11 @@ jobs:
 
       - name: Show Xcode version
         run: xcodebuild -version
+
+      # The Roborazzi baselines were recorded on macOS, so they are compared
+      # here rather than on Linux. To re-record: ./gradlew recordRoborazziDebug
+      - name: Android screenshot tests
+        run: ./gradlew :androidApp:verifyRoborazziDebug --console=plain
 
       # Kotlin/Native tests of every KMP module on the iOS simulator. Without
       # CONFIGURATION=Debug the iOS test mode is compiled into the test
@@ -213,5 +218,6 @@ jobs:
           path: |
             **/build/reports/
             **/build/test-results/
+            androidApp/build/outputs/roborazzi/
             ${{ env.DERIVED_DATA }}/Logs/Test/
           if-no-files-found: ignore
