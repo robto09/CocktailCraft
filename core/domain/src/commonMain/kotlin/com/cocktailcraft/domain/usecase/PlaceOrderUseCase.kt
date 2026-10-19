@@ -25,7 +25,7 @@ import kotlin.time.Clock
  * The total is computed here from the items and [DeliveryPolicy] — never
  * taken from the caller — so what is stored always matches what was ordered.
  */
-@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+@HiddenFromObjC // Public for :presentation; not Swift API
 class PlaceOrderUseCase(private val orderRepository: OrderRepository) {
     suspend operator fun invoke(cartItems: List<CocktailCartItem>): Result<Order> {
         return runCatchingResult("Failed to place order") {

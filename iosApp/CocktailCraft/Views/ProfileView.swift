@@ -2,7 +2,7 @@ import SwiftUI
 import shared
 
 struct ProfileView: View {
-    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    // Built once via ViewModelHolder, not on every parent re-render
     @State private var model = ViewModelHolder(ProfileViewModelSKIE.init)
     private var viewModel: ProfileViewModelSKIE { model.wrapper }
     private let themeViewModel = ThemeViewModelSKIE.shared

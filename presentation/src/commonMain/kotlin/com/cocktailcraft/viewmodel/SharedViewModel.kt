@@ -42,7 +42,7 @@ import kotlinx.coroutines.launch
  *
  * Koin `single`-scoped subclasses are never cleared (nothing routes them
  * through a ViewModelStore), so never put teardown in onCleared() expecting
- * it to run for a singleton (see PresentationModule's scoping notes, SH-9).
+ * it to run for a singleton (see PresentationModule's scoping notes).
  */
 abstract class SharedViewModel : ViewModel() {
 

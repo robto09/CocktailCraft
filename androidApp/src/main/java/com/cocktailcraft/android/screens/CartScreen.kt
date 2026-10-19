@@ -71,7 +71,7 @@ fun CartScreen(
     val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
     val favoritesError by favoritesViewModel.error.collectAsStateWithLifecycle()
     val favorites = favoritesState.favorites
-    // O(1) membership per row instead of favorites.any {} per visible item (AN-3)
+    // O(1) membership per row instead of favorites.any {} per visible item
     val favoriteIds = remember(favorites) { favorites.toFavoriteIdSet() }
     val scope = rememberCoroutineScope()
 

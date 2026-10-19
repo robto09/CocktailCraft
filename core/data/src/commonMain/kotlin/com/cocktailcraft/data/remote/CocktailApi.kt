@@ -40,7 +40,7 @@ internal class CocktailApiImpl(private val client: HttpClient, appConfig: AppCon
         // The lookup endpoint returns full details. Timeout comes from the
         // global HttpTimeout plugin (NetworkModule) like every sibling
         // endpoint — the old per-call 10s override silently shrank just this
-        // endpoint's budget to a third of the shared one (SH-8).
+        // endpoint's budget to a third of the shared one.
         val response = client.get("$baseUrl/lookup.php") {
             parameter("i", id)
         }.drinks()
@@ -75,7 +75,7 @@ internal class CocktailApiImpl(private val client: HttpClient, appConfig: AppCon
         // filter.php only returns partial data (id, name, thumbnail); full
         // details need lookup.php per id. Failures propagate like every other
         // endpoint — swallowing them here turned real API failures into empty
-        // "successful" categories upstream (SH-1).
+        // "successful" categories upstream.
         val response = client.get("$baseUrl/filter.php") {
             parameter("c", category)
         }.drinks()

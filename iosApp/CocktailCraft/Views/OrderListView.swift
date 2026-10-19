@@ -2,7 +2,7 @@ import SwiftUI
 import shared
 
 struct OrderListView: View {
-    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    // Built once via ViewModelHolder, not on every parent re-render
     @State private var model = ViewModelHolder(OrderViewModelSKIE.init)
     private var viewModel: OrderViewModelSKIE { model.wrapper }
     @State private var hasLoaded = false

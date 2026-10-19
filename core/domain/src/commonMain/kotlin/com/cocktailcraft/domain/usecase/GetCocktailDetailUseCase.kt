@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlin.native.HiddenFromObjC
 
-@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+@HiddenFromObjC // Public for :presentation; not Swift API
 class GetCocktailDetailUseCase(
     private val detailRepository: CocktailDetailRepository,
     private val favoritesRepository: CocktailFavoritesRepository,

@@ -13,7 +13,7 @@ import kotlin.native.HiddenFromObjC
  */
 @HiddenFromObjC // AppConfig is; K/N requires its subtypes to match
 class AppConfigImpl(
-    // Injected per-platform from the DI modules (AR-4): debug builds get
+    // Injected per-platform from the DI modules: debug builds get
     // verbose wire logging automatically; release builds stay quiet. The
     // default keeps test fixtures terse.
     override val verboseNetworkLogging: Boolean = false
@@ -27,7 +27,7 @@ class AppConfigImpl(
     override val networkTimeoutMs: Long = 10_000 // 10 seconds
 
     // Number of retries for network operations (consumed by NetworkModule's
-    // HttpRequestRetry — the single retry layer, SH-7/AR-4). One quick
+    // HttpRequestRetry — the single retry layer). One quick
     // retry: each further one only delays the error or the cached fallback.
     override val maxRetries: Int = 1
 

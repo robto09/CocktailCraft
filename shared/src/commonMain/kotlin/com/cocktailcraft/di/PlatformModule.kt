@@ -9,5 +9,5 @@ import kotlin.native.HiddenFromObjC
  * are all data-layer adapters, so the module itself lives in :core:data;
  * this keeps the name androidApp and initKoin() use.
  */
-@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper (AR-12)
+@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper
 fun platformModule(): Module = dataPlatformModule()

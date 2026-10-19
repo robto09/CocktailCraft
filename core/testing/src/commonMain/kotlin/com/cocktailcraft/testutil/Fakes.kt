@@ -26,7 +26,7 @@ class FakeNetworkMonitor(initiallyOnline: Boolean = true) : NetworkMonitor {
     private val _online = MutableStateFlow(initiallyOnline)
     override val isOnline: StateFlow<Boolean> = _online.asStateFlow()
 
-    // SH-2 regression counters: monitoring lifecycle belongs to app init,
+    // Regression counters: monitoring lifecycle belongs to app init,
     // so ViewModels must never call these.
     var startCalls = 0
         private set
@@ -178,7 +178,7 @@ class FakeFavoritesRepository : CocktailFavoritesRepository {
 
 @HiddenFromObjC // implements a Kotlin-only repository port
 class FakeSearchRepository(var all: List<Cocktail> = emptyList()) : CocktailSearchRepository {
-    /** Every advancedSearch invocation's filters, in order — lets tests assert debouncing (SH-13). */
+    /** Every advancedSearch invocation's filters, in order — lets tests assert debouncing. */
     val advancedSearchCalls = mutableListOf<SearchFilters>()
 
     /** When set, every search/filter method returns Result.Error with this message (simulates API failure). */

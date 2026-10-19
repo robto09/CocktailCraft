@@ -40,9 +40,9 @@ val LocalReducedMotion = staticCompositionLocalOf { false }
 
 /**
  * The app's single theme: smoothly transitions between light and dark palettes.
- * (The static CocktailBarTheme it once wrapped was dead code, deleted in AN-5.)
+ * (The static CocktailBarTheme it once wrapped was dead code, since deleted.)
  *
- * Colors reach UI code only through the theme (AN-5): MaterialTheme.colorScheme
+ * Colors reach UI code only through the theme: MaterialTheme.colorScheme
  * (built by [cocktailColorScheme] from the shared tokens, honouring
  * [accentColor] and [highContrast]) plus CocktailCraftTheme.extendedColors for
  * brand/semantic colors Material has no role for.

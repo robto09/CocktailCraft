@@ -167,7 +167,7 @@ class ErrorHandlerTest {
 
     @Test
     fun unrecognizedExceptionNoLongerPatternMatchesOnMessageSubstrings() {
-        // SH-12: the old fallback would have guessed NETWORK/"The request
+        // The old fallback would have guessed NETWORK/"The request
         // timed out..." from these substrings; classification is by exception
         // type (or a DomainException's typed code) only.
         val error = ErrorHandler.getErrorFromException(

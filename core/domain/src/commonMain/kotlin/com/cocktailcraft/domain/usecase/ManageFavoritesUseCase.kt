@@ -10,12 +10,12 @@ import com.cocktailcraft.util.runCatchingResult
 import kotlinx.coroutines.flow.Flow
 import kotlin.native.HiddenFromObjC
 
-@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+@HiddenFromObjC // Public for :presentation; not Swift API
 class ManageFavoritesUseCase(
     private val favoritesRepository: CocktailFavoritesRepository,
     private val detailRepository: CocktailDetailRepository
 ) {
-    /** Hot stream of favorites; mutations from any screen publish here (SH-4). */
+    /** Hot stream of favorites; mutations from any screen publish here. */
     fun observeFavorites(): Flow<List<Cocktail>> = favoritesRepository.observeFavorites()
 
     suspend fun toggle(cocktail: Cocktail): Result<Boolean> = runCatchingResult("Failed to update favorites") {

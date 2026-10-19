@@ -233,7 +233,7 @@ fun MainScreen() {
                 )
             }
             // No TabScaffold: the detail screen runs its own Scaffold + AppTopBar,
-            // which own the system-bar insets (AN-6).
+            // which own the system-bar insets.
             composable<CocktailDetailRoute>(
                 deepLinks = listOf(
                     navDeepLink<CocktailDetailRoute>(basePath = CocktailDeepLink.BASE_PATH)
@@ -277,7 +277,7 @@ private fun TabScaffold(
 ) {
     Scaffold(
         topBar = {
-            // Edge-to-edge inset ownership (AN-6): this Column owns the
+            // Edge-to-edge inset ownership: this Column owns the
             // status-bar inset exactly once — background first so the
             // app-bar color still paints behind the transparent status
             // bar, then padding so the indicator/title start below it.
@@ -294,7 +294,7 @@ private fun TabScaffold(
                     title = stringResource(if (tab == Screen.Home) MR.strings.app_title else tab.title),
                     // The wrapping Column already consumed the status-bar
                     // inset; keep only the horizontal/cutout parts here so
-                    // the top inset isn't applied twice (AN-6).
+                    // the top inset isn't applied twice.
                     windowInsets = TopAppBarDefaults.windowInsets.exclude(WindowInsets.statusBars)
                 )
             }

@@ -30,7 +30,7 @@ fun doInitKoin(isDebug: Boolean): KoinApplication = initKoin(isDebug) {}
  * Helper class to provide dependencies to iOS without using reified generics.
  * Explicit return types define the exported Objective-C surface.
  *
- * OBLIGATION (AR-6): every new shared single/factory that iOS needs must get
+ * OBLIGATION: every new shared single/factory that iOS needs must get
  * an explicit getter here — a missing getter silently hides the binding from
  * Swift. Add it under the matching section below AND add a resolution
  * assertion to KoinHelperTest (shared/src/iosTest) so a missing or renamed

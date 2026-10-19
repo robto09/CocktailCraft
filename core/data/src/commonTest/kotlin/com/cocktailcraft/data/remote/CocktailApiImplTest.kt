@@ -22,8 +22,8 @@ import kotlin.test.assertTrue
 
 /**
  * Exercises CocktailApiImpl through the REAL production Ktor pipeline built by
- * [buildHttpClient] — the SH-6 quirk shield (decodeDrinks),
- * HttpRequestRetry, and expectSuccess — with only the engine mocked (AR-5).
+ * [buildHttpClient] — the quirk shield (decodeDrinks),
+ * HttpRequestRetry, and expectSuccess — with only the engine mocked.
  * CocktailResponseParsingTest covers the raw Json decode of the same quirks;
  * here they must survive the full client stack.
  */
@@ -122,7 +122,7 @@ class CocktailApiImplTest {
     @Test
     fun noDataFoundStringBodyDecodesToEmptyListThroughPipeline() = runTest {
         // Some empty-result endpoints return the literal string "no data
-        // found" for drinks instead of null/[] — the SH-6 shield must hold
+        // found" for drinks instead of null/[] — the quirk shield must hold
         // through the client pipeline, not just raw decodeDrinks.
         val engine = MockEngine { respondJson("""{"drinks":"no data found"}""") }
 

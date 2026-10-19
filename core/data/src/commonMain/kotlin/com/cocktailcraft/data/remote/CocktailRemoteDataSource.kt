@@ -77,7 +77,7 @@ internal class CocktailRemoteDataSource(
 
     // --- Rate limiting ---
     // Only the proactive min-interval throttle lives here (request shaping);
-    // retry and 429 backoff are owned solely by Ktor's HttpRequestRetry (SH-7).
+    // retry and 429 backoff are owned solely by Ktor's HttpRequestRetry.
 
     /**
      * Takes the next API call slot and waits until it arrives. Reserving is

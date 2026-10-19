@@ -29,7 +29,7 @@ android {
         applicationId = "com.cocktailcraft.android"
         minSdk = 24
         targetSdk = 36
-        // Single source of truth in root gradle.properties (AR-9/AN-12);
+        // Single source of truth in root gradle.properties;
         // bump via scripts/bump-version.sh, which also syncs iosApp/project.yml.
         versionCode = providers.gradleProperty("appVersionCode").get().toInt()
         versionName = providers.gradleProperty("appVersionName").get()
@@ -118,7 +118,7 @@ roborazzi {
 composeCompiler {
     // Shared KMP domain models can't carry @Immutable (no Compose dependency
     // in shared), so they're declared stable here — makes the list-item
-    // composables skippable (AN-1).
+    // composables skippable.
     stabilityConfigurationFiles.add(
         project.layout.projectDirectory.file("compose-stability-config.conf")
     )

@@ -17,13 +17,13 @@ import kotlin.native.HiddenFromObjC
  * :core:domain itself stays free of DI; the repositories come from the
  * data layer's modules.
  */
-@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper (AR-12)
+@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper
 val domainModule = module {
-    // AppConfig binding lives in each platformModule() (AR-4): the platform
+    // AppConfig binding lives in each platformModule(): the platform
     // knows whether this is a debug build; commonMain doesn't.
 
     // Use Cases.
-    // Convention (AR-8): a use case must EARN its indirection — validation,
+    // Convention: a use case must EARN its indirection — validation,
     // orchestration, or aggregation across repositories (e.g. Sort, Search,
     // PlaceOrder hold real logic). A pure pass-through is collapsed onto
     // the repository interface instead, and ViewModels call that

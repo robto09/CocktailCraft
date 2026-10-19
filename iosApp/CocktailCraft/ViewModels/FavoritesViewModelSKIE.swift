@@ -40,7 +40,7 @@ final class FavoritesViewModelSKIE: SharedViewModelWrapper<FavoritesUiState> {
 
     func refreshFavorites() async {
         // No artificial delay: the spinner should last exactly as long as the
-        // reload does (IO-2).
+        // reload does.
         await loadFavorites()
     }
 }

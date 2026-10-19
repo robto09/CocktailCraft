@@ -82,7 +82,7 @@ kotlin {
             implementation(libs.turbine)
             implementation(libs.multiplatform.settings.test)
             // MockEngine so CocktailApiImplTest exercises the real Ktor
-            // pipeline (AR-5)
+            // pipeline
             implementation(libs.ktor.client.mock)
         }
     }

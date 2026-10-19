@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 /**
- * Locks in the SH-6 hardening against TheCocktailDB response quirks.
+ * Locks in the hardening against TheCocktailDB response quirks.
  */
 class CocktailResponseParsingTest {
 

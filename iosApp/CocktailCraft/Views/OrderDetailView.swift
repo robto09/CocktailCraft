@@ -14,7 +14,7 @@ struct OrderDetailRoute: Hashable {
 struct OrderDetailView: View {
     let orderId: String
 
-    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    // Built once via ViewModelHolder, not on every parent re-render
     @State private var model = ViewModelHolder(OrderDetailViewModelSKIE.init)
     private var viewModel: OrderDetailViewModelSKIE { model.wrapper }
     @State private var showCancelConfirmation = false

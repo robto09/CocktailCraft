@@ -251,7 +251,7 @@ class CocktailSearchRepositoryImplTest {
         assertEquals(setOf("2", "3"), ids)
     }
 
-    // --- SH-1: category fetch failures surface as errors, not empty success ---
+    // --- Category fetch failures surface as errors, not empty success ---
 
     @Test
     fun filterByCategoryReturnsErrorWhenApiFailsAndNoCacheExists() = runTest {

@@ -57,7 +57,7 @@ class SharedHomeViewModel internal constructor(
     private val loadCocktailsByCategoryUseCase: LoadCocktailsByCategoryUseCase,
     private val sortCocktailsUseCase: SortCocktailsUseCase,
     private val manageFavoritesUseCase: ManageFavoritesUseCase,
-    // Direct repository dependencies (AR-8): recently viewed and the
+    // Direct repository dependencies: recently viewed and the
     // filter option lists are read as they are, with no logic to wrap
     private val offlineRepository: CocktailOfflineRepository,
     private val catalogRepository: CocktailCatalogRepository,
@@ -72,7 +72,7 @@ class SharedHomeViewModel internal constructor(
     private val PAGE_SIZE = 10
     private val SEARCH_DEBOUNCE_MS = 300L
 
-    // Debounced search pipeline (SH-13): platforms push raw query text via
+    // Debounced search pipeline: platforms push raw query text via
     // [updateSearchQuery]; a null value cancels any pending search (used by
     // the clear paths). StateFlow's value-equality conflation provides
     // distinctUntilChanged for free; a superseded search is cancelled as the
@@ -124,7 +124,7 @@ class SharedHomeViewModel internal constructor(
 
     private fun initialize() {
         // Observe network connectivity. Monitoring itself is started once at
-        // app init (initKoin / Application.onCreate), not per-ViewModel (SH-2).
+        // app init (initKoin / Application.onCreate), not per-ViewModel.
         viewModelScope.launch {
             networkMonitor.isOnline.collectLatest { isOnline ->
                 _uiState.update { it.copy(isNetworkAvailable = isOnline) }
@@ -138,7 +138,7 @@ class SharedHomeViewModel internal constructor(
             }
         }
 
-        // Debounced search (SH-13): one request per typing pause, not per keystroke.
+        // Debounced search: one request per typing pause, not per keystroke.
         viewModelScope.launch {
             searchQueryFlow
                 .debounce(SEARCH_DEBOUNCE_MS)
@@ -147,7 +147,7 @@ class SharedHomeViewModel internal constructor(
                 }
         }
 
-        // Reactive favorites (SH-4): mutations from any screen publish
+        // Reactive favorites: mutations from any screen publish
         // through the repository flow; no manual re-pulls after toggles.
         viewModelScope.launch {
             manageFavoritesUseCase.observeFavorites().collect { favs ->
@@ -181,7 +181,7 @@ class SharedHomeViewModel internal constructor(
 
         // The one initial load: the default listing ("All"). No arbitrary
         // delay: the cache suspends inside its own ensureLoaded() when first
-        // touched (SH-7).
+        // touched.
         loadCategory(category = null, forceRefresh = false)
     }
 
@@ -476,7 +476,7 @@ class SharedHomeViewModel internal constructor(
 
     /**
      * Toggle favorite status for a cocktail. State updates arrive via the
-     * observed favorites flow (SH-4); a failed toggle is reported.
+     * observed favorites flow; a failed toggle is reported.
      */
     fun toggleFavorite(cocktail: Cocktail) {
         clearError()

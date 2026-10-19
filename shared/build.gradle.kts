@@ -1,5 +1,5 @@
 plugins {
-    // Targets, toolchain, SDK levels, opt-ins, host tests (build-logic, AR-10)
+    // Targets, toolchain, SDK levels, opt-ins, host tests (build-logic)
     id("cocktailcraft.kmp.library")
     alias(libs.plugins.skie)
     // No resources of its own: links :core:resources' strings bundle into the
@@ -18,7 +18,7 @@ skie {
         // moko-resources is an external library, but since it reaches the
         // framework through the :core:resources project module SKIE would
         // generate default-argument overloads for its classes too — ~50
-        // unused header entries (AR-12). Keep them off, as before the split.
+        // unused header entries. Keep them off, as before the split.
         group("dev.icerock.moko") {
             co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(false)
         }

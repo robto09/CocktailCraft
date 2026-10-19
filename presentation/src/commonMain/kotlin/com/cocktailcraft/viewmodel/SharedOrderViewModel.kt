@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
  * SharedOrderDetailViewModel.
  */
 class SharedOrderViewModel internal constructor(
-    // Direct repository dependency (AR-8): ManageOrdersUseCase was a pure
+    // Direct repository dependency: ManageOrdersUseCase was a pure
     // 1:1 pass-through with this VM as its only consumer.
     private val orderRepository: OrderRepository,
     private val placeOrderUseCase: PlaceOrderUseCase

@@ -72,7 +72,7 @@ fun HomeScreen(
         selectedCategory = category
     }
 
-    // Process-death recovery (AN-4): the shared VM is a process-wide singleton
+    // Process-death recovery: the shared VM is a process-wide singleton
     // with no SavedStateHandle, so an in-progress search dies with the
     // process. Shadow the query in the Activity's saved-state bundle and
     // replay it once into the fresh VM after a restore.
@@ -125,7 +125,7 @@ fun HomeScreen(
         curatedCategories = viewModel.curatedCategories,
         selectedCategory = selectedCategory,
         onCategorySelected = onCategorySelected,
-        // Shared debounced pipeline (SH-13): no per-keystroke coroutines.
+        // Shared debounced pipeline: no per-keystroke coroutines.
         onSearchQueryChange = { viewModel.updateSearchQuery(it) },
         onExitSearch = { viewModel.toggleSearchMode(false) },
         // Opening the sheet loads its option lists, once

@@ -19,7 +19,7 @@ class CocktailCraftApplication :
 
         // Shared app init: sets the log floor from this build's flag (release
         // keeps only warnings/errors), starts Koin with the shared modules and
-        // starts process-wide connectivity monitoring (SH-2).
+        // starts process-wide connectivity monitoring.
         initKoin(isDebug = BuildConfig.DEBUG) {
             androidLogger(if (BuildConfig.DEBUG) Level.INFO else Level.ERROR)
             androidContext(this@CocktailCraftApplication)

@@ -13,7 +13,7 @@ import kotlin.native.HiddenFromObjC
  * refresh-then-read snapshot. A stored page is the whole category; callers
  * page through it themselves.
  */
-@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+@HiddenFromObjC // Public for :presentation; not Swift API
 class LoadCocktailsByCategoryUseCase(private val catalogRepository: CocktailCatalogRepository) {
     /** The stored page of [category], re-emitted whenever it changes (e.g. after a refresh). */
     fun observe(category: String): Flow<List<Cocktail>> = catalogRepository.observeCategory(category)

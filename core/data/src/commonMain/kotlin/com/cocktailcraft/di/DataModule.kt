@@ -54,7 +54,7 @@ val dataModule = module {
             ignoreUnknownKeys = true
             isLenient = true
             // A JSON null for a non-nullable field with a default coerces to
-            // the default instead of failing the whole decode (SH-6).
+            // the default instead of failing the whole decode.
             coerceInputValues = true
         }
     }
@@ -72,7 +72,7 @@ val dataModule = module {
         CoroutineScope(SupervisorJob() + get<CoroutineDispatcher>(named("defaultDispatcher")))
     }
 
-    // Offline decision — single source of truth for "is the app offline" (AR-7)
+    // Offline decision — single source of truth for "is the app offline"
     single { com.cocktailcraft.data.cache.OfflineModePolicy(networkMonitor = get()) }
 
     // App database over the platform's SqlDriver (platformModule). Creating

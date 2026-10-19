@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
  * so a re-fired UI callback can only re-assert the same state.
  */
 class SharedThemeViewModel internal constructor(
-    // Direct repository dependency (AR-8): preferences are read and saved
+    // Direct repository dependency: preferences are read and saved
     // as they are, with nothing to wrap
     private val authRepository: AuthRepository
 ) : SharedViewModel() {

@@ -5,7 +5,7 @@ import org.koin.dsl.module
 import kotlin.native.HiddenFromObjC
 
 /** What the home-screen widgets show, on both platforms. */
-@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper (AR-12)
+@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper
 val widgetDataModule = module {
     single {
         WidgetDataSource(detailRepository = get(), offlineRepository = get(), favoritesRepository = get())
@@ -16,7 +16,7 @@ val widgetDataModule = module {
  * Main application module that combines all other modules.
  * This modular approach improves maintainability and testability.
  */
-@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper (AR-12)
+@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper
 val appModule = listOf(
     networkModule,
     dataModule,

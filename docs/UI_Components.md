@@ -14,8 +14,7 @@ This document provides an overview of the reusable UI components in the Cocktail
    - [ConfirmationDialog](#confirmationdialog)
    - [DetailInfoCard](#detailinfocard)
    - [RatingDisplay](#ratingdisplay)
-   - [ProfileCard](#profilecard)
-   - [AuthDialog](#authdialog)
+   - [Auth dialogs](#auth-dialogs)
    - [CocktailItem](#cocktailitem)
    - [AnimatedCocktailItem](#animatedcocktailitem)
    - [CartItemCard](#cartitemcard)
@@ -27,13 +26,19 @@ This document provides an overview of the reusable UI components in the Cocktail
    - [AnimatedIconButton](#animatediconbutton)
    - [AdvancedSearchBottomSheet](#advancedsearchbottomsheet)
    - [CocktailSearchBar](#cocktailsearchbar)
-   - [NetworkErrorStateDisplay](#networkerrordisplay)
+   - [NetworkErrorStateDisplay](#networkerrorstatedisplay)
+   - [ErrorStateView](#errorstateview)
    - [AnimatedCocktailList](#animatedcocktaillist)
    - [CategoryFilterRow](#categoryfilterrow)
    - [CocktailLoadingShimmer](#cocktailloadingshimmer)
+   - [HomeSortButton](#homesortbutton)
+   - [RecentlyViewedRow](#recentlyviewedrow)
+   - [OrderCard](#ordercard)
+   - [OfflineModeIndicator](#offlinemodeindicator)
+   - [WriteReviewSheet](#writereviewsheet)
+   - [Toasts (AppToasts.kt)](#toasts-apptoastskt)
 4. [Animations](#animations)
-5. [Refactoring Process](#refactoring-process)
-6. [Best Practices](#best-practices)
+5. [Best Practices](#best-practices)
 
 ## Introduction
 
@@ -114,14 +119,13 @@ SectionHeader(
 **Usage**:
 ```kotlin
 OrderSummaryCard(
-    subtotal = totalPrice,
-    deliveryFee = 5.99,
-    modifier = Modifier.padding(vertical = 8.dp),
-    currencyFormatter = currencyFormatter
+    subtotal = state.totalPrice,                 // Money (whole cents)
+    deliveryFee = DeliveryPolicy.STANDARD_FEE,   // the default
+    modifier = Modifier.padding(vertical = 8.dp)
 )
 ```
 
-**When to use**: In cart or checkout screens where you need to display an order summary.
+**When to use**: In cart or checkout screens where you need to display an order summary. Amounts are `Money`; the card formats them with the shared `Money.formatted()` (via `CurrencyFormatter`).
 
 ### ConfirmationDialog
 
@@ -149,19 +153,19 @@ ConfirmationDialog(
 **Usage**:
 ```kotlin
 DetailInfoCard(
-    title = "How to Prepare",
+    title = stringResource(MR.strings.how_to_prepare),
     modifier = Modifier.padding(vertical = 8.dp),
-    backgroundColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
-) {
-    // Content goes here
-    Text(
-        text = instructionsText,
-        fontSize = 15.sp,
-        color = MaterialTheme.colorScheme.onSurface,
-        lineHeight = 24.sp
-    )
-}
+    content = {
+        Text(
+            text = instructionsText,
+            color = MaterialTheme.colorScheme.onSurface,
+            lineHeight = 24.sp
+        )
+    }
+)
 ```
+
+`content` is not the last parameter (styling parameters follow it), so pass it by name rather than as a trailing lambda.
 
 **When to use**: For displaying detailed information in a card format, especially in detail screens.
 
@@ -181,40 +185,21 @@ RatingDisplay(
 
 **When to use**: When you need to display a rating with stars and review count, such as in product listings or detail screens.
 
-### ProfileCard
+### Auth dialogs
 
-**Purpose**: Displays user profile information with an avatar, name, email, and sign-in/sign-up buttons if not signed in.
-
-**Usage**:
-```kotlin
-ProfileCard(
-    userName = userName,
-    userEmail = userEmail,
-    isSignedIn = isSignedIn,
-    onSignIn = { showSignInDialog = true },
-    onSignUp = { showSignUpDialog = true }
-)
-```
-
-**When to use**: For profile screens to display user information and authentication options.
-
-### AuthDialog
-
-**Purpose**: Provides a dialog for user authentication (sign-in or sign-up).
+**Purpose**: The Profile screen's account dialogs, in `AuthDialogs.kt`: `SignInDialog`, `SignUpDialog`, `EditProfileDialog` and `ChangePasswordDialog`. Form state is `rememberSaveable`; each dialog stays open while its request runs (`isSubmitting` shows progress on the confirm button) and shows a failure inline (`errorMessage`). The caller closes it on success.
 
 **Usage**:
 ```kotlin
-AuthDialog(
-    type = AuthDialogType.SIGN_IN,
+SignInDialog(
     onDismiss = { showSignInDialog = false },
-    onSubmit = { name, email, password ->
-        profileViewModel.signIn(email, password)
-        showSignInDialog = false
-    }
+    onSignIn = { email, password -> profileViewModel.signIn(email, password) },
+    isSubmitting = isSigningIn,
+    errorMessage = signInError
 )
 ```
 
-**When to use**: When you need to display a sign-in or sign-up dialog for user authentication.
+**When to use**: For account actions on the Profile screen. (The profile header card itself is the screen-private `ProfileHeaderCard` in `ProfileScreen.kt`.)
 
 ### CocktailItem
 
@@ -236,7 +221,7 @@ CocktailItem(
 )
 ```
 
-**When to use**: In lists of cocktails, such as in the home screen or search results.
+**When to use**: The plain cocktail row; currently used by the Favorites screen. Home and search results use `AnimatedCocktailItem` (through `AnimatedCocktailList`).
 
 ### AnimatedCocktailItem
 
@@ -291,9 +276,9 @@ CartItemCard(
 **Usage**:
 ```kotlin
 FilterChip(
-    selected = selectedComplexity == complexity,
-    onClick = { onComplexitySelected(complexity) },
-    label = complexity.toString()
+    selected = selectedCategory == category,
+    onClick = { onCategorySelected(category) },
+    label = category
 )
 ```
 
@@ -416,7 +401,9 @@ CocktailSearchBar(
     onSearchQueryChange = { viewModel.searchCocktails(it) },
     onClearSearch = { viewModel.toggleSearchMode(false) },
     onToggleAdvancedSearch = { viewModel.toggleAdvancedSearchMode(!isAdvancedSearchActive) },
-    onShowAdvancedSearchDialog = { showAdvancedSearch = true }
+    trailingContent = {
+        HomeSortButton(selected = state.sortOption, onSelect = viewModel::setSortOption)
+    }
 )
 ```
 
@@ -489,6 +476,79 @@ CocktailLoadingShimmer(showHeader = false)  // Favorites: rows only
 
 **When to use**: When you need to display a loading state for cocktails, providing a better user experience than a simple spinner.
 
+### ErrorStateView
+
+**Purpose**: The full-screen error state (icon, title, message, retry button) for a load that failed with nothing to show — the counterpart of iOS's `ErrorView`. One overload takes a shared `ErrorHandler.UserFriendlyError` (its recovery action, when present, becomes the button); another takes explicit copy.
+
+```kotlin
+ErrorStateView(error = error, onRetry = { viewModel.retry() })
+```
+
+**When to use**: For a failed load with no content. Errors over content that is still on screen are toasts instead (`ErrorToastEffect`, below).
+
+### HomeSortButton
+
+**Purpose**: Home's sort control (`HomeSortMenu.kt`): an icon button styled like the advanced-search button (solid while a non-default sort is applied) that opens a dropdown of every shared `HomeSortOption`, the selected one checked.
+
+```kotlin
+HomeSortButton(selected = state.sortOption, onSelect = viewModel::setSortOption)
+```
+
+**When to use**: In the search bar's `trailingContent` on Home.
+
+### RecentlyViewedRow
+
+**Purpose**: Home's "Recently viewed" heading and horizontally scrolling row of compact cards, newest first. `horizontalBleed` lets the cards scroll to the screen edges while the first card lines up with the heading.
+
+```kotlin
+RecentlyViewedRow(
+    cocktails = state.recentlyViewed,
+    onCocktailClick = onCocktailClick,
+    horizontalBleed = 16.dp   // the list's horizontal content padding
+)
+```
+
+### OrderCard
+
+**Purpose**: An order in the order list: number and date, line items, total and a colored status indicator. With `onClick` the whole card opens the order's details.
+
+```kotlin
+OrderCard(order = order, onClick = { onOrderClick(order.id) })
+```
+
+### OfflineModeIndicator
+
+**Purpose**: The banner shown while the device is offline; stored content keeps rendering underneath. It is a polite live region, so TalkBack announces it when the connection drops.
+
+```kotlin
+OfflineModeIndicator(isOffline = isOffline)
+```
+
+### WriteReviewSheet
+
+**Purpose**: The write-a-review bottom sheet (name, 1–5 star picker, comment with a counter, Submit). `onSubmit` returns whether the review was saved; the sheet closes only then, otherwise it stays open with `submissionError` shown inline.
+
+```kotlin
+WriteReviewSheet(
+    submissionError = reviewError,
+    onDismiss = { showReviewSheet = false },
+    onClearError = { reviewViewModel.clearError() },
+    onSubmit = { name, rating, comment -> reviewViewModel.submitReview(cocktailId, rating, comment, name) }
+)
+```
+
+### Toasts (AppToasts.kt)
+
+**Purpose**: The app's success and error toasts, rendered by `ToastSnackbarHost` from a shared `LocalToastHostState`.
+
+- **`UiEventToasts(viewModel.events)`** shows a shared ViewModel's one-shot `UiEvent`s and runs an event's action when its button is tapped — this is how cart and favorite removals offer **Undo**. Collect each ViewModel's events in one place only.
+- **`SnackbarHostState.showSuccessToast(message)`** shows a 2-second success toast; **`showSuccessToast(message, actionLabel)`** shows one with an action (e.g. Undo) that stays up long enough to reach with TalkBack and returns the `SnackbarResult`.
+- **`ErrorToastEffect(error, onConsumed)`** shows a ViewModel error over content that is still on screen.
+
+```kotlin
+UiEventToasts(sharedCartViewModel.events)
+```
+
 ## Animations
 
 The animation system consists of shared utilities in `androidApp/src/main/java/com/cocktailcraft/android/ui/animation/AnimationUtils.kt` and the animated components in `ui/components/` described above.
@@ -506,11 +566,11 @@ The animation system consists of shared utilities in `androidApp/src/main/java/c
 `AnimatedCocktailBarTheme` (`ui/theme/AnimatedTheme.kt`) is the app's single
 theme. Its Material 3 color scheme is built in `ui/theme/Theme.kt`
 (`cocktailColorScheme`) from the shared `ColorTokens`
-(`shared/.../designsystem/DesignTokens.kt`) and honours the accent color
+(`core/designsystem/src/commonMain/kotlin/com/cocktailcraft/designsystem/DesignTokens.kt`) and honours the accent color
 (primary) and high-contrast setting (stronger secondary text) from the shared
 theme state. Android has no in-app controls for these (the Profile screen has
 no Appearance section); iOS sets them in its Settings sheet. Read
-colors only through the theme — there is no global color object (AN-5):
+colors only through the theme — there is no global color object:
 
 - **`MaterialTheme.colorScheme`** for every role Material defines
 - **`CocktailCraftTheme.extendedColors`** for brand/semantic colors Material
@@ -554,11 +614,6 @@ Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme
 
 ```kotlin
 AnimatedCocktailBarTheme(darkTheme = isDarkMode) { /* app content */ }
-
-AnimatedThemeSwitch(
-    isDarkMode = isDarkMode,
-    onToggle = { themeViewModel.toggleDarkMode() }
-)
 ```
 
 ### Shimmer Loading
@@ -585,40 +640,6 @@ OrderListLoadingShimmer()   // order cards (OrderCardShimmer)
 `AnimatedCocktailItem` adds a spring-based hover-scale effect on the card itself; there is no per-index stagger.
 
 Screen-to-screen navigation uses the `NavHost` defaults — no custom enter/exit transitions are wired.
-
-## Refactoring Process
-
-When refactoring UI code to use reusable components, follow these steps:
-
-1. **Identify patterns**: Look for repeated UI patterns across different screens
-2. **Extract components**: Create reusable components for these patterns
-3. **Parameterize**: Make components flexible with parameters for variations
-4. **Replace instances**: Update all occurrences to use the new components
-5. **Test thoroughly**: Ensure the refactored code works as expected
-
-Recent refactoring in the CocktailCraft app focused on:
-
-**First Phase:**
-- Creating standardized empty states
-- Extracting header images with gradient overlays
-- Standardizing section headers
-- Creating reusable cards for different types of information
-- Implementing consistent loading states
-
-**Second Phase:**
-- Creating status indicators for order status and network status
-- Extracting settings cards for profile and settings screens
-- Extracting profile cards for user information
-- Implementing authentication dialogs for sign-in and sign-up
-
-**Third Phase:**
-- Creating a reusable search bar with advanced search functionality
-- Implementing a network error state display
-- Extracting an animated cocktail list with pagination
-- Creating a category filter row for content filtering
-- Implementing a shimmer loading effect for cocktails
-- Creating an end-of-list indicator for pagination
-- Extracting filter options loading logic into a utility
 
 ## Best Practices
 

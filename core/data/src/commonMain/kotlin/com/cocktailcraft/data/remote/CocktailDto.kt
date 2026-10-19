@@ -16,7 +16,7 @@ private val drinksAsString = Regex("""^\s*\{\s*"drinks"\s*:\s*"""")
 
 /**
  * Decodes a drinks response (search, lookup, random and filter.php) in a
- * single streaming pass, with TheCocktailDB's quirks shielded (SH-6): some
+ * single streaming pass, with TheCocktailDB's quirks shielded: some
  * empty-result endpoints return the literal string "no data found" for
  * `drinks` instead of null/[], which reads as an empty list, and payloads
  * occasionally contain a malformed record without idDrink/strDrink, which is

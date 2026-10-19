@@ -1,5 +1,5 @@
 [versions]
-# Build convention values (AR-10) — single source for SDK levels and the JVM
+# Build convention values — single source for SDK levels and the JVM
 # target consumed by the KMP convention plugin (build-logic) and the
 # androidApp/baselineprofile build files. minSdk is NOT centralized on
 # purpose: the KMP libraries/androidApp use 24, baselineprofile needs 28

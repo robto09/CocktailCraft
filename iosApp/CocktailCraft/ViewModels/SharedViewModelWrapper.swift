@@ -133,7 +133,7 @@ class SharedViewModelWrapper<UiState: AnyObject> {
 }
 
 /**
- * Builds a view's ViewModel wrapper exactly once per view identity (IO-13).
+ * Builds a view's ViewModel wrapper exactly once per view identity.
  *
  * `@State var viewModel = SomeViewModelSKIE()` evaluates the initializer
  * every time a parent re-renders and re-creates the view struct. SwiftUI

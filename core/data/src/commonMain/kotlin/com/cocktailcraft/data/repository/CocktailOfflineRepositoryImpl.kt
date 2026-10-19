@@ -10,7 +10,7 @@ import com.cocktailcraft.util.runCatchingResult
 /**
  * Connectivity state and cached-data access, extracted from the former
  * CocktailRepositoryImpl god class. The offline decision itself lives in
- * [OfflineModePolicy] (AR-7); this repository is the public API over it.
+ * [OfflineModePolicy]; this repository is the public API over it.
  */
 internal class CocktailOfflineRepositoryImpl(
     private val offlineModePolicy: OfflineModePolicy,

@@ -4,7 +4,7 @@ import shared
 struct CartView: View {
     // Injected via .environment(cartViewModel) at the ContentView root
     @Environment(CartViewModelSKIE.self) private var cartViewModel
-    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    // Built once via ViewModelHolder, not on every parent re-render
     @State private var orderModel = ViewModelHolder(OrderViewModelSKIE.init)
     // Cart rows carry a favorite heart, as on Android
     @State private var favoritesModel = ViewModelHolder(FavoritesViewModelSKIE.init)

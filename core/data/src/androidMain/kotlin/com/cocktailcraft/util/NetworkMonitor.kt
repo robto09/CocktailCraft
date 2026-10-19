@@ -53,7 +53,7 @@ class AndroidNetworkMonitor(private val context: Context) :
 
     // Registering the same NetworkCallback twice throws IllegalArgumentException,
     // so start/stop are idempotent: the monitor is a Koin single shared by
-    // several consumers and must tolerate repeated lifecycle calls (SH-2).
+    // several consumers and must tolerate repeated lifecycle calls.
     private var registered = false
 
     override fun startMonitoring() {

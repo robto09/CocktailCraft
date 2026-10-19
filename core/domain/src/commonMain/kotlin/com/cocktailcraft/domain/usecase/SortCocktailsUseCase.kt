@@ -3,7 +3,7 @@ package com.cocktailcraft.domain.usecase
 import com.cocktailcraft.domain.model.Cocktail
 import kotlin.native.HiddenFromObjC
 
-@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+@HiddenFromObjC // Public for :presentation; not Swift API
 class SortCocktailsUseCase {
     /**
      * Sorts [cocktails] by [sortType]. The sorts are stable, so ties keep

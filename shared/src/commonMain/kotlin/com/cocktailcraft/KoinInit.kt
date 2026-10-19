@@ -17,7 +17,7 @@ import kotlin.native.HiddenFromObjC
  * iOS test mode (doInitKoinForTesting) swaps in its isolated storage and fake
  * network this way.
  */
-@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper (AR-12)
+@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper
 fun initKoin(
     isDebug: Boolean,
     overrides: List<Module> = emptyList(),
@@ -30,7 +30,7 @@ fun initKoin(
         modules(appModule + platformModule() + overrides)
     }.also {
         // Process-wide connectivity monitoring starts once with the DI graph.
-        // ViewModels only observe isOnline; they never start/stop the monitor (SH-2).
+        // ViewModels only observe isOnline; they never start/stop the monitor.
         it.koin.get<NetworkMonitor>().startMonitoring()
     }
 }

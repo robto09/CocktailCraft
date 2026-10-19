@@ -19,7 +19,7 @@ import org.koin.dsl.module
 
 @OptIn(ExperimentalSettingsImplementation::class, kotlin.experimental.ExperimentalNativeApi::class)
 actual fun dataPlatformModule() = module {
-    // Debug-aware config (AR-4): the K/N binary genuinely differs Debug vs
+    // Debug-aware config: the K/N binary genuinely differs Debug vs
     // Release per Xcode configuration (embedAndSignAppleFrameworkForXcode builds
     // the framework variant matching $CONFIGURATION).
     single<AppConfig> { AppConfigImpl(verboseNetworkLogging = Platform.isDebugBinary) }

@@ -3,7 +3,7 @@ import shared
 
 struct ContentView: View {
     @State private var router = AppRouter()
-    // Built once via ViewModelHolder, not on every re-render (IO-13)
+    // Built once via ViewModelHolder, not on every re-render
     @State private var cartModel = ViewModelHolder(CartViewModelSKIE.init)
     private var cartViewModel: CartViewModelSKIE { cartModel.wrapper }
     private let themeViewModel = ThemeViewModelSKIE.shared
@@ -90,7 +90,7 @@ struct ContentView: View {
             }
         }
         #if DEBUG
-        // UI-test hook (IO-7): XCUITest cannot deliver a custom-scheme URL
+        // UI-test hook: XCUITest cannot deliver a custom-scheme URL
         // to a cold-launching app reliably, so DeepLinkTests injects the
         // widget deep link's cocktail id through the launch environment and
         // this drives the same openCocktailDetail path onOpenURL uses.

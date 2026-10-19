@@ -24,7 +24,7 @@ kotlin {
             api(project(":core:domain"))
             // ThemeViewModel maps accent/color tokens
             implementation(project(":core:designsystem"))
-            // Deliberately api(), not implementation() (AR-12): the shared
+            // Deliberately api(), not implementation(): the shared
             // ViewModels extend androidx ViewModel, so the type must be on the
             // consumers' compile classpath; demoting it breaks androidApp.
             // Export-surface trimming happens via @HiddenFromObjC on

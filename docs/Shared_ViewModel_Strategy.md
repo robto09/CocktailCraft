@@ -1,424 +1,258 @@
-# ViewModel Architecture & Shared ViewModel Strategy
+# Shared ViewModel Strategy
 
-## Executive Summary
+The screens of both apps are driven by ViewModels written once in Kotlin, in
+the `:presentation` module. Android's Compose screens use them directly; the
+iOS app wraps each one in a thin Swift adapter that SKIE makes possible. This
+document describes that contract and how each platform consumes it.
 
-This document describes the **completed implementation** of shared ViewModels using Kotlin Multiplatform (KMP) with SKIE integration, and explains why the architecture is layered the way it is. All 8 shared ViewModels (plus the `SharedViewModel` base class) have been successfully implemented, providing significant benefits in code reuse, maintainability, and development velocity while maintaining native performance and user experience.
+## ViewModel inventory
 
-## ViewModel Inventory
+### Shared ViewModels (Kotlin)
 
-### Shared ViewModels (Kotlin Multiplatform)
-**Location**: `presentation/src/commonMain/kotlin/com/cocktailcraft/viewmodel/` (the `:presentation` module, re-exported to Android and Swift by the `:shared` umbrella)
+**Location**: `presentation/src/commonMain/kotlin/com/cocktailcraft/viewmodel/`
+(`:presentation`, re-exported to Android and Swift by the `:shared` umbrella).
+Their state classes are in `viewmodel/state/`.
 
-**8 ViewModels + base class** — these contain the business logic, state management, and data operations, written once and used by both platforms:
+Nine ViewModels on the `SharedViewModel` base class, registered in
+`presentation/.../di/PresentationModule.kt` (the use cases they take come from
+`DomainModule.kt`, which also lives in `:presentation`):
 
-- ✅ **SharedHomeViewModel**: Home screen with cocktail browsing and search (including network-state handling and offline cache fallback)
-- ✅ **SharedCartViewModel**: Shopping cart management
-- ✅ **SharedCocktailDetailViewModel**: Individual cocktail details
-- ✅ **SharedFavoritesViewModel**: Favorites management
-- ✅ **SharedProfileViewModel**: User profile and authentication
-- ✅ **SharedOrderViewModel**: Order placement and history
-- ✅ **SharedThemeViewModel**: Theme and accessibility settings
-- ✅ **SharedReviewViewModel**: Review system with ratings
-- ✅ **SharedViewModel**: Base class with common functionality
+| ViewModel | Scope | Screen |
+|-----------|-------|--------|
+| `SharedHomeViewModel` | `single` | Home: catalog by category, debounced and advanced search, sort, recently viewed, review averages, offline fallback |
+| `SharedCartViewModel` | `single` | Cart, plus add-to-cart from Home and Favorites |
+| `SharedFavoritesViewModel` | `single` | Favorites |
+| `SharedOrderViewModel` | `single` | Order list and placing an order |
+| `SharedProfileViewModel` | `single` | Profile: sign-in, sign-up, sign-out, profile edit, password change |
+| `SharedThemeViewModel` | `single` | Theme and accessibility settings |
+| `SharedCocktailDetailViewModel` | `viewModel {}` (screen) | Cocktail detail |
+| `SharedReviewViewModel` | `viewModel {}` (screen) | A cocktail's reviews and the review sheet |
+| `SharedOrderDetailViewModel` | `viewModel {}` (screen) | Order detail: cancel and reorder |
 
-### iOS SKIE Wrapper ViewModels
-**Location**: `iosApp/CocktailCraft/ViewModels/`
+The `single`s are shared by every screen and live for the whole process: a
+Koin `single` never goes through a `ViewModelStore`, so `onCleared()` never
+runs on them (see the scoping notes in `PresentationModule.kt`). The
+screen-scoped ones are a new instance per screen; anything that belongs to
+one screen (its loading flags, the item it shows) lives in one of those,
+never in a singleton.
 
-**8 wrappers + base class** — thin platform adapters that make the shared ViewModels work with SwiftUI's Observation (`@Observable`) patterns:
+### iOS wrappers (Swift)
 
-- CartViewModelSKIE.swift
-- CocktailDetailViewModelSKIE.swift
-- FavoritesViewModelSKIE.swift
-- HomeViewModelSKIE.swift
-- OrderViewModelSKIE.swift
-- ProfileViewModelSKIE.swift
-- ReviewViewModelSKIE.swift
-- ThemeViewModelSKIE.swift
-- SharedViewModelWrapper.swift (base class owning state/error mirroring, `clearError()`, observation-task lifecycle, and teardown of owned factory instances)
+**Location**: `iosApp/CocktailCraft/ViewModels/`. One wrapper per shared
+ViewModel the app uses, on the `SharedViewModelWrapper` base class:
+`HomeViewModelSKIE`, `CartViewModelSKIE`, `FavoritesViewModelSKIE`,
+`OrderViewModelSKIE`, `ProfileViewModelSKIE`, `ThemeViewModelSKIE`,
+`CocktailDetailViewModelSKIE`, `ReviewViewModelSKIE` and
+`OrderDetailViewModelSKIE`.
 
-### Android — No Wrapper Layer
+### Android: no wrapper layer
 
-Android has **no wrapper ViewModels**. The shared ViewModels extend the multiplatform androidx `ViewModel`, so Compose screens consume them directly:
+The shared ViewModels extend the multiplatform androidx `ViewModel`, so
+Compose screens use them as they are.
 
-- Screen-scoped ones (`viewModel { ... }` in `PresentationModule.kt`: cocktail detail, reviews, order detail) resolve via `koinViewModel<SharedCocktailDetailViewModel>()`, scoped to the nav back-stack entry. Anything that belongs to one screen — its loading flags, the item it shows — lives in a screen-scoped ViewModel, never in a singleton
-- Global-state ones (Koin `single`) are shared across screens and persist across navigation
-- Each screen collects `uiState` once with `collectAsStateWithLifecycle()` and passes it, plus intent lambdas, to a stateless `*Content` composable
+## The contract
 
-## The ViewModel Contract: One State, Plain Intents, One Error Channel
+Every shared ViewModel exposes the same surface, and both platforms use only
+that surface.
 
-Every shared ViewModel follows the same three rules, and both platforms consume only that surface.
+### State: one `uiState`
 
-### 1. `uiState` is the single public state surface
+- Each ViewModel has exactly one `val uiState: StateFlow<XxxUiState>`, backed
+  by a private `MutableStateFlow` and changed with `update { it.copy(...) }`.
+- The `XxxUiState` classes are immutable, val-only data classes, declared
+  stable for Compose in `androidApp/compose-stability-config.conf`.
+- Values derived from state live on the state, as getters or as fields set
+  in the same update as their source (`CartUiState.finalTotal`,
+  `DetailUiState.shareableText`, `ThemeUiState.isDarkMode`), so every
+  emission is self-consistent and every read is observed on both platforms.
+- There are no per-field `StateFlow`s and no getters on the ViewModel that
+  read `_uiState.value`: Compose and SwiftUI Observation can't see such a
+  read, so it renders stale data. A ViewModel may still have constant option
+  lists (`curatedCategories`) and pure helpers that take their input as a
+  parameter (`isValidEmail(email)`).
 
-- Each ViewModel exposes exactly one `val uiState: StateFlow<XxxUiState>`, backed by a private `MutableStateFlow` and updated atomically with `update { it.copy(...) }`.
-- The `XxxUiState` classes live in `viewmodel/state/`. They are immutable, val-only data classes, declared Compose-stable in `androidApp/compose-stability-config.conf` (AN-1), so a whole state can be passed into a composable that still skips.
-- Values a screen needs that are *derived* from state live **on the state**, not on the ViewModel: plain getters over the constructor vals (`CartUiState.deliveryFee`/`finalTotal`, `DetailUiState.shareableText`, `ThemeUiState.isDarkMode`/`themeModeDisplayName`), or fields published in the same update as their source. Every emission is therefore self-consistent, and reads are reactive on both platforms.
-- There are **no** per-field `StateFlow`s and **no** snapshot getters that read `_uiState.value` (no `isEmpty`, `hasItems`, `getFinalTotal()`, `isFavorite(id)`, …). A snapshot getter is invisible to Compose recomposition and to SwiftUI Observation, so it can silently render stale data.
-- What *may* stay on a ViewModel: constant option lists (`curatedCategories`, `availableFontSizes`) and pure helpers that take their input as a parameter and never read state (`isValidEmail(email)`, `getFontSizeDisplayName(size)`).
+### Errors: the consumable `error`
 
-### 2. Intents are plain public methods
+`SharedViewModel` has one error channel for every subclass:
+`val error: StateFlow<UserFriendlyError?>` plus `clearError()`. It is a
+`StateFlow`, not an event, on purpose: an error raised while nothing collects
+(a configuration change, a wrapper being recreated) is still there when the
+UI observes again, and the UI clears it once it has shown it. Every load or
+action clears it when it starts. Failures are mapped to a user-facing error
+in one place, `ErrorHandler`.
 
-- No sealed `Intent`/`onEvent` dispatcher — intents are ordinary methods named for the action (`addToCart`, `applyFilters`, `setHighContrast`).
-- Every intent runs its work on `viewModelScope`, never in the caller's coroutine, so a screen that goes away (a left composition, a cancelled Swift `Task`) cannot abort a save or a refresh halfway. Most intents are plain `fun`s that launch and report back through `uiState`/`error`/`events` (`selectCategory`, `toggleFavorite`, `removeFromCart`, `setHighContrast`, `cancelOrder`); Android and Swift call them directly, without a coroutine or `Task`.
-- An intent stays `suspend` only when its caller must wait for it: a result to branch on (`placeOrder`, `signIn`, `submitReview` return `Boolean`; `addToCart` returns its outcome) or the end of a pull-to-refresh (`refresh`, `loadFavorites`, `loadOrders`). It runs through `runInViewModelScope`, so cancelling the caller only stops the waiting, and it is `@Throws(Exception::class)`: without it, an exception reaching Swift terminates the app instead of becoming an error.
-- Every `catch` rethrows `CancellationException` (`runCatchingNonCancellation`, `runCatchingResult`): cancellation is teardown, never a failure to report.
-- Mutations are value-based where re-firing is possible: `setHighContrast(enabled)`, not `toggleHighContrast()`, so a re-delivered UI callback can only re-assert the same state.
+### Events: `events`, collected by the owning screen
 
-### 3. One-shot events: the consumable `error`, screen events, intent results
+`SharedViewModel.events` is a `SharedFlow<UiEvent>` with no replay for
+one-off outcomes a screen toasts: "Removed … from cart" with an Undo action,
+"Order cancelled", "Password changed". Only the screen that owns the
+ViewModel collects them, never an app-wide host:
 
-Each kind of one-shot outcome has one channel:
+| Screen | Android (`UiEventToasts`) | iOS (`.sharedEventToast`) |
+|--------|---------------------------|---------------------------|
+| Cart | `CartScreen` | `CartView` |
+| Favorites | `FavoritesScreen` | `FavoritesView` |
+| Profile | `ProfileScreen` | `ProfileView` |
+| Cocktail detail | `CocktailDetailScreen` | `CocktailDetailView` |
+| Order detail | `OrderDetailScreen` | `OrderDetailView` |
 
-- **Errors (alerts, error states)** use the single consumable channel on the `SharedViewModel` base class: `val error: StateFlow<UserFriendlyError?>` plus `clearError()`. It is a `StateFlow` rather than a `Channel` on purpose — an error raised while no screen is collecting (a wrapper being recreated, a configuration change) is still there when the UI next observes, and it is consumed explicitly once shown.
-- **Toasts a screen owns** ("Removed … from cart" with Undo, "Order cancelled") are `UiEvent`s on the base class's `events` `SharedFlow`, collected only by the screen that owns the ViewModel (Cart, Favorites, Profile, the detail screens) — never app-wide.
-- **Outcomes of cross-screen actions** go back to the caller instead: `SharedCartViewModel.addToCart` runs from Home and Favorites and returns its `UiEvent`, which that screen toasts. Intents that gate navigation return their result (`placeOrder`, `signIn`, `signUp`, `submitReview` return `Boolean`), and the screen navigates or confirms when it resumes (e.g. iOS switching to the Orders tab after `placeOrder`). Haptics fire in the UI at tap time.
+An action that runs from another screen returns its outcome to that caller
+instead: `SharedCartViewModel.addToCart` is called from Home and Favorites
+and returns the `UiEvent` the caller toasts, so a failure never surfaces
+later on the Cart tab. (The detail screen adds to the cart through its own
+ViewModel, whose `events` it already collects.)
 
-## Architecture Pattern: Shared Business Logic + Platform Adapters
+### Actions run in `viewModelScope`
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                   Shared Module (KMP)                    │
-├─────────────────────────────────────────────────────────┤
-│  SharedViewModel (Base)                                  │
-│  ├── SharedHomeViewModel                                 │
-│  ├── SharedCartViewModel                                 │
-│  ├── SharedCocktailDetailViewModel                       │
-│  ├── SharedFavoritesViewModel                            │
-│  ├── SharedProfileViewModel                              │
-│  ├── SharedOrderViewModel                                │
-│  ├── SharedThemeViewModel                                │
-│  └── SharedReviewViewModel                               │
-└─────────────────────────────────────────────────────────┘
-                     │                    │
-                     ▼                    ▼
-      ┌──────────────────────┐  ┌──────────────────────┐
-      │       iOS App         │  │     Android App      │
-      ├──────────────────────┤  ├──────────────────────┤
-      │ SKIE Wrapper Classes  │  │ Direct consumption   │
-      │ - Native Swift async  │  │ - koinViewModel() /  │
-      │ - StateFlow→AsyncSeq  │  │   Koin singles       │
-      │ - MainActor patterns  │  │ - Lifecycle-aware    │
-      │ - 8 wrappers + base   │  │ - Stateless *Content │
-      └──────────────────────┘  └──────────────────────┘
-```
+- Actions are plain public methods named for what they do (`selectCategory`,
+  `toggleFavorite`, `removeFromCart`, `setHighContrast`); there is no
+  `Intent`/`onEvent` dispatcher.
+- Every action runs its work in `viewModelScope`, never in the caller's
+  coroutine, so a screen that goes away (a composition left, a Swift `Task`
+  cancelled) can't stop a write or a refresh halfway. Most actions are plain
+  `fun`s that launch their work and report back through `uiState`, `error`
+  and `events`; both platforms call them without a coroutine or `Task`.
+- An action is `suspend` only when its caller has to wait for it: a result
+  to branch on (`placeOrder`, `signIn`, `signUp`, `submitReview` return
+  `Boolean`; `addToCart` returns its `UiEvent`) or the end of a
+  pull-to-refresh (`refresh`, `loadFavorites`, `loadOrders`). It runs its
+  body through `runInViewModelScope`, so cancelling the caller only stops the
+  waiting.
+- Every Swift-facing `suspend` function is `@Throws(Exception::class)`:
+  without it, an exception that reaches Swift terminates the app instead of
+  becoming a Swift error.
+- Every `catch` rethrows `CancellationException`
+  (`runCatchingNonCancellation`, `runCatchingResult`): cancellation is
+  teardown, not a failure to report.
+- Changes are value-based where a callback could fire twice:
+  `setHighContrast(enabled)`, not `toggleHighContrast()`.
 
-### What Each Layer Does
+## Android
 
-**Shared ViewModels (Kotlin)**:
-- Business logic and state management
-- Data operations and API calls
-- Error handling and validation
-- Cross-platform consistency
+Screen-scoped ViewModels are resolved with `koinViewModel()` inside their
+navigation destination, scoped to its back-stack entry. The `single`s are
+resolved with `koinInject()`; `MainScreen` resolves only the cart and
+favorites ViewModels its chrome needs on every tab, and Home and Orders are
+resolved by the destinations that use them.
 
-**iOS SKIE Wrappers (Swift)**:
-- SwiftUI integration (`@ObservableObject`, `@Published`)
-- StateFlow → AsyncSequence conversion
-- MainActor threading for UI updates
-- iOS-specific lifecycle management
-
-**Android (direct consumption)**:
-- The shared ViewModels ARE AndroidX ViewModels (multiplatform artifact)
-- Compose state management via `uiState.collectAsStateWithLifecycle()`, collected once per screen
-- Stateless `*Content` composables (state + lambdas in), previewable and screenshot-testable without a ViewModel
-- `koinViewModel()` scoping for screen-scoped instances
-- No adapter code to maintain
-
-## Architecture Implementation
-
-### Shared Layer (Kotlin)
-```kotlin
-// Base class for all shared ViewModels — on the multiplatform androidx
-// ViewModel. Dependencies are constructor-injected so subclasses can be
-// built without a Koin container. There is deliberately no shared
-// isLoading flow: loading state lives in each screen's UiState.
-abstract class SharedViewModel : ViewModel() {
-
-    // The single consumable error channel (the one-shot pattern), observed
-    // by both platforms for error UI and cleared with clearError()
-    private val _error = MutableStateFlow<ErrorHandler.UserFriendlyError?>(null)
-    val error: StateFlow<ErrorHandler.UserFriendlyError?> = _error.asStateFlow()
-
-    protected open fun handleException(
-        exception: Throwable,
-        defaultMessage: StringResource = MR.strings.error_generic,
-        recoveryAction: ErrorHandler.RecoveryAction? = null
-    ) { /* CancellationException guard + ErrorHandler classification */ }
-}
-
-// Example: SharedHomeViewModel (constructor-injected use cases, wired in
-// DomainModule.kt; state is a single consolidated HomeUiState flow)
-class SharedHomeViewModel internal constructor(
-    private val searchCocktailsUseCase: SearchCocktailsUseCase,
-    private val loadCocktailsByCategoryUseCase: LoadCocktailsByCategoryUseCase,
-    private val sortCocktailsUseCase: SortCocktailsUseCase,
-    private val manageFavoritesUseCase: ManageFavoritesUseCase,
-    private val offlineRepository: CocktailOfflineRepository,
-    private val catalogRepository: CocktailCatalogRepository,
-    private val networkMonitor: NetworkMonitor,
-    private val manageReviewsUseCase: ManageReviewsUseCase
-) : SharedViewModel() {
-
-    private val _uiState = MutableStateFlow(HomeUiState())
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
-
-    fun selectCategory(category: String?) { /* one tracked listing load */ }
-    fun updateSearchQuery(query: String) { /* debounced search pipeline */ }
-
-    @Throws(Exception::class)
-    suspend fun refresh() { /* reload on viewModelScope, awaited */ }
-}
-```
-
-### iOS Integration (Swift)
-
-iOS wraps each consumed shared ViewModel in a thin `*SKIE` adapter built on `SharedViewModelWrapper`, which owns the state/error mirroring, `clearError()`, the observation-task lifecycle and (for the factory-scoped detail/review wrappers, via `ownsViewModel: true`) clearing the owned shared instance. Views read `viewModel.state.<field>` from the single mirrored `UiState` — including derived values such as `cartViewModel.state.finalTotal` — so every read is Observation-tracked. Subclasses contain only intent forwarders and Swift-only presentation formatting (colors, SF Symbols, string formatting); they do not re-publish individual state fields or forward snapshot getters:
-
-```swift
-// iosApp/CocktailCraft/ViewModels/HomeViewModelSKIE.swift
-final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
-
-    private let sharedViewModel: SharedHomeViewModel
-
-    init() {
-        let viewModel = getSharedKoinHelper().getSharedHomeViewModel()
-        self.sharedViewModel = viewModel
-        super.init(viewModel: viewModel, uiState: viewModel.uiState)
-    }
-
-    // Fire-and-forget intents are called directly
-    func selectCategory(_ category: String?) {
-        sharedViewModel.selectCategory(category: category)
-    }
-
-    // SKIE bridges Kotlin suspend functions to Swift async/await
-    func refreshCocktails() async {
-        await run { try await sharedViewModel.refresh() }
-    }
-
-    func updateSearchQuery(_ query: String) {
-        sharedViewModel.updateSearchQuery(query: query)
-    }
-}
-```
-
-### Android Integration (Kotlin)
-
-Android has **no wrapper layer**: the shared ViewModels extend the multiplatform androidx `ViewModel`, so Compose screens consume them directly.
-
-```kotlin
-// Screen-scoped ViewModels (registered with `viewModel { ... }` in
-// DomainModule.kt) resolve via koinViewModel(), scoped to the nav
-// back-stack entry:
-val detailViewModel = koinViewModel<SharedCocktailDetailViewModel>()
-
-// Global-state ViewModels (registered as Koin `single`) are shared across
-// screens and persist across navigation.
-```
-
-Each screen is split into a stateful entry point and a stateless content composable. The screen resolves the ViewModel(s), collects `uiState` (and `error`) once, runs effects, owns the coroutine scope and navigation, and hands state plus intent lambdas down; the `internal` `*Content` composable renders and owns only UI-local state (dialog visibility, snackbar host, haptics):
+Each screen is a stateful entry point plus a stateless `internal`
+`*Content` composable. The entry point resolves the ViewModel, collects
+`uiState` and `error` once with `collectAsStateWithLifecycle()`, collects its
+own `events`, and passes state and action lambdas down:
 
 ```kotlin
 @Composable
 fun CartScreen(viewModel: SharedCartViewModel, /* ... */) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
+    UiEventToasts(viewModel.events)
 
     CartContent(
         state = state,
         error = error,
-        onRemove = { item -> scope.launch { viewModel.removeFromCart(item.cocktail.id) } },
-        onConfirmOrder = { scope.launch { /* placeOrder, then navigate */ } },
+        onRemove = { item -> viewModel.removeFromCart(item.cocktail.id) },
         /* ... */
     )
 }
-
-@Composable
-internal fun CartContent(state: CartUiState, error: UserFriendlyError?, /* lambdas */) { /* UI only */ }
 ```
 
-The same split exists for Home, Favorites, Orders, Cocktail Detail and Profile (`HomeContent`, `FavoritesContent`, `OrderListContent`, `CocktailDetailContent`, `ProfileContent`).
+The same split exists for Home, Favorites, Orders, Order detail, Cocktail
+detail and Profile, which is what the previews and Roborazzi screenshot
+tests render.
 
-## SKIE Enhanced Features
+## iOS
 
-### 1. StateFlow → AsyncSequence Conversion
-- ✅ **Automatic**: No manual conversion required
-- ✅ **Type Safe**: Generics preserved (e.g., `StateFlow<List<Cocktail>>` → `AsyncSequence<[Cocktail]>`)
-- ✅ **Performance**: Zero overhead native Swift implementation
+SwiftUI can't observe a Kotlin `StateFlow`, so each shared ViewModel gets a
+wrapper. `SharedViewModelWrapper` is `@MainActor @Observable` and does
+everything the wrappers have in common:
 
-### 2. Suspend Functions → Async Functions
-- ✅ **Native Integration**: Kotlin suspend functions become Swift async functions
-- ✅ **Cancellation**: Proper Swift Task cancellation support
-- ✅ **Error Handling**: Kotlin exceptions properly propagated
+- seeds `state` synchronously from `uiState.value`, so the first frame shows
+  current data, then mirrors `uiState`, `error` and `events` into the
+  Observation-tracked `state`, `error` and `event` properties through SKIE's
+  `AsyncSequence` bridging;
+- forwards `clearError()` and offers `clearEvent()` for the mirrored event;
+- cancels its observation tasks on deinit and, for the screen-scoped
+  ViewModels it owns (`ownsViewModel: true`), clears the shared instance
+  through `KoinHelper.clearScreenViewModel`, the way Android's
+  `ViewModelStore` would;
+- runs forwarded `suspend` calls through `run { }`, the one place a failure
+  is logged (the user sees it through `error`).
 
-### 3. Enhanced Interop
-- ✅ **Enum Support**: Better enum handling across platforms
-- ✅ **Sealed Classes**: Swift enum-like behavior
-- ✅ **Default Arguments**: Cleaner Swift APIs
-
-## SKIE's Value: With vs Without
-
-SKIE does not eliminate the iOS wrapper layer — it makes each wrapper dramatically simpler.
-
-### ✅ With SKIE (Current Implementation)
-
-**SKIE's magic**: automatic conversion of Kotlin types to native platform types
-- `StateFlow<List<Cocktail>>` → Swift `AsyncSequence<[Cocktail]>`
-- `suspend fun refresh()` → Swift `async func refresh()`
-- Kotlin `Flow` → Swift `AsyncSequence`
-- Type safety with generics preserved
-
-The `HomeViewModelSKIE` example above is the entire wrapper — roughly 20 lines, with `SharedViewModelWrapper` owning the `uiState`/`error` mirroring.
-
-### ❌ Without SKIE (Manual Bridge Code)
+Views read `viewModel.state.<field>`. Subclasses only forward actions and add
+Swift-only formatting; they never re-publish individual fields:
 
 ```swift
-// Without SKIE - would need ~80+ lines of complex bridge code
-@MainActor
-class HomeViewModelManual: ObservableObject {
-    @Published var cocktails: [Cocktail] = []
-    private let sharedViewModel: SharedHomeViewModel
+final class CartViewModelSKIE: SharedViewModelWrapper<CartUiState> {
+    private let sharedViewModel: SharedCartViewModel
 
     init() {
-        self.sharedViewModel = KoinInitializer.shared.getSharedHomeViewModel()
-        // Manual Flow collection with custom collectors
-        let collector = FlowValueCollector<NSArray>()
-        Task {
-            try await sharedViewModel.cocktails.collect(collector: collector)
-            var attempts = 0
-            while collector.isLoading && attempts < 50 {
-                try await Task.sleep(nanoseconds: 100_000_000)
-                attempts += 1
-            }
-            if let cocktailArray = collector.value as? [Cocktail] {
-                self.cocktails = cocktailArray
-            }
-        }
+        let viewModel = getSharedKoinHelper().getSharedCartViewModel()
+        self.sharedViewModel = viewModel
+        super.init(viewModel: viewModel, uiState: viewModel.uiState)
     }
 
-    // Manual async wrapping
-    func loadCocktails() {
-        Task {
-            do {
-                try await withCheckedThrowingContinuation { continuation in
-                    // Complex manual async bridging code
-                }
-            } catch {
-                // Manual error handling
-            }
+    // Runs on the shared viewModelScope; the outcome arrives through state/events
+    func removeFromCart(_ cocktailId: String) {
+        sharedViewModel.removeFromCart(cocktailId: cocktailId)
+    }
+}
+```
+
+Views hold their wrapper through `ViewModelHolder`, so a parent re-render
+doesn't build (and resolve from Koin) a throwaway wrapper each time.
+`KoinHelper` (`shared/src/iosMain/.../KoinIOS.kt`) has one getter per
+ViewModel; `KoinHelperTest` checks each one resolves.
+
+## SKIE configuration
+
+The SKIE version lives in the version catalog and the plugin is applied
+through its alias:
+
+```toml
+# libraries.toml
+[versions]
+skie = "0.10.13"
+
+[plugins]
+skie = { id = "co.touchlab.skie", version.ref = "skie" }
+```
+
+```kotlin
+// shared/build.gradle.kts
+plugins {
+    alias(libs.plugins.skie)
+}
+
+// Flows, suspend functions, enums and sealed classes are on by default;
+// default arguments are not.
+skie {
+    features {
+        group {
+            co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(true)
+        }
+        // moko-resources reaches the framework through :core:resources; no
+        // default-argument overloads for its classes
+        group("dev.icerock.moko") {
+            co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(false)
         }
     }
 }
 ```
 
-### Code Reduction Comparison
+SKIE runs only in `:shared`, the umbrella that builds the framework, over the
+modules it `export()`s (`:presentation`, `:core:domain`, `:core:common`,
+`:core:resources`, `:core:designsystem`). What the iOS code relies on:
 
-| Aspect | Without SKIE | With SKIE | Savings |
-|--------|--------------|-----------|---------|
-| iOS Wrapper Lines | ~80-100 lines | ~20-30 lines | **70% reduction** |
-| Type Casting | Manual `as?` everywhere | Automatic | **100% elimination** |
-| Flow Collection | Custom collectors | Native `for await` | **Native patterns** |
-| Error Handling | Manual try-catch bridging | Native Swift errors | **Native experience** |
-| Async Functions | Manual continuation wrapping | Direct `await` | **Native async/await** |
+- **Flows** (default): `Flow`/`StateFlow` arrive in Swift as `AsyncSequence`,
+  with `.value` on a `StateFlow`; the wrappers' mirroring is built on this.
+- **Suspend functions** (default): `suspend` functions become Swift `async`
+  functions, and cancelling the Swift `Task` cancels the Kotlin call.
+- **Enums and sealed classes** (default): Kotlin enums become Swift enums,
+  and sealed hierarchies such as `UiEvent` get `onEnum(of:)` for exhaustive
+  `switch`es.
+- **Default arguments** (enabled above): Kotlin default parameter values
+  produce Swift overloads that leave those parameters out.
 
-## Why Not Other Approaches?
-
-### 🔄 Option 1: Use Shared ViewModels Directly in SwiftUI (Not Possible)
-```swift
-struct HomeView: View {
-    // ❌ Can't use SharedHomeViewModel directly
-    // - No @ObservableObject conformance
-    // - No @Published properties
-    // - No SwiftUI lifecycle integration
-    @StateObject var viewModel: SharedHomeViewModel // ❌ Won't compile
-}
-```
-
-The platform requirements differ: SwiftUI needs `@ObservableObject`/`@MainActor` patterns, while Compose consumes the multiplatform androidx `ViewModel` natively — which is why Android needs no wrapper but iOS does.
-
-### 🔄 Option 2: No SKIE (Manual Bridge Code)
-80+ lines of custom Flow collection, manual type casting, and hand-rolled async bridging per ViewModel — error-prone and hard to maintain (see the contrast above).
-
-### ✅ Option 3: SKIE + Thin iOS Wrappers (Current Implementation)
-Clean ~20-line wrappers with native Swift patterns and compile-time type safety, plus direct consumption on Android.
-
-### 🔄 Option 4: Duplicate Business Logic per Platform
-Maintaining the same logic in two places loses the point of Kotlin Multiplatform entirely.
-
-## Migration Results
-
-### ✅ Phase 1: Foundation (COMPLETE)
-- [x] Enhanced SKIE configuration
-- [x] SharedViewModel base class
-- [x] All 9 shared ViewModels implemented
-- [x] iOS 18.5 compatibility validated
-- [x] Android compatibility validated
-
-### ✅ Phase 2: Core ViewModels (COMPLETE)
-- [x] **Simple ViewModels**: ReviewViewModel, ThemeViewModel, ProfileViewModel
-- [x] **Medium Complexity**: CartViewModel, FavoritesViewModel, OrderViewModel
-- [x] **Complex ViewModels**: HomeViewModel, CocktailDetailViewModel
-
-### ✅ Phase 3: Platform Integration (COMPLETE)
-- [x] iOS: 8 SKIE wrapper classes on the `SharedViewModelWrapper` base (all shared ViewModels the iOS app consumes)
-- [x] Android: direct consumption via koinViewModel()/Koin singles (no wrapper layer)
-- [x] Platform-specific optimizations implemented
-- [x] Comprehensive testing and validation complete
-
-## Implementation Guidelines
-
-### Shared ViewModel Best Practices (IMPLEMENTED)
-1. ✅ **State Management**: one immutable `uiState` StateFlow per ViewModel; derived values live on the state, never as snapshot getters
-2. ✅ **Error Handling**: Unified error handling from base class
-3. ✅ **Lifecycle**: Proper coroutine scope management
-4. ✅ **Dependencies**: Koin dependency injection throughout
-
-### Swift Wrapper Patterns (IMPLEMENTED)
-1. ✅ **Observation**: Consumed shared ViewModels wrapped in `@Observable` objects that publish the whole `state`
-2. ✅ **Task Management**: Swift Task used for StateFlow observation
-3. ✅ **MainActor**: All UI updates on main thread
-4. ✅ **Lifecycle**: Proper cleanup in deinit implemented (in the base class)
-5. ✅ **No mirroring**: Views read `state.<field>`; wrappers never re-publish individual fields or forward snapshot getters
-
-### Testing Strategy (IMPLEMENTED)
-1. ✅ **Shared Logic**: Business logic tested in the shared KMP modules (ViewModels in `:presentation`)
-2. ✅ **Platform Integration**: Wrappers and UI integration tested
-3. ✅ **Build Validation**: Both platforms compile successfully
-
-## Benefits Realized
-
-### Development Efficiency
-- ✅ **70% Code Reduction**: Business logic written once, used everywhere
-- ✅ **Faster Feature Development**: Single implementation for both platforms
-- ✅ **Consistent Behavior**: Identical logic across platforms
-- ✅ **Unified Testing**: Business logic tested once
-
-### Technical Advantages
-- ✅ **Type Safety**: Full generic preservation with SKIE
-- ✅ **Native Performance**: Zero overhead StateFlow conversion
-- ✅ **Modern Patterns**: Async/await integration throughout
-- ✅ **Maintainability**: Single source of truth for business logic
-
-## Key Takeaways
-
-1. **SKIE doesn't eliminate platform wrappers** — it makes them dramatically simpler
-2. **The business logic is shared** through the 9 shared ViewModels; the thin iOS wrappers handle only platform UI integration
-3. **Android needs no adapter code** — the shared ViewModels are AndroidX ViewModels
-4. **70% code reduction** on iOS compared to manual bridge implementations
-5. **Native experience** on both platforms while sharing core logic
-
-## Conclusion
-
-The shared ViewModel strategy with SKIE integration has been **successfully completed**. All 9 shared ViewModels are implemented and working across both platforms — consumed directly on Android, and through 8 thin SKIE wrappers on iOS — with:
-
-- ✅ **Complete Implementation**: All ViewModels migrated to shared architecture
-- ✅ **Build Success**: Both platforms compile and run successfully
-- ✅ **Performance Goals**: 70% code reduction achieved with zero overhead
-- ✅ **Type Safety**: 100% compile-time checking implemented
-- ✅ **Native Experience**: Platform-specific UI with shared business logic
-
-**Status**: ✅ **IMPLEMENTATION COMPLETE AND PRODUCTION READY**
-
----
-
-*Document Status: ✅ Complete — merged ViewModel architecture explanation and shared ViewModel strategy*
-*Last Updated: 2026-10-11 (single-uiState contract, intent and one-shot event conventions, stateless Android content composables)*
+If Xcode doesn't see a new Kotlin API, rebuild the framework (the app's
+"Compile Kotlin Framework" phase) before suspecting SKIE. For other options
+see [skie.touchlab.co](https://skie.touchlab.co).

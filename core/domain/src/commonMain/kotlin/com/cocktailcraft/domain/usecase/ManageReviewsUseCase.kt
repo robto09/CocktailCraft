@@ -18,7 +18,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.native.HiddenFromObjC
 import kotlin.time.Clock
 
-@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+@HiddenFromObjC // Public for :presentation; not Swift API
 class ManageReviewsUseCase(private val repository: ReviewRepository) {
 
     fun observeReviews(): Flow<List<Review>> = repository.observeReviews()

@@ -3,7 +3,7 @@ import SwiftUI
 import shared
 
 struct FavoritesView: View {
-    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    // Built once via ViewModelHolder, not on every parent re-render
     @State private var model = ViewModelHolder(FavoritesViewModelSKIE.init)
     private var viewModel: FavoritesViewModelSKIE { model.wrapper }
     @Environment(CartViewModelSKIE.self) private var cartViewModel

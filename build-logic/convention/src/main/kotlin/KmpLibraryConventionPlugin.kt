@@ -7,7 +7,7 @@ import org.gradle.kotlin.dsl.getByType
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 /**
- * Shared setup for every KMP library module (AR-10): the Android + iOS
+ * Shared setup for every KMP library module: the Android + iOS
  * targets, the JVM toolchain, SDK levels from the version catalog, the
  * project-wide opt-ins and the Android host-test compilation. A module's own
  * build file only adds its dependencies and module-specific plugins.
@@ -29,7 +29,7 @@ class KmpLibraryConventionPlugin : Plugin<Project> {
             jvmToolchain(version("jvmTarget").toInt())
 
             sourceSets.all {
-                // For @HiddenFromObjC on Kotlin-side helpers (AR-12)
+                // For @HiddenFromObjC on Kotlin-side helpers
                 languageSettings.optIn("kotlin.experimental.ExperimentalObjCRefinement")
                 // kotlin.time.Clock/Instant (kotlinx-datetime 0.7+) — stable in Kotlin 2.3
                 languageSettings.optIn("kotlin.time.ExperimentalTime")

@@ -251,9 +251,9 @@ object ErrorHandler {
         )
 
         // Default for unknown errors — repositories attach a typed
-        // ErrorCode at the boundary (AR-2), so anything reaching here has
+        // ErrorCode at the boundary, so anything reaching here has
         // no better classification available: no message-substring
-        // guessing (locale/format-fragile, SH-12), just a generic error.
+        // guessing (locale/format-fragile), just a generic error.
         else -> UserFriendlyError(
             title = getCategoryTitle(ErrorCategory.UNKNOWN),
             message = defaultMessage,

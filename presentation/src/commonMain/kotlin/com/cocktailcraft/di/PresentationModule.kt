@@ -8,7 +8,7 @@ import kotlin.native.HiddenFromObjC
  * Koin module for the shared ViewModels. Their use cases come from
  * domainModule, their repositories and NetworkMonitor from the data layer.
  */
-@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper (AR-12)
+@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper
 val presentationModule = module {
     // Screen-scoped ViewModels — new instance per screen; the viewModel DSL
     // lets Android's koinViewModel() scope them to the nav back-stack entry
@@ -31,11 +31,11 @@ val presentationModule = module {
     // navigation). They extend androidx.lifecycle.ViewModel, but a Koin
     // `single` is never routed through a ViewModelStore, so onCleared() NEVER
     // runs on them: any init{}-launched collector lives for the whole process
-    // by design (SH-9). Do not put teardown in onCleared() for these, and do
+    // by design. Do not put teardown in onCleared() for these, and do
     // not stop process-wide services from them (the since-removed offline-mode
-    // ViewModel once stopped the shared NetworkMonitor that way — fixed in SH-2).
+    // ViewModel once stopped the shared NetworkMonitor that way).
     //
-    // Process death (AN-4): these singletons carry no SavedStateHandle — the
+    // Process death: these singletons carry no SavedStateHandle — the
     // same instances are handed to iOS via KoinHelper, where no such concept
     // exists — so a process kill resets them to default state. That is an
     // accepted, documented limitation; high-value UI state that must survive

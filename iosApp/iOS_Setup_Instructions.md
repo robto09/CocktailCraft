@@ -1,16 +1,18 @@
 # iOS App Setup Instructions
 
 ## Prerequisites
-- Xcode 16 or later (the project builds with the Swift 5.10 toolchain — `SWIFT_VERSION: "5.10"` in `project.yml`)
+- Xcode 26 or later: the app builds against the iOS 26 SDK (`ToolbarItemPlacement.title` in `AppTheme.swift`). The app targets use Swift 5.10 (`SWIFT_VERSION: "5.10"` in `project.yml`)
 - XcodeGen (`brew install xcodegen`)
 - A JDK 17+ — every app build runs Gradle to compile the shared Kotlin framework
-- macOS 12.0 or later
+- A Mac with Apple silicon on macOS 15.6 (Sequoia) or later: the oldest macOS Xcode 26 runs on, and the shared Kotlin framework is built for arm64 simulators and devices only
+
+The app and its widget extension target iOS 17.0 (`deploymentTarget` in `project.yml`).
 
 No CocoaPods: the shared Kotlin framework uses Kotlin's direct Xcode
 integration and the third-party Swift libraries come from Swift Package
 Manager, so there is no Podfile, no `pod install` and no `.xcworkspace`.
 
-> **Source of truth (IO-8):** `project.yml` (XcodeGen) defines the Xcode
+> **Source of truth:** `project.yml` (XcodeGen) defines the Xcode
 > project — targets, entitlements, Swift packages,
 > the Kotlin build phase, and the test targets. The committed
 > `CocktailCraft.xcodeproj` (including its SPM `Package.resolved`) is
@@ -25,12 +27,11 @@ Manager, so there is no Podfile, no `pod install` and no `.xcworkspace`.
 cd iosApp
 xcodegen generate
 ```
-(The manual project-creation steps below are legacy documentation of what the
-generated project contains — you never need to perform them by hand.)
 
 ### 2. Open the Project
 Open `CocktailCraft.xcodeproj`. Xcode resolves the Swift packages (Kingfisher,
-DebugSwift) on first open, pinned by the committed `Package.resolved`.
+DebugSwift, and swift-snapshot-testing for the unit tests) on first open,
+pinned by the committed `Package.resolved`.
 
 There is no separate step to build the shared framework: the app target's
 **Compile Kotlin Framework** build phase runs
@@ -47,30 +48,14 @@ app — a static framework cannot carry resources. The first build downloads
 the Kotlin/Native toolchain and takes a few minutes; later builds are
 incremental.
 
-### 3. (Legacy reference) Create Xcode Project
-1. Open Xcode
-2. Create new iOS App:
-   - Product Name: `CocktailCraft`
-   - Organization Identifier: `com.cocktailcraft`
-   - Interface: SwiftUI
-   - Language: Swift
-   - Use Core Data: No
-   - Include Tests: Yes
-
-### 4. (Legacy reference) Add Project Files
-1. Delete the default `ContentView.swift`
-2. Drag all files from `iosApp/CocktailCraft/` into the Xcode project
-3. Ensure "Copy items if needed" is checked
-4. Select "Create groups" for added folders
-
-### 5. Debug-only DebugSwift
+### 3. Debug-only DebugSwift
 DebugSwift is a Swift package dependency of the app, but it never ships:
 Release excludes `DebugSwift.o` from the link, the **Strip DebugSwift from
 Release** build phase removes its resource bundle (and fails the build if any
 DebugSwift symbol is linked), and all app-side usage is wrapped in
 `#if DEBUG`. See the [DebugSwift Guide](../docs/DebugSwift.md).
 
-### 6. Migrating an Existing CocoaPods Checkout
+### 4. Migrating an Existing CocoaPods Checkout
 Delete the leftover CocoaPods artifacts (both are gitignored), regenerate, and
 open the `.xcodeproj` from now on:
 ```bash
@@ -79,10 +64,12 @@ rm -rf Pods CocktailCraft.xcworkspace
 xcodegen generate
 ```
 
-### 7. App Transport Security (already configured)
+### 5. App Transport Security (already configured)
 No ATS changes are needed — and do **not** add `NSAllowsArbitraryLoads`. The app uses the platform defaults (HTTPS only, system trust) and deliberately has no certificate pinning: TheCocktailDB is a public, unauthenticated API, and pinning the CA pool its CDN rotates on its own schedule would risk cutting the app off the network (see the comment in `CocktailCraft/Info.plist`). The widget extension does no networking (it reads App Group snapshots the app writes), so it has no ATS config of its own.
 
-### 8. Run the App
+The app's privacy manifest is `CocktailCraft/PrivacyInfo.xcprivacy`: no tracking and no collected data (everything the user creates stays on the device), and one required-reason API, `NSUserDefaults` for the app's own settings (`CA92.1`). Declare any new required-reason API there. The widget extension reads App Group files, not defaults, so it has no manifest.
+
+### 6. Run the App
 1. Select a simulator or device
 2. Press Cmd+R to build and run
 

@@ -108,7 +108,7 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
 
     @Test
     fun ordersObserverEmitsWhenRepositoryFlowChanges() = runTest {
-        // SH-12 (Turbine): the init-block observeOrders collector must push
+        // Turbine: the init-block observeOrders collector must push
         // repository changes into uiState without a manual reload.
         val repository = FakeOrderRepository()
         val vm = viewModel(repository)

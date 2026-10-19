@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Single-source version bump (AR-9/AN-12).
+# Single-source version bump.
 #
 # Usage: scripts/bump-version.sh <versionName> <versionCode>
 #   e.g. scripts/bump-version.sh 1.1 2

@@ -101,7 +101,7 @@ fun AnimatedCocktailList(
     // against overlapping pages from the API
     val distinctCocktails = remember(cocktails) { cocktails.distinctBy { it.id } }
 
-    // O(1) membership per row instead of favorites.any {} per visible item (AN-3)
+    // O(1) membership per row instead of favorites.any {} per visible item
     val favoriteIds = remember(favorites) { favorites.toFavoriteIdSet() }
 
     // A category switch replaces every row: animateItem() would fade the old

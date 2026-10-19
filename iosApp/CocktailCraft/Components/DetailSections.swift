@@ -4,7 +4,7 @@ import SwiftUI
 // minimal-concurrency build it is close to a no-op; it becomes load-bearing
 // (and must be re-audited per-type) the moment SWIFT_STRICT_CONCURRENCY is
 // set to targeted/complete or the target moves to Swift 6 language mode.
-// Tracked as tech debt (IO-12) — don't copy this pattern to new files.
+// Tracked as tech debt — don't copy this pattern to new files.
 @preconcurrency import shared
 
 /// Section subviews for CocktailDetailView, split out of the view file so it
