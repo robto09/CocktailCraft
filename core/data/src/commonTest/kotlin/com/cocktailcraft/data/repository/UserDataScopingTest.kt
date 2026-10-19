@@ -14,6 +14,7 @@ import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.FakeCocktailApi
 import com.cocktailcraft.testutil.FakeNetworkMonitor
@@ -27,6 +28,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -222,6 +224,18 @@ class UserDataScopingTest {
 
         assertTrue(app.cartIds().isEmpty())
         assertTrue(app.favoriteIds().isEmpty())
+    }
+
+    @Test
+    fun changingThePasswordKeepsTheOwnerAndTheThrottle() = runTest {
+        val app = App(backgroundScope)
+        app.auth.signUp("ana@example.com", "secret123").getOrThrow()
+        app.addData("ana")
+
+        repeat(5) { assertFalse(app.auth.changePassword("wrong-pass", "newpass456").getOrThrow()) }
+
+        assertIs<Result.Error>(app.auth.changePassword("secret123", "newpass456"), "locked out through the wrapper")
+        assertEquals(listOf("order-ana"), app.orderIds(), "still Ana's data")
     }
 
     @Test

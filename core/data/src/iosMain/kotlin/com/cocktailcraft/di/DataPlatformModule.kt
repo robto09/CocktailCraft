@@ -2,8 +2,10 @@ package com.cocktailcraft.di
 
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
+import co.touchlab.sqliter.DatabaseFileContext
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
+import com.cocktailcraft.data.local.protectDatabaseFiles
 import com.cocktailcraft.data.security.LazySettings
 import com.cocktailcraft.data.security.migrateAuthStorage
 import com.cocktailcraft.domain.config.AppConfig
@@ -11,8 +13,8 @@ import com.cocktailcraft.util.IOSNetworkMonitor
 import com.cocktailcraft.util.NetworkMonitor
 import com.russhwolf.settings.ExperimentalSettingsImplementation
 import com.russhwolf.settings.KeychainSettings
-import com.russhwolf.settings.Settings
 import com.russhwolf.settings.NSUserDefaultsSettings
+import com.russhwolf.settings.Settings
 import org.koin.dsl.module
 
 @OptIn(ExperimentalSettingsImplementation::class, kotlin.experimental.ExperimentalNativeApi::class)
@@ -58,7 +60,12 @@ actual fun dataPlatformModule() = module {
     // orders, favorites, reviews); it runs the .sqm migrations when an older
     // schema version is opened. sqlite3 itself is linked into the app via
     // OTHER_LDFLAGS in iosApp/project.yml (the framework is static).
-    single<SqlDriver> { NativeSqliteDriver(CocktailCraftDatabase.Schema, COCKTAIL_DATABASE_NAME) }
+    // Its files are excluded from backup and locked with the device
+    // (protectDatabaseFiles) before the driver can open them.
+    single<SqlDriver> {
+        protectDatabaseFiles(DatabaseFileContext.databasePath(COCKTAIL_DATABASE_NAME, null))
+        NativeSqliteDriver(CocktailCraftDatabase.Schema, COCKTAIL_DATABASE_NAME)
+    }
 }
 
 // Lives in NSUserDefaults (wiped on uninstall) — its absence detects a fresh
