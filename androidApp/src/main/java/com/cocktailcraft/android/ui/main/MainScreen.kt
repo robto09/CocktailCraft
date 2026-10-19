@@ -38,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -71,7 +72,7 @@ import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.LocalToastHostState
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
 import com.cocktailcraft.android.ui.components.ToastSnackbarHost
-import com.cocktailcraft.android.ui.components.UiEventToasts
+import com.cocktailcraft.android.ui.components.showUiEvent
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.pluralStringResource
 import com.cocktailcraft.android.util.stringResource
@@ -141,12 +142,15 @@ fun MainScreen() {
     // Toasts from every tab land in this host (LocalToastHostState below).
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Add-to-cart keeps the user in place. Its outcome arrives on the cart's
-    // events — "<name> added to cart", or the failure — and is shown here,
-    // whichever tab it came from (previously Android yanked the user to the
-    // Cart tab on every add, and then confirmed even a failed add).
+    // Add-to-cart (Home, Favorites) keeps the user in place and toasts its
+    // outcome — "<name> added to cart", or the failure — on the tab it came
+    // from (previously Android yanked the user to the Cart tab on every
+    // add, and then confirmed even a failed add).
+    val context = LocalContext.current
     val addToCart: (Cocktail) -> Unit = { cocktail ->
-        scope.launch { sharedCartViewModel.addToCart(cocktail) }
+        scope.launch {
+            snackbarHostState.showUiEvent(sharedCartViewModel.addToCart(cocktail), context)
+        }
     }
 
     // Each tab draws its own bars through TabScaffold instead of one outer
@@ -168,13 +172,9 @@ fun MainScreen() {
     }
 
     CompositionLocalProvider(LocalToastHostState provides snackbarHostState) {
-        // The one collector of the cart's events (add-to-cart outcomes, and
-        // the Undo after a removal) and of the favorites' (the Undo after
-        // unfavoriting on the Favorites tab). The detail screens toast their
-        // own ViewModels' events.
-        UiEventToasts(sharedCartViewModel.events)
-        UiEventToasts(sharedFavoritesViewModel.events)
-
+        // Every screen toasts its own ViewModel's events (Cart, Favorites,
+        // Profile, the detail screens); cross-screen actions like add-to-cart
+        // return their outcome to the caller instead.
         NavHost(
             navController = navController,
             startDestination = HomeRoute,
@@ -239,7 +239,6 @@ fun MainScreen() {
                 val route = backStackEntry.toRoute<OrderDetailRoute>()
                 OrderDetailScreen(
                     orderId = route.orderId,
-                    orderViewModel = sharedOrderViewModel,
                     onBackClick = { navigationManager.navigateBack() }
                 )
             }

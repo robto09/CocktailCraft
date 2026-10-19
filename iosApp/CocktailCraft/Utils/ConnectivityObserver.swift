@@ -7,11 +7,12 @@ import Observation
 /// Connectivity has a single source of truth in shared code (an
 /// NWPathMonitor lives in shared's iosMain implementation and feeds the
 /// same StateFlow the shared ViewModels consume); this class only mirrors
-/// that flow into an Observation-tracked property for SwiftUI.
+/// that flow into an Observation-tracked property for SwiftUI. (Not named
+/// NetworkMonitor: that would shadow the exported shared.NetworkMonitor.)
 @MainActor
 @Observable
-final class NetworkMonitor {
-    static let shared = NetworkMonitor()
+final class ConnectivityObserver {
+    static let shared = ConnectivityObserver()
 
     private(set) var isConnected = true
 

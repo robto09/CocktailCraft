@@ -1,13 +1,5 @@
 package com.cocktailcraft.domain.model
 
-import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.order_status_cancelled
-import com.cocktailcraft.resources.order_status_delivered
-import com.cocktailcraft.resources.order_status_pending
-import com.cocktailcraft.resources.order_status_processing
-import com.cocktailcraft.resources.order_status_shipped
-import dev.icerock.moko.resources.desc.StringDesc
-import dev.icerock.moko.resources.desc.desc
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.KeepGeneratedSerializer
@@ -114,19 +106,12 @@ enum class OrderStatus(val storageValue: String) {
     DELIVERED("Delivered"),
     CANCELLED("Cancelled");
 
-    /** Only orders not yet out for delivery can still be cancelled. */
+    /**
+     * Only orders not yet out for delivery can still be cancelled. (The
+     * status's label lives in :presentation, OrderStatus.displayName.)
+     */
     val isCancellable: Boolean
         get() = this == PENDING || this == PROCESSING
-
-    /** Localized label for the order list. */
-    val displayName: StringDesc
-        get() = when (this) {
-            PENDING -> MR.strings.order_status_pending.desc()
-            PROCESSING -> MR.strings.order_status_processing.desc()
-            SHIPPED -> MR.strings.order_status_shipped.desc()
-            DELIVERED -> MR.strings.order_status_delivered.desc()
-            CANCELLED -> MR.strings.order_status_cancelled.desc()
-        }
 
     @HiddenFromObjC
     companion object {

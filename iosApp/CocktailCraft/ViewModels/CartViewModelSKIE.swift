@@ -24,27 +24,29 @@ final class CartViewModelSKIE: SharedViewModelWrapper<CartUiState> {
 
     // MARK: - Public Methods (using SKIE async/await)
 
-    /// Returns whether the cocktail was added, so callers confirm only a
-    /// real add (the shared ViewModel announces the outcome on `events`
-    /// too, not on the cart's error channel).
-    @discardableResult
-    func addToCart(_ cocktail: Cocktail, quantity: Int = 1) async -> Bool {
-        await run(fallback: false) {
-            try await sharedViewModel.addToCart(cocktail: cocktail, quantity: Int32(quantity)).boolValue
+    /// Adds the cocktail and returns the outcome for the calling screen to
+    /// toast ("Added … to cart", or the failure) — not on the cart's own
+    /// `event`, which is the Cart screen's. nil only if the call itself was
+    /// cancelled.
+    func addToCart(_ cocktail: Cocktail, quantity: Int = 1) async -> UiEvent? {
+        await run(fallback: nil) {
+            try await sharedViewModel.addToCart(cocktail: cocktail, quantity: Int32(quantity))
         }
     }
 
-    func decrementQuantity(_ cocktailId: String) async {
-        // Optimistic apply/revert lives in the shared ViewModel
-        await run { try await sharedViewModel.decrementQuantity(cocktailId: cocktailId) }
+    // Fire-and-forget: the shared ViewModel applies the change at once
+    // (optimistically, reverted on failure) and saves it on its own scope
+
+    func decrementQuantity(_ cocktailId: String) {
+        sharedViewModel.decrementQuantity(cocktailId: cocktailId)
     }
 
-    func incrementQuantity(_ cocktailId: String) async {
-        // Optimistic apply/revert lives in the shared ViewModel
-        await run { try await sharedViewModel.incrementQuantity(cocktailId: cocktailId) }
+    func incrementQuantity(_ cocktailId: String) {
+        sharedViewModel.incrementQuantity(cocktailId: cocktailId)
     }
 
-    func removeFromCart(_ cocktailId: String) async {
-        await run { try await sharedViewModel.removeFromCart(cocktailId: cocktailId) }
+    /// Announced on the mirrored `event` with an Undo action.
+    func removeFromCart(_ cocktailId: String) {
+        sharedViewModel.removeFromCart(cocktailId: cocktailId)
     }
 }

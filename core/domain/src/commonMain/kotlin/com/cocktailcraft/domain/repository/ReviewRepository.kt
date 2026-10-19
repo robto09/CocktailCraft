@@ -3,7 +3,9 @@ package com.cocktailcraft.domain.repository
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.util.Result
 import kotlinx.coroutines.flow.Flow
+import kotlin.native.HiddenFromObjC
 
+@HiddenFromObjC // Kotlin-side port, not Swift API (AR-12): Swift reaches data through the ViewModels
 interface ReviewRepository {
     fun observeReviews(): Flow<List<Review>>
     suspend fun getReviews(): Result<List<Review>>

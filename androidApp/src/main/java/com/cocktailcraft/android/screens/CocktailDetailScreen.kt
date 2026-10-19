@@ -142,21 +142,11 @@ fun CocktailDetailScreen(
             onBackClick = onBackClick,
             // Through the detail ViewModel (as on iOS), so a failed toggle is
             // reported on this screen; the heart reads the shared favorites flow
-            onToggleFavorite = {
-                coroutineScope.launch {
-                    detailViewModel.toggleFavorite()
-                }
-            },
-            onRefreshDetails = {
-                // Force-refresh from the network and update the UI
-                coroutineScope.launch {
-                    detailViewModel.refreshCocktail()
-                }
-            },
+            onToggleFavorite = { detailViewModel.toggleFavorite() },
+            // Force-refresh from the network and update the UI
+            onRefreshDetails = { detailViewModel.refreshCocktail() },
             // Confirmed (or reported) by a toast from the detail events
-            onAddToCart = {
-                coroutineScope.launch { detailViewModel.addToCart() }
-            },
+            onAddToCart = { detailViewModel.addToCart() },
             onRecommendationClick = { recommendation ->
                 navigationManager.navigateToCocktailDetail(recommendation.id)
             },

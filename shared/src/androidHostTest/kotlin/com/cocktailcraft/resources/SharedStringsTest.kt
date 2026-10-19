@@ -3,10 +3,10 @@ package com.cocktailcraft.resources
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.cocktailcraft.domain.config.DeliveryPolicy
 import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
+import com.cocktailcraft.format.deliveryEstimate
 import com.cocktailcraft.util.ErrorHandler
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
@@ -65,7 +65,7 @@ class SharedStringsTest {
             "Unable to connect to the server. Please check your internet connection.",
             ErrorHandler.getErrorFromException(IOException("offline")).message.text()
         )
-        assertEquals("15-25 minutes", DeliveryPolicy.estimatedDeliveryTimeForStatus(OrderStatus.PROCESSING).text())
+        assertEquals("15-25 minutes", OrderStatus.PROCESSING.deliveryEstimate.text())
     }
 
     @Test

@@ -29,7 +29,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -79,9 +78,9 @@ import com.cocktailcraft.resources.order_number
 import com.cocktailcraft.resources.order_reorder
 import com.cocktailcraft.resources.order_reorder_unavailable
 import com.cocktailcraft.util.ErrorHandler
-import com.cocktailcraft.viewmodel.SharedOrderViewModel
-import com.cocktailcraft.viewmodel.state.OrderUiState
-import kotlinx.coroutines.launch
+import com.cocktailcraft.viewmodel.SharedOrderDetailViewModel
+import com.cocktailcraft.viewmodel.state.OrderDetailUiState
+import org.koin.androidx.compose.koinViewModel
 
 /**
  * One order: status, delivery estimate, items and totals, with Reorder (its
@@ -93,65 +92,62 @@ import kotlinx.coroutines.launch
 @Composable
 fun OrderDetailScreen(
     orderId: String,
-    orderViewModel: SharedOrderViewModel,
     onBackClick: () -> Unit
 ) {
-    val state by orderViewModel.uiState.collectAsStateWithLifecycle()
-    val error by orderViewModel.error.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
-    // Distinguishes "load not started yet" from "loaded but not found"
-    var hasLoaded by remember(orderId) { mutableStateOf(false) }
+    // Nav-entry-scoped shared ViewModel — cleared automatically when the
+    // destination leaves the back stack, so it never shows another order
+    val viewModel = koinViewModel<SharedOrderDetailViewModel>()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
     LaunchedEffect(orderId) {
-        orderViewModel.loadOrderDetail(orderId)
-        hasLoaded = true
+        // The ViewModel survives rotation: don't look up an order it holds
+        if (viewModel.uiState.value.order?.id != orderId) {
+            viewModel.loadOrder(orderId)
+        }
     }
 
     val toastHostState = remember { SnackbarHostState() }
-    // The order ViewModel is a Koin single: never render another order
-    // left selected by an earlier visit
-    val order = state.selectedOrder?.takeIf { it.id == orderId }
 
     CompositionLocalProvider(LocalToastHostState provides toastHostState) {
         // "Order cancelled", "Added 3 items to your cart" and a failed
-        // reorder — the only collector of the order events
-        UiEventToasts(orderViewModel.events)
+        // reorder — this screen's own events
+        UiEventToasts(viewModel.events)
         // With the order on screen a failed cancel is a toast; a failed load
         // is the full-screen error state instead
         ErrorToastEffect(
-            error = error.takeIf { order != null },
-            onConsumed = { orderViewModel.clearError() }
+            error = error.takeIf { state.order != null },
+            onConsumed = { viewModel.clearError() }
         )
 
         OrderDetailContent(
-            state = state.copy(selectedOrder = order),
-            isLoading = order == null && (!hasLoaded || state.isLoadingOrderDetail),
+            state = state,
             error = error,
             onBackClick = onBackClick,
-            onRetry = { scope.launch { orderViewModel.loadOrderDetail(orderId) } },
-            onConfirmCancel = { scope.launch { orderViewModel.cancelOrder(orderId) } },
-            onReorder = { scope.launch { orderViewModel.reorder(orderId) } },
+            onRetry = { viewModel.loadOrder(orderId) },
+            onConfirmCancel = { viewModel.cancelOrder() },
+            onReorder = { viewModel.reorder() },
             toastHostState = toastHostState
         )
     }
 }
 
 /**
- * Stateless order detail content: renders [state]'s selected order and
- * reports every intent upward, so it can be previewed/screenshot-tested
- * without a ViewModel. Owns only the cancel confirmation.
+ * Stateless order detail content: renders [state]'s order and reports
+ * every intent upward, so it can be previewed/screenshot-tested without a
+ * ViewModel. Owns only the cancel confirmation.
  */
 @Composable
 internal fun OrderDetailContent(
-    state: OrderUiState,
+    state: OrderDetailUiState,
     onBackClick: () -> Unit,
     onConfirmCancel: () -> Unit,
-    isLoading: Boolean = false,
     error: ErrorHandler.UserFriendlyError? = null,
     onRetry: () -> Unit = {},
     onReorder: () -> Unit = {},
     toastHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
-    val order = state.selectedOrder
+    val order = state.order
+    val isLoading = order == null && state.isLoading
     val loadError = error.takeIf { order == null && !isLoading }
     var showCancelDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -214,7 +210,7 @@ internal fun OrderDetailContent(
 @Composable
 private fun OrderDetailBody(
     order: Order,
-    state: OrderUiState,
+    state: OrderDetailUiState,
     onCancelClick: () -> Unit,
     onReorderClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -225,7 +221,7 @@ private fun OrderDetailBody(
             .padding(Spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Spacing.lg)
     ) {
-        OrderStatusCard(order = order, deliveryEstimate = state.selectedOrderDeliveryEstimate.resolve())
+        OrderStatusCard(order = order, deliveryEstimate = state.deliveryEstimate.resolve())
 
         DetailInfoCard(
             title = stringResource(MR.strings.order_detail_items),
@@ -237,19 +233,19 @@ private fun OrderDetailBody(
         )
 
         OrderSummaryCard(
-            subtotal = state.selectedOrderSubtotal,
-            deliveryFee = state.selectedOrderDeliveryFee,
+            subtotal = state.subtotal,
+            deliveryFee = state.deliveryFee,
             total = order.total
         )
 
         ReorderButton(
-            canReorder = state.canReorderSelectedOrder,
+            canReorder = state.canReorder,
             isReordering = state.isReordering,
             onClick = onReorderClick
         )
 
-        if (state.canCancelSelectedOrder) {
-            CancelOrderButton(isCancelling = state.isCancellingOrder, onClick = onCancelClick)
+        if (state.canCancel) {
+            CancelOrderButton(isCancelling = state.isCancelling, onClick = onCancelClick)
         }
 
         Spacer(modifier = Modifier.height(Spacing.sm))

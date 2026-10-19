@@ -1,6 +1,5 @@
 package com.cocktailcraft.domain.usecase
 
-import co.touchlab.kermit.Logger
 import com.cocktailcraft.domain.config.DeliveryPolicy
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
@@ -39,8 +38,6 @@ class PlaceOrderUseCase(
             val orderId = newOrderId()
             val currentDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
                 .let { "${it.year}-${it.month.number.toString().padStart(2, '0')}-${it.day.toString().padStart(2, '0')}" }
-
-            Logger.d { "PlaceOrderUseCase: Generated order ID: $orderId" }
 
             val orderItems = cartItems.map { cartItem ->
                 OrderItem(

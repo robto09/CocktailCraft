@@ -38,24 +38,16 @@ struct CartView: View {
                                     item: item,
                                     isFavorite: favoriteIds.contains(item.cocktail.id),
                                     onIncrementQuantity: {
-                                        Task {
-                                            await cartViewModel.incrementQuantity(item.cocktail.id)
-                                        }
+                                        cartViewModel.incrementQuantity(item.cocktail.id)
                                     },
                                     onDecrementQuantity: {
-                                        Task {
-                                            await cartViewModel.decrementQuantity(item.cocktail.id)
-                                        }
+                                        cartViewModel.decrementQuantity(item.cocktail.id)
                                     },
                                     onRemoveFromCart: {
-                                        Task {
-                                            await cartViewModel.removeFromCart(item.cocktail.id)
-                                        }
+                                        cartViewModel.removeFromCart(item.cocktail.id)
                                     },
                                     onToggleFavorite: {
-                                        Task {
-                                            await favoritesViewModel.toggleFavorite(item.cocktail)
-                                        }
+                                        favoritesViewModel.toggleFavorite(item.cocktail)
                                     }
                                 )
                                 .padding(.horizontal, AppTheme.Spacing.lg)
@@ -106,13 +98,9 @@ struct CartView: View {
             )
         }
         // "Removed … from cart" with Undo, after a removal or a decrement to
-        // zero here. Only events that carry an action: the cart's
-        // add-to-cart outcomes belong to the screen that added (Home and
-        // Favorites toast those themselves).
-        .sharedEventToast(
-            cartViewModel.event.flatMap { $0.action != nil ? $0 : nil },
-            clear: { cartViewModel.clearEvent() }
-        )
+        // zero here: the cart's events are this screen's own (add-to-cart
+        // returns its outcome to Home and Favorites instead)
+        .sharedEventToast(cartViewModel.event, clear: { cartViewModel.clearEvent() })
         .sharedErrorAlert(cartViewModel.error, clear: { cartViewModel.clearError() })
         .sharedErrorAlert(orderViewModel.error, clear: { orderViewModel.clearError() })
     }

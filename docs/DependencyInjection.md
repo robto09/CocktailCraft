@@ -10,7 +10,7 @@ CocktailCraft uses Koin for dependency injection. Each Gradle module that owns b
 |---|---|---|
 | `networkModule`, `dataModule` | `:core:data` | `core/data/src/commonMain/kotlin/com/cocktailcraft/di/` |
 | `dataPlatformModule()` (expect/actual) | `:core:data` | `core/data/src/{commonMain,androidMain,iosMain}/kotlin/com/cocktailcraft/di/DataPlatformModule.kt` |
-| `domainModule` | `:core:domain` | `core/domain/src/commonMain/kotlin/com/cocktailcraft/di/DomainModule.kt` |
+| `domainModule` | `:presentation` (wires `:core:domain`'s use cases) | `presentation/src/commonMain/kotlin/com/cocktailcraft/di/DomainModule.kt` |
 | `presentationModule` | `:presentation` | `presentation/src/commonMain/kotlin/com/cocktailcraft/di/PresentationModule.kt` |
 | `appModule`, `platformModule()`, `initKoin()` | `:shared` | `shared/src/commonMain/kotlin/com/cocktailcraft/` (`di/AppModule.kt`, `di/PlatformModule.kt`, `KoinInit.kt`) |
 
@@ -26,7 +26,7 @@ Combines the common modules. Only `:shared` depends on every layer, so it is the
 val appModule = listOf(
     networkModule,      // :core:data
     dataModule,         // :core:data
-    domainModule,       // :core:domain
+    domainModule,       // :presentation (the use cases of :core:domain)
     presentationModule  // :presentation
 )
 // platformModule() is added separately at Koin startup (see PlatformModule.kt)
@@ -108,9 +108,9 @@ val dataModule = module {
 
 Note the `secureSettingsQualifier` for `AuthRepositoryImpl`: auth data uses the platform-secure `Settings` instance (EncryptedSharedPreferences / Keychain) registered by the platform module (see `SettingsQualifiers.kt` in `:core:data`).
 
-### 4. Domain Module (`:core:domain`, `DomainModule.kt`)
+### 4. Domain Module (`:presentation`, `DomainModule.kt`)
 
-The use cases (all `factory`). The `AppConfig` binding lives in each platform module (AR-4) — the platform knows whether this is a debug build; commonMain doesn't. A use case must earn its indirection (AR-8): pure 1:1 pass-throughs with a single consumer are collapsed onto the repository interface instead (`ManageOrdersUseCase` was removed this way).
+The use cases (all `factory`). It lives in `:presentation`, next to `presentationModule`, so `:core:domain` itself has no DI (or logging) dependency. The `AppConfig` binding lives in each platform module (AR-4) — the platform knows whether this is a debug build; commonMain doesn't. A use case must earn its indirection (AR-8): pure pass-throughs are collapsed onto the repository interface instead, and ViewModels call that repository directly (`ManageOrdersUseCase` and `ManageProfileUseCase` were removed this way).
 
 ```kotlin
 val domainModule = module {
@@ -121,7 +121,6 @@ val domainModule = module {
     factory { GetCocktailDetailUseCase(detailRepository = get(), favoritesRepository = get(), searchRepository = get()) }
     factory { ManageFavoritesUseCase(favoritesRepository = get(), detailRepository = get()) }
     factory { ManageCartUseCase(cartRepository = get(), detailRepository = get()) }
-    factory { ManageProfileUseCase(authRepository = get()) }
     factory { ManageReviewsUseCase(repository = get()) }
     factory { PlaceOrderUseCase(orderRepository = get()) }
 }
