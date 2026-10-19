@@ -35,8 +35,8 @@ import com.revenuecat.placeholder.placeholder
  */
 @Composable
 fun CocktailLoadingShimmer(
-    itemCount: Int = 5,
     modifier: Modifier = Modifier,
+    itemCount: Int = 5,
     showHeader: Boolean = true,
     headerHeight: Int = 24,
     headerWidthFraction: Float = 0.5f,

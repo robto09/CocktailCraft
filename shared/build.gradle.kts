@@ -7,21 +7,12 @@ plugins {
     alias(libs.plugins.moko.resources)
 }
 
-// Configure SKIE for enhanced Swift interop
+// SKIE's Swift interop. Flows, suspend functions, enums and sealed classes
+// are on by default; default arguments are not.
 skie {
     features {
         group {
-            // Core interop features
-            co.touchlab.skie.configuration.FlowInterop.Enabled(true)
-            co.touchlab.skie.configuration.SuspendInterop.Enabled(true)
-
-            // Enhanced enum support for better Swift integration
-            co.touchlab.skie.configuration.EnumInterop.Enabled(true)
-
-            // Sealed class support for Swift enum-like behavior
-            co.touchlab.skie.configuration.SealedInterop.Enabled(true)
-
-            // Default arguments support for cleaner Swift APIs
+            // Default-argument overloads for cleaner Swift calls
             co.touchlab.skie.configuration.DefaultArgumentInterop.Enabled(true)
         }
         // moko-resources is an external library, but since it reaches the
@@ -34,13 +25,18 @@ skie {
     }
 }
 
-// The iOS test mode (src/iosTestMode: doInitKoinForTesting, its fixtures and
-// the ktor-client-mock engine they run on) only ever starts in Debug builds —
-// the app calls it under #if DEBUG — so Release frameworks leave it out.
-// Xcode's "Compile Kotlin Framework" phase runs Gradle with CONFIGURATION set
-// to the build configuration; builds outside Xcode (the iosTest suites, the
-// IDE) have none and keep it.
-val includeIosTestMode = providers.environmentVariable("CONFIGURATION").orNull.let { it == null || it == "Debug" }
+// The iOS test mode (src/iosTestMode: doInitKoinForTesting, its fixtures, the
+// ktor-client-mock engine they run on, and the KoinHelper debug* QA hooks)
+// only ever runs in Debug builds — the app calls it under #if DEBUG — so it is
+// compiled into the framework only when that is certain: Xcode's "Compile
+// Kotlin Framework" phase runs Gradle with CONFIGURATION=Debug, or a build
+// opts in with -PincludeIosTestMode=true. Anything else (Release, no
+// CONFIGURATION at all, a misspelt one) leaves it out rather than shipping
+// it. The iosTest suites (IosTestModeTest) always need it, so a build that
+// leaves it out of the framework compiles it into the test source set instead.
+val includeIosTestMode =
+    providers.environmentVariable("CONFIGURATION").orNull == "Debug" ||
+        providers.gradleProperty("includeIosTestMode").orNull == "true"
 
 kotlin {
     android {
@@ -81,7 +77,7 @@ kotlin {
     }
 
     sourceSets {
-        val commonMain by getting {
+        commonMain {
             dependencies {
                 // Everything Android and Swift consume — api(), which export()
                 // also requires: the shared ViewModels and UiState
@@ -104,26 +100,26 @@ kotlin {
             }
         }
 
-        // iOS test mode and Debug hooks (iosTestMode/IosTestMode.kt,
-        // iosMain/KoinIOS.kt): the stand-in storage (an in-memory database,
-        // throwaway NSUserDefaults suites) and the MockEngine HTTP client that
-        // doInitKoinForTesting() binds over the platform ones, plus the
-        // HttpSend hook behind the Debug "simulate network failure" toggle
-        if (includeIosTestMode) {
-            iosMain.configure { kotlin.srcDir("src/iosTestMode/kotlin") }
+        // iOS test mode and Debug hooks (src/iosTestMode): the stand-in
+        // storage (an in-memory database, throwaway NSUserDefaults suites) and
+        // the MockEngine HTTP client that doInitKoinForTesting() binds over
+        // the platform ones, plus the KoinHelper debug* hooks behind the
+        // Debug QA menu (including the "simulate network failure" toggle).
+        // In the framework only when includeIosTestMode, else test-only.
+        val iosTestModeSourceSet = if (includeIosTestMode) iosMain else iosTest
+        iosTestModeSourceSet.configure { kotlin.srcDir("src/iosTestMode/kotlin") }
+        iosTestModeSourceSet.dependencies {
+            implementation(libs.ktor.client.mock)
         }
         iosMain.dependencies {
             implementation(libs.multiplatform.settings.core)
             implementation(libs.sqldelight.native.driver)
             implementation(libs.ktor.client.core)
-            if (includeIosTestMode) {
-                implementation(libs.ktor.client.mock)
-            }
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
         }
 
-        val commonTest by getting {
+        commonTest {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(project(":core:testing"))
@@ -136,7 +132,7 @@ kotlin {
             }
         }
 
-        val androidHostTest by getting {
+        named("androidHostTest") {
             dependencies {
                 implementation(libs.mockk.core)
                 implementation(libs.robolectric)

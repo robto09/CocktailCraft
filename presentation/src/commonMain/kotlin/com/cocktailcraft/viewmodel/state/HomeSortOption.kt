@@ -27,7 +27,4 @@ enum class HomeSortOption(val label: StringResource) {
  * The user's reviews of one cocktail: their average [rating] (1–5) and how
  * many there are ([count] > 0; cocktails without reviews have no summary).
  */
-data class CocktailRatingSummary(
-    val rating: Float,
-    val count: Int
-)
+data class CocktailRatingSummary(val rating: Float, val count: Int)

@@ -25,8 +25,19 @@ class ResultCatchingTest {
         val result = runCatchingResult<Int>("fallback") { throw IllegalArgumentException("bad input") }
 
         val error = result as Result.Error
-        assertEquals("bad input", error.message)
         assertEquals(ErrorCode.INVALID_DATA, error.code, "AR-2: the type classifier must assign the code")
+    }
+
+    @Test
+    fun exceptionMessageIsKeptOutOfTheErrorMessage() {
+        // Ktor's messages carry the request URL (search terms); the error
+        // message is logged, so it holds only the description and the type
+        val result = runCatchingResult<Int>("Failed to search") {
+            throw IllegalStateException("GET https://example.com/search.php?s=secret failed")
+        }
+
+        val error = result as Result.Error
+        assertEquals("Failed to search (IllegalStateException)", error.message)
     }
 
     @Test
@@ -60,11 +71,11 @@ class ResultCatchingTest {
     }
 
     @Test
-    fun messagelessExceptionFallsBackToDefaultMessage() {
+    fun messagelessExceptionStillCarriesTheDefaultMessage() {
         val result = runCatchingResult<Int>("Failed to place order") { throw RuntimeException() }
 
         val error = result as Result.Error
-        assertEquals("Failed to place order", error.message)
+        assertEquals("Failed to place order (RuntimeException)", error.message)
     }
 
     @Test

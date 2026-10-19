@@ -44,15 +44,15 @@ import com.cocktailcraft.resources.total
 @Composable
 fun OrderSummaryCard(
     subtotal: Money,
+    modifier: Modifier = Modifier,
     deliveryFee: Money = DeliveryPolicy.STANDARD_FEE,
     total: Money? = null,
-    modifier: Modifier = Modifier,
     currencyFormatter: CurrencyFormatter = rememberCurrencyFormatter(),
     showDeliveryFee: Boolean = true,
     additionalItems: List<Pair<String, Money>>? = null
 ) {
     val calculatedTotal = total ?: (subtotal + deliveryFee)
-    
+
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -79,7 +79,7 @@ fun OrderSummaryCard(
                 label = stringResource(MR.strings.order_subtotal),
                 value = currencyFormatter.format(subtotal)
             )
-            
+
             // Delivery fee row
             if (showDeliveryFee) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -88,7 +88,7 @@ fun OrderSummaryCard(
                     value = currencyFormatter.format(deliveryFee)
                 )
             }
-            
+
             // Additional items
             additionalItems?.forEach { (label, value) ->
                 Spacer(modifier = Modifier.height(8.dp))
@@ -99,11 +99,11 @@ fun OrderSummaryCard(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             HorizontalDivider(color = CocktailCraftTheme.extendedColors.neutralSubtle)
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             // Total row
             Row(
                 modifier = Modifier

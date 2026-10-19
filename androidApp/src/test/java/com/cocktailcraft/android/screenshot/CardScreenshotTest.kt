@@ -82,7 +82,12 @@ class CardScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
     fun detailInfoCard() = snapshot("DetailInfoCard") {
         DetailInfoCard(
             title = "Instructions",
-            content = { Text(ScreenshotFixtures.cocktail.instructions.orEmpty(), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            content = {
+                Text(
+                    ScreenshotFixtures.cocktail.instructions.orEmpty(),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         )
     }
 

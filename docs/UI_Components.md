@@ -434,7 +434,6 @@ AnimatedCocktailList(
     cocktails = cocktails,
     isSearchActive = isSearchActive,
     selectedCategory = selectedCategory,
-    isLoadingMore = isLoadingMore,
     hasMoreData = hasMoreData,
     favorites = favorites,
     onCocktailClick = onCocktailClick,

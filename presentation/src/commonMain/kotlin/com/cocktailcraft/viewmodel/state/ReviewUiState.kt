@@ -13,4 +13,3 @@ data class ReviewUiState(
     val currentCocktailId: String? = null,
     val isLoading: Boolean = false
 )
-

@@ -1,16 +1,9 @@
 package com.cocktailcraft.util
 
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import platform.Network.*
-import kotlinx.cinterop.alloc
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.ptr
-import kotlinx.cinterop.reinterpret
 import platform.Foundation.NSLog
-import platform.darwin.dispatch_get_global_queue
+import platform.Network.*
 import platform.darwin.DISPATCH_QUEUE_PRIORITY_DEFAULT
+import platform.darwin.dispatch_get_global_queue
 import platform.darwin.dispatch_queue_t
 
 /**
@@ -18,7 +11,9 @@ import platform.darwin.dispatch_queue_t
  */
 @OptIn(kotlin.experimental.ExperimentalNativeApi::class)
 @kotlin.native.HiddenFromObjC // Swift resolves NetworkMonitor via KoinHelper; the concrete type stays Kotlin-side (AR-12)
-class IOSNetworkMonitor : BaseNetworkMonitor(), NetworkMonitor {
+class IOSNetworkMonitor :
+    BaseNetworkMonitor(),
+    NetworkMonitor {
     private var monitor: nw_path_monitor_t? = null
     private var queue: dispatch_queue_t? = null
 

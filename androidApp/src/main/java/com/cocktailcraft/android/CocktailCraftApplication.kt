@@ -3,7 +3,6 @@ package com.cocktailcraft.android
 import android.app.Application
 import coil.ImageLoader
 import coil.ImageLoaderFactory
-import com.cocktailcraft.android.di.widgetModule
 import com.cocktailcraft.android.util.ImageLoaderSingleton
 import com.cocktailcraft.initKoin
 import org.koin.android.ext.android.get
@@ -11,7 +10,9 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.logger.Level
 
-class CocktailCraftApplication : Application(), ImageLoaderFactory {
+class CocktailCraftApplication :
+    Application(),
+    ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
@@ -22,7 +23,6 @@ class CocktailCraftApplication : Application(), ImageLoaderFactory {
         initKoin(isDebug = BuildConfig.DEBUG) {
             androidLogger(if (BuildConfig.DEBUG) Level.INFO else Level.ERROR)
             androidContext(this@CocktailCraftApplication)
-            modules(widgetModule)
         }
 
         // Widget refresh is scheduled by the widget receivers (onEnabled),

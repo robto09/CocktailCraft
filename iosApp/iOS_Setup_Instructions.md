@@ -11,7 +11,7 @@ integration and the third-party Swift libraries come from Swift Package
 Manager, so there is no Podfile, no `pod install` and no `.xcworkspace`.
 
 > **Source of truth:** `project.yml` (XcodeGen) defines the Xcode
-> project — targets, entitlements, per-target ATS pinning, Swift packages,
+> project — targets, entitlements, Swift packages,
 > the Kotlin build phase, and the test targets. The committed
 > `CocktailCraft.xcodeproj` (including its SPM `Package.resolved`) is
 > **generated output**: never hand-edit it, and regenerate it
@@ -63,9 +63,7 @@ xcodegen generate
 ```
 
 ### 5. App Transport Security (already configured)
-No ATS changes are needed — and do **not** add `NSAllowsArbitraryLoads`. The app enforces TLS certificate pinning for TheCocktailDB via `NSAppTransportSecurity` → `NSPinnedDomains` in `CocktailCraft/Info.plist` (pinning the Cloudflare CA pool for `thecocktaildb.com`). The widget extension does no networking (it reads App Group snapshots the app writes), so it has no ATS config of its own. If pinned requests start failing after a Cloudflare CA rotation, refresh the pin set per the comment in `Info.plist`.
-
-> **Pin review due 2027-07-08.** `NSPinnedDomains` has no expiry setting, so unlike Android's pin-set (`expiration="2027-07-08"` in `network_security_config.xml`, after which Android falls back to normal CA validation) the iOS pins stay enforced until replaced. Re-verify the Cloudflare CA pool and ship a refreshed set — app `Info.plist` and the Android config together — before that date.
+No ATS changes are needed — and do **not** add `NSAllowsArbitraryLoads`. The app uses the platform defaults (HTTPS only, system trust) and deliberately has no certificate pinning: TheCocktailDB is a public, unauthenticated API, and pinning the CA pool its CDN rotates on its own schedule would risk cutting the app off the network (see the comment in `CocktailCraft/Info.plist`). The widget extension does no networking (it reads App Group snapshots the app writes), so it has no ATS config of its own.
 
 ### 6. Run the App
 1. Select a simulator or device
@@ -94,7 +92,7 @@ iosApp/
 │   │   ├── ErrorView.swift
 │   │   └── ...
 │   ├── Theme/                      # AppColors, AppTheme
-│   └── Utils/                      # AppRouter, NetworkMonitor, widget bridges
+│   └── Utils/                      # AppRouter, ConnectivityObserver, widget bridges
 └── project.yml                     # XcodeGen project definition (source of truth)
 ```
 

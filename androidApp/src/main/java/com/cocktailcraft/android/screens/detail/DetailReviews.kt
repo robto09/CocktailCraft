@@ -136,7 +136,11 @@ internal fun CocktailReviewItem(review: Review) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = (review.userName.takeIf { it.isNotBlank() } ?: stringResource(MR.strings.detail_review_anonymous_initial)).take(1).uppercase(),
+                    text = (
+                        review.userName.takeIf { it.isNotBlank() } ?: stringResource(
+                            MR.strings.detail_review_anonymous_initial
+                        )
+                        ).take(1).uppercase(),
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
@@ -146,7 +150,9 @@ internal fun CocktailReviewItem(review: Review) {
 
             Column {
                 Text(
-                    text = review.userName.takeIf { it.isNotBlank() } ?: stringResource(MR.strings.detail_review_anonymous),
+                    text = review.userName.takeIf { it.isNotBlank() } ?: stringResource(
+                        MR.strings.detail_review_anonymous
+                    ),
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 16.sp

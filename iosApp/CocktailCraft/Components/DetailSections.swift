@@ -47,7 +47,7 @@ extension CocktailDetailView {
                 icon: "cart.fill",
                 isLoading: viewModel.state.isAddingToCart,
                 action: {
-                    Task { await viewModel.addToCart() }
+                    viewModel.addToCart()
                 }
             )
             .accessibilityIdentifier("detail.addToCartButton")

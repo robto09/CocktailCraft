@@ -21,7 +21,7 @@ excluded:
   - "**/__Snapshots__"
 
 disabled_rules:
-  # Doc-comment TODOs are tracked in docs/ENHANCEMENT_TRACKER.md
+  # TODO comments are allowed (as reminders in place; there is no tracker)
   - todo
   # Trailing commas are used freely in multi-line literals
   - trailing_comma

@@ -58,14 +58,14 @@ fun RatingBar(
                     starValue - 0.5f <= rating -> Icons.Filled.StarHalf
                     else -> Icons.Filled.StarOutline
                 }
-                
+
                 Icon(
                     imageVector = starIcon,
                     contentDescription = null,
                     tint = starsColor,
                     modifier = Modifier.size(starSize)
                 )
-                
+
                 if (index < stars - 1) {
                     Spacer(modifier = Modifier.width(spaceBetween))
                 }
@@ -78,14 +78,14 @@ fun RatingBar(
                     index == rating.toInt() && rating % 1 != 0f -> rating % 1
                     else -> 0.3f
                 }
-                
+
                 Icon(
                     imageVector = Icons.Filled.Star,
                     contentDescription = null,
                     tint = starsColor.copy(alpha = starAlpha),
                     modifier = Modifier.size(starSize)
                 )
-                
+
                 if (index < stars - 1) {
                     Spacer(modifier = Modifier.width(spaceBetween))
                 }

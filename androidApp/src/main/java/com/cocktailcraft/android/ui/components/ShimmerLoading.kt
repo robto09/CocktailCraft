@@ -450,8 +450,8 @@ fun OrderCardShimmer(
  */
 @Composable
 fun CartLoadingShimmer(
-    itemCount: Int = 3,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    itemCount: Int = 3
 ) {
     val loadingLabel = stringResource(MR.strings.loading)
 
@@ -476,8 +476,8 @@ fun CartLoadingShimmer(
  */
 @Composable
 fun OrderListLoadingShimmer(
-    itemCount: Int = 3,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    itemCount: Int = 3
 ) {
     val loadingLabel = stringResource(MR.strings.loading)
 

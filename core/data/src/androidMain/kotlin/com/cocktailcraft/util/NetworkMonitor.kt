@@ -16,9 +16,9 @@ import kotlinx.coroutines.flow.asStateFlow
  * upstream doesn't read as online. Callbacks about any other network (a
  * stale one after a switch) are ignored, so they can't flip the state.
  */
-class AndroidNetworkMonitor(
-    private val context: Context
-) : BaseNetworkMonitor(), NetworkMonitor {
+class AndroidNetworkMonitor(private val context: Context) :
+    BaseNetworkMonitor(),
+    NetworkMonitor {
 
     override val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
     private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager

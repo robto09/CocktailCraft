@@ -5,7 +5,6 @@ import com.cocktailcraft.data.local.LegacySettingsImport.Companion.CART_KEY
 import com.cocktailcraft.data.local.LegacySettingsImport.Companion.FAVORITES_KEY
 import com.cocktailcraft.data.local.LegacySettingsImport.Companion.ORDERS_KEY
 import com.cocktailcraft.data.local.LegacySettingsImport.Companion.REVIEWS_KEY
-import com.cocktailcraft.data.repository.CartRepositoryImpl
 import com.cocktailcraft.data.repository.OrderRepositoryImpl
 import com.cocktailcraft.data.repository.ReviewRepositoryImpl
 import com.cocktailcraft.domain.model.Cocktail
@@ -20,8 +19,12 @@ import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.createTestLocalDatabase
+import com.cocktailcraft.testutil.legacyCartJson
+import com.cocktailcraft.testutil.legacyOrdersJson
+import com.cocktailcraft.testutil.testCartRepository
 import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.testutil.testJson
+import com.cocktailcraft.testutil.toLegacy
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.test.runTest
@@ -35,8 +38,8 @@ import kotlin.test.assertTrue
 /**
  * The one-time move of the cart, orders, reviews and favorites out of the
  * Settings JSON blobs older versions wrote. Fixtures are encoded with the
- * models' serializers; the blobs older versions actually wrote held money
- * as Double dollars, which legacyDollarAmountsImportAsCents covers.
+ * legacy record serializers; the blobs older versions actually wrote held
+ * money as Double dollars, which legacyDollarAmountsImportAsCents covers.
  */
 class LegacySettingsImportTest {
 
@@ -63,15 +66,27 @@ class LegacySettingsImportTest {
     )
 
     private val legacyReviews = listOf(
-        Review(id = "r1", cocktailId = "1", userName = "Robert", rating = 4.5f, comment = "Lovely and tart.", date = "2026-06-01"),
-        Review(id = "r2", cocktailId = "2", userName = "Ana", rating = 3.0f, comment = "A bit too minty.", date = "2026-06-03")
+        Review(
+            id = "r1",
+            cocktailId = "1",
+            userName = "Robert",
+            rating = 4.5f,
+            comment = "Lovely and tart.",
+            date = "2026-06-01"
+        ),
+        Review(
+            id = "r2",
+            cocktailId = "2",
+            userName = "Ana",
+            rating = 3.0f,
+            comment = "A bit too minty.",
+            date = "2026-06-03"
+        )
     )
 
-    private fun Settings.seedCart(items: List<CocktailCartItem>) =
-        putString(CART_KEY, testJson.encodeToString(ListSerializer(CocktailCartItem.serializer()), items))
+    private fun Settings.seedCart(items: List<CocktailCartItem>) = putString(CART_KEY, legacyCartJson(items))
 
-    private fun Settings.seedOrders(orders: List<Order>) =
-        putString(ORDERS_KEY, testJson.encodeToString(ListSerializer(Order.serializer()), orders))
+    private fun Settings.seedOrders(orders: List<Order>) = putString(ORDERS_KEY, legacyOrdersJson(orders))
 
     private fun Settings.seedReviews(reviews: List<Review>) =
         putString(REVIEWS_KEY, testJson.encodeToString(ListSerializer(Review.serializer()), reviews))
@@ -84,7 +99,7 @@ class LegacySettingsImportTest {
     }
 
     private fun favoriteIds(db: CocktailCraftDatabase) =
-        db.favoriteCocktailQueries.selectAll().executeAsList().map { it.id }
+        db.favoriteCocktailQueries.selectAll(OwnerIds.GUEST).executeAsList().map { it.cocktail_id }
 
     @Test
     fun firstAccessImportsEveryStoreAndRemovesTheLegacyKeys() = runTest {
@@ -92,13 +107,14 @@ class LegacySettingsImportTest {
         val settings = MapSettings().apply { seedAll() }
         val local = createTestLocalDatabase(db, settings)
 
-        val cart = CartRepositoryImpl(local, testJson).getCartItems().getOrThrow()
+        val cart = testCartRepository(local).getCartItems().getOrThrow()
         assertEquals(listOf(CocktailCartItem(margarita, 2), CocktailCartItem(mojito, 1)), cart)
         assertEquals(legacyOrders, OrderRepositoryImpl(local).getOrders().getOrThrow())
         assertEquals(legacyReviews, ReviewRepositoryImpl(local).getReviews().getOrThrow())
         assertEquals(listOf("2", "1"), favoriteIds(db))
-        // Favorites were ids only; the favorites repository resolves them later.
-        assertTrue(db.favoriteCocktailQueries.selectAll().executeAsList().all { it.payload == null })
+        // Favorites were ids only; they refer to the cocktails the imported
+        // cart stored (others are resolved by the favorites repository later)
+        assertTrue(db.favoriteCocktailQueries.selectAll(OwnerIds.GUEST).executeAsList().all { it.payload != null })
 
         legacyKeys.forEach { assertNull(settings.getStringOrNull(it), "$it must be removed after import") }
     }
@@ -115,14 +131,14 @@ class LegacySettingsImportTest {
 
         // Meanwhile the user changed things; the database is now newer.
         val local = createTestLocalDatabase(db)
-        CartRepositoryImpl(local, testJson).updateQuantity("1", 7).getOrThrow()
+        testCartRepository(local).updateQuantity("1", 7).getOrThrow()
         OrderRepositoryImpl(local).cancelOrder("ORD-2").getOrThrow()
         ReviewRepositoryImpl(local).updateReview("r1", 1.0f, "Changed my mind.", "2026-06-09").getOrThrow()
 
         settings.seedAll()
         import.run(db)
 
-        val cart = CartRepositoryImpl(local, testJson).getCartItems().getOrThrow()
+        val cart = testCartRepository(local).getCartItems().getOrThrow()
         assertEquals(listOf("1" to 7, "2" to 1), cart.map { it.cocktail.id to it.quantity })
         val orders = OrderRepositoryImpl(local).getOrders().getOrThrow()
         assertEquals(listOf(OrderStatus.DELIVERED, OrderStatus.CANCELLED), orders.map { it.status })
@@ -136,12 +152,13 @@ class LegacySettingsImportTest {
     fun importAppendsAfterRowsAlreadyInTheDatabase() = runTest {
         val db = createTestDatabase()
         val local = createTestLocalDatabase(db)
-        CartRepositoryImpl(local, testJson).addToCart(CocktailCartItem(testCocktail("9"), 1)).getOrThrow()
+        testCartRepository(local).addToCart(CocktailCartItem(testCocktail("9"), 1)).getOrThrow()
         val settings = MapSettings().apply { seedCart(listOf(CocktailCartItem(margarita, 2))) }
 
         LegacySettingsImport(settings, testJson).run(db)
 
-        val cart = CartRepositoryImpl(local, testJson).getCartItems().getOrThrow()
+        // Read on the next launch, whose first open assigns the imported rows
+        val cart = testCartRepository(createTestLocalDatabase(db)).getCartItems().getOrThrow()
         assertEquals(listOf("9", "1"), cart.map { it.cocktail.id })
     }
 
@@ -151,7 +168,7 @@ class LegacySettingsImportTest {
         val settings = MapSettings().apply { putString("unrelated", "kept") }
         val local = createTestLocalDatabase(db, settings)
 
-        assertTrue(CartRepositoryImpl(local, testJson).getCartItems().getOrThrow().isEmpty())
+        assertTrue(testCartRepository(local).getCartItems().getOrThrow().isEmpty())
         assertTrue(OrderRepositoryImpl(local).getOrders().getOrThrow().isEmpty())
         assertTrue(ReviewRepositoryImpl(local).getReviews().getOrThrow().isEmpty())
         assertTrue(favoriteIds(db).isEmpty())
@@ -169,7 +186,7 @@ class LegacySettingsImportTest {
         }
         val local = createTestLocalDatabase(db, settings)
 
-        assertTrue(CartRepositoryImpl(local, testJson).getCartItems().getOrThrow().isEmpty())
+        assertTrue(testCartRepository(local).getCartItems().getOrThrow().isEmpty())
         assertTrue(OrderRepositoryImpl(local).getOrders().getOrThrow().isEmpty())
         assertTrue(ReviewRepositoryImpl(local).getReviews().getOrThrow().isEmpty())
         assertTrue(favoriteIds(db).isEmpty())
@@ -179,8 +196,8 @@ class LegacySettingsImportTest {
 
     @Test
     fun readableEntriesSurviveAnUnreadableNeighbour() = runTest {
-        val validOrder = testJson.encodeToString(Order.serializer(), legacyOrders.first())
-        val validItem = testJson.encodeToString(CocktailCartItem.serializer(), CocktailCartItem(mojito, 3))
+        val validOrder = testJson.encodeToString(LegacyOrder.serializer(), legacyOrders.first().toLegacy())
+        val validItem = testJson.encodeToString(LegacyCartItem.serializer(), CocktailCartItem(mojito, 3).toLegacy())
         val settings = MapSettings().apply {
             putString(ORDERS_KEY, """[{"id":"broken"}, $validOrder, 42]""")
             putString(CART_KEY, """[$validItem, {"quantity":1}]""")
@@ -190,7 +207,7 @@ class LegacySettingsImportTest {
         assertEquals(listOf("ORD-1"), OrderRepositoryImpl(local).getOrders().getOrThrow().map { it.id })
         assertEquals(
             listOf(CocktailCartItem(mojito, 3)),
-            CartRepositoryImpl(local, testJson).getCartItems().getOrThrow()
+            testCartRepository(local).getCartItems().getOrThrow()
         )
     }
 
@@ -231,7 +248,7 @@ class LegacySettingsImportTest {
         }
         val local = createTestLocalDatabase(createTestDatabase(), settings)
 
-        val cart = CartRepositoryImpl(local, testJson)
+        val cart = testCartRepository(local)
         assertEquals(listOf(Money(950), Money(529)), cart.getCartItems().getOrThrow().map { it.cocktail.price })
         assertEquals(Money(2429), cart.getCartItems().getOrThrow().sumOfMoney { it.lineTotal })
         val order = OrderRepositoryImpl(local).getOrders().getOrThrow().single()
@@ -245,7 +262,12 @@ class LegacySettingsImportTest {
     fun duplicateIdsInALegacyListKeepTheFirstEntry() = runTest {
         val db = createTestDatabase()
         val settings = MapSettings().apply {
-            seedOrders(listOf(legacyOrders.first(), legacyOrders.first().copy(status = OrderStatus.CANCELLED, items = emptyList())))
+            seedOrders(
+                listOf(
+                    legacyOrders.first(),
+                    legacyOrders.first().copy(status = OrderStatus.CANCELLED, items = emptyList())
+                )
+            )
             putString(FAVORITES_KEY, "1,1,2")
         }
         val local = createTestLocalDatabase(db, settings)
@@ -275,7 +297,7 @@ class LegacySettingsImportTest {
         val db = createTestDatabase()
         val settings = MapSettings()
         val local = createTestLocalDatabase(db, settings)
-        val cart = CartRepositoryImpl(local, testJson)
+        val cart = testCartRepository(local)
         assertTrue(cart.getCartItems().getOrThrow().isEmpty())
 
         // Nothing writes these keys any more; the check is a one-time cost.
@@ -291,7 +313,7 @@ class LegacySettingsImportTest {
         val settings = MapSettings().apply { seedCart(listOf(CocktailCartItem(detailed, 1))) }
         val local = createTestLocalDatabase(createTestDatabase(), settings)
 
-        val stored: Cocktail = CartRepositoryImpl(local, testJson).getCartItems().getOrThrow().single().cocktail
+        val stored: Cocktail = testCartRepository(local).getCartItems().getOrThrow().single().cocktail
         assertEquals(detailed, stored)
     }
 }

@@ -22,7 +22,8 @@ Used across `:shared` and the `:core:*`/`:presentation` modules it is split into
 | moko-resources | 0.27.1 | Single source for the app's strings: generates `MR.strings`/`MR.plurals`, Android string resources and the iOS strings bundle from `core/resources/src/commonMain/moko-resources` (exported to Swift; see README "Localization") |
 | SKIE | 0.10.13 | Swift interop: Flow → AsyncSequence, suspend → async/await, enum/sealed-class bridging |
 | AndroidX Lifecycle ViewModel | 2.10.0 | Multiplatform `ViewModel` base for the shared ViewModels (exposed as `api` so consumers see the supertype) |
-| AndroidX Security Crypto | 1.1.0-alpha06 | Keystore-backed `EncryptedSharedPreferences` for the Android auth store. Deliberately not bumped: 1.1.0 (stable) deprecates the whole library, so replacing it is a separate migration |
+| Tink (`tink-android`) | 1.23.0 | Encrypts the Android auth store: AES-256-GCM over the whole store file, with the keyset wrapped by an Android Keystore key (`AuthStore.kt` in `:core:data`) |
+| AndroidX Security Crypto | 1.1.0-alpha06 | Legacy reader only: imports the `EncryptedSharedPreferences` file older versions kept the auth store in, once, then deletes it. Deprecated library; remove it as described in `LegacySecurePrefs.kt` |
 
 ## Android App
 
@@ -92,5 +93,5 @@ Declared under `packages:` in `iosApp/project.yml` and pinned by the committed
 | SQLDelight (`app.cash.sqldelight`) | 2.4.1 | Generates the database API from the `.sq` files and verifies migrations (`verifySqlDelightMigration`) |
 | Roborazzi (`io.github.takahirom.roborazzi`) | 1.76.0 | Record/verify/compare tasks for the Android screenshot tests |
 | moko-resources (`dev.icerock.mobile.multiplatform-resources`) | 0.27.1 | Generates the shared strings (`MR`) for Android and iOS; `copyFrameworkResourcesToApp` copies the iOS bundle into the app |
-| detekt (`io.gitlab.arturbosch.detekt`, via build-logic) | 1.23.8 | Kotlin static analysis; `detekt-formatting` 1.23.8 wraps ktlint (check-only) — see README "Static analysis" |
-| Compose rules for detekt (`io.nlopez.compose.rules:detekt`) | 0.4.28 | Jetpack Compose lint rules (last line built for detekt 1.23) |
+| detekt (`dev.detekt`, via build-logic) | 2.0.0-alpha.6 | Kotlin static analysis; pre-release because 1.23.x can't parse Kotlin 2.3. `detekt-rules-ktlint-wrapper` 2.0.0-alpha.6 wraps ktlint (check-only by default) — see README "Static analysis" |
+| Compose rules for detekt (`io.nlopez.compose.rules:detekt`) | 0.6.8 | Jetpack Compose lint rules (built against detekt 2.0.0-alpha.6) |

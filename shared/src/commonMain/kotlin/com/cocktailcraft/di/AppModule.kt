@@ -1,8 +1,16 @@
 package com.cocktailcraft.di
 
-import org.koin.core.module.Module
+import com.cocktailcraft.widget.WidgetDataSource
 import org.koin.dsl.module
 import kotlin.native.HiddenFromObjC
+
+/** What the home-screen widgets show, on both platforms. */
+@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper (AR-12)
+val widgetDataModule = module {
+    single {
+        WidgetDataSource(detailRepository = get(), offlineRepository = get(), favoritesRepository = get())
+    }
+}
 
 /**
  * Main application module that combines all other modules.
@@ -13,6 +21,7 @@ val appModule = listOf(
     networkModule,
     dataModule,
     domainModule,
-    presentationModule
+    presentationModule,
+    widgetDataModule
 )
 // The platformModule function is declared in PlatformModule.kt

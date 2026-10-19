@@ -19,7 +19,10 @@ import com.russhwolf.settings.Settings
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,14 +46,20 @@ class CocktailDetailRepositoryImplTest {
 
     // Mirrors the DataModule wiring: remote source + focused offline repo
     // backing the detail impl's cache-first lookups.
-    private fun fixture(
+    private fun TestScope.fixture(
         api: FakeCocktailApi = FakeCocktailApi(),
         settings: Settings = MapSettings(),
         online: Boolean = true
     ): Fixture {
         val networkMonitor = FakeNetworkMonitor(online)
         val policy = OfflineModePolicy(networkMonitor)
-        val cache = CocktailCache(createTestDatabase(), settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
+        val cache = CocktailCache(
+            createTestDatabase(),
+            settings,
+            Json { ignoreUnknownKeys = true },
+            config,
+            offlineModePolicy = policy
+        )
         val remote = CocktailRemoteDataSource(api, ApiRateLimiter())
         val offline = CocktailOfflineRepositoryImpl(
             offlineModePolicy = policy,
@@ -61,6 +70,7 @@ class CocktailDetailRepositoryImplTest {
             remote = remote,
             cocktailCache = cache,
             offlineRepository = offline,
+            appScope = backgroundScope,
             nowMs = { fixture.nowMs }
         )
         fixture = Fixture(detail, cache, networkMonitor)
@@ -99,7 +109,10 @@ class CocktailDetailRepositoryImplTest {
     fun offlineReturnsCachedPartialInsteadOfFetching() = runTest {
         // A partial cache entry doesn't satisfy the full-details fast path,
         // but while offline it must still be served rather than hit the API.
-        val fixture = fixture(api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))), online = false)
+        val fixture = fixture(
+            api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))),
+            online = false
+        )
         fixture.cache.cacheCocktail(partialCocktail("1", name = "Cached Partial"))
 
         val result = fixture.detail.getCocktailById("1")
@@ -109,7 +122,10 @@ class CocktailDetailRepositoryImplTest {
 
     @Test
     fun offlineWithNothingCachedReturnsNullSuccess() = runTest {
-        val fixture = fixture(api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))), online = false)
+        val fixture = fixture(
+            api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))),
+            online = false
+        )
 
         val result = fixture.detail.getCocktailById("1")
 
@@ -225,5 +241,18 @@ class CocktailDetailRepositoryImplTest {
 
         assertEquals(1, api.lookupRequests)
         results.forEach { assertIs<Result.Success<Unit>>(it) }
+    }
+
+    @Test
+    fun aRefreshCompletesIntoTheCacheWhenItsCallerIsCancelled() = runTest {
+        // The detail screen closing mid-fetch must not throw the response away
+        val api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))).apply { lookupDelayMs = 500 }
+        val fixture = fixture(api = api)
+
+        val caller = launch { fixture.detail.refreshCocktail("1", force = true) }
+        while (api.lookupRequests == 0) yield()
+        caller.cancel()
+
+        assertEquals("Remote Margarita", fixture.detail.observeCocktail("1").first { it != null }?.name)
     }
 }

@@ -21,16 +21,17 @@ package com.cocktailcraft.designsystem
 
 object ColorTokens {
     // Brand
-    val primaryLight: Long = 0xFFEB6A43   // Coral, main elements
-    val primaryDark: Long = 0xFFFF8A65    // Lighter coral for dark theme
+    val primaryLight: Long = 0xFFEB6A43 // Coral, main elements
+    val primaryDark: Long = 0xFFFF8A65 // Lighter coral for dark theme
     val secondaryLight: Long = 0xFFFFC84D // Gold accents
-    val secondaryDark: Long = 0xFFFFD180  // Lighter gold for dark theme
+    val secondaryDark: Long = 0xFFFFD180 // Lighter gold for dark theme
 
     // Surfaces
     val backgroundLight: Long = 0xFFFAFAFA
     val backgroundDark: Long = 0xFF121212
     val surfaceLight: Long = 0xFFFFFFFF
     val surfaceDark: Long = 0xFF1E1E1E
+
     // Raised controls on a surface (search field, filter button, unselected
     // chips). Light uses plain white; dark needs a third, lighter level.
     val surfaceRaisedLight: Long = 0xFFFFFFFF
@@ -51,10 +52,10 @@ object ColorTokens {
     val gray: Long = 0xFF8E8E93
     val darkGray: Long = 0xFF636366
     val lightGray: Long = 0xFFE5E5EA
-    val subtleDark: Long = 0xFF3A3A3C     // lightGray's role on dark surfaces
+    val subtleDark: Long = 0xFF3A3A3C // lightGray's role on dark surfaces
 
     // Component accents
-    val chipBackground: Long = 0xFF9C5C38     // Brown category chips ("Vodka")
+    val chipBackground: Long = 0xFF9C5C38 // Brown category chips ("Vodka")
     val chipBackgroundDark: Long = 0xFFC79A7E // Softer tan, reads on dark
 }
 
@@ -121,8 +122,8 @@ object RadiusTokens {
  */
 object TypographyTokens {
     val display: Int = 28
-    val title: Int = 24     // top bar titles
-    val headline: Int = 20  // section headers
+    val title: Int = 24 // top bar titles
+    val headline: Int = 20 // section headers
     val subtitle: Int = 18
     val body: Int = 16
     val bodySmall: Int = 14

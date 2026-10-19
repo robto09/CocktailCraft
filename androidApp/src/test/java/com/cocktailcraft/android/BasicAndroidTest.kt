@@ -2,8 +2,8 @@ package com.cocktailcraft.android
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Test
 import org.junit.Rule
+import org.junit.jupiter.api.Test
 import kotlin.test.assertTrue
 
 /**

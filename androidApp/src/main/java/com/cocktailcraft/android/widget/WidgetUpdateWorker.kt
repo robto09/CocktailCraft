@@ -17,6 +17,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.cocktailcraft.widget.WidgetDataSource
 import kotlinx.coroutines.CancellationException
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -32,12 +33,11 @@ import java.util.concurrent.TimeUnit
  * All widget data writes go through [refreshRandomCocktailWidgets] and
  * [refreshFavoritesWidgets], which the widgets' own refresh buttons use too.
  */
-class WidgetUpdateWorker(
-    context: Context,
-    params: WorkerParameters
-) : CoroutineWorker(context, params), KoinComponent {
+class WidgetUpdateWorker(context: Context, params: WorkerParameters) :
+    CoroutineWorker(context, params),
+    KoinComponent {
 
-    private val dataProvider: WidgetDataProvider by inject()
+    private val dataProvider: WidgetDataSource by inject()
 
     override suspend fun doWork(): Result {
         val context = applicationContext
@@ -63,7 +63,9 @@ class WidgetUpdateWorker(
 
         return when {
             randomOk && favoritesOk -> Result.success()
+
             runAttemptCount < MAX_RETRIES -> Result.retry()
+
             // Periodic work simply waits for its next period
             else -> Result.failure()
         }
@@ -84,6 +86,7 @@ class WidgetUpdateWorker(
 
         // Marks requests made by this version (see the migration in doWork)
         private const val TAG = "cocktailcraft_widget_refresh"
+
         // Same name as the old hourly request, so UPDATE/cancel cover it
         private const val PERIODIC_WORK_NAME = "widget_update_work"
         private const val ONE_TIME_WORK_PREFIX = "widget_refresh_now_"
@@ -113,7 +116,8 @@ class WidgetUpdateWorker(
          */
         fun schedulePeriodicRefresh(context: Context) {
             val request = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(
-                UPDATE_INTERVAL_HOURS, TimeUnit.HOURS
+                UPDATE_INTERVAL_HOURS,
+                TimeUnit.HOURS
             )
                 .setConstraints(periodicConstraints)
                 .setInputData(workDataOf(KEY_TARGET to TARGET_ALL))
@@ -202,7 +206,7 @@ class WidgetUpdateWorker(
  */
 internal suspend fun refreshRandomCocktailWidgets(
     context: Context,
-    provider: WidgetDataProvider,
+    provider: WidgetDataSource,
     glanceIds: List<GlanceId>? = null,
     showErrorOnFailure: Boolean = false
 ): Boolean {
@@ -211,7 +215,7 @@ internal suspend fun refreshRandomCocktailWidgets(
     // No widgets placed: don't burn a network call (AN-2)
     if (ids.isEmpty()) return true
 
-    val cocktail = provider.getRandomCocktail()
+    val cocktail = provider.randomCocktail()
     val widget = RandomCocktailWidget()
     ids.forEach { glanceId ->
         updateAppWidgetState(context, glanceId) { prefs ->
@@ -237,7 +241,7 @@ internal suspend fun refreshRandomCocktailWidgets(
  */
 internal suspend fun refreshFavoritesWidgets(
     context: Context,
-    provider: WidgetDataProvider,
+    provider: WidgetDataSource,
     glanceIds: List<GlanceId>? = null,
     showErrorOnFailure: Boolean = false
 ): Boolean {
@@ -245,7 +249,7 @@ internal suspend fun refreshFavoritesWidgets(
         ?: GlanceAppWidgetManager(context).getGlanceIds(FavoritesWidget::class.java)
     if (ids.isEmpty()) return true
 
-    val favorites = provider.getFavoriteCocktails()
+    val favorites = provider.favoriteCocktails()
     val favoritesJson = favorites?.let { list ->
         FavoriteItem.toJsonArray(
             list.map { cocktail ->

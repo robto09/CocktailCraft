@@ -6,12 +6,13 @@ import com.russhwolf.settings.Settings
  * A [Settings] whose backing store is created on first use instead of when
  * Koin resolves it.
  *
- * The secure store is expensive to open — on Android, MasterKey/Keystore
- * access, Tink keyset parsing, the EncryptedSharedPreferences disk read and
- * the one-time auth migration; on iOS, Keychain reads plus the migration —
+ * The secure store is expensive to open — on Android, Keystore access,
+ * Tink keyset parsing, decrypting the store file and the one-time
+ * migrations; on iOS, Keychain reads plus the migration —
  * and it sits on the first frame's injection path (MainActivity's theme
- * ViewModel → ManageProfileUseCase → AuthRepository). Wrapping it here keeps
- * resolution free: every AuthRepositoryImpl access already runs inside
+ * ViewModel → AuthRepository → AuthRepositoryImpl, which UserSession also
+ * reads to scope the user's data). Wrapping it here keeps resolution free:
+ * every AuthRepositoryImpl access already runs inside
  * withContext(ioDispatcher), so the store is now opened there, off the main
  * thread. [lazy] is synchronized, so concurrent first calls open it once; if
  * opening throws, the call fails (and surfaces as an auth Result.Error)

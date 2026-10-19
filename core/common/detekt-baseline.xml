@@ -2,20 +2,12 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>CyclomaticComplexMethod:ErrorHandler.kt$ErrorHandler$fun getErrorFromException( exception: Throwable, defaultMessage: StringDesc = MR.strings.error_generic.desc(), recoveryAction: RecoveryAction? = null ): UserFriendlyError</ID>
-    <ID>ImportOrdering:ErrorHandlerTest.kt$import com.cocktailcraft.domain.util.DomainException import com.cocktailcraft.domain.util.ErrorCode import com.cocktailcraft.resources.MR import com.cocktailcraft.resources.common_retry import com.cocktailcraft.resources.error import com.cocktailcraft.resources.error_generic import com.cocktailcraft.resources.error_load_cocktails_failed import com.cocktailcraft.resources.error_message_invalid_payload import com.cocktailcraft.resources.error_message_network import com.cocktailcraft.resources.error_message_server import com.cocktailcraft.resources.error_message_timeout import com.cocktailcraft.resources.error_suggestion_network import com.cocktailcraft.resources.error_title_data import com.cocktailcraft.resources.error_title_network import com.cocktailcraft.resources.error_title_server import com.cocktailcraft.resources.error_title_timeout import dev.icerock.moko.resources.desc.Raw import dev.icerock.moko.resources.desc.StringDesc import dev.icerock.moko.resources.desc.desc import io.ktor.client.plugins.HttpRequestTimeoutException import io.ktor.utils.io.errors.IOException import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertSame import kotlinx.serialization.SerializationException</ID>
-    <ID>ImportOrdering:NetworkMonitor.kt$import kotlin.native.HiddenFromObjC import kotlinx.coroutines.flow.MutableStateFlow import kotlinx.coroutines.flow.StateFlow import kotlinx.coroutines.flow.asStateFlow</ID>
-    <ID>Indentation:ErrorHandler.kt$ErrorHandler$ </ID>
-    <ID>LongMethod:ErrorHandler.kt$ErrorHandler$fun getErrorFromException( exception: Throwable, defaultMessage: StringDesc = MR.strings.error_generic.desc(), recoveryAction: RecoveryAction? = null ): UserFriendlyError</ID>
-    <ID>MagicNumber:ErrorHandler.kt$ErrorHandler$401</ID>
-    <ID>MagicNumber:ErrorHandler.kt$ErrorHandler$403</ID>
-    <ID>MagicNumber:ErrorHandler.kt$ErrorHandler$404</ID>
-    <ID>MagicNumber:ErrorHandler.kt$ErrorHandler$429</ID>
-    <ID>NewLineAtEndOfFile:Result.kt$com.cocktailcraft.domain.util.Result.kt</ID>
-    <ID>TooGenericExceptionCaught:ResultCatching.kt$e: Exception</ID>
-    <ID>TooGenericExceptionThrown:ResultCatchingTest.kt$ResultCatchingTest$throw RuntimeException()</ID>
-    <ID>UseCheckOrError:Result.kt$throw IllegalStateException("Result is still loading")</ID>
-    <ID>VariableNaming:NetworkMonitor.kt$BaseNetworkMonitor$// Optimistically true only until the platform monitor reports (SH-5): // Android overwrites it synchronously inside startMonitoring(); the iOS // path monitor fires its update handler with the CURRENT path immediately // after start, which is the real seed. A pessimistic (false) seed was // rejected deliberately — a false "offline" blip at launch would trip the // ViewModels' auto-enable-offline-mode side effect, which is sticky. protected val _isOnline = MutableStateFlow(true)</ID>
-    <ID>Wrapping:ErrorHandler.kt$ErrorHandler$(</ID>
+    <ID>BackingPropertyNaming:NetworkMonitor.kt:BaseNetworkMonitor$// Optimistically true only until the platform monitor reports (SH-5): // Android overwrites it synchronously inside startMonitoring(); the iOS // path monitor fires its update handler with the CURRENT path immediately // after start, which is the real seed. A pessimistic (false) seed would // flash the offline banner at every launch and mark Home's first load // as served offline, which forces a second fetch once the real // (online) state arrives. protected val _isOnline = MutableStateFlow(true)</ID>
+    <ID>CyclomaticComplexMethod:ErrorHandler.kt:ErrorHandler$fun getErrorFromException: UserFriendlyError</ID>
+    <ID>LongMethod:ErrorHandler.kt:ErrorHandler$fun getErrorFromException: UserFriendlyError</ID>
+    <ID>NewLineAtEndOfFile:Result.kt:com.cocktailcraft.domain.util.Result.kt</ID>
+    <ID>TooGenericExceptionCaught:ResultCatching.kt:e: Exception</ID>
+    <ID>TooGenericExceptionThrown:ResultCatchingTest.kt:ResultCatchingTest$throw RuntimeException()</ID>
+    <ID>VariableNaming:NetworkMonitor.kt:BaseNetworkMonitor$// Optimistically true only until the platform monitor reports (SH-5): // Android overwrites it synchronously inside startMonitoring(); the iOS // path monitor fires its update handler with the CURRENT path immediately // after start, which is the real seed. A pessimistic (false) seed would // flash the offline banner at every launch and mark Home's first load // as served offline, which forces a second fetch once the real // (online) state arrives. protected val _isOnline = MutableStateFlow(true)</ID>
   </CurrentIssues>
 </SmellBaseline>

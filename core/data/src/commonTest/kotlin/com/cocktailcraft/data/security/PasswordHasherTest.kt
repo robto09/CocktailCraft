@@ -79,5 +79,4 @@ class PasswordHasherTest {
         assertFalse(PasswordHasher.verify("anything", "v2:1:00ff:00ff")) // wrong digest
         assertFalse(PasswordHasher.verify("anything", "v3:1:00ff:00ff")) // unknown version
     }
-
 }

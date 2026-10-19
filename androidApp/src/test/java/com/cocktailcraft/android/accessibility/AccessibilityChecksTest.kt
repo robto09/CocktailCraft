@@ -29,7 +29,7 @@ import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.viewmodel.state.CartUiState
 import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
 import com.cocktailcraft.viewmodel.state.HomeSortOption
-import com.cocktailcraft.viewmodel.state.OrderUiState
+import com.cocktailcraft.viewmodel.state.OrderDetailUiState
 import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
 import com.github.takahirom.roborazzi.RoborazziATFAccessibilityCheckOptions
 import com.github.takahirom.roborazzi.RoborazziATFAccessibilityChecker
@@ -101,7 +101,6 @@ class AccessibilityChecksTest(private val fontScale: Float) {
             selectedCategory = null,
             hasActiveFilters = false,
             isSearchActive = false,
-            isLoadingMore = false,
             hasMoreData = false,
             favorites = listOf(PreviewData.cocktail),
             isNetworkAvailable = true,
@@ -136,7 +135,6 @@ class AccessibilityChecksTest(private val fontScale: Float) {
                 selectedCategory = null,
                 hasActiveFilters = false,
                 isSearchActive = false,
-                isLoadingMore = false,
                 hasMoreData = false,
                 favorites = listOf(PreviewData.cocktail),
                 isNetworkAvailable = true,
@@ -182,8 +180,8 @@ class AccessibilityChecksTest(private val fontScale: Float) {
     @Test
     fun orderDetail() = check {
         OrderDetailContent(
-            state = OrderUiState(
-                selectedOrder = Order(
+            state = OrderDetailUiState(
+                order = Order(
                     id = "ORD-42052",
                     date = "2026-07-02",
                     items = listOf(OrderItem(name = "Margarita", quantity = 2, price = Money(1250))),

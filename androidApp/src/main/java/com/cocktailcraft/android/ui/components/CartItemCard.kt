@@ -180,7 +180,10 @@ fun CartItemCard(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Remove,
-                                        contentDescription = stringResource(MR.strings.cart_decrease_quantity_a11y, item.cocktail.name),
+                                        contentDescription = stringResource(
+                                            MR.strings.cart_decrease_quantity_a11y,
+                                            item.cocktail.name
+                                        ),
                                         tint = MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -211,7 +214,10 @@ fun CartItemCard(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
-                                        contentDescription = stringResource(MR.strings.cart_increase_quantity_a11y, item.cocktail.name),
+                                        contentDescription = stringResource(
+                                            MR.strings.cart_increase_quantity_a11y,
+                                            item.cocktail.name
+                                        ),
                                         tint = Color.White,
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -247,7 +253,10 @@ fun CartItemCard(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = stringResource(MR.strings.cart_remove_item_a11y, item.cocktail.name),
+                                    contentDescription = stringResource(
+                                        MR.strings.cart_remove_item_a11y,
+                                        item.cocktail.name
+                                    ),
                                     tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(20.dp)
                                 )

@@ -6,6 +6,7 @@ import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.remote.ApiRateLimiter
 import com.cocktailcraft.data.remote.CocktailDto
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
+import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.CocktailCategories
 import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.SearchFilters
@@ -16,12 +17,18 @@ import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.testCocktail
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CocktailSearchRepositoryImplTest {
@@ -36,15 +43,30 @@ class CocktailSearchRepositoryImplTest {
 
     // Mirrors the DataModule wiring: remote source + focused offline repo +
     // the shared category fetcher backing the search impl.
-    private fun fixture(
+    // [dispatcher] (the test scheduler's, for tests that measure virtual
+    // time) runs the cache's and the remote source's work
+    private fun TestScope.fixture(
         api: FakeCocktailApi = FakeCocktailApi(),
         settings: Settings = MapSettings(),
-        online: Boolean = true
+        online: Boolean = true,
+        dispatcher: CoroutineDispatcher? = null,
+        appConfig: AppConfig = config
     ): Fixture {
         val networkMonitor = FakeNetworkMonitor(online)
         val policy = OfflineModePolicy(networkMonitor)
-        val cache = CocktailCache(createTestDatabase(), settings, Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
-        val remote = CocktailRemoteDataSource(api, ApiRateLimiter())
+        val cache = CocktailCache(
+            createTestDatabase(),
+            settings,
+            Json { ignoreUnknownKeys = true },
+            appConfig,
+            ioDispatcher = dispatcher ?: Dispatchers.IO,
+            offlineModePolicy = policy
+        )
+        val remote = CocktailRemoteDataSource(
+            api,
+            ApiRateLimiter(),
+            defaultDispatcher = dispatcher ?: Dispatchers.Default
+        )
         val offline = CocktailOfflineRepositoryImpl(
             offlineModePolicy = policy,
             cocktailCache = cache
@@ -52,7 +74,8 @@ class CocktailSearchRepositoryImplTest {
         val fetcher = CocktailCategoryFetcher(
             remote = remote,
             cocktailCache = cache,
-            offlineRepository = offline
+            offlineRepository = offline,
+            appScope = backgroundScope
         )
         val search = CocktailSearchRepositoryImpl(
             remote = remote,
@@ -63,7 +86,7 @@ class CocktailSearchRepositoryImplTest {
         return Fixture(search, networkMonitor, cache)
     }
 
-    private fun repository(
+    private fun TestScope.repository(
         api: FakeCocktailApi = FakeCocktailApi(),
         settings: Settings = MapSettings(),
         online: Boolean = true
@@ -171,6 +194,41 @@ class CocktailSearchRepositoryImplTest {
     }
 
     @Test
+    fun advancedSearchRunsItsFilterCallsConcurrently() = runTest {
+        val api = FakeCocktailApi(drinks = sampleDrinks()).apply {
+            searchDelayMs = 2_000
+            categoryDelayMs = 2_000
+        }
+        val repo = fixture(api = api, dispatcher = StandardTestDispatcher(testScheduler)).search
+
+        val result = repo.advancedSearch(SearchFilters(query = "mojito", category = "Ordinary Drink"))
+
+        assertEquals(listOf("5"), (result as Result.Success).data.map { it.id })
+        assertEquals(2_000L, testScheduler.currentTime, "both calls in flight together, not one after the other")
+    }
+
+    @Test
+    fun advancedSearchKeepsItsPartialResultsOutOfTheCacheAndTheCategoryPagesIn() = runTest {
+        // An alcoholic filter lists hundreds of drinks, far past the cap
+        val manyDrinks = (100..399).map { drinkDto("$it", "Drink $it", "Ordinary Drink", "Alcoholic", "Glass", "Rum") }
+        val api = FakeCocktailApi(drinks = sampleDrinks() + manyDrinks)
+        val fiveRowCap = object : AppConfig by config {
+            override val maxOfflineCocktails: Int = 5
+        }
+        val fixture = fixture(api = api, appConfig = fiveRowCap)
+        fixture.search.filterByCategory("Cocktail")
+
+        val result = fixture.search.advancedSearch(SearchFilters(alcoholic = true))
+
+        assertEquals(303, (result as Result.Success).data.size)
+        assertNull(fixture.cache.getCachedCocktail("100"), "filter.php's partial records aren't cached")
+        // The stored page is whole and fresh: served without a refetch
+        val page = fixture.search.filterByCategory("Cocktail") as Result.Success
+        assertEquals(listOf("2", "3"), page.data.map { it.id })
+        assertEquals(1, api.categoryRequests)
+    }
+
+    @Test
     fun advancedSearchReturnsErrorWhenAnActiveFilterCallFails() = runTest {
         val api = FakeCocktailApi(drinks = sampleDrinks())
         api.endpointError = RuntimeException("boom")
@@ -242,8 +300,10 @@ class CocktailSearchRepositoryImplTest {
 
         val cocktails = (result as Result.Success).data
         assertEquals(setOf("2", "3"), cocktails.map { it.id }.toSet())
-        assertTrue(cocktails.all { it.category == "Cocktail" },
-            "partial filter.php records must be stamped with the category they were fetched by")
+        assertTrue(
+            cocktails.all { it.category == "Cocktail" },
+            "partial filter.php records must be stamped with the category they were fetched by"
+        )
     }
 
     @Test
@@ -286,17 +346,21 @@ class CocktailSearchRepositoryImplTest {
         val fixture = fixture(api = FakeCocktailApi())
 
         // Entries persisted before category stamping existed carry no category.
-        fixture.cache.cacheCocktails(listOf(
-            testCocktail("legacy1", category = null),
-            testCocktail("legacy2", category = null)
-        ))
+        fixture.cache.cacheCocktails(
+            listOf(
+                testCocktail("legacy1", category = null),
+                testCocktail("legacy2", category = null)
+            )
+        )
         fixture.network.setOnline(false)
 
         val result = fixture.search.filterByCategory(CocktailCategories.DEFAULT)
 
-        assertEquals(setOf("legacy1", "legacy2"),
+        assertEquals(
+            setOf("legacy1", "legacy2"),
             (result as Result.Success).data.map { it.id }.toSet(),
-            "the default offline browse must surface cached entries that predate category stamping")
+            "the default offline browse must surface cached entries that predate category stamping"
+        )
     }
 
     @Test
@@ -308,9 +372,11 @@ class CocktailSearchRepositoryImplTest {
 
         val result = fixture.search.filterByCategory("Cocktail")
 
-        assertEquals(setOf("2", "3"),
+        assertEquals(
+            setOf("2", "3"),
             (result as Result.Success).data.map { it.id }.toSet(),
-            "an explicit fetch with an empty cache must try the network even when the monitor says offline")
+            "an explicit fetch with an empty cache must try the network even when the monitor says offline"
+        )
     }
 
     @Test

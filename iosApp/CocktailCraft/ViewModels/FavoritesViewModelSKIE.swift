@@ -26,8 +26,8 @@ final class FavoritesViewModelSKIE: SharedViewModelWrapper<FavoritesUiState> {
         await run { try await sharedViewModel.loadFavorites() }
     }
 
-    func toggleFavorite(_ cocktail: Cocktail) async {
-        await run { try await sharedViewModel.toggleFavorite(cocktail: cocktail) }
+    func toggleFavorite(_ cocktail: Cocktail) {
+        sharedViewModel.toggleFavorite(cocktail: cocktail)
     }
 
     /// Unfavorites from the Favorites list; announced on the mirrored

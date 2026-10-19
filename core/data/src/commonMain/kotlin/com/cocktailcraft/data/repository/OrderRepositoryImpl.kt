@@ -26,6 +26,9 @@ import kotlinx.coroutines.withContext
  * The status column holds [OrderStatus.storageValue] ("Processing", ...),
  * the same strings stored before the enum existed, so old rows read back
  * unchanged.
+ *
+ * Each owner (user, or the guest) sees, cancels and deletes only the orders
+ * they placed (see UserDataOwnership.kt).
  */
 internal class OrderRepositoryImpl(
     private val localDatabase: LocalDatabase,
@@ -45,32 +48,33 @@ internal class OrderRepositoryImpl(
             )
         }
 
-    private fun CocktailCraftDatabase.readOrders(): List<Order> =
-        customerOrderQueries.selectAllWithItems().executeAsList().map { it.toRow() }.toOrders()
+    private fun CocktailCraftDatabase.readOrders(ownerId: String): List<Order> =
+        customerOrderQueries.selectAllWithItems(ownerId).executeAsList().map { it.toRow() }.toOrders()
 
     private fun withId(order: Order): Order =
         if (order.id.isBlank()) order.copy(id = UUID.randomUUID()) else order
 
     override fun observeOrders(): Flow<List<Order>> =
-        localDatabase.observe(ioDispatcher, { customerOrderQueries.selectAllWithItems() }) { rows ->
+        localDatabase.observe(ioDispatcher, { ownerId -> customerOrderQueries.selectAllWithItems(ownerId) }) { rows ->
             rows.map { it.toRow() }.toOrders()
         }
 
     override suspend fun getOrders(): Result<List<Order>> = withContext(ioDispatcher) {
         runCatchingResult("Failed to load orders") {
-            Result.Success(localDatabase.get().readOrders())
+            Result.Success(localDatabase.get().readOrders(localDatabase.ownerId()))
         }
     }
 
     override suspend fun placeOrderAndClearCart(order: Order): Result<Unit> = withContext(ioDispatcher) {
         runCatchingResult("Failed to place order") {
             val db = localDatabase.get()
+            val ownerId = localDatabase.ownerId()
             // One transaction: either the order exists and the cart is empty,
             // or neither changed — a failure can't lose the cart or leave it
             // behind to be ordered twice.
             db.transaction {
-                db.insertOrderWithItems(withId(order))
-                db.cartItemQueries.deleteAll()
+                db.insertOrderWithItems(withId(order), ownerId)
+                db.cartItemQueries.deleteAll(ownerId)
             }
             Result.Success(Unit)
         }
@@ -78,7 +82,8 @@ internal class OrderRepositoryImpl(
 
     override suspend fun getOrderById(id: String): Result<Order?> = withContext(ioDispatcher) {
         runCatchingResult("Failed to get order by ID") {
-            val rows = localDatabase.get().customerOrderQueries.selectByIdWithItems(id).executeAsList()
+            val rows = localDatabase.get().customerOrderQueries.selectByIdWithItems(localDatabase.ownerId(), id)
+                .executeAsList()
                 .map { it.toRow() }
             Result.Success(rows.toOrders().firstOrNull())
         }
@@ -87,9 +92,10 @@ internal class OrderRepositoryImpl(
     override suspend fun deleteOrder(id: String): Result<Unit> = withContext(ioDispatcher) {
         runCatchingResult("Failed to delete order") {
             val db = localDatabase.get()
+            val ownerId = localDatabase.ownerId()
             db.transaction {
-                db.customerOrderQueries.deleteItems(id)
-                db.customerOrderQueries.deleteOrder(id)
+                db.customerOrderQueries.deleteItems(id = id, ownerId = ownerId)
+                db.customerOrderQueries.deleteOrder(ownerId = ownerId, id = id)
             }
             Result.Success(Unit)
         }
@@ -98,13 +104,18 @@ internal class OrderRepositoryImpl(
     override suspend fun cancelOrder(orderId: String): Result<Boolean> = withContext(ioDispatcher) {
         runCatchingResult("Failed to cancel order") {
             val db = localDatabase.get()
+            val ownerId = localDatabase.ownerId()
             // Check-then-update in one transaction so a concurrent status
             // change can't slip in between.
             val cancelled = db.transactionWithResult {
-                val status = db.customerOrderQueries.selectStatus(orderId).executeAsOneOrNull()
+                val status = db.customerOrderQueries.selectStatus(ownerId, orderId).executeAsOneOrNull()
                     ?.let(OrderStatus::fromStorageValue)
                 if (status?.isCancellable == true) {
-                    db.customerOrderQueries.updateStatus(status = OrderStatus.CANCELLED.storageValue, id = orderId)
+                    db.customerOrderQueries.updateStatus(
+                        status = OrderStatus.CANCELLED.storageValue,
+                        ownerId = ownerId,
+                        id = orderId
+                    )
                     true
                 } else {
                     false
@@ -116,13 +127,7 @@ internal class OrderRepositoryImpl(
 }
 
 /** One row of the order/item join; [item] is null for an order without items. */
-private class OrderRow(
-    val id: String,
-    val date: String,
-    val totalCents: Long,
-    val status: String,
-    val item: OrderItem?
-)
+private class OrderRow(val id: String, val date: String, val totalCents: Long, val status: String, val item: OrderItem?)
 
 private fun SelectAllWithItems.toRow() =
     OrderRow(id, date, total_cents, status, orderItem(item_cocktail_id, item_name, item_quantity, item_price_cents))
@@ -142,15 +147,16 @@ private fun orderItem(cocktailId: String?, name: String?, quantity: Long?, price
     }
 
 /**
- * Inserts [order] and its items; a duplicate order id fails. Call inside a
- * transaction. Shared with the legacy Settings import.
+ * Inserts [order] and its items as [ownerId]'s; a duplicate order id fails.
+ * Call inside a transaction. Shared with the legacy Settings import.
  */
-internal fun CocktailCraftDatabase.insertOrderWithItems(order: Order) {
+internal fun CocktailCraftDatabase.insertOrderWithItems(order: Order, ownerId: String) {
     customerOrderQueries.insertOrder(
         id = order.id,
         date = order.date,
         totalCents = order.total.cents,
-        status = order.status.storageValue
+        status = order.status.storageValue,
+        ownerId = ownerId
     )
     order.items.forEachIndexed { index, item ->
         customerOrderQueries.insertItem(

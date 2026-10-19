@@ -4,8 +4,8 @@ import app.cash.sqldelight.db.SqlDriver
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.di.appModule
-import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.di.secureSettingsQualifier
+import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.createInMemorySqlDriver
@@ -57,6 +57,7 @@ class KoinHelperTest : MainDispatcherTest() {
         // Shared ViewModels — screen-scoped
         assertNotNull(helper.getSharedCocktailDetailViewModel())
         assertNotNull(helper.getSharedReviewViewModel())
+        assertNotNull(helper.getSharedOrderDetailViewModel())
 
         // Shared ViewModels — global-state singles
         assertNotNull(helper.getSharedFavoritesViewModel())

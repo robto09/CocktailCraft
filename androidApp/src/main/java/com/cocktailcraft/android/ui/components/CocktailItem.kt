@@ -1,24 +1,19 @@
 package com.cocktailcraft.android.ui.components
 
-import android.graphics.drawable.ColorDrawable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.filled.LocalBar
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -131,18 +126,12 @@ fun CocktailItem(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Use safe call for ingredients that might be null or empty
+                // The first two ingredients; a partial record (from a list
+                // endpoint) has none yet, so point at the detail screen instead
                 Text(
-                    text = if (cocktail.ingredients.isNotEmpty()) {
-                        val firstIngredient = cocktail.ingredients.first().name
-                        // Check if it's a placeholder
-                        if (firstIngredient == "Tap to view ingredients") {
-                            firstIngredient
-                        } else {
-                            // Join first 2 ingredients with safe operators
-                            cocktail.ingredients.take(2).joinToString(", ") { it.name }
-                                .let { if (cocktail.ingredients.size > 2) "$it..." else it }
-                        }
+                    text = if (cocktail.hasFullDetails && cocktail.ingredients.isNotEmpty()) {
+                        cocktail.ingredients.take(2).joinToString(", ") { it.name }
+                            .let { if (cocktail.ingredients.size > 2) "$it..." else it }
                     } else {
                         stringResource(MR.strings.list_tap_to_view_ingredients)
                     },
@@ -186,7 +175,13 @@ fun CocktailItem(
                         Icon(
                             imageVector = Icons.Default.ShoppingCart,
                             contentDescription = stringResource(MR.strings.add_to_cart_item_a11y, cocktail.name),
-                            tint = if (cocktail.stockCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            tint = if (cocktail.stockCount >
+                                0
+                            ) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.outline
+                            },
                             modifier = Modifier.size(20.dp)
                         )
                     }

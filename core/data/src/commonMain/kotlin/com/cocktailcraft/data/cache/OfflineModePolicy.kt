@@ -12,9 +12,7 @@ import kotlinx.coroutines.flow.first
  * the answer from raw NetworkMonitor reads. Deliberately depends on nothing
  * above NetworkMonitor so the DI graph stays acyclic.
  */
-internal class OfflineModePolicy(
-    private val networkMonitor: NetworkMonitor
-) {
+internal class OfflineModePolicy(private val networkMonitor: NetworkMonitor) {
     /** True when the network is currently down. */
     suspend fun isOffline(): Boolean = !networkMonitor.isOnline.first()
 }

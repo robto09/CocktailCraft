@@ -19,14 +19,17 @@ class CocktailOfflineRepositoryImplTest {
 
     private val config = AppConfigImpl()
 
-    private class Fixture(
-        val repo: CocktailOfflineRepositoryImpl,
-        val cache: CocktailCache
-    )
+    private class Fixture(val repo: CocktailOfflineRepositoryImpl, val cache: CocktailCache)
 
     private fun fixture(online: Boolean = true): Fixture {
         val policy = OfflineModePolicy(FakeNetworkMonitor(online))
-        val cache = CocktailCache(createTestDatabase(), MapSettings(), Json { ignoreUnknownKeys = true }, config, offlineModePolicy = policy)
+        val cache = CocktailCache(
+            createTestDatabase(),
+            MapSettings(),
+            Json { ignoreUnknownKeys = true },
+            config,
+            offlineModePolicy = policy
+        )
         return Fixture(CocktailOfflineRepositoryImpl(offlineModePolicy = policy, cocktailCache = cache), cache)
     }
 

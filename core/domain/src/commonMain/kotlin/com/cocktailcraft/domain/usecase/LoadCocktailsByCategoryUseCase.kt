@@ -9,13 +9,12 @@ import kotlin.native.HiddenFromObjC
 
 /**
  * Category browsing over the database-backed category pages of
- * [CocktailCatalogRepository]: [observe] for live updates, [invoke] and
- * [loadMore] for refresh-then-read snapshots.
+ * [CocktailCatalogRepository]: [observe] for live updates, [invoke] for a
+ * refresh-then-read snapshot. A stored page is the whole category; callers
+ * page through it themselves.
  */
 @HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
-class LoadCocktailsByCategoryUseCase(
-    private val catalogRepository: CocktailCatalogRepository
-) {
+class LoadCocktailsByCategoryUseCase(private val catalogRepository: CocktailCatalogRepository) {
     /** The stored page of [category], re-emitted whenever it changes (e.g. after a refresh). */
     fun observe(category: String): Flow<List<Cocktail>> = catalogRepository.observeCategory(category)
 
@@ -29,17 +28,5 @@ class LoadCocktailsByCategoryUseCase(
         val refreshed = catalogRepository.refreshCategory(category, force = forceRefresh)
         val stored = catalogRepository.observeCategory(category).first()
         return if (stored.isEmpty() && refreshed is Result.Error) refreshed else Result.Success(stored)
-    }
-
-    /**
-     * Slice out the next page ([page] is 0-indexed: page 1 = items 10..19 for
-     * a size-10 page, following the first page loaded by [invoke]).
-     * Failures propagate as [Result.Error] so callers can tell a failed fetch
-     * apart from a genuinely empty final page.
-     */
-    suspend fun loadMore(category: String, page: Int, pageSize: Int): Result<List<Cocktail>> {
-        return invoke(category).map { cocktails ->
-            cocktails.drop(page * pageSize).take(pageSize)
-        }
     }
 }

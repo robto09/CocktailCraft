@@ -1,5 +1,6 @@
 package com.cocktailcraft.android.ui.components
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -117,7 +118,8 @@ fun ToastSnackbarHost(hostState: SnackbarHostState, modifier: Modifier = Modifie
 /**
  * Shows a shared ViewModel's one-shot [UiEvent]s as toasts while this is in
  * the composition, running an event's action (Undo) when its button is
- * tapped. Collect each ViewModel's events in one place only.
+ * tapped. Collect each ViewModel's events in one place only: the screen
+ * that owns the ViewModel.
  */
 @Composable
 fun UiEventToasts(events: Flow<UiEvent>) {
@@ -125,28 +127,36 @@ fun UiEventToasts(events: Flow<UiEvent>) {
     val context = LocalContext.current
     LaunchedEffect(events, hostState) {
         events.collect { event ->
-            val message = event.message.toString(context)
-            val action = event.action
-            val actionLabel = action?.label?.toString(context)
             // A newer removal's Undo replaces whatever toast is up, rather
             // than queueing behind a long one (as Material snackbars do)
-            if (action != null) hostState.currentSnackbarData?.dismiss()
+            if (event.action != null) hostState.currentSnackbarData?.dismiss()
             // Don't hold up collection while a toast is on screen; the host queues them
-            launch {
-                val result = when (event) {
-                    is UiEvent.Success ->
-                        if (actionLabel != null) {
-                            hostState.showSuccessToast(message, actionLabel)
-                        } else {
-                            hostState.showSuccessToast(message)
-                            null
-                        }
-                    is UiEvent.Failure -> hostState.showErrorToast(message, actionLabel)
-                }
-                if (result == SnackbarResult.ActionPerformed) action?.perform()
-            }
+            launch { hostState.showUiEvent(event, context) }
         }
     }
+}
+
+/**
+ * Toasts one [UiEvent] — an event, or the outcome an action returned (e.g.
+ * add-to-cart) — running its action (Undo) if its button is tapped.
+ * Suspends while the toast is up.
+ */
+suspend fun SnackbarHostState.showUiEvent(event: UiEvent, context: Context) {
+    val message = event.message.toString(context)
+    val action = event.action
+    val actionLabel = action?.label?.toString(context)
+    val result = when (event) {
+        is UiEvent.Success ->
+            if (actionLabel != null) {
+                showSuccessToast(message, actionLabel)
+            } else {
+                showSuccessToast(message)
+                null
+            }
+
+        is UiEvent.Failure -> showErrorToast(message, actionLabel)
+    }
+    if (result == SnackbarResult.ActionPerformed) action?.perform()
 }
 
 /**

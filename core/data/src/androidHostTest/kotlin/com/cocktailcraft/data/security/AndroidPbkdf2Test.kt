@@ -16,7 +16,13 @@ import kotlin.test.assertTrue
  */
 class AndroidPbkdf2Test {
 
-    private class Vector(val password: String, val salt: String, val iterations: Int, val keyLength: Int, val hex: String)
+    private class Vector(
+        val password: String,
+        val salt: String,
+        val iterations: Int,
+        val keyLength: Int,
+        val hex: String
+    )
 
     // Published PBKDF2-HMAC-SHA256 test vectors (incl. a multi-block key)
     private val vectors = listOf(
@@ -24,7 +30,10 @@ class AndroidPbkdf2Test {
         Vector("password", "salt", 2, 32, "ae4d0c95af6b46d32d0adff928f06dd02a303f8ef3c251dfd6e2d85a95474c43"),
         Vector("password", "salt", 4096, 32, "c5e478d59288c841aa530db6845c4c8d962893a001ce4e11a4963873aa98134a"),
         Vector(
-            "passwordPASSWORDpassword", "saltSALTsaltSALTsaltSALTsaltSALTsalt", 4096, 40,
+            "passwordPASSWORDpassword",
+            "saltSALTsaltSALTsaltSALTsaltSALTsalt",
+            4096,
+            40,
             "348c89dbcbd32b2f32d814b8116e84cf2b17347ebc1800181c4e2a1fb8dd53e1c635518c7dac47e9"
         ),
     )

@@ -10,6 +10,9 @@ import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.util.runCatchingResult
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 /**
  * Search and filter operations over TheCocktailDB, extracted from the former
@@ -25,22 +28,22 @@ internal class CocktailSearchRepositoryImpl(
 
     private suspend fun isOffline(): Boolean = offlineRepository.isOffline()
 
-    override suspend fun searchCocktailsByName(name: String): Result<List<Cocktail>> {
-        return runCatchingResult("Failed to search cocktails by name") {
-            Result.Success(remote.searchByName(name))
-        }
+    override suspend fun searchCocktailsByName(name: String): Result<List<Cocktail>> = runCatchingResult(
+        "Failed to search cocktails by name"
+    ) {
+        Result.Success(remote.searchByName(name))
     }
 
-    override suspend fun filterByIngredient(ingredient: String): Result<List<Cocktail>> {
-        return runCatchingResult("Failed to filter by ingredient") {
-            Result.Success(remote.filterByIngredient(ingredient))
-        }
+    override suspend fun filterByIngredient(ingredient: String): Result<List<Cocktail>> = runCatchingResult(
+        "Failed to filter by ingredient"
+    ) {
+        Result.Success(remote.filterByIngredient(ingredient))
     }
 
-    override suspend fun filterByAlcoholic(alcoholic: Boolean): Result<List<Cocktail>> {
-        return runCatchingResult("Failed to filter by alcoholic") {
-            Result.Success(remote.filterByAlcoholic(alcoholic))
-        }
+    override suspend fun filterByAlcoholic(alcoholic: Boolean): Result<List<Cocktail>> = runCatchingResult(
+        "Failed to filter by alcoholic"
+    ) {
+        Result.Success(remote.filterByAlcoholic(alcoholic))
     }
 
     /**
@@ -50,12 +53,12 @@ internal class CocktailSearchRepositoryImpl(
      * show an error/retry instead of an empty list. An empty success means
      * the category is empty.
      */
-    override suspend fun filterByCategory(category: String): Result<List<Cocktail>> {
-        return runCatchingResult("Failed to filter by category") {
-            val refreshed = categoryFetcher.refresh(category)
-            val stored = categoryFetcher.snapshot(category)
-            if (stored.isEmpty() && refreshed is Result.Error) refreshed else Result.Success(stored)
-        }
+    override suspend fun filterByCategory(
+        category: String
+    ): Result<List<Cocktail>> = runCatchingResult("Failed to filter by category") {
+        val refreshed = categoryFetcher.refresh(category)
+        val stored = categoryFetcher.snapshot(category)
+        if (stored.isEmpty() && refreshed is Result.Error) refreshed else Result.Success(stored)
     }
 
     /**
@@ -80,16 +83,20 @@ internal class CocktailSearchRepositoryImpl(
                 return filterByCategory(CocktailCategories.DEFAULT)
             }
 
-            // One call per active filter, in priority order. getOrThrow bubbles a
-            // failed call out to the catch below as Result.Error.
-            val activeSets = mutableListOf<List<Cocktail>>()
-            if (filters.query.isNotBlank()) {
-                activeSets.add(searchCocktailsByName(filters.query).getOrThrow())
+            // One call per active filter, all in flight together (the rate
+            // limiter still spaces the filter.php ones), listed in priority
+            // order. getOrThrow bubbles a failed call out to the catch below as
+            // Result.Error, cancelling the others.
+            val activeSets = coroutineScope {
+                // SearchFilters lives in :core:domain: no cross-module smart casts
+                listOfNotNull(
+                    filters.query.takeIf { it.isNotBlank() }
+                        ?.let { async { searchCocktailsByName(it).getOrThrow() } },
+                    filters.category?.let { async { filterByCategory(it).getOrThrow() } },
+                    filters.ingredient?.let { async { filterByIngredient(it).getOrThrow() } },
+                    filters.alcoholic?.let { async { filterByAlcoholic(it).getOrThrow() } }
+                ).awaitAll()
             }
-            // SearchFilters lives in :core:domain: no cross-module smart casts
-            filters.category?.let { activeSets.add(filterByCategory(it).getOrThrow()) }
-            filters.ingredient?.let { activeSets.add(filterByIngredient(it).getOrThrow()) }
-            filters.alcoholic?.let { activeSets.add(filterByAlcoholic(it).getOrThrow()) }
 
             // Base list = first active set; keep only ids present in every other set.
             val base = activeSets.first()
@@ -98,8 +105,11 @@ internal class CocktailSearchRepositoryImpl(
                 acc.filter { it.id in ids }
             }
 
-            // Cache the results for offline access
-            cocktailCache.cacheCocktails(result)
+            // Cache the full records (name search) for offline access. The
+            // filter.php ones are partial: nothing an offline search could
+            // match beyond the name, and hundreds of them per filter used to
+            // push category pages and full details out of the cache.
+            cocktailCache.cacheCocktails(result.filter { it.hasFullDetails })
 
             Result.Success(result)
         }
@@ -129,8 +139,11 @@ internal class CocktailSearchRepositoryImpl(
             // "Non alcoholic"); the underscore form only exists as a URL token.
             result = result.filter {
                 val value = it.alcoholic?.replace('_', ' ')
-                if (alcoholic) value.equals("Alcoholic", ignoreCase = true)
-                else value.equals("Non alcoholic", ignoreCase = true)
+                if (alcoholic) {
+                    value.equals("Alcoholic", ignoreCase = true)
+                } else {
+                    value.equals("Non alcoholic", ignoreCase = true)
+                }
             }
         }
         return result

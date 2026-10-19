@@ -12,10 +12,11 @@ import com.cocktailcraft.designsystem.AccentColorTokens
 import com.cocktailcraft.designsystem.ColorTokens
 
 // CocktailCraft colors, mapped 1:1 from the cross-platform design tokens in
-// shared/designsystem/DesignTokens.kt — the single source of truth for BOTH
-// Android and iOS. res/values/colors.xml (pre-Compose window + widget assets)
-// and widget/WidgetTheme.kt (Glance) mirror these for surfaces that can't read
-// the Compose theme; keep them in sync when changing the shared tokens.
+// core/designsystem/src/commonMain/kotlin/com/cocktailcraft/designsystem/DesignTokens.kt
+// — the single source of truth for BOTH Android and iOS.
+// res/values/colors.xml (pre-Compose window + widget assets) and
+// widget/WidgetTheme.kt (Glance) mirror these for surfaces that can't read the
+// Compose theme; keep them in sync when changing the shared tokens.
 //
 // UI code reads colors only through the theme (AN-5):
 // - MaterialTheme.colorScheme for every role Material 3 defines, and

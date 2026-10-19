@@ -6,8 +6,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -17,13 +15,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
@@ -101,7 +99,9 @@ fun FilterSection(
                 .heightIn(min = 48.dp)
                 .clickable(
                     role = Role.Button,
-                    onClickLabel = stringResource(if (expanded) MR.strings.filter_collapse else MR.strings.filter_expand)
+                    onClickLabel = stringResource(
+                        if (expanded) MR.strings.filter_collapse else MR.strings.filter_expand
+                    )
                 ) { expanded = !expanded }
                 .semantics {
                     heading()
@@ -328,8 +328,11 @@ fun IngredientSelectionDialog(
                     )
                 )
 
-                val filteredIngredients = ingredients.filter {
-                    it.contains(searchQuery, ignoreCase = true)
+                // ~500 ingredients: filter only when the list or the query
+                // changes, not on every recomposition. Distinct, since each
+                // one is its row's key.
+                val filteredIngredients = remember(ingredients, searchQuery) {
+                    ingredients.filter { it.contains(searchQuery, ignoreCase = true) }.distinct()
                 }
 
                 LazyColumn(
@@ -347,7 +350,7 @@ fun IngredientSelectionDialog(
                         )
                     }
 
-                    items(filteredIngredients) { ingredient ->
+                    items(filteredIngredients, key = { it }) { ingredient ->
                         IngredientRow(
                             label = ingredient,
                             selected = selectedIngredient == ingredient,

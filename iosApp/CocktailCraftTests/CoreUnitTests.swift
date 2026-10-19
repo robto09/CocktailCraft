@@ -32,9 +32,11 @@ final class DeliveryPolicyBridgeTests: XCTestCase {
         XCTAssertEqual(DeliveryPolicy.shared.deliveryFee(subtotal: Money(cents: 7500)).cents, 0)
     }
 
+    /// The estimate is display copy, an OrderStatus extension in the
+    /// shared presentation layer, reached through the SKIE enum.
     func testEstimatedDeliveryTimeByStatus() {
-        XCTAssertEqual(DeliveryPolicy.shared.estimatedDeliveryTimeForStatus(status: OrderStatus.processing).localized(), "15-25 minutes")
-        XCTAssertEqual(DeliveryPolicy.shared.estimatedDeliveryTimeForStatus(status: OrderStatus.shipped).localized(), "5-10 minutes")
+        XCTAssertEqual(OrderStatus.processing.deliveryEstimate.localized(), "15-25 minutes")
+        XCTAssertEqual(OrderStatus.shipped.deliveryEstimate.localized(), "5-10 minutes")
     }
 }
 

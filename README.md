@@ -16,7 +16,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Cocktail Discovery**: Browse and search for cocktails with detailed information
 - **Advanced Search & Filtering**: Combine a name query with category, ingredient, and alcoholic/non-alcoholic filters
 - **Shopping Cart**: Add cocktails to cart, update quantities, and checkout
-- **User Authentication**: Register, login, and manage user profiles
+- **User Authentication**: Register, sign in, and manage user profiles — accounts are device-local (stored and verified on the device; there is no server or sync)
 - **Order Management**: Place orders, track order history, open an order's details, cancel an order and reorder a past one
 - **Favorites**: Save and manage favorite cocktails
 - **Reviews**: Read and submit reviews for cocktails
@@ -317,23 +317,34 @@ See the [Documentation Index](docs/README.md) for the architecture, feature, UI 
 
 ## Static analysis
 
-All checks are local (there is no CI). Findings that predate a tool are
+CI (`.github/workflows/ci.yml`) runs these checks and the tests below on
+every pull request and push to `dev` and `main`. Findings that predate a tool are
 recorded in baselines, so the commands below pass today and report only new
 issues.
 
 ```bash
-./gradlew detekt            # detekt + ktlint (detekt-formatting) + Compose rules, every module
+./gradlew detekt            # detekt 2 + ktlint (ktlint wrapper) + Compose rules, every module
 ./gradlew :core:data:detekt # one module
 ./gradlew detektBaseline    # re-record the baselines (only to accept existing findings)
+./gradlew detekt -Pdetekt.autoCorrect=true  # apply ktlint formatting fixes (rewrites sources)
+./gradlew :core:data:detektMainAndroid      # opt-in: type-resolved analysis (Android compilation)
 cd iosApp && swiftlint lint # SwiftLint (brew install swiftlint)
 ```
 
-- **Kotlin**: applied to every module by the `cocktailcraft.detekt` convention
+- **Kotlin**: detekt 2.0.0-alpha.6 (the 1.23 line can't parse Kotlin 2.3),
+  applied to every module by the `cocktailcraft.detekt` convention
   plugin in `build-logic/`, with the shared config in `config/detekt/detekt.yml`
   and a `detekt-baseline.xml` per module; HTML reports land in
   `<module>/build/reports/detekt/`. `detekt` is also part of `./gradlew check`.
-  It never rewrites code (ktlint runs check-only; formatting follows
-  `.editorconfig`).
+  It is detekt's light (syntax-only) pass over all of `src/`, iOS source sets
+  included, so type-aware rules don't run there. The type-resolved tasks
+  (`detektMainAndroid`/`detektHostTestAndroid` in KMP modules,
+  `detektMain`/`detektDebug`/... in `:androidApp`) cover the Android
+  compilation only, aren't part of `check`, and in KMP modules still report
+  spurious expect/actual compiler errors (detekt 2 alpha limitation). By
+  default nothing rewrites code (ktlint runs check-only; formatting follows
+  `.editorconfig`); `-Pdetekt.autoCorrect=true` opts in to ktlint's fixes,
+  then re-run `detektBaseline` to drop the fixed entries.
 - **Swift**: `iosApp/.swiftlint.yml`. The app target has an advisory SwiftLint
   build phase that runs only when SwiftLint is installed and reports findings
   as warnings, never failing the build. To see only new findings, record a

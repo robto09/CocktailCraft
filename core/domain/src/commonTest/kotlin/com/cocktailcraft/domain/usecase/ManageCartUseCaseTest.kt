@@ -28,9 +28,8 @@ import kotlin.test.assertTrue
 class ManageCartUseCaseTest {
 
     /** Detail lookups counted (and optionally failed) to pin down hydration behavior. */
-    private class TrackingDetailRepository(
-        private val byId: Map<String, Cocktail> = emptyMap()
-    ) : CocktailDetailRepository {
+    private class TrackingDetailRepository(private val byId: Map<String, Cocktail> = emptyMap()) :
+        CocktailDetailRepository {
         var lookups = 0
             private set
         var throwOnLookup = false

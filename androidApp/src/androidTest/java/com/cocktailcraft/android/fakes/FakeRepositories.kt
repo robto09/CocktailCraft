@@ -56,10 +56,12 @@ object TestCocktails {
  * One fake bound to all cocktail-facing repository interfaces, mirroring
  * production where a single impl backs the five focused interfaces.
  */
-class FakeCocktailRepository(
-    private val cocktails: List<Cocktail> = TestCocktails.all
-) : CocktailSearchRepository, CocktailCatalogRepository, CocktailDetailRepository,
-    CocktailFavoritesRepository, CocktailOfflineRepository {
+class FakeCocktailRepository(private val cocktails: List<Cocktail> = TestCocktails.all) :
+    CocktailSearchRepository,
+    CocktailCatalogRepository,
+    CocktailDetailRepository,
+    CocktailFavoritesRepository,
+    CocktailOfflineRepository {
 
     private val favorites = MutableStateFlow<List<Cocktail>>(emptyList())
 
@@ -80,8 +82,11 @@ class FakeCocktailRepository(
         filters.alcoholic?.let { alc ->
             result = result.filter {
                 val value = it.alcoholic?.replace('_', ' ')
-                if (alc) value.equals("Alcoholic", ignoreCase = true)
-                else value.equals("Non alcoholic", ignoreCase = true)
+                if (alc) {
+                    value.equals("Alcoholic", ignoreCase = true)
+                } else {
+                    value.equals("Non alcoholic", ignoreCase = true)
+                }
             }
         }
         return Result.Success(result)
@@ -144,10 +149,15 @@ class FakeCartRepository : CartRepository {
             val existing = list.firstOrNull { it.cocktail.id == cartItem.cocktail.id }
             if (existing != null) {
                 list.map {
-                    if (it.cocktail.id == cartItem.cocktail.id)
-                        it.copy(quantity = it.quantity + cartItem.quantity) else it
+                    if (it.cocktail.id == cartItem.cocktail.id) {
+                        it.copy(quantity = it.quantity + cartItem.quantity)
+                    } else {
+                        it
+                    }
                 }
-            } else list + cartItem
+            } else {
+                list + cartItem
+            }
         }
         return Result.Success(Unit)
     }
@@ -197,7 +207,7 @@ class FakeReviewRepository : ReviewRepository {
         return Result.Success(Unit)
     }
     override suspend fun updateReview(reviewId: String, rating: Float, comment: String, date: String): Result<Boolean> {
-        val exists = reviews.value.any { it.id == reviewId }
+        val exists = reviews.value.any { it.id == reviewId && it.isMine }
         if (exists) {
             reviews.update { list ->
                 list.map { if (it.id == reviewId) it.copy(rating = rating, comment = comment, date = date) else it }
@@ -206,8 +216,8 @@ class FakeReviewRepository : ReviewRepository {
         return Result.Success(exists)
     }
     override suspend fun deleteReview(reviewId: String): Result<Boolean> {
-        val exists = reviews.value.any { it.id == reviewId }
-        reviews.update { list -> list.filterNot { it.id == reviewId } }
+        val exists = reviews.value.any { it.id == reviewId && it.isMine }
+        if (exists) reviews.update { list -> list.filterNot { it.id == reviewId } }
         return Result.Success(exists)
     }
 }

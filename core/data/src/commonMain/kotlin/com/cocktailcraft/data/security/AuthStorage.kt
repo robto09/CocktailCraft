@@ -4,7 +4,7 @@ import com.russhwolf.settings.Settings
 
 /**
  * Every Settings key the auth store owns. AuthRepositoryImpl writes these to
- * the dedicated secure store (EncryptedSharedPreferences on Android, the
+ * the dedicated secure store (Tink-encrypted, Keystore-keyed on Android, the
  * Keychain on iOS); the platform modules use [migrateAuthStorage] to move
  * values written by older app versions out of the plain store.
  */
@@ -34,8 +34,10 @@ internal fun migrateAuthStorage(from: Settings, to: Settings) {
             when {
                 key.startsWith(AuthStorageKeys.SIGN_IN_ATTEMPTS_PREFIX) ->
                     from.getIntOrNull(key)?.let { to.putInt(key, it) }
+
                 key.startsWith(AuthStorageKeys.SIGN_IN_LOCKOUT_PREFIX) ->
                     from.getLongOrNull(key)?.let { to.putLong(key, it) }
+
                 else -> from.getStringOrNull(key)?.let { to.putString(key, it) }
             }
         }

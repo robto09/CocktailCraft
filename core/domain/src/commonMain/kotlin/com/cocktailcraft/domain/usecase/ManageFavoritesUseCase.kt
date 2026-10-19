@@ -18,30 +18,26 @@ class ManageFavoritesUseCase(
     /** Hot stream of favorites; mutations from any screen publish here (SH-4). */
     fun observeFavorites(): Flow<List<Cocktail>> = favoritesRepository.observeFavorites()
 
-    suspend fun toggle(cocktail: Cocktail): Result<Boolean> {
-        return runCatchingResult("Failed to update favorites") {
-            val isFav = favoritesRepository.isCocktailFavorite(cocktail.id).getOrNull() ?: false
-            if (isFav) {
-                when (val removed = favoritesRepository.removeFromFavorites(cocktail)) {
-                    is Result.Error -> removed
-                    else -> Result.Success(false)
-                }
-            } else {
-                when (val added = addToFavorites(cocktail)) {
-                    is Result.Error -> added
-                    else -> Result.Success(true)
-                }
+    suspend fun toggle(cocktail: Cocktail): Result<Boolean> = runCatchingResult("Failed to update favorites") {
+        val isFav = favoritesRepository.isCocktailFavorite(cocktail.id).getOrNull() ?: false
+        if (isFav) {
+            when (val removed = favoritesRepository.removeFromFavorites(cocktail)) {
+                is Result.Error -> removed
+                else -> Result.Success(false)
+            }
+        } else {
+            when (val added = addToFavorites(cocktail)) {
+                is Result.Error -> added
+                else -> Result.Success(true)
             }
         }
     }
 
-    suspend fun loadFavorites(): Result<List<Cocktail>> {
-        return favoritesRepository.getFavoriteCocktails()
-    }
+    suspend fun loadFavorites(): Result<List<Cocktail>> = favoritesRepository.getFavoriteCocktails()
 
-    suspend fun isFavorite(cocktailId: String): Boolean {
-        return favoritesRepository.isCocktailFavorite(cocktailId).getOrNull() ?: false
-    }
+    suspend fun isFavorite(cocktailId: String): Boolean = favoritesRepository.isCocktailFavorite(
+        cocktailId
+    ).getOrNull() ?: false
 
     /**
      * Persist-then-hydrate: the list object is stored and published as-is so
@@ -61,8 +57,8 @@ class ManageFavoritesUseCase(
     }
 
     /**
-     * List endpoints fabricate placeholder ingredients/instructions; fetch
-     * full details so stored favorites are complete.
+     * List endpoints return partial records; fetch full details so stored
+     * favorites are complete.
      */
     private suspend fun hydrated(cocktail: Cocktail): Cocktail {
         if (cocktail.hasFullDetails) return cocktail
@@ -71,8 +67,7 @@ class ManageFavoritesUseCase(
         }
     }
 
-    suspend fun removeFromFavorites(cocktail: Cocktail): Result<Unit> {
-        return favoritesRepository.removeFromFavorites(cocktail)
-    }
+    suspend fun removeFromFavorites(cocktail: Cocktail): Result<Unit> = favoritesRepository.removeFromFavorites(
+        cocktail
+    )
 }
-

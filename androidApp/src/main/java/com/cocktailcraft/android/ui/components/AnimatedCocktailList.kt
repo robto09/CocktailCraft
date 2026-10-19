@@ -10,17 +10,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
@@ -54,7 +51,6 @@ import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
  * @param cocktails The list of cocktails to display
  * @param isSearchActive Whether search is currently active
  * @param selectedCategory The currently selected category, if any
- * @param isLoadingMore Whether more items are being loaded
  * @param hasMoreData Whether there is more data to load
  * @param favorites The list of favorite cocktails
  * @param onCocktailClick Callback when a cocktail is clicked
@@ -65,7 +61,6 @@ import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
  * @param headerFontSize The font size of the header
  * @param itemSpacing The spacing between items
  * @param contentPadding The padding for the content
- * @param loadingIndicatorSize The size of the loading indicator
  * @param endOfListMessageFontSize The font size of the end of list message
  * @param ratingSummaries The user's review averages by cocktail id, shown on the cards
  * @param leadingContent Shown above the header, scrolling with the list (Home's "Recently viewed" row)
@@ -75,7 +70,6 @@ fun AnimatedCocktailList(
     cocktails: List<Cocktail>,
     isSearchActive: Boolean,
     selectedCategory: String?,
-    isLoadingMore: Boolean,
     hasMoreData: Boolean,
     favorites: List<Cocktail>,
     onCocktailClick: (Cocktail) -> Unit,
@@ -86,7 +80,6 @@ fun AnimatedCocktailList(
     headerFontSize: Int = 18,
     itemSpacing: Int = 16,
     contentPadding: PaddingValues = PaddingValues(16.dp),
-    loadingIndicatorSize: Int = 32,
     endOfListMessageFontSize: Int = 14,
     ratingSummaries: Map<String, CocktailRatingSummary> = emptyMap(),
     leadingContent: (@Composable () -> Unit)? = null
@@ -95,10 +88,14 @@ fun AnimatedCocktailList(
     val reducedMotion = LocalReducedMotion.current
     val fadeSpec: FiniteAnimationSpec<Float>? =
         if (reducedMotion) null else spring(stiffness = Spring.StiffnessMediumLow)
-    val placementSpec: FiniteAnimationSpec<IntOffset>? = if (reducedMotion) null else spring(
-        stiffness = Spring.StiffnessMediumLow,
-        visibilityThreshold = IntOffset.VisibilityThreshold
-    )
+    val placementSpec: FiniteAnimationSpec<IntOffset>? = if (reducedMotion) {
+        null
+    } else {
+        spring(
+            stiffness = Spring.StiffnessMediumLow,
+            visibilityThreshold = IntOffset.VisibilityThreshold
+        )
+    }
 
     // Identity-keyed items require unique ids; guard the unique-key contract
     // against overlapping pages from the API
@@ -119,8 +116,8 @@ fun AnimatedCocktailList(
 
         // Detect when we're near the bottom to load more items
         listState.OnBottomReached(buffer = 5) {
-            // Only load more if not already loading and not searching
-            if (!isLoadingMore && !isSearchActive) {
+            // Search results are complete; only the category listing pages
+            if (!isSearchActive) {
                 onLoadMore()
             }
         }
@@ -185,24 +182,6 @@ fun AnimatedCocktailList(
                         },
                         reviewRating = ratingSummaries[cocktail.id]
                     )
-                }
-            }
-
-            // Show loading indicator at the bottom when loading more items
-            if (isLoadingMore) {
-                item(key = "loading_more") {
-                    Box(
-                        modifier = Modifier
-                            .animateItem(fadeInSpec = fadeSpec, placementSpec = placementSpec, fadeOutSpec = fadeSpec)
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(loadingIndicatorSize.dp),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
                 }
             }
 

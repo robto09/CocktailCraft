@@ -1,13 +1,14 @@
 package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.usecase.ManageFavoritesUseCase
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.error_update_favorites_failed
 import com.cocktailcraft.testutil.FakeDetailRepository
 import com.cocktailcraft.testutil.FakeFavoritesRepository
 import com.cocktailcraft.testutil.FlakyFavoritesRepository
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
-import dev.icerock.moko.resources.desc.Raw
-import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -80,7 +81,7 @@ class SharedFavoritesViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         val error = assertNotNull(vm.error.value, "a failed toggle must not be silently dropped")
-        assertEquals(StringDesc.Raw("favorites store unavailable"), error.message)
+        assertEquals(MR.strings.error_update_favorites_failed.desc(), error.message)
         assertFalse(vm.isFavorite("42"))
     }
 
@@ -92,6 +93,7 @@ class SharedFavoritesViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
         repository.failingMutations = 1
         vm.toggleFavorite(testCocktail("42"))
+        advanceUntilIdle()
         assertNotNull(vm.error.value)
 
         vm.toggleFavorite(testCocktail("42"))

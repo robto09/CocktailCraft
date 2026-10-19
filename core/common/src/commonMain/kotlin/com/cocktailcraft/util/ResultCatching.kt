@@ -17,23 +17,26 @@ import kotlin.native.HiddenFromObjC
  * keeps its original code. Coroutine cancellation is rethrown, never turned
  * into a user-facing error.
  *
+ * The error's message is [defaultMessage] plus the exception's type, never
+ * the exception's own message: Result.Error messages end up in logs that
+ * release builds keep (Warn and up), and a Ktor message embeds the request
+ * URL with the user's search terms. The network layer debug-logs the detail.
+ *
  * Lives in :core:common (was :core:data-internal) so the domain use cases
  * share it instead of hand-rolling catch blocks that swallow cancellation.
  */
 @HiddenFromObjC
-inline fun <T> runCatchingResult(defaultMessage: String, block: () -> Result<T>): Result<T> {
-    return try {
-        block()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: DomainException) {
-        Result.Error(message = e.message ?: defaultMessage, code = e.code, displayMessage = e.displayMessage)
-    } catch (e: Exception) {
-        Result.Error(
-            message = e.message ?: defaultMessage,
-            code = ErrorHandler.getErrorFromException(e).errorCode
-        )
-    }
+inline fun <T> runCatchingResult(defaultMessage: String, block: () -> Result<T>): Result<T> = try {
+    block()
+} catch (e: CancellationException) {
+    throw e
+} catch (e: DomainException) {
+    Result.Error(message = e.message ?: defaultMessage, code = e.code, displayMessage = e.displayMessage)
+} catch (e: Exception) {
+    Result.Error(
+        message = "$defaultMessage (${e::class.simpleName})",
+        code = ErrorHandler.getErrorFromException(e).errorCode
+    )
 }
 
 /**
@@ -44,12 +47,10 @@ inline fun <T> runCatchingResult(defaultMessage: String, block: () -> Result<T>)
  * of a cancelled caller and keep running as if nothing happened.
  */
 @HiddenFromObjC
-inline fun <T> runCatchingNonCancellation(onFailure: (Exception) -> T, block: () -> T): T {
-    return try {
-        block()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        onFailure(e)
-    }
+inline fun <T> runCatchingNonCancellation(onFailure: (Exception) -> T, block: () -> T): T = try {
+    block()
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Exception) {
+    onFailure(e)
 }

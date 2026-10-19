@@ -1,0 +1,68 @@
+-- Version 6 -> 7: the user's data belongs to whoever is signed in.
+--
+-- The cart, favorites, recently viewed list, orders and reviews had no
+-- owner, so after one user signed out the next (or a guest) saw their
+-- orders and cart and could edit their reviews. Each row now has an
+-- owner_id: the signed-in user's id, or "guest" while signed out (see
+-- UserDataOwnership.kt).
+--
+-- Existing rows get "" (not assigned yet) here: a migration can't read
+-- who is signed in. On the first open after the upgrade they are all
+-- assigned to whoever is signed in then, or to the guest, so nothing is
+-- lost; see claimUnassignedUserData.
+--
+-- The cart, favorites and recently viewed tables are rebuilt, since their
+-- primary key now includes the owner; orders and reviews keep their
+-- UUID keys and gain the column.
+
+CREATE TABLE cart_item_new (
+    owner_id TEXT NOT NULL,
+    cocktail_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    position INTEGER NOT NULL,
+    price_cents INTEGER,
+    PRIMARY KEY (owner_id, cocktail_id)
+);
+
+INSERT INTO cart_item_new(owner_id, cocktail_id, quantity, position, price_cents)
+SELECT '', cocktail_id, quantity, position, price_cents FROM cart_item;
+
+DROP TABLE cart_item;
+
+ALTER TABLE cart_item_new RENAME TO cart_item;
+
+CREATE TABLE favorite_cocktail_new (
+    owner_id TEXT NOT NULL,
+    cocktail_id TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    PRIMARY KEY (owner_id, cocktail_id)
+);
+
+INSERT INTO favorite_cocktail_new(owner_id, cocktail_id, position)
+SELECT '', cocktail_id, position FROM favorite_cocktail;
+
+DROP TABLE favorite_cocktail;
+
+ALTER TABLE favorite_cocktail_new RENAME TO favorite_cocktail;
+
+CREATE TABLE recently_viewed_cocktail_new (
+    owner_id TEXT NOT NULL,
+    cocktail_id TEXT NOT NULL,
+    viewed_at INTEGER NOT NULL,
+    PRIMARY KEY (owner_id, cocktail_id)
+);
+
+INSERT INTO recently_viewed_cocktail_new(owner_id, cocktail_id, viewed_at)
+SELECT '', cocktail_id, viewed_at FROM recently_viewed_cocktail;
+
+DROP TABLE recently_viewed_cocktail;
+
+ALTER TABLE recently_viewed_cocktail_new RENAME TO recently_viewed_cocktail;
+
+ALTER TABLE customer_order ADD COLUMN owner_id TEXT NOT NULL DEFAULT '';
+
+CREATE INDEX customer_order_owner ON customer_order(owner_id, position);
+
+ALTER TABLE cocktail_review ADD COLUMN owner_id TEXT NOT NULL DEFAULT '';
+
+CREATE INDEX cocktail_review_owner ON cocktail_review(owner_id, position);

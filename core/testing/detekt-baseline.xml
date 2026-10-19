@@ -2,8 +2,7 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>MultiLineIfElse:Fakes.kt$FakeSearchRepository$value.equals("Alcoholic", ignoreCase = true)</ID>
-    <ID>MultiLineIfElse:Fakes.kt$FakeSearchRepository$value.equals("Non alcoholic", ignoreCase = true)</ID>
-    <ID>ReturnCount:FakeOrderRepository.kt$FakeOrderRepository$override suspend fun cancelOrder(orderId: String): Result&lt;Boolean&gt;</ID>
+    <ID>BackingPropertyNaming:Fakes.kt:FakeNetworkMonitor$private val _online = MutableStateFlow(initiallyOnline)</ID>
+    <ID>ReturnCount:FakeOrderRepository.kt:FakeOrderRepository$override suspend fun cancelOrder: Result&lt;Boolean&gt;</ID>
   </CurrentIssues>
 </SmellBaseline>

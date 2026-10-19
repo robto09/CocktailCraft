@@ -1,15 +1,5 @@
 package com.cocktailcraft.android.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -24,23 +14,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
@@ -49,7 +31,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.ui.animation.AnimationUtils
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.rememberHapticHandler
 import com.cocktailcraft.android.util.stringResource
@@ -69,28 +50,14 @@ fun AnimatedCocktailItem(
     cocktail: Cocktail,
     onClick: () -> Unit,
     onAddToCart: (Cocktail) -> Unit,
+    modifier: Modifier = Modifier,
     isFavorite: Boolean = false,
     onToggleFavorite: (Cocktail) -> Unit = {},
-    modifier: Modifier = Modifier,
     reviewRating: CocktailRatingSummary? = null
 ) {
-    // Animation states
-    var isHovered by remember { mutableStateOf(false) }
-
-    // Scale animation for hover effect
-    val scale by animateFloatAsState(
-        targetValue = if (isHovered) 1.03f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "hover_scale"
-    )
-
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .scale(scale)
             .clickable(
                 onClick = onClick,
                 onClickLabel = stringResource(MR.strings.list_view_details_label, cocktail.name)
@@ -204,18 +171,12 @@ fun CocktailItemContent(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Use safe call for ingredients that might be null or empty
+            // The first two ingredients; a partial record (from a list
+            // endpoint) has none yet, so point at the detail screen instead
             Text(
-                text = if (cocktail.ingredients.isNotEmpty()) {
-                    val firstIngredient = cocktail.ingredients.first().name
-                    // Check if it's a placeholder
-                    if (firstIngredient == "Tap to view ingredients") {
-                        firstIngredient
-                    } else {
-                        // Join first 2 ingredients with safe operators
-                        cocktail.ingredients.take(2).joinToString(", ") { it.name }
-                            .let { if (cocktail.ingredients.size > 2) "$it..." else it }
-                    }
+                text = if (cocktail.hasFullDetails && cocktail.ingredients.isNotEmpty()) {
+                    cocktail.ingredients.take(2).joinToString(", ") { it.name }
+                        .let { if (cocktail.ingredients.size > 2) "$it..." else it }
                 } else {
                     stringResource(MR.strings.list_tap_to_view_ingredients)
                 },
@@ -268,7 +229,13 @@ fun CocktailItemContent(
                     onClick = { onAddToCart(cocktail) },
                     icon = Icons.Default.ShoppingCart,
                     contentDescription = stringResource(MR.strings.add_to_cart_item_a11y, cocktail.name),
-                    tint = if (cocktail.stockCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                    tint = if (cocktail.stockCount >
+                        0
+                    ) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.outline
+                    },
                     enabled = cocktail.stockCount > 0
                 )
             }

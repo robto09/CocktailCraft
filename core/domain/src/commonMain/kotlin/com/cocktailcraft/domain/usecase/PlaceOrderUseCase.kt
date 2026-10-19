@@ -1,6 +1,5 @@
 package com.cocktailcraft.domain.usecase
 
-import co.touchlab.kermit.Logger
 import com.cocktailcraft.domain.config.DeliveryPolicy
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Order
@@ -27,9 +26,7 @@ import kotlin.time.Clock
  * taken from the caller — so what is stored always matches what was ordered.
  */
 @HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
-class PlaceOrderUseCase(
-    private val orderRepository: OrderRepository
-) {
+class PlaceOrderUseCase(private val orderRepository: OrderRepository) {
     suspend operator fun invoke(cartItems: List<CocktailCartItem>): Result<Order> {
         return runCatchingResult("Failed to place order") {
             if (cartItems.isEmpty()) {
@@ -38,9 +35,12 @@ class PlaceOrderUseCase(
 
             val orderId = newOrderId()
             val currentDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-                .let { "${it.year}-${it.month.number.toString().padStart(2, '0')}-${it.day.toString().padStart(2, '0')}" }
-
-            Logger.d { "PlaceOrderUseCase: Generated order ID: $orderId" }
+                .let {
+                    "${it.year}-${it.month.number.toString().padStart(
+                        2,
+                        '0'
+                    )}-${it.day.toString().padStart(2, '0')}"
+                }
 
             val orderItems = cartItems.map { cartItem ->
                 OrderItem(

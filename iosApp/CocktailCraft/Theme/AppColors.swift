@@ -2,8 +2,9 @@ import SwiftUI
 import shared
 
 /// App color scheme, mapped 1:1 from the cross-platform design tokens in
-/// shared/designsystem/DesignTokens.kt (ColorTokens) — the single source of
-/// truth for BOTH iOS and Android, so the palettes can never drift.
+/// core/designsystem/src/commonMain/kotlin/com/cocktailcraft/designsystem/DesignTokens.kt
+/// (ColorTokens) — the single source of truth for BOTH iOS and Android, so the
+/// palettes can never drift.
 ///
 /// The widget extension cannot link the shared framework, so it keeps its own
 /// mirror of the two brand colors in BrandColorComponents

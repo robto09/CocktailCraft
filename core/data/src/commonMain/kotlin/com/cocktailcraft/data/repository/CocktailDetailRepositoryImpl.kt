@@ -10,6 +10,7 @@ import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.onError
 import com.cocktailcraft.util.runCatchingResult
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlin.time.Clock
 
@@ -26,12 +27,15 @@ internal class CocktailDetailRepositoryImpl(
     private val remote: CocktailRemoteDataSource,
     private val cocktailCache: CocktailCache,
     private val offlineRepository: CocktailOfflineRepository,
+    // App-wide scope the fetches run in, so they finish even if the caller
+    // goes away (see InFlightRequests)
+    appScope: CoroutineScope,
     // Injectable for tests: coroutine virtual time does not move Clock.System.
     private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() }
 ) : CocktailDetailRepository {
 
     // Concurrent refreshes of one cocktail share one request.
-    private val inFlight = InFlightRequests<String, Result<Unit>>()
+    private val inFlight = InFlightRequests<String, Result<Unit>>(appScope)
 
     override suspend fun getCocktailById(id: String): Result<Cocktail?> {
         return runCatchingResult("Failed to get cocktail by ID") {
@@ -78,9 +82,7 @@ internal class CocktailDetailRepositoryImpl(
             Result.Success(Unit)
         }
 
-    override suspend fun getRandomCocktail(): Result<Cocktail?> {
-        return runCatchingResult("Failed to get random cocktail") {
-            Result.Success(remote.getRandom())
-        }
+    override suspend fun getRandomCocktail(): Result<Cocktail?> = runCatchingResult("Failed to get random cocktail") {
+        Result.Success(remote.getRandom())
     }
 }

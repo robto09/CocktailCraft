@@ -194,7 +194,8 @@ enum SnapshotFixtures {
             stockCount: stockCount,
             rating: 4.5,
             popularity: 0,
-            dateAdded: 0
+            dateAdded: 0,
+            hasFullDetails: true
         )
     }
 

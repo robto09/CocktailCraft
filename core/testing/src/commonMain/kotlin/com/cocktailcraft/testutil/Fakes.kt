@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlin.native.HiddenFromObjC
 
 class FakeNetworkMonitor(initiallyOnline: Boolean = true) : NetworkMonitor {
     private val _online = MutableStateFlow(initiallyOnline)
@@ -45,6 +46,7 @@ class FakeNetworkMonitor(initiallyOnline: Boolean = true) : NetworkMonitor {
     }
 }
 
+@HiddenFromObjC // implements a Kotlin-only repository port
 class FakeCartRepository : CartRepository {
     private val items = MutableStateFlow<List<CocktailCartItem>>(emptyList())
 
@@ -99,9 +101,8 @@ class FakeCartRepository : CartRepository {
  * [byId] plays the local database; [remote] is what a refresh fetches into
  * it. Writes made through [refreshCocktail] reach [observeCocktail].
  */
-class FakeDetailRepository(
-    val byId: MutableMap<String, Cocktail> = mutableMapOf()
-) : CocktailDetailRepository {
+@HiddenFromObjC // implements a Kotlin-only repository port
+class FakeDetailRepository(val byId: MutableMap<String, Cocktail> = mutableMapOf()) : CocktailDetailRepository {
     /** When set, getCocktailById throws it (e.g. a CancellationException). */
     var throwOnLookup: Exception? = null
 
@@ -137,6 +138,7 @@ class FakeDetailRepository(
     override suspend fun getRandomCocktail(): Result<Cocktail?> = Result.Success(byId.values.firstOrNull())
 }
 
+@HiddenFromObjC // implements a Kotlin-only repository port
 class FakeFavoritesRepository : CocktailFavoritesRepository {
     private val favorites = MutableStateFlow<List<Cocktail>>(emptyList())
 
@@ -174,6 +176,7 @@ class FakeFavoritesRepository : CocktailFavoritesRepository {
         Result.Success(favorites.value.any { it.id == id })
 }
 
+@HiddenFromObjC // implements a Kotlin-only repository port
 class FakeSearchRepository(var all: List<Cocktail> = emptyList()) : CocktailSearchRepository {
     /** Every advancedSearch invocation's filters, in order — lets tests assert debouncing (SH-13). */
     val advancedSearchCalls = mutableListOf<SearchFilters>()
@@ -201,8 +204,11 @@ class FakeSearchRepository(var all: List<Cocktail> = emptyList()) : CocktailSear
         filters.alcoholic?.let { alc ->
             result = result.filter {
                 val value = it.alcoholic?.replace('_', ' ')
-                if (alc) value.equals("Alcoholic", ignoreCase = true)
-                else value.equals("Non alcoholic", ignoreCase = true)
+                if (alc) {
+                    value.equals("Alcoholic", ignoreCase = true)
+                } else {
+                    value.equals("Non alcoholic", ignoreCase = true)
+                }
             }
         }
         return Result.Success(result)
@@ -228,6 +234,7 @@ class FakeSearchRepository(var all: List<Cocktail> = emptyList()) : CocktailSear
  * [all] plays the network: [refreshCategory] copies a category's slice of it
  * into the stored pages (the fake database) that [observeCategory] emits.
  */
+@HiddenFromObjC // implements a Kotlin-only repository port
 class FakeCatalogRepository(var all: List<Cocktail> = emptyList()) : CocktailCatalogRepository {
 
     /** When set, refreshCategory fails with this message (ErrorCode.NETWORK). */
@@ -267,6 +274,7 @@ class FakeCatalogRepository(var all: List<Cocktail> = emptyList()) : CocktailCat
     }
 }
 
+@HiddenFromObjC // implements a Kotlin-only repository port
 class FakeOfflineRepository : CocktailOfflineRepository {
     var offline = false
     var recentlyViewed: List<Cocktail> = emptyList()

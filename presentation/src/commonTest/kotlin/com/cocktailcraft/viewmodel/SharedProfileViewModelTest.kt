@@ -4,20 +4,18 @@ import app.cash.turbine.test
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.repository.AuthRepository
-import com.cocktailcraft.domain.usecase.ManageProfileUseCase
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.error_invalid_email_title
 import com.cocktailcraft.resources.error_invalid_name_title
 import com.cocktailcraft.resources.error_invalid_password_title
+import com.cocktailcraft.resources.error_sign_in_failed
 import com.cocktailcraft.resources.error_sign_in_failed_title
 import com.cocktailcraft.resources.error_sign_up_failed_title
 import com.cocktailcraft.resources.password_changed_message
 import com.cocktailcraft.testutil.DataLayerTest
 import com.cocktailcraft.util.ErrorHandler
 import com.russhwolf.settings.MapSettings
-import dev.icerock.moko.resources.desc.Raw
-import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -33,9 +31,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** An auth store that is completely unavailable, for error-propagation tests. */
-private class FailingAuthRepository(
-    private val message: String = "auth storage unavailable"
-) : AuthRepository {
+private class FailingAuthRepository(private val message: String = "auth storage unavailable") : AuthRepository {
     override suspend fun signUp(email: String, password: String): Result<Boolean> = Result.Error(message)
     override suspend fun signIn(email: String, password: String): Result<Boolean> = Result.Error(message)
     override suspend fun signOut(): Result<Boolean> = Result.Error(message)
@@ -54,14 +50,19 @@ class SharedProfileViewModelTest : DataLayerTest() {
     /** Real repository over in-memory settings, so tests exercise VM + domain + persistence together. */
     private inner class Harness(ioDispatcher: CoroutineDispatcher) {
         val settings = MapSettings()
+
         // The real AuthRepositoryImpl (internal to :core:data), via dataModule
         val repository: AuthRepository = dataLayer(ioDispatcher, settings).get()
 
         fun viewModel(authRepository: AuthRepository = repository) =
-            SharedProfileViewModel(ManageProfileUseCase(authRepository))
+            SharedProfileViewModel(authRepository)
 
         /** Create an account with a profile name, then sign out so tests start from a clean session. */
-        suspend fun seedAccount(name: String = "Ada Lovelace", email: String = "ada@example.com", password: String = "secret123") {
+        suspend fun seedAccount(
+            name: String = "Ada Lovelace",
+            email: String = "ada@example.com",
+            password: String = "secret123"
+        ) {
             repository.signUp(email, password)
             repository.updateUserName(name)
             repository.signOut()
@@ -304,7 +305,7 @@ class SharedProfileViewModelTest : DataLayerTest() {
         assertFalse(vm.signIn("ada@example.com", "secret123"))
 
         val error = assertNotNull(vm.error.value)
-        assertEquals(StringDesc.Raw("auth storage unavailable"), error.message)
+        assertEquals(MR.strings.error_sign_in_failed.desc(), error.message)
         assertFalse(vm.uiState.value.isAuthenticating)
         assertFalse(vm.uiState.value.isLoading)
         assertFalse(vm.uiState.value.isLoggedIn)

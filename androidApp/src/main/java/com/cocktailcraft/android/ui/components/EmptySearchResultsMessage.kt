@@ -3,12 +3,10 @@ package com.cocktailcraft.android.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,13 +30,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -72,12 +68,12 @@ import com.cocktailcraft.resources.search_suggestion_none_found
 @Composable
 fun EmptySearchResultsMessage(
     searchQuery: String,
+    onClearSearch: () -> Unit,
+    modifier: Modifier = Modifier,
     selectedCategory: String? = null,
     hasActiveFilters: Boolean = false,
-    onClearSearch: () -> Unit,
     onClearCategory: (() -> Unit)? = null,
-    onClearFilters: () -> Unit = onClearSearch,
-    modifier: Modifier = Modifier
+    onClearFilters: () -> Unit = onClearSearch
 ) {
     // Animation states (Reduce Motion: start visible, no bouncy slide-in)
     val reducedMotion = LocalReducedMotion.current
@@ -128,14 +124,19 @@ fun EmptySearchResultsMessage(
                     text = when {
                         hasActiveFilters && searchQuery.isNotBlank() ->
                             stringResource(MR.strings.search_no_results_query_filters, searchQuery)
+
                         hasActiveFilters ->
                             stringResource(MR.strings.search_no_results_filters)
+
                         selectedCategory != null && searchQuery.isNotBlank() ->
                             stringResource(MR.strings.search_no_results_query_category, searchQuery, selectedCategory)
+
                         selectedCategory != null ->
                             stringResource(MR.strings.search_no_results_category, selectedCategory)
+
                         searchQuery.isNotBlank() ->
                             stringResource(MR.strings.search_no_results_query, searchQuery)
+
                         else ->
                             stringResource(MR.strings.search_no_results)
                     },
@@ -153,12 +154,16 @@ fun EmptySearchResultsMessage(
                     text = when {
                         hasActiveFilters ->
                             stringResource(MR.strings.search_suggestion_adjust_filters)
+
                         selectedCategory != null && searchQuery.isNotBlank() ->
                             stringResource(MR.strings.search_suggestion_different_term_or_category)
+
                         selectedCategory != null ->
                             stringResource(MR.strings.search_suggestion_empty_category)
+
                         searchQuery.isNotBlank() ->
                             stringResource(MR.strings.search_suggestion_check_spelling)
+
                         else ->
                             stringResource(MR.strings.search_suggestion_none_found)
                     },
@@ -193,6 +198,7 @@ fun EmptySearchResultsMessage(
                             Text(stringResource(MR.strings.search_clear_filters_button))
                         }
                     }
+
                     hasActiveFilters -> {
                         // Only advanced filters are active
                         Button(
@@ -204,6 +210,7 @@ fun EmptySearchResultsMessage(
                             Text(stringResource(MR.strings.search_clear_filters_button))
                         }
                     }
+
                     selectedCategory != null && searchQuery.isNotBlank() -> {
                         // Both category and search are active
                         Button(
@@ -226,6 +233,7 @@ fun EmptySearchResultsMessage(
                             Text(stringResource(MR.strings.filter_clear_category))
                         }
                     }
+
                     selectedCategory != null -> {
                         // Only category is active
                         Button(
@@ -237,6 +245,7 @@ fun EmptySearchResultsMessage(
                             Text(stringResource(MR.strings.search_browse_all_cocktails))
                         }
                     }
+
                     searchQuery.isNotBlank() -> {
                         // Only search is active
                         Button(
@@ -248,6 +257,7 @@ fun EmptySearchResultsMessage(
                             Text(stringResource(MR.strings.search_clear_search_button))
                         }
                     }
+
                     else -> {
                         // Neither is active
                         Button(
@@ -260,8 +270,6 @@ fun EmptySearchResultsMessage(
                         }
                     }
                 }
-
-
             }
         }
     }
