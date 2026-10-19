@@ -48,7 +48,7 @@ import com.cocktailcraft.android.ui.components.SectionHeader
 import com.cocktailcraft.android.ui.preview.PreviewData
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.viewmodel.state.HomeSortOption
-import com.cocktailcraft.viewmodel.state.OrderUiState
+import com.cocktailcraft.viewmodel.state.OrderDetailUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -245,7 +245,6 @@ class AccessibilitySemanticsTest {
                 selectedCategory = null,
                 hasActiveFilters = false,
                 isSearchActive = false,
-                isLoadingMore = false,
                 hasMoreData = false,
                 favorites = emptyList(),
                 isNetworkAvailable = true,
@@ -280,7 +279,7 @@ class AccessibilitySemanticsTest {
         var reorders = 0
         setContent {
             OrderDetailContent(
-                state = OrderUiState(selectedOrder = ScreenshotFixtures.completedOrder),
+                state = OrderDetailUiState(order = ScreenshotFixtures.completedOrder),
                 onBackClick = {},
                 onConfirmCancel = {},
                 onReorder = { reorders++ }
@@ -300,7 +299,7 @@ class AccessibilitySemanticsTest {
         // Items from before order items recorded their cocktail have no id
         setContent {
             OrderDetailContent(
-                state = OrderUiState(selectedOrder = ScreenshotFixtures.inProgressOrder),
+                state = OrderDetailUiState(order = ScreenshotFixtures.inProgressOrder),
                 onBackClick = {},
                 onConfirmCancel = {}
             )

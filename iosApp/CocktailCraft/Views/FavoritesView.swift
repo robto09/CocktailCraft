@@ -11,9 +11,8 @@ struct FavoritesView: View {
     /// Ids mid-unfavorite: their heart renders deselected for a beat before
     /// the card animates out, instead of the card vanishing on tap.
     @State private var removingIds: Set<String> = []
-    @State private var showingToast = false
-    @State private var toastMessage = ""
-    @State private var toastType: Toast.ToastType = .success
+    // The latest add-to-cart outcome, until its toast picks it up
+    @State private var addToCartOutcome: UiEvent?
     @Environment(\.isDarkMode) private var isDarkMode
 
     var body: some View {
@@ -33,8 +32,9 @@ struct FavoritesView: View {
         .task {
             await viewModel.loadFavorites()
         }
-        .toast(isShowing: $showingToast, message: toastMessage, type: toastType, duration: 2)
-        // "Removed … from favorites" with Undo
+        // Add-to-cart outcomes: returned to this screen, which asked
+        .sharedEventToast(addToCartOutcome, clear: { addToCartOutcome = nil })
+        // "Removed … from favorites" with Undo — this screen's own events
         .sharedEventToast(viewModel.event, clear: { viewModel.clearEvent() })
         .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
     }
@@ -85,14 +85,7 @@ struct FavoritesView: View {
                 onAddToCart: {
                     // Only a real add is confirmed; a failed one says so instead
                     Task { @MainActor in
-                        let added = await cartViewModel.addToCart(cocktail)
-                        toastMessage = added
-                            ? L(\.added_to_cart, cocktail.name)
-                            : L(\.error_add_item_to_cart_failed)
-                        toastType = added ? .success : .error
-                        withAnimation {
-                            showingToast = true
-                        }
+                        addToCartOutcome = await cartViewModel.addToCart(cocktail)
                     }
                 }
             )

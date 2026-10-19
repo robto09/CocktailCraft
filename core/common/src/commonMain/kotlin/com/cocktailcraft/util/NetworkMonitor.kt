@@ -23,9 +23,10 @@ abstract class BaseNetworkMonitor {
     // Optimistically true only until the platform monitor reports (SH-5):
     // Android overwrites it synchronously inside startMonitoring(); the iOS
     // path monitor fires its update handler with the CURRENT path immediately
-    // after start, which is the real seed. A pessimistic (false) seed was
-    // rejected deliberately — a false "offline" blip at launch would trip the
-    // ViewModels' auto-enable-offline-mode side effect, which is sticky.
+    // after start, which is the real seed. A pessimistic (false) seed would
+    // flash the offline banner at every launch and mark Home's first load
+    // as served offline, which forces a second fetch once the real
+    // (online) state arrives.
     protected val _isOnline = MutableStateFlow(true)
     open val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 

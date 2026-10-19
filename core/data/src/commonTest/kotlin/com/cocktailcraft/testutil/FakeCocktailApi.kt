@@ -15,7 +15,11 @@ internal class FakeCocktailApi(var drinks: List<CocktailDto> = emptyList()) : Co
     /** When set, name-search and filter.php endpoints throw it (to simulate an API failure). */
     var endpointError: Exception? = null
 
+    /** When > 0, search.php suspends this long first (a slow network). */
+    var searchDelayMs = 0L
+
     override suspend fun searchCocktailsByName(name: String): List<CocktailDto> {
+        if (searchDelayMs > 0) delay(searchDelayMs)
         endpointError?.let { throw it }
         return drinks.filter { it.name.contains(name, ignoreCase = true) }
     }

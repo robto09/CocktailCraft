@@ -27,14 +27,15 @@ import com.cocktailcraft.android.ui.components.CocktailLoadingShimmer
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
 import com.cocktailcraft.android.ui.components.ErrorStateView
 import com.cocktailcraft.android.ui.components.ErrorToastEffect
+import com.cocktailcraft.android.ui.components.UiEventToasts
 import com.cocktailcraft.android.util.refreshAccessibilityAction
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.refresh
 import com.cocktailcraft.resources.browse_cocktails
 import com.cocktailcraft.resources.favorites_empty_message
 import com.cocktailcraft.resources.no_favorites
+import com.cocktailcraft.resources.refresh
 import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.state.FavoritesUiState
@@ -58,6 +59,8 @@ fun FavoritesScreen(
         error = error.takeIf { state.favorites.isNotEmpty() },
         onConsumed = { favoritesViewModel.clearError() }
     )
+    // This screen's own events: an unfavorite, with Undo
+    UiEventToasts(favoritesViewModel.events)
 
     FavoritesContent(
         state = state,
@@ -66,7 +69,6 @@ fun FavoritesScreen(
         onBrowseProducts = onBrowseProducts,
         onAddToCart = onAddToCart,
         // Every heart here is filled: a tap unfavorites, with an Undo toast
-        // (shown by MainScreen, which collects the favorites' events)
         onToggleFavorite = { cocktail -> scope.launch { favoritesViewModel.removeFavorite(cocktail) } },
         onCocktailClick = onCocktailClick
     )

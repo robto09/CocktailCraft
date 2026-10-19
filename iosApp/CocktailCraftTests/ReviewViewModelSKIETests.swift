@@ -74,7 +74,7 @@ final class ReviewViewModelSKIETests: TestSetup {
         let wrapper = ReviewViewModelSKIE()
         let cocktailId = uniqueCocktailId()
 
-        await wrapper.loadReviews(for: cocktailId)
+        wrapper.loadReviews(for: cocktailId)
 
         let selected = await waitUntil { wrapper.state.currentCocktailId == cocktailId }
         XCTAssertTrue(selected, "state should switch to the requested cocktail")
@@ -88,7 +88,7 @@ final class ReviewViewModelSKIETests: TestSetup {
     func testSubmittedReviewMapsIntoWrapperState() async {
         let wrapper = ReviewViewModelSKIE()
         let cocktailId = uniqueCocktailId()
-        await wrapper.loadReviews(for: cocktailId)
+        wrapper.loadReviews(for: cocktailId)
 
         await submitAccepted(wrapper, cocktailId: cocktailId, rating: 5,
                              userName: "  Tester  ", comment: "  \(Self.validComment)  ")
@@ -109,7 +109,7 @@ final class ReviewViewModelSKIETests: TestSetup {
     func testCountAndAverageAcrossMultipleReviews() async {
         let wrapper = ReviewViewModelSKIE()
         let cocktailId = uniqueCocktailId()
-        await wrapper.loadReviews(for: cocktailId)
+        wrapper.loadReviews(for: cocktailId)
 
         await submitAccepted(wrapper, cocktailId: cocktailId, rating: 4, userName: "Ana")
         await submitAccepted(wrapper, cocktailId: cocktailId, rating: 2, userName: "Ben")
@@ -125,17 +125,17 @@ final class ReviewViewModelSKIETests: TestSetup {
         let wrapper = ReviewViewModelSKIE()
         let reviewed = uniqueCocktailId()
         let unreviewed = uniqueCocktailId()
-        await wrapper.loadReviews(for: reviewed)
+        wrapper.loadReviews(for: reviewed)
         await submitAccepted(wrapper, cocktailId: reviewed, rating: 3)
 
-        await wrapper.loadReviews(for: unreviewed)
+        wrapper.loadReviews(for: unreviewed)
         let emptied = await waitUntil {
             wrapper.state.currentCocktailId == unreviewed && wrapper.reviews.isEmpty
         }
         XCTAssertTrue(emptied, "another cocktail's reviews must not leak into the selection")
         XCTAssertFalse(wrapper.hasReviews)
 
-        await wrapper.loadReviews(for: reviewed)
+        wrapper.loadReviews(for: reviewed)
         let restored = await waitUntil { wrapper.reviewCount == 1 }
         XCTAssertTrue(restored, "reselecting the cocktail should show its review again")
         XCTAssertEqual(wrapper.reviews.first?.cocktailId, reviewed)
@@ -144,7 +144,7 @@ final class ReviewViewModelSKIETests: TestSetup {
     func testDeletedReviewLeavesEmptyState() async {
         let wrapper = ReviewViewModelSKIE()
         let cocktailId = uniqueCocktailId()
-        await wrapper.loadReviews(for: cocktailId)
+        wrapper.loadReviews(for: cocktailId)
         await submitAccepted(wrapper, cocktailId: cocktailId, rating: 4)
         guard let review = wrapper.reviews.first else { return XCTFail("review missing") }
 

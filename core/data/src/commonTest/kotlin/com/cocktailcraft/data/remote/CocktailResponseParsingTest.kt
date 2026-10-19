@@ -21,9 +21,9 @@ class CocktailResponseParsingTest {
     fun noDataFoundStringDecodesToEmptyList() {
         // Some empty-result endpoints return the literal string "no data
         // found" for drinks instead of null/[] — must not throw.
-        val response = json.decodeFromString<CocktailResponse>("""{"drinks":"no data found"}""")
+        val response = json.decodeDrinks("""{"drinks":"no data found"}""")
 
-        assertEquals(emptyList(), response.drinks)
+        assertEquals(emptyList(), response)
     }
 
     @Test
@@ -37,17 +37,17 @@ class CocktailResponseParsingTest {
             ]}
         """.trimIndent()
 
-        val response = json.decodeFromString<CocktailResponse>(payload)
+        val response = json.decodeDrinks(payload)
 
-        assertEquals(listOf("1", "2"), response.drinks?.map { it.id })
-        assertEquals(listOf("Margarita", "Mojito"), response.drinks?.map { it.name })
+        assertEquals(listOf("1", "2"), response?.map { it.id })
+        assertEquals(listOf("Margarita", "Mojito"), response?.map { it.name })
     }
 
     @Test
     fun nullDrinksStaysNullForCallSiteFallbacks() {
-        val response = json.decodeFromString<CocktailResponse>("""{"drinks":null}""")
+        val response = json.decodeDrinks("""{"drinks":null}""")
 
-        assertNull(response.drinks)
+        assertNull(response)
     }
 
     @Test
@@ -61,7 +61,7 @@ class CocktailResponseParsingTest {
             }]}
         """.trimIndent()
 
-        val drink = json.decodeFromString<CocktailResponse>(payload).drinks!!.single()
+        val drink = json.decodeDrinks(payload)!!.single()
 
         assertEquals("11007", drink.id)
         assertEquals("Margarita", drink.name)

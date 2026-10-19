@@ -3,7 +3,9 @@ package com.cocktailcraft.domain.repository
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.util.Result
+import kotlin.native.HiddenFromObjC
 
+@HiddenFromObjC // Kotlin-side port, not Swift API (AR-12): Swift reaches data through the ViewModels
 interface AuthRepository {
     // Authentication methods
     suspend fun signUp(email: String, password: String): Result<Boolean>

@@ -3,7 +3,9 @@ package com.cocktailcraft.domain.repository
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.util.Result
 import kotlinx.coroutines.flow.Flow
+import kotlin.native.HiddenFromObjC
 
+@HiddenFromObjC // Kotlin-side port, not Swift API (AR-12): Swift reaches data through the ViewModels
 interface CartRepository {
     fun observeCartItems(): Flow<List<CocktailCartItem>>
     suspend fun getCartItems(): Result<List<CocktailCartItem>>

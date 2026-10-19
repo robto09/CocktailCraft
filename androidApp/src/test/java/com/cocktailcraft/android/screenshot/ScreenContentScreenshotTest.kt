@@ -194,7 +194,6 @@ private fun HomeContent(
         selectedCategory = null,
         hasActiveFilters = false,
         isSearchActive = isSearchActive,
-        isLoadingMore = false,
         hasMoreData = false,
         favorites = listOf(ScreenshotFixtures.cocktail),
         isNetworkAvailable = isNetworkAvailable,

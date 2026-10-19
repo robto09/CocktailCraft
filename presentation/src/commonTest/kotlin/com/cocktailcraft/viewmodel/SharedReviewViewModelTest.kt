@@ -2,6 +2,7 @@ package com.cocktailcraft.viewmodel
 
 import app.cash.turbine.test
 import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
 import com.cocktailcraft.domain.util.getOrThrow
@@ -16,17 +17,17 @@ import com.cocktailcraft.testutil.DataLayerTest
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.koin.core.Koin
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SharedReviewViewModelTest : DataLayerTest() {
@@ -128,6 +129,36 @@ class SharedReviewViewModelTest : DataLayerTest() {
 
         assertFalse(vm.deleteReview("missing"))
         assertNotNull(vm.error.value)
+    }
+
+    @Test
+    fun everyonesReviewsShowButOnlyYourOwnCanBeChanged() = runTest {
+        val db = createTestDatabase()
+        val auth: AuthRepository = db.get()
+        val byGuest = Review(
+            id = "by-guest",
+            cocktailId = "c1",
+            userName = "Guest",
+            rating = 2.0f,
+            comment = "Far too sweet for me."
+        )
+        repository(db).addReview(byGuest).getOrThrow()
+        auth.signUp("ana@example.com", "secret123").getOrThrow()
+        val vm = viewModel(db)
+        advanceUntilIdle()
+        vm.loadReviewsForCocktail("c1")
+        assertTrue(vm.submitReview("c1", 4.0f, "Perfectly balanced, as all things should be.", "Ana"))
+        advanceUntilIdle()
+
+        val shown = vm.uiState.value.currentCocktailReviews.associate { it.userName to it.isMine }
+        assertEquals(mapOf("Guest" to false, "Ana" to true), shown)
+        assertEquals(3.0f, vm.uiState.value.averageRating, "the average counts everyone's reviews")
+
+        assertFalse(vm.updateReview("by-guest", 5.0f, "Changed my mind about it."))
+        assertNotNull(vm.error.value)
+        assertFalse(vm.deleteReview("by-guest"))
+        advanceUntilIdle()
+        assertEquals(2, vm.uiState.value.reviewCount)
     }
 
     @Test

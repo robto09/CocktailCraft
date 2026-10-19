@@ -28,6 +28,7 @@ import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
+import com.cocktailcraft.viewmodel.SharedOrderDetailViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.viewmodel.SharedProfileViewModel
 import com.cocktailcraft.viewmodel.SharedReviewViewModel
@@ -126,6 +127,7 @@ class KoinDependencyGraphTest : MainDispatcherTest() {
         // Screen-scoped ViewModels (viewModel DSL)
         assertNotNull(koin.get<SharedCocktailDetailViewModel>())
         assertNotNull(koin.get<SharedReviewViewModel>())
+        assertNotNull(koin.get<SharedOrderDetailViewModel>())
 
         // Global-state ViewModels (singles)
         assertNotNull(koin.get<SharedHomeViewModel>())
