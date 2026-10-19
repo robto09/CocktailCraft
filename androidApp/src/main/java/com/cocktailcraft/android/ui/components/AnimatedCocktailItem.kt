@@ -204,18 +204,12 @@ fun CocktailItemContent(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Use safe call for ingredients that might be null or empty
+            // The first two ingredients; a partial record (from a list
+            // endpoint) has none yet, so point at the detail screen instead
             Text(
-                text = if (cocktail.ingredients.isNotEmpty()) {
-                    val firstIngredient = cocktail.ingredients.first().name
-                    // Check if it's a placeholder
-                    if (firstIngredient == "Tap to view ingredients") {
-                        firstIngredient
-                    } else {
-                        // Join first 2 ingredients with safe operators
-                        cocktail.ingredients.take(2).joinToString(", ") { it.name }
-                            .let { if (cocktail.ingredients.size > 2) "$it..." else it }
-                    }
+                text = if (cocktail.hasFullDetails && cocktail.ingredients.isNotEmpty()) {
+                    cocktail.ingredients.take(2).joinToString(", ") { it.name }
+                        .let { if (cocktail.ingredients.size > 2) "$it..." else it }
                 } else {
                     stringResource(MR.strings.list_tap_to_view_ingredients)
                 },

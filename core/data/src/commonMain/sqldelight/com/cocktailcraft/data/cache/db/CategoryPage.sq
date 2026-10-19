@@ -4,8 +4,9 @@
 --
 -- Which cocktails each category page lists, in the API's order, and when the
 -- page was fetched. Ids only: the cocktails themselves are cached_cocktail
--- rows, joined in when the page is read. No foreign key: LRU/TTL eviction
--- may drop a listed cocktail, which then reads as a stale page.
+-- rows, joined in when the page is read. Eviction and expiry leave the rows a
+-- stored page lists alone (see CachedCocktail.sq); a listed cocktail that is
+-- missing anyway reads as a stale page.
 -- Added in version 4 (migrations/3.sqm).
 --
 --   position    index in the filter.php response
@@ -31,7 +32,7 @@ DELETE FROM category_page WHERE category = ?;
 -- The page's stored cocktails in API order. Listed ids whose cocktail row is
 -- gone are skipped.
 selectPage:
-SELECT cached_cocktail.id, cached_cocktail.payload
+SELECT cached_cocktail.id, cached_cocktail.payload, cached_cocktail.full_details
 FROM category_page
 JOIN cached_cocktail ON cached_cocktail.id = category_page.cocktail_id
 WHERE category_page.category = :category

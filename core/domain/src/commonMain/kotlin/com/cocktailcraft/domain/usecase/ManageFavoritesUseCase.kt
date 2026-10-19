@@ -61,8 +61,8 @@ class ManageFavoritesUseCase(
     }
 
     /**
-     * List endpoints fabricate placeholder ingredients/instructions; fetch
-     * full details so stored favorites are complete.
+     * List endpoints return partial records; fetch full details so stored
+     * favorites are complete.
      */
     private suspend fun hydrated(cocktail: Cocktail): Cocktail {
         if (cocktail.hasFullDetails) return cocktail

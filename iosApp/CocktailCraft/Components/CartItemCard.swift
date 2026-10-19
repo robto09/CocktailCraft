@@ -201,7 +201,8 @@ struct QuantityControlView: View {
                 stockCount: 15,
                 rating: 4.8,
                 popularity: 95,
-                dateAdded: 1672531300000
+                dateAdded: 1672531300000,
+                hasFullDetails: true
             ),
             quantity: 2
         ),

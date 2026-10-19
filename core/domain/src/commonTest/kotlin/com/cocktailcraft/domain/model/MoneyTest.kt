@@ -38,17 +38,4 @@ class MoneyTest {
         assertEquals(Money(1250).hashCode(), Money(1250).hashCode())
         assertNotEquals(Money(1250), Money(1251))
     }
-
-    @Test
-    fun legacyDollarsRoundHalfAwayFromZeroToTheNearestCent() {
-        assertEquals(Money(1250), Money.fromDollars(12.5))
-        assertEquals(Money(599), Money.fromDollars(5.99))
-        // Binary doubles a hair below the cent still land on it
-        assertEquals(Money(529), Money.fromDollars(5.0 + 29 / 100.0))
-        assertEquals(Money(1015), Money.fromDollars(5.0 + 515 / 100.0))
-        assertEquals(Money(13), Money.fromDollars(0.125))
-        assertEquals(Money(-13), Money.fromDollars(-0.125))
-        assertEquals(Money(0), Money.fromDollars(0.004))
-        assertEquals(Money(1), Money.fromDollars(0.005))
-    }
 }

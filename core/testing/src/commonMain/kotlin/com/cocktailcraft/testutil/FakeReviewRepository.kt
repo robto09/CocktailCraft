@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlin.native.HiddenFromObjC
 
-/** In-memory [ReviewRepository]. */
+/** In-memory [ReviewRepository]; like the real one, only [Review.isMine] reviews can be changed. */
 @HiddenFromObjC // implements a Kotlin-only repository port
 class FakeReviewRepository : ReviewRepository {
     private val reviews = MutableStateFlow<List<Review>>(emptyList())
@@ -25,7 +25,7 @@ class FakeReviewRepository : ReviewRepository {
     }
 
     override suspend fun updateReview(reviewId: String, rating: Float, comment: String, date: String): Result<Boolean> {
-        if (reviews.value.none { it.id == reviewId }) return Result.Success(false)
+        if (reviews.value.none { it.id == reviewId && it.isMine }) return Result.Success(false)
         reviews.value = reviews.value.map {
             if (it.id == reviewId) it.copy(rating = rating, comment = comment, date = date) else it
         }
@@ -33,7 +33,7 @@ class FakeReviewRepository : ReviewRepository {
     }
 
     override suspend fun deleteReview(reviewId: String): Result<Boolean> {
-        if (reviews.value.none { it.id == reviewId }) return Result.Success(false)
+        if (reviews.value.none { it.id == reviewId && it.isMine }) return Result.Success(false)
         reviews.value = reviews.value.filterNot { it.id == reviewId }
         return Result.Success(true)
     }

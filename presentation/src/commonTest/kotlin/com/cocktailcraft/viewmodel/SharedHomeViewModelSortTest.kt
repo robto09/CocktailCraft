@@ -184,6 +184,18 @@ class SharedHomeViewModelSortTest : MainDispatcherTest() {
     }
 
     @Test
+    fun ratingSummariesCountEveryonesReviews() = runTest {
+        val harness = HomeViewModelHarness()
+        harness.all = sortable
+        harness.reviews.addReview(review("b", 5f))
+        harness.reviews.addReview(review("b", 3f).copy(isMine = false))
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        assertEquals(mapOf("b" to CocktailRatingSummary(4f, 2)), vm.uiState.value.ratingSummaries)
+    }
+
+    @Test
     fun aNewReviewReordersTheRatingSort() = runTest {
         val harness = HomeViewModelHarness()
         harness.all = sortable

@@ -197,7 +197,7 @@ class FakeReviewRepository : ReviewRepository {
         return Result.Success(Unit)
     }
     override suspend fun updateReview(reviewId: String, rating: Float, comment: String, date: String): Result<Boolean> {
-        val exists = reviews.value.any { it.id == reviewId }
+        val exists = reviews.value.any { it.id == reviewId && it.isMine }
         if (exists) {
             reviews.update { list ->
                 list.map { if (it.id == reviewId) it.copy(rating = rating, comment = comment, date = date) else it }
@@ -206,8 +206,8 @@ class FakeReviewRepository : ReviewRepository {
         return Result.Success(exists)
     }
     override suspend fun deleteReview(reviewId: String): Result<Boolean> {
-        val exists = reviews.value.any { it.id == reviewId }
-        reviews.update { list -> list.filterNot { it.id == reviewId } }
+        val exists = reviews.value.any { it.id == reviewId && it.isMine }
+        if (exists) reviews.update { list -> list.filterNot { it.id == reviewId } }
         return Result.Success(exists)
     }
 }

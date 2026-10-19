@@ -17,6 +17,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.cocktailcraft.widget.WidgetDataSource
 import kotlinx.coroutines.CancellationException
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -37,7 +38,7 @@ class WidgetUpdateWorker(
     params: WorkerParameters
 ) : CoroutineWorker(context, params), KoinComponent {
 
-    private val dataProvider: WidgetDataProvider by inject()
+    private val dataProvider: WidgetDataSource by inject()
 
     override suspend fun doWork(): Result {
         val context = applicationContext
@@ -202,7 +203,7 @@ class WidgetUpdateWorker(
  */
 internal suspend fun refreshRandomCocktailWidgets(
     context: Context,
-    provider: WidgetDataProvider,
+    provider: WidgetDataSource,
     glanceIds: List<GlanceId>? = null,
     showErrorOnFailure: Boolean = false
 ): Boolean {
@@ -211,7 +212,7 @@ internal suspend fun refreshRandomCocktailWidgets(
     // No widgets placed: don't burn a network call (AN-2)
     if (ids.isEmpty()) return true
 
-    val cocktail = provider.getRandomCocktail()
+    val cocktail = provider.randomCocktail()
     val widget = RandomCocktailWidget()
     ids.forEach { glanceId ->
         updateAppWidgetState(context, glanceId) { prefs ->
@@ -237,7 +238,7 @@ internal suspend fun refreshRandomCocktailWidgets(
  */
 internal suspend fun refreshFavoritesWidgets(
     context: Context,
-    provider: WidgetDataProvider,
+    provider: WidgetDataSource,
     glanceIds: List<GlanceId>? = null,
     showErrorOnFailure: Boolean = false
 ): Boolean {
@@ -245,7 +246,7 @@ internal suspend fun refreshFavoritesWidgets(
         ?: GlanceAppWidgetManager(context).getGlanceIds(FavoritesWidget::class.java)
     if (ids.isEmpty()) return true
 
-    val favorites = provider.getFavoriteCocktails()
+    val favorites = provider.favoriteCocktails()
     val favoritesJson = favorites?.let { list ->
         FavoriteItem.toJsonArray(
             list.map { cocktail ->

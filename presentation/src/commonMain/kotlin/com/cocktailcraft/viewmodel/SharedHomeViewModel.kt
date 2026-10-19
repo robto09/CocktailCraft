@@ -155,7 +155,8 @@ class SharedHomeViewModel internal constructor(
             }
         }
 
-        // Review averages, observed like favorites. They rank the Rating
+        // Review averages over every review on the device (whoever wrote
+        // them), observed like favorites. They rank the Rating
         // sort and show on the cards; a failing flow just leaves them empty.
         viewModelScope.launch {
             manageReviewsUseCase.observeReviews()
@@ -345,7 +346,7 @@ class SharedHomeViewModel internal constructor(
     }
 
     /**
-     * [source] in [option]'s order. Rating ranks by the user's review
+     * [source] in [option]'s order. Rating ranks by the review
      * average where there is one, and the demo [Cocktail.rating] otherwise.
      */
     private fun sortListing(

@@ -5,6 +5,15 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
+import com.cocktailcraft.data.local.CocktailCodec
+import com.cocktailcraft.data.local.CocktailDecodeMemo
+import com.cocktailcraft.data.local.CocktailEntity
+import com.cocktailcraft.data.local.CurrentOwner
+import com.cocktailcraft.data.local.FixedOwner
+import com.cocktailcraft.data.local.LegacyCocktailSerializer
+import com.cocktailcraft.data.local.OwnerIds
+import com.cocktailcraft.data.local.claimUnassignedUserData
+import com.cocktailcraft.data.local.toDomain
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
 import com.russhwolf.settings.Settings
@@ -37,7 +46,8 @@ import kotlin.time.Clock
  */
 @Serializable
 internal data class CachedCocktailEntry(
-    val cocktail: Cocktail,
+    @Serializable(with = LegacyCocktailSerializer::class)
+    val cocktail: CocktailEntity,
     val cachedAtMs: Long = 0L
 )
 
@@ -47,13 +57,25 @@ internal data class CachedCocktailRow(
     val cachedAtMs: Long
 )
 
+/** A stored cocktail row before decoding: its id, payload and full_details flag. */
+internal class StoredCocktail(val id: String, val payload: String, val hasFullDetails: Boolean)
+
+/** Row mapper for the queries selecting (id, payload, full_details). */
+internal val storedCocktail: (String, String, Long) -> StoredCocktail =
+    { id, payload, fullDetails -> StoredCocktail(id, payload, fullDetails != 0L) }
+
+/** What [CocktailCache] merges an incoming record into. */
+private class StoredState(val category: String?, val payload: String, val hasFullDetails: Boolean)
+
 /**
  * The local cocktail catalog, backed by SQLDelight: the cached_cocktail
  * table (one row per cocktail) and category_page (which cocktails each
  * fetched category page lists, in order, and when it was fetched). It is the
  * single source of truth for every cocktail the app shows: repositories write
  * network results here and the UI reads them back through the observe*
- * flows, which emit again after every write.
+ * flows, which emit again after every write. Favorites, the cart and the
+ * recently viewed list refer to its rows by id rather than keeping copies
+ * ([storeAndReference]), so a detail refresh shows up everywhere.
  *
  * Each cocktail is one row, so caching or viewing a cocktail is a single-row
  * upsert instead of rewriting the whole cache.
@@ -64,7 +86,13 @@ internal data class CachedCocktailRow(
  * Eviction matrix (SH-11): this is the only cocktail store; there is no
  * in-memory copy with its own expiry. Eviction is LRU (capped at
  * [AppConfig.maxOfflineCocktails]) plus the TTL expiry above — there is no
- * user-facing "clear cache" path.
+ * user-facing "clear cache" path. Neither ever drops a pinned row: one a
+ * stored category page lists, or one in a favorites list, cart or recently
+ * viewed list (see CachedCocktail.sq). So a browsed category stays whole
+ * offline, and caching search results can't push it out.
+ *
+ * The cocktails are shared by everyone using the device; the recently viewed
+ * list belongs to [currentOwner] (see UserDataOwnership.kt).
  *
  * The database is opened lazily on first access, on [ioDispatcher] — a Koin
  * `single` must not block whichever thread first resolves it. That first
@@ -76,6 +104,7 @@ internal class CocktailCache(
     private val settings: Settings,
     private val json: Json,
     private val appConfig: AppConfig,
+    private val currentOwner: CurrentOwner,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val offlineModePolicy: OfflineModePolicy? = null
 ) {
@@ -85,8 +114,9 @@ internal class CocktailCache(
         json: Json,
         appConfig: AppConfig,
         ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-        offlineModePolicy: OfflineModePolicy? = null
-    ) : this(lazyOf(database), settings, json, appConfig, ioDispatcher, offlineModePolicy)
+        offlineModePolicy: OfflineModePolicy? = null,
+        currentOwner: CurrentOwner = FixedOwner()
+    ) : this(lazyOf(database), settings, json, appConfig, currentOwner, ioDispatcher, offlineModePolicy)
 
     companion object {
         // Settings keys of the legacy JSON-blob cache. internal (not private)
@@ -100,13 +130,13 @@ internal class CocktailCache(
         private const val MAX_IDS_PER_QUERY = 500
     }
 
-    private val cocktailSerializer = Cocktail.serializer()
+    private val codec = CocktailCodec(json)
 
     // Guards every database operation. Besides serialising writes, it keeps
     // the access stamps below strictly increasing.
     private val dbMutex = Mutex()
 
-    // Last stamp handed out for cached_cocktail.last_accessed /
+    // Last stamp handed out for cocktail_access.last_accessed /
     // recently_viewed_cocktail.viewed_at. See [nextStamp].
     private var lastStamp = 0L
 
@@ -141,15 +171,7 @@ internal class CocktailCache(
     private fun normalizedCategory(cocktail: Cocktail): String? =
         cocktail.category?.takeIf { it.isNotBlank() }
 
-    private fun encode(cocktail: Cocktail): String = json.encodeToString(cocktailSerializer, cocktail)
-
-    private fun decodeOrNull(payload: String): Cocktail? =
-        try {
-            json.decodeFromString(cocktailSerializer, payload)
-        } catch (e: Exception) {
-            Logger.w(e) { "Dropping unreadable cached cocktail: ${e.message}" }
-            null
-        }
+    private fun decodeOrNull(row: StoredCocktail): Cocktail? = codec.decodeOrNull(row.payload, row.hasFullDetails)
 
     /**
      * Runs [block] against the database on [ioDispatcher], one operation at a
@@ -159,17 +181,21 @@ internal class CocktailCache(
     private suspend fun <T> withDatabase(
         fallback: T,
         block: suspend CocktailCraftDatabase.() -> T
-    ): T {
+    ): T =
+        try {
+            withDatabaseOrThrow(block)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Logger.e(e) { "Cocktail cache database operation failed: ${e.message}" }
+            fallback
+        }
+
+    /** Like [withDatabase], for callers that report a failure themselves. */
+    private suspend fun <T> withDatabaseOrThrow(block: suspend CocktailCraftDatabase.() -> T): T {
         ensureLoaded()
         return withContext(ioDispatcher) {
-            try {
-                dbMutex.withLock { database.value.block() }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Logger.e(e) { "Cocktail cache database operation failed: ${e.message}" }
-                fallback
-            }
+            dbMutex.withLock { database.value.block() }
         }
     }
 
@@ -186,6 +212,7 @@ internal class CocktailCache(
     private suspend fun load(): Unit = withContext(ioDispatcher) {
         try {
             val applyExpiry = shouldApplyExpiry()
+            val ownerId = currentOwner.ownerId()
             dbMutex.withLock {
                 val db = database.value
                 lastStamp = maxOf(
@@ -193,11 +220,14 @@ internal class CocktailCache(
                     db.recentlyViewedCocktailQueries.maxViewedAt().executeAsOne().value_ ?: 0L
                 )
                 importLegacySettingsCache(db)
+                // Recently viewed entries from that import or an upgrade
+                // belong to whoever is signed in (LocalDatabase does the same)
+                db.claimUnassignedUserData(ownerId)
                 if (applyExpiry) {
                     db.cachedCocktailQueries.deleteCachedBefore(expiryCutoff())
                 }
                 // The cap is configuration; honour a lowered value on startup.
-                db.cachedCocktailQueries.trimToCapacity(appConfig.maxOfflineCocktails.toLong())
+                db.trim()
                 Logger.d {
                     "Offline cocktail cache ready with " +
                         "${db.cachedCocktailQueries.count().executeAsOne()} cocktails"
@@ -235,23 +265,23 @@ internal class CocktailCache(
             // Legacy lists are oldest-first, so ascending stamps keep both
             // the LRU order and the recently viewed order.
             entries.forEach { entry ->
-                db.cachedCocktailQueries.insertIfAbsent(
-                    id = entry.cocktail.id,
-                    category = normalizedCategory(entry.cocktail),
-                    payload = encode(entry.cocktail),
-                    cached_at = entry.cachedAtMs,
-                    last_accessed = nextStamp()
-                )
+                db.insertLegacyCocktail(entry.cocktail.toDomain(), entry.cachedAtMs)
             }
+            val now = nowMs()
             recent.forEach { cocktail ->
+                // The cocktail itself, if the legacy cache had lost it
+                db.insertLegacyCocktail(cocktail, cachedAtMs = now)
                 db.recentlyViewedCocktailQueries.insertIfAbsent(
-                    id = cocktail.id,
-                    payload = encode(cocktail),
+                    owner_id = OwnerIds.UNASSIGNED,
+                    cocktail_id = cocktail.id,
                     viewed_at = nextStamp()
                 )
             }
-            db.cachedCocktailQueries.trimToCapacity(appConfig.maxOfflineCocktails.toLong())
-            db.recentlyViewedCocktailQueries.trimToCapacity(MAX_RECENTLY_VIEWED.toLong())
+            db.recentlyViewedCocktailQueries.trimToCapacity(
+                ownerId = OwnerIds.UNASSIGNED,
+                capacity = MAX_RECENTLY_VIEWED.toLong()
+            )
+            db.trim()
         }
 
         settings.remove(ALL_COCKTAILS_KEY)
@@ -259,6 +289,21 @@ internal class CocktailCache(
         Logger.i {
             "Imported ${entries.size} cached and ${recent.size} recently viewed cocktails from Settings"
         }
+    }
+
+    /** Stores a legacy record unless the database has it already (full details win). */
+    private fun CocktailCraftDatabase.insertLegacyCocktail(cocktail: Cocktail, cachedAtMs: Long) {
+        val payload = codec.encode(cocktail)
+        val fullDetails = if (cocktail.hasFullDetails) 1L else 0L
+        cachedCocktailQueries.insertIfAbsent(
+            id = cocktail.id,
+            category = normalizedCategory(cocktail),
+            payload = payload,
+            full_details = fullDetails,
+            cached_at = cachedAtMs
+        )
+        if (cocktail.hasFullDetails) cachedCocktailQueries.upgradeToFull(payload = payload, id = cocktail.id)
+        cachedCocktailQueries.touchIfAbsent(id = cocktail.id, lastAccessed = nextStamp())
     }
 
     /**
@@ -274,7 +319,7 @@ internal class CocktailCache(
         } catch (e: Exception) {
             try {
                 val now = nowMs()
-                json.decodeFromString(ListSerializer(cocktailSerializer), raw)
+                json.decodeFromString(ListSerializer(LegacyCocktailSerializer), raw)
                     .map { CachedCocktailEntry(it, now) }
             } catch (e: Exception) {
                 Logger.w(e) { "Discarding unreadable legacy cocktail cache" }
@@ -286,7 +331,7 @@ internal class CocktailCache(
     private fun decodeLegacyRecentlyViewed(raw: String): List<Cocktail> {
         if (raw.isBlank()) return emptyList()
         return try {
-            json.decodeFromString(ListSerializer(cocktailSerializer), raw)
+            json.decodeFromString(ListSerializer(LegacyCocktailSerializer), raw).map { it.toDomain() }
         } catch (e: Exception) {
             Logger.w(e) { "Discarding unreadable legacy recently viewed list" }
             emptyList()
@@ -294,64 +339,79 @@ internal class CocktailCache(
     }
 
     /**
-     * (id, payload) rows for [ids], one `IN` query per [MAX_IDS_PER_QUERY]
-     * ids. Call inside a transaction so the chunks see one snapshot.
+     * The stored state of [ids], one `IN` query per [MAX_IDS_PER_QUERY] ids.
+     * Call inside a transaction so the chunks see one snapshot.
      */
-    private fun CocktailCraftDatabase.selectPayloads(ids: Collection<String>): List<Pair<String, String>> =
+    private fun CocktailCraftDatabase.selectStored(ids: Collection<String>): Map<String, StoredState> =
         ids.distinct().chunked(MAX_IDS_PER_QUERY).flatMap { chunk ->
-            cachedCocktailQueries.selectByIds(chunk) { id, payload -> id to payload }.executeAsList()
-        }
+            cachedCocktailQueries.selectStored(chunk) { id, category, payload, fullDetails ->
+                id to StoredState(category, payload, fullDetails != 0L)
+            }.executeAsList()
+        }.toMap()
 
     /**
-     * Upserts [cocktails] in order and applies the LRU cap. A list-endpoint
-     * placeholder never replaces a cached full record (it would put "Tap to
-     * view ingredients" back on cards); the full record is kept and refreshed.
-     * Likewise a record without a category (the ingredient and alcoholic
-     * filters omit it) keeps the category already stored for that id, so it
-     * doesn't drop out of the category page it was cached for. Existing
-     * records are read in one batch, not one SELECT per row. Call inside a
-     * transaction.
+     * Stores [cocktails] in order and marks each as just used (LRU). Call
+     * inside a transaction. Existing records are read in one batch, not one
+     * SELECT per row.
+     *
+     * [fetched] says where the records come from. Fetched from the API, they
+     * are the newest data and are written (cached_at = now), except a
+     * partial record that would replace a full one or change nothing. Handed
+     * back by the app (adding a favorite, a view), they are copies of stored
+     * data or older, so they are written only where nothing is stored or to
+     * upgrade a partial record to a full one, never passing for a fresh fetch.
+     *
+     * A partial record never replaces a cached full one (cards would lose
+     * the details again). A record without a category (the ingredient and
+     * alcoholic filters omit it) keeps the category already stored for that
+     * id, so it doesn't drop out of the category page it was cached for.
      */
-    private fun CocktailCraftDatabase.upsertCocktails(cocktails: List<Cocktail>) {
+    private fun CocktailCraftDatabase.storeCocktails(cocktails: List<Cocktail>, fetched: Boolean) {
+        if (cocktails.isEmpty()) return
         val now = nowMs()
-        val lookupIds = cocktails
-            .filter { !it.hasFullDetails || normalizedCategory(it) == null }
-            .map { it.id }
-        val existing: Map<String, Cocktail> = selectPayloads(lookupIds)
-            .mapNotNull { (id, payload) -> decodeOrNull(payload)?.let { id to it } }
-            .toMap()
+        val stored = selectStored(cocktails.map { it.id })
         cocktails.forEach { incoming ->
-            val cocktail = merge(incoming, existing[incoming.id])
-            cachedCocktailQueries.upsert(
-                id = cocktail.id,
-                category = normalizedCategory(cocktail),
-                payload = encode(cocktail),
-                cached_at = now,
-                last_accessed = nextStamp()
-            )
+            val existing = stored[incoming.id]
+            val category = normalizedCategory(incoming) ?: existing?.category
+            val cocktail = if (category == incoming.category) incoming else incoming.copy(category = category)
+            val payload = payloadToWrite(cocktail, existing, fetched)
+            if (payload != null) {
+                cachedCocktailQueries.upsert(
+                    id = cocktail.id,
+                    category = category,
+                    payload = payload,
+                    full_details = if (cocktail.hasFullDetails) 1L else 0L,
+                    cached_at = now
+                )
+            } else if (existing?.category == null && category != null) {
+                cachedCocktailQueries.fillCategory(category = category, id = cocktail.id)
+            }
+            cachedCocktailQueries.touch(id = cocktail.id, lastAccessed = nextStamp())
         }
+    }
+
+    /** The payload [storeCocktails] writes for [cocktail], or null to keep [existing]. */
+    private fun payloadToWrite(cocktail: Cocktail, existing: StoredState?, fetched: Boolean): String? = when {
+        existing == null -> codec.encode(cocktail)
+        cocktail.hasFullDetails && (fetched || !existing.hasFullDetails) -> codec.encode(cocktail)
+        fetched && !existing.hasFullDetails -> codec.encode(cocktail).takeIf { it != existing.payload }
+        else -> null
+    }
+
+    private fun CocktailCraftDatabase.trim() {
         cachedCocktailQueries.trimToCapacity(appConfig.maxOfflineCocktails.toLong())
     }
 
-    /** What to store for [incoming] given the row already cached for its id. */
-    private fun merge(incoming: Cocktail, existing: Cocktail?): Cocktail {
-        val base = if (incoming.hasFullDetails) incoming else existing?.takeIf { it.hasFullDetails } ?: incoming
-        val category = normalizedCategory(base)
-            ?: normalizedCategory(incoming)
-            ?: existing?.let(::normalizedCategory)
-        return if (category == base.category) base else base.copy(category = category)
-    }
-
     /**
-     * Decodes (id, payload) rows, deleting any row whose payload can no
-     * longer be decoded so it isn't retried on every read.
+     * Decodes stored rows, deleting any row whose payload can no longer be
+     * decoded so it isn't retried on every read.
      */
     private fun decodeRows(
-        rows: List<Pair<String, String>>,
+        rows: List<StoredCocktail>,
         deleteRow: (String) -> Unit
-    ): List<Cocktail> = rows.mapNotNull { (id, payload) ->
-        decodeOrNull(payload) ?: run {
-            deleteRow(id)
+    ): List<Cocktail> = rows.mapNotNull { row ->
+        decodeOrNull(row) ?: run {
+            deleteRow(row.id)
             null
         }
     }
@@ -365,29 +425,37 @@ internal class CocktailCache(
      * writes would re-trigger itself), and expired rows are still served:
      * stale data stays on screen until a refresh replaces it.
      *
+     * [transform] gets a [CocktailDecodeMemo] of its own for each collector,
+     * so a re-run only decodes the rows that changed.
+     *
      * A failing query is logged and ends the stream, so collectors keep their
      * last state instead of crashing the scope they collect in.
      */
     private fun <T : Any, R> observeQuery(
         query: CocktailCraftDatabase.() -> Query<T>,
-        transform: (List<T>) -> R
+        transform: CocktailDecodeMemo.(List<T>) -> R
     ): Flow<R> =
         flow {
             ensureLoaded()
-            emitAll(database.value.query().asFlow().mapToList(ioDispatcher))
+            val memo = CocktailDecodeMemo(codec)
+            emitAll(
+                database.value.query().asFlow().mapToList(ioDispatcher)
+                    .map { rows -> memo.emission { transform(rows) } }
+            )
         }
-            .map(transform)
             .flowOn(ioDispatcher)
             .catch { e -> Logger.e(e) { "Observing the cocktail cache failed: ${e.message}" } }
 
-    private fun decodeReadOnly(rows: List<Pair<String, String>>): List<Cocktail> =
-        rows.mapNotNull { (_, payload) -> decodeOrNull(payload) }
+    private fun CocktailDecodeMemo.decodeReadOnly(rows: List<StoredCocktail>): List<Cocktail> =
+        rows.mapNotNull { decode(it.id, it.payload, it.hasFullDetails) }
 
     /** The cached cocktail [id] (null when not cached), re-emitted after every write. */
     fun observeCocktail(id: String): Flow<Cocktail?> =
         observeQuery({ cachedCocktailQueries.selectById(id) }) { rows ->
-            rows.firstOrNull()?.let { decodeOrNull(it.payload) }
+            rows.firstOrNull()?.let { decode(id, it.payload, it.full_details != 0L) }
         }
+            // A write to another cocktail re-runs the query too
+            .distinctUntilChanged()
 
     /**
      * The stored page of [category], re-emitted after every write to the
@@ -408,8 +476,8 @@ internal class CocktailCache(
             .flatMapLatest { hasPage ->
                 if (hasPage) {
                     observeQuery(
-                        query = { categoryPageQueries.selectPage(category) { id, payload -> id to payload } },
-                        transform = ::decodeReadOnly
+                        query = { categoryPageQueries.selectPage(category, storedCocktail) },
+                        transform = { rows -> decodeReadOnly(rows) }
                     )
                 } else {
                     observeCategoryColumn(category, includeUncategorized)
@@ -420,9 +488,9 @@ internal class CocktailCache(
     private fun observeCategoryColumn(category: String, includeUncategorized: Boolean): Flow<List<Cocktail>> =
         observeQuery({
             if (includeUncategorized) {
-                cachedCocktailQueries.selectByCategoryOrUncategorized(category) { id, payload -> id to payload }
+                cachedCocktailQueries.selectByCategoryOrUncategorized(category, storedCocktail)
             } else {
-                cachedCocktailQueries.selectByCategory(category) { id, payload -> id to payload }
+                cachedCocktailQueries.selectByCategory(category, storedCocktail)
             }
         }) { rows ->
             val decoded = decodeReadOnly(rows)
@@ -440,7 +508,7 @@ internal class CocktailCache(
     suspend fun cacheCategoryPage(category: String, cocktails: List<Cocktail>, fetchedAtMs: Long) {
         withDatabase(Unit) {
             transaction {
-                upsertCocktails(cocktails)
+                storeCocktails(cocktails, fetched = true)
                 categoryPageQueries.deleteCategory(category)
                 cocktails.distinctBy { it.id }.forEachIndexed { position, cocktail ->
                     categoryPageQueries.insert(
@@ -450,14 +518,14 @@ internal class CocktailCache(
                         fetched_at = fetchedAtMs
                     )
                 }
+                trim()
             }
         }
     }
 
     /**
      * When [category]'s page was fetched, or null if it never was (or a
-     * cocktail it lists has since been evicted, so it no longer holds the
-     * whole page).
+     * cocktail it lists is missing, so it no longer holds the whole page).
      */
     suspend fun categoryPageFetchedAt(category: String): Long? =
         withDatabase(null) {
@@ -472,48 +540,70 @@ internal class CocktailCache(
     suspend fun peekCachedCocktail(id: String): CachedCocktailRow? =
         withDatabase(null) {
             cachedCocktailQueries.selectById(id).executeAsOneOrNull()?.let { row ->
-                decodeOrNull(row.payload)?.let { CachedCocktailRow(it, row.cached_at) }
+                codec.decodeOrNull(row.payload, row.full_details != 0L)?.let { CachedCocktailRow(it, row.cached_at) }
             }
         }
 
     /**
-     * Cache a cocktail for offline access.
+     * Cache a cocktail fetched from the API for offline access.
      */
     suspend fun cacheCocktail(cocktail: Cocktail) {
         cacheCocktails(listOf(cocktail))
     }
 
     /**
-     * Cache a batch of cocktails for offline access in one transaction.
+     * Cache a batch of cocktails fetched from the API in one transaction.
      * Insertion order matches sequential [cacheCocktail] calls, so LRU
      * eviction behaves identically.
      */
     suspend fun cacheCocktails(cocktails: List<Cocktail>) {
         if (cocktails.isEmpty()) return
         withDatabase(Unit) {
-            transaction { upsertCocktails(cocktails) }
+            transaction {
+                storeCocktails(cocktails, fetched = true)
+                trim()
+            }
+        }
+    }
+
+    /**
+     * Stores [cocktails] (where nothing better is stored) and runs [reference]
+     * — the favorites or cart write that refers to them — in the same
+     * transaction, so a reference never points at a row that isn't there and
+     * eviction never sees the rows unpinned. Failures propagate.
+     */
+    suspend fun <T> storeAndReference(
+        cocktails: List<Cocktail>,
+        reference: CocktailCraftDatabase.() -> T
+    ): T = withDatabaseOrThrow {
+        transactionWithResult {
+            storeCocktails(cocktails, fetched = false)
+            reference().also { trim() }
         }
     }
 
     /**
      * Get a cached cocktail by ID. Entries older than
-     * [AppConfig.cacheExpirationMs] are evicted (online only) and not returned.
-     * A hit counts as an access for LRU eviction.
+     * [AppConfig.cacheExpirationMs] are evicted (online only, and only when
+     * nothing pins them) and not returned. A hit counts as an access for LRU
+     * eviction; recording it doesn't re-run queries observing the cocktails.
      */
     suspend fun getCachedCocktail(id: String): Cocktail? {
         val applyExpiry = shouldApplyExpiry()
         return withDatabase(null) {
             val row = cachedCocktailQueries.selectById(id).executeAsOneOrNull()
                 ?: return@withDatabase null
-            if (applyExpiry && row.cached_at < expiryCutoff()) {
-                cachedCocktailQueries.deleteById(id)
+            val cutoff = expiryCutoff()
+            if (applyExpiry && row.cached_at < cutoff &&
+                cachedCocktailQueries.deleteIfExpired(id = id, cutoff = cutoff).value > 0L
+            ) {
                 return@withDatabase null
             }
-            val cocktail = decodeOrNull(row.payload)
+            val cocktail = codec.decodeOrNull(row.payload, row.full_details != 0L)
             if (cocktail == null) {
                 cachedCocktailQueries.deleteById(id)
             } else {
-                cachedCocktailQueries.touch(lastAccessed = nextStamp(), id = id)
+                cachedCocktailQueries.touch(id = id, lastAccessed = nextStamp())
             }
             cocktail
         }
@@ -527,7 +617,7 @@ internal class CocktailCache(
         val applyExpiry = shouldApplyExpiry()
         val live = withDatabase(emptyList()) {
             if (applyExpiry) cachedCocktailQueries.deleteCachedBefore(expiryCutoff())
-            val rows = cachedCocktailQueries.selectAll { id, payload -> id to payload }.executeAsList()
+            val rows = cachedCocktailQueries.selectAll(storedCocktail).executeAsList()
             decodeRows(rows) { cachedCocktailQueries.deleteById(it) }
         }
         Logger.d { "CocktailCache.getAllCachedCocktails() returning ${live.size} items" }
@@ -535,38 +625,34 @@ internal class CocktailCache(
     }
 
     /**
-     * Add a cocktail to the recently viewed list (capped at
+     * Add a cocktail to the current owner's recently viewed list (capped at
      * [MAX_RECENTLY_VIEWED]); it is also cached for offline access if it
      * isn't already.
      */
     suspend fun addToRecentlyViewed(cocktail: Cocktail) {
+        val ownerId = currentOwner.ownerId()
         withDatabase(Unit) {
             transaction {
+                storeCocktails(listOf(cocktail), fetched = false)
                 recentlyViewedCocktailQueries.upsert(
-                    id = cocktail.id,
-                    payload = encode(cocktail),
+                    owner_id = ownerId,
+                    cocktail_id = cocktail.id,
                     viewed_at = nextStamp()
                 )
-                recentlyViewedCocktailQueries.trimToCapacity(MAX_RECENTLY_VIEWED.toLong())
-
-                if (cachedCocktailQueries.exists(cocktail.id).executeAsOne() > 0L) {
-                    cachedCocktailQueries.touch(lastAccessed = nextStamp(), id = cocktail.id)
-                } else {
-                    upsertCocktails(listOf(cocktail))
-                }
+                recentlyViewedCocktailQueries.trimToCapacity(ownerId = ownerId, capacity = MAX_RECENTLY_VIEWED.toLong())
+                trim()
             }
         }
     }
 
     /**
-     * Get the list of recently viewed cocktails, most recent first.
+     * Get the current owner's recently viewed cocktails, most recent first.
      */
     suspend fun getRecentlyViewedCocktails(): List<Cocktail> {
+        val ownerId = currentOwner.ownerId()
         val recent = withDatabase(emptyList()) {
-            val rows = recentlyViewedCocktailQueries
-                .selectMostRecentFirst { id, payload -> id to payload }
-                .executeAsList()
-            decodeRows(rows) { recentlyViewedCocktailQueries.deleteById(it) }
+            val rows = recentlyViewedCocktailQueries.selectMostRecentFirst(ownerId, storedCocktail).executeAsList()
+            decodeRows(rows) { recentlyViewedCocktailQueries.deleteById(ownerId, it) }
         }
         Logger.d { "CocktailCache.getRecentlyViewedCocktails() returning ${recent.size} items" }
         return recent

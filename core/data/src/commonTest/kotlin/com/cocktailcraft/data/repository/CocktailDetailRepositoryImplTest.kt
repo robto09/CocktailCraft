@@ -19,7 +19,10 @@ import com.russhwolf.settings.Settings
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,7 +46,7 @@ class CocktailDetailRepositoryImplTest {
 
     // Mirrors the DataModule wiring: remote source + focused offline repo
     // backing the detail impl's cache-first lookups.
-    private fun fixture(
+    private fun TestScope.fixture(
         api: FakeCocktailApi = FakeCocktailApi(),
         settings: Settings = MapSettings(),
         online: Boolean = true
@@ -61,6 +64,7 @@ class CocktailDetailRepositoryImplTest {
             remote = remote,
             cocktailCache = cache,
             offlineRepository = offline,
+            appScope = backgroundScope,
             nowMs = { fixture.nowMs }
         )
         fixture = Fixture(detail, cache, networkMonitor)
@@ -225,5 +229,18 @@ class CocktailDetailRepositoryImplTest {
 
         assertEquals(1, api.lookupRequests)
         results.forEach { assertIs<Result.Success<Unit>>(it) }
+    }
+
+    @Test
+    fun aRefreshCompletesIntoTheCacheWhenItsCallerIsCancelled() = runTest {
+        // The detail screen closing mid-fetch must not throw the response away
+        val api = FakeCocktailApi(drinks = listOf(remoteDto("1", "Remote Margarita"))).apply { lookupDelayMs = 500 }
+        val fixture = fixture(api = api)
+
+        val caller = launch { fixture.detail.refreshCocktail("1", force = true) }
+        while (api.lookupRequests == 0) yield()
+        caller.cancel()
+
+        assertEquals("Remote Margarita", fixture.detail.observeCocktail("1").first { it != null }?.name)
     }
 }
