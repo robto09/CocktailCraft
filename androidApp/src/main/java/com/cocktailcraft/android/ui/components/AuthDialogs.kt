@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -56,7 +57,10 @@ import com.cocktailcraft.resources.sign_in
 /**
  * Sign-in, sign-up, edit-profile and change-password dialogs, extracted
  * from ProfileScreen. Form state is rememberSaveable so half-typed input
- * survives configuration changes. Each stays open while its request runs
+ * survives configuration changes — except password fields, which use plain
+ * remember: saved instance state is written to disk when the process is
+ * backgrounded, and a password must never land there. A rotation clears
+ * them; that is the accepted cost. Each stays open while its request runs
  * ([isSubmitting] shows progress on the confirm button) and shows the
  * failure inline ([errorMessage]); the caller closes it on success.
  */
@@ -68,7 +72,7 @@ fun SignInDialog(
     errorMessage: String? = null
 ) {
     var email by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
 
     AlertDialog(
@@ -122,7 +126,7 @@ fun SignUpDialog(
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
 
     AlertDialog(
@@ -256,8 +260,8 @@ fun ChangePasswordDialog(
     isSubmitting: Boolean = false,
     errorMessage: String? = null
 ) {
-    var currentPassword by rememberSaveable { mutableStateOf("") }
-    var newPassword by rememberSaveable { mutableStateOf("") }
+    var currentPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
     var currentVisible by rememberSaveable { mutableStateOf(false) }
     var newVisible by rememberSaveable { mutableStateOf(false) }
 

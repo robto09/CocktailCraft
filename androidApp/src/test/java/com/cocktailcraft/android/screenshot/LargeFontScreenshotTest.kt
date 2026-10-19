@@ -29,7 +29,6 @@ class LargeFontScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
             selectedCategory = null,
             hasActiveFilters = false,
             isSearchActive = false,
-            isLoadingMore = false,
             hasMoreData = false,
             favorites = listOf(ScreenshotFixtures.cocktail),
             isNetworkAvailable = true,

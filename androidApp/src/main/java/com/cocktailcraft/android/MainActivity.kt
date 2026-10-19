@@ -1,5 +1,6 @@
 package com.cocktailcraft.android
 
+import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -17,6 +18,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.cocktailcraft.android.navigation.CocktailDeepLink
 import com.cocktailcraft.android.ui.main.MainScreen
 import com.cocktailcraft.android.ui.theme.AnimatedCocktailBarTheme
 import com.cocktailcraft.android.widget.refreshFavoritesWidgetOnChange
@@ -43,6 +45,12 @@ class MainActivity : ComponentActivity() {
         // targetSdk 35+ enforces edge-to-edge; opt in explicitly so older
         // API levels get the same window behavior.
         enableEdgeToEdge()
+
+        // NavHost reads deep links straight from the launch intent. This
+        // activity is exported, so keep only a well-formed cocktail deep link
+        // (rebuilt without extras or flags) and drop everything else from
+        // what Navigation sees — see CocktailDeepLink.navigationIntentOrNull.
+        intent = CocktailDeepLink.navigationIntentOrNull(intent) ?: Intent(Intent.ACTION_MAIN)
 
         // Favorites only change while the app is on screen, so this is
         // where the Favorites widgets learn about it right away. Lives until

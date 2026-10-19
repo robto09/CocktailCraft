@@ -4,8 +4,6 @@ import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.repository.insertOrderWithItems
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.model.CocktailCartItem
-import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.Review
 import com.russhwolf.settings.Settings
 import kotlinx.serialization.KSerializer
@@ -26,6 +24,10 @@ import kotlinx.serialization.json.JsonArray
  *   already in the database is newer than the legacy blob and wins);
  * - a store whose import throws keeps its key without blocking the others.
  *
+ * Rows are imported without an owner ([OwnerIds.UNASSIGNED]); [LocalDatabase]
+ * assigns them to whoever is signed in right after (see
+ * UserDataOwnership.kt).
+ *
  * Unreadable data is tolerated rather than retried forever: entries that still
  * decode are imported and the rest dropped, and a blob that isn't a JSON list
  * at all imports nothing. Older versions already treated such data as empty.
@@ -34,6 +36,8 @@ internal class LegacySettingsImport(
     private val settings: Settings,
     private val json: Json
 ) {
+    private val codec = CocktailCodec(json)
+
     companion object {
         // Settings keys of the legacy stores. internal (not private) so tests
         // can seed fixtures under the real keys.
@@ -62,30 +66,52 @@ internal class LegacySettingsImport(
         }
     }
 
+    /**
+     * Each line's cocktail goes into cached_cocktail (unless a record as good
+     * is stored there) and the line refers to it, keeping the price it held.
+     */
     private fun importCart(db: CocktailCraftDatabase, raw: String): Int {
-        val items = decodeList(raw, CocktailCartItem.serializer(), "cart")
+        val items = decodeList(raw, LegacyCartItem.serializer(), "cart")
         db.transaction {
             // Legacy lists are in display order; positions follow insertion.
             items.forEach { item ->
+                val cocktail = item.cocktail.toDomain()
+                db.storeLegacyCocktail(cocktail)
                 db.cartItemQueries.insertIfAbsent(
-                    cocktailId = item.cocktail.id,
-                    payload = json.encodeToString(Cocktail.serializer(), item.cocktail),
-                    quantity = item.quantity.toLong()
+                    ownerId = OwnerIds.UNASSIGNED,
+                    cocktailId = cocktail.id,
+                    quantity = item.quantity.toLong(),
+                    priceCents = cocktail.price.cents
                 )
             }
         }
         return items.size
     }
 
+    /**
+     * Stores [cocktail] unless the database holds it already, upgrading a
+     * stored partial record to a full one. Written as never accessed and
+     * cached at 0 (stale, so the next view refreshes it); the cart line
+     * referring to it pins it.
+     */
+    private fun CocktailCraftDatabase.storeLegacyCocktail(cocktail: Cocktail) {
+        val payload = codec.encode(cocktail)
+        val category = cocktail.category?.takeIf { it.isNotBlank() }
+        val fullDetails = if (cocktail.hasFullDetails) 1L else 0L
+        cachedCocktailQueries.insertIfAbsent(cocktail.id, category, payload, fullDetails, cached_at = 0L)
+        if (cocktail.hasFullDetails) cachedCocktailQueries.upgradeToFull(payload = payload, id = cocktail.id)
+        cachedCocktailQueries.touchIfAbsent(id = cocktail.id, lastAccessed = 0L)
+    }
+
     private fun importOrders(db: CocktailCraftDatabase, raw: String): Int {
-        val orders = decodeList(raw, Order.serializer(), "orders")
+        val orders = decodeList(raw, LegacyOrder.serializer(), "orders").map { it.toDomain() }
         db.transaction {
             orders.forEach { order ->
                 // The INSERT OR IGNORE equivalent for an order and its items:
                 // an order already in the database (or a duplicate id in the
                 // legacy list) keeps exactly the items it has.
-                if (db.customerOrderQueries.selectStatus(order.id).executeAsOneOrNull() == null) {
-                    db.insertOrderWithItems(order)
+                if (db.customerOrderQueries.exists(order.id).executeAsOne() == 0L) {
+                    db.insertOrderWithItems(order, ownerId = OwnerIds.UNASSIGNED)
                 }
             }
         }
@@ -97,6 +123,7 @@ internal class LegacySettingsImport(
         db.transaction {
             reviews.forEach { review ->
                 db.cocktailReviewQueries.insertIfAbsent(
+                    ownerId = OwnerIds.UNASSIGNED,
                     id = review.id,
                     cocktailId = review.cocktailId,
                     userName = review.userName,
@@ -111,13 +138,16 @@ internal class LegacySettingsImport(
 
     /**
      * Favorites were stored as ids only; the full cocktails were looked up in
-     * the offline cache or the API on every read. They are imported without a
-     * payload, which CocktailFavoritesRepositoryImpl fills in the same way.
+     * the offline cache or the API on every read. They still are: a favorite
+     * refers to its cached_cocktail row, which CocktailFavoritesRepositoryImpl
+     * fills in when it is missing.
      */
     private fun importFavorites(db: CocktailCraftDatabase, raw: String): Int {
         val ids = raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }.distinct()
         db.transaction {
-            ids.forEach { id -> db.favoriteCocktailQueries.insertIfAbsent(id = id, payload = null) }
+            ids.forEach { id ->
+                db.favoriteCocktailQueries.insertIfAbsent(ownerId = OwnerIds.UNASSIGNED, cocktailId = id)
+            }
         }
         return ids.size
     }

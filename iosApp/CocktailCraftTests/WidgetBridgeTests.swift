@@ -166,3 +166,36 @@ final class WidgetRandomPoolRotationTests: XCTestCase {
         XCTAssertEqual(pick(snapshot(["a", "b"]), after: -fourHours), "a")
     }
 }
+
+/// When the app skips refreshing the Random Cocktail pool (no random.php
+/// call, no thumbnail downloads) because the last refresh was recent.
+final class WidgetRandomPoolThrottleTests: XCTestCase {
+
+    private let written = Date(timeIntervalSince1970: 1_800_000_000)
+    private let interval = WidgetDataBridge.minimumRefreshInterval
+
+    private func snapshot(_ ids: [String]) -> WidgetRandomCocktailSnapshot {
+        WidgetRandomCocktailSnapshot(
+            cocktails: ids.map { WidgetRandomCocktail(id: $0, name: $0, category: nil, thumbnail: nil) },
+            updatedAt: written
+        )
+    }
+
+    func testRecentPoolIsKept() {
+        XCTAssertTrue(WidgetDataBridge.isFresh(snapshot(["a"]), at: written))
+        XCTAssertTrue(WidgetDataBridge.isFresh(snapshot(["a"]), at: written.addingTimeInterval(interval - 1)))
+    }
+
+    func testPoolOlderThanTheIntervalIsRefreshed() {
+        XCTAssertFalse(WidgetDataBridge.isFresh(snapshot(["a"]), at: written.addingTimeInterval(interval)))
+    }
+
+    func testMissingOrEmptyPoolIsAlwaysRefreshed() {
+        XCTAssertFalse(WidgetDataBridge.isFresh(nil, at: written))
+        XCTAssertFalse(WidgetDataBridge.isFresh(snapshot([]), at: written))
+    }
+
+    func testPoolDatedInTheFutureIsRefreshed() {
+        XCTAssertFalse(WidgetDataBridge.isFresh(snapshot(["a"]), at: written.addingTimeInterval(-60)))
+    }
+}

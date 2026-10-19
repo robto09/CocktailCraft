@@ -2,33 +2,23 @@ package com.cocktailcraft
 
 import androidx.lifecycle.ViewModelStore
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.domain.repository.CartRepository
-import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
-import com.cocktailcraft.domain.repository.CocktailOfflineRepository
-import com.cocktailcraft.domain.repository.OrderRepository
-import com.cocktailcraft.domain.repository.ReviewRepository
-import com.cocktailcraft.domain.util.Result
-import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedCocktailDetailViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
+import com.cocktailcraft.viewmodel.SharedOrderDetailViewModel
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import com.cocktailcraft.viewmodel.SharedProfileViewModel
 import com.cocktailcraft.viewmodel.SharedReviewViewModel
 import com.cocktailcraft.viewmodel.SharedThemeViewModel
 import com.cocktailcraft.viewmodel.SharedViewModel
-import io.ktor.client.HttpClient
-import io.ktor.client.plugins.HttpSend
-import io.ktor.client.plugins.plugin
+import com.cocktailcraft.widget.WidgetDataSource
 import kotlinx.coroutines.flow.Flow
-import kotlinx.io.IOException
 import org.koin.core.KoinApplication
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
-import kotlin.concurrent.Volatile
 
 /**
  * iOS app init. [isDebug] is the app's own `#if DEBUG` — release builds keep
@@ -61,22 +51,15 @@ class KoinHelper : KoinComponent {
         get<CocktailFavoritesRepository>().observeFavorites()
 
     /**
-     * Cocktails for the Random Cocktail widget's App Group snapshot: a fresh
-     * random pick when online (best-effort — a failed fetch is skipped),
-     * followed by the recently viewed cocktails, which keep the widget
-     * populated offline, like Android's WidgetDataProvider fallback.
-     * At most [limit], without duplicates.
+     * Cocktails for the Random Cocktail widget's App Group snapshot: the
+     * shared WidgetDataSource pool Android's widgets draw from too (a fresh
+     * random pick when online, then the recently viewed cocktails). At most
+     * [limit], without duplicates. @Throws: Swift calls it, and an
+     * undeclared exception reaching Swift terminates the app.
      */
-    suspend fun getRandomCocktailWidgetPool(limit: Int): List<Cocktail> {
-        val offline = get<CocktailOfflineRepository>()
-        val random = if (offline.isOffline()) {
-            null
-        } else {
-            (get<CocktailDetailRepository>().getRandomCocktail() as? Result.Success)?.data
-        }
-        val recent = offline.getRecentlyViewedCocktails().getOrDefault(emptyList())
-        return (listOfNotNull(random) + recent).distinctBy { it.id }.take(limit)
-    }
+    @Throws(Exception::class)
+    suspend fun getRandomCocktailWidgetPool(limit: Int): List<Cocktail> =
+        get<WidgetDataSource>().randomCocktailPool(limit)
 
     // Shared ViewModels — screen-scoped (viewModel {} DSL): fresh instance per
     // resolution; iOS wrappers own the lifecycle and release it through
@@ -85,6 +68,8 @@ class KoinHelper : KoinComponent {
     fun getSharedCocktailDetailViewModel(): SharedCocktailDetailViewModel = get()
 
     fun getSharedReviewViewModel(): SharedReviewViewModel = get()
+
+    fun getSharedOrderDetailViewModel(): SharedOrderDetailViewModel = get()
 
     /**
      * Clears a screen-scoped ViewModel the way Android's ViewModelStore does
@@ -112,68 +97,7 @@ class KoinHelper : KoinComponent {
 
     fun getSharedThemeViewModel(): SharedThemeViewModel = get()
 
-    // Debug tools — called only from the Debug-build QA menu (DebugSwift's
-    // custom actions in CocktailCraftApp.swift). The shared ViewModels
-    // observe the database, so every screen updates on its own.
-
-    /** Removes every favorite. */
-    suspend fun debugClearFavorites() {
-        val favorites = get<CocktailFavoritesRepository>()
-        favorites.getFavoriteCocktails().getOrDefault(emptyList()).forEach {
-            favorites.removeFromFavorites(it)
-        }
-    }
-
-    /** Empties the cart. */
-    suspend fun debugClearCart() {
-        get<CartRepository>().clearCart()
-    }
-
-    /**
-     * Deletes the user's local data — cart, favorites, orders and reviews —
-     * leaving settings (Settings > Reset to defaults) and sign-in alone.
-     */
-    suspend fun debugResetUserData() {
-        debugClearCart()
-        debugClearFavorites()
-        val orders = get<OrderRepository>()
-        orders.getOrders().getOrDefault(emptyList()).forEach { orders.deleteOrder(it.id) }
-        val reviews = get<ReviewRepository>()
-        reviews.getReviews().getOrDefault(emptyList()).forEach { reviews.deleteReview(it.id) }
-    }
-
-    /**
-     * While on, every request through the shared HttpClient fails as a
-     * transport error — the path a dropped connection takes (retries, then
-     * the offline-cache fallback and the network error UI) — without
-     * touching the device's connectivity, so NetworkMonitor still reports
-     * online.
-     */
-    fun debugSetSimulatedNetworkFailure(enabled: Boolean) {
-        SimulatedNetworkFailure.installOn(get())
-        SimulatedNetworkFailure.enabled = enabled
-    }
-
-    fun debugIsSimulatingNetworkFailure(): Boolean = SimulatedNetworkFailure.enabled
-}
-
-/** Debug hook behind KoinHelper.debugSetSimulatedNetworkFailure. */
-private object SimulatedNetworkFailure {
-    @Volatile
-    var enabled = false
-
-    // The client the interceptor was added to: the app's Koin single, so in
-    // practice set once (a restarted graph, as in tests, brings a new client)
-    @Volatile
-    private var installedOn: HttpClient? = null
-
-    /** Adds the failing interceptor to [client] once; it is a no-op while disabled. */
-    fun installOn(client: HttpClient) {
-        if (installedOn === client) return
-        installedOn = client
-        client.plugin(HttpSend).intercept { request ->
-            if (enabled) throw IOException("Simulated network failure (Debug menu)")
-            execute(request)
-        }
-    }
+    // Debug tools (debugClearFavorites, debugSetSimulatedNetworkFailure, ...)
+    // are extensions in src/iosTestMode (DebugTools.kt), compiled into Debug
+    // frameworks only.
 }

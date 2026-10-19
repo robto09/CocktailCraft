@@ -27,8 +27,9 @@ class AppConfigImpl(
     override val networkTimeoutMs: Long = 10_000 // 10 seconds
 
     // Number of retries for network operations (consumed by NetworkModule's
-    // HttpRequestRetry — the single retry layer, SH-7/AR-4)
-    override val maxRetries: Int = 3
+    // HttpRequestRetry — the single retry layer, SH-7/AR-4). One quick
+    // retry: each further one only delays the error or the cached fallback.
+    override val maxRetries: Int = 1
 
     // Cache configuration (enforced by CocktailCache)
     override val cacheExpirationMs: Long = 86400000 // 24 hours cache expiration

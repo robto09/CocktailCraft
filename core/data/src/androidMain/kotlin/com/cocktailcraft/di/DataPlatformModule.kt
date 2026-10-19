@@ -6,12 +6,10 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
-import com.cocktailcraft.domain.config.AppConfig
-import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import com.cocktailcraft.data.security.LazySettings
 import com.cocktailcraft.data.security.migrateAuthStorage
+import com.cocktailcraft.data.security.openAuthStore
+import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.util.AndroidNetworkMonitor
 import com.cocktailcraft.util.NetworkMonitor
 import com.russhwolf.settings.Settings
@@ -20,8 +18,6 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import okhttp3.OkHttpClient
 import org.koin.dsl.module
-import java.io.IOException
-import java.security.GeneralSecurityException
 
 actual fun dataPlatformModule() = module {
     // Debug-aware config (AR-4): androidApp's BuildConfig is invisible to this
@@ -37,18 +33,21 @@ actual fun dataPlatformModule() = module {
         SharedPreferencesSettings(sharedPrefs)
     }
 
-    // Keystore-encrypted store for credentials and profile PII. The backup
-    // rules exclude its file (cocktailcraft_secure_prefs.xml): the master key
+    // Encrypted store for credentials and profile PII: Tink AES-256-GCM
+    // with a Keystore-wrapped keyset (openAuthStore). Neither the store nor
+    // the keyset is backed up (no_backup/ + backup rules): the Keystore key
     // never leaves the device, so a restored copy would be unreadable.
     // Opened lazily (LazySettings): resolving this sits on the first frame's
-    // injection path, but the MasterKey/Tink/disk work and the migration
+    // injection path, but the Keystore/Tink/disk work and the migrations
     // only run on first access, which AuthRepositoryImpl makes on its io
     // dispatcher.
     single<Settings>(secureSettingsQualifier) {
         val context = get<Context>()
         LazySettings {
-            SharedPreferencesSettings(createSecurePrefs(context)).also { secure ->
-                // Move auth data written by older versions out of the plain store.
+            // openAuthStore also imports the EncryptedSharedPreferences file
+            // the previous versions used.
+            openAuthStore(context).also { secure ->
+                // Move auth data written by even older versions out of the plain store.
                 migrateAuthStorage(from = get(), to = secure)
             }
         }
@@ -60,9 +59,8 @@ actual fun dataPlatformModule() = module {
     // The app's one OkHttpClient. Ktor's engine (below) and androidApp's Coil
     // ImageLoader both derive from it via newBuilder(), sharing its
     // connection pool and TLS sessions — TheCocktailDB serves the API and the
-    // images from the same host. Certificate pinning is unaffected: it lives
-    // in network_security_config.xml, enforced by the platform trust manager
-    // OkHttp uses, not in an OkHttp CertificatePinner.
+    // images from the same host. TLS trust is the platform's (see
+    // androidApp's network_security_config.xml: no certificate pinning).
     single<OkHttpClient> { OkHttpClient.Builder().build() }
 
     // Picked up by networkModule; timeouts come from its HttpTimeout config
@@ -76,38 +74,4 @@ actual fun dataPlatformModule() = module {
     single<SqlDriver> {
         AndroidSqliteDriver(CocktailCraftDatabase.Schema, get<Context>(), COCKTAIL_DATABASE_NAME)
     }
-}
-
-private const val SECURE_PREFS_FILE = "cocktailcraft_secure_prefs"
-
-// Keystore-backed prefs have a documented corruption class (master key
-// invalidated by an OTA/vendor bug, keyset/prefs desync after a partial
-// restore) where create() throws on every launch. Failing soft — wiping the
-// store and starting fresh — loses the local accounts in that rare case but
-// beats an unrecoverable crash loop the user can only escape via Clear Data.
-private fun createSecurePrefs(context: Context): SharedPreferences =
-    try {
-        buildSecurePrefs(context)
-    } catch (e: GeneralSecurityException) {
-        recreateSecurePrefs(context)
-    } catch (e: IOException) {
-        recreateSecurePrefs(context)
-    }
-
-private fun recreateSecurePrefs(context: Context): SharedPreferences {
-    context.deleteSharedPreferences(SECURE_PREFS_FILE)
-    return buildSecurePrefs(context)
-}
-
-private fun buildSecurePrefs(context: Context): SharedPreferences {
-    val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
-    return EncryptedSharedPreferences.create(
-        context,
-        SECURE_PREFS_FILE,
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
 }

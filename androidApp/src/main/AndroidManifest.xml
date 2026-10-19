@@ -26,18 +26,18 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Cocktail detail deep link: app://cocktailcraft/cocktail/{id}
-                 (COCKTAIL_DEEP_LINK_BASE_PATH in navigation/Routes.kt).
-                 Not BROWSABLE: only the widgets (explicit intents) need it,
-                 so web pages cannot fire it. The detail route still
-                 rejects ids that are not numeric (isValidCocktailId). -->
+            <!-- Cocktail detail deep link: cocktailcraft://cocktail/{id}, the
+                 same URL as iOS (CocktailDeepLink in
+                 navigation/CocktailDeepLink.kt). Not BROWSABLE: only the
+                 widgets (explicit intents) need it, so web pages cannot fire
+                 it. MainActivity passes Navigation only well-formed cocktail
+                 links (numeric ids), whatever else an intent carries. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data
-                    android:scheme="app"
-                    android:host="cocktailcraft"
-                    android:pathPrefix="/cocktail/" />
+                    android:scheme="cocktailcraft"
+                    android:host="cocktail" />
             </intent-filter>
         </activity>
 

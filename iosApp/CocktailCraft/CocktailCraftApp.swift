@@ -83,7 +83,7 @@ struct CocktailCraftApp: App {
                     .init(title: "Clear Cart") {
                         Task { try? await helper.debugClearCart() }
                     },
-                    .init(title: "Delete All User Data (cart, favorites, orders, reviews)") {
+                    .init(title: "Delete Every User's Data (cart, favorites, orders, reviews)") {
                         Task { try? await helper.debugResetUserData() }
                     },
                     // Every API request fails as a dropped connection would

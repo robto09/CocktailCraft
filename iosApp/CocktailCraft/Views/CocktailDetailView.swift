@@ -78,7 +78,7 @@ struct CocktailDetailView: View {
                         .tint(.white)
 
                         Button(action: {
-                            Task { await viewModel.toggleFavorite() }
+                            viewModel.toggleFavorite()
                         }) {
                             Image(systemName: viewModel.state.isFavorite ? "heart.fill" : "heart")
                                 .foregroundColor(.white)
@@ -129,10 +129,10 @@ struct CocktailDetailView: View {
                 hasLoaded = true
             }
         }
-        .task {
+        .onAppear {
             // Cheap and idempotent: only re-selects this cocktail's slice of
             // the persisted review store, which the wrapper keeps mirroring.
-            await reviewViewModel.loadReviews(for: cocktailId)
+            reviewViewModel.loadReviews(for: cocktailId)
         }
         .sheet(isPresented: $showingWriteReview, onDismiss: {
             reviewViewModel.clearError()

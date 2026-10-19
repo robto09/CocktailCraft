@@ -5,13 +5,14 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import com.cocktailcraft.domain.model.Money
-import com.cocktailcraft.domain.model.formatted
+import com.cocktailcraft.format.formatted
 import java.util.Locale
 
 /**
- * Formats prices for one locale through the shared [Money] formatter: US
- * dollars laid out for the user's locale ("$12.50" in en-US, "12,50 $" in
- * de-DE), from the exact number of cents.
+ * Formats prices for one locale through the shared Money formatter (the
+ * one iOS uses too): US dollars with a plain "$", laid out for the user's
+ * locale ("$12.50" in en-US, "12,50 $" in de-DE), from the exact number of
+ * cents.
  */
 @Immutable
 class CurrencyFormatter internal constructor(private val locale: Locale) {

@@ -40,7 +40,7 @@ This document describes the **completed implementation** of shared ViewModels us
 
 Android has **no wrapper ViewModels**. The shared ViewModels extend the multiplatform androidx `ViewModel`, so Compose screens consume them directly:
 
-- Screen-scoped ones (`viewModel { ... }` in `DomainModule.kt`) resolve via `koinViewModel<SharedCocktailDetailViewModel>()`, scoped to the nav back-stack entry
+- Screen-scoped ones (`viewModel { ... }` in `PresentationModule.kt`: cocktail detail, reviews, order detail) resolve via `koinViewModel<SharedCocktailDetailViewModel>()`, scoped to the nav back-stack entry. Anything that belongs to one screen — its loading flags, the item it shows — lives in a screen-scoped ViewModel, never in a singleton
 - Global-state ones (Koin `single`) are shared across screens and persist across navigation
 - Each screen collects `uiState` once with `collectAsStateWithLifecycle()` and passes it, plus intent lambdas, to a stateless `*Content` composable
 
@@ -59,15 +59,18 @@ Every shared ViewModel follows the same three rules, and both platforms consume 
 ### 2. Intents are plain public methods
 
 - No sealed `Intent`/`onEvent` dispatcher — intents are ordinary methods named for the action (`addToCart`, `applyFilters`, `setHighContrast`).
-- Work that does I/O is a `suspend fun`, so callers can await completion: SKIE turns it into a Swift `async` function (pull-to-refresh spinners, `.task {}` loads), and Android launches it from a composition-scoped coroutine. Synchronous state changes and explicit fire-and-forget entry points (`updateSearchQuery`, `retry`, `refresh`) are plain `fun`s that launch in `viewModelScope` themselves.
+- Every intent runs its work on `viewModelScope`, never in the caller's coroutine, so a screen that goes away (a left composition, a cancelled Swift `Task`) cannot abort a save or a refresh halfway. Most intents are plain `fun`s that launch and report back through `uiState`/`error`/`events` (`selectCategory`, `toggleFavorite`, `removeFromCart`, `setHighContrast`, `cancelOrder`); Android and Swift call them directly, without a coroutine or `Task`.
+- An intent stays `suspend` only when its caller must wait for it: a result to branch on (`placeOrder`, `signIn`, `submitReview` return `Boolean`; `addToCart` returns its outcome) or the end of a pull-to-refresh (`refresh`, `loadFavorites`, `loadOrders`). It runs through `runInViewModelScope`, so cancelling the caller only stops the waiting, and it is `@Throws(Exception::class)`: without it, an exception reaching Swift terminates the app instead of becoming an error.
+- Every `catch` rethrows `CancellationException` (`runCatchingNonCancellation`, `runCatchingResult`): cancellation is teardown, never a failure to report.
 - Mutations are value-based where re-firing is possible: `setHighContrast(enabled)`, not `toggleHighContrast()`, so a re-delivered UI callback can only re-assert the same state.
 
-### 3. One-shot events: the consumable `error` + intent results
+### 3. One-shot events: the consumable `error`, screen events, intent results
 
-There are no event `Channel`s/`SharedFlow`s in the codebase, and none were added. The two patterns already in use are kept, each for one job:
+Each kind of one-shot outcome has one channel:
 
 - **Errors (alerts, error states)** use the single consumable channel on the `SharedViewModel` base class: `val error: StateFlow<UserFriendlyError?>` plus `clearError()`. It is a `StateFlow` rather than a `Channel` on purpose — an error raised while no screen is collecting (a wrapper being recreated, a configuration change) is still there when the UI next observes, and it is consumed explicitly once shown.
-- **Navigation, snackbars/toasts and haptics** are platform concerns driven by the caller after awaiting the intent: intents that gate navigation return their outcome (`placeOrder`, `signIn`, `signUp`, `submitReview` return `Boolean`), and the screen navigates or confirms when it resumes (e.g. Android's add-to-cart snackbar in `MainScreen`, iOS switching to the Orders tab after `placeOrder`). Haptics fire in the UI at tap time.
+- **Toasts a screen owns** ("Removed … from cart" with Undo, "Order cancelled") are `UiEvent`s on the base class's `events` `SharedFlow`, collected only by the screen that owns the ViewModel (Cart, Favorites, Profile, the detail screens) — never app-wide.
+- **Outcomes of cross-screen actions** go back to the caller instead: `SharedCartViewModel.addToCart` runs from Home and Favorites and returns its `UiEvent`, which that screen toasts. Intents that gate navigation return their result (`placeOrder`, `signIn`, `signUp`, `submitReview` return `Boolean`), and the screen navigates or confirms when it resumes (e.g. iOS switching to the Orders tab after `placeOrder`). Haptics fire in the UI at tap time.
 
 ## Architecture Pattern: Shared Business Logic + Platform Adapters
 
@@ -149,16 +152,19 @@ class SharedHomeViewModel internal constructor(
     private val sortCocktailsUseCase: SortCocktailsUseCase,
     private val manageFavoritesUseCase: ManageFavoritesUseCase,
     private val offlineRepository: CocktailOfflineRepository,
-    private val getCocktailDetailUseCase: GetCocktailDetailUseCase,
     private val catalogRepository: CocktailCatalogRepository,
-    private val networkMonitor: NetworkMonitor
+    private val networkMonitor: NetworkMonitor,
+    private val manageReviewsUseCase: ManageReviewsUseCase
 ) : SharedViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    suspend fun loadCocktails() { /* ... */ }
+    fun selectCategory(category: String?) { /* one tracked listing load */ }
     fun updateSearchQuery(query: String) { /* debounced search pipeline */ }
+
+    @Throws(Exception::class)
+    suspend fun refresh() { /* reload on viewModelScope, awaited */ }
 }
 ```
 
@@ -178,9 +184,14 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
         super.init(viewModel: viewModel, uiState: viewModel.uiState)
     }
 
+    // Fire-and-forget intents are called directly
+    func selectCategory(_ category: String?) {
+        sharedViewModel.selectCategory(category: category)
+    }
+
     // SKIE bridges Kotlin suspend functions to Swift async/await
-    func loadCocktails() async {
-        await run { try await sharedViewModel.loadCocktails() }
+    func refreshCocktails() async {
+        await run { try await sharedViewModel.refresh() }
     }
 
     func updateSearchQuery(_ query: String) {
@@ -252,7 +263,7 @@ SKIE does not eliminate the iOS wrapper layer — it makes each wrapper dramatic
 
 **SKIE's magic**: automatic conversion of Kotlin types to native platform types
 - `StateFlow<List<Cocktail>>` → Swift `AsyncSequence<[Cocktail]>`
-- `suspend fun loadCocktails()` → Swift `async func loadCocktails()`
+- `suspend fun refresh()` → Swift `async func refresh()`
 - Kotlin `Flow` → Swift `AsyncSequence`
 - Type safety with generics preserved
 

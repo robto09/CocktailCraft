@@ -53,16 +53,17 @@ class ManageCartUseCase(
         }
         val cartItems = order.items.mapNotNull { item ->
             item.cocktailId?.let { id ->
-                CocktailCartItem(hydrated(Cocktail(id = id, name = item.name, price = item.price)), item.quantity)
+                val ordered = Cocktail(id = id, name = item.name, price = item.price, hasFullDetails = false)
+                CocktailCartItem(hydrated(ordered), item.quantity)
             }
         }
         return cartRepository.addAllToCart(cartItems).map { cartItems.sumOf { it.quantity } }
     }
 
     /**
-     * List endpoints fabricate placeholder ingredients/instructions; fetch
-     * full details before persisting so stored items are complete. Falls
-     * back to the partial object when offline or on lookup failure.
+     * List endpoints return partial records; fetch full details before
+     * persisting so stored items are complete. Falls back to the partial
+     * object when offline or on lookup failure.
      */
     private suspend fun hydrated(cocktail: Cocktail): Cocktail {
         if (cocktail.hasFullDetails) return cocktail

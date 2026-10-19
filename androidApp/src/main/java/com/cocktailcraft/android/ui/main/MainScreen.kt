@@ -33,11 +33,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -49,8 +49,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
 import androidx.navigation.toRoute
-import com.cocktailcraft.android.navigation.COCKTAIL_DEEP_LINK_BASE_PATH
 import com.cocktailcraft.android.navigation.CartRoute
+import com.cocktailcraft.android.navigation.CocktailDeepLink
 import com.cocktailcraft.android.navigation.CocktailDetailRoute
 import com.cocktailcraft.android.navigation.FavoritesRoute
 import com.cocktailcraft.android.navigation.HomeRoute
@@ -71,7 +71,7 @@ import com.cocktailcraft.android.ui.components.AppTopBar
 import com.cocktailcraft.android.ui.components.LocalToastHostState
 import com.cocktailcraft.android.ui.components.OfflineModeIndicator
 import com.cocktailcraft.android.ui.components.ToastSnackbarHost
-import com.cocktailcraft.android.ui.components.UiEventToasts
+import com.cocktailcraft.android.ui.components.showUiEvent
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.pluralStringResource
 import com.cocktailcraft.android.util.stringResource
@@ -86,8 +86,6 @@ import com.cocktailcraft.resources.profile
 import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.viewmodel.SharedCartViewModel
 import com.cocktailcraft.viewmodel.SharedFavoritesViewModel
-import com.cocktailcraft.viewmodel.SharedHomeViewModel
-import com.cocktailcraft.viewmodel.SharedOrderViewModel
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -101,14 +99,15 @@ fun MainScreen() {
     // MainActivity is singleTop, so a widget deep link while the app is
     // already running arrives via onNewIntent instead of a fresh launch —
     // forward it to the NavController (the launch intent is handled by
-    // NavHost itself). Widget PendingIntents are delivered with a
-    // framework-forced FLAG_ACTIVITY_NEW_TASK, which makes handleDeepLink
-    // finish and relaunch the activity instead of navigating in place —
-    // strip launch flags first, we are already in the right task.
+    // NavHost itself, after MainActivity has filtered it the same way).
+    // Only a well-formed cocktail deep link gets through, rebuilt without
+    // extras or launch flags (see CocktailDeepLink.navigationIntentOrNull):
+    // the activity is exported, and handleDeepLink would otherwise act on
+    // Navigation's internal extras from any app's intent.
     val activity = LocalActivity.current as? ComponentActivity
     DisposableEffect(activity, navController) {
         val listener = Consumer<Intent> { intent ->
-            navController.handleDeepLink(Intent(intent).setFlags(0))
+            CocktailDeepLink.navigationIntentOrNull(intent)?.let(navController::handleDeepLink)
         }
         activity?.addOnNewIntentListener(listener)
         onDispose { activity?.removeOnNewIntentListener(listener) }
@@ -123,17 +122,19 @@ fun MainScreen() {
     )
 
     // Shared KMP ViewModels (Koin singles — app-scoped by design; screen-scoped
-    // VMs are resolved with koinViewModel inside their destinations)
-    val sharedOrderViewModel: SharedOrderViewModel = koinInject()
+    // VMs are resolved with koinViewModel inside their destinations). Only
+    // the ones the chrome needs on every tab are resolved here: cart (badge,
+    // add-to-cart, toasts) and favorites (toasts). Home and Orders are
+    // resolved by the destinations that use them — the same singles, just
+    // not created before the first screen that needs them.
     val sharedCartViewModel: SharedCartViewModel = koinInject()
-    val sharedHomeViewModel: SharedHomeViewModel = koinInject()
     val sharedFavoritesViewModel: SharedFavoritesViewModel = koinInject()
     val scope = rememberCoroutineScope()
 
     // Connectivity drives the offline banner directly — "offline" is purely
     // "the network is down"; there is no user-facing offline toggle.
     val networkMonitor: NetworkMonitor = koinInject()
-    val isOnline by networkMonitor.isOnline.collectAsState()
+    val isOnline by networkMonitor.isOnline.collectAsStateWithLifecycle()
 
     // Cart state drives the bottom-nav badge (parity with the iOS tab badge)
     val cartUiState by sharedCartViewModel.uiState.collectAsStateWithLifecycle()
@@ -141,12 +142,15 @@ fun MainScreen() {
     // Toasts from every tab land in this host (LocalToastHostState below).
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Add-to-cart keeps the user in place. Its outcome arrives on the cart's
-    // events — "<name> added to cart", or the failure — and is shown here,
-    // whichever tab it came from (previously Android yanked the user to the
-    // Cart tab on every add, and then confirmed even a failed add).
+    // Add-to-cart (Home, Favorites) keeps the user in place and toasts its
+    // outcome — "<name> added to cart", or the failure — on the tab it came
+    // from (previously Android yanked the user to the Cart tab on every
+    // add, and then confirmed even a failed add).
+    val context = LocalContext.current
     val addToCart: (Cocktail) -> Unit = { cocktail ->
-        scope.launch { sharedCartViewModel.addToCart(cocktail) }
+        scope.launch {
+            snackbarHostState.showUiEvent(sharedCartViewModel.addToCart(cocktail), context)
+        }
     }
 
     // Each tab draws its own bars through TabScaffold instead of one outer
@@ -168,13 +172,9 @@ fun MainScreen() {
     }
 
     CompositionLocalProvider(LocalToastHostState provides snackbarHostState) {
-        // The one collector of the cart's events (add-to-cart outcomes, and
-        // the Undo after a removal) and of the favorites' (the Undo after
-        // unfavoriting on the Favorites tab). The detail screens toast their
-        // own ViewModels' events.
-        UiEventToasts(sharedCartViewModel.events)
-        UiEventToasts(sharedFavoritesViewModel.events)
-
+        // Every screen toasts its own ViewModel's events (Cart, Favorites,
+        // Profile, the detail screens); cross-screen actions like add-to-cart
+        // return their outcome to the caller instead.
         NavHost(
             navController = navController,
             startDestination = HomeRoute,
@@ -183,7 +183,7 @@ fun MainScreen() {
             composable<HomeRoute> {
                 tabScaffold(Screen.Home) {
                     HomeScreen(
-                        viewModel = sharedHomeViewModel,
+                        viewModel = koinInject(),
                         onAddToCart = addToCart,
                         onCocktailClick = { cocktail ->
                             // Navigate to cocktail detail screen
@@ -200,7 +200,7 @@ fun MainScreen() {
                             navigationManager.navigateToHome()
                         },
                         navigationManager = navigationManager,
-                        orderViewModel = sharedOrderViewModel,
+                        orderViewModel = koinInject(),
                         favoritesViewModel = sharedFavoritesViewModel
                     )
                 }
@@ -229,7 +229,7 @@ fun MainScreen() {
             composable<OrderListRoute> {
                 tabScaffold(Screen.OrderList) {
                     OrderListScreen(
-                        orderViewModel = sharedOrderViewModel,
+                        orderViewModel = koinInject(),
                         navigationManager = navigationManager
                     )
                 }
@@ -239,7 +239,6 @@ fun MainScreen() {
                 val route = backStackEntry.toRoute<OrderDetailRoute>()
                 OrderDetailScreen(
                     orderId = route.orderId,
-                    orderViewModel = sharedOrderViewModel,
                     onBackClick = { navigationManager.navigateBack() }
                 )
             }
@@ -247,7 +246,7 @@ fun MainScreen() {
             // which own the system-bar insets (AN-6).
             composable<CocktailDetailRoute>(
                 deepLinks = listOf(
-                    navDeepLink<CocktailDetailRoute>(basePath = COCKTAIL_DEEP_LINK_BASE_PATH)
+                    navDeepLink<CocktailDetailRoute>(basePath = CocktailDeepLink.BASE_PATH)
                 )
             ) { backStackEntry ->
                 val route = backStackEntry.toRoute<CocktailDetailRoute>()

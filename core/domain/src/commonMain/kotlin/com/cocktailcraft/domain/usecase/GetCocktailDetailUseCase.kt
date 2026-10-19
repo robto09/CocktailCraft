@@ -2,9 +2,9 @@ package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCategories
+import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
-import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.domain.util.getOrDefault
 import com.cocktailcraft.util.runCatchingNonCancellation
@@ -16,7 +16,7 @@ import kotlin.native.HiddenFromObjC
 class GetCocktailDetailUseCase(
     private val detailRepository: CocktailDetailRepository,
     private val favoritesRepository: CocktailFavoritesRepository,
-    private val searchRepository: CocktailSearchRepository
+    private val catalogRepository: CocktailCatalogRepository
 ) {
     suspend operator fun invoke(cocktailId: String): Result<Cocktail?> {
         return detailRepository.getCocktailById(cocktailId)
@@ -39,10 +39,20 @@ class GetCocktailDetailUseCase(
         }
     }
 
+    /**
+     * Up to [limit] other cocktails of [cocktail]'s category, picked at
+     * random from the category's stored page. Only a category with nothing
+     * stored is fetched first: a handful of suggestions doesn't justify a
+     * rate-limited filter.php call and a page of writes on every detail view.
+     */
     suspend fun getRelatedCocktails(cocktail: Cocktail, limit: Int = 3): List<Cocktail> {
         return runCatchingNonCancellation(onFailure = { emptyList() }) {
-            val cocktails = searchRepository.filterByCategory(cocktail.category ?: CocktailCategories.DEFAULT).getOrDefault(emptyList())
-            cocktails.filter { it.id != cocktail.id }.shuffled().take(limit)
+            val category = cocktail.category?.takeIf { it.isNotBlank() } ?: CocktailCategories.DEFAULT
+            val stored = catalogRepository.observeCategory(category).first().ifEmpty {
+                catalogRepository.refreshCategory(category, force = false)
+                catalogRepository.observeCategory(category).first()
+            }
+            stored.filter { it.id != cocktail.id }.shuffled().take(limit)
         }
     }
 
@@ -55,7 +65,6 @@ class GetCocktailDetailUseCase(
         return when (val refreshed = detailRepository.refreshCocktail(cocktailId, force = true)) {
             is Result.Success -> Result.Success(detailRepository.observeCocktail(cocktailId).first())
             is Result.Error -> refreshed
-            is Result.Loading -> refreshed
         }
     }
 }

@@ -42,11 +42,11 @@ final class SharedViewModelWrapperTests: TestSetup {
         // point (continueAfterFailure=false aborts the test body on
         // failure). The settings themselves are test mode's throwaway
         // suite, never the simulator's real ones.
-        addTeardownBlock {
-            try await viewModel.setFontSize(size: original)
+        addTeardownBlock { @MainActor in
+            viewModel.setFontSize(size: original)
         }
 
-        try await viewModel.setFontSize(size: target)
+        viewModel.setFontSize(size: target)
 
         let mirrored = await waitUntil { wrapper.state.fontSize == target }
         XCTAssertTrue(mirrored,

@@ -22,8 +22,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.LocalReducedMotion
@@ -137,7 +138,9 @@ fun AnimatedThemeSwitch(
         Box(
             modifier = Modifier
                 .size(24.dp)
-                .offset(x = (36 * thumbPosition).dp)
+                // Lambda overload: the animated offset moves the thumb in the
+                // layout phase instead of recomposing every frame
+                .offset { IntOffset(x = (36 * thumbPosition).dp.roundToPx(), y = 0) }
                 .clip(CircleShape)
                 .background(thumbColor)
                 .align(Alignment.CenterStart),

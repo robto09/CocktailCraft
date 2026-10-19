@@ -44,9 +44,9 @@ import com.cocktailcraft.resources.total
 @Composable
 fun OrderSummaryCard(
     subtotal: Money,
+    modifier: Modifier = Modifier,
     deliveryFee: Money = DeliveryPolicy.STANDARD_FEE,
     total: Money? = null,
-    modifier: Modifier = Modifier,
     currencyFormatter: CurrencyFormatter = rememberCurrencyFormatter(),
     showDeliveryFee: Boolean = true,
     additionalItems: List<Pair<String, Money>>? = null

@@ -35,8 +35,8 @@ final class ReviewViewModelSKIE: SharedViewModelWrapper<ReviewUiState> {
 
     // MARK: - Public Methods (using SKIE async/await)
 
-    func loadReviews(for cocktailId: String) async {
-        await run { try await sharedViewModel.loadReviewsForCocktail(cocktailId: cocktailId) }
+    func loadReviews(for cocktailId: String) {
+        sharedViewModel.loadReviewsForCocktail(cocktailId: cocktailId)
     }
 
     /// Validation (rating 1-5, comment 10-500 chars, non-blank name) runs in

@@ -57,6 +57,7 @@ class KoinHelperTest : MainDispatcherTest() {
         // Shared ViewModels — screen-scoped
         assertNotNull(helper.getSharedCocktailDetailViewModel())
         assertNotNull(helper.getSharedReviewViewModel())
+        assertNotNull(helper.getSharedOrderDetailViewModel())
 
         // Shared ViewModels — global-state singles
         assertNotNull(helper.getSharedFavoritesViewModel())

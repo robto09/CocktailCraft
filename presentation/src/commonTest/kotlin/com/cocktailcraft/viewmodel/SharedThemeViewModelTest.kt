@@ -2,7 +2,6 @@ package com.cocktailcraft.viewmodel
 
 import com.cocktailcraft.domain.model.ThemeMode
 import com.cocktailcraft.domain.repository.AuthRepository
-import com.cocktailcraft.domain.usecase.ManageProfileUseCase
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.theme_mode_dark
@@ -12,15 +11,15 @@ import com.cocktailcraft.testutil.DataLayerTest
 import com.russhwolf.settings.MapSettings
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SharedThemeViewModelTest : DataLayerTest() {
@@ -35,7 +34,7 @@ class SharedThemeViewModelTest : DataLayerTest() {
         // The real AuthRepositoryImpl (internal to :core:data), via dataModule
         val repository: AuthRepository = dataLayer(ioDispatcher, settings).get()
 
-        fun viewModel() = SharedThemeViewModel(ManageProfileUseCase(repository))
+        fun viewModel() = SharedThemeViewModel(repository)
     }
 
     @Test

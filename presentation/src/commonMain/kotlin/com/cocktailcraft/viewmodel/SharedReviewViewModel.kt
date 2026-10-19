@@ -15,6 +15,7 @@ import com.cocktailcraft.resources.error_submit_review_failed
 import com.cocktailcraft.resources.error_update_review_failed
 import com.cocktailcraft.resources.error_validation_title
 import com.cocktailcraft.util.ErrorHandler
+import com.cocktailcraft.util.runCatchingNonCancellation
 import com.cocktailcraft.viewmodel.state.ReviewUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -24,6 +25,10 @@ import kotlinx.coroutines.launch
  * Collects the persisted review store reactively, so submitted reviews
  * survive restarts and every state change flows through [uiState] — the only
  * public state surface (per-cocktail counts/averages are derived into it).
+ *
+ * It holds every review on the device, whoever wrote it; only the
+ * [Review.isMine] ones can be updated or deleted (any other id reports
+ * "not found"), so screens offer edit/delete on those alone.
  */
 class SharedReviewViewModel internal constructor(
     private val manageReviewsUseCase: ManageReviewsUseCase
@@ -44,54 +49,52 @@ class SharedReviewViewModel internal constructor(
     }
 
     /**
-     * Load reviews for a specific cocktail.
-     * SKIE will convert this to Swift async function.
+     * Show the reviews of [cocktailId]: selects its slice of the observed
+     * review store (nothing to fetch).
      */
-    suspend fun loadReviewsForCocktail(cocktailId: String) {
+    fun loadReviewsForCocktail(cocktailId: String) {
         _uiState.update { state ->
             state.copy(currentCocktailId = cocktailId).withReviews(state.reviews)
         }
     }
 
     /**
-     * Submit a new review for a cocktail.
+     * Submit a new review for a cocktail. Returns whether it was saved, so
+     * the sheet can close; a rejection or failure is reported on [error].
      * SKIE will convert this to Swift async function.
      */
-    suspend fun submitReview(cocktailId: String, rating: Float, comment: String, userName: String): Boolean {
+    @Throws(Exception::class)
+    suspend fun submitReview(cocktailId: String, rating: Float, comment: String, userName: String): Boolean =
+        runInViewModelScope { submit(cocktailId, rating, comment, userName) }
+
+    private suspend fun submit(cocktailId: String, rating: Float, comment: String, userName: String): Boolean {
         clearError()
-        if (!validateReview(rating, comment)) {
-            return false
-        }
+        if (!validateReview(rating, comment) || !validateUserName(userName)) return false
 
-        if (userName.isBlank()) {
-            setError(
-                MR.strings.error_invalid_user_title,
-                MR.strings.error_review_user_required,
-                ErrorHandler.ErrorCategory.DATA
-            )
-            return false
-        }
-
-        return try {
+        return runCatchingNonCancellation(onFailure = {
+            handleException(it, MR.strings.error_submit_review_failed)
+            false
+        }) {
             manageReviewsUseCase.submitReview(cocktailId, rating, comment, userName).getOrThrow()
             true
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_submit_review_failed)
-            false
         }
     }
 
     /**
-     * Update an existing review.
+     * Update an existing review. Returns whether it was saved.
      * SKIE will convert this to Swift async function.
      */
-    suspend fun updateReview(reviewId: String, rating: Float, comment: String): Boolean {
+    @Throws(Exception::class)
+    suspend fun updateReview(reviewId: String, rating: Float, comment: String): Boolean = runInViewModelScope {
         clearError()
         if (!validateReview(rating, comment)) {
-            return false
+            return@runInViewModelScope false
         }
 
-        return try {
+        runCatchingNonCancellation(onFailure = {
+            handleException(it, MR.strings.error_update_review_failed)
+            false
+        }) {
             val found = manageReviewsUseCase.updateReview(reviewId, rating, comment).getOrThrow()
             if (!found) {
                 setError(
@@ -101,19 +104,20 @@ class SharedReviewViewModel internal constructor(
                 )
             }
             found
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_update_review_failed)
-            false
         }
     }
 
     /**
-     * Delete a review.
+     * Delete a review. Returns whether it was deleted.
      * SKIE will convert this to Swift async function.
      */
-    suspend fun deleteReview(reviewId: String): Boolean {
+    @Throws(Exception::class)
+    suspend fun deleteReview(reviewId: String): Boolean = runInViewModelScope {
         clearError()
-        return try {
+        runCatchingNonCancellation(onFailure = {
+            handleException(it, MR.strings.error_delete_review_failed)
+            false
+        }) {
             val found = manageReviewsUseCase.deleteReview(reviewId).getOrThrow()
             if (!found) {
                 setError(
@@ -123,9 +127,6 @@ class SharedReviewViewModel internal constructor(
                 )
             }
             found
-        } catch (e: Exception) {
-            handleException(e, MR.strings.error_delete_review_failed)
-            false
         }
     }
 
@@ -145,6 +146,17 @@ class SharedReviewViewModel internal constructor(
             return false
         }
         return true
+    }
+
+    private fun validateUserName(userName: String): Boolean {
+        if (userName.isBlank()) {
+            setError(
+                MR.strings.error_invalid_user_title,
+                MR.strings.error_review_user_required,
+                ErrorHandler.ErrorCategory.DATA
+            )
+        }
+        return userName.isNotBlank()
     }
 
     /** Re-derives the per-cocktail slices from the grouped store. */

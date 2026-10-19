@@ -2,38 +2,70 @@
 -- (N = current version, starting at 1) and regenerate the snapshot with
 -- `./gradlew :core:data:generateCommonMainCocktailCraftDatabaseSchema`.
 --
--- Recently viewed cocktails (capped by CocktailCache). Kept apart from
--- cached_cocktail so evicting a cocktail from the offline cache does not drop
--- it from the recently viewed list that Home and the Android widgets read.
+-- Recently viewed cocktails (capped per owner by CocktailCache), by owner
+-- and id. The cocktail itself is the cached_cocktail row, which a recently
+-- viewed entry pins, so evicting from the offline cache never drops it from
+-- the list Home and the widgets read. Until version 6 (migrations/5.sqm)
+-- each entry kept its own JSON copy.
 --
+--   owner_id   whose history: the signed-in user's id, or "guest" while
+--              signed out (see UserDataOwnership.kt; "" for rows not assigned
+--              yet after an upgrade). Browsing history is personal, like the
+--              cart. Added in version 7 (migrations/6.sqm).
 --   viewed_at  epoch millis of the last view; CocktailCache keeps it strictly
 --              increasing so the list order is stable.
 CREATE TABLE recently_viewed_cocktail (
-    id TEXT NOT NULL PRIMARY KEY,
-    payload TEXT NOT NULL,
-    viewed_at INTEGER NOT NULL
+    owner_id TEXT NOT NULL,
+    cocktail_id TEXT NOT NULL,
+    viewed_at INTEGER NOT NULL,
+    PRIMARY KEY (owner_id, cocktail_id)
 );
 
 upsert:
-INSERT OR REPLACE INTO recently_viewed_cocktail(id, payload, viewed_at)
+INSERT OR REPLACE INTO recently_viewed_cocktail(owner_id, cocktail_id, viewed_at)
 VALUES (?, ?, ?);
 
 -- One-time import from the old Settings cache: never overwrite newer rows.
 insertIfAbsent:
-INSERT OR IGNORE INTO recently_viewed_cocktail(id, payload, viewed_at)
+INSERT OR IGNORE INTO recently_viewed_cocktail(owner_id, cocktail_id, viewed_at)
 VALUES (?, ?, ?);
 
 selectMostRecentFirst:
-SELECT id, payload FROM recently_viewed_cocktail ORDER BY viewed_at DESC;
+SELECT recently_viewed_cocktail.cocktail_id, cached_cocktail.payload, cached_cocktail.full_details
+FROM recently_viewed_cocktail
+JOIN cached_cocktail ON cached_cocktail.id = recently_viewed_cocktail.cocktail_id
+WHERE recently_viewed_cocktail.owner_id = :ownerId
+ORDER BY recently_viewed_cocktail.viewed_at DESC;
 
 maxViewedAt:
 SELECT MAX(viewed_at) AS value FROM recently_viewed_cocktail;
 
 deleteById:
-DELETE FROM recently_viewed_cocktail WHERE id = ?;
+DELETE FROM recently_viewed_cocktail WHERE owner_id = :ownerId AND cocktail_id = :cocktailId;
+
+deleteAll:
+DELETE FROM recently_viewed_cocktail WHERE owner_id = :ownerId;
 
 trimToCapacity:
 DELETE FROM recently_viewed_cocktail
-WHERE id NOT IN (
-    SELECT id FROM recently_viewed_cocktail ORDER BY viewed_at DESC LIMIT :capacity
+WHERE owner_id = :ownerId AND cocktail_id NOT IN (
+    SELECT cocktail_id FROM recently_viewed_cocktail
+    WHERE owner_id = :ownerId
+    ORDER BY viewed_at DESC LIMIT :capacity
 );
+
+-- Signing in: the account's entries for cocktails the guest also viewed
+-- take the later view (then reassign moves the other guest entries).
+keepLatestViewsOf:
+UPDATE recently_viewed_cocktail
+SET viewed_at = MAX(viewed_at, (
+    SELECT other.viewed_at FROM recently_viewed_cocktail other
+    WHERE other.owner_id = :fromOwnerId AND other.cocktail_id = recently_viewed_cocktail.cocktail_id
+))
+WHERE owner_id = :toOwnerId
+    AND cocktail_id IN (SELECT cocktail_id FROM recently_viewed_cocktail WHERE owner_id = :fromOwnerId);
+
+-- Moves one owner's entries to another; ones the target already has stay
+-- with the source (see UserDataOwnership.kt).
+reassign:
+UPDATE OR IGNORE recently_viewed_cocktail SET owner_id = :toOwnerId WHERE owner_id = :fromOwnerId;

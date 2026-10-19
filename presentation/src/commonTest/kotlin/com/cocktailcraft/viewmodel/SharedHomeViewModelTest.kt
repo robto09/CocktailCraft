@@ -173,7 +173,8 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         val vm = harness.viewModel()
         advanceUntilIdle()
 
-        vm.loadCocktailsByCategory("Shot")
+        vm.selectCategory("Shot")
+        advanceUntilIdle()
         assertEquals(10, vm.uiState.value.cocktails.size)
         assertTrue(vm.uiState.value.hasMoreData)
 
@@ -206,34 +207,26 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
     }
 
     @Test
-    fun loadMoreFailureSurfacesRetryableErrorInsteadOfEndOfList() = runTest {
-        // A failure while fetching page 2 with nothing stored must surface an
-        // error with a Retry action — not silently flip hasMoreData off,
-        // which is indistinguishable from genuinely reaching the end of the list.
+    fun loadMoreShowsMoreOfTheObservedPageWithoutARequest() = runTest {
+        // The whole category is stored and observed: paging just shows more
+        // of it, instead of re-running the load (and its refresh) per page.
         val harness = HomeViewModelHarness()
-        harness.all = (1..12).map { testCocktail("c$it", category = "Cocktail") }
+        harness.all = (1..25).map { testCocktail("c$it", category = "Cocktail") }
         val vm = harness.viewModel()
         advanceUntilIdle()
-        assertEquals(10, vm.uiState.value.cocktails.size)
+        val requests = harness.catalog.refreshCalls.toList()
+
+        vm.loadMoreCocktails()
+        assertEquals(20, vm.uiState.value.cocktails.size)
         assertTrue(vm.uiState.value.hasMoreData)
 
-        harness.catalog.store("Cocktail", emptyList()) // e.g. evicted from the cache
-        harness.errorMessage = "api down"
         vm.loadMoreCocktails()
-
-        assertNotNull(vm.error.value, "a failed page fetch must surface an error")
-        assertNotNull(vm.error.value?.recoveryAction, "the error must offer a retry")
-        assertTrue(vm.uiState.value.hasMoreData, "a failure must not masquerade as end of list")
-        assertFalse(vm.uiState.value.isLoadingMore)
-        assertEquals(10, vm.uiState.value.cocktails.size, "the loaded list must be untouched")
-
-        // Backend recovers: the retry path completes the pagination.
-        harness.errorMessage = null
-        vm.loadMoreCocktails()
-
-        assertEquals(12, vm.uiState.value.cocktails.size)
+        assertEquals(25, vm.uiState.value.cocktails.size)
         assertFalse(vm.uiState.value.hasMoreData)
-        assertNull(vm.error.value, "a successful retry must clear the error")
+
+        advanceUntilIdle()
+        assertEquals(requests, harness.catalog.refreshCalls, "paging must not refetch the category")
+        assertEquals((1..25).map { "c$it" }, vm.uiState.value.cocktails.map { it.id })
     }
 
     @Test
@@ -250,6 +243,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         assertTrue(vm.uiState.value.hasMoreData, "12-item category must page")
 
         vm.searchCocktails("marg")
+        advanceUntilIdle()
 
         assertFalse(vm.uiState.value.hasMoreData, "search results are complete — no more pages")
 
@@ -260,6 +254,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
 
         // Clearing the search restores the paginated category listing.
         vm.searchCocktails("")
+        advanceUntilIdle()
         assertTrue(vm.uiState.value.hasMoreData)
     }
 
@@ -274,6 +269,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         vm.searchCocktails("marg")
+        advanceUntilIdle()
 
         assertEquals("marg", vm.uiState.value.searchQuery)
         assertEquals(listOf("Margarita"), vm.uiState.value.cocktails.map { it.name })
@@ -289,14 +285,16 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         val vm = harness.viewModel()
         advanceUntilIdle()
         vm.searchCocktails("marg")
+        advanceUntilIdle()
 
         vm.searchCocktails("")
+        advanceUntilIdle()
 
         assertEquals(2, vm.uiState.value.cocktails.size)
     }
 
     @Test
-    fun networkLossKeepsLoadedListAndPausesPagination() = runTest {
+    fun networkLossKeepsLoadedListAndPagesFromTheStoredCategory() = runTest {
         val harness = HomeViewModelHarness()
         harness.all = (1..12).map { testCocktail("c$it", category = "Cocktail") }
         val vm = harness.viewModel()
@@ -309,13 +307,11 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
         assertFalse(vm.uiState.value.isNetworkAvailable)
 
-        // Offline load-more is a silent no-op: the list ends at the loaded
-        // data, no error, and hasMoreData stays true so pagination resumes
-        // once connectivity returns.
+        // The next page is already stored: it shows offline too, no error
         vm.loadMoreCocktails()
 
-        assertEquals(10, vm.uiState.value.cocktails.size)
-        assertTrue(vm.uiState.value.hasMoreData)
+        assertEquals(12, vm.uiState.value.cocktails.size)
+        assertFalse(vm.uiState.value.hasMoreData)
         assertNull(vm.error.value, "offline load-more must not surface an error")
     }
 
@@ -415,6 +411,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         vm.applyFilters(SearchFilters(category = "Cocktail"))
+        advanceUntilIdle()
 
         assertEquals(SearchFilters(category = "Cocktail"), vm.uiState.value.searchFilters)
         assertEquals(listOf("2", "3"), vm.uiState.value.cocktails.map { it.id })
@@ -431,6 +428,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         val vm = harness.viewModel()
         advanceUntilIdle()
         vm.applyFilters(SearchFilters(category = "Shot"))
+        advanceUntilIdle()
         assertEquals(listOf("3"), vm.uiState.value.cocktails.map { it.id })
 
         vm.clearSearchFilters()
@@ -453,7 +451,9 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         vm.applyFilters(SearchFilters(category = "Cocktail"))
+        advanceUntilIdle()
         vm.searchCocktails("mojito")
+        advanceUntilIdle()
 
         assertEquals("mojito", vm.uiState.value.searchQuery)
         assertEquals(SearchFilters(query = "mojito", category = "Cocktail"), vm.uiState.value.searchFilters)
@@ -486,10 +486,12 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
 
         harness.errorMessage = "api down"
         vm.applyFilters(SearchFilters(query = "marg"))
+        advanceUntilIdle()
         assertNotNull(vm.error.value)
 
         harness.errorMessage = null
         vm.applyFilters(SearchFilters(query = "marg"))
+        advanceUntilIdle()
 
         assertNull(vm.error.value, "the next attempt must clear the earlier failure")
         assertEquals(listOf("1"), vm.uiState.value.cocktails.map { it.id })
@@ -579,6 +581,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         vm.searchCocktails("marg")
+        advanceUntilIdle()
         harness.catalog.store("Cocktail", listOf(testCocktail("3")))
         advanceUntilIdle()
 

@@ -16,7 +16,7 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **Cocktail Discovery**: Browse and search for cocktails with detailed information
 - **Advanced Search & Filtering**: Combine a name query with category, ingredient, and alcoholic/non-alcoholic filters
 - **Shopping Cart**: Add cocktails to cart, update quantities, and checkout
-- **User Authentication**: Register, login, and manage user profiles
+- **User Authentication**: Register, sign in, and manage user profiles — accounts are device-local (stored and verified on the device; there is no server or sync)
 - **Order Management**: Place orders and track order history
 - **Favorites**: Save and manage favorite cocktails
 - **Reviews**: Read and submit reviews for cocktails
@@ -476,7 +476,8 @@ The application includes comprehensive test coverage:
 
 ## Static analysis
 
-All checks are local (there is no CI). Findings that predate a tool are
+CI (`.github/workflows/ci.yml`) runs these checks and the tests below on
+every pull request and push to `dev` and `main`. Findings that predate a tool are
 recorded in baselines, so the commands below pass today and report only new
 issues.
 

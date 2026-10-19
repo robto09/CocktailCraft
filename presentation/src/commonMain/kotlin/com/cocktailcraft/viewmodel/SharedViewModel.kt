@@ -12,6 +12,7 @@ import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +27,22 @@ import kotlinx.coroutines.launch
  * multiplatform androidx [ViewModel] (Main-dispatched viewModelScope, cleared
  * automatically when owned by a ViewModelStore).
  * Dependencies are constructor-injected so subclasses can be built without a Koin container.
+ *
+ * Actions run on viewModelScope, never in the caller's coroutine, so a
+ * screen that goes away (a Compose scope left, a Swift Task cancelled) can
+ * not abort a write or a refresh halfway:
+ *  - most are plain functions that launch their work and report back
+ *    through uiState, [error] and [events];
+ *  - an action stays `suspend` only when its caller has to wait for it — a
+ *    result to branch on (dismiss a sheet, navigate, toast an outcome) or
+ *    the end of a pull-to-refresh. It runs through [runInViewModelScope],
+ *    so cancelling the caller only stops the waiting, and it is
+ *    `@Throws(Exception::class)`: Swift calls it, and without the
+ *    annotation an exception escaping to Swift terminates the app.
+ *
+ * Koin `single`-scoped subclasses are never cleared (nothing routes them
+ * through a ViewModelStore), so never put teardown in onCleared() expecting
+ * it to run for a singleton (see PresentationModule's scoping notes, SH-9).
  */
 abstract class SharedViewModel : ViewModel() {
 
@@ -84,14 +101,18 @@ abstract class SharedViewModel : ViewModel() {
             return
         }
 
-        _error.value = ErrorHandler.getErrorFromException(
+        val error = ErrorHandler.getErrorFromException(
             exception = exception,
             defaultMessage = defaultMessage.desc(),
             recoveryAction = recoveryAction
         )
+        _error.value = error
 
-        // Log the error
-        Logger.e("Error in ${this::class.simpleName}", exception)
+        // Release builds keep Warn and up: only the exception type and the
+        // error code reach them. The message (a Ktor one embeds the request
+        // URL, search terms included) and the stack trace are debug-only.
+        Logger.w { "Error in ${this::class.simpleName}: ${exception::class.simpleName} (${error.errorCode})" }
+        Logger.d(exception) { "Error detail: ${exception.message}" }
     }
 
     /**
@@ -129,8 +150,10 @@ abstract class SharedViewModel : ViewModel() {
 
     /**
      * Unwrap a [Result], reporting a [Result.Error] to the error channel
-     * (typed via its ErrorCode) instead of silently discarding it. The
-     * error's own (raw) message wins; [fallbackMessage] covers a blank one.
+     * instead of silently discarding it. The copy comes from the same
+     * mapping as [handleException] (ErrorHandler.errorFromResult): the
+     * error's localized displayMessage, else the shared copy for a transport
+     * failure, else [fallbackMessage]. The raw message is only logged.
      */
     protected fun <T> Result<T>.getOrReport(
         default: T,
@@ -139,25 +162,19 @@ abstract class SharedViewModel : ViewModel() {
     ): T = when (this) {
         is Result.Success -> data
         is Result.Error -> {
-            _error.value = ErrorHandler.errorFromCode(
-                code = code,
-                message = ErrorHandler.rawMessage(message) ?: fallbackMessage.desc(),
-                recoveryAction = recoveryAction
-            )
-            Logger.e { "Error in ${this@SharedViewModel::class.simpleName}: $message ($code)" }
+            _error.value = ErrorHandler.errorFromResult(this, fallbackMessage.desc(), recoveryAction)
+            Logger.w { "Error in ${this@SharedViewModel::class.simpleName}: $code" }
+            Logger.d { "Error detail: $message" }
             default
         }
-        is Result.Loading -> default
     }
 
     /**
-     * Public so manually-owned instances (iOS factory-scoped wrappers) can
-     * clear themselves; store-owned instances are cleared by the platform.
-     * Koin `single`-scoped ViewModels are NEITHER — nothing ever calls
-     * onCleared() on them, so never put teardown logic here expecting it to
-     * run for a singleton (see PresentationModule's ViewModel scoping notes, SH-9).
+     * Runs [block] on viewModelScope and waits for its result: the body of
+     * every `suspend` action (see the class notes). Cancelling the caller
+     * only stops it waiting; the work itself finishes, and is cancelled only
+     * with the ViewModel.
      */
-    public override fun onCleared() {
-        super.onCleared()
-    }
+    protected suspend fun <T> runInViewModelScope(block: suspend () -> T): T =
+        viewModelScope.async { block() }.await()
 }

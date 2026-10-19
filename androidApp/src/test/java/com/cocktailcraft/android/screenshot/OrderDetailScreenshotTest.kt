@@ -2,7 +2,7 @@ package com.cocktailcraft.android.screenshot
 
 import com.cocktailcraft.android.screens.OrderDetailContent
 import com.cocktailcraft.domain.model.OrderStatus
-import com.cocktailcraft.viewmodel.state.OrderUiState
+import com.cocktailcraft.viewmodel.state.OrderDetailUiState
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
@@ -22,7 +22,7 @@ class OrderDetailScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant)
     fun cancellableOrder() = snapshot("OrderDetail_cancellable") {
         val order = ScreenshotFixtures.completedOrder.copy(status = OrderStatus.PROCESSING)
         OrderDetailContent(
-            state = OrderUiState(selectedOrder = order),
+            state = OrderDetailUiState(order = order),
             onBackClick = {},
             onConfirmCancel = {}
         )
@@ -32,7 +32,7 @@ class OrderDetailScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant)
     fun cancelledOrder() = snapshot("OrderDetail_cancelled") {
         val order = ScreenshotFixtures.inProgressOrder.copy(status = OrderStatus.CANCELLED)
         OrderDetailContent(
-            state = OrderUiState(selectedOrder = order),
+            state = OrderDetailUiState(order = order),
             onBackClick = {},
             onConfirmCancel = {}
         )

@@ -1,14 +1,16 @@
 package com.cocktailcraft.data.repository
 
 import app.cash.turbine.test
+import com.cocktailcraft.data.local.OwnerIds
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.sumOfMoney
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.createTestLocalDatabase
+import com.cocktailcraft.testutil.testCache
+import com.cocktailcraft.testutil.testCartRepository
 import com.cocktailcraft.testutil.testCocktail
-import com.cocktailcraft.testutil.testJson
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,7 +22,7 @@ class CartRepositoryImplTest {
     private val localDatabase = createTestLocalDatabase(db)
 
     // A new repository over the same database simulates an app relaunch.
-    private fun repository() = CartRepositoryImpl(localDatabase, testJson)
+    private fun repository() = testCartRepository(localDatabase)
 
     @Test
     fun addToCartStoresItemAndMergesDuplicates() = runTest {
@@ -118,9 +120,23 @@ class CartRepositoryImplTest {
     @Test
     fun unreadableStoredItemIsSkippedNotFatal() = runTest {
         repository().addToCart(CocktailCartItem(testCocktail("1"), quantity = 1)).getOrThrow()
-        db.cartItemQueries.insert(cocktailId = "broken", payload = "{not valid json", quantity = 1)
+        db.cachedCocktailQueries.upsert("broken", null, "{not valid json", full_details = 1, cached_at = 0)
+        db.cartItemQueries.insert(ownerId = OwnerIds.GUEST, cocktailId = "broken", quantity = 1, priceCents = null)
 
         assertEquals(listOf("1"), repository().getCartItems().getOrThrow().map { it.cocktail.id })
+    }
+
+    @Test
+    fun aLineKeepsThePriceItWasAddedAtAndShowsTheLatestDetails() = runTest {
+        val repository = repository()
+        repository.addToCart(CocktailCartItem(testCocktail("1", name = "Mojito", price = Money(900)), 2)).getOrThrow()
+
+        // A detail refresh rewrites the one stored copy of the cocktail
+        localDatabase.testCache().cacheCocktail(testCocktail("1", name = "Mojito Royale", price = Money(1200)))
+
+        val item = repository.getCartItems().getOrThrow().single()
+        assertEquals("Mojito Royale", item.cocktail.name)
+        assertEquals(Money(900), item.cocktail.price, "the price the user agreed to")
     }
 
     @Test

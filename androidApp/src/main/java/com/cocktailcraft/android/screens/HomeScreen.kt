@@ -58,7 +58,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -104,7 +103,6 @@ import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
 import com.cocktailcraft.viewmodel.state.HomeSortOption
 import com.cocktailcraft.viewmodel.state.HomeUiState
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 @Composable
@@ -116,27 +114,20 @@ fun HomeScreen(
     // HomeUiState carries the favorites too (same repository flow the
     // favorites VM observes), so the screen collects one state.
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
     val cocktails = state.cocktails
     val error by viewModel.error.collectAsStateWithLifecycle()
     val errorMessage = error?.message?.resolve() ?: ""
-    val isSearchActive = state.isSearchActive
     val searchQuery = state.searchQuery
 
-    // State for advanced search panel
-
-    // Add state for selected category - use rememberSaveable to persist across navigation.
-    // null = "All" chip selected (matches iOS); the shared VM browses the
-    // default "Cocktail" category for null.
+    // The selected chip, rememberSaveable so it survives navigation and
+    // process death. null = "All" chip selected (matches iOS); the shared VM
+    // browses the default "Cocktail" category for null.
     var selectedCategory by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Function to handle category selection
     val onCategorySelected: (String?) -> Unit = { category ->
         selectedCategory = category
     }
-
-    // Track if this is the first composition
-    var isFirstComposition by rememberSaveable { mutableStateOf(true) }
 
     // Process-death recovery (AN-4): the shared VM is a process-wide singleton
     // with no SavedStateHandle, so an in-progress search dies with the
@@ -167,20 +158,13 @@ fun HomeScreen(
         onPauseOrDispose { }
     }
     
-    // Effect to load cocktails by category when selected category changes
+    // Apply the selection: on a chip tap, and again whenever Home comes
+    // back (from a detail page, another tab, a restored process). The
+    // ViewModel loads the initial list itself and ignores re-selecting what
+    // it already shows (or a selection under an active search), so coming
+    // back keeps the list, its loaded pages and scroll position.
     LaunchedEffect(selectedCategory) {
-        // Skip loading on first composition if we already have data
-        if (isFirstComposition && cocktails.isNotEmpty()) {
-            isFirstComposition = false
-            return@LaunchedEffect
-        }
-
-        isFirstComposition = false
-
-        // Only load if not in search mode and category has changed
-        if (!isSearchActive) {
-            viewModel.loadCocktailsByCategory(selectedCategory)
-        }
+        viewModel.selectCategory(selectedCategory)
     }
 
     // With cocktails on screen, a failure (load more, filters, a category
@@ -192,12 +176,6 @@ fun HomeScreen(
         onConsumed = { viewModel.clearError() }
     )
 
-    // Load the shared filter-option lists (categories / ingredients)
-    // into the ViewModel state once; the sheet and category row read them.
-    LaunchedEffect(Unit) {
-        viewModel.loadFilterOptions()
-    }
-
     HomeContent(
         state = state,
         errorMessage = errorMessage,
@@ -207,8 +185,9 @@ fun HomeScreen(
         // Shared debounced pipeline (SH-13): no per-keystroke coroutines.
         onSearchQueryChange = { viewModel.updateSearchQuery(it) },
         onExitSearch = { viewModel.toggleSearchMode(false) },
+        // Opening the sheet loads its option lists, once
         onSetAdvancedSearchActive = { viewModel.toggleAdvancedSearchMode(it) },
-        onApplyFilters = { filters -> scope.launch { viewModel.applyFilters(filters) } },
+        onApplyFilters = { filters -> viewModel.applyFilters(filters) },
         onClearSearchFilters = { viewModel.clearSearchFilters() },
         onSortChange = { viewModel.setSortOption(it) },
         onRetry = { viewModel.retry() },
@@ -216,12 +195,8 @@ fun HomeScreen(
         onAddToCart = onAddToCart,
         // Through the Home ViewModel (as on iOS), so a failed toggle reports
         // on this screen's error channel rather than surfacing on Favorites
-        onToggleFavorite = { cocktailToToggle ->
-            scope.launch { viewModel.toggleFavorite(cocktailToToggle) }
-        },
-        onLoadMore = {
-            scope.launch { viewModel.loadMoreCocktails() }
-        }
+        onToggleFavorite = { cocktailToToggle -> viewModel.toggleFavorite(cocktailToToggle) },
+        onLoadMore = { viewModel.loadMoreCocktails() }
     )
 }
 
@@ -251,7 +226,6 @@ internal fun HomeContent(
 ) {
     val isLoading = state.isLoading
     val cocktails = state.cocktails
-    val isLoadingMore = state.isLoadingMore
     val hasMoreData = state.hasMoreData
     val isSearchActive = state.isSearchActive
     val searchQuery = state.searchQuery
@@ -327,7 +301,6 @@ internal fun HomeContent(
             selectedCategory = selectedCategory,
             hasActiveFilters = searchFilters.hasActiveFilters(),
             isSearchActive = isSearchActive,
-            isLoadingMore = isLoadingMore,
             hasMoreData = hasMoreData,
             favorites = favorites,
             isNetworkAvailable = isNetworkAvailable,
@@ -453,7 +426,6 @@ internal fun HomeContentSection(
     selectedCategory: String?,
     hasActiveFilters: Boolean,
     isSearchActive: Boolean,
-    isLoadingMore: Boolean,
     hasMoreData: Boolean,
     favorites: List<Cocktail>,
     isNetworkAvailable: Boolean,
@@ -522,7 +494,6 @@ internal fun HomeContentSection(
                 cocktails = cocktails,
                 isSearchActive = isSearchActive,
                 selectedCategory = selectedCategory,
-                isLoadingMore = isLoadingMore,
                 hasMoreData = hasMoreData,
                 favorites = favorites,
                 onCocktailClick = onCocktailClick,
@@ -654,7 +625,6 @@ private fun HomeContentSectionPreview() {
             selectedCategory = null,
             hasActiveFilters = false,
             isSearchActive = false,
-            isLoadingMore = false,
             hasMoreData = false,
             favorites = emptyList(),
             isNetworkAvailable = true,
@@ -681,7 +651,6 @@ private fun HomeContentSectionDarkPreview() {
             selectedCategory = null,
             hasActiveFilters = false,
             isSearchActive = false,
-            isLoadingMore = false,
             hasMoreData = false,
             favorites = emptyList(),
             isNetworkAvailable = true,
@@ -708,7 +677,6 @@ private fun HomeContentSectionLargeFontPreview() {
             selectedCategory = null,
             hasActiveFilters = false,
             isSearchActive = false,
-            isLoadingMore = false,
             hasMoreData = false,
             favorites = emptyList(),
             isNetworkAvailable = true,
