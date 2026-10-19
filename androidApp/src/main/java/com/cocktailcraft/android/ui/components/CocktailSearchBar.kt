@@ -174,8 +174,15 @@ fun CocktailSearchBar(
                     shape = RoundedCornerShape(8.dp)
                 )
                 .then(
-                    if (isHighlighted) Modifier
-                    else Modifier.border(1.dp, CocktailCraftTheme.extendedColors.neutralSubtle, RoundedCornerShape(8.dp))
+                    if (isHighlighted) {
+                        Modifier
+                    } else {
+                        Modifier.border(
+                            1.dp,
+                            CocktailCraftTheme.extendedColors.neutralSubtle,
+                            RoundedCornerShape(8.dp)
+                        )
+                    }
                 )
                 .size(48.dp)
         ) {

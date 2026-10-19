@@ -29,9 +29,7 @@ import kotlinx.coroutines.launch
  * only public state surface (delivery pricing is derived on the state).
  * Its [events] are the Cart screen's own (removals and clears, with Undo).
  */
-class SharedCartViewModel internal constructor(
-    private val manageCartUseCase: ManageCartUseCase
-) : SharedViewModel() {
+class SharedCartViewModel internal constructor(private val manageCartUseCase: ManageCartUseCase) : SharedViewModel() {
 
     // Consolidated UI State
     private val _uiState = MutableStateFlow(CartUiState())
@@ -135,9 +133,11 @@ class SharedCartViewModel internal constructor(
         clearError()
         val previous = _uiState.value.cartItems
         // Optimistic: reflect the new quantity immediately, revert if it fails
-        applyItems(previous.map {
-            if (it.cocktail.id == cocktailId) it.copy(quantity = quantity) else it
-        })
+        applyItems(
+            previous.map {
+                if (it.cocktail.id == cocktailId) it.copy(quantity = quantity) else it
+            }
+        )
         viewModelScope.launch {
             val result = runCatchingResult("Failed to update quantity") {
                 manageCartUseCase.updateQuantity(cocktailId, quantity)

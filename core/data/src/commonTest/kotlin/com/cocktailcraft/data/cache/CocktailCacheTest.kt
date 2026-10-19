@@ -409,12 +409,14 @@ class CocktailCacheTest {
     @Test
     fun categoryQueryReturnsOnlyThatCategory() = runTest {
         val cache = cache(createTestDatabase())
-        cache.cacheCocktails(listOf(
-            testCocktail("1", category = "Cocktail"),
-            testCocktail("2", category = "Shot"),
-            testCocktail("3", category = "Cocktail"),
-            testCocktail("4", category = null)
-        ))
+        cache.cacheCocktails(
+            listOf(
+                testCocktail("1", category = "Cocktail"),
+                testCocktail("2", category = "Shot"),
+                testCocktail("3", category = "Cocktail"),
+                testCocktail("4", category = null)
+            )
+        )
 
         assertEquals(setOf("1", "3"), cache.observeCategoryPage("Cocktail").first().map { it.id }.toSet())
         assertEquals(listOf("2"), cache.observeCategoryPage("Shot").first().map { it.id })
@@ -424,12 +426,14 @@ class CocktailCacheTest {
     @Test
     fun categoryQueryCanIncludeLegacyEntriesWithoutCategory() = runTest {
         val cache = cache(createTestDatabase())
-        cache.cacheCocktails(listOf(
-            testCocktail("stamped", category = CocktailCategories.DEFAULT),
-            testCocktail("null", category = null),
-            testCocktail("blank", category = "  "),
-            testCocktail("other", category = "Shot")
-        ))
+        cache.cacheCocktails(
+            listOf(
+                testCocktail("stamped", category = CocktailCategories.DEFAULT),
+                testCocktail("null", category = null),
+                testCocktail("blank", category = "  "),
+                testCocktail("other", category = "Shot")
+            )
+        )
 
         // Legacy rows only stand in while nothing carries the category
         assertEquals(
@@ -591,8 +595,11 @@ class CocktailCacheTest {
         val db = createTestDatabase()
         val settings = MapSettings()
         // The legacy list was stored oldest first
-        seedLegacyCocktails(settings, CocktailCache.RECENTLY_VIEWED_KEY,
-            listOf(testCocktail("a"), testCocktail("b"), testCocktail("c")))
+        seedLegacyCocktails(
+            settings,
+            CocktailCache.RECENTLY_VIEWED_KEY,
+            listOf(testCocktail("a"), testCocktail("b"), testCocktail("c"))
+        )
 
         val cache = cache(db, settings)
 

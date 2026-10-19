@@ -55,10 +55,10 @@ fun SectionHeader(
             color = titleColor,
             modifier = Modifier.semantics { heading() }
         )
-        
+
         if (actionText != null && onActionClick != null) {
             Spacer(modifier = Modifier.width(8.dp))
-            
+
             TextButton(onClick = onActionClick) {
                 Text(
                     text = actionText,

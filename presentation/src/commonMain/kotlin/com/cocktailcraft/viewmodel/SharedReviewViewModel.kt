@@ -30,9 +30,8 @@ import kotlinx.coroutines.launch
  * [Review.isMine] ones can be updated or deleted (any other id reports
  * "not found"), so screens offer edit/delete on those alone.
  */
-class SharedReviewViewModel internal constructor(
-    private val manageReviewsUseCase: ManageReviewsUseCase
-) : SharedViewModel() {
+class SharedReviewViewModel internal constructor(private val manageReviewsUseCase: ManageReviewsUseCase) :
+    SharedViewModel() {
 
     // Consolidated UI State
     private val _uiState = MutableStateFlow(ReviewUiState())

@@ -130,15 +130,15 @@ fun ErrorDialog(
                         } ?: run {
                             if (onRetry != null) {
                                 Button(
-                                onClick = {
-                                    onRetry()
-                                    onDismiss()
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary
-                                )
-                            ) {
-                                Text(stringResource(MR.strings.dialog_try_again))
+                                    onClick = {
+                                        onRetry()
+                                        onDismiss()
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    )
+                                ) {
+                                    Text(stringResource(MR.strings.dialog_try_again))
                                 }
                             }
                         }

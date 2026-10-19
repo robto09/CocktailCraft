@@ -45,8 +45,10 @@ object CocktailDeepLink {
         val segments = uri?.pathSegments ?: return null
         val id = when {
             uri.scheme == SCHEME && uri.host == HOST && segments.size == 1 -> segments[0]
+
             uri.scheme == LEGACY_SCHEME && uri.host == LEGACY_HOST && segments.size == 2 &&
                 segments[0] == LEGACY_PATH_PREFIX -> segments[1]
+
             else -> null
         }
         return id?.takeIf(::isValidCocktailId)

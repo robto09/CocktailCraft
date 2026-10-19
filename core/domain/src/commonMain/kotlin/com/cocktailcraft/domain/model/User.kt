@@ -21,6 +21,7 @@ data class User(
     @HiddenFromObjC
     companion object
 }
+
 @Serializable
 data class Address(
     val street: String = "",
@@ -34,6 +35,7 @@ data class Address(
     @HiddenFromObjC
     companion object
 }
+
 @Serializable
 data class UserPreferences(
     val darkMode: Boolean = false,

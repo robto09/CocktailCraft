@@ -153,6 +153,7 @@ suspend fun SnackbarHostState.showUiEvent(event: UiEvent, context: Context) {
                 showSuccessToast(message)
                 null
             }
+
         is UiEvent.Failure -> showErrorToast(message, actionLabel)
     }
     if (result == SnackbarResult.ActionPerformed) action?.perform()

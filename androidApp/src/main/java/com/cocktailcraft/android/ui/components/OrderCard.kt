@@ -164,9 +164,11 @@ fun OrderCard(
 @Composable
 internal fun orderStatusColor(status: OrderStatus): Color = when (status) {
     OrderStatus.DELIVERED -> CocktailCraftTheme.extendedColors.success
+
     OrderStatus.PENDING,
     OrderStatus.PROCESSING,
     OrderStatus.SHIPPED -> CocktailCraftTheme.extendedColors.warning
+
     OrderStatus.CANCELLED -> MaterialTheme.colorScheme.outline
 }
 

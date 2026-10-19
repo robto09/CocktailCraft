@@ -11,9 +11,8 @@ import kotlin.native.HiddenFromObjC
  * now on return Result.Error (and change nothing), then it behaves normally.
  */
 @HiddenFromObjC // implements a Kotlin-only repository port
-class FlakyFavoritesRepository(
-    private val delegate: FakeFavoritesRepository = FakeFavoritesRepository()
-) : CocktailFavoritesRepository by delegate {
+class FlakyFavoritesRepository(private val delegate: FakeFavoritesRepository = FakeFavoritesRepository()) :
+    CocktailFavoritesRepository by delegate {
 
     var failingMutations = 0
 
@@ -23,10 +22,16 @@ class FlakyFavoritesRepository(
         (failingMutations > 0).also { if (it) failingMutations-- }
 
     override suspend fun addToFavorites(cocktail: Cocktail): Result<Unit> =
-        if (consumeFailure()) Result.Error("favorites store unavailable")
-        else delegate.addToFavorites(cocktail)
+        if (consumeFailure()) {
+            Result.Error("favorites store unavailable")
+        } else {
+            delegate.addToFavorites(cocktail)
+        }
 
     override suspend fun removeFromFavorites(cocktail: Cocktail): Result<Unit> =
-        if (consumeFailure()) Result.Error("favorites store unavailable")
-        else delegate.removeFromFavorites(cocktail)
+        if (consumeFailure()) {
+            Result.Error("favorites store unavailable")
+        } else {
+            delegate.removeFromFavorites(cocktail)
+        }
 }

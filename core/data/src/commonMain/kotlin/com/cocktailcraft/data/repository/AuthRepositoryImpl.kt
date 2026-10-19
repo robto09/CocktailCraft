@@ -173,16 +173,19 @@ internal class AuthRepositoryImpl(
             if (currentUser != null) {
                 val prefs = currentUser.preferences
                 val defaults = UserPreferences()
-                Result.Success(UserPreferences(
-                    darkMode = prefs["darkMode"]?.toBoolean() ?: defaults.darkMode,
-                    followSystemTheme = prefs["followSystemTheme"]?.toBoolean() ?: defaults.followSystemTheme,
-                    notificationsEnabled = prefs["notificationsEnabled"]?.toBoolean() ?: defaults.notificationsEnabled,
-                    language = prefs["language"] ?: defaults.language,
-                    accentColor = prefs["accentColor"] ?: defaults.accentColor,
-                    fontSize = prefs["fontSize"] ?: defaults.fontSize,
-                    isHighContrast = prefs["isHighContrast"]?.toBoolean() ?: defaults.isHighContrast,
-                    isReducedMotion = prefs["isReducedMotion"]?.toBoolean() ?: defaults.isReducedMotion
-                ))
+                Result.Success(
+                    UserPreferences(
+                        darkMode = prefs["darkMode"]?.toBoolean() ?: defaults.darkMode,
+                        followSystemTheme = prefs["followSystemTheme"]?.toBoolean() ?: defaults.followSystemTheme,
+                        notificationsEnabled =
+                        prefs["notificationsEnabled"]?.toBoolean() ?: defaults.notificationsEnabled,
+                        language = prefs["language"] ?: defaults.language,
+                        accentColor = prefs["accentColor"] ?: defaults.accentColor,
+                        fontSize = prefs["fontSize"] ?: defaults.fontSize,
+                        isHighContrast = prefs["isHighContrast"]?.toBoolean() ?: defaults.isHighContrast,
+                        isReducedMotion = prefs["isReducedMotion"]?.toBoolean() ?: defaults.isReducedMotion
+                    )
+                )
             } else {
                 val stored = settings.getStringOrNull(GUEST_PREFERENCES_KEY)
                 Result.Success(
@@ -320,8 +323,10 @@ internal class AuthRepositoryImpl(
             when {
                 key.startsWith(AuthStorageKeys.SIGN_IN_ATTEMPTS_PREFIX) ->
                     key.removePrefix(AuthStorageKeys.SIGN_IN_ATTEMPTS_PREFIX)
+
                 key.startsWith(AuthStorageKeys.SIGN_IN_LOCKOUT_PREFIX) ->
                     key.removePrefix(AuthStorageKeys.SIGN_IN_LOCKOUT_PREFIX)
+
                 else -> null
             }
         }

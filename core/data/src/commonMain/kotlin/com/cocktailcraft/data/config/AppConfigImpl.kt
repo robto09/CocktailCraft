@@ -33,6 +33,7 @@ class AppConfigImpl(
 
     // Cache configuration (enforced by CocktailCache)
     override val cacheExpirationMs: Long = 86400000 // 24 hours cache expiration
+
     // Maximum number of cocktails to cache. A single category can return ~100
     // drinks, so this leaves room for several browsed categories offline.
     override val maxOfflineCocktails: Int = 500

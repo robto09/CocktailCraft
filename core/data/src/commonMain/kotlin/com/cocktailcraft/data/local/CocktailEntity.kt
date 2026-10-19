@@ -63,10 +63,7 @@ internal data class CocktailEntity(
 }
 
 @Serializable
-internal data class IngredientEntity(
-    val name: String,
-    val measure: String
-)
+internal data class IngredientEntity(val name: String, val measure: String)
 
 internal fun Cocktail.toEntity(): CocktailEntity = CocktailEntity(
     id = id,

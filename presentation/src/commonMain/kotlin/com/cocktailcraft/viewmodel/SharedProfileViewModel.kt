@@ -76,10 +76,12 @@ class SharedProfileViewModel internal constructor(
     private suspend fun checkAuthStatus() {
         runCatchingNonCancellation(onFailure = { handleException(it, MR.strings.error_check_auth_failed) }) {
             val signedIn = authRepository.isUserSignedIn().getOrThrow()
-            _uiState.update { it.copy(
-                isLoggedIn = signedIn,
-                authStatus = if (signedIn) "Authenticated" else "Not Authenticated"
-            ) }
+            _uiState.update {
+                it.copy(
+                    isLoggedIn = signedIn,
+                    authStatus = if (signedIn) "Authenticated" else "Not Authenticated"
+                )
+            }
             if (signedIn) {
                 loadCurrentUser()
             } else {
@@ -103,9 +105,11 @@ class SharedProfileViewModel internal constructor(
             // looser rules must still be able to authenticate. Strict format
             // rules apply where the email is first stored (signUp/updateProfile).
             email.isBlank() || !email.contains('@') -> rejectInvalidEmail()
+
             // Like the email gate above: existing accounts may hold passwords
             // set under an older policy, so sign-in only rejects empty input.
             password.isBlank() -> rejectPassword(MR.strings.error_password_required.desc())
+
             else -> true
         }
         if (!inputValid) return false
@@ -245,7 +249,9 @@ class SharedProfileViewModel internal constructor(
             // The old password may predate the current policy — only the new
             // one has to meet it.
             oldPassword.isBlank() -> rejectPassword(MR.strings.error_current_password_required.desc())
+
             !meetsPasswordPolicy(newPassword) -> rejectPassword(passwordPolicyMessage())
+
             else -> true
         }
         if (!inputValid) return false

@@ -23,4 +23,3 @@ interface CocktailFavoritesRepository {
     suspend fun removeFromFavorites(cocktail: Cocktail): Result<Unit>
     suspend fun isCocktailFavorite(id: String): Result<Boolean>
 }
-

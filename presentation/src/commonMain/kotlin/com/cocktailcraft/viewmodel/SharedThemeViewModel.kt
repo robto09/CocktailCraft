@@ -134,31 +134,27 @@ class SharedThemeViewModel internal constructor(
     /**
      * Get accent color display name.
      */
-    fun getAccentColorDisplayName(color: String): StringDesc {
-        return when (color.lowercase()) {
-            "coral" -> MR.strings.accent_color_coral.desc()
-            "blue" -> MR.strings.accent_color_blue.desc()
-            "green" -> MR.strings.accent_color_green.desc()
-            "red" -> MR.strings.accent_color_red.desc()
-            "orange" -> MR.strings.accent_color_orange.desc()
-            "purple" -> MR.strings.accent_color_purple.desc()
-            "pink" -> MR.strings.accent_color_pink.desc()
-            else -> StringDesc.Raw(color.replaceFirstChar { it.uppercase() })
-        }
+    fun getAccentColorDisplayName(color: String): StringDesc = when (color.lowercase()) {
+        "coral" -> MR.strings.accent_color_coral.desc()
+        "blue" -> MR.strings.accent_color_blue.desc()
+        "green" -> MR.strings.accent_color_green.desc()
+        "red" -> MR.strings.accent_color_red.desc()
+        "orange" -> MR.strings.accent_color_orange.desc()
+        "purple" -> MR.strings.accent_color_purple.desc()
+        "pink" -> MR.strings.accent_color_pink.desc()
+        else -> StringDesc.Raw(color.replaceFirstChar { it.uppercase() })
     }
 
     /**
      * Get font size display name.
      */
-    fun getFontSizeDisplayName(size: String): StringDesc {
-        return when (size.lowercase()) {
-            "small" -> MR.strings.font_size_small
-            "medium" -> MR.strings.font_size_medium
-            "large" -> MR.strings.font_size_large
-            "xlarge" -> MR.strings.font_size_xlarge
-            else -> MR.strings.common_unknown
-        }.desc()
-    }
+    fun getFontSizeDisplayName(size: String): StringDesc = when (size.lowercase()) {
+        "small" -> MR.strings.font_size_small
+        "medium" -> MR.strings.font_size_medium
+        "large" -> MR.strings.font_size_large
+        "xlarge" -> MR.strings.font_size_xlarge
+        else -> MR.strings.common_unknown
+    }.desc()
 
     // MARK: - Private Helper Methods
 
@@ -166,18 +162,20 @@ class SharedThemeViewModel internal constructor(
         // Silent fail for preferences loading
         runCatchingNonCancellation(onFailure = {}) {
             val preferences = authRepository.getUserPreferences().getOrDefault(UserPreferences())
-            _uiState.update { it.copy(
-                userPreferences = preferences,
-                themeMode = when {
-                    preferences.followSystemTheme -> ThemeMode.SYSTEM
-                    preferences.darkMode -> ThemeMode.DARK
-                    else -> ThemeMode.LIGHT
-                },
-                accentColor = preferences.accentColor,
-                fontSize = preferences.fontSize,
-                isHighContrast = preferences.isHighContrast,
-                isReducedMotion = preferences.isReducedMotion
-            ) }
+            _uiState.update {
+                it.copy(
+                    userPreferences = preferences,
+                    themeMode = when {
+                        preferences.followSystemTheme -> ThemeMode.SYSTEM
+                        preferences.darkMode -> ThemeMode.DARK
+                        else -> ThemeMode.LIGHT
+                    },
+                    accentColor = preferences.accentColor,
+                    fontSize = preferences.fontSize,
+                    isHighContrast = preferences.isHighContrast,
+                    isReducedMotion = preferences.isReducedMotion
+                )
+            }
         }
     }
 

@@ -17,4 +17,3 @@ interface CocktailSearchRepository {
     suspend fun filterByAlcoholic(alcoholic: Boolean): Result<List<Cocktail>>
     suspend fun filterByCategory(category: String): Result<List<Cocktail>>
 }
-

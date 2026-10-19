@@ -9,7 +9,6 @@ import com.cocktailcraft.resources.theme_mode_light
 import com.cocktailcraft.resources.theme_mode_system
 import com.cocktailcraft.testutil.DataLayerTest
 import com.russhwolf.settings.MapSettings
-import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -31,6 +30,7 @@ class SharedThemeViewModelTest : DataLayerTest() {
      */
     private inner class Harness(ioDispatcher: CoroutineDispatcher) {
         val settings = MapSettings()
+
         // The real AuthRepositoryImpl (internal to :core:data), via dataModule
         val repository: AuthRepository = dataLayer(ioDispatcher, settings).get()
 

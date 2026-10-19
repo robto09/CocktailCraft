@@ -66,8 +66,22 @@ class LegacySettingsImportTest {
     )
 
     private val legacyReviews = listOf(
-        Review(id = "r1", cocktailId = "1", userName = "Robert", rating = 4.5f, comment = "Lovely and tart.", date = "2026-06-01"),
-        Review(id = "r2", cocktailId = "2", userName = "Ana", rating = 3.0f, comment = "A bit too minty.", date = "2026-06-03")
+        Review(
+            id = "r1",
+            cocktailId = "1",
+            userName = "Robert",
+            rating = 4.5f,
+            comment = "Lovely and tart.",
+            date = "2026-06-01"
+        ),
+        Review(
+            id = "r2",
+            cocktailId = "2",
+            userName = "Ana",
+            rating = 3.0f,
+            comment = "A bit too minty.",
+            date = "2026-06-03"
+        )
     )
 
     private fun Settings.seedCart(items: List<CocktailCartItem>) = putString(CART_KEY, legacyCartJson(items))
@@ -248,7 +262,12 @@ class LegacySettingsImportTest {
     fun duplicateIdsInALegacyListKeepTheFirstEntry() = runTest {
         val db = createTestDatabase()
         val settings = MapSettings().apply {
-            seedOrders(listOf(legacyOrders.first(), legacyOrders.first().copy(status = OrderStatus.CANCELLED, items = emptyList())))
+            seedOrders(
+                listOf(
+                    legacyOrders.first(),
+                    legacyOrders.first().copy(status = OrderStatus.CANCELLED, items = emptyList())
+                )
+            )
             putString(FAVORITES_KEY, "1,1,2")
         }
         val local = createTestLocalDatabase(db, settings)

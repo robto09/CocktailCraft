@@ -29,9 +29,8 @@ import kotlinx.coroutines.launch
  * - Suspend functions become Swift async functions
  * - No FlowCollector bridge needed
  */
-class SharedFavoritesViewModel internal constructor(
-    private val manageFavoritesUseCase: ManageFavoritesUseCase
-) : SharedViewModel() {
+class SharedFavoritesViewModel internal constructor(private val manageFavoritesUseCase: ManageFavoritesUseCase) :
+    SharedViewModel() {
 
     // Consolidated UI State
     private val _uiState = MutableStateFlow(FavoritesUiState())

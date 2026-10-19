@@ -1,7 +1,6 @@
 package com.cocktailcraft.di
 
 import com.cocktailcraft.widget.WidgetDataSource
-import org.koin.core.module.Module
 import org.koin.dsl.module
 import kotlin.native.HiddenFromObjC
 

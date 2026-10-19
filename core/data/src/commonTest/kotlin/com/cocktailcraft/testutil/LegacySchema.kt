@@ -11,10 +11,8 @@ import app.cash.sqldelight.db.SqlSchema
  * version had them (copied from the src/commonMain/sqldelight/databases
  * snapshots), then the test inserts rows and runs the real migrations.
  */
-internal class LegacySchema(
-    override val version: Long,
-    private val statements: List<String>
-) : SqlSchema<QueryResult.Value<Unit>> {
+internal class LegacySchema(override val version: Long, private val statements: List<String>) :
+    SqlSchema<QueryResult.Value<Unit>> {
 
     override fun create(driver: SqlDriver): QueryResult.Value<Unit> {
         statements.forEach { driver.execute(null, it, 0) }

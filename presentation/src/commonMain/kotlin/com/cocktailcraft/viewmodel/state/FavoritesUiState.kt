@@ -10,4 +10,3 @@ data class FavoritesUiState(
     val favoriteCount: Int = 0,
     val isLoading: Boolean = false
 )
-

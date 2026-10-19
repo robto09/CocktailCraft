@@ -27,10 +27,7 @@ import java.io.IOException
  */
 // The function count is the Settings interface's
 @Suppress("TooManyFunctions")
-internal class EncryptedFileSettings(
-    private val file: File,
-    private val aead: Aead,
-) : Settings {
+internal class EncryptedFileSettings(private val file: File, private val aead: Aead,) : Settings {
 
     private val lock = Any()
     private var state: StoreFile = load()

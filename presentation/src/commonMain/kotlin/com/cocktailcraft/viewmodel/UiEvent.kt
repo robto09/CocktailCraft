@@ -22,15 +22,9 @@ sealed class UiEvent {
     abstract val message: StringDesc
     abstract val action: UiEventAction?
 
-    data class Success(
-        override val message: StringDesc,
-        override val action: UiEventAction? = null
-    ) : UiEvent()
+    data class Success(override val message: StringDesc, override val action: UiEventAction? = null) : UiEvent()
 
-    data class Failure(
-        override val message: StringDesc,
-        override val action: UiEventAction? = null
-    ) : UiEvent()
+    data class Failure(override val message: StringDesc, override val action: UiEventAction? = null) : UiEvent()
 }
 
 /**
@@ -44,10 +38,7 @@ sealed class UiEvent {
  * still different actions, so every event carrying one is distinct (SwiftUI's
  * onChange only fires for a value that differs from the last one).
  */
-class UiEventAction internal constructor(
-    val label: StringDesc,
-    private val onPerform: () -> Unit
-) {
+class UiEventAction internal constructor(val label: StringDesc, private val onPerform: () -> Unit) {
     private var performed = false
 
     /** Whether [perform] has already run. */

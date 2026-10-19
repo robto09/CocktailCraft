@@ -60,8 +60,10 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         // Only the immediate clear-path search ran; the pending "marg" never fired.
-        assertTrue(harness.search.advancedSearchCalls.none { it.query == "marg" },
-            "clearing must cancel the pending debounced search")
+        assertTrue(
+            harness.search.advancedSearchCalls.none { it.query == "marg" },
+            "clearing must cancel the pending debounced search"
+        )
     }
 
     @Test
@@ -82,8 +84,11 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         vm.updateSearchQuery("")
         advanceUntilIdle()
 
-        assertEquals(listOf("1"), vm.uiState.value.cocktails.map { it.id },
-            "empty query falls back to the default category listing")
+        assertEquals(
+            listOf("1"),
+            vm.uiState.value.cocktails.map { it.id },
+            "empty query falls back to the default category listing"
+        )
         assertEquals("", vm.uiState.value.searchQuery)
     }
 
@@ -249,8 +254,11 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
 
         vm.loadMoreCocktails()
 
-        assertEquals(listOf("m1"), vm.uiState.value.cocktails.map { it.id },
-            "load-more during search must not append category items")
+        assertEquals(
+            listOf("m1"),
+            vm.uiState.value.cocktails.map { it.id },
+            "load-more during search must not append category items"
+        )
 
         // Clearing the search restores the paginated category listing.
         vm.searchCocktails("")
@@ -336,9 +344,11 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         assertTrue(vm.uiState.value.isNetworkAvailable)
-        assertEquals(setOf("fresh1", "fresh2"),
+        assertEquals(
+            setOf("fresh1", "fresh2"),
             vm.uiState.value.cocktails.map { it.id }.toSet(),
-            "a restore after an offline load must refresh the stale cached list")
+            "a restore after an offline load must refresh the stale cached list"
+        )
     }
 
     @Test
@@ -359,9 +369,11 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         assertTrue(vm.uiState.value.isNetworkAvailable)
-        assertEquals(setOf("fresh1", "fresh2"),
+        assertEquals(
+            setOf("fresh1", "fresh2"),
             vm.uiState.value.cocktails.map { it.id }.toSet(),
-            "a restore during an in-flight offline load must still refresh the stale snapshot")
+            "a restore during an in-flight offline load must still refresh the stale snapshot"
+        )
     }
 
     @Test

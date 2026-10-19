@@ -42,6 +42,7 @@ data class ThemeVariant(
         // Accessibility variants for a handful of key components
         val HighContrastDark = ThemeVariant("dark_highContrast", darkTheme = true, highContrast = true)
         val LargeFont = ThemeVariant("light_largeFont", darkTheme = false, fontScale = 1.5f)
+
         // Android's largest system font size (200%)
         val LargestFont = ThemeVariant("light_fontScale2", darkTheme = false, fontScale = 2f)
         val AccentBlue = ThemeVariant("light_accentBlue", darkTheme = false, accentColor = "blue")

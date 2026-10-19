@@ -162,7 +162,7 @@ class SharedCocktailDetailViewModel internal constructor(
             }
         }
     }
-    
+
     /**
      * Refresh cocktail details.
      */

@@ -32,10 +32,7 @@ import kotlinx.serialization.json.JsonArray
  * decode are imported and the rest dropped, and a blob that isn't a JSON list
  * at all imports nothing. Older versions already treated such data as empty.
  */
-internal class LegacySettingsImport(
-    private val settings: Settings,
-    private val json: Json
-) {
+internal class LegacySettingsImport(private val settings: Settings, private val json: Json) {
     private val codec = CocktailCodec(json)
 
     companion object {

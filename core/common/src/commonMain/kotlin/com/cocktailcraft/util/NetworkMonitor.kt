@@ -1,10 +1,9 @@
 package com.cocktailcraft.util
 
-import kotlin.native.HiddenFromObjC
-
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlin.native.HiddenFromObjC
 
 /**
  * Common interface for monitoring network connectivity.

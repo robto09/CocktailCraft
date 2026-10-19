@@ -14,9 +14,7 @@ import kotlin.native.HiddenFromObjC
  * page through it themselves.
  */
 @HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
-class LoadCocktailsByCategoryUseCase(
-    private val catalogRepository: CocktailCatalogRepository
-) {
+class LoadCocktailsByCategoryUseCase(private val catalogRepository: CocktailCatalogRepository) {
     /** The stored page of [category], re-emitted whenever it changes (e.g. after a refresh). */
     fun observe(category: String): Flow<List<Cocktail>> = catalogRepository.observeCategory(category)
 

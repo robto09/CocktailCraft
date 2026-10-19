@@ -78,6 +78,7 @@ class SharedOrderViewModel internal constructor(
     suspend fun placeOrder(cartItems: List<CocktailCartItem>): Boolean = runInViewModelScope {
         when {
             _uiState.value.isPlacingOrder -> false
+
             cartItems.isEmpty() -> {
                 clearError()
                 setError(
@@ -87,6 +88,7 @@ class SharedOrderViewModel internal constructor(
                 )
                 false
             }
+
             else -> {
                 clearError()
                 checkOut(cartItems)
@@ -101,6 +103,7 @@ class SharedOrderViewModel internal constructor(
         when (result) {
             // The observed orders flow picks up the new order automatically
             is Result.Success -> _uiState.update { it.copy(currentOrder = result.data) }
+
             is Result.Error -> setError(
                 MR.strings.error_order_failed_title,
                 ErrorHandler.errorFromResult(result, MR.strings.error_place_order_failed.desc()).message,

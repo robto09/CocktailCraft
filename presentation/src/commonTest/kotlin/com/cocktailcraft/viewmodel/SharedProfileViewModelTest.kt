@@ -31,9 +31,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** An auth store that is completely unavailable, for error-propagation tests. */
-private class FailingAuthRepository(
-    private val message: String = "auth storage unavailable"
-) : AuthRepository {
+private class FailingAuthRepository(private val message: String = "auth storage unavailable") : AuthRepository {
     override suspend fun signUp(email: String, password: String): Result<Boolean> = Result.Error(message)
     override suspend fun signIn(email: String, password: String): Result<Boolean> = Result.Error(message)
     override suspend fun signOut(): Result<Boolean> = Result.Error(message)
@@ -52,6 +50,7 @@ class SharedProfileViewModelTest : DataLayerTest() {
     /** Real repository over in-memory settings, so tests exercise VM + domain + persistence together. */
     private inner class Harness(ioDispatcher: CoroutineDispatcher) {
         val settings = MapSettings()
+
         // The real AuthRepositoryImpl (internal to :core:data), via dataModule
         val repository: AuthRepository = dataLayer(ioDispatcher, settings).get()
 
@@ -59,7 +58,11 @@ class SharedProfileViewModelTest : DataLayerTest() {
             SharedProfileViewModel(authRepository)
 
         /** Create an account with a profile name, then sign out so tests start from a clean session. */
-        suspend fun seedAccount(name: String = "Ada Lovelace", email: String = "ada@example.com", password: String = "secret123") {
+        suspend fun seedAccount(
+            name: String = "Ada Lovelace",
+            email: String = "ada@example.com",
+            password: String = "secret123"
+        ) {
             repository.signUp(email, password)
             repository.updateUserName(name)
             repository.signOut()

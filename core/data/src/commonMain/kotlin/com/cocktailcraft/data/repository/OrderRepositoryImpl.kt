@@ -127,13 +127,7 @@ internal class OrderRepositoryImpl(
 }
 
 /** One row of the order/item join; [item] is null for an order without items. */
-private class OrderRow(
-    val id: String,
-    val date: String,
-    val totalCents: Long,
-    val status: String,
-    val item: OrderItem?
-)
+private class OrderRow(val id: String, val date: String, val totalCents: Long, val status: String, val item: OrderItem?)
 
 private fun SelectAllWithItems.toRow() =
     OrderRow(id, date, total_cents, status, orderItem(item_cocktail_id, item_name, item_quantity, item_price_cents))

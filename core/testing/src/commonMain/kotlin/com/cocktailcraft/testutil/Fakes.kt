@@ -102,9 +102,7 @@ class FakeCartRepository : CartRepository {
  * it. Writes made through [refreshCocktail] reach [observeCocktail].
  */
 @HiddenFromObjC // implements a Kotlin-only repository port
-class FakeDetailRepository(
-    val byId: MutableMap<String, Cocktail> = mutableMapOf()
-) : CocktailDetailRepository {
+class FakeDetailRepository(val byId: MutableMap<String, Cocktail> = mutableMapOf()) : CocktailDetailRepository {
     /** When set, getCocktailById throws it (e.g. a CancellationException). */
     var throwOnLookup: Exception? = null
 
@@ -206,8 +204,11 @@ class FakeSearchRepository(var all: List<Cocktail> = emptyList()) : CocktailSear
         filters.alcoholic?.let { alc ->
             result = result.filter {
                 val value = it.alcoholic?.replace('_', ' ')
-                if (alc) value.equals("Alcoholic", ignoreCase = true)
-                else value.equals("Non alcoholic", ignoreCase = true)
+                if (alc) {
+                    value.equals("Alcoholic", ignoreCase = true)
+                } else {
+                    value.equals("Non alcoholic", ignoreCase = true)
+                }
             }
         }
         return Result.Success(result)

@@ -11,7 +11,10 @@ class LazySettingsTest {
     @Test
     fun opensTheStoreOnFirstUseNotOnConstruction() {
         var opened = 0
-        val settings = LazySettings { opened++; MapSettings() }
+        val settings = LazySettings {
+            opened++
+            MapSettings()
+        }
         assertEquals(0, opened)
 
         settings.putString("k", "v")

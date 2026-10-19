@@ -4,7 +4,6 @@ import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.remote.CocktailApi
 import com.cocktailcraft.data.remote.CocktailApiImpl
 import com.cocktailcraft.domain.config.AppConfig
-import com.cocktailcraft.util.NetworkMonitor
 import io.ktor.client.*
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.network.sockets.ConnectTimeoutException
@@ -42,11 +41,15 @@ internal fun shouldRetryResponse(statusCode: Int): Boolean =
  */
 internal fun shouldRetryException(cause: Throwable): Boolean = when {
     cause is ResponseException -> shouldRetryResponse(cause.response.status.value)
+
     cause is CancellationException -> false
+
     cause is HttpRequestTimeoutException ||
         cause is ConnectTimeoutException ||
         cause is SocketTimeoutException -> false
+
     cause is UnresolvedAddressException || isUnreachableHostError(cause) -> false
+
     else -> true
 }
 
@@ -126,7 +129,7 @@ internal fun buildHttpClient(
             )
             modifyRequest { request ->
                 // Log retry attempts - access retryCount from the context
-                Logger.d { "Retrying request to ${request.url} (attempt #${retryCount})" }
+                Logger.d { "Retrying request to ${request.url} (attempt #$retryCount)" }
             }
         }
 

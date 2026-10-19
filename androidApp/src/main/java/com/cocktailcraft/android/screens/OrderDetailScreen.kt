@@ -187,7 +187,9 @@ internal fun OrderDetailContent(
             isLoading -> Column(modifier = contentModifier) {
                 OrderListLoadingShimmer(itemCount = 1)
             }
+
             loadError != null -> ErrorStateView(error = loadError, onRetry = onRetry, modifier = contentModifier)
+
             order == null -> ErrorStateView(
                 title = stringResource(MR.strings.order_detail_not_found_title),
                 message = stringResource(MR.strings.order_detail_not_found_message),
@@ -196,6 +198,7 @@ internal fun OrderDetailContent(
                 onRetry = null,
                 modifier = contentModifier
             )
+
             else -> OrderDetailBody(
                 order = order,
                 state = state,
