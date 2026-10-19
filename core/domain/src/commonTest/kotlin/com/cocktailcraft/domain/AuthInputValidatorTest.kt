@@ -19,14 +19,14 @@ class AuthInputValidatorTest {
         assertFalse(AuthInputValidator.isValidEmail("no-at-sign.com"))
         assertFalse(AuthInputValidator.isValidEmail("no@dots"))
         assertFalse(AuthInputValidator.isValidEmail("a@b."))
-        assertFalse(AuthInputValidator.isValidEmail("a@.b"))          // empty domain label
-        assertFalse(AuthInputValidator.isValidEmail("@b.co"))         // missing local part
-        assertFalse(AuthInputValidator.isValidEmail("a@"))            // missing domain
-        assertFalse(AuthInputValidator.isValidEmail("a b@c.de"))      // whitespace
-        assertFalse(AuthInputValidator.isValidEmail("a@b..co"))       // empty middle label
-        assertFalse(AuthInputValidator.isValidEmail("a@-b.co"))       // label starts with hyphen
-        assertFalse(AuthInputValidator.isValidEmail("a@b.c"))         // one-char TLD
-        assertFalse(AuthInputValidator.isValidEmail("a@b.co "))       // trailing space
+        assertFalse(AuthInputValidator.isValidEmail("a@.b")) // empty domain label
+        assertFalse(AuthInputValidator.isValidEmail("@b.co")) // missing local part
+        assertFalse(AuthInputValidator.isValidEmail("a@")) // missing domain
+        assertFalse(AuthInputValidator.isValidEmail("a b@c.de")) // whitespace
+        assertFalse(AuthInputValidator.isValidEmail("a@b..co")) // empty middle label
+        assertFalse(AuthInputValidator.isValidEmail("a@-b.co")) // label starts with hyphen
+        assertFalse(AuthInputValidator.isValidEmail("a@b.c")) // one-char TLD
+        assertFalse(AuthInputValidator.isValidEmail("a@b.co ")) // trailing space
     }
 
     @Test
@@ -51,8 +51,8 @@ class AuthInputValidatorTest {
     @Test
     fun passwordStrengthScoring() {
         assertEquals(0, AuthInputValidator.passwordStrength(""))
-        assertEquals(2, AuthInputValidator.passwordStrength("abc1"))       // lower + digit
-        assertEquals(3, AuthInputValidator.passwordStrength("abcdefg1"))   // + length
-        assertEquals(5, AuthInputValidator.passwordStrength("Abcdef1!"))   // all criteria
+        assertEquals(2, AuthInputValidator.passwordStrength("abc1")) // lower + digit
+        assertEquals(3, AuthInputValidator.passwordStrength("abcdefg1")) // + length
+        assertEquals(5, AuthInputValidator.passwordStrength("Abcdef1!")) // all criteria
     }
 }

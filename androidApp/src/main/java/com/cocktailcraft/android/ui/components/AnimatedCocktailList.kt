@@ -88,10 +88,14 @@ fun AnimatedCocktailList(
     val reducedMotion = LocalReducedMotion.current
     val fadeSpec: FiniteAnimationSpec<Float>? =
         if (reducedMotion) null else spring(stiffness = Spring.StiffnessMediumLow)
-    val placementSpec: FiniteAnimationSpec<IntOffset>? = if (reducedMotion) null else spring(
-        stiffness = Spring.StiffnessMediumLow,
-        visibilityThreshold = IntOffset.VisibilityThreshold
-    )
+    val placementSpec: FiniteAnimationSpec<IntOffset>? = if (reducedMotion) {
+        null
+    } else {
+        spring(
+            stiffness = Spring.StiffnessMediumLow,
+            visibilityThreshold = IntOffset.VisibilityThreshold
+        )
+    }
 
     // Identity-keyed items require unique ids; guard the unique-key contract
     // against overlapping pages from the API

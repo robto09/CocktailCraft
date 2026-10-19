@@ -35,9 +35,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** A detail source that always fails, for error-path tests. */
-private class FailingDetailRepository(
-    private val message: String = "detail lookup failed"
-) : CocktailDetailRepository {
+private class FailingDetailRepository(private val message: String = "detail lookup failed") : CocktailDetailRepository {
     override suspend fun getCocktailById(id: String): Result<Cocktail?> = Result.Error(message)
     override fun observeCocktail(id: String): Flow<Cocktail?> = flowOf(null)
     override suspend fun refreshCocktail(id: String, force: Boolean): Result<Unit> = Result.Error(message)

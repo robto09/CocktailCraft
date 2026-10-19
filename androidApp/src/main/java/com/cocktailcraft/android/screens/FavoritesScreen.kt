@@ -137,32 +137,32 @@ internal fun FavoritesContent(
                     )
                 }
             ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Keyed by id, so unfavoriting a card doesn't rebind the
-                // following rows to the wrong cocktail
-                items(favorites, key = { it.id }) { cocktail ->
-                    CocktailItem(
-                        cocktail = cocktail,
-                        onClick = { onCocktailClick(cocktail) },
-                        // onAddToCart both mutates the cart and confirms via
-                        // snackbar (MainScreen); the extra local addToCart here
-                        // was double-adding every item.
-                        onAddToCart = { _ ->
-                            onAddToCart(cocktail)
-                        },
-                        isFavorite = true,
-                        onToggleFavorite = { _ ->
-                            onToggleFavorite(cocktail)
-                        }
-                    )
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    contentPadding = PaddingValues(vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Keyed by id, so unfavoriting a card doesn't rebind the
+                    // following rows to the wrong cocktail
+                    items(favorites, key = { it.id }) { cocktail ->
+                        CocktailItem(
+                            cocktail = cocktail,
+                            onClick = { onCocktailClick(cocktail) },
+                            // onAddToCart both mutates the cart and confirms via
+                            // snackbar (MainScreen); the extra local addToCart here
+                            // was double-adding every item.
+                            onAddToCart = { _ ->
+                                onAddToCart(cocktail)
+                            },
+                            isFavorite = true,
+                            onToggleFavorite = { _ ->
+                                onToggleFavorite(cocktail)
+                            }
+                        )
+                    }
                 }
-            }
             }
         }
     }

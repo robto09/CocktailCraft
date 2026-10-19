@@ -52,10 +52,7 @@ internal data class CachedCocktailEntry(
 )
 
 /** A cached cocktail plus when its row was last written (epoch millis). */
-internal data class CachedCocktailRow(
-    val cocktail: Cocktail,
-    val cachedAtMs: Long
-)
+internal data class CachedCocktailRow(val cocktail: Cocktail, val cachedAtMs: Long)
 
 /** A stored cocktail row before decoding: its id, payload and full_details flag. */
 internal class StoredCocktail(val id: String, val payload: String, val hasFullDetails: Boolean)
@@ -661,9 +658,7 @@ internal class CocktailCache(
     /**
      * Check if a cocktail is cached (and not expired).
      */
-    suspend fun isCocktailCached(id: String): Boolean {
-        return getCachedCocktail(id) != null
-    }
+    suspend fun isCocktailCached(id: String): Boolean = getCachedCocktail(id) != null
 
     /**
      * Get the number of cached cocktails.

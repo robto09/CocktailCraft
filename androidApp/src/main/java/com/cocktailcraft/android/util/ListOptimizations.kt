@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.filter
  * Utility functions for optimizing list rendering performance.
  */
 object ListOptimizations {
-    
+
     /**
      * Calculate a stable key for a list item.
      * This helps Compose efficiently update only changed items.
@@ -24,10 +24,8 @@ object ListOptimizations {
      * @param id The unique identifier of the item
      * @return A stable string key
      */
-    fun itemKey(prefix: String, id: String): String {
-        return "${prefix}_$id"
-    }
-    
+    fun itemKey(prefix: String, id: String): String = "${prefix}_$id"
+
     /**
      * Detect when a lazy list has reached its end to implement pagination.
      * 
@@ -68,7 +66,7 @@ object ListOptimizations {
                 }
         }
     }
-    
+
     /**
      * Detect when a lazy list has been scrolled to implement features like
      * hiding/showing UI elements based on scroll position.
@@ -91,7 +89,7 @@ object ListOptimizations {
         val isPastThreshold = remember {
             derivedStateOf {
                 firstVisibleItemIndex > currentThreshold ||
-                (firstVisibleItemIndex == currentThreshold && firstVisibleItemScrollOffset > 0)
+                    (firstVisibleItemIndex == currentThreshold && firstVisibleItemScrollOffset > 0)
             }
         }
 

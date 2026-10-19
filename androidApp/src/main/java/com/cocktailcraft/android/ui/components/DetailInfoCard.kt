@@ -68,7 +68,6 @@ fun DetailInfoCard(
                 )
             }
 
-
             content()
         }
     }

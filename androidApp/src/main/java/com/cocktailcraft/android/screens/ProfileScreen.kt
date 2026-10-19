@@ -10,14 +10,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Email
@@ -33,12 +30,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -51,14 +44,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -200,7 +189,11 @@ internal fun ProfileContent(
         if (!isSubmitting) {
             isSubmitting = true
             scope.launch {
-                val succeeded = try { action() } finally { isSubmitting = false }
+                val succeeded = try {
+                    action()
+                } finally {
+                    isSubmitting = false
+                }
                 if (succeeded) onSuccess()
             }
         }
@@ -573,7 +566,13 @@ internal fun AppSettingsCard(
             // Follow System Theme Toggle with animated switch
             AnimatedThemeToggleRow(
                 title = stringResource(MR.strings.follow_system_theme),
-                subtitle = if (isSystemTheme) stringResource(MR.strings.profile_toggle_on) else stringResource(MR.strings.profile_toggle_off),
+                subtitle = if (isSystemTheme) {
+                    stringResource(
+                        MR.strings.profile_toggle_on
+                    )
+                } else {
+                    stringResource(MR.strings.profile_toggle_off)
+                },
                 icon = Icons.Default.DateRange,
                 isChecked = isSystemTheme,
                 onToggle = onToggleFollowSystemTheme,
@@ -583,10 +582,17 @@ internal fun AppSettingsCard(
             // Dark Mode Toggle with animated switch (only enabled if not following system theme)
             AnimatedThemeToggleRow(
                 title = stringResource(MR.strings.dark_mode),
-                subtitle = if (isSystemTheme)
+                subtitle = if (isSystemTheme) {
                     stringResource(MR.strings.profile_controlled_by_system)
-                else
-                    if (isDarkMode) stringResource(MR.strings.profile_toggle_on) else stringResource(MR.strings.profile_toggle_off),
+                } else {
+                    if (isDarkMode) {
+                        stringResource(
+                            MR.strings.profile_toggle_on
+                        )
+                    } else {
+                        stringResource(MR.strings.profile_toggle_off)
+                    }
+                },
                 icon = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
                 isChecked = isDarkMode,
                 onToggle = onToggleDarkMode,

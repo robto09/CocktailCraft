@@ -82,9 +82,7 @@ internal class CocktailDetailRepositoryImpl(
             Result.Success(Unit)
         }
 
-    override suspend fun getRandomCocktail(): Result<Cocktail?> {
-        return runCatchingResult("Failed to get random cocktail") {
-            Result.Success(remote.getRandom())
-        }
+    override suspend fun getRandomCocktail(): Result<Cocktail?> = runCatchingResult("Failed to get random cocktail") {
+        Result.Success(remote.getRandom())
     }
 }

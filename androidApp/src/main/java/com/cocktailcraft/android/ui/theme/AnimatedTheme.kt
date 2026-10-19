@@ -1,5 +1,7 @@
 package com.cocktailcraft.android.ui.theme
 
+import android.app.Activity
+import android.os.Build
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.snap
@@ -19,8 +21,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Density
-import android.app.Activity
-import android.os.Build
 import androidx.core.view.WindowCompat
 import com.cocktailcraft.designsystem.AccentColorTokens
 import com.revenuecat.placeholder.LocalPlaceholderTheme
@@ -123,7 +123,7 @@ fun AnimatedCocktailBarTheme(
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }
-    
+
     // App-level font scaling (user's in-app Font Size setting) multiplies the
     // system font scale, so every sp-based text size follows it.
     val density = LocalDensity.current

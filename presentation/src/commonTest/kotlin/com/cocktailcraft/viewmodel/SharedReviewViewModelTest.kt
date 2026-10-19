@@ -78,8 +78,14 @@ class SharedReviewViewModelTest : DataLayerTest() {
         vm.uiState.test {
             assertEquals(0, awaitItem().reviewCount)
             repo.addReview(
-                Review(id = "r9", cocktailId = "c1", userName = "A", rating = 4.0f,
-                    comment = "Really quite refreshing.", date = "2026-07-05")
+                Review(
+                    id = "r9",
+                    cocktailId = "c1",
+                    userName = "A",
+                    rating = 4.0f,
+                    comment = "Really quite refreshing.",
+                    date = "2026-07-05"
+                )
             ).getOrThrow()
             var state = awaitItem()
             while (state.reviewCount == 0) state = awaitItem()
@@ -107,9 +113,36 @@ class SharedReviewViewModelTest : DataLayerTest() {
     fun loadReviewsForCocktailDerivesPerCocktailSlices() = runTest {
         val db = createTestDatabase()
         val repo = repository(db)
-        repo.addReview(Review(id = "r1", cocktailId = "c1", userName = "A", rating = 2.0f, comment = "Far too sweet for me.", date = "2026-07-01")).getOrThrow()
-        repo.addReview(Review(id = "r2", cocktailId = "c1", userName = "B", rating = 4.0f, comment = "Really quite refreshing.", date = "2026-07-03")).getOrThrow()
-        repo.addReview(Review(id = "r3", cocktailId = "c2", userName = "C", rating = 5.0f, comment = "The best drink in town.", date = "2026-07-02")).getOrThrow()
+        repo.addReview(
+            Review(
+                id = "r1",
+                cocktailId = "c1",
+                userName = "A",
+                rating = 2.0f,
+                comment = "Far too sweet for me.",
+                date = "2026-07-01"
+            )
+        ).getOrThrow()
+        repo.addReview(
+            Review(
+                id = "r2",
+                cocktailId = "c1",
+                userName = "B",
+                rating = 4.0f,
+                comment = "Really quite refreshing.",
+                date = "2026-07-03"
+            )
+        ).getOrThrow()
+        repo.addReview(
+            Review(
+                id = "r3",
+                cocktailId = "c2",
+                userName = "C",
+                rating = 5.0f,
+                comment = "The best drink in town.",
+                date = "2026-07-02"
+            )
+        ).getOrThrow()
 
         val vm = viewModel(db)
         advanceUntilIdle()
@@ -165,7 +198,16 @@ class SharedReviewViewModelTest : DataLayerTest() {
     fun updateReviewChangesStateReactively() = runTest {
         val db = createTestDatabase()
         val repo = repository(db)
-        repo.addReview(Review(id = "r1", cocktailId = "c1", userName = "A", rating = 2.0f, comment = "Far too sweet for me.", date = "2026-07-01")).getOrThrow()
+        repo.addReview(
+            Review(
+                id = "r1",
+                cocktailId = "c1",
+                userName = "A",
+                rating = 2.0f,
+                comment = "Far too sweet for me.",
+                date = "2026-07-01"
+            )
+        ).getOrThrow()
 
         val vm = viewModel(db)
         advanceUntilIdle()
@@ -235,7 +277,16 @@ class SharedReviewViewModelTest : DataLayerTest() {
     fun selectingUnreviewedCocktailShowsEmptyState() = runTest {
         val db = createTestDatabase()
         val repo = repository(db)
-        repo.addReview(Review(id = "r1", cocktailId = "c1", userName = "A", rating = 4.0f, comment = "Really quite refreshing.", date = "2026-07-01")).getOrThrow()
+        repo.addReview(
+            Review(
+                id = "r1",
+                cocktailId = "c1",
+                userName = "A",
+                rating = 4.0f,
+                comment = "Really quite refreshing.",
+                date = "2026-07-01"
+            )
+        ).getOrThrow()
 
         val vm = viewModel(db)
         advanceUntilIdle()

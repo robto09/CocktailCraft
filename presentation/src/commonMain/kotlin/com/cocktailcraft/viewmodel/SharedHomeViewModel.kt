@@ -265,12 +265,14 @@ class SharedHomeViewModel internal constructor(
 
         showsCategory = true
         categoryPage = emptyList()
-        _uiState.update { it.copy(
-            selectedCategory = category,
-            isLoading = true,
-            currentPage = 1,
-            hasMoreData = true
-        ) }
+        _uiState.update {
+            it.copy(
+                selectedCategory = category,
+                isLoading = true,
+                currentPage = 1,
+                hasMoreData = true
+            )
+        }
         clearError()
         observeCategory(targetCategory)
 
@@ -290,6 +292,7 @@ class SharedHomeViewModel internal constructor(
                     clearError()
                     settleOfflineLoad(startedOffline)
                 }
+
                 is Result.Error -> showCachedOrReport(targetCategory, result, startedOffline)
             }
         }
@@ -440,6 +443,7 @@ class SharedHomeViewModel internal constructor(
                 is Result.Success -> publishListing(result.data) {
                     it.copy(isLoading = false, hasMoreData = false, currentPage = 1)
                 }
+
                 is Result.Error -> {
                     result.getOrReport(Unit, MR.strings.error_apply_filters_failed)
                     _uiState.update { it.copy(isLoading = false) }

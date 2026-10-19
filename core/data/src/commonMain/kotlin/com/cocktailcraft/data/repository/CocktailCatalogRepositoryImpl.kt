@@ -18,16 +18,12 @@ internal class CocktailCatalogRepositoryImpl(
     private val categoryFetcher: CocktailCategoryFetcher
 ) : CocktailCatalogRepository {
 
-    override suspend fun getCategories(): Result<List<String>> {
-        return runCatchingResult("Failed to get categories") {
-            Result.Success(remote.getCategories())
-        }
+    override suspend fun getCategories(): Result<List<String>> = runCatchingResult("Failed to get categories") {
+        Result.Success(remote.getCategories())
     }
 
-    override suspend fun getIngredients(): Result<List<String>> {
-        return runCatchingResult("Failed to get ingredients") {
-            Result.Success(remote.getIngredients())
-        }
+    override suspend fun getIngredients(): Result<List<String>> = runCatchingResult("Failed to get ingredients") {
+        Result.Success(remote.getIngredients())
     }
 
     override fun observeCategory(category: String): Flow<List<Cocktail>> =

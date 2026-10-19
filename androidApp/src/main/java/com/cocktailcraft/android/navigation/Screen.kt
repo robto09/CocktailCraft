@@ -24,12 +24,7 @@ import dev.icerock.moko.resources.StringResource
  * resource-id via testTagsAsResourceId) used by the baseline profile
  * generator and UI tests.
  */
-sealed class Screen(
-    val route: Any,
-    val title: StringResource,
-    val icon: ImageVector,
-    val tag: String
-) {
+sealed class Screen(val route: Any, val title: StringResource, val icon: ImageVector, val tag: String) {
     object Home : Screen(HomeRoute, MR.strings.home, Icons.Filled.Home, "nav_home")
     object Cart : Screen(CartRoute, MR.strings.cart, Icons.Filled.ShoppingCart, "nav_cart")
     object Profile : Screen(ProfileRoute, MR.strings.profile, Icons.Filled.Person, "nav_profile")

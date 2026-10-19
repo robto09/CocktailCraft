@@ -19,9 +19,9 @@ internal class CocktailOfflineRepositoryImpl(
 
     override suspend fun isOffline(): Boolean = offlineModePolicy.isOffline()
 
-    override suspend fun getRecentlyViewedCocktails(): Result<List<Cocktail>> {
-        return runCatchingResult("Failed to get recently viewed cocktails") {
-            Result.Success(cocktailCache.getRecentlyViewedCocktails())
-        }
+    override suspend fun getRecentlyViewedCocktails(): Result<List<Cocktail>> = runCatchingResult(
+        "Failed to get recently viewed cocktails"
+    ) {
+        Result.Success(cocktailCache.getRecentlyViewedCocktails())
     }
 }

@@ -80,12 +80,14 @@ class SharedOrderDetailViewModel internal constructor(
             val result = runCatchingResult("Failed to cancel order") { orderRepository.cancelOrder(order.id) }
             when {
                 result is Result.Error -> result.getOrReport(Unit, MR.strings.error_cancel_order_failed)
+
                 // The repository refused: the order is past cancelling
                 result.getOrNull() != true -> setError(
                     MR.strings.error_cancellation_failed_title,
                     MR.strings.error_cancellation_failed_message,
                     ErrorHandler.ErrorCategory.SERVER
                 )
+
                 else -> sendEvent(UiEvent.Success(MR.strings.order_cancelled_message.desc()))
             }
             _uiState.update { it.copy(isCancelling = false) }

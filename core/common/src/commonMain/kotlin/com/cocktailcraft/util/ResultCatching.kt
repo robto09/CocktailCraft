@@ -26,19 +26,17 @@ import kotlin.native.HiddenFromObjC
  * share it instead of hand-rolling catch blocks that swallow cancellation.
  */
 @HiddenFromObjC
-inline fun <T> runCatchingResult(defaultMessage: String, block: () -> Result<T>): Result<T> {
-    return try {
-        block()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: DomainException) {
-        Result.Error(message = e.message ?: defaultMessage, code = e.code, displayMessage = e.displayMessage)
-    } catch (e: Exception) {
-        Result.Error(
-            message = "$defaultMessage (${e::class.simpleName})",
-            code = ErrorHandler.getErrorFromException(e).errorCode
-        )
-    }
+inline fun <T> runCatchingResult(defaultMessage: String, block: () -> Result<T>): Result<T> = try {
+    block()
+} catch (e: CancellationException) {
+    throw e
+} catch (e: DomainException) {
+    Result.Error(message = e.message ?: defaultMessage, code = e.code, displayMessage = e.displayMessage)
+} catch (e: Exception) {
+    Result.Error(
+        message = "$defaultMessage (${e::class.simpleName})",
+        code = ErrorHandler.getErrorFromException(e).errorCode
+    )
 }
 
 /**
@@ -49,12 +47,10 @@ inline fun <T> runCatchingResult(defaultMessage: String, block: () -> Result<T>)
  * of a cancelled caller and keep running as if nothing happened.
  */
 @HiddenFromObjC
-inline fun <T> runCatchingNonCancellation(onFailure: (Exception) -> T, block: () -> T): T {
-    return try {
-        block()
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        onFailure(e)
-    }
+inline fun <T> runCatchingNonCancellation(onFailure: (Exception) -> T, block: () -> T): T = try {
+    block()
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Exception) {
+    onFailure(e)
 }

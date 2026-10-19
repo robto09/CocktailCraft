@@ -13,8 +13,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.FilterChip as Material3FilterChip
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
+import androidx.compose.material3.FilterChip as Material3FilterChip
 
 /**
  * App-styled wrapper around Material 3's FilterChip: pill shape, no outline,

@@ -17,7 +17,7 @@ import androidx.compose.ui.platform.LocalView
  * intensity levels for various user interactions.
  */
 object HapticUtils {
-    
+
     /**
      * Performs a medium/confirm haptic feedback.
      * Best for: successful actions, adding to favorites
@@ -29,7 +29,7 @@ object HapticUtils {
             performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
         }
     }
-    
+
     /**
      * Performs a reject/error haptic feedback.
      * Best for: errors, failed actions, removing from favorites
@@ -56,10 +56,7 @@ object HapticUtils {
  * })
  * ```
  */
-class HapticHandler(
-    private val view: View,
-    private val hapticFeedback: HapticFeedback
-) {
+class HapticHandler(private val view: View, private val hapticFeedback: HapticFeedback) {
     /**
      * Performs haptic feedback for favorite toggle action.
      * Uses confirm feedback when adding, reject when removing.
@@ -75,14 +72,14 @@ class HapticHandler(
             with(HapticUtils) { view.performConfirmHaptic() }
         }
     }
-    
+
     /**
      * Performs a light click haptic feedback.
      */
     fun performClick() {
         hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
     }
-    
+
     /**
      * Performs a confirm haptic feedback (for successful actions).
      */
@@ -104,4 +101,3 @@ fun rememberHapticHandler(): HapticHandler {
         HapticHandler(view, hapticFeedback)
     }
 }
-

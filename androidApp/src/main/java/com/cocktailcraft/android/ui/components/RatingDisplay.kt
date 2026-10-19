@@ -64,9 +64,9 @@ fun RatingDisplay(
             color = textColor,
             modifier = Modifier.clearAndSetSemantics {}
         )
-        
+
         Spacer(modifier = Modifier.width(4.dp))
-        
+
         // Display the stars
         RatingBar(
             rating = rating,
@@ -74,11 +74,11 @@ fun RatingDisplay(
             starsColor = starsColor,
             useHalfStars = useHalfStars
         )
-        
+
         // Display the review count if requested
         if (showReviewCount && reviewCount > 0) {
             Spacer(modifier = Modifier.width(4.dp))
-            
+
             Text(
                 text = pluralStringResource(MR.plurals.review_count, reviewCount, reviewCount),
                 fontSize = reviewCountTextSize.sp,

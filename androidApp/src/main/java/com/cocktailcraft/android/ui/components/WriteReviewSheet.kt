@@ -140,7 +140,12 @@ fun WriteReviewSheet(
                     userName = it
                     onClearError()
                 },
-                placeholder = { Text(stringResource(MR.strings.review_enter_your_name), color = MaterialTheme.colorScheme.outline) },
+                placeholder = {
+                    Text(
+                        stringResource(MR.strings.review_enter_your_name),
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                },
                 isError = showFieldErrors && userName.isBlank(),
                 singleLine = true,
                 shape = RoundedCornerShape(8.dp),
@@ -175,7 +180,13 @@ fun WriteReviewSheet(
                         Icon(
                             imageVector = if (star <= userRating) Icons.Filled.Star else Icons.Filled.StarOutline,
                             contentDescription = stringResource(MR.strings.review_rate_star, star),
-                            tint = if (star <= userRating) CocktailCraftTheme.extendedColors.rating else MaterialTheme.colorScheme.outline,
+                            tint = if (star <=
+                                userRating
+                            ) {
+                                CocktailCraftTheme.extendedColors.rating
+                            } else {
+                                MaterialTheme.colorScheme.outline
+                            },
                             modifier = Modifier.size(36.dp)
                         )
                     }
@@ -197,7 +208,12 @@ fun WriteReviewSheet(
                         onClearError()
                     }
                 },
-                placeholder = { Text(stringResource(MR.strings.review_share_experience_placeholder), color = MaterialTheme.colorScheme.outline) },
+                placeholder = {
+                    Text(
+                        stringResource(MR.strings.review_share_experience_placeholder),
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                },
                 shape = RoundedCornerShape(8.dp),
                 colors = reviewFieldColors(),
                 modifier = Modifier

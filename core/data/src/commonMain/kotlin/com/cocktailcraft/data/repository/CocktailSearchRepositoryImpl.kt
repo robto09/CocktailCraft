@@ -28,22 +28,22 @@ internal class CocktailSearchRepositoryImpl(
 
     private suspend fun isOffline(): Boolean = offlineRepository.isOffline()
 
-    override suspend fun searchCocktailsByName(name: String): Result<List<Cocktail>> {
-        return runCatchingResult("Failed to search cocktails by name") {
-            Result.Success(remote.searchByName(name))
-        }
+    override suspend fun searchCocktailsByName(name: String): Result<List<Cocktail>> = runCatchingResult(
+        "Failed to search cocktails by name"
+    ) {
+        Result.Success(remote.searchByName(name))
     }
 
-    override suspend fun filterByIngredient(ingredient: String): Result<List<Cocktail>> {
-        return runCatchingResult("Failed to filter by ingredient") {
-            Result.Success(remote.filterByIngredient(ingredient))
-        }
+    override suspend fun filterByIngredient(ingredient: String): Result<List<Cocktail>> = runCatchingResult(
+        "Failed to filter by ingredient"
+    ) {
+        Result.Success(remote.filterByIngredient(ingredient))
     }
 
-    override suspend fun filterByAlcoholic(alcoholic: Boolean): Result<List<Cocktail>> {
-        return runCatchingResult("Failed to filter by alcoholic") {
-            Result.Success(remote.filterByAlcoholic(alcoholic))
-        }
+    override suspend fun filterByAlcoholic(alcoholic: Boolean): Result<List<Cocktail>> = runCatchingResult(
+        "Failed to filter by alcoholic"
+    ) {
+        Result.Success(remote.filterByAlcoholic(alcoholic))
     }
 
     /**
@@ -53,12 +53,12 @@ internal class CocktailSearchRepositoryImpl(
      * show an error/retry instead of an empty list. An empty success means
      * the category is empty.
      */
-    override suspend fun filterByCategory(category: String): Result<List<Cocktail>> {
-        return runCatchingResult("Failed to filter by category") {
-            val refreshed = categoryFetcher.refresh(category)
-            val stored = categoryFetcher.snapshot(category)
-            if (stored.isEmpty() && refreshed is Result.Error) refreshed else Result.Success(stored)
-        }
+    override suspend fun filterByCategory(
+        category: String
+    ): Result<List<Cocktail>> = runCatchingResult("Failed to filter by category") {
+        val refreshed = categoryFetcher.refresh(category)
+        val stored = categoryFetcher.snapshot(category)
+        if (stored.isEmpty() && refreshed is Result.Error) refreshed else Result.Success(stored)
     }
 
     /**
@@ -139,8 +139,11 @@ internal class CocktailSearchRepositoryImpl(
             // "Non alcoholic"); the underscore form only exists as a URL token.
             result = result.filter {
                 val value = it.alcoholic?.replace('_', ' ')
-                if (alcoholic) value.equals("Alcoholic", ignoreCase = true)
-                else value.equals("Non alcoholic", ignoreCase = true)
+                if (alcoholic) {
+                    value.equals("Alcoholic", ignoreCase = true)
+                } else {
+                    value.equals("Non alcoholic", ignoreCase = true)
+                }
             }
         }
         return result

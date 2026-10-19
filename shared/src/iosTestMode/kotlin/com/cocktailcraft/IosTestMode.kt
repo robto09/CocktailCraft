@@ -106,35 +106,63 @@ internal object TestModeFixtures {
 
     private val drinks = listOf(
         Drink(
-            id = "11007", name = "Margarita", category = "Ordinary Drink", alcoholic = "Alcoholic",
+            id = "11007",
+            name = "Margarita",
+            category = "Ordinary Drink",
+            alcoholic = "Alcoholic",
             glass = "Cocktail glass",
             instructions = "Rub the rim of the glass with the lime slice to make the salt stick to it. " +
                 "Shake the other ingredients with ice, then carefully pour into the glass.",
-            ingredients = listOf("Tequila" to "1 1/2 oz", "Triple sec" to "1/2 oz",
-                "Lime juice" to "1 oz", "Salt" to "")
+            ingredients = listOf(
+                "Tequila" to "1 1/2 oz",
+                "Triple sec" to "1/2 oz",
+                "Lime juice" to "1 oz",
+                "Salt" to ""
+            )
         ),
         Drink(
-            id = "11000", name = "Mojito", category = "Cocktail", alcoholic = "Alcoholic",
+            id = "11000",
+            name = "Mojito",
+            category = "Cocktail",
+            alcoholic = "Alcoholic",
             glass = "Highball glass",
             instructions = "Muddle mint leaves with sugar and lime juice. Add a splash of soda water " +
                 "and fill the glass with cracked ice. Pour the rum and top with soda water.",
-            ingredients = listOf("Light rum" to "2-3 oz", "Lime" to "Juice of 1", "Sugar" to "2 tsp",
-                "Mint" to "2-4", "Soda water" to "")
+            ingredients = listOf(
+                "Light rum" to "2-3 oz",
+                "Lime" to "Juice of 1",
+                "Sugar" to "2 tsp",
+                "Mint" to "2-4",
+                "Soda water" to ""
+            )
         ),
         Drink(
-            id = "11001", name = "Old Fashioned", category = "Cocktail", alcoholic = "Alcoholic",
+            id = "11001",
+            name = "Old Fashioned",
+            category = "Cocktail",
+            alcoholic = "Alcoholic",
             glass = "Old-fashioned glass",
             instructions = "Place sugar cube in old fashioned glass and saturate with bitters, add a " +
                 "dash of plain water. Muddle until dissolved. Fill the glass with ice cubes and add whiskey.",
-            ingredients = listOf("Bourbon" to "4.5 cL", "Angostura bitters" to "2 dashes",
-                "Sugar" to "1 cube", "Water" to "dash")
+            ingredients = listOf(
+                "Bourbon" to "4.5 cL",
+                "Angostura bitters" to "2 dashes",
+                "Sugar" to "1 cube",
+                "Water" to "dash"
+            )
         ),
         Drink(
-            id = "12560", name = "Afterglow", category = "Cocktail", alcoholic = "Non alcoholic",
+            id = "12560",
+            name = "Afterglow",
+            category = "Cocktail",
+            alcoholic = "Non alcoholic",
             glass = "Highball Glass",
             instructions = "Mix. Serve over ice.",
-            ingredients = listOf("Grenadine" to "1 part", "Orange juice" to "4 parts",
-                "Pineapple juice" to "4 parts")
+            ingredients = listOf(
+                "Grenadine" to "1 part",
+                "Orange juice" to "4 parts",
+                "Pineapple juice" to "4 parts"
+            )
         )
     )
 
@@ -144,28 +172,36 @@ internal object TestModeFixtures {
      */
     fun responseFor(endpoint: String, parameters: Map<String, String>): JsonObject? = when (endpoint) {
         "random.php" -> drinksResponse(drinks.take(1))
+
         "lookup.php" -> drinksResponse(drinks.filter { it.id == parameters["i"] })
+
         "search.php" -> {
             val query = parameters["s"].orEmpty()
             drinksResponse(drinks.filter { it.name.contains(query, ignoreCase = true) })
         }
+
         "filter.php" -> drinksResponse(
             when {
                 "c" in parameters -> drinks.filter { it.category.equals(parameters["c"], ignoreCase = true) }
+
                 "i" in parameters -> drinks.filter { drink ->
                     drink.ingredients.any { it.first.equals(parameters["i"], ignoreCase = true) }
                 }
+
                 "a" in parameters -> drinks.filter {
                     it.alcoholic.replace(' ', '_').equals(parameters["a"], ignoreCase = true)
                 }
+
                 else -> emptyList()
             }
         )
+
         "list.php" -> when {
             "c" in parameters -> listResponse("strCategory", drinks.map { it.category })
             "i" in parameters -> listResponse("strIngredient1", drinks.flatMap { d -> d.ingredients.map { it.first } })
             else -> null
         }
+
         else -> null
     }
 

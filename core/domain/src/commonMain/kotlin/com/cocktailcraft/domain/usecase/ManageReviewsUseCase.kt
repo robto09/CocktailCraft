@@ -11,17 +11,15 @@ import com.cocktailcraft.resources.review_error_rating_range
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
-import kotlin.time.Clock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import kotlin.native.HiddenFromObjC
+import kotlin.time.Clock
 
 @HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
-class ManageReviewsUseCase(
-    private val repository: ReviewRepository
-) {
+class ManageReviewsUseCase(private val repository: ReviewRepository) {
 
     fun observeReviews(): Flow<List<Review>> = repository.observeReviews()
 
@@ -48,21 +46,27 @@ class ManageReviewsUseCase(
     suspend fun deleteReview(reviewId: String): Result<Boolean> =
         repository.deleteReview(reviewId)
 
-    fun computeAverageRating(reviews: List<Review>): Float {
-        return if (reviews.isNotEmpty()) reviews.map { it.rating }.average().toFloat() else 0.0f
+    fun computeAverageRating(reviews: List<Review>): Float = if (reviews.isNotEmpty()) {
+        reviews.map {
+            it.rating
+        }.average().toFloat()
+    } else {
+        0.0f
     }
 
     /** The validation failure to show, or null when the review is valid. */
-    fun validateReview(rating: Float, comment: String): StringDesc? {
-        return when {
-            rating < 1.0f || rating > 5.0f -> MR.strings.review_error_rating_range.desc()
-            comment.isBlank() -> MR.strings.review_error_comment_required.desc()
-            comment.length < MIN_COMMENT_LENGTH ->
-                MR.strings.review_error_comment_too_short.format(MIN_COMMENT_LENGTH)
-            comment.length > MAX_COMMENT_LENGTH ->
-                MR.strings.review_error_comment_too_long.format(MAX_COMMENT_LENGTH)
-            else -> null
-        }
+    fun validateReview(rating: Float, comment: String): StringDesc? = when {
+        rating < 1.0f || rating > 5.0f -> MR.strings.review_error_rating_range.desc()
+
+        comment.isBlank() -> MR.strings.review_error_comment_required.desc()
+
+        comment.length < MIN_COMMENT_LENGTH ->
+            MR.strings.review_error_comment_too_short.format(MIN_COMMENT_LENGTH)
+
+        comment.length > MAX_COMMENT_LENGTH ->
+            MR.strings.review_error_comment_too_long.format(MAX_COMMENT_LENGTH)
+
+        else -> null
     }
 
     private companion object {

@@ -36,7 +36,9 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         systemAnimationsOff = Settings.Global.getFloat(
-            contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f
+            contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f
         ) == 0f
     }
 
@@ -107,4 +109,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-

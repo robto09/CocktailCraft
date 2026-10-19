@@ -27,9 +27,8 @@ import kotlin.test.assertNull
 class ViewModelActionScopeTest : MainDispatcherTest() {
 
     /** [FakeReviewRepository] whose writes take a second, or throw [throwOnAdd]. */
-    private class SlowReviewRepository(
-        private val delegate: FakeReviewRepository = FakeReviewRepository()
-    ) : ReviewRepository by delegate {
+    private class SlowReviewRepository(private val delegate: FakeReviewRepository = FakeReviewRepository()) :
+        ReviewRepository by delegate {
         var throwOnAdd: Exception? = null
         val stored: List<Review> get() = delegate.stored
 

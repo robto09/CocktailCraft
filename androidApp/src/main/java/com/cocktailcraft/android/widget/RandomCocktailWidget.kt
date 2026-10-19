@@ -65,9 +65,9 @@ import org.koin.core.component.inject
  * Supports manual refresh and opens app on tap.
  */
 class RandomCocktailWidget : GlanceAppWidget() {
-    
+
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
-    
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         // A widget with nothing loaded yet (just placed, or another instance
         // of an already-placed widget) fetches now rather than waiting up to
@@ -85,7 +85,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
             }
         }
     }
-    
+
     @Composable
     private fun RandomCocktailContent() {
         val prefs = currentState<Preferences>()
@@ -94,7 +94,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
         val cocktailId = prefs[RandomCocktailKeys.ID] ?: ""
         val isLoading = prefs[RandomCocktailKeys.IS_LOADING] == "true"
         val hasError = prefs[RandomCocktailKeys.ERROR] == true
-        
+
         // Deep-link to the shown cocktail's detail screen; fall back to a
         // plain app launch until a cocktail has been loaded
         val context = LocalContext.current
@@ -132,7 +132,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
                         ),
                         modifier = GlanceModifier.defaultWeight()
                     )
-                    
+
                     // Refresh button
                     Box(
                         modifier = GlanceModifier
@@ -158,12 +158,15 @@ class RandomCocktailWidget : GlanceAppWidget() {
                     isLoading -> {
                         LoadingContent()
                     }
+
                     hasError -> {
                         ErrorContent()
                     }
+
                     cocktailName == null -> {
                         EmptyContent()
                     }
+
                     else -> {
                         CocktailDisplayContent(
                             name = cocktailName,
@@ -174,7 +177,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
             }
         }
     }
-    
+
     @Composable
     private fun LoadingContent() {
         Column(
@@ -306,7 +309,9 @@ object RandomCocktailKeys {
 /**
  * Action callback to refresh the random cocktail.
  */
-class RefreshRandomCocktailAction : ActionCallback, KoinComponent {
+class RefreshRandomCocktailAction :
+    ActionCallback,
+    KoinComponent {
     private val dataProvider: WidgetDataSource by inject()
 
     override suspend fun onAction(
@@ -325,7 +330,10 @@ class RefreshRandomCocktailAction : ActionCallback, KoinComponent {
         // error state when nothing could be loaded
         try {
             refreshRandomCocktailWidgets(
-                context, dataProvider, listOf(glanceId), showErrorOnFailure = true
+                context,
+                dataProvider,
+                listOf(glanceId),
+                showErrorOnFailure = true
             )
         } catch (e: CancellationException) {
             throw e
@@ -367,4 +375,3 @@ class RandomCocktailWidgetReceiver : GlanceAppWidgetReceiver() {
         }
     }
 }
-

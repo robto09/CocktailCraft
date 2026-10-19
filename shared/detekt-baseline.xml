@@ -2,21 +2,9 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>ArgumentListWrapping:IosTestMode.kt$TestModeFixtures$( id = "11000", name = "Mojito", category = "Cocktail", alcoholic = "Alcoholic", glass = "Highball glass", instructions = "Muddle mint leaves with sugar and lime juice. Add a splash of soda water " + "and fill the glass with cracked ice. Pour the rum and top with soda water.", ingredients = listOf("Light rum" to "2-3 oz", "Lime" to "Juice of 1", "Sugar" to "2 tsp", "Mint" to "2-4", "Soda water" to "") )</ID>
-    <ID>ArgumentListWrapping:IosTestMode.kt$TestModeFixtures$( id = "11001", name = "Old Fashioned", category = "Cocktail", alcoholic = "Alcoholic", glass = "Old-fashioned glass", instructions = "Place sugar cube in old fashioned glass and saturate with bitters, add a " + "dash of plain water. Muddle until dissolved. Fill the glass with ice cubes and add whiskey.", ingredients = listOf("Bourbon" to "4.5 cL", "Angostura bitters" to "2 dashes", "Sugar" to "1 cube", "Water" to "dash") )</ID>
-    <ID>ArgumentListWrapping:IosTestMode.kt$TestModeFixtures$( id = "11007", name = "Margarita", category = "Ordinary Drink", alcoholic = "Alcoholic", glass = "Cocktail glass", instructions = "Rub the rim of the glass with the lime slice to make the salt stick to it. " + "Shake the other ingredients with ice, then carefully pour into the glass.", ingredients = listOf("Tequila" to "1 1/2 oz", "Triple sec" to "1/2 oz", "Lime juice" to "1 oz", "Salt" to "") )</ID>
-    <ID>ArgumentListWrapping:IosTestMode.kt$TestModeFixtures$( id = "12560", name = "Afterglow", category = "Cocktail", alcoholic = "Non alcoholic", glass = "Highball Glass", instructions = "Mix. Serve over ice.", ingredients = listOf("Grenadine" to "1 part", "Orange juice" to "4 parts", "Pineapple juice" to "4 parts") )</ID>
-    <ID>ArgumentListWrapping:IosTestMode.kt$TestModeFixtures$("Bourbon" to "4.5 cL", "Angostura bitters" to "2 dashes", "Sugar" to "1 cube", "Water" to "dash")</ID>
-    <ID>ArgumentListWrapping:IosTestMode.kt$TestModeFixtures$("Grenadine" to "1 part", "Orange juice" to "4 parts", "Pineapple juice" to "4 parts")</ID>
-    <ID>ArgumentListWrapping:IosTestMode.kt$TestModeFixtures$("Light rum" to "2-3 oz", "Lime" to "Juice of 1", "Sugar" to "2 tsp", "Mint" to "2-4", "Soda water" to "")</ID>
-    <ID>ArgumentListWrapping:IosTestMode.kt$TestModeFixtures$("Tequila" to "1 1/2 oz", "Triple sec" to "1/2 oz", "Lime juice" to "1 oz", "Salt" to "")</ID>
-    <ID>ImportOrdering:KoinHelperTest.kt$import app.cash.sqldelight.db.SqlDriver import com.cocktailcraft.data.cache.db.CocktailCraftDatabase import com.cocktailcraft.data.config.AppConfigImpl import com.cocktailcraft.di.appModule import com.cocktailcraft.domain.config.AppConfig import com.cocktailcraft.di.secureSettingsQualifier import com.cocktailcraft.testutil.FakeNetworkMonitor import com.cocktailcraft.testutil.MainDispatcherTest import com.cocktailcraft.testutil.createInMemorySqlDriver import com.cocktailcraft.util.NetworkMonitor import com.russhwolf.settings.MapSettings import com.russhwolf.settings.Settings import org.koin.core.context.startKoin import org.koin.core.context.stopKoin import org.koin.dsl.module import kotlin.test.AfterTest import kotlin.test.Test import kotlin.test.assertNotNull</ID>
-    <ID>LongParameterList:IosTestMode.kt$TestModeFixtures.Drink$( val id: String, val name: String, val category: String, val alcoholic: String, val glass: String, val instructions: String, val ingredients: List&lt;Pair&lt;String, String&gt;&gt; )</ID>
-    <ID>NewLineAtEndOfFile:AppModule.kt$com.cocktailcraft.di.AppModule.kt</ID>
-    <ID>NoUnusedImports:AppModule.kt$com.cocktailcraft.di.AppModule.kt</ID>
-    <ID>TooManyFunctions:KoinIOS.kt$KoinHelper : KoinComponent</ID>
-    <ID>TopLevelPropertyNaming:IosTestMode.kt$private const val TEST_SECURE_SETTINGS_SUITE = "com.cocktailcraft.testmode.secure"</ID>
-    <ID>TopLevelPropertyNaming:IosTestMode.kt$private const val TEST_SETTINGS_SUITE = "com.cocktailcraft.testmode"</ID>
-    <ID>Wrapping:IosTestMode.kt$TestModeFixtures$(</ID>
+    <ID>NewLineAtEndOfFile:AppModule.kt:com.cocktailcraft.di.AppModule.kt</ID>
+    <ID>TooManyFunctions:KoinIOS.kt:KoinHelper : KoinComponent</ID>
+    <ID>TopLevelPropertyNaming:IosTestMode.kt:private const val TEST_SECURE_SETTINGS_SUITE = "com.cocktailcraft.testmode.secure"</ID>
+    <ID>TopLevelPropertyNaming:IosTestMode.kt:private const val TEST_SETTINGS_SUITE = "com.cocktailcraft.testmode"</ID>
   </CurrentIssues>
 </SmellBaseline>

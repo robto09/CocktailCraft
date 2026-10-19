@@ -68,11 +68,7 @@ fun <T> Result<T>.getOrDefault(defaultValue: @UnsafeVariance T): T = when (this)
  * [displayMessage], if any), thrown when a [Result.Error] is unwrapped via
  * [getOrThrow]. Lets try/catch error paths keep the typed code and copy.
  */
-class DomainException(
-    val code: ErrorCode,
-    message: String,
-    val displayMessage: StringDesc? = null
-) : Exception(message)
+class DomainException(val code: ErrorCode, message: String, val displayMessage: StringDesc? = null) : Exception(message)
 
 // Extension: get data or throw an exception (useful for bridging to try/catch callers)
 @HiddenFromObjC

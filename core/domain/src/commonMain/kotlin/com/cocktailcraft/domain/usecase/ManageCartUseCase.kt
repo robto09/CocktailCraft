@@ -19,9 +19,7 @@ class ManageCartUseCase(
     /** Hot stream of cart contents, seeded from persistence. */
     fun observeCartItems(): Flow<List<CocktailCartItem>> = cartRepository.observeCartItems()
 
-    suspend fun getCartItems(): Result<List<CocktailCartItem>> {
-        return cartRepository.getCartItems()
-    }
+    suspend fun getCartItems(): Result<List<CocktailCartItem>> = cartRepository.getCartItems()
 
     suspend fun addToCart(cocktail: Cocktail, quantity: Int = 1): Result<Unit> {
         val cartItem = CocktailCartItem(hydrated(cocktail), quantity)
@@ -30,8 +28,11 @@ class ManageCartUseCase(
 
     suspend fun addToCart(cartItem: CocktailCartItem): Result<Unit> {
         val item =
-            if (cartItem.cocktail.hasFullDetails) cartItem
-            else cartItem.copy(cocktail = hydrated(cartItem.cocktail))
+            if (cartItem.cocktail.hasFullDetails) {
+                cartItem
+            } else {
+                cartItem.copy(cocktail = hydrated(cartItem.cocktail))
+            }
         return cartRepository.addToCart(item)
     }
 
@@ -72,16 +73,12 @@ class ManageCartUseCase(
         }
     }
 
-    suspend fun removeFromCart(cocktailId: String): Result<Unit> {
-        return cartRepository.removeFromCart(cocktailId)
-    }
+    suspend fun removeFromCart(cocktailId: String): Result<Unit> = cartRepository.removeFromCart(cocktailId)
 
-    suspend fun updateQuantity(cocktailId: String, quantity: Int): Result<Unit> {
-        return cartRepository.updateQuantity(cocktailId, quantity)
-    }
+    suspend fun updateQuantity(cocktailId: String, quantity: Int): Result<Unit> = cartRepository.updateQuantity(
+        cocktailId,
+        quantity
+    )
 
-    suspend fun clearCart(): Result<Unit> {
-        return cartRepository.clearCart()
-    }
+    suspend fun clearCart(): Result<Unit> = cartRepository.clearCart()
 }
-

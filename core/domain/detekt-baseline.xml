@@ -2,47 +2,16 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>ArgumentListWrapping:DomainPolicyTest.kt$DeliveryPolicyTest$(15, 25)</ID>
-    <ID>ArgumentListWrapping:DomainPolicyTest.kt$DeliveryPolicyTest$(MR.strings.delivery_estimate_minutes.format(15, 25), DeliveryPolicy.estimatedDeliveryTimeForStatus(OrderStatus.PROCESSING))</ID>
-    <ID>ArgumentListWrapping:DomainPolicyTest.kt$DeliveryPolicyTest$(MR.strings.order_status_delivered.desc(), DeliveryPolicy.estimatedDeliveryTimeForStatus(OrderStatus.DELIVERED))</ID>
-    <ID>ArgumentListWrapping:DomainPolicyTest.kt$DeliveryPolicyTest$(OrderStatus.DELIVERED)</ID>
-    <ID>ArgumentListWrapping:DomainPolicyTest.kt$DeliveryPolicyTest$(OrderStatus.PROCESSING)</ID>
-    <ID>ArgumentListWrapping:GetCocktailDetailUseCase.kt$GetCocktailDetailUseCase$(cocktail.category ?: CocktailCategories.DEFAULT)</ID>
-    <ID>ArgumentListWrapping:GetCocktailDetailUseCase.kt$GetCocktailDetailUseCase$(emptyList())</ID>
-    <ID>ArgumentListWrapping:PlaceOrderUseCase.kt$PlaceOrderUseCase$(2, '0')</ID>
-    <ID>Filename:DomainPolicyTest.kt$com.cocktailcraft.domain.DomainPolicyTest.kt</ID>
-    <ID>ImportOrdering:ManageReviewsUseCase.kt$import com.cocktailcraft.domain.model.Review import com.cocktailcraft.domain.repository.ReviewRepository import com.cocktailcraft.domain.util.Result import com.cocktailcraft.resources.MR import com.cocktailcraft.resources.review_error_comment_required import com.cocktailcraft.resources.review_error_comment_too_long import com.cocktailcraft.resources.review_error_comment_too_short import com.cocktailcraft.resources.review_error_rating_range import dev.icerock.moko.resources.desc.StringDesc import dev.icerock.moko.resources.desc.desc import dev.icerock.moko.resources.format import kotlin.time.Clock import kotlinx.coroutines.flow.Flow import kotlinx.datetime.TimeZone import kotlinx.datetime.number import kotlinx.datetime.toLocalDateTime import kotlin.native.HiddenFromObjC</ID>
-    <ID>ImportOrdering:Review.kt$import com.cocktailcraft.util.UUID import kotlin.native.HiddenFromObjC import kotlinx.serialization.Serializable import kotlin.time.Clock import kotlinx.datetime.TimeZone import kotlinx.datetime.number import kotlinx.datetime.toLocalDateTime</ID>
-    <ID>ImportOrdering:User.kt$import com.cocktailcraft.designsystem.AccentColorTokens import kotlin.native.HiddenFromObjC import kotlinx.serialization.SerialName import kotlinx.serialization.Serializable</ID>
-    <ID>MagicNumber:AuthInputValidator.kt$AuthInputValidator$8</ID>
-    <ID>MagicNumber:DeliveryPolicy.kt$DeliveryPolicy$10</ID>
-    <ID>MagicNumber:DeliveryPolicy.kt$DeliveryPolicy$15</ID>
-    <ID>MagicNumber:DeliveryPolicy.kt$DeliveryPolicy$25</ID>
-    <ID>MagicNumber:DeliveryPolicy.kt$DeliveryPolicy$5</ID>
-    <ID>MagicNumber:ManageReviewsUseCase.kt$ManageReviewsUseCase$5.0f</ID>
-    <ID>MatchingDeclarationName:DomainPolicyTest.kt$DeliveryPolicyTest</ID>
-    <ID>MaxLineLength:DomainPolicyTest.kt$DeliveryPolicyTest$assertEquals(MR.strings.delivery_estimate_minutes.format(15, 25), DeliveryPolicy.estimatedDeliveryTimeForStatus(OrderStatus.PROCESSING))</ID>
-    <ID>MaxLineLength:DomainPolicyTest.kt$DeliveryPolicyTest$assertEquals(MR.strings.order_status_delivered.desc(), DeliveryPolicy.estimatedDeliveryTimeForStatus(OrderStatus.DELIVERED))</ID>
-    <ID>MaxLineLength:GetCocktailDetailUseCase.kt$GetCocktailDetailUseCase$val cocktails = searchRepository.filterByCategory(cocktail.category ?: CocktailCategories.DEFAULT).getOrDefault(emptyList())</ID>
-    <ID>MaxLineLength:PlaceOrderUseCase.kt$PlaceOrderUseCase$.</ID>
-    <ID>MultiLineIfElse:ManageCartUseCase.kt$ManageCartUseCase$cartItem</ID>
-    <ID>MultiLineIfElse:ManageCartUseCase.kt$ManageCartUseCase$cartItem.copy(cocktail = hydrated(cartItem.cocktail))</ID>
-    <ID>NewLineAtEndOfFile:AppConfig.kt$com.cocktailcraft.domain.config.AppConfig.kt</ID>
-    <ID>NewLineAtEndOfFile:AuthRepository.kt$com.cocktailcraft.domain.repository.AuthRepository.kt</ID>
-    <ID>NewLineAtEndOfFile:CartRepository.kt$com.cocktailcraft.domain.repository.CartRepository.kt</ID>
-    <ID>NewLineAtEndOfFile:CocktailCartItem.kt$com.cocktailcraft.domain.model.CocktailCartItem.kt</ID>
-    <ID>NewLineAtEndOfFile:CocktailIngredient.kt$com.cocktailcraft.domain.model.CocktailIngredient.kt</ID>
-    <ID>NewLineAtEndOfFile:Review.kt$com.cocktailcraft.domain.model.Review.kt</ID>
-    <ID>NewLineAtEndOfFile:User.kt$com.cocktailcraft.domain.model.User.kt</ID>
-    <ID>NoConsecutiveBlankLines:CocktailFavoritesRepository.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:CocktailSearchRepository.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:ManageCartUseCase.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:ManageFavoritesUseCase.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:ManageProfileUseCase.kt$ </ID>
-    <ID>NoMultipleSpaces:AuthInputValidatorTest.kt$AuthInputValidatorTest$ </ID>
-    <ID>NoMultipleSpaces:SearchFilters.kt$SearchFilters$ </ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:User.kt$Address</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:User.kt$UserPreferences</ID>
-    <ID>UseCheckOrError:ManageCartUseCaseTest.kt$ManageCartUseCaseTest.TrackingDetailRepository$throw IllegalStateException("lookup failed")</ID>
+    <ID>Filename:DomainPolicyTest.kt:com.cocktailcraft.domain.DomainPolicyTest.kt</ID>
+    <ID>MagicNumber:AuthInputValidator.kt:AuthInputValidator$8</ID>
+    <ID>MagicNumber:ManageReviewsUseCase.kt:ManageReviewsUseCase$5.0f</ID>
+    <ID>MatchingDeclarationName:DomainPolicyTest.kt:DeliveryPolicyTest</ID>
+    <ID>NewLineAtEndOfFile:AppConfig.kt:com.cocktailcraft.domain.config.AppConfig.kt</ID>
+    <ID>NewLineAtEndOfFile:AuthRepository.kt:com.cocktailcraft.domain.repository.AuthRepository.kt</ID>
+    <ID>NewLineAtEndOfFile:CartRepository.kt:com.cocktailcraft.domain.repository.CartRepository.kt</ID>
+    <ID>NewLineAtEndOfFile:CocktailCartItem.kt:com.cocktailcraft.domain.model.CocktailCartItem.kt</ID>
+    <ID>NewLineAtEndOfFile:CocktailIngredient.kt:com.cocktailcraft.domain.model.CocktailIngredient.kt</ID>
+    <ID>NewLineAtEndOfFile:Review.kt:com.cocktailcraft.domain.model.Review.kt</ID>
+    <ID>NewLineAtEndOfFile:User.kt:com.cocktailcraft.domain.model.User.kt</ID>
   </CurrentIssues>
 </SmellBaseline>

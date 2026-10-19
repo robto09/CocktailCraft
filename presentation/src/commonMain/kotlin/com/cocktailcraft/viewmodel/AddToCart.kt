@@ -24,6 +24,7 @@ internal suspend fun ManageCartUseCase.addToCartOutcome(cocktail: Cocktail, quan
     }
     return when (result) {
         is Result.Success -> UiEvent.Success(MR.strings.added_to_cart.format(cocktail.name))
+
         is Result.Error -> UiEvent.Failure(
             ErrorHandler.errorFromResult(result, MR.strings.error_add_item_to_cart_failed.desc()).message
         )

@@ -32,10 +32,8 @@ class SharedHomeViewModelListingTest : MainDispatcherTest() {
      * finish even when their caller is cancelled — like a request already on
      * the wire, or one shared with another caller.
      */
-    private class SlowCatalog(
-        private val delegate: FakeCatalogRepository,
-        private val delays: Map<String, Long>
-    ) : CocktailCatalogRepository by delegate {
+    private class SlowCatalog(private val delegate: FakeCatalogRepository, private val delays: Map<String, Long>) :
+        CocktailCatalogRepository by delegate {
         var listCalls = 0
 
         override suspend fun refreshCategory(category: String, force: Boolean): Result<Unit> =

@@ -14,9 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -231,7 +229,13 @@ fun CocktailItemContent(
                     onClick = { onAddToCart(cocktail) },
                     icon = Icons.Default.ShoppingCart,
                     contentDescription = stringResource(MR.strings.add_to_cart_item_a11y, cocktail.name),
-                    tint = if (cocktail.stockCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                    tint = if (cocktail.stockCount >
+                        0
+                    ) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.outline
+                    },
                     enabled = cocktail.stockCount > 0
                 )
             }

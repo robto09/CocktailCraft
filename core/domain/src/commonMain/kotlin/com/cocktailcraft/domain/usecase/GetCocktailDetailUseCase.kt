@@ -18,9 +18,7 @@ class GetCocktailDetailUseCase(
     private val favoritesRepository: CocktailFavoritesRepository,
     private val catalogRepository: CocktailCatalogRepository
 ) {
-    suspend operator fun invoke(cocktailId: String): Result<Cocktail?> {
-        return detailRepository.getCocktailById(cocktailId)
-    }
+    suspend operator fun invoke(cocktailId: String): Result<Cocktail?> = detailRepository.getCocktailById(cocktailId)
 
     /** The stored cocktail, re-emitted whenever it changes (e.g. after a refresh). */
     fun observe(cocktailId: String): Flow<Cocktail?> = detailRepository.observeCocktail(cocktailId)
@@ -45,15 +43,18 @@ class GetCocktailDetailUseCase(
      * stored is fetched first: a handful of suggestions doesn't justify a
      * rate-limited filter.php call and a page of writes on every detail view.
      */
-    suspend fun getRelatedCocktails(cocktail: Cocktail, limit: Int = 3): List<Cocktail> {
-        return runCatchingNonCancellation(onFailure = { emptyList() }) {
-            val category = cocktail.category?.takeIf { it.isNotBlank() } ?: CocktailCategories.DEFAULT
-            val stored = catalogRepository.observeCategory(category).first().ifEmpty {
-                catalogRepository.refreshCategory(category, force = false)
-                catalogRepository.observeCategory(category).first()
-            }
-            stored.filter { it.id != cocktail.id }.shuffled().take(limit)
+    suspend fun getRelatedCocktails(
+        cocktail: Cocktail,
+        limit: Int = 3
+    ): List<Cocktail> = runCatchingNonCancellation(onFailure = {
+        emptyList()
+    }) {
+        val category = cocktail.category?.takeIf { it.isNotBlank() } ?: CocktailCategories.DEFAULT
+        val stored = catalogRepository.observeCategory(category).first().ifEmpty {
+            catalogRepository.refreshCategory(category, force = false)
+            catalogRepository.observeCategory(category).first()
         }
+        stored.filter { it.id != cocktail.id }.shuffled().take(limit)
     }
 
     /**
@@ -61,10 +62,10 @@ class GetCocktailDetailUseCase(
      * refresh (offline included) is a [Result.Error]; the stored copy is left
      * as it was.
      */
-    suspend fun refresh(cocktailId: String): Result<Cocktail?> {
-        return when (val refreshed = detailRepository.refreshCocktail(cocktailId, force = true)) {
-            is Result.Success -> Result.Success(detailRepository.observeCocktail(cocktailId).first())
-            is Result.Error -> refreshed
-        }
+    suspend fun refresh(
+        cocktailId: String
+    ): Result<Cocktail?> = when (val refreshed = detailRepository.refreshCocktail(cocktailId, force = true)) {
+        is Result.Success -> Result.Success(detailRepository.observeCocktail(cocktailId).first())
+        is Result.Error -> refreshed
     }
 }

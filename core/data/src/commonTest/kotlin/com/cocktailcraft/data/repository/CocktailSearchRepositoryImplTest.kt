@@ -300,8 +300,10 @@ class CocktailSearchRepositoryImplTest {
 
         val cocktails = (result as Result.Success).data
         assertEquals(setOf("2", "3"), cocktails.map { it.id }.toSet())
-        assertTrue(cocktails.all { it.category == "Cocktail" },
-            "partial filter.php records must be stamped with the category they were fetched by")
+        assertTrue(
+            cocktails.all { it.category == "Cocktail" },
+            "partial filter.php records must be stamped with the category they were fetched by"
+        )
     }
 
     @Test
@@ -344,17 +346,21 @@ class CocktailSearchRepositoryImplTest {
         val fixture = fixture(api = FakeCocktailApi())
 
         // Entries persisted before category stamping existed carry no category.
-        fixture.cache.cacheCocktails(listOf(
-            testCocktail("legacy1", category = null),
-            testCocktail("legacy2", category = null)
-        ))
+        fixture.cache.cacheCocktails(
+            listOf(
+                testCocktail("legacy1", category = null),
+                testCocktail("legacy2", category = null)
+            )
+        )
         fixture.network.setOnline(false)
 
         val result = fixture.search.filterByCategory(CocktailCategories.DEFAULT)
 
-        assertEquals(setOf("legacy1", "legacy2"),
+        assertEquals(
+            setOf("legacy1", "legacy2"),
             (result as Result.Success).data.map { it.id }.toSet(),
-            "the default offline browse must surface cached entries that predate category stamping")
+            "the default offline browse must surface cached entries that predate category stamping"
+        )
     }
 
     @Test
@@ -366,9 +372,11 @@ class CocktailSearchRepositoryImplTest {
 
         val result = fixture.search.filterByCategory("Cocktail")
 
-        assertEquals(setOf("2", "3"),
+        assertEquals(
+            setOf("2", "3"),
             (result as Result.Success).data.map { it.id }.toSet(),
-            "an explicit fetch with an empty cache must try the network even when the monitor says offline")
+            "an explicit fetch with an empty cache must try the network even when the monitor says offline"
+        )
     }
 
     @Test

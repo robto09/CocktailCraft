@@ -16,4 +16,3 @@ data class ProfileUiState(
     val preferences: UserPreferences = UserPreferences(),
     val isLoading: Boolean = false
 )
-

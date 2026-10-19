@@ -36,43 +36,41 @@ object ImageLoaderSingleton {
      * Build the ImageLoader. [okHttpClient] is the app-wide client the Ktor
      * API engine also derives from (resolved from Koin by the Application).
      */
-    fun create(context: Context, okHttpClient: OkHttpClient): ImageLoader {
-        return ImageLoader.Builder(context)
-            // Memory cache configuration
-            .memoryCache {
-                MemoryCache.Builder(context)
-                    .maxSizePercent(MEMORY_CACHE_PERCENT)
-                    .build()
-            }
-            // Disk cache configuration
-            .diskCache {
-                DiskCache.Builder()
-                    .directory(File(context.cacheDir, "image_cache"))
-                    .maxSizeBytes(DISK_CACHE_SIZE)
-                    .build()
-            }
-            // Network configuration: newBuilder() shares the API client's
-            // connection pool and TLS sessions (same host). Its own
-            // dispatcher keeps a screenful of image loads from queueing API
-            // calls behind them (OkHttp runs at most 5 calls per host per
-            // dispatcher).
-            .okHttpClient {
-                okHttpClient.newBuilder()
-                    .dispatcher(Dispatcher())
-                    .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                    .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                    .build()
-            }
-            // Cache policies
-            .respectCacheHeaders(false) // Override server cache policies
-            .diskCachePolicy(CachePolicy.ENABLED)
-            .memoryCachePolicy(CachePolicy.ENABLED)
-            .networkCachePolicy(CachePolicy.ENABLED)
-            // We'll skip custom decoders for now as they're causing issues
-            // Coil has default decoders that will work fine
-            // Verbose request logging is debug-only noise
-            .logger(if (BuildConfig.DEBUG) DebugLogger() else null)
-            .crossfade(true)
-            .build()
-    }
+    fun create(context: Context, okHttpClient: OkHttpClient): ImageLoader = ImageLoader.Builder(context)
+        // Memory cache configuration
+        .memoryCache {
+            MemoryCache.Builder(context)
+                .maxSizePercent(MEMORY_CACHE_PERCENT)
+                .build()
+        }
+        // Disk cache configuration
+        .diskCache {
+            DiskCache.Builder()
+                .directory(File(context.cacheDir, "image_cache"))
+                .maxSizeBytes(DISK_CACHE_SIZE)
+                .build()
+        }
+        // Network configuration: newBuilder() shares the API client's
+        // connection pool and TLS sessions (same host). Its own
+        // dispatcher keeps a screenful of image loads from queueing API
+        // calls behind them (OkHttp runs at most 5 calls per host per
+        // dispatcher).
+        .okHttpClient {
+            okHttpClient.newBuilder()
+                .dispatcher(Dispatcher())
+                .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .build()
+        }
+        // Cache policies
+        .respectCacheHeaders(false) // Override server cache policies
+        .diskCachePolicy(CachePolicy.ENABLED)
+        .memoryCachePolicy(CachePolicy.ENABLED)
+        .networkCachePolicy(CachePolicy.ENABLED)
+        // We'll skip custom decoders for now as they're causing issues
+        // Coil has default decoders that will work fine
+        // Verbose request logging is debug-only noise
+        .logger(if (BuildConfig.DEBUG) DebugLogger() else null)
+        .crossfade(true)
+        .build()
 }

@@ -235,7 +235,11 @@ class AuthRepositoryImplTest {
     fun concurrentProfileUpdatesDoNotDropEachOther() = runTest {
         // Each update rewrites the whole users list; unserialized, one
         // writer's read-modify-write would overwrite the other's change.
-        val repository = AuthRepositoryImpl(settings, Json { ignoreUnknownKeys = true }, ioDispatcher = Dispatchers.Default)
+        val repository = AuthRepositoryImpl(
+            settings,
+            Json { ignoreUnknownKeys = true },
+            ioDispatcher = Dispatchers.Default
+        )
         repository.signUp("a@b.com", "secret123")
 
         repeat(50) { round ->

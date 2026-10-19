@@ -72,9 +72,9 @@ import org.koin.core.component.inject
  * Shows a scrollable list of favorites with quick access to the app.
  */
 class FavoritesWidget : GlanceAppWidget() {
-    
+
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
-    
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         // A widget with no list yet (just placed, or another instance of an
         // already-placed widget) loads it now rather than waiting up to a
@@ -92,7 +92,7 @@ class FavoritesWidget : GlanceAppWidget() {
             }
         }
     }
-    
+
     @Composable
     private fun FavoritesContent() {
         val prefs = currentState<Preferences>()
@@ -100,7 +100,7 @@ class FavoritesWidget : GlanceAppWidget() {
         val favoritesCount = prefs[FavoritesWidgetKeys.FAVORITES_COUNT]?.toIntOrNull() ?: 0
         val isLoading = prefs[FavoritesWidgetKeys.IS_LOADING] == "true"
         val hasError = prefs[FavoritesWidgetKeys.ERROR] == true
-        
+
         val favorites = try {
             if (favoritesJson != null) {
                 FavoriteItem.fromJsonArray(favoritesJson)
@@ -110,7 +110,7 @@ class FavoritesWidget : GlanceAppWidget() {
         } catch (e: Exception) {
             emptyList()
         }
-        
+
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
@@ -137,7 +137,7 @@ class FavoritesWidget : GlanceAppWidget() {
                         ),
                         modifier = GlanceModifier.defaultWeight()
                     )
-                    
+
                     // Refresh button
                     Box(
                         modifier = GlanceModifier
@@ -156,9 +156,9 @@ class FavoritesWidget : GlanceAppWidget() {
                         )
                     }
                 }
-                
+
                 Spacer(modifier = GlanceModifier.height(8.dp))
-                
+
                 when {
                     isLoading -> LoadingContent()
                     hasError -> ErrorContent()
@@ -168,7 +168,7 @@ class FavoritesWidget : GlanceAppWidget() {
             }
         }
     }
-    
+
     @Composable
     private fun LoadingContent() {
         Box(
@@ -184,7 +184,7 @@ class FavoritesWidget : GlanceAppWidget() {
             )
         }
     }
-    
+
     @Composable
     private fun ErrorContent() {
         Box(
@@ -331,40 +331,29 @@ class FavoritesWidget : GlanceAppWidget() {
  * Simple data class for favorite items in widget.
  * Uses Android's org.json for serialization to avoid kotlinx.serialization dependency.
  */
-data class FavoriteItem(
-    val id: String,
-    val name: String,
-    val category: String = "",
-    val imageUrl: String = ""
-) {
-    fun toJson(): JSONObject {
-        return JSONObject().apply {
-            put("id", id)
-            put("name", name)
-            put("category", category)
-            put("imageUrl", imageUrl)
-        }
+data class FavoriteItem(val id: String, val name: String, val category: String = "", val imageUrl: String = "") {
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("id", id)
+        put("name", name)
+        put("category", category)
+        put("imageUrl", imageUrl)
     }
 
     companion object {
-        fun fromJson(json: JSONObject): FavoriteItem {
-            return FavoriteItem(
-                id = json.optString("id", ""),
-                name = json.optString("name", ""),
-                category = json.optString("category", ""),
-                imageUrl = json.optString("imageUrl", "")
-            )
-        }
+        fun fromJson(json: JSONObject): FavoriteItem = FavoriteItem(
+            id = json.optString("id", ""),
+            name = json.optString("name", ""),
+            category = json.optString("category", ""),
+            imageUrl = json.optString("imageUrl", "")
+        )
 
-        fun fromJsonArray(jsonString: String): List<FavoriteItem> {
-            return try {
-                val jsonArray = JSONArray(jsonString)
-                (0 until jsonArray.length()).map { i ->
-                    fromJson(jsonArray.getJSONObject(i))
-                }
-            } catch (e: Exception) {
-                emptyList()
+        fun fromJsonArray(jsonString: String): List<FavoriteItem> = try {
+            val jsonArray = JSONArray(jsonString)
+            (0 until jsonArray.length()).map { i ->
+                fromJson(jsonArray.getJSONObject(i))
             }
+        } catch (e: Exception) {
+            emptyList()
         }
 
         fun toJsonArray(items: List<FavoriteItem>): String {
@@ -393,7 +382,9 @@ object FavoritesWidgetKeys {
 /**
  * Action callback to refresh favorites.
  */
-class RefreshFavoritesAction : ActionCallback, KoinComponent {
+class RefreshFavoritesAction :
+    ActionCallback,
+    KoinComponent {
     private val dataProvider: WidgetDataSource by inject()
 
     override suspend fun onAction(
@@ -412,7 +403,10 @@ class RefreshFavoritesAction : ActionCallback, KoinComponent {
         // error state when the favorites could not be read
         try {
             refreshFavoritesWidgets(
-                context, dataProvider, listOf(glanceId), showErrorOnFailure = true
+                context,
+                dataProvider,
+                listOf(glanceId),
+                showErrorOnFailure = true
             )
         } catch (e: CancellationException) {
             throw e
@@ -454,4 +448,3 @@ class FavoritesWidgetReceiver : GlanceAppWidgetReceiver() {
         }
     }
 }
-

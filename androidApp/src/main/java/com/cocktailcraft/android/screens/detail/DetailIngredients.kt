@@ -49,7 +49,6 @@ internal fun DetailIngredientsSection(ingredients: List<CocktailIngredient>) {
         title = stringResource(MR.strings.ingredients),
         modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm),
         content = {
-
             // Handle different types of ingredients list
             (ingredients as? List<CocktailIngredient>)?.forEach { ingredient ->
                 Row(
@@ -75,7 +74,6 @@ internal fun DetailIngredientsSection(ingredients: List<CocktailIngredient>) {
                     )
                 }
             }
-
         }
     )
 }

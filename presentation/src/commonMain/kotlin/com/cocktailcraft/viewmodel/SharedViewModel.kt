@@ -161,6 +161,7 @@ abstract class SharedViewModel : ViewModel() {
         recoveryAction: ErrorHandler.RecoveryAction? = null
     ): T = when (this) {
         is Result.Success -> data
+
         is Result.Error -> {
             _error.value = ErrorHandler.errorFromResult(this, fallbackMessage.desc(), recoveryAction)
             Logger.w { "Error in ${this@SharedViewModel::class.simpleName}: $code" }

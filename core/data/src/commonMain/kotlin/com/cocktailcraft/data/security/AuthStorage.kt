@@ -34,8 +34,10 @@ internal fun migrateAuthStorage(from: Settings, to: Settings) {
             when {
                 key.startsWith(AuthStorageKeys.SIGN_IN_ATTEMPTS_PREFIX) ->
                     from.getIntOrNull(key)?.let { to.putInt(key, it) }
+
                 key.startsWith(AuthStorageKeys.SIGN_IN_LOCKOUT_PREFIX) ->
                     from.getLongOrNull(key)?.let { to.putLong(key, it) }
+
                 else -> from.getStringOrNull(key)?.let { to.putString(key, it) }
             }
         }
