@@ -25,6 +25,10 @@ import kotlinx.coroutines.launch
  * Collects the persisted review store reactively, so submitted reviews
  * survive restarts and every state change flows through [uiState] — the only
  * public state surface (per-cocktail counts/averages are derived into it).
+ *
+ * It holds every review on the device, whoever wrote it; only the
+ * [Review.isMine] ones can be updated or deleted (any other id reports
+ * "not found"), so screens offer edit/delete on those alone.
  */
 class SharedReviewViewModel internal constructor(
     private val manageReviewsUseCase: ManageReviewsUseCase

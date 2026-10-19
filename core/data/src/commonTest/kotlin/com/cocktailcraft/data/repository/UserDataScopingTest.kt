@@ -32,8 +32,9 @@ import kotlin.test.assertTrue
 
 /**
  * The cart, favorites, recently viewed list, orders and reviews belong to
- * whoever is signed in, or to the guest (see UserDataOwnership.kt): over the
- * real repositories, account store and session, as DataModule wires them.
+ * whoever is signed in, or to the guest, and everyone reads every review
+ * (see UserDataOwnership.kt): over the real repositories, account store and
+ * session, as DataModule wires them.
  */
 class UserDataScopingTest {
 
@@ -62,6 +63,7 @@ class UserDataScopingTest {
         suspend fun favoriteIds() = favorites.getFavoriteCocktails().getOrThrow().map { it.id }
         suspend fun orderIds() = orders.getOrders().getOrThrow().map { it.id }
         suspend fun reviewIds() = reviews.getReviews().getOrThrow().map { it.id }
+        suspend fun myReviewIds() = reviews.getReviews().getOrThrow().filter { it.isMine }.map { it.id }
         suspend fun recentIds() = cache.getRecentlyViewedCocktails().map { it.id }
 
         /** Fills the current owner's cart, favorites, recently viewed list, orders and reviews. */
@@ -76,7 +78,7 @@ class UserDataScopingTest {
     }
 
     @Test
-    fun aSignedOutGuestSeesNoneOfTheUsersData() = runTest {
+    fun aSignedOutGuestSeesNoneOfTheUsersDataButTheirReviews() = runTest {
         val app = App(backgroundScope)
         app.auth.signUp("ana@example.com", "secret123").getOrThrow()
         app.addData("ana")
@@ -87,7 +89,44 @@ class UserDataScopingTest {
         assertTrue(app.favoriteIds().isEmpty())
         assertTrue(app.recentIds().isEmpty())
         assertTrue(app.orderIds().isEmpty())
-        assertTrue(app.reviewIds().isEmpty())
+        assertEquals(listOf("review-ana"), app.reviewIds(), "everyone reads every review")
+        assertTrue(app.myReviewIds().isEmpty())
+    }
+
+    @Test
+    fun everyoneReadsEveryReviewButOnlyItsAuthorChangesIt() = runTest {
+        val app = App(backgroundScope)
+        app.reviews.addReview(review("review-guest")).getOrThrow()
+        app.auth.signUp("ana@example.com", "secret123").getOrThrow()
+        app.reviews.addReview(review("review-ana")).getOrThrow()
+
+        val asAna = app.reviews.getReviews().getOrThrow().associate { it.id to it.isMine }
+        assertEquals(mapOf("review-guest" to false, "review-ana" to true), asAna)
+        assertFalse(app.reviews.updateReview("review-guest", 1f, "Hijacked", "2026-10-20").getOrThrow())
+        assertFalse(app.reviews.deleteReview("review-guest").getOrThrow())
+        assertTrue(app.reviews.updateReview("review-ana", 5f, "Even better", "2026-10-20").getOrThrow())
+
+        app.auth.signOut().getOrThrow()
+        val asGuest = app.reviews.getReviews().getOrThrow()
+        assertEquals(listOf("review-guest" to true, "review-ana" to false), asGuest.map { it.id to it.isMine })
+        assertEquals(listOf("Nice", "Even better"), asGuest.map { it.comment })
+        assertTrue(app.reviews.deleteReview("review-guest").getOrThrow())
+        assertEquals(listOf("review-ana"), app.reviewIds())
+    }
+
+    @Test
+    fun observedReviewsFollowWhoseTheyAre() = runTest {
+        val app = App(backgroundScope)
+        app.auth.signUp("ana@example.com", "secret123").getOrThrow()
+        app.reviews.addReview(review("review-ana")).getOrThrow()
+
+        app.reviews.observeReviews().test {
+            assertEquals(listOf(true), awaitItem().map { it.isMine })
+
+            app.auth.signOut().getOrThrow()
+            assertEquals(listOf(false), awaitItem().map { it.isMine }, "still shown, no longer editable")
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
@@ -127,7 +166,8 @@ class UserDataScopingTest {
         assertEquals(listOf("fav-ana"), app.favoriteIds())
         assertEquals(listOf("viewed-ana"), app.recentIds())
         assertEquals(listOf("order-ana"), app.orderIds())
-        assertEquals(listOf("review-ana"), app.reviewIds())
+        assertEquals(listOf("review-ana", "review-ben"), app.reviewIds())
+        assertEquals(listOf("review-ana"), app.myReviewIds())
     }
 
     @Test
@@ -157,7 +197,8 @@ class UserDataScopingTest {
         assertEquals(listOf("3", "4"), app.favoriteIds())
         assertEquals(listOf("5"), app.recentIds())
         assertTrue(app.orderIds().isEmpty(), "orders stay with whoever placed them")
-        assertTrue(app.reviewIds().isEmpty(), "reviews stay with their author")
+        assertTrue(app.myReviewIds().isEmpty(), "reviews stay with their author")
+        assertEquals(listOf("guest-review"), app.reviewIds(), "but everyone still reads them")
 
         // The guest keeps the orders and reviews; the rest moved
         app.auth.signOut().getOrThrow()
@@ -165,7 +206,7 @@ class UserDataScopingTest {
         assertTrue(app.favoriteIds().isEmpty())
         assertTrue(app.recentIds().isEmpty())
         assertEquals(listOf("guest-order"), app.orderIds())
-        assertEquals(listOf("guest-review"), app.reviewIds())
+        assertEquals(listOf("guest-review"), app.myReviewIds())
     }
 
     @Test

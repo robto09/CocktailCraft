@@ -27,7 +27,7 @@ data class HomeUiState(
     val sortOption: HomeSortOption = HomeSortOption.DEFAULT,
     // Most recently viewed first, at most SharedHomeViewModel.RECENTLY_VIEWED_LIMIT
     val recentlyViewed: List<Cocktail> = emptyList(),
-    // Review averages by cocktail id, for cocktails the user has reviewed
+    // Review averages by cocktail id, over every review on the device
     val ratingSummaries: Map<String, CocktailRatingSummary> = emptyMap()
 ) {
     /** The "Recently viewed" row shows when there is something in it and no search query. */

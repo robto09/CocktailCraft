@@ -14,8 +14,9 @@ import kotlinx.coroutines.sync.withLock
  * The app's [AuthRepository]: [delegate] (the account store) plus keeping
  * the owner of the user's data in step with who is signed in. After a
  * successful sign-in, sign-up or sign-out it switches [session] to the new
- * owner, so the cart, favorites, recently viewed list, orders and reviews
- * everywhere show that owner's rows; moving from the guest to an account
+ * owner, so the cart, favorites, recently viewed list and orders everywhere
+ * show that owner's rows (and reviews which of them it may edit); moving
+ * from the guest to an account
  * first merges the guest's cart, favorites and recently viewed list into it
  * (the rules are in UserDataOwnership.kt).
  */

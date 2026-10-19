@@ -85,7 +85,7 @@ class UserDataOwnerMigrationTest {
         return CocktailCraftDatabase(driver)
     }
 
-    /** What [ownerId] sees: cart, favorites, recently viewed, orders and reviews. */
+    /** What [ownerId] owns: cart, favorites, recently viewed, orders and reviews (everyone reads every review). */
     private suspend fun dataOf(db: CocktailCraftDatabase, ownerId: String): List<List<String>> {
         val owner = FixedOwner(ownerId)
         val local = createTestLocalDatabase(db, owner = owner)
@@ -95,7 +95,7 @@ class UserDataOwnerMigrationTest {
             db.favoriteCocktailQueries.selectAll(ownerId).executeAsList().map { it.cocktail_id },
             cache.getRecentlyViewedCocktails().map { it.id },
             OrderRepositoryImpl(local).getOrders().getOrThrow().map { it.id },
-            ReviewRepositoryImpl(local).getReviews().getOrThrow().map { it.id }
+            ReviewRepositoryImpl(local).getReviews().getOrThrow().filter { it.isMine }.map { it.id }
         )
     }
 
@@ -169,7 +169,8 @@ class UserDataOwnerMigrationTest {
 
         assertEquals(listOf("1"), testCartRepository(anas).getCartItems().getOrThrow().map { it.cocktail.id })
         assertEquals(listOf("ORD-1"), OrderRepositoryImpl(anas).getOrders().getOrThrow().map { it.id })
-        assertEquals(listOf("r1"), ReviewRepositoryImpl(anas).getReviews().getOrThrow().map { it.id })
+        val anasReviews = ReviewRepositoryImpl(anas).getReviews().getOrThrow()
+        assertEquals(listOf("r1" to true), anasReviews.map { it.id to it.isMine })
         assertEquals(listOf("1"), db.favoriteCocktailQueries.selectAll("ana").executeAsList().map { it.cocktail_id })
 
         val guests = createTestLocalDatabase(db, owner = FixedOwner(OwnerIds.GUEST))

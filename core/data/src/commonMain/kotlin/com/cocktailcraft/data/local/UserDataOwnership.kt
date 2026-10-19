@@ -7,11 +7,16 @@ import kotlinx.coroutines.flow.flowOf
 
 // Who owns the user's data: the cart, favorites, recently viewed list,
 // orders and reviews. Every row of those tables has an owner_id, and every
-// read and write is filtered by the current owner:
+// read and write is filtered by the current owner, except that reviews are
+// read unfiltered:
 //
 // - Signed in, the owner is the user's id; signed out, it is OwnerIds.GUEST.
 //   Signing out or switching accounts moves nothing: the next owner sees
 //   only their own data, and the previous user's is back when they sign in.
+// - Reviews are the exception: everyone on the device (every user and the
+//   guest) reads every review, so a cocktail's ratings don't depend on who
+//   is signed in. Only a review's owner edits or deletes it (Review.isMine
+//   marks the reader's own).
 // - Signing in (or up) from the guest merges the guest's cart, favorites
 //   and recently viewed list into the account (mergeGuestUserData), the way
 //   a shop keeps the cart you built before logging in: quantities add up,
@@ -19,7 +24,7 @@ import kotlinx.coroutines.flow.flowOf
 //   on this device, and leaving them with a guest nobody returns to would
 //   lose them. Orders and reviews stay with the guest: they were placed and
 //   written under that identity (a review shows its author's name), and the
-//   guest still sees them after signing out.
+//   guest still sees, and alone edits, them after signing out.
 // - Rows written before owners existed (database version 6 and earlier,
 //   or the Settings data of older versions) are assigned on the first open
 //   after the upgrade to whoever is signed in then, else the guest
