@@ -4,6 +4,7 @@ import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import org.koin.core.Koin
 
 // Who owns the user's data: the cart, favorites, recently viewed list,
 // orders and reviews. Every row of those tables has an owner_id, and every
@@ -99,3 +100,25 @@ internal fun CocktailCraftDatabase.mergeGuestUserData(accountId: String) {
         )
     }
 }
+
+/**
+ * Deletes every owner's cart, favorites, orders and reviews, in one
+ * transaction: those of every user who has signed in on this device, and
+ * the guest's. Accounts, settings and the recently viewed lists stay.
+ */
+internal fun CocktailCraftDatabase.deleteEveryOwnersUserData() {
+    transaction {
+        cartItemQueries.deleteEveryOwners()
+        favoriteCocktailQueries.deleteEveryOwners()
+        customerOrderQueries.deleteEveryOwnersItems()
+        customerOrderQueries.deleteEveryOwners()
+        cocktailReviewQueries.deleteEveryOwners()
+    }
+}
+
+/**
+ * [deleteEveryOwnersUserData] over the app's database. Only the iOS Debug
+ * menu's "Reset user data" calls it (DebugTools.kt in :shared's iOS test
+ * mode source set): the app itself never removes another owner's data.
+ */
+suspend fun Koin.deleteEveryOwnersUserData() = get<LocalDatabase>().deleteEveryOwnersUserData()

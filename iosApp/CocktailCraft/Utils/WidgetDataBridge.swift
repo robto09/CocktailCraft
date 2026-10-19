@@ -27,7 +27,8 @@ final class WidgetDataBridge {
     /// - Favorites: follows the shared favorites flow, so the widget updates
     ///   as soon as a favorite is added or removed anywhere in the app.
     /// - Random Cocktail: refreshes the pool now and whenever the app leaves
-    ///   the foreground (when this session's recently viewed list is final).
+    ///   the foreground (when this session's recently viewed list is final),
+    ///   at most once per `minimumRefreshInterval`.
     func start() {
         guard !started else { return }
         started = true
@@ -78,35 +79,36 @@ final class WidgetDataBridge {
 
     /// Rewrites the Random Cocktail pool: a fresh random pick when online,
     /// then recently viewed cocktails, each with its preview thumbnail.
-    /// A failed refresh keeps the previous pool.
+    /// A failed refresh keeps the previous pool, and so does a refresh
+    /// within `minimumRefreshInterval` of the last one.
     func refreshRandomCocktailPool() async {
+        let previous = WidgetRandomSnapshotStore.read()
+        guard !Self.isFresh(previous, at: Date()) else { return }
+
         guard let cocktails = try? await getSharedKoinHelper()
             .getRandomCocktailWidgetPool(limit: Self.randomPoolSize),
             !cocktails.isEmpty else {
             return
         }
 
-        let previous = WidgetRandomSnapshotStore.read()
-        // Reuse thumbnails already in the pool instead of re-downloading
+        // Reuse thumbnails already in the pool instead of re-downloading;
+        // fetch the rest concurrently
         var thumbnails: [String: Data] = [:]
         for cocktail in previous?.cocktails ?? [] {
             thumbnails[cocktail.id] = cocktail.thumbnail
         }
+        let missing = cocktails
+            .filter { thumbnails[$0.id] == nil }
+            .map { (id: $0.id, imageUrl: $0.imageUrl) }
+        thumbnails.merge(await Self.downloadThumbnails(missing)) { cached, _ in cached }
 
-        var pool: [WidgetRandomCocktail] = []
-        for cocktail in cocktails {
-            let thumbnail: Data?
-            if let cached = thumbnails[cocktail.id] {
-                thumbnail = cached
-            } else {
-                thumbnail = await Self.downloadThumbnail(imageUrl: cocktail.imageUrl)
-            }
-            pool.append(WidgetRandomCocktail(
+        let pool = cocktails.map { cocktail in
+            WidgetRandomCocktail(
                 id: cocktail.id,
                 name: cocktail.name,
                 category: cocktail.category,
-                thumbnail: thumbnail
-            ))
+                thumbnail: thumbnails[cocktail.id]
+            )
         }
         WidgetRandomSnapshotStore.write(WidgetRandomCocktailSnapshot(cocktails: pool, updatedAt: Date()))
 
@@ -118,10 +120,50 @@ final class WidgetDataBridge {
         }
     }
 
+    /// True when `snapshot` holds a pool written less than
+    /// `minimumRefreshInterval` before `date`, so refreshing again would
+    /// only spend another random.php call and thumbnail downloads: the
+    /// widget shows a new pool at its next 4-hourly timeline refresh anyway.
+    /// An empty pool, or one dated in the future (clock change), is stale.
+    nonisolated static func isFresh(_ snapshot: WidgetRandomCocktailSnapshot?, at date: Date) -> Bool {
+        guard let snapshot, !snapshot.cocktails.isEmpty else { return false }
+        let age = date.timeIntervalSince(snapshot.updatedAt)
+        return age >= 0 && age < minimumRefreshInterval
+    }
+
+    /// The app refreshes the pool at launch and on every backgrounding;
+    /// within this interval of the last refresh it keeps the pool as is.
+    nonisolated static let minimumRefreshInterval: TimeInterval = 60 * 60
+
+    /// Downloads with at most this many requests in flight.
+    private static let maxConcurrentDownloads = 3
+
+    /// Thumbnails for `cocktails` by id, downloaded concurrently (bounded);
+    /// a failed download is simply missing from the result.
+    private static func downloadThumbnails(
+        _ cocktails: [(id: String, imageUrl: String?)]
+    ) async -> [String: Data] {
+        await withTaskGroup(of: (String, Data?).self) { group in
+            var pending = cocktails.makeIterator()
+            func startNext() {
+                guard let next = pending.next() else { return }
+                group.addTask { (next.id, await downloadThumbnail(imageUrl: next.imageUrl)) }
+            }
+            for _ in 0..<maxConcurrentDownloads { startNext() }
+
+            var thumbnails: [String: Data] = [:]
+            for await (id, data) in group {
+                thumbnails[id] = data
+                startNext()
+            }
+            return thumbnails
+        }
+    }
+
     /// TheCocktailDB's /preview variant (~100px): plenty for a widget and
     /// small enough to embed in the snapshot. nil on any failure — the
     /// widget then shows its placeholder glyph.
-    private static func downloadThumbnail(imageUrl: String?) async -> Data? {
+    private nonisolated static func downloadThumbnail(imageUrl: String?) async -> Data? {
         guard let imageUrl, !imageUrl.isEmpty,
               let url = URL(string: imageUrl + "/preview"),
               let (data, response) = try? await URLSession.shared.data(from: url),

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- App privacy manifest. No tracking and no collected data: favorites, cart,
+     orders, reviews and the local account stay on the device (SQLDelight
+     database, Keychain, NSUserDefaults), there are no analytics or crash
+     SDKs, and the only server, TheCocktailDB, gets just the catalog
+     requests it answers. Required-reason APIs: NSUserDefaults (the shared
+     module's settings in the app's own standard defaults — CA92.1). The
+     widget extension uses none (it reads App Group files, not defaults), and
+     Kingfisher ships its own manifest. Re-check when adding an SDK or an API
+     from Apple's required-reason list. -->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

@@ -59,9 +59,8 @@ actual fun dataPlatformModule() = module {
     // The app's one OkHttpClient. Ktor's engine (below) and androidApp's Coil
     // ImageLoader both derive from it via newBuilder(), sharing its
     // connection pool and TLS sessions — TheCocktailDB serves the API and the
-    // images from the same host. Certificate pinning is unaffected: it lives
-    // in network_security_config.xml, enforced by the platform trust manager
-    // OkHttp uses, not in an OkHttp CertificatePinner.
+    // images from the same host. TLS trust is the platform's (see
+    // androidApp's network_security_config.xml: no certificate pinning).
     single<OkHttpClient> { OkHttpClient.Builder().build() }
 
     // Picked up by networkModule; timeouts come from its HttpTimeout config

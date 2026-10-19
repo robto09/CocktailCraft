@@ -88,6 +88,12 @@ internal class LocalDatabase(
         withContext(ioDispatcher) { db.mergeGuestUserData(accountId) }
     }
 
+    /** Deletes every owner's cart, favorites, orders and reviews (see deleteEveryOwnersUserData). */
+    suspend fun deleteEveryOwnersUserData() {
+        val db = get()
+        withContext(ioDispatcher) { db.deleteEveryOwnersUserData() }
+    }
+
     private fun importLegacyData() {
         try {
             legacyImport.run(database.value)

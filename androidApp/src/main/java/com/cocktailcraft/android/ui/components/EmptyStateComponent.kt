@@ -44,9 +44,9 @@ import androidx.compose.ui.unit.sp
 fun EmptyStateComponent(
     title: String,
     message: String,
+    modifier: Modifier = Modifier,
     actionButtonText: String? = null,
     onActionButtonClick: () -> Unit = {},
-    modifier: Modifier = Modifier,
     icon: ImageVector? = null,
     painter: Painter? = null,
     iconSize: Int = 120,

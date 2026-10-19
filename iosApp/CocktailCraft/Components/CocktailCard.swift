@@ -42,9 +42,14 @@ struct CocktailCard: View {
         // Same metrics as Android's CocktailItem: 12 padding and gap,
         // 12 corners, 100 image with 8 corners
         .padding(12)
-        .background(AppColors.surface(isDarkMode: isDarkMode))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
+        // The shadow belongs to the background shape, not the whole card:
+        // shadowing a clipped view makes every scrolling card render
+        // offscreen to find its outline, while a shape's outline is known
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(AppColors.surface(isDarkMode: isDarkMode))
+                .shadow(color: Color.black.opacity(0.12), radius: 6, x: 0, y: 3)
+        )
         .if(onCardTap != nil) { view in
             view.onTapGesture {
                 onCardTap?()

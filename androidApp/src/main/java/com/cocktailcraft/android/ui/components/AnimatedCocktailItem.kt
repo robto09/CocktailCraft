@@ -1,15 +1,5 @@
 package com.cocktailcraft.android.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -32,15 +22,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
@@ -49,7 +33,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.ui.animation.AnimationUtils
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.rememberHapticHandler
 import com.cocktailcraft.android.util.stringResource
@@ -69,28 +52,14 @@ fun AnimatedCocktailItem(
     cocktail: Cocktail,
     onClick: () -> Unit,
     onAddToCart: (Cocktail) -> Unit,
+    modifier: Modifier = Modifier,
     isFavorite: Boolean = false,
     onToggleFavorite: (Cocktail) -> Unit = {},
-    modifier: Modifier = Modifier,
     reviewRating: CocktailRatingSummary? = null
 ) {
-    // Animation states
-    var isHovered by remember { mutableStateOf(false) }
-
-    // Scale animation for hover effect
-    val scale by animateFloatAsState(
-        targetValue = if (isHovered) 1.03f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "hover_scale"
-    )
-
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .scale(scale)
             .clickable(
                 onClick = onClick,
                 onClickLabel = stringResource(MR.strings.list_view_details_label, cocktail.name)
