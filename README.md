@@ -358,10 +358,13 @@ cd iosApp && swiftlint lint # SwiftLint (brew install swiftlint)
 and `main`, in two jobs. No secrets are used; release builds are unsigned.
 
 - **Linux** (Android and shared Kotlin): `detekt`, `testAndroidHostTest`,
-  `:androidApp:testDebugUnitTest` (unit, Robolectric and screenshot verify),
+  `:androidApp:testDebugUnitTest` (unit and Robolectric; screenshots are not
+  compared on Linux),
   `:core:data:verifySqlDelightMigration`, `:androidApp:lintRelease` and
   `:androidApp:assembleRelease`.
-- **macOS** (iOS): `iosSimulatorArm64Test`; checks the committed Xcode
+- **macOS** (Xcode 26 on `macos-26`): `:androidApp:verifyRoborazziDebug`
+  (the Android screenshot references were recorded on macOS);
+  `iosSimulatorArm64Test`; checks the committed Xcode
   project matches `xcodegen generate`; builds the app and runs the
   `CocktailCraftTests` unit and snapshot tests (snapshots are verified only on
   an iPhone 16 Pro iOS 18.5 simulator, skipped otherwise); builds the Release
@@ -430,8 +433,8 @@ Robolectric (JVM, no emulator). Tests live in
 Failed comparisons write `*_compare.png` / `*_actual.png` to
 `androidApp/build/outputs/roborazzi`. Robolectric is pinned to SDK 34 and a
 360x640dp xhdpi window (`androidApp/src/test/resources/robolectric.properties`);
-references were recorded on macOS — font rasterization can differ slightly
-on Linux CI.
+references were recorded on macOS and Linux renders text differently, so CI
+compares them in its macOS job.
 
 **iOS** — [swift-snapshot-testing](https://github.com/pointfreeco/swift-snapshot-testing)
 (Swift package, `CocktailCraftTests` target only). Tests live in

@@ -1,10 +1,10 @@
 # iOS App Setup Instructions
 
 ## Prerequisites
-- Xcode 16 or later (the project builds with the Swift 5.10 toolchain — `SWIFT_VERSION: "5.10"` in `project.yml`)
+- Xcode 26 or later: the app builds against the iOS 26 SDK (`ToolbarItemPlacement.title` in `AppTheme.swift`). The app targets use Swift 5.10 (`SWIFT_VERSION: "5.10"` in `project.yml`)
 - XcodeGen (`brew install xcodegen`)
 - A JDK 17+ — every app build runs Gradle to compile the shared Kotlin framework
-- A Mac with Apple silicon on macOS 14.5 (Sonoma) or later: the oldest macOS Xcode 16 runs on, and the shared Kotlin framework is built for arm64 simulators and devices only
+- A Mac with Apple silicon on macOS 15.6 (Sequoia) or later: the oldest macOS Xcode 26 runs on, and the shared Kotlin framework is built for arm64 simulators and devices only
 
 The app and its widget extension target iOS 17.0 (`deploymentTarget` in `project.yml`).
 

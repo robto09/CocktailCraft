@@ -16,7 +16,7 @@ This guide documents the DebugSwift integration in the CocktailCraft iOS app: in
 ## Requirements
 
 - **iOS deployment target**: 17.0 (DebugSwift needs 14.0+)
-- **Xcode**: 16.0+
+- **Xcode**: 26.0+ (the app needs the iOS 26 SDK)
 - **Swift**: the app targets use Swift 5.10 (`SWIFT_VERSION` in `iosApp/project.yml`); Swift Package Manager builds DebugSwift in the language mode its own `Package.swift` declares, so the two do not need to match
 
 ## Installation
