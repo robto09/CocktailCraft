@@ -65,6 +65,10 @@ DELETE FROM cart_item WHERE owner_id = :ownerId AND cocktail_id = :cocktailId;
 deleteAll:
 DELETE FROM cart_item WHERE owner_id = :ownerId;
 
+-- Every owner's cart (the iOS Debug menu's reset; see deleteAllUserData)
+deleteEveryOwners:
+DELETE FROM cart_item;
+
 -- Signing in: the account's lines for cocktails the guest cart also holds
 -- gain the guest's quantities (then reassign moves the other guest lines).
 addQuantitiesOf:

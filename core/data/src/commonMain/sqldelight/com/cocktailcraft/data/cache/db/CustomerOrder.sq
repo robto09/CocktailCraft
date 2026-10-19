@@ -97,3 +97,10 @@ DELETE FROM customer_order WHERE owner_id = :ownerId AND id = :id;
 -- Assigns orders left unassigned by an upgrade (see UserDataOwnership.kt)
 reassign:
 UPDATE customer_order SET owner_id = :toOwnerId WHERE owner_id = :fromOwnerId;
+
+-- Every owner's orders (the iOS Debug menu's reset; see deleteAllUserData)
+deleteEveryOwnersItems:
+DELETE FROM customer_order_item;
+
+deleteEveryOwners:
+DELETE FROM customer_order;

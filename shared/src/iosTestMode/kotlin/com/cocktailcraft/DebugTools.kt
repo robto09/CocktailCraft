@@ -1,9 +1,8 @@
 package com.cocktailcraft
 
+import com.cocktailcraft.data.local.deleteEveryOwnersUserData
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
-import com.cocktailcraft.domain.repository.OrderRepository
-import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.util.getOrDefault
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpSend
@@ -18,9 +17,11 @@ import kotlin.concurrent.Volatile
 // includeIosTestMode in shared/build.gradle.kts). Extensions on KoinHelper
 // export to Swift as KoinHelper methods, so the call sites read the same.
 // The shared ViewModels observe the database, so every screen updates on its
-// own.
+// own. The suspend hooks declare @Throws: Swift awaits them, and an
+// undeclared exception reaching Swift terminates the app.
 
-/** Removes every favorite. */
+/** Removes the current user's (or, signed out, the guest's) favorites. */
+@Throws(Exception::class)
 suspend fun KoinHelper.debugClearFavorites() {
     val favorites = get<CocktailFavoritesRepository>()
     favorites.getFavoriteCocktails().getOrDefault(emptyList()).forEach {
@@ -28,22 +29,20 @@ suspend fun KoinHelper.debugClearFavorites() {
     }
 }
 
-/** Empties the cart. */
+/** Empties the current user's (or, signed out, the guest's) cart. */
+@Throws(Exception::class)
 suspend fun KoinHelper.debugClearCart() {
     get<CartRepository>().clearCart()
 }
 
 /**
- * Deletes the user's local data — cart, favorites, orders and reviews —
- * leaving settings (Settings > Reset to defaults) and sign-in alone.
+ * Deletes every owner's local data — the cart, favorites, orders and
+ * reviews of every user on the device and of the guest — leaving settings
+ * (Settings > Reset to defaults), accounts and sign-in alone.
  */
+@Throws(Exception::class)
 suspend fun KoinHelper.debugResetUserData() {
-    debugClearCart()
-    debugClearFavorites()
-    val orders = get<OrderRepository>()
-    orders.getOrders().getOrDefault(emptyList()).forEach { orders.deleteOrder(it.id) }
-    val reviews = get<ReviewRepository>()
-    reviews.getReviews().getOrDefault(emptyList()).forEach { reviews.deleteReview(it.id) }
+    getKoin().deleteEveryOwnersUserData()
 }
 
 /**

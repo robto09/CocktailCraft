@@ -5,8 +5,11 @@ import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.di.appModule
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
+import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.MainDispatcherTest
@@ -79,6 +82,25 @@ class IosTestModeTest : MainDispatcherTest() {
 
         assertTrue(cart.getCartItems().getOrThrow().isEmpty())
         assertTrue(favorites.getFavoriteCocktails().getOrThrow().isEmpty())
+    }
+
+    @Test
+    fun debugResetUserDataEmptiesEveryOwnersData() = runTest {
+        val koin = KoinPlatform.getKoin()
+        val auth = koin.get<AuthRepository>()
+        val cart = koin.get<CartRepository>()
+        val reviews = koin.get<ReviewRepository>()
+        auth.signUp("ana@example.com", "secret123").getOrThrow()
+        cart.addToCart(CocktailCartItem(testCocktail("1"), quantity = 1)).getOrThrow()
+        reviews.addReview(Review(cocktailId = "1", userName = "Ana", rating = 4f, comment = "Nice")).getOrThrow()
+        auth.signOut().getOrThrow()
+        reviews.addReview(Review(cocktailId = "1", userName = "Guest", rating = 3f, comment = "Fine")).getOrThrow()
+
+        helper.debugResetUserData()
+
+        assertTrue(reviews.getReviews().getOrThrow().isEmpty())
+        auth.signIn("ana@example.com", "secret123").getOrThrow()
+        assertTrue(cart.getCartItems().getOrThrow().isEmpty())
     }
 
     @Test

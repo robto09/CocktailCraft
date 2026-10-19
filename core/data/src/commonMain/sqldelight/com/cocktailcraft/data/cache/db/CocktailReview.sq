@@ -55,3 +55,7 @@ DELETE FROM cocktail_review WHERE owner_id = :ownerId AND id = :id;
 -- Assigns reviews left unassigned by an upgrade (see UserDataOwnership.kt)
 reassign:
 UPDATE cocktail_review SET owner_id = :toOwnerId WHERE owner_id = :fromOwnerId;
+
+-- Every owner's reviews (the iOS Debug menu's reset; see deleteAllUserData)
+deleteEveryOwners:
+DELETE FROM cocktail_review;

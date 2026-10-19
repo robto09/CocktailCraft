@@ -48,6 +48,10 @@ DELETE FROM favorite_cocktail WHERE owner_id = :ownerId AND cocktail_id = :cockt
 deleteAll:
 DELETE FROM favorite_cocktail WHERE owner_id = :ownerId;
 
+-- Every owner's favorites (the iOS Debug menu's reset; see deleteAllUserData)
+deleteEveryOwners:
+DELETE FROM favorite_cocktail;
+
 -- Moves one owner's favorites to another; ones the target already has stay
 -- with the source (see UserDataOwnership.kt).
 reassign:
