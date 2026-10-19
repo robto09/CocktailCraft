@@ -60,8 +60,5 @@
     <ID>MayBeConstant:DesignTokens.kt:TypographyTokens$val label: Int = 11</ID>
     <ID>MayBeConstant:DesignTokens.kt:TypographyTokens$val subtitle: Int = 18</ID>
     <ID>MayBeConstant:DesignTokens.kt:TypographyTokens$val title: Int = 24 // top bar titles</ID>
-    <ID>NoMultipleSpaces:DesignTokens.kt:ColorTokens$ </ID>
-    <ID>NoMultipleSpaces:DesignTokens.kt:TypographyTokens$ </ID>
-    <ID>SpacingBetweenDeclarationsWithComments:DesignTokens.kt:ColorTokens$// Raised controls on a surface (search field, filter button, unselected</ID>
   </CurrentIssues>
 </SmellBaseline>

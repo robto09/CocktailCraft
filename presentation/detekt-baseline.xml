@@ -2,111 +2,11 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>ArgumentListWrapping:SharedCartViewModel.kt:SharedCartViewModel$(_uiState.value.cartItems, MR.strings.error_refresh_cart_failed)</ID>
-    <ID>ArgumentListWrapping:SharedCartViewModel.kt:SharedCartViewModel$(manageCartUseCase.getCartItems().getOrReport(_uiState.value.cartItems, MR.strings.error_refresh_cart_failed))</ID>
-    <ID>ArgumentListWrapping:SharedHomeViewModelTest.kt:SharedHomeViewModelTest$(harness.search.advancedSearchCalls.none { it.query == "marg" }, "clearing must cancel the pending debounced search")</ID>
-    <ID>ArgumentListWrapping:SharedHomeViewModelTest.kt:SharedHomeViewModelTest$(listOf("1"), vm.uiState.value.cocktails.map { it.id }, "empty query falls back to the default category listing")</ID>
-    <ID>ArgumentListWrapping:SharedHomeViewModelTest.kt:SharedHomeViewModelTest$(listOf("m1"), vm.uiState.value.cocktails.map { it.id }, "load-more during search must not append category items")</ID>
-    <ID>ArgumentListWrapping:SharedHomeViewModelTest.kt:SharedHomeViewModelTest$(setOf("fresh1", "fresh2"), vm.uiState.value.cocktails.map { it.id }.toSet(), "a restore after an offline load must refresh the stale cached list")</ID>
-    <ID>ArgumentListWrapping:SharedHomeViewModelTest.kt:SharedHomeViewModelTest$(setOf("fresh1", "fresh2"), vm.uiState.value.cocktails.map { it.id }.toSet(), "a restore during an in-flight offline load must still refresh the stale snapshot")</ID>
-    <ID>ArgumentListWrapping:SharedReviewViewModelTest.kt:SharedReviewViewModelTest$(Review(id = "r1", cocktailId = "c1", userName = "A", rating = 2.0f, comment = "Far too sweet for me.", date = "2026-07-01"))</ID>
-    <ID>ArgumentListWrapping:SharedReviewViewModelTest.kt:SharedReviewViewModelTest$(Review(id = "r1", cocktailId = "c1", userName = "A", rating = 4.0f, comment = "Really quite refreshing.", date = "2026-07-01"))</ID>
-    <ID>ArgumentListWrapping:SharedReviewViewModelTest.kt:SharedReviewViewModelTest$(Review(id = "r2", cocktailId = "c1", userName = "B", rating = 4.0f, comment = "Really quite refreshing.", date = "2026-07-03"))</ID>
-    <ID>ArgumentListWrapping:SharedReviewViewModelTest.kt:SharedReviewViewModelTest$(Review(id = "r3", cocktailId = "c2", userName = "C", rating = 5.0f, comment = "The best drink in town.", date = "2026-07-02"))</ID>
-    <ID>ArgumentListWrapping:SharedReviewViewModelTest.kt:SharedReviewViewModelTest$(id = "r1", cocktailId = "c1", userName = "A", rating = 2.0f, comment = "Far too sweet for me.", date = "2026-07-01")</ID>
-    <ID>ArgumentListWrapping:SharedReviewViewModelTest.kt:SharedReviewViewModelTest$(id = "r1", cocktailId = "c1", userName = "A", rating = 4.0f, comment = "Really quite refreshing.", date = "2026-07-01")</ID>
-    <ID>ArgumentListWrapping:SharedReviewViewModelTest.kt:SharedReviewViewModelTest$(id = "r2", cocktailId = "c1", userName = "B", rating = 4.0f, comment = "Really quite refreshing.", date = "2026-07-03")</ID>
-    <ID>ArgumentListWrapping:SharedReviewViewModelTest.kt:SharedReviewViewModelTest$(id = "r3", cocktailId = "c2", userName = "C", rating = 5.0f, comment = "The best drink in town.", date = "2026-07-02")</ID>
-    <ID>ArgumentListWrapping:SharedReviewViewModelTest.kt:SharedReviewViewModelTest$(id = "r9", cocktailId = "c1", userName = "A", rating = 4.0f, comment = "Really quite refreshing.", date = "2026-07-05")</ID>
-    <ID>BlankLineBetweenWhenConditions:AddToCart.kt:when (result) { is Result.Success -&gt; { announce(UiEvent.Success(MR.strings.added_to_cart.format(cocktail.name))) true } is Result.Error -&gt; { announce( UiEvent.Failure( ErrorHandler.rawMessage(result.message) ?: MR.strings.error_add_item_to_cart_failed.desc() ) ) false } is Result.Loading -&gt; false }</ID>
-    <ID>BlankLineBetweenWhenConditions:SharedOrderViewModel.kt:SharedOrderViewModel$when (val result = placeOrderUseCase(cartItems)) { is Result.Success -&gt; { // The observed orders flow picks up the new order automatically _uiState.update { it.copy(currentOrder = result.data) } true } is Result.Error -&gt; { setError( MR.strings.error_order_failed_title, ErrorHandler.rawMessage(result.message) ?: MR.strings.error_place_order_failed.desc(), ErrorHandler.ErrorCategory.SERVER ) false } is Result.Loading -&gt; false }</ID>
-    <ID>BlankLineBetweenWhenConditions:SharedOrderViewModel.kt:SharedOrderViewModel$when { _uiState.value.isPlacingOrder -&gt; false cartItems.isEmpty() -&gt; { clearError() setError( MR.strings.error_empty_cart_title, MR.strings.error_empty_cart_message, ErrorHandler.ErrorCategory.DATA ) false } else -&gt; { clearError() checkOut(cartItems) } }</ID>
-    <ID>BlankLineBetweenWhenConditions:SharedViewModel.kt:SharedViewModel$when (this) { is Result.Success -&gt; data is Result.Error -&gt; { _error.value = ErrorHandler.errorFromCode( code = code, message = ErrorHandler.rawMessage(message) ?: fallbackMessage.desc(), recoveryAction = recoveryAction ) Logger.e { "Error in ${this@SharedViewModel::class.simpleName}: $message ($code)" } default } is Result.Loading -&gt; default }</ID>
-    <ID>ClassSignature:FlakyFavoritesRepository.kt:FlakyFavoritesRepository : CocktailFavoritesRepository</ID>
-    <ID>ClassSignature:HomeSortOption.kt:CocktailRatingSummary</ID>
-    <ID>ClassSignature:SharedCartViewModel.kt:SharedCartViewModel : SharedViewModel</ID>
-    <ID>ClassSignature:SharedCocktailDetailViewModelTest.kt:FailingDetailRepository : CocktailDetailRepository</ID>
-    <ID>ClassSignature:SharedFavoritesViewModel.kt:SharedFavoritesViewModel : SharedViewModel</ID>
-    <ID>ClassSignature:SharedProfileViewModel.kt:SharedProfileViewModel : SharedViewModel</ID>
-    <ID>ClassSignature:SharedProfileViewModelTest.kt:FailingAuthRepository : AuthRepository</ID>
-    <ID>ClassSignature:SharedReviewViewModel.kt:SharedReviewViewModel : SharedViewModel</ID>
-    <ID>ClassSignature:SharedThemeViewModel.kt:SharedThemeViewModel : SharedViewModel</ID>
-    <ID>ClassSignature:UiEvent.kt:UiEvent$Failure : UiEvent</ID>
-    <ID>ClassSignature:UiEvent.kt:UiEvent$Success : UiEvent</ID>
-    <ID>ClassSignature:UiEvent.kt:UiEventAction</ID>
     <ID>ComplexCondition:SharedHomeViewModel.kt:SharedHomeViewModel$isOnline &amp;&amp; ((error.value != null &amp;&amp; _uiState.value.cocktails.isEmpty()) || lastLoadWasOffline)</ID>
     <ID>Filename:DataLayer.kt:com.cocktailcraft.testutil.DataLayer.kt</ID>
-    <ID>FunctionExpressionBody:SharedHomeViewModel.kt:SharedHomeViewModel${ return try { getCocktailDetailUseCase(id).getOrNull() } catch (e: Exception) { handleException(e, MR.strings.error_load_cocktail_details_failed) null } }</ID>
-    <ID>FunctionExpressionBody:SharedThemeViewModel.kt:SharedThemeViewModel${ return when (color.lowercase()) { "coral" -&gt; MR.strings.accent_color_coral.desc() "blue" -&gt; MR.strings.accent_color_blue.desc() "green" -&gt; MR.strings.accent_color_green.desc() "red" -&gt; MR.strings.accent_color_red.desc() "orange" -&gt; MR.strings.accent_color_orange.desc() "purple" -&gt; MR.strings.accent_color_purple.desc() "pink" -&gt; MR.strings.accent_color_pink.desc() else -&gt; StringDesc.Raw(color.replaceFirstChar { it.uppercase() }) } }</ID>
-    <ID>FunctionExpressionBody:SharedThemeViewModel.kt:SharedThemeViewModel${ return when (size.lowercase()) { "small" -&gt; MR.strings.font_size_small "medium" -&gt; MR.strings.font_size_medium "large" -&gt; MR.strings.font_size_large "xlarge" -&gt; MR.strings.font_size_xlarge else -&gt; MR.strings.common_unknown }.desc() }</ID>
-    <ID>FunctionLiteral:SharedHomeViewModel.kt:SharedHomeViewModel$&lt;anonymous&gt;</ID>
-    <ID>FunctionLiteral:SharedProfileViewModel.kt:SharedProfileViewModel$&lt;anonymous&gt;</ID>
-    <ID>FunctionLiteral:SharedThemeViewModel.kt:SharedThemeViewModel$&lt;anonymous&gt;</ID>
-    <ID>ImportOrdering:SharedReviewViewModelTest.kt:import app.cash.turbine.test import com.cocktailcraft.domain.model.Review import com.cocktailcraft.domain.repository.ReviewRepository import com.cocktailcraft.domain.usecase.ManageReviewsUseCase import com.cocktailcraft.domain.util.getOrThrow import com.cocktailcraft.resources.MR import com.cocktailcraft.resources.error_invalid_user_title import com.cocktailcraft.resources.error_review_user_required import com.cocktailcraft.resources.review_error_comment_required import com.cocktailcraft.resources.review_error_comment_too_long import com.cocktailcraft.resources.review_error_comment_too_short import com.cocktailcraft.resources.review_error_rating_range import com.cocktailcraft.testutil.DataLayerTest import dev.icerock.moko.resources.desc.StringDesc import dev.icerock.moko.resources.desc.desc import dev.icerock.moko.resources.format import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFalse import kotlin.test.assertNotNull import kotlin.test.assertTrue import kotlinx.coroutines.ExperimentalCoroutinesApi import kotlinx.coroutines.test.StandardTestDispatcher import kotlinx.coroutines.test.TestScope import kotlinx.coroutines.test.advanceUntilIdle import kotlinx.coroutines.test.runTest import org.koin.core.Koin</ID>
-    <ID>ImportOrdering:SharedThemeViewModelTest.kt:import com.cocktailcraft.domain.model.ThemeMode import com.cocktailcraft.domain.repository.AuthRepository import com.cocktailcraft.domain.usecase.ManageProfileUseCase import com.cocktailcraft.domain.util.getOrThrow import com.cocktailcraft.resources.MR import com.cocktailcraft.resources.theme_mode_dark import com.cocktailcraft.resources.theme_mode_light import com.cocktailcraft.resources.theme_mode_system import com.cocktailcraft.testutil.DataLayerTest import com.russhwolf.settings.MapSettings import dev.icerock.moko.resources.desc.StringDesc import dev.icerock.moko.resources.desc.desc import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFalse import kotlin.test.assertTrue import kotlinx.coroutines.CoroutineDispatcher import kotlinx.coroutines.ExperimentalCoroutinesApi import kotlinx.coroutines.test.StandardTestDispatcher import kotlinx.coroutines.test.advanceUntilIdle import kotlinx.coroutines.test.runTest</ID>
     <ID>MatchingDeclarationName:DataLayer.kt:DataLayerTest : MainDispatcherTest</ID>
-    <ID>MaxLineLength:SharedCartViewModel.kt:SharedCartViewModel$applyItems(manageCartUseCase.getCartItems().getOrReport(_uiState.value.cartItems, MR.strings.error_refresh_cart_failed))</ID>
-    <ID>MaxLineLength:SharedProfileViewModelTest.kt:SharedProfileViewModelTest.Harness$suspend</ID>
-    <ID>MaxLineLength:SharedReviewViewModelTest.kt:SharedReviewViewModelTest$repo.addReview(Review(id = "r1", cocktailId = "c1", userName = "A", rating = 2.0f, comment = "Far too sweet for me.", date = "2026-07-01")).getOrThrow()</ID>
-    <ID>MaxLineLength:SharedReviewViewModelTest.kt:SharedReviewViewModelTest$repo.addReview(Review(id = "r1", cocktailId = "c1", userName = "A", rating = 4.0f, comment = "Really quite refreshing.", date = "2026-07-01")).getOrThrow()</ID>
-    <ID>MaxLineLength:SharedReviewViewModelTest.kt:SharedReviewViewModelTest$repo.addReview(Review(id = "r2", cocktailId = "c1", userName = "B", rating = 4.0f, comment = "Really quite refreshing.", date = "2026-07-03")).getOrThrow()</ID>
-    <ID>MaxLineLength:SharedReviewViewModelTest.kt:SharedReviewViewModelTest$repo.addReview(Review(id = "r3", cocktailId = "c2", userName = "C", rating = 5.0f, comment = "The best drink in town.", date = "2026-07-02")).getOrThrow()</ID>
     <ID>MaxLineLength:SharedThemeViewModelTest.kt:SharedThemeViewModelTest$"""{"darkMode":false,"followSystemTheme":true,"notificationsEnabled":true,"language":"en","accentColor":"blue"}"""</ID>
-    <ID>MultiLineIfElse:FlakyFavoritesRepository.kt:FlakyFavoritesRepository$Result.Error("favorites store unavailable")</ID>
-    <ID>MultiLineIfElse:FlakyFavoritesRepository.kt:FlakyFavoritesRepository$delegate.addToFavorites(cocktail)</ID>
-    <ID>MultiLineIfElse:FlakyFavoritesRepository.kt:FlakyFavoritesRepository$delegate.removeFromFavorites(cocktail)</ID>
     <ID>NewLineAtEndOfFile:SharedProfileViewModel.kt:com.cocktailcraft.viewmodel.SharedProfileViewModel.kt</ID>
-    <ID>NoConsecutiveBlankLines:FavoritesUiState.kt: </ID>
-    <ID>NoConsecutiveBlankLines:ProfileUiState.kt: </ID>
-    <ID>NoConsecutiveBlankLines:ReviewUiState.kt: </ID>
-    <ID>NoConsecutiveBlankLines:SharedProfileViewModel.kt:SharedProfileViewModel$ </ID>
-    <ID>NoTrailingSpaces:SharedCocktailDetailViewModel.kt:SharedCocktailDetailViewModel$ </ID>
-    <ID>NoTrailingSpaces:SharedHomeViewModel.kt:SharedHomeViewModel$ </ID>
-    <ID>NoTrailingSpaces:SharedOrderViewModel.kt:SharedOrderViewModel$ </ID>
-    <ID>NoTrailingSpaces:SharedProfileViewModel.kt:SharedProfileViewModel$ </ID>
-    <ID>NoUnusedImports:SharedThemeViewModelTest.kt:com.cocktailcraft.viewmodel.SharedThemeViewModelTest.kt</ID>
-    <ID>ParameterListWrapping:SharedProfileViewModelTest.kt:SharedProfileViewModelTest.Harness$(name: String = "Ada Lovelace", email: String = "ada@example.com", password: String = "secret123")</ID>
-    <ID>ReturnCount:SharedHomeViewModel.kt:SharedHomeViewModel$suspend fun loadMoreCocktails</ID>
-    <ID>ReturnCount:SharedProfileViewModel.kt:SharedProfileViewModel$suspend fun changePassword: Boolean</ID>
-    <ID>ReturnCount:SharedProfileViewModel.kt:SharedProfileViewModel$suspend fun signIn: Boolean</ID>
-    <ID>ReturnCount:SharedProfileViewModel.kt:SharedProfileViewModel$suspend fun signUp: Boolean</ID>
-    <ID>ReturnCount:SharedProfileViewModel.kt:SharedProfileViewModel$suspend fun updateProfile: Boolean</ID>
-    <ID>ReturnCount:SharedReviewViewModel.kt:SharedReviewViewModel$suspend fun submitReview: Boolean</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedCocktailDetailViewModel.kt:SharedCocktailDetailViewModel$/** * Refresh cocktail details. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedHomeViewModel.kt:SharedHomeViewModel$/** * Apply the advanced-search [filters] and refresh the cocktail list. * Stores [filters] into state so the active-filter chips reflect them. * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedHomeViewModel.kt:SharedHomeViewModel$/** * Load cocktails by category. * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedHomeViewModel.kt:SharedHomeViewModel$/** * Load cocktails for the currently selected category. * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedHomeViewModel.kt:SharedHomeViewModel$/** * Load more cocktails for pagination. * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedHomeViewModel.kt:SharedHomeViewModel$/** * Search cocktails by name, composed with any active advanced-search filters. * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedHomeViewModel.kt:SharedHomeViewModel$/** * Toggle favorite status for a cocktail. State updates arrive via the * observed favorites flow (SH-4); a failed toggle is reported. * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedOrderViewModel.kt:SharedOrderViewModel$/** * Check out: place an order for [cartItems] and empty the cart, atomically. * On success the cart is already empty (SharedCartViewModel picks that up * from its observed flow); on failure it is untouched. Callers must not * clear the cart themselves. A call while an order is already being * placed is ignored (returns false), so a double tap can't order twice. * PlaceOrderUseCase computes the stored total from [cartItems] and * DeliveryPolicy; callers never pass one. * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedOrderViewModel.kt:SharedOrderViewModel$/** * Load orders from the repository. * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedOrderViewModel.kt:SharedOrderViewModel$/** * Load the order the detail screen shows into [OrderUiState.selectedOrder] * (null when there is no such order, or the lookup failed — which is * reported on [error]). While it loads, a different previously selected * order is cleared so the screen never shows the wrong one. * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedOrderViewModel.kt:SharedOrderViewModel$/** * Reorder: puts order [orderId]'s items back in the cart with their * quantities (see ManageCartUseCase.reorder). Success is announced on * [events] ("Added 3 items to your cart"), and so is a failure (a toast * on the detail screen, like add-to-cart). An order that can't be * reordered ([OrderUiState.canReorderSelectedOrder] false) adds nothing. * A call while a reorder is in flight is ignored (returns false), so a * double tap can't add the items twice. * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedProfileViewModel.kt:SharedProfileViewModel$/** * Change user password. Success is announced on [events] (it used to be * pushed through the error channel, so it rendered as an error alert). * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedProfileViewModel.kt:SharedProfileViewModel$/** * Check current authentication status. * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedProfileViewModel.kt:SharedProfileViewModel$/** * Sign in with email and password. * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedProfileViewModel.kt:SharedProfileViewModel$/** * Sign out current user. * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedProfileViewModel.kt:SharedProfileViewModel$/** * Sign up with name, email and password. * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedProfileViewModel.kt:SharedProfileViewModel$/** * Update user profile information. * SKIE will convert this to Swift async function. */</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedProfileViewModelTest.kt:SharedProfileViewModelTest.Harness$// The real AuthRepositoryImpl (internal to :core:data), via dataModule</ID>
-    <ID>SpacingBetweenDeclarationsWithComments:SharedThemeViewModelTest.kt:SharedThemeViewModelTest.Harness$// The real AuthRepositoryImpl (internal to :core:data), via dataModule</ID>
-    <ID>StatementWrapping:SharedHomeViewModel.kt:SharedHomeViewModel$it.copy( filterCategories = categories, filterIngredients = ingredients )</ID>
-    <ID>StatementWrapping:SharedHomeViewModel.kt:SharedHomeViewModel$it.copy( selectedCategory = category, isLoading = true, currentPage = 1, hasMoreData = true )</ID>
-    <ID>StatementWrapping:SharedProfileViewModel.kt:SharedProfileViewModel$it.copy( isLoggedIn = signedIn, authStatus = if (signedIn) "Authenticated" else "Not Authenticated" )</ID>
-    <ID>StatementWrapping:SharedThemeViewModel.kt:SharedThemeViewModel$it.copy( userPreferences = preferences, themeMode = when { preferences.followSystemTheme -&gt; ThemeMode.SYSTEM preferences.darkMode -&gt; ThemeMode.DARK else -&gt; ThemeMode.LIGHT }, accentColor = preferences.accentColor, fontSize = preferences.fontSize, isHighContrast = preferences.isHighContrast, isReducedMotion = preferences.isReducedMotion )</ID>
-    <ID>SwallowedException:SharedCocktailDetailViewModel.kt:SharedCocktailDetailViewModel$e: Exception</ID>
-    <ID>SwallowedException:SharedHomeViewModel.kt:SharedHomeViewModel$e: Exception</ID>
-    <ID>SwallowedException:SharedProfileViewModel.kt:SharedProfileViewModel$e: Exception</ID>
-    <ID>SwallowedException:SharedThemeViewModel.kt:SharedThemeViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:SharedCartViewModel.kt:SharedCartViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:SharedCocktailDetailViewModel.kt:SharedCocktailDetailViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:SharedFavoritesViewModel.kt:SharedFavoritesViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:SharedHomeViewModel.kt:SharedHomeViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:SharedOrderViewModel.kt:SharedOrderViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:SharedProfileViewModel.kt:SharedProfileViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:SharedReviewViewModel.kt:SharedReviewViewModel$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:SharedThemeViewModel.kt:SharedThemeViewModel$e: Exception</ID>
     <ID>TooManyFunctions:SharedHomeViewModel.kt:SharedHomeViewModel : SharedViewModel</ID>
     <ID>TooManyFunctions:SharedProfileViewModel.kt:SharedProfileViewModel : SharedViewModel</ID>
     <ID>TooManyFunctions:SharedThemeViewModel.kt:SharedThemeViewModel : SharedViewModel</ID>
@@ -120,12 +20,5 @@
     <ID>WildcardImport:SharedProfileViewModel.kt:import kotlinx.coroutines.flow.*</ID>
     <ID>WildcardImport:SharedReviewViewModel.kt:import kotlinx.coroutines.flow.*</ID>
     <ID>WildcardImport:SharedThemeViewModel.kt:import kotlinx.coroutines.flow.*</ID>
-    <ID>Wrapping:SharedCartViewModel.kt:SharedCartViewModel$(</ID>
-    <ID>Wrapping:SharedHomeViewModel.kt:SharedHomeViewModel$it.copy( filterCategories = categories, filterIngredients = ingredients )</ID>
-    <ID>Wrapping:SharedHomeViewModel.kt:SharedHomeViewModel$it.copy( selectedCategory = category, isLoading = true, currentPage = 1, hasMoreData = true )</ID>
-    <ID>Wrapping:SharedHomeViewModelTest.kt:SharedHomeViewModelTest$(</ID>
-    <ID>Wrapping:SharedProfileViewModel.kt:SharedProfileViewModel$it.copy( isLoggedIn = signedIn, authStatus = if (signedIn) "Authenticated" else "Not Authenticated" )</ID>
-    <ID>Wrapping:SharedReviewViewModelTest.kt:SharedReviewViewModelTest$(</ID>
-    <ID>Wrapping:SharedThemeViewModel.kt:SharedThemeViewModel$it.copy( userPreferences = preferences, themeMode = when { preferences.followSystemTheme -&gt; ThemeMode.SYSTEM preferences.darkMode -&gt; ThemeMode.DARK else -&gt; ThemeMode.LIGHT }, accentColor = preferences.accentColor, fontSize = preferences.fontSize, isHighContrast = preferences.isHighContrast, isReducedMotion = preferences.isReducedMotion )</ID>
   </CurrentIssues>
 </SmellBaseline>
