@@ -72,6 +72,7 @@ class CocktailCatalogRepositoryImplTest {
             remote = remote,
             cocktailCache = cache,
             offlineRepository = offline,
+            appScope = backgroundScope,
             nowMs = { fixture.nowMs }
         )
         fixture = Fixture(CocktailCatalogRepositoryImpl(remote, fetcher), api, cache, network, offline, remote)
@@ -82,11 +83,12 @@ class CocktailCatalogRepositoryImplTest {
      * A new repository and fetcher over the same database, on the same
      * clock: the app after a restart (nothing carried over in memory).
      */
-    private fun Fixture.restarted(): CocktailCatalogRepositoryImpl =
+    private fun TestScope.restarted(fixture: Fixture): CocktailCatalogRepositoryImpl = with(fixture) {
         CocktailCatalogRepositoryImpl(
             remote,
-            CocktailCategoryFetcher(remote, cache, offline, nowMs = { nowMs })
+            CocktailCategoryFetcher(remote, cache, offline, backgroundScope, nowMs = { nowMs })
         )
+    }
 
     private fun drink(id: String, name: String, category: String = "Cocktail") = CocktailDto(
         id = id,
@@ -280,7 +282,10 @@ class CocktailCatalogRepositoryImplTest {
 
         // The ingredient filter returns partial records without a category.
         fixture.cache.cacheCocktail(
-            fixture.remote.mapToDomain(CocktailDto(id = "2", name = "Mojito", imageUrl = "https://example.com/2.jpg"))
+            fixture.remote.mapToDomain(
+                CocktailDto(id = "2", name = "Mojito", imageUrl = "https://example.com/2.jpg"),
+                hasFullDetails = false
+            )
         )
 
         assertEquals(listOf("2", "3"), fixture.catalog.observeCategory("Cocktail").first().ids())
@@ -298,7 +303,7 @@ class CocktailCatalogRepositoryImplTest {
         val fixture = fixture(api)
         fixture.catalog.refreshCategory("Cocktail")
 
-        assertEquals(listOf("z", "a", "m"), fixture.restarted().observeCategory("Cocktail").first().ids())
+        assertEquals(listOf("z", "a", "m"), restarted(fixture).observeCategory("Cocktail").first().ids())
     }
 
     @Test
@@ -321,7 +326,7 @@ class CocktailCatalogRepositoryImplTest {
         val fixture = fixture()
         fixture.catalog.refreshCategory("Cocktail")
 
-        val restarted = fixture.restarted()
+        val restarted = restarted(fixture)
         restarted.refreshCategory("Cocktail")
         assertEquals(1, fixture.api.categoryRequests, "the stored fetch time still counts as fresh")
 
@@ -336,7 +341,7 @@ class CocktailCatalogRepositoryImplTest {
         fixture.catalog.refreshCategory("Cocktail")
         fixture.network.setOnline(false)
 
-        val restarted = fixture.restarted()
+        val restarted = restarted(fixture)
 
         assertEquals(listOf("2", "3"), restarted.observeCategory("Cocktail").first().ids())
         assertIs<Result.Error>(restarted.refreshCategory("Cocktail", force = true), "offline: nothing refreshed")

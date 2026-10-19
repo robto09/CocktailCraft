@@ -145,12 +145,10 @@
     <ID>SwallowedException:FavoritesWidget.kt$FavoritesWidget$e: Exception</ID>
     <ID>SwallowedException:FavoritesWidget.kt$RefreshFavoritesAction$e: Exception</ID>
     <ID>SwallowedException:RandomCocktailWidget.kt$RefreshRandomCocktailAction$e: Exception</ID>
-    <ID>SwallowedException:WidgetDataProvider.kt$WidgetDataProvider$e: Exception</ID>
     <ID>TooGenericExceptionCaught:FavoritesWidget.kt$FavoriteItem.Companion$e: Exception</ID>
     <ID>TooGenericExceptionCaught:FavoritesWidget.kt$FavoritesWidget$e: Exception</ID>
     <ID>TooGenericExceptionCaught:FavoritesWidget.kt$RefreshFavoritesAction$e: Exception</ID>
     <ID>TooGenericExceptionCaught:RandomCocktailWidget.kt$RefreshRandomCocktailAction$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:WidgetDataProvider.kt$WidgetDataProvider$e: Exception</ID>
     <ID>TooGenericExceptionCaught:WidgetUpdateWorker.kt$WidgetUpdateWorker$e: Exception</ID>
     <ID>TooManyFunctions:ComponentPreviews.kt$com.cocktailcraft.android.ui.preview.ComponentPreviews.kt</ID>
     <ID>TooManyFunctions:HomeScreen.kt$com.cocktailcraft.android.screens.HomeScreen.kt</ID>

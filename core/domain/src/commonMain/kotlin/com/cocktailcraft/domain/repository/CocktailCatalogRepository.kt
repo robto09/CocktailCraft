@@ -3,6 +3,7 @@ package com.cocktailcraft.domain.repository
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.util.Result
 import kotlinx.coroutines.flow.Flow
+import kotlin.native.HiddenFromObjC
 
 /**
  * Repository interface for cocktail catalog/browsing operations.
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
  * from the network into the database, so observers see the result through
  * the flow.
  */
+@HiddenFromObjC // Kotlin-side port, not Swift API (AR-12): Swift reaches data through the ViewModels
 interface CocktailCatalogRepository {
     suspend fun getCategories(): Result<List<String>>
     suspend fun getIngredients(): Result<List<String>>

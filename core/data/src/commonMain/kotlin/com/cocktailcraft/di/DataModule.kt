@@ -5,6 +5,7 @@ import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.local.LegacySettingsImport
 import com.cocktailcraft.data.local.LocalDatabase
+import com.cocktailcraft.data.local.UserSession
 import com.cocktailcraft.data.remote.ApiRateLimiter
 import com.cocktailcraft.data.remote.CocktailRemoteDataSource
 import com.cocktailcraft.data.repository.AuthRepositoryImpl
@@ -17,6 +18,7 @@ import com.cocktailcraft.data.repository.CocktailOfflineRepositoryImpl
 import com.cocktailcraft.data.repository.CocktailSearchRepositoryImpl
 import com.cocktailcraft.data.repository.OrderRepositoryImpl
 import com.cocktailcraft.data.repository.ReviewRepositoryImpl
+import com.cocktailcraft.data.repository.SessionAwareAuthRepository
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
@@ -27,8 +29,10 @@ import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.repository.ReviewRepository
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -58,6 +62,16 @@ val dataModule = module {
     // Background dispatcher for database and Settings I/O and JSON (de)serialization
     single<CoroutineDispatcher>(named("ioDispatcher")) { Dispatchers.IO }
 
+    // CPU work off the main thread: decoding and mapping API responses
+    single<CoroutineDispatcher>(named("defaultDispatcher")) { Dispatchers.Default }
+
+    // Lives as long as the process. Work that must not die with the screen
+    // that started it runs here: shared fetches (InFlightRequests) and the
+    // shared favorites stream. SupervisorJob: one failure never cancels it.
+    single<CoroutineScope>(named("appScope")) {
+        CoroutineScope(SupervisorJob() + get<CoroutineDispatcher>(named("defaultDispatcher")))
+    }
+
     // Offline decision — single source of truth for "is the app offline" (AR-7)
     single { com.cocktailcraft.data.cache.OfflineModePolicy(networkMonitor = get()) }
 
@@ -69,14 +83,17 @@ val dataModule = module {
     // touches disk; the cache opens it on first use, on the io dispatcher.
     // Settings is still needed to import (once) the cache older versions
     // kept there.
-    single { CocktailCache(
-        database = inject<CocktailCraftDatabase>(),
-        settings = get(),
-        json = get(),
-        appConfig = get(),
-        ioDispatcher = get(named("ioDispatcher")),
-        offlineModePolicy = get()
-    ) }
+    single {
+        CocktailCache(
+            database = inject<CocktailCraftDatabase>(),
+            settings = get(),
+            json = get(),
+            appConfig = get(),
+            currentOwner = get<UserSession>(),
+            ioDispatcher = get(named("ioDispatcher")),
+            offlineModePolicy = get()
+        )
+    }
 
     // Database access for the cart, orders, favorites and reviews
     // repositories. Like the cache, it opens the database lazily on the io
@@ -86,6 +103,7 @@ val dataModule = module {
         LocalDatabase(
             database = inject<CocktailCraftDatabase>(),
             legacyImport = LegacySettingsImport(settings = get(), json = get()),
+            owner = get<UserSession>(),
             ioDispatcher = get(named("ioDispatcher"))
         )
     }
@@ -94,7 +112,9 @@ val dataModule = module {
     single { ApiRateLimiter() }
 
     // Remote data source: API access, DTO mapping, rate limiting
-    single { CocktailRemoteDataSource(api = get(), rateLimiter = get()) }
+    single {
+        CocktailRemoteDataSource(api = get(), rateLimiter = get(), defaultDispatcher = get(named("defaultDispatcher")))
+    }
 
     // Focused repositories, each owning one concern
     single<CocktailOfflineRepository> {
@@ -111,6 +131,7 @@ val dataModule = module {
             cocktailCache = get(),
             remote = get(),
             offlineRepository = get(),
+            appScope = get(named("appScope")),
             ioDispatcher = get(named("ioDispatcher"))
         )
     }
@@ -122,7 +143,8 @@ val dataModule = module {
         CocktailCategoryFetcher(
             remote = get(),
             cocktailCache = get(),
-            offlineRepository = get()
+            offlineRepository = get(),
+            appScope = get(named("appScope"))
         )
     }
 
@@ -139,7 +161,8 @@ val dataModule = module {
         CocktailDetailRepositoryImpl(
             remote = get(),
             cocktailCache = get(),
-            offlineRepository = get()
+            offlineRepository = get(),
+            appScope = get(named("appScope"))
         )
     }
 
@@ -150,13 +173,21 @@ val dataModule = module {
     single<CartRepository> {
         CartRepositoryImpl(
             localDatabase = get(),
+            cocktailCache = get(),
             json = get(),
             ioDispatcher = get(named("ioDispatcher"))
         )
     }
 
+    // The account store, and who owns the user's data: the signed-in user,
+    // else the guest (UserSession). The app's AuthRepository wraps the store
+    // to switch that owner on sign-in/out (SessionAwareAuthRepository).
+    single { AuthRepositoryImpl(get(secureSettingsQualifier), get(), get(named("ioDispatcher"))) }
+
+    single { UserSession(authRepository = get<AuthRepositoryImpl>()) }
+
     single<AuthRepository> {
-        AuthRepositoryImpl(get(secureSettingsQualifier), get(), get(named("ioDispatcher")))
+        SessionAwareAuthRepository(delegate = get<AuthRepositoryImpl>(), session = get(), localDatabase = get())
     }
 
     single<OrderRepository> {

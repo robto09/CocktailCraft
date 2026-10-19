@@ -87,18 +87,10 @@ internal class AuthRepositoryImpl(
             // casing of it shares one counter
             val throttleEmail = user?.email ?: normalizeEmail(email)
 
-            val lockoutMs = lockoutRemainingMs(throttleEmail)
-            if (lockoutMs > 0) {
-                // Must be an Error (not Success(false)) so the lockout message
-                // reaches the UI instead of the generic invalid-credentials one.
-                return@locked Result.Error(
-                    message = "Sign-in locked for ${lockoutMs}ms after repeated failures",
-                    code = ErrorCode.FORBIDDEN,
-                    displayMessage = lockoutMessage(lockoutMs)
-                )
-            }
+            lockoutError(throttleEmail)?.let { return@locked it }
 
             if (user == null || !verifyCredentials(user.email, password)) {
+                if (user == null) makeRoomToThrottleUnknownEmail(throttleEmail)
                 recordFailedSignIn(throttleEmail)
                 return@locked Result.Success(false)
             }
@@ -117,7 +109,15 @@ internal class AuthRepositoryImpl(
     override suspend fun changePassword(oldPassword: String, newPassword: String): Result<Boolean> =
         locked("Failed to change password") {
             val currentUser = getCurrentUserSync() ?: return@locked Result.Success(false)
-            if (!verifyCredentials(currentUser.email, oldPassword)) return@locked Result.Success(false)
+            // Checking the current password is a password guess like any
+            // sign-in (an unlocked phone left signed in), so it shares the
+            // account's sign-in counter and lockout.
+            lockoutError(currentUser.email)?.let { return@locked it }
+            if (!verifyCredentials(currentUser.email, oldPassword)) {
+                recordFailedSignIn(currentUser.email)
+                return@locked Result.Success(false)
+            }
+            clearFailedSignIns(currentUser.email)
             saveCredentials(currentUser.email, newPassword)
             Result.Success(true)
         }
@@ -250,8 +250,9 @@ internal class AuthRepositoryImpl(
 
     private fun passwordKey(email: String) = "${AuthStorageKeys.PASSWORD_PREFIX}$email"
 
-    // Sign-in throttling: after FREE_SIGN_IN_ATTEMPTS consecutive failures the
-    // email locks for BASE_LOCKOUT_MS, doubling per further failure up to
+    // Sign-in throttling: after FREE_SIGN_IN_ATTEMPTS consecutive failures
+    // (sign-ins and change-password checks of the current password count
+    // alike) the email locks for BASE_LOCKOUT_MS, doubling per further failure up to
     // BASE_LOCKOUT_MS << MAX_LOCKOUT_DOUBLINGS. State clears on success.
     // Deadlines use the wall clock — the only persistent cross-platform time
     // source available here — so advancing the device clock skips one wait;
@@ -261,6 +262,21 @@ internal class AuthRepositoryImpl(
     private fun lockoutRemainingMs(email: String): Long {
         val until = settings.getLongOrNull(lockoutUntilKey(email)) ?: return 0
         return until - nowMs()
+    }
+
+    /**
+     * The error to return while [email] is locked out, or null. An Error (not
+     * Success(false)) so the lockout message reaches the UI instead of the
+     * generic invalid-credentials one.
+     */
+    private fun lockoutError(email: String): Result.Error? {
+        val lockoutMs = lockoutRemainingMs(email)
+        if (lockoutMs <= 0) return null
+        return Result.Error(
+            message = "Locked for ${lockoutMs}ms after repeated failed password attempts",
+            code = ErrorCode.FORBIDDEN,
+            displayMessage = lockoutMessage(lockoutMs)
+        )
     }
 
     private fun recordFailedSignIn(email: String) {
@@ -277,6 +293,39 @@ internal class AuthRepositoryImpl(
         settings.remove(lockoutUntilKey(email))
     }
 
+    /**
+     * Emails with no account are throttled too — skipping them would let a
+     * caller tell accounts apart by which addresses ever lock — but each one
+     * costs secure-store entries (a Keychain item apiece on iOS), so made-up
+     * addresses must not grow the store without bound. Before [email] gets
+     * its first entry, at most MAX_UNKNOWN_THROTTLED_EMAILS - 1 other unknown
+     * emails keep theirs: the least protective go first (no or expired
+     * lockout, then the soonest deadline). Accounts' entries are never
+     * evicted, so flooding made-up addresses cannot reset a real lockout.
+     */
+    private fun makeRoomToThrottleUnknownEmail(email: String) {
+        if (settings.hasKey(attemptsKey(email))) return
+        val accountEmails = getCurrentUsers().mapTo(HashSet()) { it.email }
+        val unknown = throttledEmails() - accountEmails
+        val excess = unknown.size - (MAX_UNKNOWN_THROTTLED_EMAILS - 1)
+        if (excess <= 0) return
+        unknown.sortedBy { settings.getLongOrNull(lockoutUntilKey(it)) ?: 0L }
+            .take(excess)
+            .forEach(::clearFailedSignIns)
+    }
+
+    /** Every email that currently has throttle state, account or not. */
+    private fun throttledEmails(): Set<String> =
+        settings.keys.mapNotNullTo(HashSet()) { key ->
+            when {
+                key.startsWith(AuthStorageKeys.SIGN_IN_ATTEMPTS_PREFIX) ->
+                    key.removePrefix(AuthStorageKeys.SIGN_IN_ATTEMPTS_PREFIX)
+                key.startsWith(AuthStorageKeys.SIGN_IN_LOCKOUT_PREFIX) ->
+                    key.removePrefix(AuthStorageKeys.SIGN_IN_LOCKOUT_PREFIX)
+                else -> null
+            }
+        }
+
     private fun attemptsKey(email: String) = "${AuthStorageKeys.SIGN_IN_ATTEMPTS_PREFIX}$email"
 
     private fun lockoutUntilKey(email: String) = "${AuthStorageKeys.SIGN_IN_LOCKOUT_PREFIX}$email"
@@ -291,6 +340,9 @@ internal class AuthRepositoryImpl(
         private const val FREE_SIGN_IN_ATTEMPTS = 5
         private const val BASE_LOCKOUT_MS = 30_000L
         private const val MAX_LOCKOUT_DOUBLINGS = 6 // caps at 32 minutes
+
+        /** Most emails without an account that keep throttle state at once. */
+        internal const val MAX_UNKNOWN_THROTTLED_EMAILS = 20
 
         /** Canonical form for matching and storing emails: trimmed, lowercase. */
         internal fun normalizeEmail(email: String): String = email.trim().lowercase()

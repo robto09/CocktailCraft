@@ -17,6 +17,11 @@ import kotlin.native.HiddenFromObjC
  * keeps its original code. Coroutine cancellation is rethrown, never turned
  * into a user-facing error.
  *
+ * The error's message is [defaultMessage] plus the exception's type, never
+ * the exception's own message: Result.Error messages end up in logs that
+ * release builds keep (Warn and up), and a Ktor message embeds the request
+ * URL with the user's search terms. The network layer debug-logs the detail.
+ *
  * Lives in :core:common (was :core:data-internal) so the domain use cases
  * share it instead of hand-rolling catch blocks that swallow cancellation.
  */
@@ -30,7 +35,7 @@ inline fun <T> runCatchingResult(defaultMessage: String, block: () -> Result<T>)
         Result.Error(message = e.message ?: defaultMessage, code = e.code, displayMessage = e.displayMessage)
     } catch (e: Exception) {
         Result.Error(
-            message = e.message ?: defaultMessage,
+            message = "$defaultMessage (${e::class.simpleName})",
             code = ErrorHandler.getErrorFromException(e).errorCode
         )
     }

@@ -118,6 +118,7 @@ class SharedCartViewModelUndoTest : MainDispatcherTest() {
 
         vm.events.test {
             vm.removeFromCart("1")
+            advanceUntilIdle()
             expectNoEvents()
         }
         assertEquals(listOf("1" to 1), vm.quantities())

@@ -40,11 +40,11 @@ class ManageReviewsUseCase(
         return repository.addReview(review).map { review }
     }
 
-    /** Returns false when no review with [reviewId] exists. */
+    /** Returns false when the current user has no review with [reviewId]. */
     suspend fun updateReview(reviewId: String, rating: Float, comment: String): Result<Boolean> =
         repository.updateReview(reviewId, rating, comment.trim(), getCurrentDate())
 
-    /** Returns false when no review with [reviewId] exists. */
+    /** Returns false when the current user has no review with [reviewId]. */
     suspend fun deleteReview(reviewId: String): Result<Boolean> =
         repository.deleteReview(reviewId)
 

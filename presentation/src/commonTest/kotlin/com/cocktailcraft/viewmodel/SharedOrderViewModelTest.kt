@@ -8,19 +8,16 @@ import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.repository.OrderRepository
-import com.cocktailcraft.domain.usecase.ManageCartUseCase
 import com.cocktailcraft.domain.usecase.PlaceOrderUseCase
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.error_empty_cart_title
+import com.cocktailcraft.resources.error_load_orders_failed
 import com.cocktailcraft.resources.error_order_failed_title
-import com.cocktailcraft.testutil.FakeCartRepository
-import com.cocktailcraft.testutil.FakeDetailRepository
+import com.cocktailcraft.resources.error_place_order_failed
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.util.ErrorHandler
-import dev.icerock.moko.resources.desc.Raw
-import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -104,12 +101,9 @@ private class FakeOrderRepository : OrderRepository {
 @OptIn(ExperimentalCoroutinesApi::class)
 class SharedOrderViewModelTest : MainDispatcherTest() {
 
-    private val cart = FakeCartRepository()
-
     private fun viewModel(repository: FakeOrderRepository) = SharedOrderViewModel(
         orderRepository = repository,
-        placeOrderUseCase = PlaceOrderUseCase(repository),
-        manageCartUseCase = ManageCartUseCase(cart, FakeDetailRepository())
+        placeOrderUseCase = PlaceOrderUseCase(repository)
     )
 
     @Test
@@ -178,7 +172,7 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         vm.loadOrders()
 
         val error = assertNotNull(vm.error.value)
-        assertEquals(StringDesc.Raw("orders backend down"), error.message)
+        assertEquals(MR.strings.error_load_orders_failed.desc(), error.message)
         assertFalse(vm.uiState.value.isLoading)
     }
 
@@ -235,7 +229,7 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
 
         val error = assertNotNull(vm.error.value)
         assertEquals(MR.strings.error_order_failed_title.desc(), error.title)
-        assertEquals(StringDesc.Raw("order store failed"), error.message)
+        assertEquals(MR.strings.error_place_order_failed.desc(), error.message)
         assertEquals(ErrorHandler.ErrorCategory.SERVER, error.category)
         assertNull(vm.uiState.value.currentOrder)
         assertFalse(vm.uiState.value.isPlacingOrder)
@@ -280,18 +274,5 @@ class SharedOrderViewModelTest : MainDispatcherTest() {
         assertEquals(1, repository.placeOrderCalls)
         assertEquals(1, vm.uiState.value.orders.size)
         assertFalse(vm.uiState.value.isPlacingOrder)
-    }
-
-    @Test
-    fun cancelOrderMarksOrderCancelled() = runTest {
-        val repository = FakeOrderRepository()
-        repository.seed(testOrder("o1", status = OrderStatus.PENDING))
-        val vm = viewModel(repository)
-        advanceUntilIdle()
-
-        assertTrue(vm.cancelOrder("o1"))
-        advanceUntilIdle()
-
-        assertEquals(OrderStatus.CANCELLED, vm.uiState.value.orders.single().status)
     }
 }

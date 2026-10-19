@@ -22,13 +22,12 @@ data class HomeUiState(
     val selectedCategory: String? = null,
     val currentPage: Int = 1,
     val hasMoreData: Boolean = true,
-    val isLoadingMore: Boolean = false,
     val isNetworkAvailable: Boolean = true,
     // Kept across category changes, searches and catalog refreshes
     val sortOption: HomeSortOption = HomeSortOption.DEFAULT,
     // Most recently viewed first, at most SharedHomeViewModel.RECENTLY_VIEWED_LIMIT
     val recentlyViewed: List<Cocktail> = emptyList(),
-    // Review averages by cocktail id, for cocktails the user has reviewed
+    // Review averages by cocktail id, over every review on the device
     val ratingSummaries: Map<String, CocktailRatingSummary> = emptyMap()
 ) {
     /** The "Recently viewed" row shows when there is something in it and no search query. */

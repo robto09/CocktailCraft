@@ -9,30 +9,25 @@ struct OrderDetailRoute: Hashable {
 /// One order: status, delivery estimate, items and totals, with Reorder
 /// (its items back into the cart) and Cancel Order (behind a
 /// confirmation) while the order is still cancellable —
-/// the counterpart of Android's OrderDetailScreen. Shares the order list's
-/// wrapper, whose shared ViewModel holds the selected order.
+/// the counterpart of Android's OrderDetailScreen. Owns its screen-scoped
+/// shared ViewModel, so it never shows an order an earlier visit left.
 struct OrderDetailView: View {
     let orderId: String
-    let viewModel: OrderViewModelSKIE
 
-    // Distinguishes "load not started yet" from "loaded but not found"
-    @State private var hasLoaded = false
+    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    @State private var model = ViewModelHolder(OrderDetailViewModelSKIE.init)
+    private var viewModel: OrderDetailViewModelSKIE { model.wrapper }
     @State private var showCancelConfirmation = false
     @Environment(\.isDarkMode) private var isDarkMode
 
-    /// The shared ViewModel is a Koin single: never show another order an
-    /// earlier visit left selected.
-    private var order: Order? {
-        guard let selected = viewModel.state.selectedOrder, selected.id == orderId else { return nil }
-        return selected
-    }
+    private var order: Order? { viewModel.state.order }
 
     var body: some View {
         content
             // Its own alert level, apart from the error alert below
             .alert(L(\.order_cancel_confirm_title), isPresented: $showCancelConfirmation) {
                 Button(L(\.order_cancel), role: .destructive) {
-                    Task { await viewModel.cancelOrder(orderId) }
+                    viewModel.cancelOrder()
                 }
                 Button(L(\.order_cancel_keep), role: .cancel) {}
             } message: {
@@ -44,8 +39,11 @@ struct OrderDetailView: View {
             .accessibilityIdentifier("orderDetail.screen")
             .brandedNavigationBar(title: L(\.order_detail_title))
             .task {
-                await viewModel.loadOrderDetail(orderId)
-                if !Task.isCancelled { hasLoaded = true }
+                // Re-fires when the view re-appears: skip the lookup when
+                // this screen already shows its order
+                if order?.id != orderId {
+                    viewModel.loadOrder(orderId)
+                }
             }
             // "Order cancelled", "Added 3 items to your cart" or a failed reorder
             .sharedEventToast(viewModel.event, clear: { viewModel.clearEvent() })
@@ -60,26 +58,26 @@ struct OrderDetailView: View {
             ScrollView {
                 OrderDetailContent(
                     order: order,
-                    subtotal: viewModel.state.selectedOrderSubtotal,
-                    deliveryFee: viewModel.state.selectedOrderDeliveryFee,
-                    deliveryEstimate: viewModel.state.selectedOrderDeliveryEstimate.localized(),
-                    canCancel: viewModel.state.canCancelSelectedOrder,
-                    isCancelling: viewModel.state.isCancellingOrder,
+                    subtotal: viewModel.state.subtotal,
+                    deliveryFee: viewModel.state.deliveryFee,
+                    deliveryEstimate: viewModel.state.deliveryEstimate.localized(),
+                    canCancel: viewModel.state.canCancel,
+                    isCancelling: viewModel.state.isCancelling,
                     onCancel: { showCancelConfirmation = true },
-                    canReorder: viewModel.state.canReorderSelectedOrder,
+                    canReorder: viewModel.state.canReorder,
                     isReordering: viewModel.state.isReordering,
                     onReorder: {
-                        Task { await viewModel.reorder(orderId) }
+                        viewModel.reorder()
                     }
                 )
             }
-        } else if !hasLoaded || viewModel.state.isLoadingOrderDetail {
+        } else if viewModel.state.isLoading {
             OrderListSkeleton(cardCount: 1)
         } else if let error = viewModel.error {
             ErrorView(
                 error: error,
                 onRetry: {
-                    Task { await viewModel.loadOrderDetail(orderId) }
+                    viewModel.loadOrder(orderId)
                 }
             )
         } else {

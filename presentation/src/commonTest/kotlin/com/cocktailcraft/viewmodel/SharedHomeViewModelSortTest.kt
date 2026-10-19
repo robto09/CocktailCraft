@@ -91,13 +91,13 @@ class SharedHomeViewModelSortTest : MainDispatcherTest() {
         advanceUntilIdle()
         vm.setSortOption(HomeSortOption.PRICE_ASC)
 
-        vm.loadCocktailsByCategory("Shot")
+        vm.selectCategory("Shot")
         advanceUntilIdle()
 
         assertEquals(HomeSortOption.PRICE_ASC, vm.uiState.value.sortOption)
         assertEquals(listOf("s2", "s3", "s1"), vm.uiState.value.cocktails.map { it.id })
 
-        vm.loadCocktailsByCategory(null)
+        vm.selectCategory(null)
         advanceUntilIdle()
 
         assertEquals(listOf("a", "c", "b"), vm.uiState.value.cocktails.map { it.id })
@@ -157,6 +157,7 @@ class SharedHomeViewModelSortTest : MainDispatcherTest() {
         )
 
         vm.searchCocktails("Drink 1")
+        advanceUntilIdle()
         assertEquals(listOf("15", "14", "13", "12", "11", "10", "1"), vm.uiState.value.cocktails.map { it.id })
     }
 
@@ -180,6 +181,18 @@ class SharedHomeViewModelSortTest : MainDispatcherTest() {
             mapOf("b" to CocktailRatingSummary(4.5f, 2), "a" to CocktailRatingSummary(2f, 1)),
             vm.uiState.value.ratingSummaries
         )
+    }
+
+    @Test
+    fun ratingSummariesCountEveryonesReviews() = runTest {
+        val harness = HomeViewModelHarness()
+        harness.all = sortable
+        harness.reviews.addReview(review("b", 5f))
+        harness.reviews.addReview(review("b", 3f).copy(isMine = false))
+        val vm = harness.viewModel()
+        advanceUntilIdle()
+
+        assertEquals(mapOf("b" to CocktailRatingSummary(4f, 2)), vm.uiState.value.ratingSummaries)
     }
 
     @Test

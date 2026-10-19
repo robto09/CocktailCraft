@@ -2,11 +2,14 @@ package com.cocktailcraft.util
 
 import com.cocktailcraft.domain.util.DomainException
 import com.cocktailcraft.domain.util.ErrorCode
+import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.common_retry
 import com.cocktailcraft.resources.error
 import com.cocktailcraft.resources.error_generic
 import com.cocktailcraft.resources.error_load_cocktails_failed
+import com.cocktailcraft.resources.error_message_forbidden
+import com.cocktailcraft.resources.error_message_invalid_data
 import com.cocktailcraft.resources.error_message_invalid_payload
 import com.cocktailcraft.resources.error_message_network
 import com.cocktailcraft.resources.error_message_server
@@ -20,11 +23,11 @@ import dev.icerock.moko.resources.desc.Raw
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import io.ktor.client.plugins.HttpRequestTimeoutException
-import io.ktor.utils.io.errors.IOException
+import kotlinx.io.IOException
+import kotlinx.serialization.SerializationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
-import kotlinx.serialization.SerializationException
 
 /**
  * Locks in the behavior of the single error-construction path
@@ -75,15 +78,40 @@ class ErrorHandlerTest {
     }
 
     @Test
-    fun domainExceptionUsesItsTypedCodeAndMessage() {
+    fun domainExceptionUsesItsTypedCodeAndTheCallersCopyNotItsRawMessage() {
         val error = ErrorHandler.getErrorFromException(
-            DomainException(ErrorCode.NOT_FOUND, "Cocktail not found")
+            DomainException(ErrorCode.NOT_FOUND, "Cocktail not found"),
+            defaultMessage = MR.strings.error_load_cocktails_failed.desc()
         )
 
         assertEquals(ErrorCode.NOT_FOUND, error.errorCode)
         assertEquals(ErrorHandler.ErrorCategory.DATA, error.category)
         assertEquals(MR.strings.error_title_data.desc(), error.title)
-        assertEquals(StringDesc.Raw("Cocktail not found"), error.message)
+        assertEquals(MR.strings.error_load_cocktails_failed.desc(), error.message)
+    }
+
+    @Test
+    fun resultErrorMapsLikeTheDomainExceptionItBecomes() {
+        val fallback = MR.strings.error_load_cocktails_failed.desc()
+        val localized = MR.strings.error_message_forbidden.desc()
+        val cases = listOf(
+            Result.Error("raw", ErrorCode.FORBIDDEN, displayMessage = localized),
+            Result.Error("raw [url=https://example.com]", ErrorCode.TIMEOUT),
+            Result.Error("Failed to update favorites", ErrorCode.UNKNOWN)
+        )
+
+        cases.forEach { result ->
+            val reported = ErrorHandler.errorFromResult(result, fallback)
+            val thrown = ErrorHandler.getErrorFromException(
+                DomainException(result.code, result.message, result.displayMessage),
+                defaultMessage = fallback
+            )
+            assertEquals(thrown.message, reported.message)
+            assertEquals(thrown.errorCode, reported.errorCode)
+        }
+        assertEquals(localized, ErrorHandler.errorFromResult(cases[0], fallback).message)
+        assertEquals(MR.strings.error_message_timeout.desc(), ErrorHandler.errorFromResult(cases[1], fallback).message)
+        assertEquals(fallback, ErrorHandler.errorFromResult(cases[2], fallback).message)
     }
 
     @Test
@@ -119,12 +147,12 @@ class ErrorHandlerTest {
     }
 
     @Test
-    fun illegalArgumentExceptionKeepsItsMessageAsDataError() {
+    fun illegalArgumentExceptionIsADataErrorWithSharedCopy() {
         val error = ErrorHandler.getErrorFromException(IllegalArgumentException("bad id"))
 
         assertEquals(ErrorHandler.ErrorCategory.DATA, error.category)
         assertEquals(ErrorCode.INVALID_DATA, error.errorCode)
-        assertEquals(StringDesc.Raw("bad id"), error.message)
+        assertEquals(MR.strings.error_message_invalid_data.desc(), error.message)
     }
 
     @Test
@@ -198,8 +226,8 @@ class ErrorHandlerTest {
     }
 
     @Test
-    fun errorFromCodeFallsBackToRecoverySuggestionForBlankMessage() {
-        val error = ErrorHandler.errorFromCode(ErrorCode.NETWORK, ErrorHandler.rawMessage("  "))
+    fun errorFromCodeFallsBackToRecoverySuggestionWithoutAMessage() {
+        val error = ErrorHandler.errorFromCode(ErrorCode.NETWORK, null)
 
         assertEquals(MR.strings.error_suggestion_network.desc(), error.message)
     }

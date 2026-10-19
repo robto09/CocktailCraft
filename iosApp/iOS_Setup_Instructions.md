@@ -109,7 +109,7 @@ iosApp/
 │   │   ├── ErrorView.swift
 │   │   └── ...
 │   ├── Theme/                      # AppColors, AppTheme
-│   └── Utils/                      # AppRouter, NetworkMonitor, widget bridges
+│   └── Utils/                      # AppRouter, ConnectivityObserver, widget bridges
 └── project.yml                     # XcodeGen project definition (source of truth)
 ```
 

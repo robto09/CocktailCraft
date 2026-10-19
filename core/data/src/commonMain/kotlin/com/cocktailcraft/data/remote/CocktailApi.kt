@@ -4,7 +4,10 @@ import com.cocktailcraft.domain.config.AppConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.*
+import kotlinx.serialization.json.Json
 
 internal interface CocktailApi {
     suspend fun searchCocktailsByName(name: String): List<CocktailDto>
@@ -19,18 +22,22 @@ internal interface CocktailApi {
 
 internal class CocktailApiImpl(
     private val client: HttpClient,
-    appConfig: AppConfig
+    appConfig: AppConfig,
+    private val json: Json
 ) : CocktailApi {
 
     private val baseUrl: String = appConfig.apiBaseUrl
+
+    // Drinks responses skip ContentNegotiation: see decodeDrinks
+    private suspend fun HttpResponse.drinks(): List<CocktailDto>? = json.decodeDrinks(bodyAsText())
 
     
     override suspend fun searchCocktailsByName(name: String): List<CocktailDto> {
         val response = client.get("$baseUrl/search.php") {
             parameter("s", name)
-        }.body<CocktailResponse>()
+        }.drinks()
         
-        return response.drinks ?: emptyList()
+        return response ?: emptyList()
     }
     
     override suspend fun getCocktailById(id: String): CocktailDto? {
@@ -40,33 +47,32 @@ internal class CocktailApiImpl(
         // endpoint's budget to a third of the shared one (SH-8).
         val response = client.get("$baseUrl/lookup.php") {
             parameter("i", id)
-        }.body<CocktailResponse>()
+        }.drinks()
 
-        return response.drinks?.firstOrNull()
+        return response?.firstOrNull()
     }
     
     override suspend fun getRandomCocktail(): CocktailDto? {
-        val response = client.get("$baseUrl/random.php")
-            .body<CocktailResponse>()
+        val response = client.get("$baseUrl/random.php").drinks()
         
-        return response.drinks?.firstOrNull()
+        return response?.firstOrNull()
     }
     
     override suspend fun filterByIngredient(ingredient: String): List<CocktailDto> {
         val response = client.get("$baseUrl/filter.php") {
             parameter("i", ingredient)
-        }.body<CocktailResponse>()
+        }.drinks()
         
-        return response.drinks ?: emptyList()
+        return response ?: emptyList()
     }
     
     override suspend fun filterByAlcoholic(alcoholic: Boolean): List<CocktailDto> {
         val filter = if (alcoholic) "Alcoholic" else "Non_Alcoholic"
         val response = client.get("$baseUrl/filter.php") {
             parameter("a", filter)
-        }.body<CocktailResponse>()
+        }.drinks()
         
-        return response.drinks ?: emptyList()
+        return response ?: emptyList()
     }
     
     override suspend fun filterByCategory(category: String): List<CocktailDto> {
@@ -76,9 +82,9 @@ internal class CocktailApiImpl(
         // "successful" categories upstream (SH-1).
         val response = client.get("$baseUrl/filter.php") {
             parameter("c", category)
-        }.body<CocktailResponse>()
+        }.drinks()
 
-        return response.drinks ?: emptyList()
+        return response ?: emptyList()
     }
     
     override suspend fun getCategories(): List<CategoryDto> {

@@ -34,6 +34,7 @@ import com.cocktailcraft.android.util.resolve
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderStatus
+import com.cocktailcraft.format.displayName
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.order_item_quantity_name
 import com.cocktailcraft.resources.order_number

@@ -2,7 +2,10 @@ package com.cocktailcraft.data.remote
 
 import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.testutil.FakeCocktailApi
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.math.absoluteValue
@@ -22,7 +25,12 @@ class CocktailRemoteDataSourceTest {
 
     /** Data source on the test scheduler's virtual clock. */
     private fun TestScope.remote(rateLimiter: ApiRateLimiter = ApiRateLimiter()) =
-        CocktailRemoteDataSource(FakeCocktailApi(drinks), rateLimiter, nowMs = { testScheduler.currentTime })
+        CocktailRemoteDataSource(
+            FakeCocktailApi(drinks),
+            rateLimiter,
+            defaultDispatcher = StandardTestDispatcher(testScheduler),
+            nowMs = { testScheduler.currentTime }
+        )
 
     @Test
     fun concurrentCallsEachGetTheirOwnRateLimitSlot() = runTest {
@@ -46,7 +54,7 @@ class CocktailRemoteDataSourceTest {
     fun filterEndpointsShareOneLimiter() = runTest {
         val remote = remote()
 
-        remote.filterByCategoryRaw("Cocktail")
+        remote.filterByCategory("Cocktail")
         remote.filterByIngredient("Tequila")
         remote.filterByAlcoholic(true)
 
@@ -71,7 +79,7 @@ class CocktailRemoteDataSourceTest {
         // wait behind a category page's slot.
         val remote = remote()
 
-        remote.filterByCategoryRaw("Cocktail")
+        remote.filterByCategory("Cocktail")
         remote.searchByName("a")
         remote.getById("1")
         remote.searchByName("b")
@@ -91,10 +99,28 @@ class CocktailRemoteDataSourceTest {
             // The formula before prices were cents, as displayed (two decimals)
             val legacyDollars = 5.0 + (seed % 1001) / 100.0
 
-            val price = remote.mapToDomain(CocktailDto(id = id, name = "Drink $id")).price
+            val price = remote.mapToDomain(CocktailDto(id = id, name = "Drink $id"), hasFullDetails = true).price
 
             assertEquals((legacyDollars * 100).roundToLong(), price.cents, "price of $id")
             assertTrue(price in Money(500)..Money(1500))
         }
+    }
+
+    @Test
+    fun responsesAreFetchedAndMappedOnTheInjectedDispatcher() = runTest {
+        // Ktor decodes the body in the calling coroutine: a ViewModel's call
+        // must not decode on the main thread
+        val default = StandardTestDispatcher(testScheduler, name = "default")
+        var apiDispatcher: CoroutineDispatcher? = null
+        val api = object : CocktailApi by FakeCocktailApi(drinks) {
+            override suspend fun getCocktailById(id: String): CocktailDto? {
+                apiDispatcher = currentCoroutineContext()[CoroutineDispatcher]
+                return drinks.find { it.id == id }
+            }
+        }
+        val remote = CocktailRemoteDataSource(api, ApiRateLimiter(), defaultDispatcher = default)
+
+        assertEquals("Margarita", remote.getById("1")?.name)
+        assertEquals(default, apiDispatcher)
     }
 }

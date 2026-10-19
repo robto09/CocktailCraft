@@ -1,0 +1,199 @@
+-- Version 5 -> 6: cached_cocktail becomes the only copy of each cocktail.
+--
+-- favorite_cocktail, cart_item and recently_viewed_cocktail each kept their
+-- own JSON copy of the cocktail, which a detail refresh never updated. They
+-- now refer to cached_cocktail by id, and pin the rows they refer to
+-- against eviction and expiry (see CachedCocktail.sq). Their payloads are
+-- copied into cached_cocktail first, so nothing is lost:
+-- - a cocktail not cached yet gets the copy's payload, with cached_at 0 so
+--   the next detail view refreshes it;
+-- - a cached partial record is upgraded by a copy that holds full details;
+-- - otherwise the cached row, the newest write, wins.
+-- Favorites imported without a payload stay unresolved, as before.
+--
+-- Also:
+-- - cached_cocktail.full_details flags full vs partial records. Earlier
+--   payloads marked a list endpoint's partial record with the placeholder
+--   ingredient "Tap to view ingredients" (or no ingredients at all); that is
+--   what the LIKE tests below look for, without decoding the JSON (the
+--   framework SQLite on older devices has no JSON functions). Payloads are
+--   compact JSON with keys in declaration order.
+-- - cached_cocktail.last_accessed moves to its own table, cocktail_access,
+--   so recording a read no longer counts as a write to cached_cocktail.
+-- - cart_item.price_cents records the unit price a line was added at; lines
+--   from before stay NULL and charge the stored cocktail's price, as before.
+--
+-- SQLite can't drop columns before 3.35, so every changed table is rebuilt.
+
+CREATE TABLE cocktail_access (
+    id TEXT NOT NULL PRIMARY KEY,
+    last_accessed INTEGER NOT NULL
+);
+
+INSERT INTO cocktail_access(id, last_accessed)
+SELECT id, last_accessed FROM cached_cocktail;
+
+CREATE INDEX cocktail_access_last_accessed ON cocktail_access(last_accessed);
+
+CREATE TABLE cached_cocktail_new (
+    id TEXT NOT NULL PRIMARY KEY,
+    category TEXT,
+    payload TEXT NOT NULL,
+    full_details INTEGER NOT NULL,
+    cached_at INTEGER NOT NULL
+);
+
+INSERT INTO cached_cocktail_new(id, category, payload, full_details, cached_at)
+SELECT
+    id,
+    category,
+    payload,
+    CASE
+        WHEN payload LIKE '%"ingredients":[{%'
+            AND payload NOT LIKE '%"ingredients":[{"name":"Tap to view ingredients"%' THEN 1
+        ELSE 0
+    END,
+    cached_at
+FROM cached_cocktail;
+
+-- DROP TABLE would take its indexes along; dropped explicitly so the
+-- schema SQLDelight tracks agrees
+DROP INDEX cached_cocktail_category;
+
+DROP INDEX cached_cocktail_last_accessed;
+
+DROP INDEX cached_cocktail_cached_at;
+
+DROP TABLE cached_cocktail;
+
+ALTER TABLE cached_cocktail_new RENAME TO cached_cocktail;
+
+CREATE INDEX cached_cocktail_category ON cached_cocktail(category);
+
+CREATE INDEX cached_cocktail_cached_at ON cached_cocktail(cached_at);
+
+-- Copies of cocktails not cached yet, full ones first: when a favorite,
+-- a cart line and a recently viewed entry all hold one, a full copy wins
+-- over a partial one.
+
+INSERT OR IGNORE INTO cached_cocktail(id, category, payload, full_details, cached_at)
+SELECT id, NULL, payload, 1, 0 FROM favorite_cocktail
+WHERE payload IS NOT NULL AND payload LIKE '%"ingredients":[{%'
+    AND payload NOT LIKE '%"ingredients":[{"name":"Tap to view ingredients"%';
+
+INSERT OR IGNORE INTO cached_cocktail(id, category, payload, full_details, cached_at)
+SELECT cocktail_id, NULL, payload, 1, 0 FROM cart_item
+WHERE payload LIKE '%"ingredients":[{%'
+    AND payload NOT LIKE '%"ingredients":[{"name":"Tap to view ingredients"%';
+
+INSERT OR IGNORE INTO cached_cocktail(id, category, payload, full_details, cached_at)
+SELECT id, NULL, payload, 1, 0 FROM recently_viewed_cocktail
+WHERE payload LIKE '%"ingredients":[{%'
+    AND payload NOT LIKE '%"ingredients":[{"name":"Tap to view ingredients"%';
+
+INSERT OR IGNORE INTO cached_cocktail(id, category, payload, full_details, cached_at)
+SELECT id, NULL, payload, 0, 0 FROM favorite_cocktail
+WHERE payload IS NOT NULL;
+
+INSERT OR IGNORE INTO cached_cocktail(id, category, payload, full_details, cached_at)
+SELECT cocktail_id, NULL, payload, 0, 0 FROM cart_item;
+
+INSERT OR IGNORE INTO cached_cocktail(id, category, payload, full_details, cached_at)
+SELECT id, NULL, payload, 0, 0 FROM recently_viewed_cocktail;
+
+-- The copied rows' category, from the payload's top-level "category"
+-- string (ingredient objects only hold name and measure). Rows imported from
+-- Settings without a category also have cached_at 0, but their payloads
+-- hold none either.
+UPDATE cached_cocktail
+SET category = NULLIF(
+    substr(
+        payload,
+        instr(payload, '"category":"') + 12,
+        instr(substr(payload, instr(payload, '"category":"') + 12), '"') - 1
+    ),
+    ''
+)
+WHERE category IS NULL AND cached_at = 0 AND instr(payload, '"category":"') > 0;
+
+-- Cached partial records a copy holds the full details for
+UPDATE cached_cocktail
+SET
+    payload = COALESCE(
+        (SELECT payload FROM favorite_cocktail ref
+        WHERE ref.id = cached_cocktail.id
+            AND ref.payload LIKE '%"ingredients":[{%'
+            AND ref.payload NOT LIKE '%"ingredients":[{"name":"Tap to view ingredients"%'),
+        (SELECT payload FROM cart_item ref
+        WHERE ref.cocktail_id = cached_cocktail.id
+            AND ref.payload LIKE '%"ingredients":[{%'
+            AND ref.payload NOT LIKE '%"ingredients":[{"name":"Tap to view ingredients"%'),
+        (SELECT payload FROM recently_viewed_cocktail ref
+        WHERE ref.id = cached_cocktail.id
+            AND ref.payload LIKE '%"ingredients":[{%'
+            AND ref.payload NOT LIKE '%"ingredients":[{"name":"Tap to view ingredients"%')
+    ),
+    full_details = 1
+WHERE full_details = 0
+    AND COALESCE(
+        (SELECT payload FROM favorite_cocktail ref
+        WHERE ref.id = cached_cocktail.id
+            AND ref.payload LIKE '%"ingredients":[{%'
+            AND ref.payload NOT LIKE '%"ingredients":[{"name":"Tap to view ingredients"%'),
+        (SELECT payload FROM cart_item ref
+        WHERE ref.cocktail_id = cached_cocktail.id
+            AND ref.payload LIKE '%"ingredients":[{%'
+            AND ref.payload NOT LIKE '%"ingredients":[{"name":"Tap to view ingredients"%'),
+        (SELECT payload FROM recently_viewed_cocktail ref
+        WHERE ref.id = cached_cocktail.id
+            AND ref.payload LIKE '%"ingredients":[{%'
+            AND ref.payload NOT LIKE '%"ingredients":[{"name":"Tap to view ingredients"%')
+    ) IS NOT NULL;
+
+-- Copied rows were never accessed: oldest, but pinned
+INSERT OR IGNORE INTO cocktail_access(id, last_accessed)
+SELECT id, 0 FROM cached_cocktail;
+
+CREATE TRIGGER cached_cocktail_delete_access
+AFTER DELETE ON cached_cocktail
+BEGIN
+    DELETE FROM cocktail_access WHERE id = old.id;
+END;
+
+CREATE TABLE favorite_cocktail_new (
+    cocktail_id TEXT NOT NULL PRIMARY KEY,
+    position INTEGER NOT NULL
+);
+
+INSERT INTO favorite_cocktail_new(cocktail_id, position)
+SELECT id, position FROM favorite_cocktail;
+
+DROP TABLE favorite_cocktail;
+
+ALTER TABLE favorite_cocktail_new RENAME TO favorite_cocktail;
+
+CREATE TABLE cart_item_new (
+    cocktail_id TEXT NOT NULL PRIMARY KEY,
+    quantity INTEGER NOT NULL,
+    position INTEGER NOT NULL,
+    price_cents INTEGER
+);
+
+INSERT INTO cart_item_new(cocktail_id, quantity, position, price_cents)
+SELECT cocktail_id, quantity, position, NULL FROM cart_item;
+
+DROP TABLE cart_item;
+
+ALTER TABLE cart_item_new RENAME TO cart_item;
+
+CREATE TABLE recently_viewed_cocktail_new (
+    cocktail_id TEXT NOT NULL PRIMARY KEY,
+    viewed_at INTEGER NOT NULL
+);
+
+INSERT INTO recently_viewed_cocktail_new(cocktail_id, viewed_at)
+SELECT id, viewed_at FROM recently_viewed_cocktail;
+
+DROP TABLE recently_viewed_cocktail;
+
+ALTER TABLE recently_viewed_cocktail_new RENAME TO recently_viewed_cocktail;

@@ -57,14 +57,15 @@ import com.cocktailcraft.resources.widget_no_favorites_icon
 import com.cocktailcraft.resources.widget_refresh_icon
 import com.cocktailcraft.resources.widget_tap_refresh_to_retry
 import com.cocktailcraft.resources.widget_view_all_favorites
+import com.cocktailcraft.widget.WidgetDataSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import org.json.JSONArray
 import org.json.JSONObject
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 /**
  * Favorites Widget that displays the user's favorite cocktails.
@@ -393,7 +394,7 @@ object FavoritesWidgetKeys {
  * Action callback to refresh favorites.
  */
 class RefreshFavoritesAction : ActionCallback, KoinComponent {
-    private val dataProvider: WidgetDataProvider by inject()
+    private val dataProvider: WidgetDataSource by inject()
 
     override suspend fun onAction(
         context: Context,

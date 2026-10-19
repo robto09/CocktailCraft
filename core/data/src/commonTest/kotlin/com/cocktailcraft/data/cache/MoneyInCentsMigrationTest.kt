@@ -1,12 +1,10 @@
 package com.cocktailcraft.data.cache
 
-import app.cash.sqldelight.db.AfterVersion
-import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
-import app.cash.sqldelight.db.SqlSchema
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
-import com.cocktailcraft.data.repository.CartRepositoryImpl
+import com.cocktailcraft.data.local.CocktailCodec
+import com.cocktailcraft.data.local.OwnerIds
 import com.cocktailcraft.data.repository.OrderRepositoryImpl
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
@@ -16,8 +14,10 @@ import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
 import com.cocktailcraft.domain.model.sumOfMoney
 import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.testutil.LegacySchema
 import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.testutil.createTestLocalDatabase
+import com.cocktailcraft.testutil.testCartRepository
 import com.cocktailcraft.testutil.testJson
 import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.test.runTest
@@ -32,55 +32,10 @@ import kotlin.time.Clock
  * order tables into INTEGER cents and adds customer_order_item.cocktail_id.
  * verifySqlDelightMigration checks the resulting schema against the 5.db
  * snapshot; this checks real version 4 rows (and the JSON payloads other
- * tables kept) come through with the same amounts.
+ * tables kept) come through with the same amounts, through every later
+ * migration too.
  */
 class MoneyInCentsMigrationTest {
-
-    /** The version 4 schema: today's, with the order tables as 1.sqm created them. */
-    private object Version4Schema : SqlSchema<QueryResult.Value<Unit>> {
-        override val version: Long = 4
-
-        override fun create(driver: SqlDriver): QueryResult.Value<Unit> {
-            CocktailCraftDatabase.Schema.create(driver)
-            driver.execute(null, "DROP TABLE customer_order_item", 0)
-            driver.execute(null, "DROP TABLE customer_order", 0)
-            driver.execute(
-                null,
-                """
-                CREATE TABLE customer_order (
-                    id TEXT NOT NULL PRIMARY KEY,
-                    date TEXT NOT NULL,
-                    total REAL NOT NULL,
-                    status TEXT NOT NULL,
-                    position INTEGER NOT NULL
-                )
-                """.trimIndent(),
-                0
-            )
-            driver.execute(
-                null,
-                """
-                CREATE TABLE customer_order_item (
-                    order_id TEXT NOT NULL REFERENCES customer_order(id) ON DELETE CASCADE,
-                    position INTEGER NOT NULL,
-                    name TEXT NOT NULL,
-                    quantity INTEGER NOT NULL,
-                    price REAL NOT NULL,
-                    PRIMARY KEY (order_id, position)
-                )
-                """.trimIndent(),
-                0
-            )
-            return QueryResult.Unit
-        }
-
-        override fun migrate(
-            driver: SqlDriver,
-            oldVersion: Long,
-            newVersion: Long,
-            vararg callbacks: AfterVersion
-        ): QueryResult.Value<Unit> = error("not used")
-    }
 
     // Demo prices were 5.0 + n / 100.0, which lands a hair off the cent in
     // binary for many n
@@ -116,7 +71,7 @@ class MoneyInCentsMigrationTest {
         }
 
     /** A version 4 database holding orders and cocktail payloads as the previous version wrote them. */
-    private fun legacyDriver(): SqlDriver = createInMemorySqlDriver(Version4Schema).apply {
+    private fun legacyDriver(): SqlDriver = createInMemorySqlDriver(LegacySchema.V4).apply {
         // 2 x 12.50 + 5.29 + 5.99 delivery
         insertLegacyOrder("ORD-1", total = 2 * 12.5 + noisyPrice + 5.99, status = "Delivered", position = 1)
         insertLegacyItem("ORD-1", 0, "Margarita", 2, 12.5)
@@ -158,13 +113,8 @@ class MoneyInCentsMigrationTest {
 
     private fun migratedDatabase(): CocktailCraftDatabase {
         val driver = legacyDriver()
-        CocktailCraftDatabase.Schema.migrate(driver, oldVersion = 4, newVersion = 5)
+        CocktailCraftDatabase.Schema.migrate(driver, oldVersion = 4, newVersion = CocktailCraftDatabase.Schema.version)
         return CocktailCraftDatabase(driver)
-    }
-
-    @Test
-    fun schemaVersionIsFive() {
-        assertEquals(5L, CocktailCraftDatabase.Schema.version)
     }
 
     @Test
@@ -221,7 +171,7 @@ class MoneyInCentsMigrationTest {
 
     @Test
     fun legacyCartPayloadsReadTheirDollarPricesAsCents() = runTest {
-        val cart = CartRepositoryImpl(createTestLocalDatabase(migratedDatabase()), testJson)
+        val cart = testCartRepository(createTestLocalDatabase(migratedDatabase()))
 
         val items = cart.getCartItems().getOrThrow()
 
@@ -232,7 +182,7 @@ class MoneyInCentsMigrationTest {
 
     @Test
     fun legacyCartItemsGainMoreQuantityWithoutLosingTheirPrice() = runTest {
-        val cart = CartRepositoryImpl(createTestLocalDatabase(migratedDatabase()), testJson)
+        val cart = testCartRepository(createTestLocalDatabase(migratedDatabase()))
 
         val margarita = Cocktail(id = "11007", name = "Margarita", price = Money(1250))
 
@@ -251,10 +201,12 @@ class MoneyInCentsMigrationTest {
 
     @Test
     fun legacyFavoritePayloadsReadTheirPricesAsCents() {
-        val payload = migratedDatabase().favoriteCocktailQueries.selectAll().executeAsList().single().payload
+        // Read straight from the migrated tables, before an open assigns owners
+        val favorites = migratedDatabase().favoriteCocktailQueries.selectAll(OwnerIds.UNASSIGNED).executeAsList()
+        val payload = favorites.single().payload
 
         // The migration leaves payloads in their old shape; reads convert them
         assertFalse(payload!!.contains("priceCents"))
-        assertEquals(Money(529), testJson.decodeFromString(Cocktail.serializer(), payload).price)
+        assertEquals(Money(529), CocktailCodec(testJson).decode(payload).price)
     }
 }

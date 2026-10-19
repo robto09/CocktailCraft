@@ -30,10 +30,10 @@ struct OrderListView: View {
                 if !Task.isCancelled { hasLoaded = true }
             }
             .navigationDestination(item: $selectedOrder) { route in
-                OrderDetailView(orderId: route.orderId, viewModel: viewModel)
+                OrderDetailView(orderId: route.orderId)
             }
-            // While a detail screen is pushed, it alerts the (shared) error
-            // itself; presenting it from here too would double up
+            // While a detail screen is pushed it alerts its own errors; the
+            // covered list keeps its own for when it is back on screen
             .sharedErrorAlert(selectedOrder == nil ? viewModel.error : nil, clear: { viewModel.clearError() })
     }
 
