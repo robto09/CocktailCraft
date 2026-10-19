@@ -79,7 +79,7 @@ class SharedCartViewModelTest : MainDispatcherTest() {
 
     @Test
     fun removeFromCartFailureEmitsOptimisticRemovalThenRevert() = runTest {
-        // SH-12 (Turbine): assert the emission SEQUENCE — optimistic removal
+        // Turbine: assert the emission SEQUENCE — optimistic removal
         // first, then the revert when the repository rejects the mutation.
         val repository = FakeCartRepository()
         repository.addToCart(CocktailCartItem(testCocktail("1"), quantity = 1))

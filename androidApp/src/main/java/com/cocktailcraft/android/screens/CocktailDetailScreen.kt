@@ -113,7 +113,7 @@ fun CocktailDetailScreen(
     val reviewError by reviewViewModel.error.collectAsStateWithLifecycle()
     val favoritesState by favoritesViewModel.uiState.collectAsStateWithLifecycle()
     val favorites = favoritesState.favorites
-    // O(1) membership instead of a scan on every screen recomposition (AN-3)
+    // O(1) membership instead of a scan on every screen recomposition
     val favoriteIds = remember(favorites) { favorites.toFavoriteIdSet() }
     val isFavorite = detailState.cocktail?.let { it.id in favoriteIds } ?: false
 

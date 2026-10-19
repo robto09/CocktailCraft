@@ -25,7 +25,7 @@ class ResultCatchingTest {
         val result = runCatchingResult<Int>("fallback") { throw IllegalArgumentException("bad input") }
 
         val error = result as Result.Error
-        assertEquals(ErrorCode.INVALID_DATA, error.code, "AR-2: the type classifier must assign the code")
+        assertEquals(ErrorCode.INVALID_DATA, error.code, "the type classifier must assign the code")
     }
 
     @Test

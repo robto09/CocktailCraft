@@ -7,7 +7,7 @@ import kotlinx.coroutines.sync.withLock
  * The proactive min-interval throttle for TheCocktailDB's free API: callers
  * reserve a call slot at least [MIN_API_CALL_INTERVAL_MS] after the previous
  * one. Retry and 429 backoff are not here; Ktor's HttpRequestRetry owns
- * them (SH-7).
+ * them.
  *
  * A Koin `single`, so every [CocktailRemoteDataSource] shares one budget.
  */

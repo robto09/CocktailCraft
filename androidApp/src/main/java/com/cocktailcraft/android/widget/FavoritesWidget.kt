@@ -426,7 +426,7 @@ class RefreshFavoritesAction :
 class FavoritesWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = FavoritesWidget()
 
-    // Widget refresh lifecycle (AN-2): the first widget placed starts the
+    // Widget refresh lifecycle: the first widget placed starts the
     // shared periodic refresh and loads its content right away; the refresh
     // is torn down only when no widget of either type remains (both widgets
     // share it). The app itself never schedules widget work.

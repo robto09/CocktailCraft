@@ -9,11 +9,11 @@ import kotlin.native.HiddenFromObjC
  * Repository interface for cocktail favorites operations.
  * Part of the Interface Segregation split of CocktailRepository.
  */
-@HiddenFromObjC // Kotlin-side port, not Swift API (AR-12): Swift reaches data through the ViewModels
+@HiddenFromObjC // Kotlin-side port, not Swift API: Swift reaches data through the ViewModels
 interface CocktailFavoritesRepository {
     /**
      * Stream of favorite cocktails: the stored list on collection, then again
-     * after every add, remove or in-place upgrade from any screen (SH-4) —
+     * after every add, remove or in-place upgrade from any screen —
      * mirrors [CartRepository.observeCartItems].
      */
     fun observeFavorites(): Flow<List<Cocktail>>

@@ -18,7 +18,7 @@ import com.cocktailcraft.designsystem.ColorTokens
 // widget/WidgetTheme.kt (Glance) mirror these for surfaces that can't read the
 // Compose theme; keep them in sync when changing the shared tokens.
 //
-// UI code reads colors only through the theme (AN-5):
+// UI code reads colors only through the theme:
 // - MaterialTheme.colorScheme for every role Material 3 defines, and
 // - CocktailCraftTheme.extendedColors for brand/semantic colors it doesn't.
 //
@@ -105,7 +105,7 @@ internal fun cocktailColorScheme(
 }
 
 /**
- * Brand/semantic colors with no Material 3 role (AN-5). Provided by
+ * Brand/semantic colors with no Material 3 role. Provided by
  * AnimatedCocktailBarTheme; read via [CocktailCraftTheme.extendedColors].
  * Deliberately independent of the Material scheme so they keep their brand
  * meaning even if the scheme ever comes from dynamic color.

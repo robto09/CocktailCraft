@@ -5,7 +5,7 @@
 -- Favorite cocktails (CocktailFavoritesRepositoryImpl), by owner and id.
 -- The cocktail itself is the cached_cocktail row, which a favorite pins:
 -- the offline cache never evicts or expires it, so a favorite stays
--- available offline (SH-4). Until version 6 (migrations/5.sqm) each favorite
+-- available offline. Until version 6 (migrations/5.sqm) each favorite
 -- kept its own copy of the cocktail as JSON, which detail refreshes never
 -- updated.
 --

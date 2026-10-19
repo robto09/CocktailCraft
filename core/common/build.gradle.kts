@@ -1,5 +1,5 @@
 // Cross-layer basics every other module needs: the Result/ErrorCode/
-// DomainException error pipeline (AR-2), ErrorHandler's exception ->
+// DomainException error pipeline, ErrorHandler's exception ->
 // user-facing error mapping, the NetworkMonitor contract, and UUID.
 // Package names predate the split (Result stays in domain.util), only the
 // module boundary is new.

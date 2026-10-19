@@ -15,7 +15,7 @@ import kotlin.native.HiddenFromObjC
  * Runs first thing in [initKoin]; each app passes its own build flag
  * (BuildConfig.DEBUG on Android, `#if DEBUG` on iOS).
  */
-@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper (AR-12)
+@HiddenFromObjC // Kotlin-side wiring; Swift only calls doInitKoin()/KoinHelper
 fun configureLogging(isDebug: Boolean) {
     Logger.setMinSeverity(minLogSeverity(isDebug))
 }

@@ -37,7 +37,7 @@ class SharedFavoritesViewModel internal constructor(private val manageFavoritesU
     val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
 
     init {
-        // Reactive favorites (SH-4): the repository publishes after every
+        // Reactive favorites: the repository publishes after every
         // mutation from any screen, so this collector is the single way
         // favorites reach the UI state — no manual re-pulls.
         viewModelScope.launch {
@@ -67,7 +67,7 @@ class SharedFavoritesViewModel internal constructor(private val manageFavoritesU
 
     /**
      * Toggle favorite status for a cocktail. State updates arrive via the
-     * observed favorites flow (SH-4); a failed toggle is reported.
+     * observed favorites flow; a failed toggle is reported.
      */
     fun toggleFavorite(cocktail: Cocktail) {
         clearError()
@@ -83,7 +83,7 @@ class SharedFavoritesViewModel internal constructor(private val manageFavoritesU
      * Unfavorite [cocktail] from a list of favorites (the Favorites screen,
      * where every heart is filled), announcing it on [events] with an Undo
      * action that favorites it again. State updates arrive via the observed
-     * flow (SH-4); a failed removal is reported and offers no Undo. Returns
+     * flow; a failed removal is reported and offers no Undo. Returns
      * once the removal is done, so the screen can hold the card's emptied
      * heart until then.
      * SKIE will convert this to Swift async function.

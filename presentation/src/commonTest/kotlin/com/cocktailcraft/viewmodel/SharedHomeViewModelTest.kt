@@ -20,7 +20,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class SharedHomeViewModelTest : MainDispatcherTest() {
 
-    // --- SH-13: debounced search pipeline ---
+    // --- Debounced search pipeline ---
 
     @Test
     fun typingBurstFiresOneDebouncedSearchForTheLastQuery() = runTest {
@@ -94,7 +94,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
 
     @Test
     fun networkRestoreRetriesFailedLoadAndRecovers() = runTest {
-        // SH-12 (Turbine): the init-block network observer must auto-retry a
+        // Turbine: the init-block network observer must auto-retry a
         // failed load once connectivity is restored, emitting the recovered list.
         val harness = HomeViewModelHarness()
         harness.errorMessage = "api down"
@@ -122,7 +122,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
 
     @Test
     fun favoritesToggledElsewherePropagateThroughTheObservedFlow() = runTest {
-        // SH-4: a mutation made directly against the repository (e.g. from the
+        // A mutation made directly against the repository (e.g. from the
         // Detail screen's separate ViewModel) must reach this VM's state
         // without any manual loadFavorites() re-pull.
         val harness = HomeViewModelHarness()
@@ -140,7 +140,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
 
     @Test
     fun viewModelNeverStartsOrStopsTheSharedNetworkMonitor() = runTest {
-        // SH-2: monitoring lifecycle belongs to app init; a second start from a
+        // Monitoring lifecycle belongs to app init; a second start from a
         // ViewModel double-registers the Android NetworkCallback and throws.
         val harness = HomeViewModelHarness()
         harness.viewModel()
@@ -403,7 +403,7 @@ class SharedHomeViewModelTest : MainDispatcherTest() {
         advanceUntilIdle()
 
         vm.toggleFavorite(cocktail)
-        advanceUntilIdle() // state arrives via the observed favorites flow (SH-4)
+        advanceUntilIdle() // state arrives via the observed favorites flow
         assertTrue(vm.isFavorite("1"))
 
         vm.toggleFavorite(cocktail)

@@ -49,7 +49,7 @@ import kotlinx.coroutines.launch
  * input validators (they take the input, never read state).
  */
 class SharedProfileViewModel internal constructor(
-    // Direct repository dependency (AR-8): there is no logic to wrap — the
+    // Direct repository dependency: there is no logic to wrap — the
     // input rules live here, the auth rules in the repository
     private val authRepository: AuthRepository
 ) : SharedViewModel() {

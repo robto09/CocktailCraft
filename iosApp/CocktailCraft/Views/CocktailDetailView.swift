@@ -4,7 +4,7 @@ import SwiftUI
 // minimal-concurrency build it is close to a no-op; it becomes load-bearing
 // (and must be re-audited per-type) the moment SWIFT_STRICT_CONCURRENCY is
 // set to targeted/complete or the target moves to Swift 6 language mode.
-// Tracked as tech debt (IO-12) — don't copy this pattern to new files.
+// Tracked as tech debt — don't copy this pattern to new files.
 @preconcurrency import shared
 
 /// Full detail screen driven by CocktailDetailViewModelSKIE. Section order
@@ -17,7 +17,7 @@ struct CocktailDetailView: View {
     let cocktailId: String
     // Both wrap Koin factory instances they own (and clear on deinit), so
     // they are built once per screen through ViewModelHolder rather than on
-    // every parent re-render (IO-13).
+    // every parent re-render.
     @State private var detailModel = ViewModelHolder(CocktailDetailViewModelSKIE.init)
     // Screen-scoped like Android's koinViewModel<SharedReviewViewModel>()
     @State private var reviewModel = ViewModelHolder(ReviewViewModelSKIE.init)

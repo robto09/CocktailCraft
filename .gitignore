@@ -62,7 +62,7 @@ output.json
 **/build/kotlin/compile*/
 
 # iOS specific
-# The generated project and its SPM Package.resolved are committed (IO-8);
+# The generated project and its SPM Package.resolved are committed;
 # the Kotlin framework (shared/build/xcode-frameworks/) is a build artifact.
 iosApp/DerivedData/
 iosApp/*.xcodeproj/xcuserdata/
@@ -98,6 +98,6 @@ Thumbs.db
 shared/shared.xcframework/
 *.xcframework
 
-# Generated codebase dumps and stray captures (AR-11) — never commit these
+# Generated codebase dumps and stray captures — never commit these
 repomix-output*.md
 /Screenshot_*.png

@@ -168,7 +168,7 @@ class CocktailFavoritesRepositoryImplTest {
 
     @Test
     fun favoritesStayAvailableOfflineWhateverTheCacheEvicts() = runTest {
-        // SH-4: a favorite pins its cocktail, so an offline favorite survives
+        // A favorite pins its cocktail, so an offline favorite survives
         // the offline cache filling up past its cap
         val db = createTestDatabase()
         val policy = OfflineModePolicy(FakeNetworkMonitor(false))

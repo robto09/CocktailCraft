@@ -19,7 +19,7 @@ interface NetworkMonitor {
  */
 @HiddenFromObjC
 abstract class BaseNetworkMonitor {
-    // Optimistically true only until the platform monitor reports (SH-5):
+    // Optimistically true only until the platform monitor reports:
     // Android overwrites it synchronously inside startMonitoring(); the iOS
     // path monitor fires its update handler with the CURRENT path immediately
     // after start, which is the real seed. A pessimistic (false) seed would

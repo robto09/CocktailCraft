@@ -13,7 +13,7 @@ import kotlin.native.HiddenFromObjC
  * stored cocktail and [refreshCocktail] fetches it from the network into the
  * database.
  */
-@HiddenFromObjC // Kotlin-side port, not Swift API (AR-12): Swift reaches data through the ViewModels
+@HiddenFromObjC // Kotlin-side port, not Swift API: Swift reaches data through the ViewModels
 interface CocktailDetailRepository {
     /**
      * One-shot lookup: the stored cocktail when it has full details,

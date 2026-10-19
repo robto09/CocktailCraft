@@ -6,7 +6,7 @@ import shared
 /// sheet live in Components/; this view owns the state wiring and the
 /// loading/empty/content branching.
 struct HomeViewSKIE: View {
-    // Built once via ViewModelHolder, not on every parent re-render (IO-13)
+    // Built once via ViewModelHolder, not on every parent re-render
     @State private var model = ViewModelHolder(HomeViewModelSKIE.init)
     private var viewModel: HomeViewModelSKIE { model.wrapper }
     @State private var searchText = ""
@@ -65,7 +65,7 @@ struct HomeViewSKIE: View {
             // Every change — including deleting back to empty — goes through the
             // shared debounced pipeline: no per-keystroke Tasks, no stale
             // last-completed-wins results, and an empty query restores the
-            // category listing (IO-1).
+            // category listing.
             viewModel.updateSearchQuery(newValue)
         }
         .onAppear {

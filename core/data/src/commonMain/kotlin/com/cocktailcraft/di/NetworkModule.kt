@@ -24,7 +24,7 @@ import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
 /**
- * Retry predicate for the single retry/backoff layer (SH-7): transient server
+ * Retry predicate for the single retry/backoff layer: transient server
  * errors and TheCocktailDB's 429 rate limit are retryable; ordinary client
  * errors are not.
  */
@@ -78,7 +78,7 @@ internal object RetryBackoff {
 
 /**
  * Builds the shared [HttpClient] with the full production plugin stack.
- * Extracted from the Koin single (AR-5) so tests can inject a MockEngine while
+ * Extracted from the Koin single so tests can inject a MockEngine while
  * exercising the exact same configuration; [engine] = null (production) lets
  * Ktor pick the platform default engine.
  */
@@ -110,7 +110,7 @@ internal fun buildHttpClient(
             header(HttpHeaders.Accept, ContentType.Application.Json)
         }
 
-        // The single retry/backoff layer (SH-7): the manual per-endpoint
+        // The single retry/backoff layer: the manual per-endpoint
         // exponential backoff in CocktailRemoteDataSource was deleted in
         // its favor. Covers transport exceptions, 5xx, and 429 —
         // exponentialDelay() honors a 429's Retry-After header. Because

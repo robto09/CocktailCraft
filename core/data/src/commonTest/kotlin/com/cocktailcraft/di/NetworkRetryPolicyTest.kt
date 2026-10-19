@@ -10,7 +10,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * Locks in the single retry policy (SH-7): transient server errors and
+ * Locks in the single retry policy: transient server errors and
  * TheCocktailDB's 429 rate limit retry; ordinary client errors don't.
  * Transport failures retry only when a second attempt can help.
  */

@@ -34,7 +34,7 @@ import com.cocktailcraft.data.cache.db.favoriteCocktail.SelectAll as FavoriteRow
  *
  * A favorite refers to the cocktail's cached_cocktail row ([CocktailCache]),
  * which it pins, so favorites are available offline whatever else the cache
- * evicts (SH-4) and show the latest details. [observeFavorites] re-emits
+ * evicts and show the latest details. [observeFavorites] re-emits
  * after every add or remove from any screen, and whenever a favorite's
  * cocktail is refreshed.
  *

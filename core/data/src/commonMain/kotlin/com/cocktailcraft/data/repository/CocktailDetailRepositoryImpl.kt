@@ -73,7 +73,7 @@ internal class CocktailDetailRepositoryImpl(
                 return Result.Error(CatalogRefreshPolicy.OFFLINE_MESSAGE, ErrorCode.NETWORK)
             }
             // getById is not throttled: opening a cocktail is user-initiated
-            // and must never wait behind a category page's slot (SH-7).
+            // and must never wait behind a category page's slot.
             // A null lookup (unknown id) leaves the cache as it is.
             remote.getById(id)?.let { cocktail ->
                 cocktailCache.cacheCocktail(cocktail)

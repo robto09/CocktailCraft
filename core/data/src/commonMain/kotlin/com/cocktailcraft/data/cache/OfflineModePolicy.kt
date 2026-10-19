@@ -4,7 +4,7 @@ import com.cocktailcraft.util.NetworkMonitor
 import kotlinx.coroutines.flow.first
 
 /**
- * Single source of truth for "is the app offline" (AR-7): the network is
+ * Single source of truth for "is the app offline": the network is
  * currently down.
  *
  * [CocktailCache] (expiry decision) and CocktailOfflineRepositoryImpl (the

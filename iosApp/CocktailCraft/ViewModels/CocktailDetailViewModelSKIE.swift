@@ -18,7 +18,7 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
         self.sharedViewModel = viewModel
         super.init(viewModel: viewModel, uiState: viewModel.uiState, ownsViewModel: true)
         #if DEBUG
-        // IO-13 gauge: a plain `@State var viewModel = ...()` re-ran this
+        // Instance gauge: a plain `@State var viewModel = ...()` re-ran this
         // initializer on every parent re-render, each time building (and
         // immediately tearing down) a fresh Koin factory VM. Views now hold
         // the wrapper through ViewModelHolder, so this should log exactly
@@ -29,7 +29,7 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
     }
 
     // The wrapped Koin `factory` instance is owned (ownsViewModel), so the
-    // base deinit clears its scope; this one only feeds the IO-13 gauge.
+    // base deinit clears its scope; this one only feeds the instance gauge.
     #if DEBUG
     deinit {
         Self.liveInstances -= 1

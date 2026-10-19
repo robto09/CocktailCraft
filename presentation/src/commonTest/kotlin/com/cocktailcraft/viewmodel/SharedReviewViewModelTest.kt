@@ -66,7 +66,7 @@ class SharedReviewViewModelTest : DataLayerTest() {
 
     @Test
     fun reviewObserverEmitsWhenRepositoryChanges() = runTest {
-        // SH-12 (Turbine): the observed reviews flow must push repository
+        // Turbine: the observed reviews flow must push repository
         // changes into uiState without a manual reload.
         val db = createTestDatabase()
         val repo = repository(db)

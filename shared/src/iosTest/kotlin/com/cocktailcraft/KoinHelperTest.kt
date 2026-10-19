@@ -20,7 +20,7 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 
 /**
- * Mirror of KoinDependencyGraphTest for the iOS service locator (AR-6):
+ * Mirror of KoinDependencyGraphTest for the iOS service locator:
  * resolves every KoinHelper getter so a shared binding that was renamed,
  * removed, or never surfaced here fails THIS test instead of crashing Swift
  * at first use. When a getter is added to KoinHelper, add its assertion here.

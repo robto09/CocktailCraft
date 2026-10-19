@@ -80,7 +80,7 @@ private class StoredState(val category: String?, val payload: String, val hasFul
  * Entries expire after [AppConfig.cacheExpirationMs], but only while the app is
  * effectively online — see [shouldApplyExpiry].
  *
- * Eviction matrix (SH-11): this is the only cocktail store; there is no
+ * Eviction matrix: this is the only cocktail store; there is no
  * in-memory copy with its own expiry. Eviction is LRU (capped at
  * [AppConfig.maxOfflineCocktails]) plus the TTL expiry above — there is no
  * user-facing "clear cache" path. Neither ever drops a pinned row: one a
@@ -157,7 +157,7 @@ internal class CocktailCache(
      * browsing: evicting stale entries when there is no connectivity would
      * empty the offline experience with no way to refetch, so stale entries
      * keep being served until we are back online. The offline decision itself
-     * is owned by [OfflineModePolicy] (AR-7) — the cache only stores data; it
+     * is owned by [OfflineModePolicy] — the cache only stores data; it
      * does not re-derive policy from raw NetworkMonitor reads.
      */
     private suspend fun shouldApplyExpiry(): Boolean =

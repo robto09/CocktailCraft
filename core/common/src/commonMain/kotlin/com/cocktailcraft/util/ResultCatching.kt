@@ -6,7 +6,7 @@ import kotlinx.coroutines.CancellationException
 import kotlin.native.HiddenFromObjC
 
 /**
- * Repository/use-case boundary helper for the typed error pipeline (AR-2).
+ * Repository/use-case boundary helper for the typed error pipeline.
  *
  * Runs [block] — which builds its own Result.Success/Result.Error for
  * legitimate business-rule early returns (e.g. auth lockout) — and, if it

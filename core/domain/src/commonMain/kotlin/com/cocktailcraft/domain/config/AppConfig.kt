@@ -7,7 +7,7 @@ import kotlin.native.HiddenFromObjC
  * This follows the hexagonal architecture by defining a port in the domain layer
  * that will be implemented by adapters in the infrastructure layer.
  */
-@HiddenFromObjC // Public for :core:data; not Swift API (AR-12)
+@HiddenFromObjC // Public for :core:data; not Swift API
 interface AppConfig {
     /**
      * Base URL for the API

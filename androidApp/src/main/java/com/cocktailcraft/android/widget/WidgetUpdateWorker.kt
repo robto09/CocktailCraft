@@ -171,7 +171,7 @@ class WidgetUpdateWorker(context: Context, params: WorkerParameters) :
         /**
          * Cancel only when no widget instances of EITHER type remain — both
          * widgets share the periodic refresh, so a receiver's onDisabled must
-         * not tear it down for the other widget (AN-2).
+         * not tear it down for the other widget.
          */
         suspend fun cancelIfNoWidgetsRemain(context: Context) {
             val manager = GlanceAppWidgetManager(context)
@@ -212,7 +212,7 @@ internal suspend fun refreshRandomCocktailWidgets(
 ): Boolean {
     val ids = glanceIds
         ?: GlanceAppWidgetManager(context).getGlanceIds(RandomCocktailWidget::class.java)
-    // No widgets placed: don't burn a network call (AN-2)
+    // No widgets placed: don't burn a network call
     if (ids.isEmpty()) return true
 
     val cocktail = provider.randomCocktail()

@@ -11,7 +11,7 @@ import com.cocktailcraft.util.runCatchingNonCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlin.native.HiddenFromObjC
 
-@HiddenFromObjC // Public for :presentation; not Swift API (AR-12)
+@HiddenFromObjC // Public for :presentation; not Swift API
 class ManageCartUseCase(
     private val cartRepository: CartRepository,
     private val detailRepository: CocktailDetailRepository

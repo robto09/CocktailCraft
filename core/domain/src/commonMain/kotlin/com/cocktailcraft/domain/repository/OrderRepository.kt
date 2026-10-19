@@ -6,7 +6,7 @@ import com.cocktailcraft.domain.util.Result
 import kotlinx.coroutines.flow.Flow
 import kotlin.native.HiddenFromObjC
 
-@HiddenFromObjC // Kotlin-side port, not Swift API (AR-12): Swift reaches data through the ViewModels
+@HiddenFromObjC // Kotlin-side port, not Swift API: Swift reaches data through the ViewModels
 interface OrderRepository {
     fun observeOrders(): Flow<List<Order>>
     suspend fun getOrders(): Result<List<Order>>

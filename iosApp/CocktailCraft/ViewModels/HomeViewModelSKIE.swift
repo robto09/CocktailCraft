@@ -59,7 +59,7 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
     }
 
     /// Per-keystroke entry point: pushes the query into the shared debounced
-    /// search pipeline (SH-13/IO-1). One request per typing pause, superseded
+    /// search pipeline. One request per typing pause, superseded
     /// searches cancelled in shared code; an empty query clears stale results
     /// by falling back to the category listing.
     func updateSearchQuery(_ query: String) {
@@ -131,7 +131,7 @@ final class HomeViewModelSKIE: SharedViewModelWrapper<HomeUiState> {
 
     /// Pull-to-refresh: refetches what the list shows and returns when it
     /// is on screen. No artificial delay: the spinner should last exactly as
-    /// long as the reload does (IO-2).
+    /// long as the reload does.
     func refreshCocktails() async {
         await run { try await sharedViewModel.refresh() }
     }

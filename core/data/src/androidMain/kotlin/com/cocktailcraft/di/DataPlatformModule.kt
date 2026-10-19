@@ -20,7 +20,7 @@ import okhttp3.OkHttpClient
 import org.koin.dsl.module
 
 actual fun dataPlatformModule() = module {
-    // Debug-aware config (AR-4): androidApp's BuildConfig is invisible to this
+    // Debug-aware config: androidApp's BuildConfig is invisible to this
     // module, but the debuggable flag carries the same signal.
     single<AppConfig> {
         val debuggable = (get<Context>().applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0

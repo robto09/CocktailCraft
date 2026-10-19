@@ -20,7 +20,7 @@ final class AppRouter {
     /// Entry point for cocktailcraft://cocktail/{id} deep links.
     /// Resets the Home stack first: tapping a widget while deep in the stack
     /// must land on the detail screen, not push on top of it — and repeated
-    /// taps must not stack duplicate details (IO-11).
+    /// taps must not stack duplicate details.
     func openCocktailDetail(id: String) {
         selectedTab = .home
         homePath = NavigationPath()

@@ -97,7 +97,7 @@ internal class CocktailCategoryFetcher(
                 return Result.Error(CatalogRefreshPolicy.OFFLINE_MESSAGE, ErrorCode.NETWORK)
             }
             // filterByCategory takes the rate-limit slot (retry/backoff is
-            // Ktor's job — SH-7) and stamps the category filter.php omits.
+            // Ktor's job) and stamps the category filter.php omits.
             val cocktails = remote.filterByCategory(category)
             cocktailCache.cacheCategoryPage(category, cocktails, fetchedAtMs = nowMs())
             Result.Success(Unit)
