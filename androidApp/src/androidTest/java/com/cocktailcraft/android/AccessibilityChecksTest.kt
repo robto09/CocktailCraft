@@ -1,7 +1,7 @@
 package com.cocktailcraft.android
 
 import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
@@ -32,6 +32,7 @@ import com.google.android.apps.common.testing.accessibility.framework.Accessibil
 import com.google.android.apps.common.testing.accessibility.framework.checks.ImageContrastCheck
 import com.google.android.apps.common.testing.accessibility.framework.checks.TextContrastCheck
 import com.google.android.apps.common.testing.accessibility.framework.integrations.espresso.AccessibilityValidator
+import okhttp3.OkHttpClient
 import org.hamcrest.CoreMatchers.anyOf
 import org.junit.After
 import org.junit.Before
@@ -81,6 +82,8 @@ class AccessibilityChecksTest {
                     single<AuthRepository> { FakeAuthRepository() }
                     single<ReviewRepository> { FakeReviewRepository() }
                     single<NetworkMonitor> { FakeNetworkMonitor(initiallyOnline = true) }
+                    // The app's Coil image loader is built over the shared client
+                    single { OkHttpClient() }
                 }
             )
         }

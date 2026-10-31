@@ -64,7 +64,8 @@ class SnapshotTestCase: XCTestCase {
     static let referenceOSVersion = (major: 18, minor: 5)
 
     /// iPhone 16 Pro point width — wide enough for every component.
-    static let defaultWidth: CGFloat = 402
+    /// nonisolated: it is a default argument, evaluated outside the main actor.
+    nonisolated static let defaultWidth: CGFloat = 402
 
     override func setUpWithError() throws {
         try super.setUpWithError()
