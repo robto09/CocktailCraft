@@ -187,11 +187,13 @@ jobs:
           git diff --exit-code -- CocktailCraft.xcodeproj ||
             { echo "::error::CocktailCraft.xcodeproj is out of date: run xcodegen generate in iosApp and commit the result"; exit 1; }
 
-      # Snapshot references were recorded on an iPhone 16 Pro simulator on
-      # iOS 18.5. When the runner has that runtime the snapshot tests must
-      # pass (SNAPSHOT_REQUIRE_REFERENCE_RUNTIME); otherwise they skip
-      # themselves (XCTSkip, see SnapshotSupport.swift) and every other unit
-      # test still runs.
+      # Snapshot references were recorded on an iPhone 17 Pro simulator on
+      # iOS 26.5, which the macos-26 runners have; there the snapshot tests
+      # must pass (SNAPSHOT_REQUIRE_REFERENCE_RUNTIME). If a runner image drops
+      # that runtime they skip themselves (XCTSkip, see SnapshotSupport.swift)
+      # with a warning below, and every other unit test still runs. When
+      # moving to a newer runtime, re-record (README -> Screenshot tests) and
+      # update this step and SnapshotSupport.referenceOSVersion together.
       - name: Pick a simulator
         id: simulator
         run: |
@@ -206,8 +208,8 @@ jobs:
                       if name is None or device["name"] == name:
                           return device["udid"]
               return None
-          reference = find("iOS-18-5", "iPhone 16 Pro")
-          fallback = find("", "iPhone 16 Pro") or find("", None)
+          reference = find("iOS-26-5", "iPhone 17 Pro")
+          fallback = find("", "iPhone 17 Pro") or find("", None)
           print(reference or fallback, "yes" if reference else "no")
           ')
           if [ -z "$udid" ] || [ "$udid" = "None" ]; then
@@ -216,9 +218,9 @@ jobs:
           echo "udid=$udid" >> "$GITHUB_OUTPUT"
           echo "reference=$reference" >> "$GITHUB_OUTPUT"
           if [ "$reference" = "yes" ]; then
-            echo "Using iPhone 16 Pro on iOS 18.5 ($udid): snapshot tests are verified"
+            echo "Using iPhone 17 Pro on iOS 26.5 ($udid): snapshot tests are verified"
           else
-            echo "::notice::No iPhone 16 Pro iOS 18.5 simulator on this runner; snapshot tests are skipped, the other unit tests run"
+            echo "::warning::No iPhone 17 Pro iOS 26.5 simulator on this runner; iOS snapshot tests are skipped, the other unit tests run"
           fi
 
       # Debug build of the app (the "Compile Kotlin Framework" phase builds
