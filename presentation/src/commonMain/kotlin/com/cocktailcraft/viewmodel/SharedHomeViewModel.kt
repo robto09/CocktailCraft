@@ -3,6 +3,7 @@ package com.cocktailcraft.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCategories
+import com.cocktailcraft.domain.model.CocktailRatingSummary
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
@@ -22,7 +23,6 @@ import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.util.runCatchingNonCancellation
 import com.cocktailcraft.util.runCatchingResult
-import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
 import com.cocktailcraft.viewmodel.state.HomeSortOption
 import com.cocktailcraft.viewmodel.state.HomeUiState
 import dev.icerock.moko.resources.desc.desc
@@ -155,19 +155,12 @@ class SharedHomeViewModel internal constructor(
             }
         }
 
-        // Review averages over every review on the device (whoever wrote
-        // them), observed like favorites. They rank the Rating
+        // Review averages, observed like favorites. They rank the Rating
         // sort and show on the cards; a failing flow just leaves them empty.
         viewModelScope.launch {
-            manageReviewsUseCase.observeReviews()
+            manageReviewsUseCase.observeRatingSummaries()
                 .catch { /* non-fatal: no review averages */ }
-                .collect { reviews ->
-                    val summaries = reviews.groupBy { it.cocktailId }.mapValues { (_, cocktailReviews) ->
-                        CocktailRatingSummary(
-                            rating = manageReviewsUseCase.computeAverageRating(cocktailReviews),
-                            count = cocktailReviews.size
-                        )
-                    }
+                .collect { summaries ->
                     _uiState.update {
                         it.copy(
                             ratingSummaries = summaries,
