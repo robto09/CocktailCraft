@@ -1,8 +1,10 @@
 import SwiftUI
+import shared
 
 /// Write-a-review bottom sheet, laid out like Android's WriteReviewSheet (and
-/// like the Advanced Search sheets): a Cancel / title header, name, a 1-5
-/// star picker, a comment capped at 500 characters, then Submit Review. Name and rating
+/// like the Advanced Search sheets): a Cancel / title header, name, a star
+/// picker, a capped comment, then Submit Review. The star count and the cap
+/// come from the shared ReviewRules, like Android's. Name and rating
 /// are checked here (same as Android); comment rules are enforced by the
 /// shared ReviewViewModel and its rejection message is shown inline via
 /// `submissionError`, keeping the sheet open so nothing typed is lost.
@@ -27,7 +29,10 @@ struct WriteReviewView: View {
     /// Clears the shared error once the user edits the form again.
     let onClearError: () -> Void
 
-    static let maxCommentLength = 500
+    // The shared review limits (ReviewRules in :core:domain), not copies
+    static let minRating = Int(ReviewRules.shared.MIN_RATING)
+    static let maxRating = Int(ReviewRules.shared.MAX_RATING)
+    static let maxCommentLength = Int(ReviewRules.shared.MAX_COMMENT_LENGTH)
 
     private var nameMissing: Bool {
         userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -129,7 +134,7 @@ struct WriteReviewView: View {
 
             // 36pt stars in 48pt targets, centered, as on Android
             HStack(spacing: 0) {
-                ForEach(1...5, id: \.self) { star in
+                ForEach(Self.minRating...Self.maxRating, id: \.self) { star in
                     Button {
                         rating = star
                     } label: {
@@ -183,7 +188,7 @@ struct WriteReviewView: View {
                     .stroke(AppColors.gray.opacity(0.3), lineWidth: 1)
             )
             .onChange(of: comment) { _, newValue in
-                // Hard cap like Android's dialog, which drops input past 500
+                // Hard cap like Android's sheet, which drops input past the limit
                 if newValue.count > Self.maxCommentLength {
                     comment = String(newValue.prefix(Self.maxCommentLength))
                 }
