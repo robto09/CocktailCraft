@@ -13,10 +13,12 @@ package com.cocktailcraft.designsystem
  * units (dp/sp on Android, pt on iOS).
  *
  * Two hand-maintained mirrors CANNOT read these values and must be updated
- * alongside any brand color change here:
- * - androidApp res/values/colors.xml (pre-Compose window, cold start)
+ * alongside any brand color change here. A test fails if either drifts:
+ * - androidApp res/values/colors.xml (pre-Compose window, cold start),
+ *   pinned by BrandColorParityTest (androidApp unit tests)
  * - the iOS widget extension's BrandColorComponents (WidgetBridge.swift),
- *   which does not link the shared framework.
+ *   which does not link the shared framework, pinned by
+ *   BrandColorParityTests (CocktailCraftTests)
  */
 
 object ColorTokens {
