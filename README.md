@@ -295,6 +295,17 @@ link the framework, gets prices already formatted in its snapshot.
    - Select a simulator and run the app
    - See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) for detailed setup
 
+### TheCocktailDB API key
+Both apps call [TheCocktailDB](https://www.thecocktaildb.com/api.php). By default they use its public test key, `1`, so the project builds and runs without any setup. Per TheCocktailDB's API page, that key is for development and education; a published app needs a premium key.
+
+To build with your own key, set `cocktailDbApiKey` in one of these places (the first one found wins):
+
+1. On the command line: `./gradlew assembleRelease -PcocktailDbApiKey=YOUR_KEY`
+2. In the environment: `COCKTAILDB_API_KEY=YOUR_KEY` (use this in CI, from a secret)
+3. In `local.properties` (untracked): `cocktailDbApiKey=YOUR_KEY`
+
+The key must be letters and digits only. `:core:data` compiles it into a generated constant, so it applies to both platforms. The iOS app's "Compile Kotlin Framework" build phase runs this same Gradle build, so `local.properties` works for Xcode builds too. The environment variable works for `xcodebuild` run from a shell, but not for the Xcode app. Never commit a real key. Anything compiled into an app can be extracted from it, so treat the key as identifying the app, not as a secret.
+
 ## Development Setup
 - **Android Studio**: a release that supports AGP 9.2 (the version in `libraries.toml`) — see the [AGP/Android Studio compatibility table](https://developer.android.com/build/releases/gradle-plugin#android_gradle_plugin_and_android_studio_compatibility)
 - **JDK**: Version 17 or higher
