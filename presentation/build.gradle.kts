@@ -20,8 +20,11 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             // ViewModel state and inputs are domain models; brings
-            // :core:common (ErrorHandler, NetworkMonitor) and :core:resources
+            // :core:common (Result, ErrorClassifier, NetworkMonitor)
             api(project(":core:domain"))
+            // User-facing copy (StringResource/StringDesc) is chosen here and
+            // nowhere below: ErrorHandler, the format/ helpers, ViewModels
+            api(project(":core:resources"))
             // ThemeViewModel maps accent/color tokens
             implementation(project(":core:designsystem"))
             // Deliberately api(), not implementation(): the shared
@@ -48,6 +51,8 @@ kotlin {
             // code cannot see the data layer.
             implementation(project(":core:data"))
             implementation(libs.kotlinx.coroutines.test)
+            // ErrorHandlerTest builds Ktor's exception types
+            implementation(libs.ktor.client.core)
             implementation(libs.koin.core)
             implementation(libs.turbine)
             implementation(libs.multiplatform.settings.core)

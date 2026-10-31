@@ -7,14 +7,9 @@ import com.cocktailcraft.domain.model.UserPreferences
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
-import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.error_sign_in_locked_out_minutes
-import com.cocktailcraft.resources.error_sign_in_locked_out_seconds
 import com.cocktailcraft.util.UUID
 import com.cocktailcraft.util.runCatchingResult
 import com.russhwolf.settings.Settings
-import dev.icerock.moko.resources.desc.PluralFormatted
-import dev.icerock.moko.resources.desc.StringDesc
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -270,7 +265,7 @@ internal class AuthRepositoryImpl(
     /**
      * The error to return while [email] is locked out, or null. An Error (not
      * Success(false)) so the lockout message reaches the UI instead of the
-     * generic invalid-credentials one.
+     * generic invalid-credentials one; the UI words it from [Result.Error.retryAfterMs].
      */
     private fun lockoutError(email: String): Result.Error? {
         val lockoutMs = lockoutRemainingMs(email)
@@ -278,7 +273,7 @@ internal class AuthRepositoryImpl(
         return Result.Error(
             message = "Locked for ${lockoutMs}ms after repeated failed password attempts",
             code = ErrorCode.FORBIDDEN,
-            displayMessage = lockoutMessage(lockoutMs)
+            retryAfterMs = lockoutMs
         )
     }
 
@@ -351,16 +346,5 @@ internal class AuthRepositoryImpl(
 
         /** Canonical form for matching and storing emails: trimmed, lowercase. */
         internal fun normalizeEmail(email: String): String = email.trim().lowercase()
-
-        /** Localized lockout copy; the remaining wait is rounded up to whole seconds/minutes. */
-        internal fun lockoutMessage(remainingMs: Long): StringDesc {
-            val seconds = ((remainingMs + 999) / 1000).toInt()
-            return if (seconds < 60) {
-                StringDesc.PluralFormatted(MR.plurals.error_sign_in_locked_out_seconds, seconds, seconds)
-            } else {
-                val minutes = (seconds + 59) / 60
-                StringDesc.PluralFormatted(MR.plurals.error_sign_in_locked_out_minutes, minutes, minutes)
-            }
-        }
     }
 }

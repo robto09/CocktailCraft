@@ -1,5 +1,6 @@
 package com.cocktailcraft.domain.usecase
 
+import com.cocktailcraft.domain.model.ReviewValidationError
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.FakeReviewRepository
 import kotlinx.coroutines.test.runTest
@@ -20,6 +21,17 @@ class ManageReviewsUseCaseTest {
         assertNotNull(useCase.validateReview(5.5f, comment))
         assertNull(useCase.validateReview(1f, comment))
         assertNull(useCase.validateReview(5f, comment))
+    }
+
+    @Test
+    fun validateReviewNamesTheBrokenRule() {
+        val comment = "Lovely drink, would order again"
+        assertEquals(ReviewValidationError.RATING_OUT_OF_RANGE, useCase.validateReview(0f, comment))
+        assertEquals(ReviewValidationError.COMMENT_REQUIRED, useCase.validateReview(3f, "   "))
+        assertEquals(ReviewValidationError.COMMENT_TOO_SHORT, useCase.validateReview(3f, "a".repeat(9)))
+        assertEquals(ReviewValidationError.COMMENT_TOO_LONG, useCase.validateReview(3f, "a".repeat(501)))
+        assertNull(useCase.validateReview(3f, "a".repeat(10)))
+        assertNull(useCase.validateReview(3f, "a".repeat(500)))
     }
 
     @Test

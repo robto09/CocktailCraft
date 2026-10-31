@@ -9,9 +9,6 @@ plugins {
     id("cocktailcraft.kmp.library")
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.sqldelight)
-    // No resources of its own: copies :core:resources' strings bundle next to
-    // the iOS test executable, which MR needs to initialize
-    alias(libs.plugins.moko.resources)
 }
 
 // Local storage: the offline cocktail cache (see CocktailCache) and the
