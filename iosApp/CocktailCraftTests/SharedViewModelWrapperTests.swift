@@ -75,7 +75,7 @@ final class SharedViewModelWrapperTests: TestSetup {
 
     func testWrapperDeinitsWhenReleased() async {
         var wrapper: SharedViewModelWrapper<ThemeUiState>? = makeWrapper()
-        weak var weakWrapper = wrapper
+        weak let weakWrapper = wrapper
         XCTAssertNotNil(weakWrapper)
 
         wrapper = nil
