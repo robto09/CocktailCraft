@@ -1,5 +1,6 @@
 package com.cocktailcraft.domain.usecase
 
+import com.cocktailcraft.domain.model.CocktailRatingSummary
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.util.Result
@@ -12,6 +13,7 @@ import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
@@ -22,6 +24,21 @@ import kotlin.time.Clock
 class ManageReviewsUseCase(private val repository: ReviewRepository) {
 
     fun observeReviews(): Flow<List<Review>> = repository.observeReviews()
+
+    /**
+     * The rating summary of every reviewed cocktail, by cocktail id, over
+     * every review on the device (whoever wrote it). Cocktails without
+     * reviews have no entry.
+     */
+    fun observeRatingSummaries(): Flow<Map<String, CocktailRatingSummary>> =
+        repository.observeReviews().map { reviews ->
+            reviews.groupBy { it.cocktailId }.mapValues { (_, cocktailReviews) ->
+                CocktailRatingSummary(
+                    rating = computeAverageRating(cocktailReviews),
+                    count = cocktailReviews.size
+                )
+            }
+        }
 
     suspend fun submitReview(
         cocktailId: String,

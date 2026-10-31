@@ -32,12 +32,12 @@ import com.cocktailcraft.android.util.ListOptimizations.OnBottomReached
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.android.util.toFavoriteIdSet
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailRatingSummary
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.list_all_cocktails
 import com.cocktailcraft.resources.list_category_cocktails
 import com.cocktailcraft.resources.list_end_of_list_message
 import com.cocktailcraft.resources.list_search_results
-import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
 
 /**
  * A reusable component for displaying a list of cocktails with animations.

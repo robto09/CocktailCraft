@@ -16,7 +16,7 @@ import com.cocktailcraft.android.screens.detail.DetailMainInfoCard
 import com.cocktailcraft.android.screens.detail.DetailRecommendationsSection
 import com.cocktailcraft.android.screens.detail.DetailReviewsSection
 import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
+import com.cocktailcraft.domain.model.CocktailRatingSummary
 import com.cocktailcraft.viewmodel.state.HomeSortOption
 import org.junit.Test
 import org.junit.runner.RunWith

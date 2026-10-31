@@ -35,12 +35,12 @@ import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.rememberHapticHandler
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailRatingSummary
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.add_to_cart_item_a11y
 import com.cocktailcraft.resources.list_out_of_stock
 import com.cocktailcraft.resources.list_tap_to_view_ingredients
 import com.cocktailcraft.resources.list_view_details_label
-import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
 
 /**
  * An enhanced version of CocktailItem with animations

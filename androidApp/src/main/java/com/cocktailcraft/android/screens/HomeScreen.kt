@@ -40,11 +40,11 @@ import com.cocktailcraft.android.util.refreshAccessibilityAction
 import com.cocktailcraft.android.util.resolve
 import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailRatingSummary
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.refresh
 import com.cocktailcraft.viewmodel.SharedHomeViewModel
-import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
 import com.cocktailcraft.viewmodel.state.HomeSortOption
 import com.cocktailcraft.viewmodel.state.HomeUiState
 

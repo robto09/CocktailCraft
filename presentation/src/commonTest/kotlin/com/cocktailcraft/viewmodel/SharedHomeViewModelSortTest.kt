@@ -1,10 +1,10 @@
 package com.cocktailcraft.viewmodel
 
+import com.cocktailcraft.domain.model.CocktailRatingSummary
 import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.testutil.testCocktail
-import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
 import com.cocktailcraft.viewmodel.state.HomeSortOption
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
