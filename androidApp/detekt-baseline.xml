@@ -4,7 +4,7 @@
   <CurrentIssues>
     <ID>ComposableParamOrder:ConfirmationDialog.kt:@Composable fun ConfirmationDialog</ID>
     <ID>ComposableParamOrder:DetailInfoCard.kt:@Composable fun DetailInfoCard</ID>
-    <ID>ComposableParamOrder:HomeScreen.kt:@Composable internal fun HomeContentSection</ID>
+    <ID>ComposableParamOrder:HomeContentSection.kt:@Composable internal fun HomeContentSection</ID>
     <ID>CompositionLocalAllowlist:AnimatedTheme.kt:/** * True when the user enabled the Reduce Motion accessibility setting. * Animation call sites (shimmer, list entrances, decorative transitions) * read this to swap animated behavior for a static equivalent. */ val LocalReducedMotion = staticCompositionLocalOf { false }</ID>
     <ID>CompositionLocalAllowlist:AppToasts.kt:/** * The snackbar host every screen posts its toasts to: the tabs share * MainScreen's, the detail screen (which has no tab chrome) provides its own. * Read by [UiEventToasts] and [ErrorToastEffect]. */ val LocalToastHostState = staticCompositionLocalOf { SnackbarHostState() }</ID>
     <ID>CompositionLocalAllowlist:Theme.kt:internal val LocalDarkTheme = staticCompositionLocalOf { false }</ID>
@@ -26,14 +26,13 @@
     <ID>ModifierMissing:SearchFilterComponents.kt:@OptIn(ExperimentalLayoutApi::class) @Composable fun AlcoholicFilterContent</ID>
     <ID>ModifierMissing:SearchFilterComponents.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun CategorySelector</ID>
     <ID>ModifierMissing:SearchFilterComponents.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun IngredientSelector</ID>
-    <ID>MultipleEmitters:ProfileScreen.kt:@Composable private fun SignInPromptSection</ID>
+    <ID>MultipleEmitters:ProfileHeader.kt:@Composable private fun SignInPromptSection</ID>
     <ID>NewLineAtEndOfFile:AnimatedCocktailItem.kt:com.cocktailcraft.android.ui.components.AnimatedCocktailItem.kt</ID>
     <ID>NewLineAtEndOfFile:CartItemCard.kt:com.cocktailcraft.android.ui.components.CartItemCard.kt</ID>
     <ID>NewLineAtEndOfFile:CocktailItem.kt:com.cocktailcraft.android.ui.components.CocktailItem.kt</ID>
-    <ID>NewLineAtEndOfFile:HomeScreen.kt:com.cocktailcraft.android.screens.HomeScreen.kt</ID>
-    <ID>NewLineAtEndOfFile:ProfileScreen.kt:com.cocktailcraft.android.screens.ProfileScreen.kt</ID>
     <ID>ParameterNaming:AppToasts.kt:onConsumed: () -&gt; Unit</ID>
     <ID>ParameterNaming:CategoryFilterRow.kt:onCategorySelected: (String?) -&gt; Unit</ID>
+    <ID>ParameterNaming:HomeSearchSections.kt:onCategorySelected: (String?) -&gt; Unit</ID>
     <ID>ParameterNaming:HomeScreen.kt:onCategorySelected: (String?) -&gt; Unit</ID>
     <ID>ParameterNaming:SearchFilterComponents.kt:onAlcoholicChanged: (Boolean?) -&gt; Unit</ID>
     <ID>ParameterNaming:SearchFilterComponents.kt:onCategorySelected: (String?) -&gt; Unit</ID>
@@ -47,8 +46,6 @@
     <ID>TooGenericExceptionCaught:FavoritesWidget.kt:RefreshFavoritesAction$e: Exception</ID>
     <ID>TooGenericExceptionCaught:RandomCocktailWidget.kt:RefreshRandomCocktailAction$e: Exception</ID>
     <ID>TooGenericExceptionCaught:WidgetUpdateWorker.kt:WidgetUpdateWorker$e: Exception</ID>
-    <ID>TooManyFunctions:HomeScreen.kt:com.cocktailcraft.android.screens.HomeScreen.kt</ID>
-    <ID>TooManyFunctions:ProfileScreen.kt:com.cocktailcraft.android.screens.ProfileScreen.kt</ID>
     <ID>TopLevelPropertyNaming:AppToasts.kt:// Matches the iOS toast duration private const val SUCCESS_TOAST_DURATION_MS = 2_000L</ID>
     <ID>TopLevelPropertyNaming:CartScreen.kt:/** * Above this font scale (the 1.3x maximum of Android's standard sizes, i.e. * the accessibility "non-linear" sizes), the cart's checkout section scrolls * with the items instead of being pinned. */ private const val LARGE_FONT_SCALE = 1.3f</ID>
     <ID>TopLevelPropertyNaming:OptimizedImage.kt:private const val MEDIUM_THUMBNAIL_PX = 350</ID>

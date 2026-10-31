@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.screens.CartContent
-import com.cocktailcraft.android.screens.HomeContentSection
 import com.cocktailcraft.android.screens.detail.DetailMainInfoCard
+import com.cocktailcraft.android.screens.home.HomeContentSection
 import com.cocktailcraft.viewmodel.state.CartUiState
 import org.junit.Test
 import org.junit.runner.RunWith
