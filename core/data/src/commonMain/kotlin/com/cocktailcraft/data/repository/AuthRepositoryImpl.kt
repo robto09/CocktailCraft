@@ -240,10 +240,7 @@ internal class AuthRepositoryImpl(
 
     private fun verifyCredentials(email: String, password: String): Boolean {
         val stored = settings.getStringOrNull(passwordKey(email)) ?: return false
-        if (!PasswordHasher.verify(password, stored)) return false
-        // Hashes from older formats upgrade to the current KDF on use.
-        if (PasswordHasher.needsRehash(stored)) saveCredentials(email, password)
-        return true
+        return PasswordHasher.verify(password, stored)
     }
 
     private fun passwordKey(email: String) = "${AuthStorageKeys.PASSWORD_PREFIX}$email"

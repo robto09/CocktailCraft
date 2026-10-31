@@ -112,9 +112,6 @@ kotlin {
             // Tink AEAD with a Keystore-wrapped keyset encrypts the auth store
             // (AuthStore.kt)
             implementation(libs.tink.android)
-            // Only to read the EncryptedSharedPreferences file older versions
-            // kept the auth store in, once (LegacySecurePrefs.kt)
-            implementation(libs.androidx.security.crypto)
             implementation(libs.sqldelight.android.driver)
         }
 

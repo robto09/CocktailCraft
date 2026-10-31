@@ -28,7 +28,6 @@
     <ID>MagicNumber:NetworkModule.kt:599</ID>
     <ID>MagicNumber:PasswordHasher.kt:PasswordHasher$16</ID>
     <ID>MagicNumber:PasswordHasher.kt:PasswordHasher$4</ID>
-    <ID>MatchingDeclarationName:AuthStorage.kt:AuthStorageKeys</ID>
     <ID>MatchingDeclarationName:NetworkMonitor.kt:AndroidNetworkMonitor : BaseNetworkMonitorNetworkMonitor</ID>
     <ID>MatchingDeclarationName:NetworkMonitor.kt:IOSNetworkMonitor : BaseNetworkMonitorNetworkMonitor</ID>
     <ID>MaxLineLength:FakeCocktailApi.kt:FakeCocktailApi$/** When set, only filter.php?c= throws it — kept separate from [endpointError] so intersection tests can fail a later filter while category succeeds. */</ID>
@@ -43,12 +42,10 @@
     <ID>ReturnCount:PasswordHasher.kt:PasswordHasher$private fun String.hexToBytesOrNull: ByteArray?</ID>
     <ID>SwallowedException:AuthRepositoryImpl.kt:AuthRepositoryImpl$e: Exception</ID>
     <ID>SwallowedException:Crypto.kt:e: GeneralSecurityException</ID>
-    <ID>SwallowedException:LegacySettingsImport.kt:LegacySettingsImport$e: Exception</ID>
     <ID>SwallowedException:NetworkMonitor.kt:AndroidNetworkMonitor$e: Exception</ID>
     <ID>TooGenericExceptionCaught:AuthRepositoryImpl.kt:AuthRepositoryImpl$e: Exception</ID>
     <ID>TooGenericExceptionCaught:CocktailCache.kt:CocktailCache$e: Exception</ID>
     <ID>TooGenericExceptionCaught:CocktailFavoritesRepositoryImpl.kt:CocktailFavoritesRepositoryImpl$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:LegacySettingsImport.kt:LegacySettingsImport$e: Exception</ID>
     <ID>TooGenericExceptionCaught:LocalDatabase.kt:LocalDatabase$e: Exception</ID>
     <ID>TooGenericExceptionCaught:NetworkMonitor.kt:AndroidNetworkMonitor$e: Exception</ID>
     <ID>TooManyFunctions:AuthRepositoryImpl.kt:AuthRepositoryImpl : AuthRepository</ID>

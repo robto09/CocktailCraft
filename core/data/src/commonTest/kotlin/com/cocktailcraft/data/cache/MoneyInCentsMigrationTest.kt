@@ -19,7 +19,6 @@ import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.testutil.createTestLocalDatabase
 import com.cocktailcraft.testutil.testCartRepository
 import com.cocktailcraft.testutil.testJson
-import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -193,7 +192,7 @@ class MoneyInCentsMigrationTest {
 
     @Test
     fun legacyCachedAndRecentlyViewedPayloadsReadTheirPricesAsCents() = runTest {
-        val cache = CocktailCache(migratedDatabase(), MapSettings(), testJson, AppConfigImpl())
+        val cache = CocktailCache(migratedDatabase(), testJson, AppConfigImpl())
 
         assertEquals(Money(1250), cache.getCachedCocktail("11007")?.price)
         assertEquals(listOf(Money(529)), cache.getRecentlyViewedCocktails().map { it.price })

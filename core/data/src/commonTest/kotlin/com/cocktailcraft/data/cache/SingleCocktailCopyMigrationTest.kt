@@ -23,7 +23,6 @@ import com.cocktailcraft.testutil.partialCocktail
 import com.cocktailcraft.testutil.testCartRepository
 import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.testutil.testJson
-import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -157,7 +156,7 @@ class SingleCocktailCopyMigrationTest {
     fun favoritesCartAndRecentlyViewedReadTheMigratedRows() = runTest {
         val db = v5Database()
         val local = createTestLocalDatabase(db)
-        val cache = CocktailCache(db, MapSettings(), testJson, AppConfigImpl())
+        val cache = CocktailCache(db, testJson, AppConfigImpl())
         val policy = OfflineModePolicy(FakeNetworkMonitor(false))
         val favorites = CocktailFavoritesRepositoryImpl(
             localDatabase = local,
@@ -185,7 +184,7 @@ class SingleCocktailCopyMigrationTest {
         val oneRowCap = object : AppConfig by AppConfigImpl() {
             override val maxOfflineCocktails: Int = 1
         }
-        val cache = CocktailCache(db, MapSettings(), testJson, oneRowCap)
+        val cache = CocktailCache(db, testJson, oneRowCap)
 
         // Opening the cache trims to the cap and sweeps expired rows (cached_at
         // 0 and 1000 are long expired), but every row is referenced by a page,

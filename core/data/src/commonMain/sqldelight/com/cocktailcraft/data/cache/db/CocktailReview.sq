@@ -39,12 +39,6 @@ insert:
 INSERT INTO cocktail_review(id, cocktail_id, user_name, rating, comment, date, position, owner_id)
 VALUES (:id, :cocktailId, :userName, :rating, :comment, :date, (SELECT COALESCE(MAX(position), 0) + 1 FROM cocktail_review), :ownerId);
 
--- Used by the one-time import from Settings (LegacySettingsImport): reviews
--- already in the database must win.
-insertIfAbsent:
-INSERT OR IGNORE INTO cocktail_review(id, cocktail_id, user_name, rating, comment, date, position, owner_id)
-VALUES (:id, :cocktailId, :userName, :rating, :comment, :date, (SELECT COALESCE(MAX(position), 0) + 1 FROM cocktail_review), :ownerId);
-
 update:
 UPDATE cocktail_review SET rating = :rating, comment = :comment, date = :date
 WHERE owner_id = :ownerId AND id = :id;

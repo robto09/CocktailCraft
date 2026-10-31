@@ -5,7 +5,6 @@ import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.local.CocktailCodec
 import com.cocktailcraft.data.local.FixedOwner
-import com.cocktailcraft.data.local.toEntity
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCategories
@@ -13,16 +12,12 @@ import com.cocktailcraft.testutil.CountingSqlDriver
 import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.testutil.createTestDatabase
-import com.cocktailcraft.testutil.legacyCocktailsJson
 import com.cocktailcraft.testutil.testCocktail
-import com.russhwolf.settings.MapSettings
-import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -42,23 +37,11 @@ class CocktailCacheTest {
         override val maxOfflineCocktails: Int = cap
     }
 
-    /** Wraps a [Settings] so tests can count writes to the old key-value store. */
-    private class CountingSettings(private val delegate: Settings) : Settings by delegate {
-        var putStringCount = 0
-            private set
-
-        override fun putString(key: String, value: String) {
-            putStringCount++
-            delegate.putString(key, value)
-        }
-    }
-
     private fun cache(
         db: CocktailCraftDatabase,
-        settings: Settings = MapSettings(),
         online: Boolean = true,
         appConfig: AppConfig = config
-    ) = CocktailCache(db, settings, json, appConfig, offlineModePolicy = OfflineModePolicy(FakeNetworkMonitor(online)))
+    ) = CocktailCache(db, json, appConfig, offlineModePolicy = OfflineModePolicy(FakeNetworkMonitor(online)))
 
     private fun nowMs() = Clock.System.now().toEpochMilliseconds()
 
@@ -80,17 +63,6 @@ class CocktailCacheTest {
 
     private fun cachedAt(db: CocktailCraftDatabase, id: String) =
         db.cachedCocktailQueries.selectById(id).executeAsOneOrNull()?.cached_at
-
-    private fun seedLegacyEntries(settings: Settings, entries: List<CachedCocktailEntry>) {
-        settings.putString(
-            CocktailCache.ALL_COCKTAILS_KEY,
-            json.encodeToString(ListSerializer(CachedCocktailEntry.serializer()), entries)
-        )
-    }
-
-    private fun seedLegacyCocktails(settings: Settings, key: String, cocktails: List<Cocktail>) {
-        settings.putString(key, legacyCocktailsJson(cocktails))
-    }
 
     // --- Per-row persistence ---
 
@@ -196,7 +168,6 @@ class CocktailCacheTest {
         val driver = CountingSqlDriver(createInMemorySqlDriver())
         val cache = CocktailCache(
             createTestDatabase(driver),
-            MapSettings(),
             json,
             config,
             ioDispatcher = StandardTestDispatcher(testScheduler)
@@ -230,10 +201,9 @@ class CocktailCacheTest {
     }
 
     @Test
-    fun cachingWritesOneRowPerCocktailAndNeverTheSettingsBlob() = runTest {
+    fun cachingWritesOneRowPerCocktail() = runTest {
         val db = createTestDatabase()
-        val settings = CountingSettings(MapSettings())
-        val cache = cache(db, settings)
+        val cache = cache(db)
 
         cache.cacheCocktails((1..20).map { testCocktail("$it") })
         val firstBatchCachedAt = cachedAt(db, "1")
@@ -243,8 +213,6 @@ class CocktailCacheTest {
         assertEquals(21L, rowCount(db))
         // Caching one more cocktail left the existing rows alone
         assertEquals(firstBatchCachedAt, cachedAt(db, "1"))
-        assertEquals(0, settings.putStringCount, "the cache must no longer write to Settings")
-        assertNull(settings.getStringOrNull(CocktailCache.ALL_COCKTAILS_KEY))
     }
 
     @Test
@@ -266,7 +234,7 @@ class CocktailCacheTest {
             opened = true
             createTestDatabase()
         }
-        val cache = CocktailCache(database, MapSettings(), json, config, FixedOwner())
+        val cache = CocktailCache(database, json, config, FixedOwner())
 
         assertFalse(opened, "constructing the cache must not touch the database")
 
@@ -546,151 +514,6 @@ class CocktailCacheTest {
 
         cache.addToRecentlyViewed(testCocktail("1"))
 
-        assertNotNull(cache.getCachedCocktail("1"))
-    }
-
-    // --- One-time migration from the Settings blobs ---
-
-    @Test
-    fun migratesTimestampedEntriesPreservingCachedAtAndRemovesTheKeys() = runTest {
-        val db = createTestDatabase()
-        val settings = MapSettings()
-        val oneHourAgo = nowMs() - 3_600_000
-        val twoHoursAgo = nowMs() - 7_200_000
-        seedLegacyEntries(
-            settings,
-            listOf(
-                CachedCocktailEntry(testCocktail("1").toEntity(), oneHourAgo),
-                CachedCocktailEntry(testCocktail("2").toEntity(), twoHoursAgo)
-            )
-        )
-
-        val cache = cache(db, settings)
-
-        assertEquals(setOf("1", "2"), cache.getAllCachedCocktails().map { it.id }.toSet())
-        assertEquals(oneHourAgo, cachedAt(db, "1"))
-        assertEquals(twoHoursAgo, cachedAt(db, "2"))
-        assertFalse(settings.hasKey(CocktailCache.ALL_COCKTAILS_KEY))
-        assertFalse(settings.hasKey(CocktailCache.RECENTLY_VIEWED_KEY))
-    }
-
-    @Test
-    fun migratesPreTtlPlainCocktailListStampedNow() = runTest {
-        val db = createTestDatabase()
-        val settings = MapSettings()
-        // Pre-TTL format: plain List<Cocktail>, no cachedAtMs anywhere
-        seedLegacyCocktails(settings, CocktailCache.ALL_COCKTAILS_KEY, listOf(testCocktail("1"), testCocktail("2")))
-        val before = nowMs()
-
-        val cache = cache(db, settings, online = true)
-
-        // Stamped "now", so they load and are not expired
-        assertEquals(setOf("1", "2"), cache.getAllCachedCocktails().map { it.id }.toSet())
-        assertTrue(cachedAt(db, "1")!! >= before)
-        assertFalse(settings.hasKey(CocktailCache.ALL_COCKTAILS_KEY))
-    }
-
-    @Test
-    fun migratesRecentlyViewedKeepingItsOrder() = runTest {
-        val db = createTestDatabase()
-        val settings = MapSettings()
-        // The legacy list was stored oldest first
-        seedLegacyCocktails(
-            settings,
-            CocktailCache.RECENTLY_VIEWED_KEY,
-            listOf(testCocktail("a"), testCocktail("b"), testCocktail("c"))
-        )
-
-        val cache = cache(db, settings)
-
-        assertEquals(listOf("c", "b", "a"), cache.getRecentlyViewedCocktails().map { it.id })
-        assertFalse(settings.hasKey(CocktailCache.RECENTLY_VIEWED_KEY))
-
-        // New views land in front of the imported ones
-        cache.addToRecentlyViewed(testCocktail("d"))
-        assertEquals(listOf("d", "c", "b", "a"), cache.getRecentlyViewedCocktails().map { it.id })
-    }
-
-    @Test
-    fun migratedLegacyCategoriesAreQueryable() = runTest {
-        val settings = MapSettings()
-        seedLegacyEntries(
-            settings,
-            listOf(
-                CachedCocktailEntry(testCocktail("legacy", category = null).toEntity(), nowMs()),
-                CachedCocktailEntry(testCocktail("shot", category = "Shot").toEntity(), nowMs())
-            )
-        )
-
-        val cache = cache(createTestDatabase(), settings)
-
-        assertEquals(listOf("shot"), cache.observeCategoryPage("Shot").first().map { it.id })
-        assertEquals(
-            listOf("legacy"),
-            cache.observeCategoryPage(CocktailCategories.DEFAULT, includeUncategorized = true).first().map { it.id }
-        )
-    }
-
-    @Test
-    fun rerunningAnInterruptedMigrationNeitherDuplicatesNorOverwrites() = runTest {
-        val db = createTestDatabase()
-        val settings = MapSettings()
-        val legacyEntries = listOf(
-            CachedCocktailEntry(testCocktail("1", name = "Legacy name").toEntity(), nowMs()),
-            CachedCocktailEntry(testCocktail("2").toEntity(), nowMs())
-        )
-        val legacyRecent = listOf(testCocktail("1"))
-        seedLegacyEntries(settings, legacyEntries)
-        seedLegacyCocktails(settings, CocktailCache.RECENTLY_VIEWED_KEY, legacyRecent)
-
-        val first = cache(db, settings)
-        first.cacheCocktail(testCocktail("1", name = "Fresh name"))
-
-        // Simulate the app dying after the import committed but before the
-        // keys were removed: the same legacy data is still in Settings.
-        seedLegacyEntries(settings, legacyEntries)
-        seedLegacyCocktails(settings, CocktailCache.RECENTLY_VIEWED_KEY, legacyRecent)
-
-        val second = cache(db, settings)
-
-        assertEquals(2, second.getCachedCocktailCount())
-        assertEquals("Fresh name", second.getCachedCocktail("1")?.name, "newer database rows must win")
-        assertEquals(listOf("1"), second.getRecentlyViewedCocktails().map { it.id })
-        assertFalse(settings.hasKey(CocktailCache.ALL_COCKTAILS_KEY))
-        assertFalse(settings.hasKey(CocktailCache.RECENTLY_VIEWED_KEY))
-    }
-
-    @Test
-    fun expiredLegacyEntriesAreDroppedOnlineButKeptOffline() = runTest {
-        val legacy = listOf(
-            CachedCocktailEntry(testCocktail("old").toEntity(), expiredAt()),
-            CachedCocktailEntry(testCocktail("fresh").toEntity(), nowMs())
-        )
-
-        val onlineSettings = MapSettings().also { seedLegacyEntries(it, legacy) }
-        val online = cache(createTestDatabase(), onlineSettings, online = true)
-        assertEquals(listOf("fresh"), online.getAllCachedCocktails().map { it.id })
-
-        val offlineSettings = MapSettings().also { seedLegacyEntries(it, legacy) }
-        val offline = cache(createTestDatabase(), offlineSettings, online = false)
-        assertEquals(setOf("old", "fresh"), offline.getAllCachedCocktails().map { it.id }.toSet())
-    }
-
-    @Test
-    fun unreadableLegacyDataIsDiscardedWithoutCrashing() = runTest {
-        val settings = MapSettings()
-        settings.putString(CocktailCache.ALL_COCKTAILS_KEY, "{not json")
-        settings.putString(CocktailCache.RECENTLY_VIEWED_KEY, "[42]")
-
-        val cache = cache(createTestDatabase(), settings)
-
-        assertTrue(cache.getAllCachedCocktails().isEmpty())
-        assertTrue(cache.getRecentlyViewedCocktails().isEmpty())
-        assertFalse(settings.hasKey(CocktailCache.ALL_COCKTAILS_KEY))
-        assertFalse(settings.hasKey(CocktailCache.RECENTLY_VIEWED_KEY))
-
-        // The cache keeps working after the failed import
-        cache.cacheCocktail(testCocktail("1"))
         assertNotNull(cache.getCachedCocktail("1"))
     }
 }
