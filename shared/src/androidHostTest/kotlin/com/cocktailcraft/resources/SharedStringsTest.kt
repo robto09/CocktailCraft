@@ -11,7 +11,7 @@ import com.cocktailcraft.util.ErrorHandler
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
-import io.ktor.utils.io.errors.IOException
+import kotlinx.io.IOException
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
