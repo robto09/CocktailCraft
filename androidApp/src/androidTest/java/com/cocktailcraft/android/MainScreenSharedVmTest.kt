@@ -1,7 +1,7 @@
 package com.cocktailcraft.android
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
@@ -30,6 +30,7 @@ import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.util.NetworkMonitor
+import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -76,6 +77,8 @@ class MainScreenSharedVmTest {
                     single<AuthRepository> { FakeAuthRepository() }
                     single<ReviewRepository> { FakeReviewRepository() }
                     single<NetworkMonitor> { networkMonitor }
+                    // The app's Coil image loader is built over the shared client
+                    single { OkHttpClient() }
                 }
             )
         }
