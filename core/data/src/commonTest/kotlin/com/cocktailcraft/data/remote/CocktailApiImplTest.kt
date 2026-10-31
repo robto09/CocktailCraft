@@ -29,7 +29,9 @@ import kotlin.test.assertTrue
  */
 class CocktailApiImplTest {
 
-    private val config = AppConfigImpl()
+    // A distinctive key, so the request URLs below prove the configured key
+    // (not a hard-coded one) reaches the wire
+    private val config = AppConfigImpl(apiKey = "TestKey42")
 
     // Mirrors the DataModule Json configuration.
     private val json = Json {
@@ -67,7 +69,7 @@ class CocktailApiImplTest {
 
         val request = engine.requestHistory.single()
         assertEquals("www.thecocktaildb.com", request.url.host)
-        assertEquals("/api/json/v1/1/search.php", request.url.encodedPath)
+        assertEquals("/api/json/v1/TestKey42/search.php", request.url.encodedPath)
         assertEquals("margarita", request.url.parameters["s"])
 
         val drink = drinks.single()
@@ -91,7 +93,7 @@ class CocktailApiImplTest {
         val drink = api(engine).getCocktailById("11007")
 
         val request = engine.requestHistory.single()
-        assertEquals("/api/json/v1/1/lookup.php", request.url.encodedPath)
+        assertEquals("/api/json/v1/TestKey42/lookup.php", request.url.encodedPath)
         assertEquals("11007", request.url.parameters["i"])
         assertEquals("11007", drink?.id)
     }
