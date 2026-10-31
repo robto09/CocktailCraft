@@ -17,11 +17,8 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
     }
-    versionCatalogs {
-        create("libs") {
-            from(files("libraries.toml"))
-        }
-    }
+    // The `libs` catalog is gradle/libs.versions.toml, which Gradle picks up
+    // by convention (and Dependabot reads from that path only)
 }
 
 rootProject.name = "CocktailCraft"

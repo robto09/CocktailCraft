@@ -2,7 +2,7 @@
 
 This document lists the libraries used in the CocktailCraft application, with their versions and purposes.
 
-All versions are managed in a single version catalog: **`libraries.toml`** at the repository root, wired up as the `libs` catalog in `settings.gradle.kts` (`versionCatalogs { create("libs") { from(files("libraries.toml")) } }`). The build files (`shared/`, `presentation/` and `core/*/build.gradle.kts`, `androidApp/build.gradle.kts`, `baselineprofile/build.gradle.kts`) and the `build-logic` convention plugins reference dependencies and SDK/JVM levels only through the catalog — update versions there, not in the build files.
+All versions are managed in a single version catalog: **`gradle/libs.versions.toml`**, which Gradle picks up as the `libs` catalog by convention (`build-logic/settings.gradle.kts` loads the same file explicitly). Dependabot reads that path and opens weekly update PRs (see `.github/dependabot.yml`). The build files (`shared/`, `presentation/` and `core/*/build.gradle.kts`, `androidApp/build.gradle.kts`, `baselineprofile/build.gradle.kts`) and the `build-logic` convention plugins reference dependencies and SDK/JVM levels only through the catalog — update versions there, not in the build files.
 
 ## Shared Modules (Kotlin Multiplatform)
 
