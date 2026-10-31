@@ -7,17 +7,13 @@ plugins {
     id("cocktailcraft.kmp.library")
     // Domain models are @Serializable (the local database stores some as JSON)
     alias(libs.plugins.kotlin.serialization)
-    // No resources of its own: copies :core:resources' strings bundle next to
-    // the iOS test executable, which MR needs to initialize
-    alias(libs.plugins.moko.resources)
 }
 
 kotlin {
     sourceSets {
         commonMain.dependencies {
             // Result/ErrorCode appear in every repository signature; also
-            // brings :core:resources (StringDesc for validation messages)
-            // and coroutines
+            // brings coroutines
             api(project(":core:common"))
             api(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)

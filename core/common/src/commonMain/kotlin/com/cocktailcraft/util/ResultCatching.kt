@@ -12,7 +12,7 @@ import kotlin.native.HiddenFromObjC
  * legitimate business-rule early returns (e.g. auth lockout) — and, if it
  * throws, converts the exception into a [Result.Error] carrying the
  * [com.cocktailcraft.domain.util.ErrorCode] assigned by the shared type-based
- * classifier ([ErrorHandler.getErrorFromException]) instead of defaulting to
+ * classifier ([ErrorClassifier]) instead of defaulting to
  * ErrorCode.UNKNOWN. A thrown DomainException (from a nested getOrThrow())
  * keeps its original code. Coroutine cancellation is rethrown, never turned
  * into a user-facing error.
@@ -31,11 +31,11 @@ inline fun <T> runCatchingResult(defaultMessage: String, block: () -> Result<T>)
 } catch (e: CancellationException) {
     throw e
 } catch (e: DomainException) {
-    Result.Error(message = e.message ?: defaultMessage, code = e.code, displayMessage = e.displayMessage)
+    Result.Error(message = e.message ?: defaultMessage, code = e.code, retryAfterMs = e.retryAfterMs)
 } catch (e: Exception) {
     Result.Error(
         message = "$defaultMessage (${e::class.simpleName})",
-        code = ErrorHandler.getErrorFromException(e).errorCode
+        code = ErrorClassifier.codeFor(e)
     )
 }
 

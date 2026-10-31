@@ -151,8 +151,8 @@ abstract class SharedViewModel : ViewModel() {
     /**
      * Unwrap a [Result], reporting a [Result.Error] to the error channel
      * instead of silently discarding it. The copy comes from the same
-     * mapping as [handleException] (ErrorHandler.errorFromResult): the
-     * error's localized displayMessage, else the shared copy for a transport
+     * mapping as [handleException] (ErrorHandler.errorFromResult): a
+     * lockout's countdown copy, else the shared copy for a transport
      * failure, else [fallbackMessage]. The raw message is only logged.
      */
     protected fun <T> Result<T>.getOrReport(

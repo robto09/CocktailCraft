@@ -30,3 +30,14 @@ data class Review(
     @HiddenFromObjC
     companion object
 }
+
+/**
+ * A rule a review breaks (see ManageReviewsUseCase.validateReview). Data,
+ * not copy: the presentation layer turns it into the message to show.
+ */
+enum class ReviewValidationError {
+    RATING_OUT_OF_RANGE,
+    COMMENT_REQUIRED,
+    COMMENT_TOO_SHORT,
+    COMMENT_TOO_LONG
+}
