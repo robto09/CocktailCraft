@@ -18,7 +18,6 @@ import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.testutil.testJson
-import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
@@ -59,7 +58,6 @@ class CocktailCatalogRepositoryImplTest {
         val policy = OfflineModePolicy(network)
         val cache = CocktailCache(
             createTestDatabase(),
-            MapSettings(),
             testJson,
             config,
             ioDispatcher = StandardTestDispatcher(testScheduler),

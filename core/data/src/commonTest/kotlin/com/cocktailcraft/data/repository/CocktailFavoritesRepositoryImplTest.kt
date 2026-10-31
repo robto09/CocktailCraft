@@ -5,7 +5,6 @@ import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.OfflineModePolicy
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
-import com.cocktailcraft.data.local.LegacySettingsImport
 import com.cocktailcraft.data.local.OwnerIds
 import com.cocktailcraft.data.remote.ApiRateLimiter
 import com.cocktailcraft.data.remote.CocktailDto
@@ -21,8 +20,6 @@ import com.cocktailcraft.testutil.createTestLocalDatabase
 import com.cocktailcraft.testutil.partialCocktail
 import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.testutil.testJson
-import com.russhwolf.settings.MapSettings
-import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -42,19 +39,18 @@ class CocktailFavoritesRepositoryImplTest {
     private fun TestScope.repository(
         api: FakeCocktailApi = FakeCocktailApi(),
         db: CocktailCraftDatabase = createTestDatabase(),
-        settings: Settings = MapSettings(),
         online: Boolean = true,
         cache: CocktailCache? = null
     ): CocktailFavoritesRepositoryImpl {
         val policy = OfflineModePolicy(FakeNetworkMonitor(online))
-        val cocktailCache = cache ?: CocktailCache(db, settings, testJson, config, offlineModePolicy = policy)
+        val cocktailCache = cache ?: CocktailCache(db, testJson, config, offlineModePolicy = policy)
         val remote = CocktailRemoteDataSource(api, ApiRateLimiter())
         val offline = CocktailOfflineRepositoryImpl(
             offlineModePolicy = policy,
             cocktailCache = cocktailCache
         )
         return CocktailFavoritesRepositoryImpl(
-            localDatabase = createTestLocalDatabase(db, settings),
+            localDatabase = createTestLocalDatabase(db),
             json = testJson,
             cocktailCache = cocktailCache,
             remote = remote,
@@ -108,12 +104,11 @@ class CocktailFavoritesRepositoryImplTest {
     }
 
     @Test
-    fun legacyFavoriteIdsResolveThroughApiWhenOnline() = runTest {
-        // Favorites imported from the old id-only Settings list have no
-        // stored cocktail; they resolve through the API and are then stored.
-        val db = createTestDatabase()
-        val settings = MapSettings().apply { putString(LegacySettingsImport.FAVORITES_KEY, "11007") }
-        val repo = repository(api = FakeCocktailApi(drinks = listOf(margaritaDto())), db = db, settings = settings)
+    fun favoritesWithoutAStoredCocktailResolveThroughApiWhenOnline() = runTest {
+        // A favorite with no stored cocktail resolves through the API and is
+        // then stored.
+        val db = createTestDatabase().withFavoriteIds("11007")
+        val repo = repository(api = FakeCocktailApi(drinks = listOf(margaritaDto())), db = db)
 
         assertEquals(listOf("Margarita"), names(repo.getFavoriteCocktails()))
         assertTrue(
@@ -123,24 +118,23 @@ class CocktailFavoritesRepositoryImplTest {
     }
 
     @Test
-    fun legacyFavoriteIdsResolveFromTheOfflineCacheWhenOffline() = runTest {
-        val db = createTestDatabase()
-        val settings = MapSettings().apply { putString(LegacySettingsImport.FAVORITES_KEY, "42,7") }
+    fun favoritesWithoutAStoredCocktailResolveFromTheOfflineCacheWhenOffline() = runTest {
+        val db = createTestDatabase().withFavoriteIds("42", "7")
         val policy = OfflineModePolicy(FakeNetworkMonitor(false))
-        val cache = CocktailCache(db, settings, testJson, config, offlineModePolicy = policy)
+        val cache = CocktailCache(db, testJson, config, offlineModePolicy = policy)
         cache.cacheCocktail(testCocktail("42", name = "Negroni"))
-        val repo = repository(db = db, settings = settings, online = false, cache = cache)
+        val repo = repository(db = db, online = false, cache = cache)
 
         // "7" is neither cached nor fetchable offline: it stays a favorite
-        // but hidden until it can be resolved, as unresolvable ids were.
+        // but hidden until it can be resolved.
         assertEquals(listOf("Negroni"), names(repo.getFavoriteCocktails()))
         assertTrue(repo.isCocktailFavorite("7").getOrThrow())
     }
 
     @Test
-    fun observeFavoritesResolvesLegacyIdsAndEmitsThem() = runTest {
-        val settings = MapSettings().apply { putString(LegacySettingsImport.FAVORITES_KEY, "11007") }
-        val repo = repository(api = FakeCocktailApi(drinks = listOf(margaritaDto())), settings = settings)
+    fun observeFavoritesResolvesUnstoredFavoritesAndEmitsThem() = runTest {
+        val db = createTestDatabase().withFavoriteIds("11007")
+        val repo = repository(api = FakeCocktailApi(drinks = listOf(margaritaDto())), db = db)
 
         repo.observeFavorites().test {
             var favorites = awaitItem()
@@ -175,7 +169,7 @@ class CocktailFavoritesRepositoryImplTest {
         val oneRowCap = object : AppConfig by config {
             override val maxOfflineCocktails: Int = 1
         }
-        val cache = CocktailCache(db, MapSettings(), testJson, oneRowCap, offlineModePolicy = policy)
+        val cache = CocktailCache(db, testJson, oneRowCap, offlineModePolicy = policy)
         val repo = repository(api = FakeCocktailApi(), db = db, online = false, cache = cache)
 
         repo.addToFavorites(testCocktail("42", name = "Negroni"))
@@ -189,7 +183,7 @@ class CocktailFavoritesRepositoryImplTest {
     fun aDetailRefreshShowsUpInTheFavorites() = runTest {
         // One copy of each cocktail: refreshing it updates the favorite too
         val db = createTestDatabase()
-        val cache = CocktailCache(db, MapSettings(), testJson, config)
+        val cache = CocktailCache(db, testJson, config)
         val repo = repository(db = db, cache = cache)
         repo.addToFavorites(testCocktail("42", name = "Negroni"))
 
@@ -242,5 +236,10 @@ class CocktailFavoritesRepositoryImplTest {
     fun unknownFavoriteIsNotAFavorite() = runTest {
         assertFalse(repository().isCocktailFavorite("nope").getOrThrow())
         assertNull((repository().getFavoriteCocktails() as Result.Success).data.firstOrNull())
+    }
+
+    /** Favorites of the guest (the default owner) whose cocktails aren't stored. */
+    private fun CocktailCraftDatabase.withFavoriteIds(vararg ids: String) = apply {
+        ids.forEach { favoriteCocktailQueries.insertIfAbsent(ownerId = OwnerIds.GUEST, cocktailId = it) }
     }
 }

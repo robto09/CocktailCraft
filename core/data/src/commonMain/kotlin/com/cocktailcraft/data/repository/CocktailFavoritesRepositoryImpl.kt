@@ -41,10 +41,9 @@ import com.cocktailcraft.data.cache.db.favoriteCocktail.SelectAll as FavoriteRow
  * Each owner (user, or the guest) has favorites of their own; everything
  * here works on the current owner's (see UserDataOwnership.kt).
  *
- * Favorites imported from the old id-only Settings list may have no stored
- * cocktail yet; they are resolved (offline cache first, then the API while
- * online) when favorites are first observed or loaded, and stay hidden until
- * then — as unresolvable ids always were.
+ * A favorite may have no stored cocktail; it is resolved (offline cache first, then the API while
+ * online) when favorites are first observed or loaded, and stays hidden until
+ * then.
  */
 internal class CocktailFavoritesRepositoryImpl(
     private val localDatabase: LocalDatabase,

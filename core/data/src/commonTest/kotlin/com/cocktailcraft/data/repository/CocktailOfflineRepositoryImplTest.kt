@@ -7,7 +7,6 @@ import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.testCocktail
-import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -25,7 +24,6 @@ class CocktailOfflineRepositoryImplTest {
         val policy = OfflineModePolicy(FakeNetworkMonitor(online))
         val cache = CocktailCache(
             createTestDatabase(),
-            MapSettings(),
             Json { ignoreUnknownKeys = true },
             config,
             offlineModePolicy = policy

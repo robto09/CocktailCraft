@@ -148,7 +148,7 @@ private fun orderItem(cocktailId: String?, name: String?, quantity: Long?, price
 
 /**
  * Inserts [order] and its items as [ownerId]'s; a duplicate order id fails.
- * Call inside a transaction. Shared with the legacy Settings import.
+ * Call inside a transaction.
  */
 internal fun CocktailCraftDatabase.insertOrderWithItems(order: Order, ownerId: String) {
     customerOrderQueries.insertOrder(
