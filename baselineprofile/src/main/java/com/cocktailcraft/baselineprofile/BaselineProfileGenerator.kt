@@ -83,24 +83,30 @@ class BaselineProfileGenerator {
         }
     }
 
-    // A tab node found while the screen is still recomposing can be replaced
-    // before the click lands, so it is looked up again in that case
+    // Taps the tab's position rather than its node. The bottom bar never
+    // moves, but on a busy device a recomposition can replace the tab's node
+    // between the lookup and the click (StaleObjectException). Reading the
+    // position right after the lookup leaves only a tiny window for that,
+    // and each retry waits a little longer for the screen to settle.
     private fun MacrobenchmarkScope.clickTab(tag: String) {
-        repeat(TAB_CLICK_ATTEMPTS) {
+        repeat(TAB_CLICK_ATTEMPTS) { attempt ->
             val tab = checkNotNull(device.wait(Until.findObject(By.res(tag)), 5_000)) {
                 "Bottom tab $tag not found"
             }
             try {
-                tab.click()
+                val center = tab.visibleCenter
+                device.click(center.x, center.y)
                 return
             } catch (_: StaleObjectException) {
                 device.waitForIdle()
+                Thread.sleep(RETRY_BACKOFF_MS * (attempt + 1))
             }
         }
         error("Bottom tab $tag kept changing before it could be clicked")
     }
 
     private companion object {
-        const val TAB_CLICK_ATTEMPTS = 3
+        const val TAB_CLICK_ATTEMPTS = 5
+        const val RETRY_BACKOFF_MS = 250L
     }
 }
