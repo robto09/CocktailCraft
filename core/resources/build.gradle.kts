@@ -4,6 +4,12 @@ plugins {
 }
 
 kotlin {
+    // The generated MR object is an expect/actual class. Those are Beta in
+    // Kotlin; this flag acknowledges that and silences the per-file warning.
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     sourceSets {
         commonMain.dependencies {
             // The generated MR accessors (StringResource) and StringDesc are

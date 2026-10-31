@@ -216,7 +216,7 @@ final class ReviewViewModelSKIETests: TestSetup {
 
     func testWrapperDeinitsWhenReleased() async {
         var wrapper: ReviewViewModelSKIE? = ReviewViewModelSKIE()
-        weak var weakWrapper = wrapper
+        weak let weakWrapper = wrapper
         XCTAssertNotNil(weakWrapper)
 
         wrapper = nil

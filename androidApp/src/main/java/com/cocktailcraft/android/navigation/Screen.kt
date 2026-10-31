@@ -1,9 +1,9 @@
 package com.cocktailcraft.android.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -29,5 +29,5 @@ sealed class Screen(val route: Any, val title: StringResource, val icon: ImageVe
     object Cart : Screen(CartRoute, MR.strings.cart, Icons.Filled.ShoppingCart, "nav_cart")
     object Profile : Screen(ProfileRoute, MR.strings.profile, Icons.Filled.Person, "nav_profile")
     object Favorites : Screen(FavoritesRoute, MR.strings.favorites, Icons.Filled.Favorite, "nav_favorites")
-    object OrderList : Screen(OrderListRoute, MR.strings.orders, Icons.Filled.List, "nav_orders")
+    object OrderList : Screen(OrderListRoute, MR.strings.orders, Icons.AutoMirrored.Filled.List, "nav_orders")
 }
