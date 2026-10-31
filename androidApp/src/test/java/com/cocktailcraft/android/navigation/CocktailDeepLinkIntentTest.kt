@@ -53,13 +53,6 @@ class CocktailDeepLinkIntentTest {
     }
 
     @Test
-    fun legacyWidgetLinkIsRewrittenToTheCurrentForm() {
-        val forwarded = CocktailDeepLink.navigationIntentOrNull(viewIntent("app://cocktailcraft/cocktail/11007"))
-
-        assertEquals("cocktailcraft://cocktail/11007", forwarded?.dataString)
-    }
-
-    @Test
     fun navigationInternalExtrasWithoutACocktailLinkAreDropped() {
         // The extras NavDeepLinkBuilder puts on its intents: destination ids
         // to open (here an arbitrary one) and their arguments
@@ -95,6 +88,8 @@ class CocktailDeepLinkIntentTest {
             "cocktailcraft://cocktail/11007/extra",
             "cocktailcraft://order/11007",
             "cocktailcraft://orders/1",
+            // The pre-0.4.0 widget link is no longer accepted
+            "app://cocktailcraft/cocktail/11007",
             "app://cocktailcraft/order/11007",
             "app://cocktailcraft/11007",
             "app://other/cocktail/11007",
