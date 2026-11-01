@@ -7,7 +7,6 @@ import com.cocktailcraft.testutil.LegacySchema
 import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.testutil.testJson
-import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -42,7 +41,7 @@ class CategoryPageMigrationTest {
         }
 
         CocktailCraftDatabase.Schema.migrate(driver, oldVersion = 3, newVersion = CocktailCraftDatabase.Schema.version)
-        val cache = CocktailCache(CocktailCraftDatabase(driver), MapSettings(), testJson, AppConfigImpl())
+        val cache = CocktailCache(CocktailCraftDatabase(driver), testJson, AppConfigImpl())
 
         assertEquals(
             listOf("2", "1"),

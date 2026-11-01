@@ -5,12 +5,9 @@ import com.cocktailcraft.domain.util.ErrorCode
 import com.cocktailcraft.domain.util.Result
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.error_message_network
-import com.cocktailcraft.resources.error_sign_in_failed
 import com.cocktailcraft.resources.error_update_favorites_failed
 import com.cocktailcraft.testutil.MainDispatcherTest
 import com.cocktailcraft.util.ErrorHandler
-import dev.icerock.moko.resources.desc.Raw
-import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -41,7 +38,7 @@ class SharedViewModelErrorReportingTest : MainDispatcherTest() {
 
     private fun handled(result: Result.Error): ErrorHandler.UserFriendlyError {
         val vm = ReportingViewModel()
-        vm.handle(DomainException(result.code, result.message, result.displayMessage))
+        vm.handle(DomainException(result.code, result.message, result.retryAfterMs))
         return assertNotNull(vm.error.value)
     }
 
@@ -53,12 +50,10 @@ class SharedViewModelErrorReportingTest : MainDispatcherTest() {
     }
 
     @Test
-    fun getOrReportHonoursTheErrorsDisplayMessage() {
-        val localized = MR.strings.error_sign_in_failed.desc()
+    fun getOrReportWordsALockoutFromItsRetryAfter() {
+        val error = reported(Result.Error("locked out", ErrorCode.FORBIDDEN, retryAfterMs = 30_000))
 
-        val error = reported(Result.Error("locked out", ErrorCode.FORBIDDEN, displayMessage = localized))
-
-        assertEquals(localized, error.message)
+        assertEquals(ErrorHandler.lockoutMessage(30_000), error.message)
         assertEquals(ErrorCode.FORBIDDEN, error.errorCode)
     }
 
@@ -76,7 +71,7 @@ class SharedViewModelErrorReportingTest : MainDispatcherTest() {
         val cases = listOf(
             Result.Error("raw"),
             Result.Error("raw", ErrorCode.TIMEOUT),
-            Result.Error("raw", ErrorCode.UNAUTHORIZED, displayMessage = StringDesc.Raw("Signed out elsewhere"))
+            Result.Error("raw", ErrorCode.FORBIDDEN, retryAfterMs = 90_000)
         )
 
         cases.forEach { result ->

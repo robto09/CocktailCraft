@@ -32,19 +32,6 @@ internal class EncryptedFileSettings(private val file: File, private val aead: A
     private val lock = Any()
     private var state: StoreFile = load()
 
-    /** Whether [importLegacy] has completed for this store. */
-    val isLegacyImported: Boolean get() = synchronized(lock) { state.legacyImported }
-
-    /**
-     * Copies [entries] in (replacing same-named keys; unsupported value
-     * types are skipped) and marks the store as imported, in a single
-     * atomic write — so an interrupted import is simply redone.
-     */
-    fun importLegacy(entries: Map<String, *>) = synchronized(lock) {
-        val imported = entries.mapNotNull { (key, value) -> value?.let(::storedValueOf)?.let { key to it } }
-        commit(StoreFile(legacyImported = true, entries = state.entries + imported))
-    }
-
     override val keys: Set<String> get() = synchronized(lock) { state.entries.keys.toSet() }
     override val size: Int get() = synchronized(lock) { state.entries.size }
 
@@ -127,19 +114,10 @@ internal class EncryptedFileSettings(private val file: File, private val aead: A
 
     private fun tempFile() = File(file.parentFile, "${file.name}.tmp")
 
-    private fun storedValueOf(value: Any): StoredValue? = when (value) {
-        is String -> StoredValue(TYPE_STRING, value)
-        is Int -> StoredValue(TYPE_INT, value.toString())
-        is Long -> StoredValue(TYPE_LONG, value.toString())
-        is Float -> StoredValue(TYPE_FLOAT, value.toString())
-        is Double -> StoredValue(TYPE_DOUBLE, value.toString())
-        is Boolean -> StoredValue(TYPE_BOOLEAN, value.toString())
-        else -> null // e.g. a string set, which Settings has no accessor for
-    }
-
     @Serializable
     private data class StoreFile(
-        val legacyImported: Boolean = false,
+        // Stores written while the auth store still imported an older file
+        // also hold a "legacyImported" flag; ignoreUnknownKeys skips it.
         val entries: Map<String, StoredValue> = emptyMap(),
     )
 

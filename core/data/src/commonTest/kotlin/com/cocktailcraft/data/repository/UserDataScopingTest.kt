@@ -45,7 +45,7 @@ class UserDataScopingTest {
         private val accounts = AuthRepositoryImpl(MapSettings(), testJson)
         private val session = UserSession(accounts)
         private val local = createTestLocalDatabase(db, owner = session)
-        val cache = CocktailCache(db, MapSettings(), testJson, AppConfigImpl(), currentOwner = session)
+        val cache = CocktailCache(db, testJson, AppConfigImpl(), currentOwner = session)
         private val offline = CocktailOfflineRepositoryImpl(OfflineModePolicy(FakeNetworkMonitor(true)), cache)
 
         val auth = SessionAwareAuthRepository(accounts, session, local)

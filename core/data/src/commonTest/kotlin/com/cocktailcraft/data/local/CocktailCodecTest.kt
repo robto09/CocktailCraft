@@ -3,10 +3,8 @@ package com.cocktailcraft.data.local
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailIngredient
 import com.cocktailcraft.domain.model.Money
-import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.testutil.partialCocktail
 import com.cocktailcraft.testutil.testCocktail
-import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -113,32 +111,5 @@ class CocktailCodecTest {
             listOf(CocktailIngredient("Gin", "50 ml")),
             codec.decode(payload, hasFullDetails = false).ingredients
         )
-    }
-
-    @Test
-    fun legacyCartItemsNestTheConvertedCocktail() {
-        val legacy = """[{"cocktail":{"id":"1","name":"A","price":8.5},"quantity":3}]"""
-
-        val item = json.decodeFromString(ListSerializer(LegacyCartItem.serializer()), legacy).single()
-
-        assertEquals(850L, item.cocktail.priceCents)
-        assertEquals(3, item.quantity)
-    }
-
-    @Test
-    fun legacyOrdersReadTheirDollarTotalsAndItemPrices() {
-        // The shape Settings held before orders moved to the database
-        val legacy = """
-            [{"id":"ORD-1","date":"2024-05-01","status":"Delivered","total":30.99,
-              "items":[{"name":"Margarita","quantity":2,"price":12.5}]}]
-        """.trimIndent()
-
-        val order = json.decodeFromString(ListSerializer(LegacyOrder.serializer()), legacy).single().toDomain()
-
-        assertEquals(Money(3099), order.total)
-        assertEquals(OrderItem(name = "Margarita", quantity = 2, price = Money(1250)), order.items.single())
-        assertNull(order.items.single().cocktailId)
-        assertEquals(Money(599), order.deliveryFee)
-        assertFalse(order.canReorder)
     }
 }

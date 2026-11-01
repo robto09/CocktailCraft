@@ -22,7 +22,6 @@ import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.util.NetworkMonitor
 import com.cocktailcraft.util.runCatchingNonCancellation
 import com.cocktailcraft.util.runCatchingResult
-import com.cocktailcraft.viewmodel.state.CocktailRatingSummary
 import com.cocktailcraft.viewmodel.state.HomeSortOption
 import com.cocktailcraft.viewmodel.state.HomeUiState
 import dev.icerock.moko.resources.desc.desc
@@ -60,7 +59,7 @@ class SharedHomeViewModel internal constructor(
     // Direct repository dependencies: recently viewed and the
     // filter option lists are read as they are, with no logic to wrap
     private val offlineRepository: CocktailOfflineRepository,
-    private val catalogRepository: CocktailCatalogRepository,
+    catalogRepository: CocktailCatalogRepository,
     private val networkMonitor: NetworkMonitor,
     private val manageReviewsUseCase: ManageReviewsUseCase
 ) : SharedViewModel() {
@@ -94,10 +93,9 @@ class SharedHomeViewModel internal constructor(
     // database flow. Restarted per load; stopped while search/filters show.
     private var categoryJob: Job? = null
 
-    // The selected category's whole stored page, as last loaded or
-    // observed. The listing shows its first currentPage * PAGE_SIZE
-    // cocktails; paging further just shows more of it.
-    private var categoryPage: List<Cocktail> = emptyList()
+    // The selected category's whole stored page; the listing shows its
+    // first currentPage pages
+    private val categoryPages = CategoryPages(PAGE_SIZE)
 
     // Whether the listing is the selected category's (loaded or loading) —
     // not search results, and not a failed load with nothing to show. A
@@ -114,9 +112,7 @@ class SharedHomeViewModel internal constructor(
 
     private var recentlyViewedJob: Job? = null
 
-    // The filter option lists, once both have loaded
-    private var filterOptionsLoaded = false
-    private var filterOptionsJob: Job? = null
+    private val filterOptions = FilterOptionsLoader(catalogRepository)
 
     init {
         initialize()
@@ -155,23 +151,16 @@ class SharedHomeViewModel internal constructor(
             }
         }
 
-        // Review averages over every review on the device (whoever wrote
-        // them), observed like favorites. They rank the Rating
+        // Review averages, observed like favorites. They rank the Rating
         // sort and show on the cards; a failing flow just leaves them empty.
         viewModelScope.launch {
-            manageReviewsUseCase.observeReviews()
+            manageReviewsUseCase.observeRatingSummaries()
                 .catch { /* non-fatal: no review averages */ }
-                .collect { reviews ->
-                    val summaries = reviews.groupBy { it.cocktailId }.mapValues { (_, cocktailReviews) ->
-                        CocktailRatingSummary(
-                            rating = manageReviewsUseCase.computeAverageRating(cocktailReviews),
-                            count = cocktailReviews.size
-                        )
-                    }
+                .collect { summaries ->
                     _uiState.update {
                         it.copy(
                             ratingSummaries = summaries,
-                            cocktails = sortListing(listingSource, it.sortOption, summaries)
+                            cocktails = sortCocktailsUseCase.sortListing(listingSource, it.sortOption, summaries)
                         )
                     }
                 }
@@ -264,7 +253,7 @@ class SharedHomeViewModel internal constructor(
         val startedOffline = !networkMonitor.isOnline.value
 
         showsCategory = true
-        categoryPage = emptyList()
+        categoryPages.all = emptyList()
         _uiState.update {
             it.copy(
                 selectedCategory = category,
@@ -284,10 +273,9 @@ class SharedHomeViewModel internal constructor(
             currentCoroutineContext().ensureActive()
             when (result) {
                 is Result.Success -> {
-                    categoryPage = result.data
-                    val firstPage = result.data.take(PAGE_SIZE)
-                    publishListing(firstPage) {
-                        it.copy(hasMoreData = firstPage.size < result.data.size, isLoading = false)
+                    categoryPages.all = result.data
+                    publishListing(categoryPages.visible(pagesShown = 1)) {
+                        it.copy(hasMoreData = categoryPages.hasMore(pagesShown = 1), isLoading = false)
                     }
                     clearError()
                     settleOfflineLoad(startedOffline)
@@ -312,7 +300,7 @@ class SharedHomeViewModel internal constructor(
         categoryJob = viewModelScope.launch {
             loadCocktailsByCategoryUseCase.observe(category).collect { stored ->
                 if (stored.isNotEmpty()) {
-                    categoryPage = stored
+                    categoryPages.all = stored
                     publishCategoryPage()
                 }
             }
@@ -324,16 +312,15 @@ class SharedHomeViewModel internal constructor(
         categoryJob = null
     }
 
-    /** The first currentPage pages of [categoryPage] as the listing. */
+    /**
+     * The first currentPage pages of the stored category page as the
+     * listing, keeping the cards' places while it lists the same cocktails.
+     */
     private fun publishCategoryPage() {
-        val visible = categoryPage.take(_uiState.value.currentPage * PAGE_SIZE)
-        val source = if (listingSource.mapTo(HashSet()) { it.id } == visible.mapTo(HashSet()) { it.id }) {
-            val latest = visible.associateBy { it.id }
-            listingSource.map { latest.getValue(it.id) }
-        } else {
-            visible
+        val pagesShown = _uiState.value.currentPage
+        publishListing(keepingOrder(shown = listingSource, latest = categoryPages.visible(pagesShown))) {
+            it.copy(hasMoreData = categoryPages.hasMore(pagesShown))
         }
-        publishListing(source) { it.copy(hasMoreData = visible.size < categoryPage.size) }
     }
 
     /**
@@ -344,28 +331,8 @@ class SharedHomeViewModel internal constructor(
         listingSource = source
         _uiState.update { state ->
             val next = transform(state)
-            next.copy(cocktails = sortListing(source, next.sortOption, next.ratingSummaries))
+            next.copy(cocktails = sortCocktailsUseCase.sortListing(source, next.sortOption, next.ratingSummaries))
         }
-    }
-
-    /**
-     * [source] in [option]'s order. Rating ranks by the review
-     * average where there is one, and the demo [Cocktail.rating] otherwise.
-     */
-    private fun sortListing(
-        source: List<Cocktail>,
-        option: HomeSortOption,
-        ratings: Map<String, CocktailRatingSummary>
-    ): List<Cocktail> {
-        val sortType = when (option) {
-            HomeSortOption.DEFAULT -> return source
-            HomeSortOption.NAME_ASC -> SortCocktailsUseCase.SortType.NAME_ASC
-            HomeSortOption.PRICE_ASC -> SortCocktailsUseCase.SortType.PRICE_ASC
-            HomeSortOption.PRICE_DESC -> SortCocktailsUseCase.SortType.PRICE_DESC
-            HomeSortOption.RATING -> SortCocktailsUseCase.SortType.RATING
-            HomeSortOption.POPULARITY -> SortCocktailsUseCase.SortType.POPULARITY
-        }
-        return sortCocktailsUseCase(source, sortType) { ratings[it.id]?.rating ?: it.rating }
     }
 
     /**
@@ -407,7 +374,7 @@ class SharedHomeViewModel internal constructor(
      */
     fun loadMoreCocktails() {
         val state = _uiState.value
-        if (!state.hasMoreData || !showsCategory || categoryPage.isEmpty()) return
+        if (!state.hasMoreData || !showsCategory || categoryPages.all.isEmpty()) return
         // While a search or filters are active the list holds complete
         // search results — paging would splice category items into them.
         if (state.searchQuery.isNotBlank() || state.searchFilters.hasActiveFilters()) return
@@ -459,11 +426,7 @@ class SharedHomeViewModel internal constructor(
      * UI opens, and only a failed load is tried again.
      */
     fun loadFilterOptions() {
-        if (filterOptionsLoaded || filterOptionsJob?.isActive == true) return
-        filterOptionsJob = viewModelScope.launch {
-            val categories = runCatchingResult("Failed to load categories") { catalogRepository.getCategories() }
-            val ingredients = runCatchingResult("Failed to load ingredients") { catalogRepository.getIngredients() }
-            filterOptionsLoaded = categories is Result.Success && ingredients is Result.Success
+        filterOptions.load(viewModelScope) { categories, ingredients ->
             // Non-fatal: a failed list keeps the options it would replace
             _uiState.update {
                 it.copy(
@@ -497,7 +460,7 @@ class SharedHomeViewModel internal constructor(
         _uiState.update {
             it.copy(
                 sortOption = option,
-                cocktails = sortListing(listingSource, option, it.ratingSummaries)
+                cocktails = sortCocktailsUseCase.sortListing(listingSource, option, it.ratingSummaries)
             )
         }
     }

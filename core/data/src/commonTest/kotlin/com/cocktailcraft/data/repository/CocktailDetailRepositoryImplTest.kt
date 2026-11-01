@@ -14,8 +14,6 @@ import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.partialCocktail
 import com.cocktailcraft.testutil.testCocktail
-import com.russhwolf.settings.MapSettings
-import com.russhwolf.settings.Settings
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
@@ -48,14 +46,12 @@ class CocktailDetailRepositoryImplTest {
     // backing the detail impl's cache-first lookups.
     private fun TestScope.fixture(
         api: FakeCocktailApi = FakeCocktailApi(),
-        settings: Settings = MapSettings(),
         online: Boolean = true
     ): Fixture {
         val networkMonitor = FakeNetworkMonitor(online)
         val policy = OfflineModePolicy(networkMonitor)
         val cache = CocktailCache(
             createTestDatabase(),
-            settings,
             Json { ignoreUnknownKeys = true },
             config,
             offlineModePolicy = policy

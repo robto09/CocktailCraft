@@ -20,7 +20,7 @@
 # predate full mode — verified startup crash without this.
 -keep class * extends androidx.room.RoomDatabase { <init>(); }
 
-# --- Tink (auth store encryption; also under the legacy security-crypto reader) ---
+# --- Tink (auth store encryption) ---
 # tink-android ships its own keep rules for its shaded protobuf
 # (META-INF/proguard/protobuf.pro). It references ErrorProne's compile-only
 # annotations; they never exist at runtime, so R8 just needs to stop

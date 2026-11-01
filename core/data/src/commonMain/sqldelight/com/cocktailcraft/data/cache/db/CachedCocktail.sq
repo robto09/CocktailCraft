@@ -61,17 +61,6 @@ upsert:
 INSERT OR REPLACE INTO cached_cocktail(id, category, payload, full_details, cached_at)
 VALUES (?, ?, ?, ?, ?);
 
--- Used by the one-time imports from the old Settings stores: rows already in
--- the database are newer than the legacy blob and must win.
-insertIfAbsent:
-INSERT OR IGNORE INTO cached_cocktail(id, category, payload, full_details, cached_at)
-VALUES (?, ?, ?, ?, ?);
-
--- A full record for a row that only holds a partial one (legacy imports).
-upgradeToFull:
-UPDATE cached_cocktail SET payload = :payload, full_details = 1
-WHERE id = :id AND full_details = 0;
-
 -- Gives a row stored without a category the one a later record knew.
 fillCategory:
 UPDATE cached_cocktail SET category = :category WHERE id = :id AND category IS NULL;
@@ -149,10 +138,6 @@ WHERE id NOT IN (
 
 touch:
 INSERT OR REPLACE INTO cocktail_access(id, last_accessed) VALUES (:id, :lastAccessed);
-
--- Legacy imports: rows already used keep their stamp.
-touchIfAbsent:
-INSERT OR IGNORE INTO cocktail_access(id, last_accessed) VALUES (:id, :lastAccessed);
 
 maxLastAccessed:
 SELECT MAX(last_accessed) AS value FROM cocktail_access;

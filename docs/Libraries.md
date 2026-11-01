@@ -2,7 +2,7 @@
 
 This document lists the libraries used in the CocktailCraft application, with their versions and purposes.
 
-All versions are managed in a single version catalog: **`libraries.toml`** at the repository root, wired up as the `libs` catalog in `settings.gradle.kts` (`versionCatalogs { create("libs") { from(files("libraries.toml")) } }`). The build files (`shared/`, `presentation/` and `core/*/build.gradle.kts`, `androidApp/build.gradle.kts`, `baselineprofile/build.gradle.kts`) and the `build-logic` convention plugins reference dependencies and SDK/JVM levels only through the catalog — update versions there, not in the build files.
+All versions are managed in a single version catalog: **`gradle/libs.versions.toml`**, which Gradle picks up as the `libs` catalog by convention (`build-logic/settings.gradle.kts` loads the same file explicitly). Dependabot reads that path and opens weekly update PRs (see `.github/dependabot.yml`). The build files (`shared/`, `presentation/` and `core/*/build.gradle.kts`, `androidApp/build.gradle.kts`, `baselineprofile/build.gradle.kts`) and the `build-logic` convention plugins reference dependencies and SDK/JVM levels only through the catalog — update versions there, not in the build files.
 
 ## Shared Modules (Kotlin Multiplatform)
 
@@ -16,14 +16,13 @@ Used across `:shared` and the `:core:*`/`:presentation` modules it is split into
 | Kotlinx Serialization | 1.11.0 | JSON (de)serialization |
 | Kotlinx DateTime | 0.8.0 | Date and time handling |
 | Koin | 4.2.2 | Dependency injection (`koin-core`, `koin-core-viewmodel`; `koin-android`/`koin-androidx-compose` on Android) |
-| Multiplatform Settings | 1.3.0 | Cross-platform key-value storage (auth data, in the secure store: a Tink-encrypted file on Android, the Keychain on iOS; older versions' cart/orders/favorites/reviews are read once to import them into SQLite) |
+| Multiplatform Settings | 1.3.0 | Cross-platform key-value storage (auth data, in the secure store: a Tink-encrypted file on Android, the Keychain on iOS) |
 | SQLDelight | 2.4.1 | SQLite storage for the cocktail catalog (`cached_cocktail`, `category_page`), recently viewed, cart, orders, favorites and reviews (`android-driver` on Android, `native-driver` on iOS; the iOS app links `sqlite3` itself via `OTHER_LDFLAGS` in `iosApp/project.yml`; `coroutines-extensions` for reactive `Query.asFlow()` reads) |
 | Kermit | 2.2.0 | Multiplatform logging |
 | moko-resources | 0.27.1 | Single source for the app's strings: generates `MR.strings`/`MR.plurals`, Android string resources and the iOS strings bundle from `core/resources/src/commonMain/moko-resources` (exported to Swift; see README "Localization") |
 | SKIE | 0.10.13 | Swift interop: Flow → AsyncSequence, suspend → async/await, enum/sealed-class bridging |
 | AndroidX Lifecycle ViewModel | 2.10.0 | Multiplatform `ViewModel` base for the shared ViewModels (exposed as `api` so consumers see the supertype) |
 | Tink (`tink-android`) | 1.23.0 | Encrypts the Android auth store: AES-256-GCM over the whole store file, with the keyset wrapped by an Android Keystore key (`AuthStore.kt` in `:core:data`) |
-| AndroidX Security Crypto | 1.1.0-alpha06 | Legacy reader only: imports the `EncryptedSharedPreferences` file older versions kept the auth store in, once, then deletes it. Deprecated library; remove it as described in `LegacySecurePrefs.kt` |
 
 ## Android App
 

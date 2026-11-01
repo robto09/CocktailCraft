@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.ui.theme.Spacing
 import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.domain.model.ReviewRules
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.cancel
 import com.cocktailcraft.resources.review_character_count
@@ -65,8 +66,9 @@ import kotlinx.coroutines.launch
 
 /**
  * Write-a-review bottom sheet, laid out like the iOS sheet (and like the
- * Advanced Search sheets): a Cancel / title header, name, a 1-5 star picker,
- * the comment with a 0/500 counter, then a full-width Submit Review button.
+ * Advanced Search sheets): a Cancel / title header, name, a star picker, the
+ * comment with a character counter, then a full-width Submit Review button.
+ * The star count and the comment cap come from the shared [ReviewRules].
  *
  * Name and rating are checked here; the comment rules live in the shared
  * ReviewViewModel. [onSubmit] returns whether the review was saved: the sheet
@@ -166,7 +168,7 @@ fun WriteReviewSheet(
                     .selectableGroup(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                repeat(5) { index ->
+                repeat(ReviewRules.MAX_RATING) { index ->
                     val star = index + 1
                     IconButton(
                         onClick = {
@@ -203,7 +205,7 @@ fun WriteReviewSheet(
             OutlinedTextField(
                 value = userComment,
                 onValueChange = {
-                    if (it.length <= MAX_COMMENT_LENGTH) {
+                    if (it.length <= ReviewRules.MAX_COMMENT_LENGTH) {
                         userComment = it
                         onClearError()
                     }
@@ -221,7 +223,11 @@ fun WriteReviewSheet(
                     .height(120.dp)
             )
             Text(
-                text = stringResource(MR.strings.review_character_count, userComment.length, MAX_COMMENT_LENGTH),
+                text = stringResource(
+                    MR.strings.review_character_count,
+                    userComment.length,
+                    ReviewRules.MAX_COMMENT_LENGTH
+                ),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.End,
@@ -294,6 +300,3 @@ private fun reviewFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedContainerColor = MaterialTheme.colorScheme.surface,
     unfocusedContainerColor = MaterialTheme.colorScheme.surface
 )
-
-// Mirrors the shared review rule (ManageReviewsUseCase.validateReview)
-private const val MAX_COMMENT_LENGTH = 500

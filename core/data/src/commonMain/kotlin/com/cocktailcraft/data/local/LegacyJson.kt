@@ -1,29 +1,23 @@
 package com.cocktailcraft.data.local
 
-import com.cocktailcraft.domain.model.Money
-import com.cocktailcraft.domain.model.Order
-import com.cocktailcraft.domain.model.OrderItem
-import com.cocktailcraft.domain.model.OrderStatus
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.KeepGeneratedSerializer
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonTransformingSerializer
 
-// JSON shapes older app versions stored: payloads with prices in floating-
-// point dollars, and the cart and orders they kept in Settings. Read once
-// (the Settings import) or as a fallback (CocktailCodec); never written.
+// The JSON shape cocktail payloads had before money moved to cents: prices
+// in floating-point dollars. Database rows written then (and carried over
+// by migrations/4.sqm, which converts only the columns) still hold it, so
+// CocktailCodec falls back to it; never written.
 
 /**
  * Until money moved to cents, payloads stored amounts as floating-point
  * dollars under [dollarsKey] (e.g. `"price": 12.5`); they now store whole
  * cents under [centsKey] (`"priceCents": 1250`). Rewrites an old object
- * into the new shape so cart, favorite, cache and legacy Settings payloads
- * written by earlier versions keep decoding with the same amounts. An object
- * that already has [centsKey] is left as it is.
+ * into the new shape so stored payloads written by earlier versions keep
+ * decoding with the same amounts. An object that already has [centsKey] is
+ * left as it is.
  */
 internal fun JsonElement.withLegacyDollarsAsCents(dollarsKey: String, centsKey: String): JsonElement {
     if (this !is JsonObject || centsKey in this || dollarsKey !in this) return this
@@ -55,63 +49,6 @@ internal fun legacyDollarsToCents(dollars: Double): Long {
 
 /** A [CocktailEntity] payload, also reading the pre-cents shape (`"price": 12.5` dollars). */
 internal object LegacyCocktailSerializer : JsonTransformingSerializer<CocktailEntity>(CocktailEntity.serializer()) {
-    override fun transformDeserialize(element: JsonElement): JsonElement =
-        element.withLegacyDollarsAsCents(dollarsKey = "price", centsKey = "priceCents")
-}
-
-/** A cart line as the Settings cart blob ("cocktail_cart_items") held it. */
-@Serializable
-internal data class LegacyCartItem(
-    @Serializable(with = LegacyCocktailSerializer::class)
-    val cocktail: CocktailEntity,
-    val quantity: Int
-)
-
-/**
- * An order as the Settings orders blob ("orders_data") held it, in either
- * the pre-cents shape (`"total": 33.99` dollars) or the cents one.
- */
-@OptIn(ExperimentalSerializationApi::class)
-@KeepGeneratedSerializer
-@Serializable(with = LegacyOrderSerializer::class)
-internal data class LegacyOrder(
-    val id: String,
-    val date: String,
-    val items: List<LegacyOrderItem>,
-    val totalCents: Long,
-    // OrderStatus.storageValue, e.g. "Processing"
-    val status: String
-) {
-    fun toDomain() = Order(
-        id = id,
-        date = date,
-        items = items.map { it.toDomain() },
-        total = Money(totalCents),
-        status = OrderStatus.fromStorageValue(status)
-    )
-}
-
-@OptIn(ExperimentalSerializationApi::class)
-@KeepGeneratedSerializer
-@Serializable(with = LegacyOrderItemSerializer::class)
-internal data class LegacyOrderItem(
-    val name: String,
-    val quantity: Int,
-    val priceCents: Long,
-    val cocktailId: String? = null
-) {
-    fun toDomain() = OrderItem(name = name, quantity = quantity, price = Money(priceCents), cocktailId = cocktailId)
-}
-
-@OptIn(ExperimentalSerializationApi::class)
-internal object LegacyOrderSerializer : JsonTransformingSerializer<LegacyOrder>(LegacyOrder.generatedSerializer()) {
-    override fun transformDeserialize(element: JsonElement): JsonElement =
-        element.withLegacyDollarsAsCents(dollarsKey = "total", centsKey = "totalCents")
-}
-
-@OptIn(ExperimentalSerializationApi::class)
-internal object LegacyOrderItemSerializer :
-    JsonTransformingSerializer<LegacyOrderItem>(LegacyOrderItem.generatedSerializer()) {
     override fun transformDeserialize(element: JsonElement): JsonElement =
         element.withLegacyDollarsAsCents(dollarsKey = "price", centsKey = "priceCents")
 }

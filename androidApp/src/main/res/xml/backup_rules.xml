@@ -2,8 +2,6 @@
 <!-- Backup rules for API 24-30. Keep in sync with data_extraction_rules.xml (API 31+),
      which explains each file. -->
 <full-backup-content>
-    <exclude domain="sharedpref" path="cocktailcraft_prefs.xml" />
-    <exclude domain="sharedpref" path="cocktailcraft_secure_prefs.xml" />
     <exclude domain="sharedpref" path="cocktailcraft_auth_keyset.xml" />
     <exclude domain="root" path="no_backup/cocktailcraft_auth_store" />
     <exclude domain="database" path="cocktailcraft_cache.db" />

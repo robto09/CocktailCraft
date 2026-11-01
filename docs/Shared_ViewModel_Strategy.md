@@ -209,7 +209,7 @@ The SKIE version lives in the version catalog and the plugin is applied
 through its alias:
 
 ```toml
-# libraries.toml
+# gradle/libs.versions.toml
 [versions]
 skie = "0.10.13"
 

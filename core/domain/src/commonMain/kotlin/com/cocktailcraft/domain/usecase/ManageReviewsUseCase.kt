@@ -1,17 +1,13 @@
 package com.cocktailcraft.domain.usecase
 
+import com.cocktailcraft.domain.model.CocktailRatingSummary
 import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.domain.model.ReviewRules
+import com.cocktailcraft.domain.model.ReviewValidationError
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.util.Result
-import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.review_error_comment_required
-import com.cocktailcraft.resources.review_error_comment_too_long
-import com.cocktailcraft.resources.review_error_comment_too_short
-import com.cocktailcraft.resources.review_error_rating_range
-import dev.icerock.moko.resources.desc.StringDesc
-import dev.icerock.moko.resources.desc.desc
-import dev.icerock.moko.resources.format
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
@@ -22,6 +18,21 @@ import kotlin.time.Clock
 class ManageReviewsUseCase(private val repository: ReviewRepository) {
 
     fun observeReviews(): Flow<List<Review>> = repository.observeReviews()
+
+    /**
+     * The rating summary of every reviewed cocktail, by cocktail id, over
+     * every review on the device (whoever wrote it). Cocktails without
+     * reviews have no entry.
+     */
+    fun observeRatingSummaries(): Flow<Map<String, CocktailRatingSummary>> =
+        repository.observeReviews().map { reviews ->
+            reviews.groupBy { it.cocktailId }.mapValues { (_, cocktailReviews) ->
+                CocktailRatingSummary(
+                    rating = computeAverageRating(cocktailReviews),
+                    count = cocktailReviews.size
+                )
+            }
+        }
 
     suspend fun submitReview(
         cocktailId: String,
@@ -54,24 +65,16 @@ class ManageReviewsUseCase(private val repository: ReviewRepository) {
         0.0f
     }
 
-    /** The validation failure to show, or null when the review is valid. */
-    fun validateReview(rating: Float, comment: String): StringDesc? = when {
-        rating < 1.0f || rating > 5.0f -> MR.strings.review_error_rating_range.desc()
-
-        comment.isBlank() -> MR.strings.review_error_comment_required.desc()
-
-        comment.length < MIN_COMMENT_LENGTH ->
-            MR.strings.review_error_comment_too_short.format(MIN_COMMENT_LENGTH)
-
-        comment.length > MAX_COMMENT_LENGTH ->
-            MR.strings.review_error_comment_too_long.format(MAX_COMMENT_LENGTH)
-
+    /**
+     * The rule the review breaks, or null when it is valid. The
+     * presentation layer words it.
+     */
+    fun validateReview(rating: Float, comment: String): ReviewValidationError? = when {
+        rating < ReviewRules.MIN_RATING || rating > ReviewRules.MAX_RATING -> ReviewValidationError.RATING_OUT_OF_RANGE
+        comment.isBlank() -> ReviewValidationError.COMMENT_REQUIRED
+        comment.length < ReviewRules.MIN_COMMENT_LENGTH -> ReviewValidationError.COMMENT_TOO_SHORT
+        comment.length > ReviewRules.MAX_COMMENT_LENGTH -> ReviewValidationError.COMMENT_TOO_LONG
         else -> null
-    }
-
-    private companion object {
-        const val MIN_COMMENT_LENGTH = 10
-        const val MAX_COMMENT_LENGTH = 500
     }
 
     private fun getCurrentDate(): String {

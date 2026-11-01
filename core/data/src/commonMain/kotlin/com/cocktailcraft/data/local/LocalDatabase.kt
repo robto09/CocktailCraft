@@ -5,7 +5,6 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,44 +29,38 @@ import kotlinx.coroutines.withContext
  *
  * The database is opened lazily on first [get], on [ioDispatcher] — a Koin
  * `single` must not touch disk on whichever thread first resolves it. That
- * first open also runs the one-time [LegacySettingsImport] of the data older
- * app versions kept as JSON in Settings, and assigns any rows without an
- * owner yet (from that import or an upgrade) to the current owner, so no
- * repository ever reads the tables before both have run.
+ * first open also assigns any rows without an owner yet (from a database
+ * upgrade) to the current owner, so no repository ever reads the tables
+ * before that has run.
  *
  * [com.cocktailcraft.data.cache.CocktailCache] shares the same database but
- * opens it, and imports its own legacy Settings keys, independently.
+ * opens it independently.
  */
 internal class LocalDatabase(
     // Also read by CocktailCache's test fixtures over the same database
     internal val database: Lazy<CocktailCraftDatabase>,
-    private val legacyImport: LegacySettingsImport,
     private val owner: CurrentOwner,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     constructor(
         database: CocktailCraftDatabase,
-        legacyImport: LegacySettingsImport,
         ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
         owner: CurrentOwner = FixedOwner()
-    ) : this(lazyOf(database), legacyImport, owner, ioDispatcher)
+    ) : this(lazyOf(database), owner, ioDispatcher)
 
     private val openMutex = Mutex()
     private var opened = false
 
     /**
-     * The database, after the legacy import and the assignment of rows
-     * without an owner have run (once per process).
+     * The database, after the assignment of rows without an owner has run
+     * (once per process).
      */
     suspend fun get(): CocktailCraftDatabase {
         if (!opened) {
             openMutex.withLock {
                 if (!opened) {
                     val ownerId = owner.ownerId()
-                    withContext(ioDispatcher) {
-                        importLegacyData()
-                        database.value.claimUnassignedUserData(ownerId)
-                    }
+                    withContext(ioDispatcher) { database.value.claimUnassignedUserData(ownerId) }
                     opened = true
                 }
             }
@@ -92,18 +85,6 @@ internal class LocalDatabase(
     suspend fun deleteEveryOwnersUserData() {
         val db = get()
         withContext(ioDispatcher) { db.deleteEveryOwnersUserData() }
-    }
-
-    private fun importLegacyData() {
-        try {
-            legacyImport.run(database.value)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            // Each store's Settings key is only removed after its rows are
-            // committed, so anything that failed here is retried next launch.
-            Logger.e(e) { "Importing legacy Settings data failed: ${e.message}" }
-        }
     }
 
     /**

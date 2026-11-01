@@ -1,15 +1,11 @@
 package com.cocktailcraft.data.security
 
 import java.security.GeneralSecurityException
-import java.security.MessageDigest
 import java.security.SecureRandom
 import javax.crypto.Mac
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
-
-internal actual fun sha256(data: ByteArray): ByteArray =
-    MessageDigest.getInstance("SHA-256").digest(data)
 
 private val secureRandom = SecureRandom()
 

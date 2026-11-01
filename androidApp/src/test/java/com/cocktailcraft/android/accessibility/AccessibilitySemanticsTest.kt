@@ -30,9 +30,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import com.cocktailcraft.android.screens.HomeContentSection
 import com.cocktailcraft.android.screens.OrderDetailContent
 import com.cocktailcraft.android.screens.detail.DetailChipsSection
+import com.cocktailcraft.android.screens.home.HomeContentSection
 import com.cocktailcraft.android.screenshot.ScreenshotFixtures
 import com.cocktailcraft.android.ui.components.ActiveFilterChip
 import com.cocktailcraft.android.ui.components.AnimatedThemeToggleRow

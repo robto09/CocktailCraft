@@ -47,12 +47,6 @@ insert:
 INSERT INTO cart_item(owner_id, cocktail_id, quantity, position, price_cents)
 VALUES (:ownerId, :cocktailId, :quantity, (SELECT COALESCE(MAX(position), 0) + 1 FROM cart_item), :priceCents);
 
--- Used by the one-time import from Settings (LegacySettingsImport): items
--- already in the database are newer than the legacy blob and must win.
-insertIfAbsent:
-INSERT OR IGNORE INTO cart_item(owner_id, cocktail_id, quantity, position, price_cents)
-VALUES (:ownerId, :cocktailId, :quantity, (SELECT COALESCE(MAX(position), 0) + 1 FROM cart_item), :priceCents);
-
 addQuantity:
 UPDATE cart_item SET quantity = quantity + :delta WHERE owner_id = :ownerId AND cocktail_id = :cocktailId;
 

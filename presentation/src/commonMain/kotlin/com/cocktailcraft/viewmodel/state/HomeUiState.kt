@@ -1,6 +1,7 @@
 package com.cocktailcraft.viewmodel.state
 
 import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailRatingSummary
 import com.cocktailcraft.domain.model.SearchFilters
 
 /**

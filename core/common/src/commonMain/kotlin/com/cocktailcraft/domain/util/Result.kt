@@ -1,22 +1,18 @@
 package com.cocktailcraft.domain.util
 
-import dev.icerock.moko.resources.desc.StringDesc
 import kotlin.native.HiddenFromObjC
 
 sealed class Result<out T> {
     data class Success<T>(val data: T) : Result<T>()
 
     /**
-     * [message] is raw (untranslated) data-layer text. [displayMessage],
-     * when set, is localized user-facing copy for the failure (e.g. the
-     * sign-in lockout with its remaining time) and wins over [message] in
-     * the UI.
+     * [message] is raw (untranslated) data-layer text, only ever logged.
+     * [retryAfterMs], when set, is how long until the operation may be tried
+     * again (e.g. a sign-in lockout); the presentation layer words it. No
+     * user-facing copy is built below :presentation.
      */
-    data class Error(
-        val message: String,
-        val code: ErrorCode = ErrorCode.UNKNOWN,
-        val displayMessage: StringDesc? = null
-    ) : Result<Nothing>()
+    data class Error(val message: String, val code: ErrorCode = ErrorCode.UNKNOWN, val retryAfterMs: Long? = null) :
+        Result<Nothing>()
 
     // Helper functions to safely handle results
     fun isSuccess(): Boolean = this is Success
@@ -64,15 +60,15 @@ fun <T> Result<T>.getOrDefault(defaultValue: @UnsafeVariance T): T = when (this)
 }
 
 /**
- * Exception carrying a domain [ErrorCode] (and the error's localized
- * [displayMessage], if any), thrown when a [Result.Error] is unwrapped via
- * [getOrThrow]. Lets try/catch error paths keep the typed code and copy.
+ * Exception carrying a domain [ErrorCode] (and the error's [retryAfterMs],
+ * if any), thrown when a [Result.Error] is unwrapped via [getOrThrow]. Lets
+ * try/catch error paths keep the typed details.
  */
-class DomainException(val code: ErrorCode, message: String, val displayMessage: StringDesc? = null) : Exception(message)
+class DomainException(val code: ErrorCode, message: String, val retryAfterMs: Long? = null) : Exception(message)
 
 // Extension: get data or throw an exception (useful for bridging to try/catch callers)
 @HiddenFromObjC
 fun <T> Result<T>.getOrThrow(): T = when (this) {
     is Result.Success -> data
-    is Result.Error -> throw DomainException(code, message, displayMessage)
+    is Result.Error -> throw DomainException(code, message, retryAfterMs)
 }

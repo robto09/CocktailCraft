@@ -58,32 +58,29 @@ only use what its module depends on.
   ┌────────────────────┐                       ┌────────────────────┐
   │ :presentation      │                       │ :core:data         │
   │ shared ViewModels, │                       │ repository impls,  │
-  │ UiState            │                       │ Ktor, SQLDelight,  │
-  └────────────────────┘                       │ Settings, drivers  │
-                                               └────────────────────┘
-             │ api                                     │ api
-             └──────────────────┐   ┌──────────────────┘
-                                ▼   ▼
-                        ┌──────────────────────────┐
-                        │ :core:domain             │                      ┌────────────────────┐
-                        │ models, repository       │ ── implementation ─► │ :core:designsystem │
-                        │ interfaces, use cases,   │                      │ DesignTokens       │
-                        │ validators               │                      └────────────────────┘
-                        └──────────────────────────┘
+  │ UiState,           │                       │ Ktor, SQLDelight,  │
+  │ ErrorHandler       │                       │ Settings, drivers  │
+  └────────────────────┘                       └────────────────────┘
+     │ api        │ api                                │ api
+     │            └─────────────┐   ┌──────────────────┘
+     ▼                          ▼   ▼
+  ┌────────────────────┐  ┌──────────────────────────┐
+  │ :core:resources    │  │ :core:domain             │
+  │ moko strings (MR)  │  │ models, repository       │
+  └────────────────────┘  │ interfaces, use cases,   │
+                          │ validators               │
+                          └──────────────────────────┘
                                      │ api
                                      ▼
-                        ┌──────────────────────────┐
-                        │ :core:common             │
-                        │ Result/ErrorCode,        │
-                        │ ErrorHandler,            │
-                        │ NetworkMonitor, UUID     │
-                        └──────────────────────────┘
-                                     │ api
-                                     ▼
-                        ┌──────────────────────────┐
-                        │ :core:resources          │
-                        │ moko strings (MR)        │
-                        └──────────────────────────┘
+                          ┌──────────────────────────┐
+                          │ :core:common             │
+                          │ Result/ErrorCode,        │
+                          │ ErrorClassifier,         │
+                          │ NetworkMonitor, UUID     │
+                          └──────────────────────────┘
+
+  User-facing copy is chosen only in :presentation (and the apps): the
+  layers below report typed codes and values, never strings.
 
   :core:testing — test-only fakes, test data, MainDispatcherTest (api :core:domain)
 ```
@@ -92,10 +89,10 @@ only use what its module depends on.
 |--------|----------|------------|
 | `:core:resources` | moko-resources strings/plurals → `com.cocktailcraft.resources.MR` | moko-resources (api) |
 | `:core:designsystem` | `DesignTokens` (colors, spacing, typography) | — |
-| `:core:common` | `Result`/`ErrorCode`/`DomainException`, `ErrorHandler`, the `NetworkMonitor` contract, `UUID` | resources (api); Ktor core (implementation — only for exception types) |
-| `:core:domain` | models, repository interfaces, use cases, `AppConfig`, `DeliveryPolicy`, validators, `domainModule` | common (api), designsystem (implementation) |
+| `:core:common` | `Result`/`ErrorCode`/`DomainException`, `ErrorClassifier`, the `NetworkMonitor` contract, `UUID` | Ktor core (implementation — only for exception types) |
+| `:core:domain` | models, repository interfaces, use cases, `AppConfig`, `DeliveryPolicy`, validators | common (api) |
 | `:core:data` | repository implementations, Ktor remote + DTOs, SQLDelight database, Settings/secure storage, platform `NetworkMonitor`s and drivers, `networkModule`/`dataModule`/`dataPlatformModule()` | domain (api); Ktor, SQLDelight, Settings (implementation) |
-| `:presentation` | shared ViewModels + UiState, `presentationModule` | domain (api), androidx ViewModel (api), designsystem (implementation) |
+| `:presentation` | shared ViewModels + UiState, `ErrorHandler`, display formatting (`format/`), `domainModule`/`presentationModule` | domain (api), resources (api), androidx ViewModel (api), designsystem (implementation) |
 | `:shared` | umbrella: iOS framework, Koin assembly, `KoinHelper` | presentation/domain/common/resources/designsystem (api + `export`), data (implementation) |
 | `:core:testing` | test doubles shared across suites (only ever a test dependency) | domain (api) |
 
@@ -122,7 +119,7 @@ only use what its module depends on.
   so each module's build file only lists its dependencies.
 
 Each platform renders native UI over the same shared ViewModels: Jetpack Compose on Android ([UI Components](docs/UI_Components.md)) and SwiftUI on iOS ([iOS UI Components](docs/iOS_UI_Components.md)).
-ViewModels expose one `StateFlow` of UI state plus an error channel; failures are classified by `ErrorHandler` (`:core:common`) into user-friendly, localized messages.
+ViewModels expose one `StateFlow` of UI state plus an error channel; failures are classified by `ErrorHandler` (`:presentation`) into user-friendly, localized messages.
 For diagrams of the catalog flow and order placement, see the [Documentation Index](docs/README.md).
 
 ### Animations and Transitions
@@ -145,7 +142,7 @@ For detailed information about the dependency injection implementation, see:
 
 ## Libraries
 
-Every dependency, with its version and purpose, is listed in [docs/Libraries.md](docs/Libraries.md); versions live in the `libraries.toml` version catalog.
+Every dependency, with its version and purpose, is listed in [docs/Libraries.md](docs/Libraries.md); versions live in the `gradle/libs.versions.toml` version catalog.
 
 ## Package Structure
 
@@ -200,7 +197,7 @@ Every dependency, with its version and purpose, is listed in [docs/Libraries.md]
 - **UI Indicators**: Clear indicators of offline status and available actions
 
 ### Error Handling
-- **ErrorHandler** (`:core:common`): Centralized error classification into user-friendly errors with recovery actions
+- **ErrorHandler** (`:presentation`): Turns failures into user-friendly errors with recovery actions; exception types are classified by `ErrorClassifier` (`:core:common`)
 - **ErrorUtils** (Android): Maps error categories to Android UI resources (icons, colors)
 - **SharedViewModel**: Common error handling for all ViewModels
 - **ErrorDialog**: User-friendly error display component
@@ -223,12 +220,12 @@ accessors (package `com.cocktailcraft.resources`), Android string resources in
 that module, and an iOS `Localizable.strings`/`.stringsdict` bundle that the
 `shared` framework build collects and the iOS app's "Compile Kotlin Framework"
 phase copies into the app (the shared framework is static, so it cannot carry
-the bundle itself). The other KMP modules apply the moko plugin without
+the bundle itself). `:presentation` and `:shared` apply the moko plugin without
 resources of their own, only so their iOS test executables get the bundle.
 
 | Where | How to use a string |
 |-------|---------------------|
-| Shared Kotlin (ViewModels, `ErrorHandler`, validators) | Return/emit a `StringDesc` — `MR.strings.key.desc()`, `MR.strings.key.format(arg)`, or `StringDesc.Raw(text)` for untranslated data-layer text. Never resolve it in shared code: `UserFriendlyError.title/message`, `RecoveryAction.actionLabel` and the theme/order display names are `StringDesc`s. |
+| Shared Kotlin (`:presentation` only: ViewModels, `ErrorHandler`, `format/`) | Return/emit a `StringDesc` — `MR.strings.key.desc()`, `MR.strings.key.format(arg)`, or `StringDesc.Raw(text)` for untranslated data-layer text. Never resolve it in shared code: `UserFriendlyError.title/message`, `RecoveryAction.actionLabel` and the theme/order display names are `StringDesc`s. Below `:presentation`, return a typed value (e.g. `ReviewValidationError`, `Result.Error.retryAfterMs`) and word it in `format/`. |
 | Android Compose | `stringResource(MR.strings.key)`, `stringResource(MR.strings.key, arg)`, `pluralStringResource(MR.plurals.key, count, count)` and `desc.resolve()` from `androidApp/.../util/SharedStrings.kt` |
 | Android Glance widgets / non-Compose | `context.getString(MR.strings.key, …)` (same file) |
 | iOS SwiftUI | `L(\.key)`, `L(\.key, arg1, arg2)`, `L(\.key, count: n)` from `iosApp/CocktailCraft/Utils/Strings.swift`; `desc.localized()` for a shared `StringDesc` |
@@ -298,8 +295,19 @@ link the framework, gets prices already formatted in its snapshot.
    - Select a simulator and run the app
    - See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) for detailed setup
 
+### TheCocktailDB API key
+Both apps call [TheCocktailDB](https://www.thecocktaildb.com/api.php). By default they use its public test key, `1`, so the project builds and runs without any setup. Per TheCocktailDB's API page, that key is for development and education; a published app needs a premium key.
+
+To build with your own key, set `cocktailDbApiKey` in one of these places (the first one found wins):
+
+1. On the command line: `./gradlew assembleRelease -PcocktailDbApiKey=YOUR_KEY`
+2. In the environment: `COCKTAILDB_API_KEY=YOUR_KEY` (use this in CI, from a secret)
+3. In `local.properties` (untracked): `cocktailDbApiKey=YOUR_KEY`
+
+The key must be letters and digits only. `:core:data` compiles it into a generated constant, so it applies to both platforms. The iOS app's "Compile Kotlin Framework" build phase runs this same Gradle build, so `local.properties` works for Xcode builds too. The environment variable works for `xcodebuild` run from a shell, but not for the Xcode app. Never commit a real key. Anything compiled into an app can be extracted from it, so treat the key as identifying the app, not as a secret.
+
 ## Development Setup
-- **Android Studio**: a release that supports AGP 9.2 (the version in `libraries.toml`) — see the [AGP/Android Studio compatibility table](https://developer.android.com/build/releases/gradle-plugin#android_gradle_plugin_and_android_studio_compatibility)
+- **Android Studio**: a release that supports AGP 9.2 (the version in `gradle/libs.versions.toml`) — see the [AGP/Android Studio compatibility table](https://developer.android.com/build/releases/gradle-plugin#android_gradle_plugin_and_android_studio_compatibility)
 - **JDK**: Version 17 or higher
 - **Xcode**: Latest version (for iOS development), plus [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
 - **Mac**: Apple silicon for iOS work — the Kotlin framework is built for arm64 simulators and devices only (no Intel `x86_64` simulator)
@@ -310,7 +318,7 @@ link the framework, gets prices already formatted in its snapshot.
 - **Build Issues**: Try cleaning and rebuilding the project
 - **KMP Plugin Issues**: Make sure the Kotlin Multiplatform plugin is up to date
 - **iOS Builds**: See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) and the [SKIE configuration](docs/Shared_ViewModel_Strategy.md#skie-configuration) for details
-- **Dependency Resolution**: Check Gradle settings and the `libraries.toml` version catalog
+- **Dependency Resolution**: Check Gradle settings and the `gradle/libs.versions.toml` version catalog
 
 ## Documentation
 
