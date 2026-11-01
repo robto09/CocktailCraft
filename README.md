@@ -90,11 +90,11 @@ only use what its module depends on.
 | `:core:resources` | moko-resources strings/plurals → `com.cocktailcraft.resources.MR` | moko-resources (api) |
 | `:core:designsystem` | `DesignTokens` (colors, spacing, typography) | — |
 | `:core:common` | `Result`/`ErrorCode`/`DomainException`, `ErrorClassifier`, the `NetworkMonitor` contract, `UUID` | Ktor core (implementation — only for exception types) |
-| `:core:domain` | models, repository interfaces, use cases, `AppConfig`, `DeliveryPolicy`, validators | common (api) |
+| `:core:domain` | models, repository interfaces, use cases, `AppConfig`, `DeliveryPolicy`, validators and rules (`AuthInputValidator`, `ReviewRules`) | common, kotlinx-serialization-json (api); kotlinx-datetime (implementation) |
 | `:core:data` | repository implementations, Ktor remote + DTOs, SQLDelight database, Settings/secure storage, platform `NetworkMonitor`s and drivers, `networkModule`/`dataModule`/`dataPlatformModule()` | domain (api); Ktor, SQLDelight, Settings (implementation) |
 | `:presentation` | shared ViewModels + UiState, `ErrorHandler`, display formatting (`format/`), `domainModule`/`presentationModule` | domain (api), resources (api), androidx ViewModel (api), designsystem (implementation) |
 | `:shared` | umbrella: iOS framework, Koin assembly, `KoinHelper` | presentation/domain/common/resources/designsystem (api + `export`), data (implementation) |
-| `:core:testing` | test doubles shared across suites (only ever a test dependency) | domain (api) |
+| `:core:testing` | test doubles shared across suites, an in-memory SQLite driver (only ever a test dependency) | domain, kotlinx-coroutines-test, SQLDelight runtime (api) |
 
 **Dependency rules**
 - `:presentation` → `:core:domain` ← `:core:data`. The domain depends on
@@ -309,7 +309,7 @@ The key must be letters and digits only. `:core:data` compiles it into a generat
 ## Development Setup
 - **Android Studio**: a release that supports AGP 9.2 (the version in `gradle/libs.versions.toml`) — see the [AGP/Android Studio compatibility table](https://developer.android.com/build/releases/gradle-plugin#android_gradle_plugin_and_android_studio_compatibility)
 - **JDK**: Version 17 or higher
-- **Xcode**: Latest version (for iOS development), plus [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
+- **Xcode**: 26 or later (the app builds against the iOS 26 SDK; CI uses Xcode 26 on `macos-26`), plus [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
 - **Mac**: Apple silicon for iOS work — the Kotlin framework is built for arm64 simulators and devices only (no Intel `x86_64` simulator)
 - **Gradle**: Managed by the project
 - **Git**: For version control
@@ -372,7 +372,7 @@ and `main`, in three jobs. No secrets are used; release builds are unsigned.
   `:androidApp:assembleRelease`.
 - **Linux, emulator**: `:androidApp:connectedDebugAndroidTest` (the
   instrumented Compose tests, against fake repositories) on an API 34 ATD
-  emulator.
+  emulator, after freeing runner disk space for it.
 - **macOS** (Xcode 26 on `macos-26`): `:androidApp:verifyRoborazziDebug`
   (the Android screenshot references were recorded on macOS);
   `iosSimulatorArm64Test`; checks the committed Xcode
@@ -381,7 +381,7 @@ and `main`, in three jobs. No secrets are used; release builds are unsigned.
   an iPhone 17 Pro iOS 26.5 simulator, which the runner has); builds the Release
   configuration and fails if it contains the Debug-only test mode or QA
   hooks; and runs the `CocktailCraftUITests` XCUITest flows in the app's test
-  mode.
+  mode (a failed UI test is retried once; one that fails twice fails the job).
 
 ## Versioning
 
@@ -403,7 +403,7 @@ Contributions are welcome! Please follow the standard GitHub flow:
 
 The test suites live alongside the code they cover — the tests themselves are the up-to-date catalog:
 
-- **Shared (KMP)**: each module's `src/commonTest` (plus `androidHostTest`/`iosTest`), next to the code it covers — `presentation` (ViewModels), `core/domain` (use cases, policies, validators), `core/data` (repositories, cache, API, database, data DI), `core/common` (`ErrorHandler`), and `shared` (full DI graph, `KoinHelper`, Android string resolution).
+- **Shared (KMP)**: each module's `src/commonTest` (plus `androidHostTest`/`iosTest`), next to the code it covers — `presentation` (ViewModels, their `HomeListing.kt` helpers, `ErrorHandler`, display formatting), `core/domain` (use cases, policies, validators), `core/data` (repositories, cache, API, database, data DI), `core/common` (`ErrorClassifier`, `runCatchingResult`, `UUID`), and `shared` (full DI graph, `KoinHelper`, Android string resolution).
 - **`core/testing`**: a test-only module (only ever a test dependency) with hand-written fakes (`Fakes.kt`, `FakeOrderRepository`, `FakeReviewRepository`), test data, the `MainDispatcherTest` base and an in-memory SQLite driver (`createInMemorySqlDriver`, plus `CountingSqlDriver`). Tests construct ViewModels and use cases directly through their constructors; there is no mock-based Koin test module. Some `presentation` tests run against the real repositories on the in-memory database (`:core:data` is a test-only dependency there).
 - **Android**: `androidApp/src/test` (JVM unit, Robolectric and screenshot tests) and `androidApp/src/androidTest` (instrumented Compose tests against fake repositories, e.g. `MainScreenSharedVmTest`)
 - **iOS**: `iosApp/CocktailCraftTests` (unit and snapshot tests) and `iosApp/CocktailCraftUITests` (XCUITest flows and the accessibility audit)

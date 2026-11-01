@@ -199,7 +199,7 @@ SignInDialog(
 )
 ```
 
-**When to use**: For account actions on the Profile screen. (The profile header card itself is the screen-private `ProfileHeaderCard` in `ProfileScreen.kt`.)
+**When to use**: For account actions on the Profile screen. (The profile header card itself is the Profile screen's own `ProfileHeaderCard`, in `screens/profile/ProfileHeader.kt`.)
 
 ### CocktailItem
 
@@ -526,7 +526,7 @@ OfflineModeIndicator(isOffline = isOffline)
 
 ### WriteReviewSheet
 
-**Purpose**: The write-a-review bottom sheet (name, 1–5 star picker, comment with a counter, Submit). `onSubmit` returns whether the review was saved; the sheet closes only then, otherwise it stays open with `submissionError` shown inline.
+**Purpose**: The write-a-review bottom sheet (name, 1–5 star picker, comment with a counter, Submit). The star count and the comment cap come from the shared `ReviewRules`, the same limits the shared validation and iOS use. `onSubmit` returns whether the review was saved; the sheet closes only then, otherwise it stays open with `submissionError` shown inline.
 
 ```kotlin
 WriteReviewSheet(

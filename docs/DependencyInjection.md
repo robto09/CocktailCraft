@@ -170,7 +170,7 @@ val presentationModule = module {
 
 ### 7. Platform Module (`platformModule()`)
 
-- `expect fun dataPlatformModule(): Module` in `:core:data`'s commonMain; the Android and iOS actuals provide the platform-specific bindings (the secure/encrypted `Settings` store — plus, on iOS, the plain `NSUserDefaults` store holding the fresh-install marker — `NetworkMonitor`, the SQLDelight `SqlDriver`, the debug-aware `AppConfig`). They are all data-layer adapters, so they live in `core/data/src/androidMain/.../di/DataPlatformModule.kt` and `core/data/src/iosMain/.../di/DataPlatformModule.kt` (named apart from `:shared`'s `PlatformModule.kt`: same package, so equal file names would clash as JVM classes in the app).
+- `expect fun dataPlatformModule(): Module` in `:core:data`'s commonMain; the Android and iOS actuals provide the platform-specific bindings (the secure/encrypted `Settings` store — plus, on iOS, the plain `NSUserDefaults` store holding the fresh-install marker — `NetworkMonitor`, the SQLDelight `SqlDriver`, the debug-aware `AppConfig`, and on Android the app's one `OkHttpClient` with the Ktor engine over it, which androidApp's Coil image loader shares). They are all data-layer adapters, so they live in `core/data/src/androidMain/.../di/DataPlatformModule.kt` and `core/data/src/iosMain/.../di/DataPlatformModule.kt` (named apart from `:shared`'s `PlatformModule.kt`: same package, so equal file names would clash as JVM classes in the app).
 - `:shared` re-exposes it as `platformModule()` (`shared/src/commonMain/.../di/PlatformModule.kt`) — the name androidApp and `initKoin()` use, since neither app can see `:core:data`.
 
 ## Data layer

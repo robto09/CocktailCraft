@@ -19,7 +19,7 @@ Nine ViewModels on the `SharedViewModel` base class, registered in
 
 | ViewModel | Scope | Screen |
 |-----------|-------|--------|
-| `SharedHomeViewModel` | `single` | Home: catalog by category, debounced and advanced search, sort, recently viewed, review averages, offline fallback |
+| `SharedHomeViewModel` | `single` | Home: catalog by category, debounced and advanced search, sort, recently viewed, review averages, offline fallback (its standalone helpers — sorting, category paging, filter options — are in `viewmodel/HomeListing.kt`) |
 | `SharedCartViewModel` | `single` | Cart, plus add-to-cart from Home and Favorites |
 | `SharedFavoritesViewModel` | `single` | Favorites |
 | `SharedOrderViewModel` | `single` | Order list and placing an order |
@@ -158,7 +158,9 @@ fun CartScreen(viewModel: SharedCartViewModel, /* ... */) {
 
 The same split exists for Home, Favorites, Orders, Order detail, Cocktail
 detail and Profile, which is what the previews and Roborazzi screenshot
-tests render.
+tests render. The larger screens keep their sections in their own files:
+`screens/home/` (search controls, content section), `screens/profile/`
+(header, settings cards) and `screens/detail/`.
 
 ## iOS
 
