@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.screens.AppSettingsCard
+import com.cocktailcraft.android.screens.profile.AppSettingsCard
 import com.cocktailcraft.android.ui.components.CartItemCard
 import com.cocktailcraft.android.ui.components.CategoryFilterRow
 import com.cocktailcraft.android.ui.components.CocktailItem
