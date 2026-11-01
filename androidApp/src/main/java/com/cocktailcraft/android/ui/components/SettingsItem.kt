@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,7 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.theme.Spacing
 
 /**
@@ -31,7 +31,7 @@ fun SettingsItem(
     title: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    textColor: Color = AppColors.TextPrimary
+    textColor: Color = MaterialTheme.colorScheme.onSurface
 ) {
     Row(
         modifier = modifier
@@ -59,7 +59,7 @@ fun SettingsItem(
         Icon(
             imageVector = Icons.Default.ChevronRight,
             contentDescription = null,
-            tint = AppColors.Gray,
+            tint = MaterialTheme.colorScheme.outline,
             modifier = Modifier.size(20.dp)
         )
     }

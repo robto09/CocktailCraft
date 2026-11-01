@@ -15,31 +15,33 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuBoxScope
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,16 +50,36 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
+import com.cocktailcraft.android.ui.theme.LocalReducedMotion
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.alcoholic
+import com.cocktailcraft.resources.filter_all_categories
+import com.cocktailcraft.resources.filter_any
+import com.cocktailcraft.resources.filter_any_ingredient
+import com.cocktailcraft.resources.filter_collapse
+import com.cocktailcraft.resources.filter_expand
+import com.cocktailcraft.resources.filter_section_collapsed_a11y
+import com.cocktailcraft.resources.filter_section_expanded_a11y
+import com.cocktailcraft.resources.filter_select_an_ingredient
+import com.cocktailcraft.resources.filter_select_category
+import com.cocktailcraft.resources.filter_select_ingredient_title
+import com.cocktailcraft.resources.non_alcoholic
+import com.cocktailcraft.resources.search_ingredients_placeholder
 
 /**
- * Section component for filter categories
+ * Collapsible section for filter categories. The header is one TalkBack
+ * element: a heading with its expanded/collapsed state and a
+ * "double-tap to collapse/expand" action.
  */
 @Composable
 fun FilterSection(
@@ -65,12 +87,26 @@ fun FilterSection(
     content: @Composable () -> Unit
 ) {
     var expanded by remember { mutableStateOf(true) }
+    val reducedMotion = LocalReducedMotion.current
+    val stateLabel = stringResource(
+        if (expanded) MR.strings.filter_section_expanded_a11y else MR.strings.filter_section_collapsed_a11y
+    )
 
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { expanded = !expanded },
+                .heightIn(min = 48.dp)
+                .clickable(
+                    role = Role.Button,
+                    onClickLabel = stringResource(
+                        if (expanded) MR.strings.filter_collapse else MR.strings.filter_expand
+                    )
+                ) { expanded = !expanded }
+                .semantics {
+                    heading()
+                    stateDescription = stateLabel
+                },
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -83,15 +119,15 @@ fun FilterSection(
 
             Icon(
                 imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = if (expanded) stringResource(R.string.filter_collapse) else stringResource(R.string.filter_expand),
-                tint = AppColors.TextSecondary
+                contentDescription = null, // state and action are on the header
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
         AnimatedVisibility(
             visible = expanded,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically()
+            enter = if (reducedMotion) fadeIn() else fadeIn() + expandVertically(),
+            exit = if (reducedMotion) fadeOut() else fadeOut() + shrinkVertically()
         ) {
             Column(
                 modifier = Modifier
@@ -126,7 +162,7 @@ fun CategorySelector(
     ) {
         SelectorField(
             value = selectedCategory,
-            placeholder = stringResource(R.string.filter_select_category),
+            placeholder = stringResource(MR.strings.filter_select_category),
             expanded = expanded
         )
 
@@ -136,7 +172,7 @@ fun CategorySelector(
         ) {
             // "All" option clears the category filter
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.filter_all_categories)) },
+                text = { Text(stringResource(MR.strings.filter_all_categories)) },
                 onClick = {
                     onCategorySelected(null)
                     expanded = false
@@ -177,22 +213,22 @@ private fun ExposedDropdownMenuBoxScope.SelectorField(
             Text(
                 text = placeholder,
                 style = MaterialTheme.typography.bodyMedium,
-                color = AppColors.TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         },
         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
         shape = RoundedCornerShape(8.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = AppColors.TextPrimary,
-            unfocusedTextColor = AppColors.TextPrimary,
-            focusedBorderColor = AppColors.Primary,
-            unfocusedBorderColor = AppColors.LightGray,
-            focusedTrailingIconColor = AppColors.TextSecondary,
-            unfocusedTrailingIconColor = AppColors.TextSecondary
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = CocktailCraftTheme.extendedColors.neutralSubtle,
+            focusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unfocusedTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
         ),
         modifier = Modifier
             .fillMaxWidth()
-            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
     )
 }
 
@@ -213,17 +249,17 @@ fun AlcoholicFilterContent(
         FilterChip(
             selected = alcoholic == null,
             onClick = { onAlcoholicChanged(null) },
-            label = stringResource(R.string.filter_any)
+            label = stringResource(MR.strings.filter_any)
         )
         FilterChip(
             selected = alcoholic == true,
             onClick = { onAlcoholicChanged(true) },
-            label = stringResource(R.string.alcoholic)
+            label = stringResource(MR.strings.alcoholic)
         )
         FilterChip(
             selected = alcoholic == false,
             onClick = { onAlcoholicChanged(false) },
-            label = stringResource(R.string.non_alcoholic)
+            label = stringResource(MR.strings.non_alcoholic)
         )
     }
 }
@@ -252,7 +288,7 @@ fun IngredientSelectionDialog(
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = AppColors.Surface
+            color = MaterialTheme.colorScheme.surface
         ) {
             Column(
                 modifier = Modifier
@@ -260,7 +296,7 @@ fun IngredientSelectionDialog(
                     .navigationBarsPadding()
             ) {
                 AppTopBar(
-                    title = stringResource(R.string.filter_select_ingredient_title),
+                    title = stringResource(MR.strings.filter_select_ingredient_title),
                     showBackButton = true,
                     onBackClick = onDismiss
                 )
@@ -272,31 +308,37 @@ fun IngredientSelectionDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 16.dp),
-                    placeholder = { Text(stringResource(R.string.search_ingredients_placeholder)) },
+                    placeholder = { Text(stringResource(MR.strings.search_ingredients_placeholder)) },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Search,
-                            contentDescription = stringResource(R.string.search),
-                            tint = AppColors.Gray
+                            contentDescription = null, // decorative
+                            tint = MaterialTheme.colorScheme.outline
                         )
                     },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AppColors.Primary,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = Color.Gray,
-                        cursorColor = AppColors.Primary,
-                        focusedLeadingIconColor = AppColors.Primary,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
                         unfocusedLeadingIconColor = Color.Gray,
-                        focusedContainerColor = Color.White, unfocusedContainerColor = Color.White
+                        focusedContainerColor = CocktailCraftTheme.extendedColors.surfaceRaised,
+                        unfocusedContainerColor = CocktailCraftTheme.extendedColors.surfaceRaised
                     )
                 )
 
-                val filteredIngredients = ingredients.filter {
-                    it.contains(searchQuery, ignoreCase = true)
+                // ~500 ingredients: filter only when the list or the query
+                // changes, not on every recomposition. Distinct, since each
+                // one is its row's key.
+                val filteredIngredients = remember(ingredients, searchQuery) {
+                    ingredients.filter { it.contains(searchQuery, ignoreCase = true) }.distinct()
                 }
 
                 LazyColumn(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .selectableGroup(),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
                 ) {
                     // "Any" option clears the ingredient filter
@@ -308,7 +350,7 @@ fun IngredientSelectionDialog(
                         )
                     }
 
-                    items(filteredIngredients) { ingredient ->
+                    items(filteredIngredients, key = { it }) { ingredient ->
                         IngredientRow(
                             label = ingredient,
                             selected = selectedIngredient == ingredient,
@@ -323,6 +365,8 @@ fun IngredientSelectionDialog(
 
 /**
  * A selectable ingredient row with a radio indicator; null = "Any ingredient".
+ * The whole row is the radio button for TalkBack (one focus stop with its
+ * selected state); the RadioButton itself is visual only.
  */
 @Composable
 private fun IngredientRow(
@@ -333,17 +377,19 @@ private fun IngredientRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(
             selected = selected,
-            onClick = onClick
+            onClick = null,
+            // Keep the 48dp footprint the clickable RadioButton had
+            modifier = Modifier.minimumInteractiveComponentSize()
         )
 
         Text(
-            text = label ?: stringResource(R.string.filter_any_ingredient),
+            text = label ?: stringResource(MR.strings.filter_any_ingredient),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(start = 8.dp)
         )
@@ -371,7 +417,7 @@ fun IngredientSelector(
     ) {
         SelectorField(
             value = selectedIngredient,
-            placeholder = stringResource(R.string.filter_select_an_ingredient),
+            placeholder = stringResource(MR.strings.filter_select_an_ingredient),
             expanded = false
         )
     }

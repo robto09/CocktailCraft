@@ -6,13 +6,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * A reusable detail info card component.
@@ -35,8 +37,8 @@ fun DetailInfoCard(
     content: @Composable () -> Unit,
     titleFontSize: Int = 18,
     titleFontWeight: FontWeight = FontWeight.Bold,
-    titleColor: androidx.compose.ui.graphics.Color = AppColors.TextPrimary,
-    backgroundColor: androidx.compose.ui.graphics.Color = AppColors.Surface,
+    titleColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
+    backgroundColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.surface,
     elevation: Int = 2,
     cornerRadius: Int = 12,
     contentPadding: Int = 16
@@ -52,14 +54,20 @@ fun DetailInfoCard(
                 .fillMaxWidth()
                 .padding(contentPadding.dp)
         ) {
-            Text(
-                text = title,
-                fontSize = titleFontSize.sp,
-                fontWeight = titleFontWeight,
-                color = titleColor,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-            
+            // Cards with their own header row pass a blank title: draw
+            // nothing, so it leaves no empty gap above their content
+            if (title.isNotBlank()) {
+                Text(
+                    text = title,
+                    fontSize = titleFontSize.sp,
+                    fontWeight = titleFontWeight,
+                    color = titleColor,
+                    modifier = Modifier
+                        .padding(bottom = 12.dp)
+                        .semantics { heading() }
+                )
+            }
+
             content()
         }
     }

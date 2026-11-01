@@ -1,0 +1,200 @@
+package com.cocktailcraft.di
+
+import app.cash.sqldelight.db.SqlDriver
+import com.cocktailcraft.data.cache.CocktailCache
+import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
+import com.cocktailcraft.data.local.LocalDatabase
+import com.cocktailcraft.data.local.UserSession
+import com.cocktailcraft.data.remote.ApiRateLimiter
+import com.cocktailcraft.data.remote.CocktailRemoteDataSource
+import com.cocktailcraft.data.repository.AuthRepositoryImpl
+import com.cocktailcraft.data.repository.CartRepositoryImpl
+import com.cocktailcraft.data.repository.CocktailCatalogRepositoryImpl
+import com.cocktailcraft.data.repository.CocktailCategoryFetcher
+import com.cocktailcraft.data.repository.CocktailDetailRepositoryImpl
+import com.cocktailcraft.data.repository.CocktailFavoritesRepositoryImpl
+import com.cocktailcraft.data.repository.CocktailOfflineRepositoryImpl
+import com.cocktailcraft.data.repository.CocktailSearchRepositoryImpl
+import com.cocktailcraft.data.repository.OrderRepositoryImpl
+import com.cocktailcraft.data.repository.ReviewRepositoryImpl
+import com.cocktailcraft.data.repository.SessionAwareAuthRepository
+import com.cocktailcraft.domain.repository.AuthRepository
+import com.cocktailcraft.domain.repository.CartRepository
+import com.cocktailcraft.domain.repository.CocktailCatalogRepository
+import com.cocktailcraft.domain.repository.CocktailDetailRepository
+import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
+import com.cocktailcraft.domain.repository.CocktailOfflineRepository
+import com.cocktailcraft.domain.repository.CocktailSearchRepository
+import com.cocktailcraft.domain.repository.OrderRepository
+import com.cocktailcraft.domain.repository.ReviewRepository
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.serialization.json.Json
+import org.koin.core.qualifier.named
+import org.koin.dsl.module
+
+/**
+ * File name of the app's SQLite database: the offline cocktail cache plus the
+ * user's cart, orders, favorites and reviews. The name predates the user-data
+ * tables; it stays so existing installs keep their database.
+ */
+internal const val COCKTAIL_DATABASE_NAME = "cocktailcraft_cache.db"
+
+/**
+ * Koin module for data-related dependencies including repositories and caching.
+ */
+val dataModule = module {
+    // JSON
+    single {
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            // A JSON null for a non-nullable field with a default coerces to
+            // the default instead of failing the whole decode.
+            coerceInputValues = true
+        }
+    }
+
+    // Background dispatcher for database and Settings I/O and JSON (de)serialization
+    single<CoroutineDispatcher>(named("ioDispatcher")) { Dispatchers.IO }
+
+    // CPU work off the main thread: decoding and mapping API responses
+    single<CoroutineDispatcher>(named("defaultDispatcher")) { Dispatchers.Default }
+
+    // Lives as long as the process. Work that must not die with the screen
+    // that started it runs here: shared fetches (InFlightRequests) and the
+    // shared favorites stream. SupervisorJob: one failure never cancels it.
+    single<CoroutineScope>(named("appScope")) {
+        CoroutineScope(SupervisorJob() + get<CoroutineDispatcher>(named("defaultDispatcher")))
+    }
+
+    // Offline decision — single source of truth for "is the app offline"
+    single { com.cocktailcraft.data.cache.OfflineModePolicy(networkMonitor = get()) }
+
+    // App database over the platform's SqlDriver (platformModule). Creating
+    // it doesn't open the database file.
+    single { CocktailCraftDatabase(get<SqlDriver>()) }
+
+    // Cache. The database is injected lazily so resolving this single never
+    // touches disk; the cache opens it on first use, on the io dispatcher.
+    single {
+        CocktailCache(
+            database = inject<CocktailCraftDatabase>(),
+            json = get(),
+            appConfig = get(),
+            currentOwner = get<UserSession>(),
+            ioDispatcher = get(named("ioDispatcher")),
+            offlineModePolicy = get()
+        )
+    }
+
+    // Database access for the cart, orders, favorites and reviews
+    // repositories. Like the cache, it opens the database lazily on the io
+    // dispatcher.
+    single {
+        LocalDatabase(
+            database = inject<CocktailCraftDatabase>(),
+            owner = get<UserSession>(),
+            ioDispatcher = get(named("ioDispatcher"))
+        )
+    }
+
+    // The API's min-interval throttle, shared by every remote call site
+    single { ApiRateLimiter() }
+
+    // Remote data source: API access, DTO mapping, rate limiting
+    single {
+        CocktailRemoteDataSource(api = get(), rateLimiter = get(), defaultDispatcher = get(named("defaultDispatcher")))
+    }
+
+    // Focused repositories, each owning one concern
+    single<CocktailOfflineRepository> {
+        CocktailOfflineRepositoryImpl(
+            offlineModePolicy = get(),
+            cocktailCache = get()
+        )
+    }
+
+    single<CocktailFavoritesRepository> {
+        CocktailFavoritesRepositoryImpl(
+            localDatabase = get(),
+            json = get(),
+            cocktailCache = get(),
+            remote = get(),
+            offlineRepository = get(),
+            appScope = get(named("appScope")),
+            ioDispatcher = get(named("ioDispatcher"))
+        )
+    }
+
+    // Database-backed category pages, shared by category browsing (catalog
+    // repository) and the search repository's category filter. A single, so
+    // both see one page index and one set of in-flight requests.
+    single {
+        CocktailCategoryFetcher(
+            remote = get(),
+            cocktailCache = get(),
+            offlineRepository = get(),
+            appScope = get(named("appScope"))
+        )
+    }
+
+    single<CocktailSearchRepository> {
+        CocktailSearchRepositoryImpl(
+            remote = get(),
+            cocktailCache = get(),
+            offlineRepository = get(),
+            categoryFetcher = get()
+        )
+    }
+
+    single<CocktailDetailRepository> {
+        CocktailDetailRepositoryImpl(
+            remote = get(),
+            cocktailCache = get(),
+            offlineRepository = get(),
+            appScope = get(named("appScope"))
+        )
+    }
+
+    single<CocktailCatalogRepository> {
+        CocktailCatalogRepositoryImpl(remote = get(), categoryFetcher = get())
+    }
+
+    single<CartRepository> {
+        CartRepositoryImpl(
+            localDatabase = get(),
+            cocktailCache = get(),
+            json = get(),
+            ioDispatcher = get(named("ioDispatcher"))
+        )
+    }
+
+    // The account store, and who owns the user's data: the signed-in user,
+    // else the guest (UserSession). The app's AuthRepository wraps the store
+    // to switch that owner on sign-in/out (SessionAwareAuthRepository).
+    single { AuthRepositoryImpl(get(secureSettingsQualifier), get(), get(named("ioDispatcher"))) }
+
+    single { UserSession(authRepository = get<AuthRepositoryImpl>()) }
+
+    single<AuthRepository> {
+        SessionAwareAuthRepository(delegate = get<AuthRepositoryImpl>(), session = get(), localDatabase = get())
+    }
+
+    single<OrderRepository> {
+        OrderRepositoryImpl(
+            localDatabase = get(),
+            ioDispatcher = get(named("ioDispatcher"))
+        )
+    }
+
+    single<ReviewRepository> {
+        ReviewRepositoryImpl(
+            localDatabase = get(),
+            ioDispatcher = get(named("ioDispatcher"))
+        )
+    }
+}

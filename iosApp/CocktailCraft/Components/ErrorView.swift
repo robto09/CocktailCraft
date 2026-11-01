@@ -6,6 +6,7 @@ struct ErrorView: View {
     let error: ErrorHandler.UserFriendlyError
     let onRetry: (() -> Void)?
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
     
     var body: some View {
         VStack(spacing: 16) {
@@ -14,14 +15,16 @@ struct ErrorView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 60, height: 60)
                 .foregroundColor(getErrorColor(for: error.category))
-            
-            Text(error.title)
+                .accessibilityHidden(true)
+
+            Text(error.title.localized())
                 .font(.title3)
                 .fontWeight(.semibold)
+                .accessibilityAddTraits(.isHeader)
             
-            Text(error.message)
+            Text(error.message.localized())
                 .font(.body)
-                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                .foregroundColor(AppColors.textSecondary(appearance))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
             
@@ -29,22 +32,22 @@ struct ErrorView: View {
                 Button(action: {
                     recoveryAction.action()
                 }) {
-                    Text(recoveryAction.actionLabel)
+                    Text(recoveryAction.actionLabel.localized())
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(AppColors.onPrimary(isDarkMode: isDarkMode))
                         .padding(.horizontal, 24)
                         .padding(.vertical, 12)
-                        .background(AppColors.primary(isDarkMode: isDarkMode), in: RoundedRectangle(cornerRadius: 8))
+                        .background(AppColors.primary(appearance), in: RoundedRectangle(cornerRadius: 8))
                 }
                 .buttonStyle(.plain)
             } else if let onRetry = onRetry {
                 Button(action: onRetry) {
-                    Text("Try Again")
+                    Text(L(\.dialog_try_again))
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(AppColors.onPrimary(isDarkMode: isDarkMode))
                         .padding(.horizontal, 24)
                         .padding(.vertical, 12)
-                        .background(AppColors.primary(isDarkMode: isDarkMode), in: RoundedRectangle(cornerRadius: 8))
+                        .background(AppColors.primary(appearance), in: RoundedRectangle(cornerRadius: 8))
                 }
                 .buttonStyle(.plain)
             }
@@ -74,9 +77,9 @@ struct ErrorView: View {
         case .server:
             return AppColors.error
         case .authentication:
-            return AppColors.primary(isDarkMode: isDarkMode)
+            return AppColors.primary(appearance)
         case .data:
-            return AppColors.primary(isDarkMode: isDarkMode)
+            return AppColors.primary(appearance)
         default:
             return AppColors.gray
         }

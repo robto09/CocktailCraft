@@ -6,13 +6,15 @@ import SwiftUI
 struct PasswordStrengthMeter: View {
     let strength: Int
 
+    @Environment(\.isDarkMode) private var isDarkMode
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 ForEach(0..<5, id: \.self) { index in
                     Rectangle()
                         .frame(height: 4)
-                        .foregroundColor(index < strength ? color : AppColors.lightGray)
+                        .foregroundColor(index < strength ? color : AppColors.neutralSubtle(isDarkMode: isDarkMode))
                         .cornerRadius(2)
                 }
             }
@@ -35,10 +37,10 @@ struct PasswordStrengthMeter: View {
 
     private var label: String {
         switch strength {
-        case 0...1: return "Weak password"
-        case 2: return "Fair password"
-        case 3: return "Good password"
-        case 4...5: return "Strong password"
+        case 0...1: return L(\.password_strength_weak)
+        case 2: return L(\.password_strength_fair)
+        case 3: return L(\.password_strength_good)
+        case 4...5: return L(\.password_strength_strong)
         default: return ""
         }
     }

@@ -1,0 +1,78 @@
+# Overrides on top of detekt's default config (buildUponDefaultConfig = true in
+# build-logic's DetektConventionPlugin). Everything not listed here keeps the
+# detekt / ktlint-wrapper / Compose-rules defaults (detekt 2.x). Pre-existing findings
+# are in each module's detekt-baseline.xml — see README "Static analysis".
+
+complexity:
+  LongMethod:
+    # Composable bodies are mostly layout declarations
+    ignoreAnnotated: ['Composable']
+  LongParameterList:
+    # Composables take modifiers, state and callbacks as parameters by design
+    ignoreAnnotated: ['Composable']
+    ignoreDefaultParameters: true
+
+naming:
+  FunctionNaming:
+    # Composables are PascalCase
+    ignoreAnnotated: ['Composable']
+  TopLevelPropertyNaming:
+    # Compose CompositionLocals and colors are PascalCase top-level vals
+    constantPattern: '[A-Z][A-Za-z0-9]*'
+
+style:
+  MagicNumber:
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/androidHostTest/**'
+      - '**/iosTest/**'
+      - '**/*.kts'
+    # dp/sp/alpha literals in UI code
+    ignoreAnnotated: ['Composable', 'Preview']
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+  MaxLineLength:
+    maxLineLength: 120
+  UnusedPrivateFunction:
+    # @Preview functions are only called by the IDE
+    ignoreAnnotated: ['Preview']
+
+ktlint:
+  # The ktlint rules below duplicate detekt's own, which stay on.
+  # (ktlint's FunctionNaming, previously disabled here in favour of
+  # naming>FunctionNaming, is no longer shipped by the detekt 2.x wrapper.)
+  # style>MaxLineLength
+  MaximumLineLength:
+    active: false
+  # style>WildcardImport
+  NoWildcardImports:
+    active: false
+  # style>NewLineAtEndOfFile
+  FinalNewline:
+    active: false
+
+  # Off in detekt 1.23's detekt-formatting defaults but switched on by the
+  # detekt 2.x ktlint wrapper. Kept off so the upgrade doesn't change the
+  # code style (trailing commas alone would be ~1,400 new findings); adopting
+  # any of them is a separate decision. Rules ktlint added since 1.23 run at
+  # their defaults.
+  ContextReceiverMapping:
+    active: false
+  EnumWrapping:
+    active: false
+  FunctionSignature:
+    active: false
+  ParameterListSpacing:
+    active: false
+  PropertyName:
+    active: false
+  TrailingCommaOnCallSite:
+    active: false
+  TrailingCommaOnDeclarationSite:
+    active: false
+  TypeArgumentListSpacing:
+    active: false
+  TypeParameterListSpacing:
+    active: false

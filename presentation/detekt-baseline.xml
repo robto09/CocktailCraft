@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ComplexCondition:SharedHomeViewModel.kt:SharedHomeViewModel$isOnline &amp;&amp; ((error.value != null &amp;&amp; _uiState.value.cocktails.isEmpty()) || lastLoadWasOffline)</ID>
+    <ID>Filename:DataLayer.kt:com.cocktailcraft.testutil.DataLayer.kt</ID>
+    <ID>MatchingDeclarationName:DataLayer.kt:DataLayerTest : MainDispatcherTest</ID>
+    <ID>MaxLineLength:SharedThemeViewModelTest.kt:SharedThemeViewModelTest$"""{"darkMode":false,"followSystemTheme":true,"notificationsEnabled":true,"language":"en","accentColor":"blue"}"""</ID>
+    <ID>NewLineAtEndOfFile:SharedProfileViewModel.kt:com.cocktailcraft.viewmodel.SharedProfileViewModel.kt</ID>
+    <ID>TooManyFunctions:SharedHomeViewModel.kt:SharedHomeViewModel : SharedViewModel</ID>
+    <ID>TooManyFunctions:SharedProfileViewModel.kt:SharedProfileViewModel : SharedViewModel</ID>
+    <ID>TooManyFunctions:SharedThemeViewModel.kt:SharedThemeViewModel : SharedViewModel</ID>
+    <ID>VariableNaming:SharedHomeViewModel.kt:SharedHomeViewModel$private val PAGE_SIZE = 10</ID>
+    <ID>VariableNaming:SharedHomeViewModel.kt:SharedHomeViewModel$private val SEARCH_DEBOUNCE_MS = 300L</ID>
+    <ID>WildcardImport:SharedCartViewModel.kt:import kotlinx.coroutines.flow.*</ID>
+    <ID>WildcardImport:SharedCocktailDetailViewModel.kt:import kotlinx.coroutines.flow.*</ID>
+    <ID>WildcardImport:SharedFavoritesViewModel.kt:import kotlinx.coroutines.flow.*</ID>
+    <ID>WildcardImport:SharedHomeViewModel.kt:import kotlinx.coroutines.flow.*</ID>
+    <ID>WildcardImport:SharedOrderViewModel.kt:import kotlinx.coroutines.flow.*</ID>
+    <ID>WildcardImport:SharedProfileViewModel.kt:import kotlinx.coroutines.flow.*</ID>
+    <ID>WildcardImport:SharedReviewViewModel.kt:import kotlinx.coroutines.flow.*</ID>
+    <ID>WildcardImport:SharedThemeViewModel.kt:import kotlinx.coroutines.flow.*</ID>
+  </CurrentIssues>
+</SmellBaseline>

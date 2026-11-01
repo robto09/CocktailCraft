@@ -1,36 +1,35 @@
 package com.cocktailcraft.android.ui.components
 
-import android.graphics.drawable.ColorDrawable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.filled.LocalBar
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
 import com.cocktailcraft.android.ui.components.OptimizedImage
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.rememberHapticHandler
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.add_to_cart_item_a11y
+import com.cocktailcraft.resources.list_out_of_stock
+import com.cocktailcraft.resources.list_tap_to_view_ingredients
+import com.cocktailcraft.resources.list_view_details_label
 
 @Composable
 fun CocktailItem(
@@ -45,10 +44,13 @@ fun CocktailItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(
+                onClick = onClick,
+                onClickLabel = stringResource(MR.strings.list_view_details_label, cocktail.name)
+            ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -63,12 +65,13 @@ fun CocktailItem(
                 modifier = Modifier
                     .size(100.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(AppColors.LightGray)
+                    .background(CocktailCraftTheme.extendedColors.neutralSubtle)
             ) {
-                // Use our optimized image component
+                // Use our optimized image component (decorative: the name
+                // is read from the text beside it)
                 OptimizedImage(
                     url = cocktail.imageUrl,
-                    contentDescription = cocktail.name,
+                    contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                     targetSize = 200 // Target size for better memory usage
@@ -83,7 +86,7 @@ fun CocktailItem(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = stringResource(R.string.list_out_of_stock),
+                            text = stringResource(MR.strings.list_out_of_stock),
                             color = Color.White,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
@@ -104,47 +107,36 @@ fun CocktailItem(
                     text = cocktail.name,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = AppColors.TextPrimary,
-                    maxLines = 1,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Display alcoholic info with category info
+                // "Alcoholic • Cocktail"; an alcoholic value the list endpoint
+                // didn't supply is left out rather than shown as "Unknown"
                 Text(
-                    text = buildString {
-                        append(cocktail.alcoholic ?: stringResource(R.string.list_alcoholic_unknown))
-                        cocktail.category?.let {
-                            append(" • ")
-                            append(it)
-                        }
-                    },
+                    text = listOfNotNull(cocktail.knownAlcoholic, cocktail.category).joinToString(" • "),
                     fontSize = 14.sp,
-                    color = AppColors.TextSecondary,
-                    maxLines = 1,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Use safe call for ingredients that might be null or empty
+                // The first two ingredients; a partial record (from a list
+                // endpoint) has none yet, so point at the detail screen instead
                 Text(
-                    text = if (cocktail.ingredients.isNotEmpty()) {
-                        val firstIngredient = cocktail.ingredients.first().name
-                        // Check if it's a placeholder
-                        if (firstIngredient == "Tap to view ingredients") {
-                            firstIngredient
-                        } else {
-                            // Join first 2 ingredients with safe operators
-                            cocktail.ingredients.take(2).joinToString(", ") { it.name }
-                                .let { if (cocktail.ingredients.size > 2) "$it..." else it }
-                        }
+                    text = if (cocktail.hasFullDetails && cocktail.ingredients.isNotEmpty()) {
+                        cocktail.ingredients.take(2).joinToString(", ") { it.name }
+                            .let { if (cocktail.ingredients.size > 2) "$it..." else it }
                     } else {
-                        stringResource(R.string.list_tap_to_view_ingredients)
+                        stringResource(MR.strings.list_tap_to_view_ingredients)
                     },
                     fontSize = 12.sp,
-                    color = AppColors.TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontStyle = FontStyle.Italic,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -158,29 +150,22 @@ fun CocktailItem(
                 ) {
                     // Price
                     Text(
-                        text = stringResource(R.string.list_price_format, cocktail.price),
+                        text = formatPrice(cocktail.price),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = AppColors.Primary
+                        color = MaterialTheme.colorScheme.primary
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // Favorite button with haptic feedback — default IconButton
-                    // size keeps the 48 dp minimum touch target
-                    IconButton(
-                        onClick = {
+                    // Favorite toggle with haptic feedback
+                    FavoriteToggleButton(
+                        isFavorite = isFavorite,
+                        onToggle = {
                             hapticHandler.performToggleFavorite(isFavorite)
                             onToggleFavorite(cocktail)
                         }
-                    ) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = if (isFavorite) stringResource(R.string.list_remove_from_favorites) else stringResource(R.string.list_add_to_favorites),
-                            tint = if (isFavorite) AppColors.Secondary else AppColors.Gray,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                    )
 
                     // Add to cart button
                     IconButton(
@@ -189,8 +174,14 @@ fun CocktailItem(
                     ) {
                         Icon(
                             imageVector = Icons.Default.ShoppingCart,
-                            contentDescription = stringResource(R.string.add_to_cart),
-                            tint = if (cocktail.stockCount > 0) AppColors.Primary else AppColors.Gray,
+                            contentDescription = stringResource(MR.strings.add_to_cart_item_a11y, cocktail.name),
+                            tint = if (cocktail.stockCount >
+                                0
+                            ) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.outline
+                            },
                             modifier = Modifier.size(20.dp)
                         )
                     }

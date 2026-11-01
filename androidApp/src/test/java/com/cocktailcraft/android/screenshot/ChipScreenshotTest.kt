@@ -1,0 +1,59 @@
+package com.cocktailcraft.android.screenshot
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.unit.dp
+import com.cocktailcraft.android.ui.components.CategoryFilterRow
+import com.cocktailcraft.android.ui.components.FilterChip
+import com.cocktailcraft.android.ui.components.SearchFilterChips
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.ParameterizedRobolectricTestRunner
+
+@RunWith(ParameterizedRobolectricTestRunner::class)
+class ChipScreenshotTest(variant: ThemeVariant) : ScreenshotTest(variant) {
+
+    @Test
+    fun filterChip() = snapshot("FilterChip") {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = true, onClick = {}, label = "Cocktail")
+            FilterChip(selected = false, onClick = {}, label = "Shot")
+            FilterChip(selected = true, onClick = {}, label = "Tequila", trailingIcon = Icons.Default.Close)
+        }
+    }
+
+    @Test
+    fun categoryFilterRow() = snapshot("CategoryFilterRow") {
+        CategoryFilterRow(
+            categories = ScreenshotFixtures.categories,
+            selectedCategory = "Cocktail",
+            onCategorySelected = {}
+        )
+    }
+
+    @Test
+    fun categoryFilterRowAllSelected() = snapshot("CategoryFilterRow_all") {
+        CategoryFilterRow(
+            categories = ScreenshotFixtures.categories,
+            selectedCategory = null,
+            onCategorySelected = {}
+        )
+    }
+
+    @Test
+    fun searchFilterChips() = snapshot("SearchFilterChips") {
+        SearchFilterChips(
+            filters = ScreenshotFixtures.activeFilters,
+            onClearFilter = {},
+            onClearAllFilters = {}
+        )
+    }
+
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
+        fun variants() = ThemeVariant.lightAndDark()
+    }
+}

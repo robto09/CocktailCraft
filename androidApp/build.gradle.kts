@@ -5,6 +5,9 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.baselineprofile)
+    alias(libs.plugins.roborazzi)
+    // detekt + ktlint + Compose rules (build-logic)
+    id("cocktailcraft.detekt")
 }
 
 // Release signing comes from an untracked keystore.properties at the repo root
@@ -26,7 +29,7 @@ android {
         applicationId = "com.cocktailcraft.android"
         minSdk = 24
         targetSdk = 36
-        // Single source of truth in root gradle.properties (AR-9/AN-12);
+        // Single source of truth in root gradle.properties;
         // bump via scripts/bump-version.sh, which also syncs iosApp/project.yml.
         versionCode = providers.gradleProperty("appVersionCode").get().toInt()
         versionName = providers.gradleProperty("appVersionName").get()
@@ -40,6 +43,8 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/LICENSE.md"
+            excludes += "/META-INF/LICENSE-notice.md"
         }
     }
     signingConfigs {
@@ -97,14 +102,6 @@ android {
         }
     }
 
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            excludes += "/META-INF/LICENSE.md"
-            excludes += "/META-INF/LICENSE-notice.md"
-        }
-    }
-
     lint {
         // Localization guard: user-facing text belongs in strings.xml.
         // (Covers XML layouts — the widget previews; Compose literals are
@@ -113,10 +110,15 @@ android {
     }
 }
 
+// Screenshot baselines are committed next to the tests (see README → Testing).
+roborazzi {
+    outputDir.set(layout.projectDirectory.dir("src/test/screenshots"))
+}
+
 composeCompiler {
     // Shared KMP domain models can't carry @Immutable (no Compose dependency
     // in shared), so they're declared stable here — makes the list-item
-    // composables skippable (AN-1).
+    // composables skippable.
     stabilityConfigurationFiles.add(
         project.layout.projectDirectory.file("compose-stability-config.conf")
     )
@@ -135,7 +137,8 @@ dependencies {
 
     // Compose UI
     implementation(libs.compose.ui.core)
-    implementation(libs.compose.ui.tooling)
+    // @Preview annotations only; the preview renderer (ui-tooling) is
+    // debugImplementation below so it stays out of release builds
     implementation(libs.compose.ui.toolingPreview)
     implementation(libs.compose.foundation)
     implementation(libs.compose.material3)
@@ -164,6 +167,9 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
 
+    // Loading skeletons; colors and Reduce Motion come from AnimatedCocktailBarTheme
+    implementation(libs.placeholder.compose)
+
     // Glance for Widgets
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
@@ -185,10 +191,22 @@ dependencies {
     testImplementation(libs.koin.test.junit4)
     testImplementation(libs.androidx.arch.core.testing)
     testImplementation(libs.robolectric)
+    // Robolectric is JUnit4-only; the vintage engine runs it on the JUnit Platform
+    testRuntimeOnly(libs.junit.vintage.engine)
+
+    // Screenshot tests (Roborazzi on Robolectric — no emulator needed)
+    testImplementation(composeBom)
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.roborazzi.core)
+    testImplementation(libs.roborazzi.compose)
+    // Accessibility Test Framework checks on Robolectric (Compose's own
+    // enableAccessibilityChecks is a no-op there; it runs in androidTest)
+    testImplementation(libs.roborazzi.accessibility.check)
 
     // Compose UI Testing
     androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.compose.ui.test.manifest)
+    androidTestImplementation(libs.compose.ui.test.junit4.accessibility)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.androidx.test.runner)

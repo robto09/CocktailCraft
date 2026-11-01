@@ -2,6 +2,9 @@ import SwiftUI
 
 struct SignUpView: View {
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
+    // 60pt header icon at the default text size, scaling with Dynamic Type
+    @ScaledMetric(relativeTo: .largeTitle) private var headerIconSize: CGFloat = 60
     @State private var name = ""
     @State private var email = ""
     @State private var password = ""
@@ -23,12 +26,12 @@ struct SignUpView: View {
                 // Header
                 VStack(spacing: 8) {
                     Image(systemName: "person.badge.plus")
-                        .font(.system(size: 60))
-                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                        .font(.system(size: headerIconSize))
+                        .foregroundColor(AppColors.primary(appearance))
 
-                    Text("Join us and discover amazing cocktails!")
+                    Text(L(\.sign_up_subtitle))
                         .font(.body)
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.textSecondary(appearance))
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 32)
@@ -37,46 +40,46 @@ struct SignUpView: View {
                 VStack(spacing: 16) {
                     // Name Field
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Full Name")
+                        Text(L(\.auth_full_name))
                             .font(.headline)
                             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                         
-                        TextField("Enter your full name", text: $name)
+                        TextField(L(\.auth_enter_full_name), text: $name)
                             .textFieldStyle(CustomTextFieldStyle())
                             .autocapitalization(.words)
-                            .accessibilityLabel("Full name")
+                            .accessibilityLabel(L(\.auth_full_name_a11y))
                             .accessibilityIdentifier("signup.nameField")
                     }
                     
                     // Email Field
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Email")
+                        Text(L(\.email))
                             .font(.headline)
                             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                         
-                        TextField("Enter your email", text: $email)
+                        TextField(L(\.auth_enter_email), text: $email)
                             .textFieldStyle(CustomTextFieldStyle())
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
-                            .accessibilityLabel("Email")
+                            .accessibilityLabel(L(\.email))
                             .accessibilityIdentifier("signup.emailField")
                     }
                     
                     // Password Field
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Password")
+                        Text(L(\.password))
                             .font(.headline)
                             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                         
                         HStack {
                             if isPasswordVisible {
-                                TextField("Enter your password", text: $password)
-                                    .accessibilityLabel("Password")
+                                TextField(L(\.auth_enter_password), text: $password)
+                                    .accessibilityLabel(L(\.password))
                                     .accessibilityIdentifier("signup.passwordField")
                             } else {
-                                SecureField("Enter your password", text: $password)
-                                    .accessibilityLabel("Password")
+                                SecureField(L(\.auth_enter_password), text: $password)
+                                    .accessibilityLabel(L(\.password))
                                     .accessibilityIdentifier("signup.passwordField")
                             }
 
@@ -84,10 +87,10 @@ struct SignUpView: View {
                                 isPasswordVisible.toggle()
                             }) {
                                 Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
-                                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                                    .foregroundColor(AppColors.textSecondary(appearance))
                                     .minimumHitTarget()
                             }
-                            .accessibilityLabel(isPasswordVisible ? "Hide password" : "Show password")
+                            .accessibilityLabel(isPasswordVisible ? L(\.hide_password) : L(\.show_password))
                             .accessibilityIdentifier("signup.togglePasswordVisibility")
                         }
                         .textFieldStyle(CustomTextFieldStyle())
@@ -102,7 +105,7 @@ struct SignUpView: View {
                 
                 // Create Account Button
                 PrimaryButton(
-                    title: String(localized: "Create Account"),
+                    title: L(\.create_account),
                     isLoading: isLoading,
                     isDisabled: !isFormValid,
                     action: {
@@ -115,20 +118,19 @@ struct SignUpView: View {
                     }
                 )
                 .padding(.horizontal)
-                .accessibilityLabel("Create Account")
+                .accessibilityLabel(L(\.create_account))
                 .accessibilityIdentifier("signup.submitButton")
                 
                 Spacer()
             }
             .background(AppColors.background(isDarkMode: isDarkMode))
-            .navigationTitle("Create Account")
-            .brandedNavigationBar()
+            .brandedNavigationBar(title: L(\.create_account))
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button(L(\.cancel)) {
                         onDismiss()
                     }
-                    .accessibilityLabel("Cancel")
+                    .accessibilityLabel(L(\.cancel))
                     .accessibilityIdentifier("signup.cancelButton")
                     .tint(.white)
                 }

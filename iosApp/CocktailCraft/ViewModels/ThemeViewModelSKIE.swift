@@ -4,21 +4,14 @@ import shared
 /**
  * iOS ViewModel wrapper for SharedThemeViewModel using pure SKIE integration.
  * State/error mirroring and observation-task lifecycle live in
- * SharedViewModelWrapper.
+ * SharedViewModelWrapper; views read `state.<field>` (including the derived
+ * `state.isDarkMode` / `state.isSystemTheme` / `state.themeModeDisplayName`).
  */
 final class ThemeViewModelSKIE: SharedViewModelWrapper<ThemeUiState> {
     // Singleton instance
     static let shared = ThemeViewModelSKIE()
 
-    // Computed properties
-    var currentThemeName: String {
-        sharedViewModel.currentThemeName
-    }
-
-    var availableThemes: [String] {
-        sharedViewModel.availableThemes
-    }
-
+    // Constant option lists (not state) from the shared ViewModel
     var availableAccentColors: [String] {
         sharedViewModel.availableAccentColors
     }
@@ -33,138 +26,52 @@ final class ThemeViewModelSKIE: SharedViewModelWrapper<ThemeUiState> {
     private init() {
         let viewModel = getSharedKoinHelper().getSharedThemeViewModel()
         self.sharedViewModel = viewModel
-        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
+        super.init(viewModel: viewModel, uiState: viewModel.uiState)
     }
 
     // No deinit: the base class cancels observation. Wraps a Koin `single`
     // whose coroutine scope must survive any one wrapper — never onCleared().
 
-    // MARK: - Public Methods (using SKIE async/await)
+    // MARK: - Public Methods
 
-    func setThemeMode(_ mode: String) async {
-        await run { try await sharedViewModel.setThemeMode(mode: mode) }
+    // Value-based setters only: a re-fired binding re-asserts, never flips.
+    // Each applies at once and saves on the shared ViewModel's scope.
+
+    func setDarkMode(_ enabled: Bool) {
+        sharedViewModel.setDarkMode(enabled: enabled)
     }
 
-    func setDarkMode(_ enabled: Bool) async {
-        await run { try await sharedViewModel.setDarkMode(enabled: enabled) }
+    func setAccentColor(_ color: String) {
+        sharedViewModel.setAccentColor(color: color)
     }
 
-    func setAccentColor(_ color: String) async {
-        await run { try await sharedViewModel.setAccentColor(color: color) }
+    func setFontSize(_ size: String) {
+        sharedViewModel.setFontSize(size: size)
     }
 
-    func setFontSize(_ size: String) async {
-        await run { try await sharedViewModel.setFontSize(size: size) }
+    func setHighContrast(_ enabled: Bool) {
+        sharedViewModel.setHighContrast(enabled: enabled)
     }
 
-    func toggleHighContrast() async {
-        await run { try await sharedViewModel.toggleHighContrast() }
+    func setReducedMotion(_ enabled: Bool) {
+        sharedViewModel.setReducedMotion(enabled: enabled)
     }
 
-    func toggleReducedMotion() async {
-        await run { try await sharedViewModel.toggleReducedMotion() }
+    func resetToDefaults() {
+        sharedViewModel.resetToDefaults()
     }
 
-    func resetToDefaults() async {
-        await run { try await sharedViewModel.resetToDefaults() }
-    }
-
-    func setFollowSystemTheme(_ enabled: Bool) async {
-        await run { try await sharedViewModel.setFollowSystemTheme(enabled: enabled) }
+    func setFollowSystemTheme(_ enabled: Bool) {
+        sharedViewModel.setFollowSystemTheme(enabled: enabled)
     }
 
     // MARK: - Synchronous Methods
 
-    func isValidThemeMode(_ mode: String) -> Bool {
-        return sharedViewModel.isValidThemeMode(mode: mode)
-    }
-
-    func isValidAccentColor(_ color: String) -> Bool {
-        return sharedViewModel.isValidAccentColor(color: color)
-    }
-
-    func isValidFontSize(_ size: String) -> Bool {
-        return sharedViewModel.isValidFontSize(size: size)
-    }
-
-    func getThemeModeDisplayName(_ mode: String) -> String {
-        return sharedViewModel.getThemeModeDisplayName(mode: mode)
-    }
-
     func getAccentColorDisplayName(_ color: String) -> String {
-        return sharedViewModel.getAccentColorDisplayName(color: color)
+        return sharedViewModel.getAccentColorDisplayName(color: color).localized()
     }
 
     func getFontSizeDisplayName(_ size: String) -> String {
-        return sharedViewModel.getFontSizeDisplayName(size: size)
-    }
-
-    func isCustomTheme() -> Bool {
-        return sharedViewModel.isCustomTheme()
-    }
-
-    func getThemePreviewColors(_ mode: String) -> [String: String] {
-        return sharedViewModel.getThemePreviewColors(mode: mode)
-    }
-
-    func systemSupportsDarkMode() -> Bool {
-        return sharedViewModel.systemSupportsDarkMode()
-    }
-
-    func clearError() {
-        sharedViewModel.clearError()
-    }
-
-    func refreshThemeSettings() {
-        sharedViewModel.refreshThemeSettings()
-    }
-
-    func exportThemeSettings() -> [String: Any] {
-        return sharedViewModel.exportThemeSettings()
-    }
-
-    func importThemeSettings(_ settings: [String: Any]) {
-        sharedViewModel.importThemeSettings(settings: settings)
-    }
-
-    // MARK: - Helper Methods for SwiftUI
-
-    func getSwiftUIColor(for colorName: String) -> Color {
-        switch colorName.lowercased() {
-        case "blue": return .blue
-        case "green": return .green
-        case "red": return .red
-        case "orange": return .orange
-        case "purple": return .purple
-        case "pink": return .pink
-        case "yellow": return .yellow
-        default: return .blue
-        }
-    }
-
-    func getFontSizeValue() -> CGFloat {
-        switch state.fontSize.lowercased() {
-        case "small": return 14.0
-        case "medium": return 16.0
-        case "large": return 18.0
-        case "xlarge": return 20.0
-        default: return 16.0
-        }
-    }
-
-    func getThemeModeIcon() -> String {
-        switch state.themeMode {
-        case .light: return "sun.max"
-        case .dark: return "moon"
-        case .system: return "gear"
-        default: return "gear"
-        }
-    }
-
-    func shouldUseDarkMode() -> Bool {
-        if state.isSystemTheme {
-            return UITraitCollection.current.userInterfaceStyle == .dark
-        }
-        return state.isDarkMode
+        return sharedViewModel.getFontSizeDisplayName(size: size).localized()
     }
 }

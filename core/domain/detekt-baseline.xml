@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>Filename:DomainPolicyTest.kt:com.cocktailcraft.domain.DomainPolicyTest.kt</ID>
+    <ID>MagicNumber:AuthInputValidator.kt:AuthInputValidator$8</ID>
+    <ID>MagicNumber:ManageReviewsUseCase.kt:ManageReviewsUseCase$5.0f</ID>
+    <ID>MatchingDeclarationName:DomainPolicyTest.kt:DeliveryPolicyTest</ID>
+    <ID>NewLineAtEndOfFile:AppConfig.kt:com.cocktailcraft.domain.config.AppConfig.kt</ID>
+    <ID>NewLineAtEndOfFile:AuthRepository.kt:com.cocktailcraft.domain.repository.AuthRepository.kt</ID>
+    <ID>NewLineAtEndOfFile:CartRepository.kt:com.cocktailcraft.domain.repository.CartRepository.kt</ID>
+    <ID>NewLineAtEndOfFile:CocktailCartItem.kt:com.cocktailcraft.domain.model.CocktailCartItem.kt</ID>
+    <ID>NewLineAtEndOfFile:CocktailIngredient.kt:com.cocktailcraft.domain.model.CocktailIngredient.kt</ID>
+    <ID>NewLineAtEndOfFile:Review.kt:com.cocktailcraft.domain.model.Review.kt</ID>
+    <ID>NewLineAtEndOfFile:User.kt:com.cocktailcraft.domain.model.User.kt</ID>
+  </CurrentIssues>
+</SmellBaseline>

@@ -1,0 +1,42 @@
+package com.cocktailcraft.domain
+
+import com.cocktailcraft.domain.config.DeliveryPolicy
+import com.cocktailcraft.domain.model.Money
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+
+class DeliveryPolicyTest {
+
+    @Test
+    fun thresholdAndFeeAreFiftyDollarsAndFiveNinetyNine() {
+        assertEquals(Money(5000), DeliveryPolicy.FREE_DELIVERY_THRESHOLD)
+        assertEquals(Money(599), DeliveryPolicy.STANDARD_FEE)
+    }
+
+    @Test
+    fun feeIsWaivedAtThresholdAndChargedBelow() {
+        // One cent either side of the threshold: no floating-point fuzz
+        assertFalse(DeliveryPolicy.isFreeDelivery(Money(4999)))
+        assertTrue(DeliveryPolicy.isFreeDelivery(Money(5000)))
+        assertTrue(DeliveryPolicy.isFreeDelivery(Money(5001)))
+        assertEquals(Money(599), DeliveryPolicy.deliveryFee(Money(1000)))
+        assertEquals(Money(599), DeliveryPolicy.deliveryFee(Money(4999)))
+        assertEquals(Money.ZERO, DeliveryPolicy.deliveryFee(Money(5000)))
+        assertEquals(Money.ZERO, DeliveryPolicy.deliveryFee(Money(7500)))
+    }
+
+    @Test
+    fun finalTotalAddsTheFeeInWholeCents() {
+        assertEquals(Money(1599), DeliveryPolicy.finalTotal(Money(1000)))
+        // 49.99 + 5.99 = 55.98 exactly, with no binary-fraction remainder
+        assertEquals(Money(5598), DeliveryPolicy.finalTotal(Money(4999)))
+        assertEquals(Money(7500), DeliveryPolicy.finalTotal(Money(7500)))
+    }
+
+    @Test
+    fun emptyCartHasTheStandardFee() {
+        assertEquals(Money(599), DeliveryPolicy.finalTotal(Money.ZERO))
+    }
+}

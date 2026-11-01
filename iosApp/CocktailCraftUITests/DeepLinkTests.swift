@@ -16,9 +16,10 @@ class DeepLinkTests: UITestSetup {
     /// set before launch, so the base class's plain `app.launch()` is skipped.
     override func setUpWithError() throws {
         continueAfterFailure = false
-        app = XCUIApplication()
-        // "11007" is TheCocktailDB's Margarita — the same fixture id the
-        // WidgetDeepLink unit tests use. Only Debug builds read this.
+        app = makeApp()
+        // "11007" is TheCocktailDB's Margarita — one of test mode's fixture
+        // cocktails, and the id the WidgetDeepLink unit tests use. Only
+        // Debug builds read this.
         app.launchEnvironment["DEEPLINK_COCKTAIL_ID"] = "11007"
         app.launch()
     }
@@ -26,8 +27,10 @@ class DeepLinkTests: UITestSetup {
     func testColdLaunchDeepLinkShowsCocktailDetail() {
         // detail.screen marks CocktailDetailView's root in every branch
         // (loading/loaded/error), so this asserts the navigation itself
-        // without depending on live network data.
-        let detailScreen = app.otherElements["detail.screen"].firstMatch
+        // without depending on live network data. The root's element type
+        // differs by branch (a ScrollView once loaded, a plain container while
+        // loading or on error), so match the identifier on any type.
+        let detailScreen = app.descendants(matching: .any)["detail.screen"].firstMatch
         XCTAssertTrue(waitForElement(detailScreen, timeout: 15.0),
                       "Deep link should push the cocktail detail screen on launch")
 

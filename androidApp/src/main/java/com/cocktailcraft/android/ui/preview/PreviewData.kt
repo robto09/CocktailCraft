@@ -3,6 +3,7 @@ package com.cocktailcraft.android.ui.preview
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.CocktailIngredient
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Review
 
 /**
@@ -27,7 +28,7 @@ internal object PreviewData {
             CocktailIngredient("Lime juice", "1 oz"),
             CocktailIngredient("Salt", "pinch")
         ),
-        price = 12.5,
+        price = Money(1250),
         stockCount = 8,
         dateAdded = 0L
     )

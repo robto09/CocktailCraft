@@ -11,17 +11,24 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
-import java.text.NumberFormat
-import java.util.Locale
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.domain.config.DeliveryPolicy
+import com.cocktailcraft.domain.model.Money
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.order_delivery_fee
+import com.cocktailcraft.resources.order_subtotal
+import com.cocktailcraft.resources.order_summary_title
+import com.cocktailcraft.resources.total
 
 /**
  * A reusable order summary card component.
@@ -36,19 +43,19 @@ import java.util.Locale
  */
 @Composable
 fun OrderSummaryCard(
-    subtotal: Double,
-    deliveryFee: Double = 5.99,
-    total: Double? = null,
+    subtotal: Money,
     modifier: Modifier = Modifier,
-    currencyFormatter: NumberFormat = NumberFormat.getCurrencyInstance(Locale.US),
+    deliveryFee: Money = DeliveryPolicy.STANDARD_FEE,
+    total: Money? = null,
+    currencyFormatter: CurrencyFormatter = rememberCurrencyFormatter(),
     showDeliveryFee: Boolean = true,
-    additionalItems: List<Pair<String, Double>>? = null
+    additionalItems: List<Pair<String, Money>>? = null
 ) {
     val calculatedTotal = total ?: (subtotal + deliveryFee)
-    
+
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = AppColors.Surface),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -58,29 +65,30 @@ fun OrderSummaryCard(
                 .padding(16.dp)
         ) {
             Text(
-                text = stringResource(R.string.order_summary_title),
+                text = stringResource(MR.strings.order_summary_title),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = AppColors.TextPrimary
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.semantics { heading() }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // Subtotal row
             SummaryRow(
-                label = stringResource(R.string.order_subtotal),
+                label = stringResource(MR.strings.order_subtotal),
                 value = currencyFormatter.format(subtotal)
             )
-            
+
             // Delivery fee row
             if (showDeliveryFee) {
                 Spacer(modifier = Modifier.height(8.dp))
                 SummaryRow(
-                    label = stringResource(R.string.order_delivery_fee),
+                    label = stringResource(MR.strings.order_delivery_fee),
                     value = currencyFormatter.format(deliveryFee)
                 )
             }
-            
+
             // Additional items
             additionalItems?.forEach { (label, value) ->
                 Spacer(modifier = Modifier.height(8.dp))
@@ -91,27 +99,29 @@ fun OrderSummaryCard(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            
-            HorizontalDivider(color = AppColors.LightGray)
-            
+
+            HorizontalDivider(color = CocktailCraftTheme.extendedColors.neutralSubtle)
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             // Total row
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics(mergeDescendants = true) {},
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = stringResource(R.string.total),
+                    text = stringResource(MR.strings.total),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AppColors.TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = currencyFormatter.format(calculatedTotal),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = AppColors.Primary
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -123,20 +133,23 @@ private fun SummaryRow(
     label: String,
     value: String
 ) {
+    // One TalkBack stop per line: "Subtotal, $25.00"
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {},
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             text = label,
             fontSize = 15.sp,
-            color = AppColors.TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = value,
             fontWeight = FontWeight.Medium,
             fontSize = 15.sp,
-            color = AppColors.TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }

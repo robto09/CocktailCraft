@@ -1,6 +1,6 @@
 package com.cocktailcraft.android.ui.components
 
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -9,9 +9,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.ui.theme.AppColors
 
 /**
  * The app's standard primary call-to-action button: brand-color container,
@@ -30,22 +31,32 @@ fun PrimaryButton(
         onClick = onClick,
         enabled = enabled && !isLoading,
         colors = ButtonDefaults.buttonColors(
-            containerColor = AppColors.Primary,
-            contentColor = Color.White,
-            disabledContainerColor = AppColors.Primary.copy(alpha = 0.5f),
-            disabledContentColor = Color.White.copy(alpha = 0.8f)
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+            disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
         ),
         shape = MaterialTheme.shapes.medium,
-        modifier = modifier.height(54.dp)
+        // Minimum, not fixed: a large font grows the button instead of
+        // clipping its label
+        modifier = modifier.heightIn(min = 54.dp)
     ) {
         if (isLoading) {
+            // The spinner replaces the label; TalkBack still hears what the
+            // (busy, disabled) button is
             CircularProgressIndicator(
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 strokeWidth = 2.dp,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier
+                    .size(24.dp)
+                    .semantics { contentDescription = text }
             )
         } else {
-            Text(text = text, style = MaterialTheme.typography.labelLarge)
+            // Bold 16sp, the size and weight of the iOS button labels
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+            )
         }
     }
 }

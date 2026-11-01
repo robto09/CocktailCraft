@@ -3,14 +3,21 @@ import shared
 
 struct ContentView: View {
     @State private var router = AppRouter()
-    @State private var cartViewModel = CartViewModelSKIE()
+    // Built once via ViewModelHolder, not on every re-render
+    @State private var cartModel = ViewModelHolder(CartViewModelSKIE.init)
+    private var cartViewModel: CartViewModelSKIE { cartModel.wrapper }
     private let themeViewModel = ThemeViewModelSKIE.shared
+    // System accessibility settings, read above the app's own overrides
+    @Environment(\.dynamicTypeSize) private var systemTypeSize
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     var body: some View {
         let themeState = themeViewModel.state
-        // Publish accent + high contrast into AppColors before children
-        // render (mirrors Android's AppColors globals; see applyAppearance).
-        let _ = Self.applyAppearance(themeState)
+        let appearance = AppAppearance(
+            isDarkMode: themeState.isDarkMode,
+            accentName: themeState.accentColor,
+            isHighContrast: themeState.isHighContrast
+        )
 
         ZStack {
             TabView(selection: $router.selectedTab) {
@@ -20,7 +27,7 @@ struct ContentView: View {
                     HomeViewSKIE()
                 }
                 .tabItem {
-                    Label("Home", systemImage: "house.fill")
+                    Label(L(\.home), systemImage: "house.fill")
                 }
                 .tag(AppRouter.Tab.home)
                 .brandedTabBar()
@@ -30,7 +37,7 @@ struct ContentView: View {
                     CartView()
                 }
                 .tabItem {
-                    Label("Cart", systemImage: "cart.fill")
+                    Label(L(\.cart), systemImage: "cart.fill")
                 }
                 .badge(Int(cartViewModel.state.itemCount))
                 .tag(AppRouter.Tab.cart)
@@ -41,7 +48,7 @@ struct ContentView: View {
                     FavoritesView()
                 }
                 .tabItem {
-                    Label("Favorites", systemImage: "heart.fill")
+                    Label(L(\.favorites), systemImage: "heart.fill")
                 }
                 .tag(AppRouter.Tab.favorites)
                 .brandedTabBar()
@@ -51,7 +58,7 @@ struct ContentView: View {
                     OrderListView()
                 }
                 .tabItem {
-                    Label("Orders", systemImage: "list.bullet")
+                    Label(L(\.orders), systemImage: "list.bullet")
                 }
                 .tag(AppRouter.Tab.orders)
                 .brandedTabBar()
@@ -61,17 +68,13 @@ struct ContentView: View {
                     ProfileView()
                 }
                 .tabItem {
-                    Label("Profile", systemImage: "person.fill")
+                    Label(L(\.profile), systemImage: "person.fill")
                 }
                 .tag(AppRouter.Tab.profile)
                 .brandedTabBar()
             }
             // Selected tab in the brand color, matching the Android bottom nav
-            .tint(AppColors.primary(isDarkMode: themeState.isDarkMode))
-            // Re-identify the tree when accent/contrast change so every view
-            // re-reads the AppColors statics. These change only from the
-            // Settings sheet, so the (rare) navigation-state reset is fine.
-            .id("appearance-\(themeState.accentColor)-\(themeState.isHighContrast)")
+            .tint(AppColors.primary(appearance))
 
             // Offline Banner
             VStack {
@@ -87,7 +90,7 @@ struct ContentView: View {
             }
         }
         #if DEBUG
-        // UI-test hook (IO-7): XCUITest cannot deliver a custom-scheme URL
+        // UI-test hook: XCUITest cannot deliver a custom-scheme URL
         // to a cold-launching app reliably, so DeepLinkTests injects the
         // widget deep link's cocktail id through the launch environment and
         // this drives the same openCocktailDetail path onOpenURL uses.
@@ -101,35 +104,40 @@ struct ContentView: View {
         #endif
         .environment(cartViewModel)
         .environment(router)
-        .environment(\.isDarkMode, themeState.isDarkMode)
+        // Theme, accent and contrast for every AppColors lookup below; a
+        // change re-renders the views that read them, in place (navigation
+        // stacks and screen ViewModels survive it)
+        .environment(\.appearance, appearance)
         .preferredColorScheme(themeState.isSystemTheme ? nil : (themeState.isDarkMode ? .dark : .light))
-        // In-app Font Size setting (Dynamic Type override; .large = default)
-        .dynamicTypeSize(Self.dynamicTypeSize(for: themeState.fontSize))
-        // Reduce Motion: strip implicit animations app-wide
+        // In-app Font Size setting, applied relative to the system Dynamic
+        // Type size so accessibility sizes keep working
+        .dynamicTypeSize(Self.dynamicTypeSize(for: themeState.fontSize, system: systemTypeSize))
+        // Reduce Motion (in-app setting or the system one): strip
+        // animations app-wide
         .transaction { transaction in
-            if themeViewModel.state.isReducedMotion {
+            if themeViewModel.state.isReducedMotion || systemReduceMotion {
                 transaction.animation = nil
             }
         }
     }
 
-    /// Mirrors the shared theme state into AppColors' appearance statics.
-    /// Runs at the top of body, before any child view resolves a color.
-    @discardableResult
-    private static func applyAppearance(_ state: ThemeUiState) -> Bool {
-        AppColors.accentName = state.accentColor
-        AppColors.isHighContrast = state.isHighContrast
-        return true
-    }
-
-    /// Maps the shared font-size setting onto a Dynamic Type size.
-    private static func dynamicTypeSize(for fontSize: String) -> DynamicTypeSize {
+    /// Maps the shared font-size setting onto a Dynamic Type size, as steps
+    /// from the user's system size — like Android, where the in-app setting
+    /// multiplies the system font scale. "Medium" (the default) is the system
+    /// size itself, so the system accessibility sizes (up to AX5) apply;
+    /// with the default system size (.large) the other settings land on
+    /// .small / .xLarge / .xxLarge as before.
+    static func dynamicTypeSize(for fontSize: String, system: DynamicTypeSize) -> DynamicTypeSize {
+        let steps: Int
         switch fontSize.lowercased() {
-        case "small": return .small
-        case "large": return .xLarge
-        case "xlarge": return .xxLarge
-        default: return .large
+        case "small": steps = -2
+        case "large": steps = 1
+        case "xlarge": steps = 2
+        default: steps = 0
         }
+        let sizes = DynamicTypeSize.allCases
+        guard let index = sizes.firstIndex(of: system) else { return system }
+        return sizes[min(max(index + steps, 0), sizes.count - 1)]
     }
 }
 

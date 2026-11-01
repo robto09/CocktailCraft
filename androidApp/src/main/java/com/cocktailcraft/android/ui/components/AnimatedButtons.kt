@@ -4,16 +4,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -21,64 +14,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
 import com.cocktailcraft.android.ui.animation.AnimationUtils
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.LocalReducedMotion
 import com.cocktailcraft.android.util.HapticHandler
 import com.cocktailcraft.android.util.rememberHapticHandler
-
-/**
- * An animated button that scales when pressed
- */
-@Composable
-fun AnimatedButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
-    content: @Composable () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(
-            dampingRatio = AnimationUtils.SPRING_DAMPENING_MEDIUM_BOUNCY,
-            stiffness = AnimationUtils.SPRING_STIFFNESS_MEDIUM
-        ),
-        label = "button_scale"
-    )
-    
-    Button(
-        onClick = onClick,
-        modifier = modifier.scale(scale),
-        enabled = enabled,
-        contentPadding = contentPadding,
-        interactionSource = interactionSource
-    ) {
-        content()
-    }
-}
-
-/**
- * An animated text button with scale animation
- */
-@Composable
-fun AnimatedTextButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true
-) {
-    AnimatedButton(
-        onClick = onClick,
-        modifier = modifier,
-        enabled = enabled
-    ) {
-        Text(text = text)
-    }
-}
 
 /**
  * An animated icon button with scale and rotation effects.
@@ -99,7 +38,7 @@ fun AnimatedIconButton(
     icon: ImageVector,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    tint: Color = AppColors.Primary,
+    tint: Color = MaterialTheme.colorScheme.primary,
     enabled: Boolean = true,
     enableHapticFeedback: Boolean = false,
     hapticHandler: HapticHandler? = null
@@ -109,7 +48,7 @@ fun AnimatedIconButton(
     val defaultHapticHandler = if (enableHapticFeedback) rememberHapticHandler() else null
 
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.85f else 1f,
+        targetValue = if (isPressed && !LocalReducedMotion.current) 0.85f else 1f,
         animationSpec = spring(
             dampingRatio = AnimationUtils.SPRING_DAMPENING_MEDIUM_BOUNCY,
             stiffness = AnimationUtils.SPRING_STIFFNESS_MEDIUM
@@ -132,43 +71,8 @@ fun AnimatedIconButton(
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = if (enabled) tint else AppColors.Gray,
+            tint = if (enabled) tint else MaterialTheme.colorScheme.outline,
             modifier = Modifier.scale(scale)
-        )
-    }
-}
-
-/**
- * An animated floating action button with scale effect
- */
-@Composable
-fun AnimatedFloatingActionButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    icon: ImageVector = Icons.Default.Add,
-    contentDescription: String? = null
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.92f else 1f,
-        animationSpec = spring(
-            dampingRatio = AnimationUtils.SPRING_DAMPENING_MEDIUM_BOUNCY,
-            stiffness = AnimationUtils.SPRING_STIFFNESS_MEDIUM
-        ),
-        label = "fab_scale"
-    )
-    
-    FloatingActionButton(
-        onClick = onClick,
-        modifier = modifier.scale(scale),
-        interactionSource = interactionSource
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            modifier = Modifier.size(24.dp)
         )
     }
 }

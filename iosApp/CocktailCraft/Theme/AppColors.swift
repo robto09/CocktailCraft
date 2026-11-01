@@ -2,8 +2,9 @@ import SwiftUI
 import shared
 
 /// App color scheme, mapped 1:1 from the cross-platform design tokens in
-/// shared/designsystem/DesignTokens.kt (ColorTokens) — the single source of
-/// truth for BOTH iOS and Android, so the palettes can never drift.
+/// core/designsystem/src/commonMain/kotlin/com/cocktailcraft/designsystem/DesignTokens.kt
+/// (ColorTokens) — the single source of truth for BOTH iOS and Android, so the
+/// palettes can never drift.
 ///
 /// The widget extension cannot link the shared framework, so it keeps its own
 /// mirror of the two brand colors in BrandColorComponents
@@ -39,18 +40,24 @@ struct AppColors {
     static let gray = Color(token: ColorTokens.shared.gray)         // Secondary text
     static let darkGray = Color(token: ColorTokens.shared.darkGray) // Stronger secondary text
     static let lightGray = Color(token: ColorTokens.shared.lightGray) // Backgrounds
+    static let subtleDark = Color(token: ColorTokens.shared.subtleDark) // lightGray's role on dark
     static let chipBackground = Color(token: ColorTokens.shared.chipBackground) // Brown for category chips
-
-    // MARK: - User appearance settings (accent + high contrast)
-    // Written only by ContentView from the shared theme state, mirroring
-    // Android's AppColors globals. ContentView re-identifies the view tree
-    // when either changes, so no view can render a stale value.
-    static var accentName: String = AccentColorTokens.shared.DEFAULT
-    static var isHighContrast: Bool = false
+    static let surfaceRaisedLight = Color(token: ColorTokens.shared.surfaceRaisedLight)
+    static let surfaceRaisedDark = Color(token: ColorTokens.shared.surfaceRaisedDark)
 
     // MARK: - Dynamic Colors (controlled by app theme preference)
+    // Colors that depend on the accent or high-contrast settings take the
+    // whole AppAppearance (@Environment(\.appearance)); the rest only need
+    // isDarkMode (@Environment(\.isDarkMode)).
+
     // Primary follows the user-selected accent ("coral" = brand default)
-    static func primary(isDarkMode: Bool) -> Color {
+    static func primary(_ appearance: AppAppearance) -> Color {
+        primary(isDarkMode: appearance.isDarkMode, accentName: appearance.accentName)
+    }
+
+    /// The accent's light or dark variant regardless of the theme — e.g. the
+    /// theme switch's thumb, which previews the mode it toggles to.
+    static func primary(isDarkMode: Bool, accentName: String) -> Color {
         Color(token: isDarkMode
             ? AccentColorTokens.shared.dark(name: accentName)
             : AccentColorTokens.shared.light(name: accentName))
@@ -68,14 +75,47 @@ struct AppColors {
         isDarkMode ? surfaceDark : surfaceLight
     }
 
+    /// Content on a primary fill: white on the light coral, black on the
+    /// lighter dark-theme coral (white there is ~2.3:1), matching Android's
+    /// onPrimary.
+    static func onPrimary(isDarkMode: Bool) -> Color {
+        isDarkMode ? .black : .white
+    }
+
+    /// Navigation bar background: brand primary in light, surface in dark,
+    /// matching Android's extendedColors.topBar.
+    static func topBar(_ appearance: AppAppearance) -> Color {
+        appearance.isDarkMode
+            ? surfaceDark
+            : primary(isDarkMode: false, accentName: appearance.accentName)
+    }
+
+    /// Controls raised on a surface (fields, unselected chips).
+    static func surfaceRaised(isDarkMode: Bool) -> Color {
+        isDarkMode ? surfaceRaisedDark : surfaceRaisedLight
+    }
+
+    /// Dividers, unfocused borders, empty segments: lightGray, or its dark
+    /// counterpart so it doesn't glare on dark surfaces.
+    static func neutralSubtle(isDarkMode: Bool) -> Color {
+        isDarkMode ? subtleDark : lightGray
+    }
+
+    /// Fill of the detail-screen attribute chips: the shared chip color at
+    /// 20%, as Android's tertiary.copy(alpha = 0.2f).
+    static func chipFill(isDarkMode: Bool) -> Color {
+        Color(token: isDarkMode ? ColorTokens.shared.chipBackgroundDark : ColorTokens.shared.chipBackground)
+            .opacity(0.2)
+    }
+
     static func textPrimary(isDarkMode: Bool) -> Color {
         isDarkMode ? textPrimaryDark : textPrimaryLight
     }
 
     // High contrast pushes secondary text further from the background,
     // matching Android's AppColors.TextSecondary behavior.
-    static func textSecondary(isDarkMode: Bool) -> Color {
-        switch (isHighContrast, isDarkMode) {
+    static func textSecondary(_ appearance: AppAppearance) -> Color {
+        switch (appearance.isHighContrast, appearance.isDarkMode) {
         case (true, true): return lightGray
         case (true, false): return darkGray
         case (false, true): return textSecondaryDark
@@ -87,8 +127,11 @@ struct AppColors {
     // are gone on purpose: they followed the SYSTEM appearance while the
     // rest of the app follows the app-controlled theme
     // (ThemeViewModelSKIE), so any call site could visually desync from
-    // the chosen theme. Always use the isDarkMode:-parameterized functions
-    // above with @Environment(\.isDarkMode).
+    // the chosen theme. Always use the functions above with
+    // @Environment(\.isDarkMode) / @Environment(\.appearance). The accent
+    // and high-contrast statics went the same way: written during
+    // ContentView's body, they forced an .id() rebuild of the whole tree
+    // (losing navigation state) on every change.
 }
 
 // MARK: - Color Extensions

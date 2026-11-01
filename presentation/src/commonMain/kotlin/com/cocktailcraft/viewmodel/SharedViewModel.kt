@@ -1,0 +1,181 @@
+package com.cocktailcraft.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import co.touchlab.kermit.Logger
+import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.error_generic
+import com.cocktailcraft.resources.undo
+import com.cocktailcraft.util.ErrorHandler
+import dev.icerock.moko.resources.StringResource
+import dev.icerock.moko.resources.desc.StringDesc
+import dev.icerock.moko.resources.desc.desc
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+/**
+ * Base ViewModel class for multiplatform ViewModels, on top of the official
+ * multiplatform androidx [ViewModel] (Main-dispatched viewModelScope, cleared
+ * automatically when owned by a ViewModelStore).
+ * Dependencies are constructor-injected so subclasses can be built without a Koin container.
+ *
+ * Actions run on viewModelScope, never in the caller's coroutine, so a
+ * screen that goes away (a Compose scope left, a Swift Task cancelled) can
+ * not abort a write or a refresh halfway:
+ *  - most are plain functions that launch their work and report back
+ *    through uiState, [error] and [events];
+ *  - an action stays `suspend` only when its caller has to wait for it — a
+ *    result to branch on (dismiss a sheet, navigate, toast an outcome) or
+ *    the end of a pull-to-refresh. It runs through [runInViewModelScope],
+ *    so cancelling the caller only stops the waiting, and it is
+ *    `@Throws(Exception::class)`: Swift calls it, and without the
+ *    annotation an exception escaping to Swift terminates the app.
+ *
+ * Koin `single`-scoped subclasses are never cleared (nothing routes them
+ * through a ViewModelStore), so never put teardown in onCleared() expecting
+ * it to run for a singleton (see PresentationModule's scoping notes).
+ */
+abstract class SharedViewModel : ViewModel() {
+
+    // The single error channel, observed by both platforms for error UI.
+    // A consumable StateFlow (survives a moment with no collector) that the
+    // UI clears with clearError() once shown. Every load/action also clears
+    // it when it starts, so a failure never outlives the next attempt — the
+    // Koin-single ViewModels would otherwise carry one failure for the whole
+    // session. Everything else a screen renders lives in the subclass's
+    // single uiState — there is deliberately no parallel isLoading flow here.
+    private val _error = MutableStateFlow<ErrorHandler.UserFriendlyError?>(null)
+    val error: StateFlow<ErrorHandler.UserFriendlyError?> = _error.asStateFlow()
+
+    // One-off outcomes for toasts/snackbars (see [UiEvent]). Broadcast with
+    // no replay: whoever is collecting when the event fires shows it, and an
+    // event nobody is listening for is dropped rather than replayed onto a
+    // later screen. Anything that must not be missed belongs in uiState or
+    // [error] instead. The small buffer keeps [sendEvent] non-suspending.
+    private val _events = MutableSharedFlow<UiEvent>(
+        extraBufferCapacity = 8,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val events: SharedFlow<UiEvent> = _events.asSharedFlow()
+
+    /** Announce a one-off outcome on [events]. */
+    protected fun sendEvent(event: UiEvent) {
+        _events.tryEmit(event)
+    }
+
+    /**
+     * An Undo button for a toast: [undo] runs once, on viewModelScope, when
+     * the user taps it — so a Koin-single ViewModel restores the item even
+     * if the screen that showed the toast is gone by then.
+     */
+    protected fun undoAction(undo: suspend () -> Unit): UiEventAction =
+        UiEventAction(MR.strings.undo.desc()) {
+            viewModelScope.launch { undo() }
+        }
+
+    /**
+     * Handle an exception and convert it to a user-friendly error.
+     * [defaultMessage] is a shared string, resolved for the user's locale by
+     * the platform UI.
+     */
+    protected open fun handleException(
+        exception: Throwable,
+        defaultMessage: StringResource = MR.strings.error_generic,
+        recoveryAction: ErrorHandler.RecoveryAction? = null
+    ) {
+        // Cancellation is normal teardown (screen dismissed / scope cleared
+        // mid-flight), never a user-facing failure. Without this guard a
+        // deep link that dismisses a sheet mid-load puts a
+        // "StandaloneCoroutine was cancelled" alert over the new screen.
+        if (exception is CancellationException) {
+            Logger.d { "Cancelled in ${this::class.simpleName}" }
+            return
+        }
+
+        val error = ErrorHandler.getErrorFromException(
+            exception = exception,
+            defaultMessage = defaultMessage.desc(),
+            recoveryAction = recoveryAction
+        )
+        _error.value = error
+
+        // Release builds keep Warn and up: only the exception type and the
+        // error code reach them. The message (a Ktor one embeds the request
+        // URL, search terms included) and the stack trace are debug-only.
+        Logger.w { "Error in ${this::class.simpleName}: ${exception::class.simpleName} (${error.errorCode})" }
+        Logger.d(exception) { "Error detail: ${exception.message}" }
+    }
+
+    /**
+     * Set a user-friendly error directly. [message] is usually a shared
+     * string (see the StringResource overload) but may be formatted or raw.
+     */
+    protected open fun setError(
+        title: StringResource,
+        message: StringDesc,
+        category: ErrorHandler.ErrorCategory = ErrorHandler.ErrorCategory.UNKNOWN,
+        recoveryAction: ErrorHandler.RecoveryAction? = null
+    ) {
+        _error.value = ErrorHandler.UserFriendlyError(
+            title = title.desc(),
+            message = message,
+            category = category,
+            recoveryAction = recoveryAction
+        )
+    }
+
+    protected fun setError(
+        title: StringResource,
+        message: StringResource,
+        category: ErrorHandler.ErrorCategory = ErrorHandler.ErrorCategory.UNKNOWN,
+        recoveryAction: ErrorHandler.RecoveryAction? = null
+    ) = setError(title, message.desc(), category, recoveryAction)
+
+    /**
+     * Clear the current error. The UI calls this once the error is shown;
+     * subclasses call it at the start of every load/action.
+     */
+    fun clearError() {
+        _error.value = null
+    }
+
+    /**
+     * Unwrap a [Result], reporting a [Result.Error] to the error channel
+     * instead of silently discarding it. The copy comes from the same
+     * mapping as [handleException] (ErrorHandler.errorFromResult): a
+     * lockout's countdown copy, else the shared copy for a transport
+     * failure, else [fallbackMessage]. The raw message is only logged.
+     */
+    protected fun <T> Result<T>.getOrReport(
+        default: T,
+        fallbackMessage: StringResource = MR.strings.error_generic,
+        recoveryAction: ErrorHandler.RecoveryAction? = null
+    ): T = when (this) {
+        is Result.Success -> data
+
+        is Result.Error -> {
+            _error.value = ErrorHandler.errorFromResult(this, fallbackMessage.desc(), recoveryAction)
+            Logger.w { "Error in ${this@SharedViewModel::class.simpleName}: $code" }
+            Logger.d { "Error detail: $message" }
+            default
+        }
+    }
+
+    /**
+     * Runs [block] on viewModelScope and waits for its result: the body of
+     * every `suspend` action (see the class notes). Cancelling the caller
+     * only stops it waiting; the work itself finishes, and is cancelled only
+     * with the ViewModel.
+     */
+    protected suspend fun <T> runInViewModelScope(block: suspend () -> T): T =
+        viewModelScope.async { block() }.await()
+}

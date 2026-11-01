@@ -1,27 +1,24 @@
 package com.cocktailcraft.android.ui.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -29,7 +26,6 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,39 +37,48 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
+import com.cocktailcraft.android.ui.theme.LocalReducedMotion
 
 /**
  * A custom animated switch for toggling between light and dark themes.
+ * Reduce Motion swaps the bouncy thumb/icon springs for instant changes.
  *
  * @param isDarkMode Whether the dark mode is currently enabled
- * @param onToggle Callback when the switch is toggled
+ * @param onToggle Callback when the switch is toggled; null when a parent
+ * (e.g. [AnimatedThemeToggleRow]) owns the toggle and this is visual only
  * @param modifier Optional modifier for the switch
  * @param enabled Whether the switch is enabled
  */
 @Composable
 fun AnimatedThemeSwitch(
     isDarkMode: Boolean,
-    onToggle: () -> Unit,
+    onToggle: (() -> Unit)?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
     val transition = updateTransition(targetState = isDarkMode, label = "theme_switch_transition")
+    val reducedMotion = LocalReducedMotion.current
 
-    // Animate the track color
+    // Animate the track color; the off track stays subtle on dark surfaces
+    val offTrackColor = if (CocktailCraftTheme.isDarkTheme) {
+        CocktailCraftTheme.extendedColors.neutralSubtle
+    } else {
+        Color(0xFFE4E4E4)
+    }
     val trackColor by animateColorAsState(
-        targetValue = if (isDarkMode) Color(0xFF3C4043) else Color(0xFFE4E4E4),
-        animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
+        targetValue = if (isDarkMode) Color(0xFF3C4043) else offTrackColor,
+        animationSpec = if (reducedMotion) snap() else tween(durationMillis = 300, easing = LinearOutSlowInEasing),
         label = "track_color"
     )
 
     // Animate the thumb color
     val thumbColor by animateColorAsState(
-        targetValue = AppColors.Primary, // follows the selected accent
-        animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
+        targetValue = MaterialTheme.colorScheme.primary, // follows the selected accent
+        animationSpec = if (reducedMotion) snap() else tween(durationMillis = 300, easing = LinearOutSlowInEasing),
         label = "thumb_color"
     )
 
@@ -81,10 +86,14 @@ fun AnimatedThemeSwitch(
     val thumbPosition by transition.animateFloat(
         label = "thumb_position",
         transitionSpec = {
-            spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow
-            )
+            if (reducedMotion) {
+                snap()
+            } else {
+                spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            }
         }
     ) { if (it) 1f else 0f }
 
@@ -92,10 +101,14 @@ fun AnimatedThemeSwitch(
     val iconScale by transition.animateFloat(
         label = "icon_scale",
         transitionSpec = {
-            spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessMedium
-            )
+            if (reducedMotion) {
+                snap()
+            } else {
+                spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMedium
+                )
+            }
         }
     ) { if (it) 1f else 0.7f }
 
@@ -105,11 +118,20 @@ fun AnimatedThemeSwitch(
         modifier = modifier
             .clip(RoundedCornerShape(24.dp))
             .background(trackColor)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                enabled = enabled,
-                onClick = onToggle
+            .then(
+                if (onToggle != null) {
+                    // Standalone: a real switch for TalkBack (role + on/off state)
+                    Modifier.toggleable(
+                        value = isDarkMode,
+                        interactionSource = interactionSource,
+                        indication = null,
+                        enabled = enabled,
+                        role = Role.Switch,
+                        onValueChange = { onToggle() }
+                    )
+                } else {
+                    Modifier
+                }
             )
             .padding(4.dp)
             .height(32.dp)
@@ -119,15 +141,18 @@ fun AnimatedThemeSwitch(
         Box(
             modifier = Modifier
                 .size(24.dp)
-                .offset(x = (36 * thumbPosition).dp)
+                // Lambda overload: the animated offset moves the thumb in the
+                // layout phase instead of recomposing every frame
+                .offset { IntOffset(x = (36 * thumbPosition).dp.roundToPx(), y = 0) }
                 .clip(CircleShape)
                 .background(thumbColor)
                 .align(Alignment.CenterStart),
             contentAlignment = Alignment.Center
         ) {
+            // Decorative: the switch state is exposed by the toggle semantics
             Icon(
                 imageVector = if (isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
-                contentDescription = if (isDarkMode) stringResource(R.string.dark_mode) else stringResource(R.string.profile_light_mode),
+                contentDescription = null,
                 tint = Color.White,
                 modifier = Modifier
                     .size(16.dp)
@@ -138,7 +163,9 @@ fun AnimatedThemeSwitch(
 }
 
 /**
- * A custom animated theme toggle row with icon, text, and switch.
+ * A custom animated theme toggle row with icon, text, and switch. The whole
+ * row is a single switch for TalkBack ("Dark Mode, Off, switch"), so the
+ * title, subtitle and state are read together and there is one focus stop.
  */
 @Composable
 fun AnimatedThemeToggleRow(
@@ -154,14 +181,19 @@ fun AnimatedThemeToggleRow(
 
     Row(
         modifier = modifier
-            .clickable(enabled = enabled) { onToggle() }
+            .toggleable(
+                value = isChecked,
+                enabled = enabled,
+                role = Role.Switch,
+                onValueChange = { onToggle() }
+            )
             .padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = AppColors.TextPrimary,
+            tint = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier
                 .size(24.dp)
                 .alpha(alpha)
@@ -177,19 +209,19 @@ fun AnimatedThemeToggleRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
-                color = AppColors.TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = AppColors.TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
         AnimatedThemeSwitch(
             isDarkMode = isChecked,
-            onToggle = onToggle,
+            onToggle = null,
             enabled = enabled
         )
     }

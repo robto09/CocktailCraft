@@ -2,6 +2,9 @@ import SwiftUI
 
 struct EditProfileView: View {
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
+    // 60pt header icon at the default text size, scaling with Dynamic Type
+    @ScaledMetric(relativeTo: .largeTitle) private var headerIconSize: CGFloat = 60
     @State private var name: String
     @State private var email: String
     @State private var isLoading = false
@@ -34,12 +37,12 @@ struct EditProfileView: View {
                 // Header
                 VStack(spacing: 8) {
                     Image(systemName: "person.crop.circle.badge.checkmark")
-                        .font(.system(size: 60))
-                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                        .font(.system(size: headerIconSize))
+                        .foregroundColor(AppColors.primary(appearance))
 
-                    Text("Update your name and email address.")
+                    Text(L(\.edit_profile_subtitle))
                         .font(.body)
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.textSecondary(appearance))
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 32)
@@ -47,28 +50,28 @@ struct EditProfileView: View {
                 // Form
                 VStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Full Name")
+                        Text(L(\.auth_full_name))
                             .font(.headline)
                             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
-                        TextField("Enter your full name", text: $name)
+                        TextField(L(\.auth_enter_full_name), text: $name)
                             .textFieldStyle(CustomTextFieldStyle())
                             .autocapitalization(.words)
-                            .accessibilityLabel("Full name")
+                            .accessibilityLabel(L(\.auth_full_name_a11y))
                             .accessibilityIdentifier("editProfile.nameField")
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Email")
+                        Text(L(\.email))
                             .font(.headline)
                             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
 
-                        TextField("Enter your email", text: $email)
+                        TextField(L(\.auth_enter_email), text: $email)
                             .textFieldStyle(CustomTextFieldStyle())
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
-                            .accessibilityLabel("Email address")
+                            .accessibilityLabel(L(\.auth_email_address_a11y))
                             .accessibilityIdentifier("editProfile.emailField")
                     }
                 }
@@ -76,7 +79,7 @@ struct EditProfileView: View {
 
                 // Save Button
                 PrimaryButton(
-                    title: String(localized: "Save Changes"),
+                    title: L(\.edit_profile_save_changes),
                     isLoading: isLoading,
                     isDisabled: !isFormValid,
                     action: {
@@ -89,20 +92,19 @@ struct EditProfileView: View {
                     }
                 )
                 .padding(.horizontal)
-                .accessibilityLabel("Save changes")
+                .accessibilityLabel(L(\.edit_profile_save_changes_a11y))
                 .accessibilityIdentifier("editProfile.saveButton")
 
                 Spacer()
             }
             .background(AppColors.background(isDarkMode: isDarkMode))
-            .navigationTitle("Edit Profile")
-            .brandedNavigationBar()
+            .brandedNavigationBar(title: L(\.edit_profile))
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button(L(\.cancel)) {
                         onDismiss()
                     }
-                    .accessibilityLabel("Cancel")
+                    .accessibilityLabel(L(\.cancel))
                     .accessibilityIdentifier("editProfile.cancelButton")
                     .tint(.white)
                 }

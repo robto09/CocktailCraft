@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Count-dependent copy (see strings.xml in this folder for conventions).
+    Every language must provide the quantities its plural rules need;
+    English uses "one" and "other". The count is also format argument %1$d.
+-->
+<resources>
+    <plural name="review_count">
+        <item quantity="one">(%1$d review)</item>
+        <item quantity="other">(%1$d reviews)</item>
+    </plural>
+    <plural name="cart_badge_a11y">
+        <item quantity="one">%1$d item in cart</item>
+        <item quantity="other">%1$d items in cart</item>
+    </plural>
+    <!-- Reorder from the order detail screen; the count is units added -->
+    <plural name="order_reorder_added">
+        <item quantity="one">Added %1$d item to your cart</item>
+        <item quantity="other">Added %1$d items to your cart</item>
+    </plural>
+    <!-- Sign-in lockout (AuthRepositoryImpl); the count is the wait, rounded up -->
+    <plural name="error_sign_in_locked_out_seconds">
+        <item quantity="one">Too many failed attempts. Try again in %1$d second.</item>
+        <item quantity="other">Too many failed attempts. Try again in %1$d seconds.</item>
+    </plural>
+    <plural name="error_sign_in_locked_out_minutes">
+        <item quantity="one">Too many failed attempts. Try again in %1$d minute.</item>
+        <item quantity="other">Too many failed attempts. Try again in %1$d minutes.</item>
+    </plural>
+</resources>

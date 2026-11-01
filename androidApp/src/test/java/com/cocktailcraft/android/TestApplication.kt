@@ -1,11 +1,10 @@
 package com.cocktailcraft.android
 
 import android.app.Application
-import com.cocktailcraft.di.dataModule
-import com.cocktailcraft.di.domainModule
+import com.cocktailcraft.di.appModule
+import io.mockk.MockKAnnotations
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
-import io.mockk.MockKAnnotations
 
 /**
  * Test Application class for unit tests.
@@ -14,12 +13,14 @@ import io.mockk.MockKAnnotations
 class TestApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        
+
         startKoin {
             androidContext(this@TestApplication)
-            modules(dataModule, domainModule)
+            // The shared graph minus platformModule() (androidApp sees the
+            // data layer only through :shared's appModule)
+            modules(appModule)
         }
-        
+
         MockKAnnotations.init(this)
     }
 }

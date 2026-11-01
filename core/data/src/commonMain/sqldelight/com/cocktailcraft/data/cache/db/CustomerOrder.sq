@@ -1,0 +1,106 @@
+-- Schema changes need a migration: add src/commonMain/sqldelight/migrations/<N>.sqm
+-- (N = current version, starting at 1) and regenerate the snapshot with
+-- `./gradlew :core:data:generateCommonMainCocktailCraftDatabaseSchema`.
+--
+-- Placed orders (OrderRepositoryImpl): one customer_order row per Order and
+-- one customer_order_item row per OrderItem.
+--
+--   customer_order.owner_id       who placed it: the signed-in user's id,
+--                                 or "guest" while signed out (see
+--                                 UserDataOwnership.kt; "" for rows not
+--                                 assigned yet after an upgrade). Added in
+--                                 version 7 (migrations/6.sqm), as the last
+--                                 column, since SQLite appends added columns
+--   customer_order.position       placement order (1-based, increasing);
+--                                 orders list in this order
+--   customer_order.total_cents    items + delivery fee, in whole US cents
+--   customer_order_item.position  the item's index within its order
+--   customer_order_item.cocktail_id
+--                                 the ordered cocktail, for Reorder; NULL
+--                                 for items of orders placed before
+--                                 version 5, which didn't record it
+--   customer_order_item.price_cents
+--                                 unit price at checkout, in whole US cents
+--
+-- Money columns held REAL dollars until version 5 (migrations/4.sqm).
+--
+-- Foreign keys are not enforced (neither platform driver turns on
+-- PRAGMA foreign_keys), so deleting an order deletes its items explicitly in
+-- the same transaction; the REFERENCES clause documents the relationship.
+CREATE TABLE customer_order (
+    id TEXT NOT NULL PRIMARY KEY,
+    date TEXT NOT NULL,
+    total_cents INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    owner_id TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX customer_order_owner ON customer_order(owner_id, position);
+
+CREATE TABLE customer_order_item (
+    order_id TEXT NOT NULL REFERENCES customer_order(id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    cocktail_id TEXT,
+    name TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    price_cents INTEGER NOT NULL,
+    PRIMARY KEY (order_id, position)
+);
+
+-- One row per item (a single row with NULL item columns for an order without
+-- items). Joining both tables means observers of this query are notified
+-- when either table changes.
+selectAllWithItems:
+SELECT o.id, o.date, o.total_cents, o.status,
+       i.cocktail_id AS item_cocktail_id, i.name AS item_name,
+       i.quantity AS item_quantity, i.price_cents AS item_price_cents
+FROM customer_order o
+LEFT JOIN customer_order_item i ON i.order_id = o.id
+WHERE o.owner_id = :ownerId
+ORDER BY o.position, i.position;
+
+selectByIdWithItems:
+SELECT o.id, o.date, o.total_cents, o.status,
+       i.cocktail_id AS item_cocktail_id, i.name AS item_name,
+       i.quantity AS item_quantity, i.price_cents AS item_price_cents
+FROM customer_order o
+LEFT JOIN customer_order_item i ON i.order_id = o.id
+WHERE o.owner_id = :ownerId AND o.id = :id
+ORDER BY i.position;
+
+selectStatus:
+SELECT status FROM customer_order WHERE owner_id = :ownerId AND id = :id;
+
+-- Whoever placed it (order ids are UUIDs, unique across owners)
+exists:
+SELECT COUNT(*) FROM customer_order WHERE id = ?;
+
+insertOrder:
+INSERT INTO customer_order(id, date, total_cents, status, position, owner_id)
+VALUES (:id, :date, :totalCents, :status, (SELECT COALESCE(MAX(position), 0) + 1 FROM customer_order), :ownerId);
+
+insertItem:
+INSERT INTO customer_order_item(order_id, position, cocktail_id, name, quantity, price_cents)
+VALUES (?, ?, ?, ?, ?, ?);
+
+updateStatus:
+UPDATE customer_order SET status = :status WHERE owner_id = :ownerId AND id = :id;
+
+deleteItems:
+DELETE FROM customer_order_item
+WHERE order_id = :id AND order_id IN (SELECT id FROM customer_order WHERE owner_id = :ownerId);
+
+deleteOrder:
+DELETE FROM customer_order WHERE owner_id = :ownerId AND id = :id;
+
+-- Assigns orders left unassigned by an upgrade (see UserDataOwnership.kt)
+reassign:
+UPDATE customer_order SET owner_id = :toOwnerId WHERE owner_id = :fromOwnerId;
+
+-- Every owner's orders (the iOS Debug menu's reset; see deleteAllUserData)
+deleteEveryOwnersItems:
+DELETE FROM customer_order_item;
+
+deleteEveryOwners:
+DELETE FROM customer_order;

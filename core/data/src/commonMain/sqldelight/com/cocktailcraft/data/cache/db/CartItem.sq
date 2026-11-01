@@ -1,0 +1,80 @@
+-- Schema changes need a migration: add src/commonMain/sqldelight/migrations/<N>.sqm
+-- (N = current version, starting at 1) and regenerate the snapshot with
+-- `./gradlew :core:data:generateCommonMainCocktailCraftDatabaseSchema`.
+--
+-- The shopping carts (CartRepositoryImpl), one row per owner and cocktail.
+-- The cocktail itself is the cached_cocktail row, which a cart line pins
+-- (the offline cache never evicts or expires it), so the cart shows the
+-- current details. Until version 6 (migrations/5.sqm) each line kept its
+-- own JSON copy.
+--
+--   owner_id     whose cart: the signed-in user's id, or "guest" while
+--                signed out (see UserDataOwnership.kt; "" for rows not
+--                assigned yet after an upgrade). Added in version 7
+--                (migrations/6.sqm).
+--   price_cents  the unit price when the cocktail was added, in whole US
+--                cents: the amount the user agreed to stays what the line
+--                charges, whatever a later catalog refresh says, and a
+--                reorder that couldn't look its cocktail up keeps the price
+--                paid. NULL for lines added before version 6, which charge
+--                the stored cocktail's price as before.
+--   position     insertion order (1-based, increasing); the cart lists in
+--                this order, and changing a quantity keeps an item in place.
+CREATE TABLE cart_item (
+    owner_id TEXT NOT NULL,
+    cocktail_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    position INTEGER NOT NULL,
+    price_cents INTEGER,
+    PRIMARY KEY (owner_id, cocktail_id)
+);
+
+-- Lines whose cocktail isn't stored (only possible if the row was lost) are
+-- left out rather than shown blank.
+selectAll:
+SELECT cart_item.cocktail_id, cart_item.quantity, cart_item.price_cents,
+       cached_cocktail.payload, cached_cocktail.full_details
+FROM cart_item
+JOIN cached_cocktail ON cached_cocktail.id = cart_item.cocktail_id
+WHERE cart_item.owner_id = :ownerId
+ORDER BY cart_item.position;
+
+exists:
+SELECT COUNT(*) FROM cart_item WHERE owner_id = :ownerId AND cocktail_id = :cocktailId;
+
+-- Appends a new item at the end of the cart.
+insert:
+INSERT INTO cart_item(owner_id, cocktail_id, quantity, position, price_cents)
+VALUES (:ownerId, :cocktailId, :quantity, (SELECT COALESCE(MAX(position), 0) + 1 FROM cart_item), :priceCents);
+
+addQuantity:
+UPDATE cart_item SET quantity = quantity + :delta WHERE owner_id = :ownerId AND cocktail_id = :cocktailId;
+
+setQuantity:
+UPDATE cart_item SET quantity = :quantity WHERE owner_id = :ownerId AND cocktail_id = :cocktailId;
+
+deleteById:
+DELETE FROM cart_item WHERE owner_id = :ownerId AND cocktail_id = :cocktailId;
+
+deleteAll:
+DELETE FROM cart_item WHERE owner_id = :ownerId;
+
+-- Every owner's cart (the iOS Debug menu's reset; see deleteAllUserData)
+deleteEveryOwners:
+DELETE FROM cart_item;
+
+-- Signing in: the account's lines for cocktails the guest cart also holds
+-- gain the guest's quantities (then reassign moves the other guest lines).
+addQuantitiesOf:
+UPDATE cart_item
+SET quantity = quantity + (
+    SELECT other.quantity FROM cart_item other
+    WHERE other.owner_id = :fromOwnerId AND other.cocktail_id = cart_item.cocktail_id
+)
+WHERE owner_id = :toOwnerId
+    AND cocktail_id IN (SELECT cocktail_id FROM cart_item WHERE owner_id = :fromOwnerId);
+
+-- Moves one owner's lines to another; lines the target already has for
+-- the same cocktail stay with the source (see UserDataOwnership.kt).
+reassign:
+UPDATE OR IGNORE cart_item SET owner_id = :toOwnerId WHERE owner_id = :fromOwnerId;

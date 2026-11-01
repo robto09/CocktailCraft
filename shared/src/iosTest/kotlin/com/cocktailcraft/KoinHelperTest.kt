@@ -1,11 +1,14 @@
 package com.cocktailcraft
 
+import app.cash.sqldelight.db.SqlDriver
+import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.di.appModule
-import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.di.secureSettingsQualifier
+import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.MainDispatcherTest
+import com.cocktailcraft.testutil.createInMemorySqlDriver
 import com.cocktailcraft.util.NetworkMonitor
 import com.russhwolf.settings.MapSettings
 import com.russhwolf.settings.Settings
@@ -17,7 +20,7 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 
 /**
- * Mirror of KoinDependencyGraphTest for the iOS service locator (AR-6):
+ * Mirror of KoinDependencyGraphTest for the iOS service locator:
  * resolves every KoinHelper getter so a shared binding that was renamed,
  * removed, or never surfaced here fails THIS test instead of crashing Swift
  * at first use. When a getter is added to KoinHelper, add its assertion here.
@@ -34,6 +37,7 @@ class KoinHelperTest : MainDispatcherTest() {
         single<Settings> { MapSettings() }
         single<Settings>(secureSettingsQualifier) { MapSettings() }
         single<NetworkMonitor> { FakeNetworkMonitor() }
+        single<SqlDriver> { createInMemorySqlDriver(CocktailCraftDatabase.Schema) }
     }
 
     @AfterTest
@@ -46,17 +50,14 @@ class KoinHelperTest : MainDispatcherTest() {
         startKoin { modules(appModule + testPlatformModule) }
         val helper = KoinHelper()
 
-        // Repositories
-        assertNotNull(helper.getAuthRepository())
-        assertNotNull(helper.getCartRepository())
-        assertNotNull(helper.getOrderRepository())
-
         // Services / platform bridges
         assertNotNull(helper.getNetworkMonitor())
+        assertNotNull(helper.observeFavoriteCocktails())
 
         // Shared ViewModels — screen-scoped
         assertNotNull(helper.getSharedCocktailDetailViewModel())
         assertNotNull(helper.getSharedReviewViewModel())
+        assertNotNull(helper.getSharedOrderDetailViewModel())
 
         // Shared ViewModels — global-state singles
         assertNotNull(helper.getSharedFavoritesViewModel())

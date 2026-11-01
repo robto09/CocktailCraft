@@ -1,0 +1,157 @@
+package com.cocktailcraft.domain.usecase
+
+import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.util.Result
+import com.cocktailcraft.testutil.FakeCatalogRepository
+import com.cocktailcraft.testutil.FakeDetailRepository
+import com.cocktailcraft.testutil.FakeFavoritesRepository
+import com.cocktailcraft.testutil.testCocktail
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+class GetCocktailDetailUseCaseTest {
+
+    private val detail = FakeDetailRepository()
+    private val favorites = FakeFavoritesRepository()
+    private val catalog = FakeCatalogRepository()
+
+    private val useCase = GetCocktailDetailUseCase(
+        detailRepository = detail,
+        favoritesRepository = favorites,
+        catalogRepository = catalog
+    )
+
+    @Test
+    fun invokeReturnsCocktailFromDetailRepository() = runTest {
+        detail.byId["1"] = testCocktail("1", name = "Margarita")
+
+        val result = useCase("1")
+
+        assertEquals("Margarita", (result as Result.Success).data?.name)
+    }
+
+    @Test
+    fun invokeReturnsNullSuccessForUnknownId() = runTest {
+        val result = useCase("404")
+
+        assertNull((result as Result.Success).data)
+    }
+
+    @Test
+    fun isFavoriteTrueOnlyWhenIdIsAmongStoredFavorites() = runTest {
+        favorites.addToFavorites(testCocktail("1"))
+
+        assertTrue(useCase.isFavorite("1"))
+        assertFalse(useCase.isFavorite("2"))
+    }
+
+    @Test
+    fun isFavoriteIsAPointLookupNotAFullFavoritesLoad() = runTest {
+        favorites.addToFavorites(testCocktail("1"))
+
+        useCase.isFavorite("1")
+
+        assertEquals(0, favorites.getFavoriteCocktailsCalls)
+    }
+
+    // --- Related cocktails: same category, excluding the cocktail itself ---
+
+    @Test
+    fun relatedCocktailsComeFromSameCategoryExcludingSelf() = runTest {
+        val self = testCocktail("1", category = "Cocktail")
+        catalog.all = listOf(
+            self,
+            testCocktail("2", category = "Cocktail"),
+            testCocktail("3", category = "Cocktail"),
+            testCocktail("4", category = "Cocktail"),
+            testCocktail("5", category = "Cocktail"),
+            testCocktail("9", category = "Shot")
+        )
+
+        val related = useCase.getRelatedCocktails(self, limit = 3)
+
+        assertEquals(3, related.size)
+        val ids = related.map(Cocktail::id).toSet()
+        assertFalse("1" in ids, "a cocktail must never relate to itself")
+        assertTrue(ids.all { it in setOf("2", "3", "4", "5") }, "unexpected ids: $ids")
+    }
+
+    @Test
+    fun relatedCocktailsFallBackToDefaultCategoryWhenCocktailHasNone() = runTest {
+        // testCocktail's default category "Cocktail" == CocktailCategories.DEFAULT
+        catalog.all = listOf(testCocktail("2"), testCocktail("3"))
+
+        val related = useCase.getRelatedCocktails(testCocktail("1", category = null))
+
+        assertEquals(setOf("2", "3"), related.map(Cocktail::id).toSet())
+    }
+
+    @Test
+    fun relatedCocktailsAreEmptyWhenTheFetchFails() = runTest {
+        catalog.all = listOf(testCocktail("2"))
+        catalog.errorMessage = "API down"
+
+        val related = useCase.getRelatedCocktails(testCocktail("1"))
+
+        assertTrue(related.isEmpty(), "a failed category lookup must degrade to no suggestions")
+    }
+
+    @Test
+    fun relatedCocktailsComeFromTheStoredPageWithoutAFetch() = runTest {
+        catalog.store("Cocktail", listOf(testCocktail("1"), testCocktail("2"), testCocktail("3")))
+
+        val related = useCase.getRelatedCocktails(testCocktail("1"))
+
+        assertEquals(setOf("2", "3"), related.map(Cocktail::id).toSet())
+        assertTrue(catalog.refreshCalls.isEmpty(), "a stored page is enough for suggestions")
+    }
+
+    @Test
+    fun relatedCocktailsFetchTheCategoryOnlyWhenNothingIsStored() = runTest {
+        catalog.all = listOf(testCocktail("2"), testCocktail("3"))
+
+        useCase.getRelatedCocktails(testCocktail("1"))
+        useCase.getRelatedCocktails(testCocktail("1"))
+
+        assertEquals(listOf("Cocktail" to false), catalog.refreshCalls)
+    }
+
+    @Test
+    fun refreshForcesAFetchAndReturnsTheStoredResult() = runTest {
+        detail.byId["1"] = testCocktail("1", name = "Stale Margarita")
+        detail.remote["1"] = testCocktail("1", name = "Fresh Margarita")
+
+        val result = useCase.refresh("1")
+
+        assertEquals("Fresh Margarita", (result as Result.Success).data?.name)
+        assertEquals(listOf("1" to true), detail.refreshCalls)
+    }
+
+    @Test
+    fun refreshFailureIsSurfacedAsAnError() = runTest {
+        detail.byId["1"] = testCocktail("1")
+        detail.refreshError = "offline"
+
+        assertTrue(useCase.refresh("1") is Result.Error)
+    }
+
+    @Test
+    fun refreshIfStaleDoesNotForce() = runTest {
+        useCase.refreshIfStale("1")
+
+        assertEquals(listOf("1" to false), detail.refreshCalls)
+    }
+
+    @Test
+    fun refreshReturnsLatestFromDetailRepository() = runTest {
+        detail.byId["1"] = testCocktail("1", name = "Refreshed Margarita")
+
+        val result = useCase.refresh("1")
+
+        assertEquals("Refreshed Margarita", (result as Result.Success).data?.name)
+    }
+}

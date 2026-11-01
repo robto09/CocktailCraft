@@ -4,19 +4,26 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
+import com.cocktailcraft.android.util.pluralStringResource
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.review_count
+import com.cocktailcraft.resources.review_rating_value
 
 /**
  * A reusable rating display component that shows a rating with stars and review count.
+ * TalkBack reads it as one element: "4.5 out of 5 stars, (12 reviews)".
  *
  * @param rating The rating value to display
  * @param reviewCount The number of reviews
@@ -38,25 +45,28 @@ fun RatingDisplay(
     starSize: Int = 16,
     ratingTextSize: Int = 14,
     reviewCountTextSize: Int = 14,
-    starsColor: androidx.compose.ui.graphics.Color = AppColors.Secondary,
-    textColor: androidx.compose.ui.graphics.Color = AppColors.TextSecondary,
+    starsColor: androidx.compose.ui.graphics.Color = CocktailCraftTheme.extendedColors.rating,
+    textColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
     useHalfStars: Boolean = true
 ) {
+    // One merged element: the stars carry the spoken rating, so the
+    // duplicate numeric label is hidden
     Row(
-        modifier = modifier,
+        modifier = modifier.semantics(mergeDescendants = true) {},
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start
     ) {
         // Display the rating value
         Text(
-            text = stringResource(R.string.review_rating_value, rating),
+            text = stringResource(MR.strings.review_rating_value, rating),
             fontSize = ratingTextSize.sp,
             fontWeight = FontWeight.Bold,
-            color = textColor
+            color = textColor,
+            modifier = Modifier.clearAndSetSemantics {}
         )
-        
+
         Spacer(modifier = Modifier.width(4.dp))
-        
+
         // Display the stars
         RatingBar(
             rating = rating,
@@ -64,16 +74,13 @@ fun RatingDisplay(
             starsColor = starsColor,
             useHalfStars = useHalfStars
         )
-        
+
         // Display the review count if requested
         if (showReviewCount && reviewCount > 0) {
             Spacer(modifier = Modifier.width(4.dp))
-            
+
             Text(
-                text = stringResource(
-                    if (reviewCount == 1) R.string.review_count_singular else R.string.review_count_plural,
-                    reviewCount
-                ),
+                text = pluralStringResource(MR.plurals.review_count, reviewCount, reviewCount),
                 fontSize = reviewCountTextSize.sp,
                 color = textColor
             )

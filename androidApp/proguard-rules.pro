@@ -4,6 +4,15 @@
 # ship consumer R8 rules in their AARs/JARs, so they need nothing here.
 # Koin 4's constructor DSL resolves via lambdas, not reflection — no rules.
 
+# --- Logging ---
+# Release builds keep no Verbose/Debug logcat output: Kermit's floor is Warn
+# in release (configureLogging), and this strips any direct Log.v/Log.d call
+# sites too — including their message-building code.
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+}
+
 # --- Room (via WorkManager) ---
 # WorkDatabase_Impl is created reflectively (Class.forName + newInstance).
 # R8 full mode (AGP 9 default) does not keep constructors for classes kept
@@ -11,9 +20,11 @@
 # predate full mode — verified startup crash without this.
 -keep class * extends androidx.room.RoomDatabase { <init>(); }
 
-# --- Tink (via androidx.security:security-crypto) ---
-# Tink references ErrorProne's compile-only annotations; they never exist at
-# runtime, so R8 just needs to stop warning about them.
+# --- Tink (auth store encryption) ---
+# tink-android ships its own keep rules for its shaded protobuf
+# (META-INF/proguard/protobuf.pro). It references ErrorProne's compile-only
+# annotations; they never exist at runtime, so R8 just needs to stop
+# warning about them.
 -dontwarn com.google.errorprone.annotations.**
 
 # --- kotlinx-serialization (official rules) ---

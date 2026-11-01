@@ -1,0 +1,41 @@
+package com.cocktailcraft.testutil
+
+import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailIngredient
+import com.cocktailcraft.domain.model.Money
+
+/** A cocktail with full details (real ingredients/instructions), as returned by lookup endpoints. */
+fun testCocktail(
+    id: String,
+    name: String = "Cocktail $id",
+    category: String? = "Cocktail",
+    price: Money = Cocktail.DEFAULT_PRICE,
+    rating: Float = 4.5f,
+    popularity: Int = 0,
+    dateAdded: Long = 0L
+) = Cocktail(
+    id = id,
+    name = name,
+    category = category,
+    alcoholic = "Alcoholic",
+    glass = "Cocktail glass",
+    instructions = "Stir well and strain.",
+    imageUrl = "https://example.com/$id.jpg",
+    ingredients = listOf(CocktailIngredient("Gin", "50 ml")),
+    price = price,
+    rating = rating,
+    popularity = popularity,
+    dateAdded = dateAdded
+)
+
+/**
+ * A cocktail as returned by list/filter endpoints: no ingredients or
+ * instructions, and [Cocktail.hasFullDetails] false, so use cases must hydrate it.
+ */
+fun partialCocktail(id: String, name: String = "Partial $id") = Cocktail(
+    id = id,
+    name = name,
+    category = "Cocktail",
+    imageUrl = "https://example.com/$id.jpg",
+    hasFullDetails = false
+)

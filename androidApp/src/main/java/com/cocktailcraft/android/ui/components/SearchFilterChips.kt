@@ -29,14 +29,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.cocktailcraft.android.util.stringResource
 import com.cocktailcraft.domain.model.SearchFilters
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.alcoholic
+import com.cocktailcraft.resources.category_label
+import com.cocktailcraft.resources.filter_active_filters
+import com.cocktailcraft.resources.filter_alcoholic_filter
+import com.cocktailcraft.resources.filter_clear_all
+import com.cocktailcraft.resources.filter_ingredient_label
+import com.cocktailcraft.resources.filter_remove_action_a11y
+import com.cocktailcraft.resources.non_alcoholic
 
 /**
  * Component to display active search filters as chips
@@ -60,7 +69,7 @@ fun SearchFilterChips(
                 // 4dp + the neighbors' own 8dp = a 12dp gap above and below,
                 // matching the iOS header's 12pt rhythm
                 .padding(horizontal = 16.dp, vertical = 4.dp),
-            color = AppColors.Surface,
+            color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(8.dp)
         ) {
             Column(
@@ -75,26 +84,29 @@ fun SearchFilterChips(
                 ) {
                     Icon(
                         imageVector = Icons.Default.FilterAlt,
-                        contentDescription = stringResource(R.string.filter_filters),
-                        tint = AppColors.Primary,
+                        contentDescription = null, // decorative: the heading follows
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
 
                     Spacer(modifier = Modifier.width(4.dp))
 
                     Text(
-                        text = stringResource(R.string.filter_active_filters),
+                        text = stringResource(MR.strings.filter_active_filters),
                         style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.semantics { heading() }
                     )
 
                     Spacer(modifier = Modifier.weight(1f))
 
                     Text(
-                        text = stringResource(R.string.filter_clear_all),
+                        text = stringResource(MR.strings.filter_clear_all),
                         style = MaterialTheme.typography.bodySmall,
-                        color = AppColors.Primary,
-                        modifier = Modifier.clickable { onClearAllFilters() }
+                        color = MaterialTheme.colorScheme.primary,
+                        // Compose extends the touch (and accessibility) bounds of
+                        // this small clickable to the 48dp minimum
+                        modifier = Modifier.clickable(role = Role.Button) { onClearAllFilters() }
                     )
                 }
 
@@ -108,7 +120,7 @@ fun SearchFilterChips(
                     // Category filter
                     if (filters.category != null) {
                         ActiveFilterChip(
-                            label = stringResource(R.string.category_label, filters.category!!),
+                            label = stringResource(MR.strings.category_label, filters.category!!),
                             onClear = { onClearFilter("category") }
                         )
                     }
@@ -116,7 +128,7 @@ fun SearchFilterChips(
                     // Ingredient filter
                     if (filters.ingredient != null) {
                         ActiveFilterChip(
-                            label = stringResource(R.string.filter_ingredient_label, filters.ingredient!!),
+                            label = stringResource(MR.strings.filter_ingredient_label, filters.ingredient!!),
                             onClear = { onClearFilter("ingredient") }
                         )
                     }
@@ -124,9 +136,9 @@ fun SearchFilterChips(
                     // Alcoholic filter
                     if (filters.alcoholic != null) {
                         val alcoholicLabel = when (filters.alcoholic) {
-                            true -> stringResource(R.string.alcoholic)
-                            false -> stringResource(R.string.non_alcoholic)
-                            else -> stringResource(R.string.filter_alcoholic_filter)
+                            true -> stringResource(MR.strings.alcoholic)
+                            false -> stringResource(MR.strings.non_alcoholic)
+                            else -> stringResource(MR.strings.filter_alcoholic_filter)
                         }
                         ActiveFilterChip(
                             label = alcoholicLabel,
@@ -143,15 +155,23 @@ fun SearchFilterChips(
  * Active-filter chip built on Material 3's InputChip: tapping anywhere on
  * the chip removes the filter (the trailing X is the visual affordance),
  * with the ripple and full-size touch target the old hand-rolled chip lacked.
+ * TalkBack reads the filter and "double-tap to remove filter".
  */
 @Composable
 fun ActiveFilterChip(
     label: String,
     onClear: () -> Unit
 ) {
+    val removeLabel = stringResource(MR.strings.filter_remove_action_a11y)
     InputChip(
         selected = false,
         onClick = onClear,
+        modifier = Modifier.semantics {
+            onClick(label = removeLabel) {
+                onClear()
+                true
+            }
+        },
         label = {
             Text(
                 text = label,
@@ -163,17 +183,16 @@ fun ActiveFilterChip(
         shape = RoundedCornerShape(16.dp),
         border = null,
         colors = InputChipDefaults.inputChipColors(
-            containerColor = AppColors.Primary.copy(alpha = 0.1f),
-            labelColor = AppColors.Primary,
-            trailingIconColor = AppColors.Primary
+            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+            labelColor = MaterialTheme.colorScheme.primary,
+            trailingIconColor = MaterialTheme.colorScheme.primary
         ),
         trailingIcon = {
             Icon(
                 imageVector = Icons.Default.Clear,
-                contentDescription = stringResource(R.string.filter_clear),
+                contentDescription = null, // the chip's click label says "remove filter"
                 modifier = Modifier.size(16.dp)
             )
         }
     )
 }
-

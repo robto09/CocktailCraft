@@ -1,0 +1,5 @@
+-- Version 2 -> 3: index cached_cocktail.cached_at. The TTL sweep
+-- (deleteCachedBefore) runs on every cache list read while online and
+-- otherwise scans the whole table.
+
+CREATE INDEX cached_cocktail_cached_at ON cached_cocktail(cached_at);

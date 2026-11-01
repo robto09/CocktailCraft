@@ -4,6 +4,8 @@ plugins {
     // No version: AGP is already on the build classpath via :androidApp
     id("com.android.test")
     alias(libs.plugins.baselineprofile)
+    // detekt + ktlint (build-logic)
+    id("cocktailcraft.detekt")
 }
 
 android {

@@ -1,139 +1,177 @@
 import SwiftUI
 import shared
 
+/// Laid out like Android's CartItemCard: image on the left; name and
+/// favorite heart, unit price, alcoholic label, then one row with the
+/// stepper on the left and the line total and remove button on the right.
 struct CartItemCard: View {
     let item: CocktailCartItem
+    var isFavorite: Bool = false
     let onIncrementQuantity: () -> Void
     let onDecrementQuantity: () -> Void
     let onRemoveFromCart: () -> Void
     let onToggleFavorite: (() -> Void)?
     @Environment(\.isDarkMode) var isDarkMode
-    
+    @Environment(\.appearance) var appearance
+
     var body: some View {
-        HStack(spacing: AppTheme.Spacing.lg) {
-            // Cocktail Image
+        HStack(alignment: .center, spacing: AppTheme.Spacing.md) {
             CocktailImageView(
                 imageUrl: item.cocktail.imageUrl,
                 height: 80,
-                cornerRadius: AppTheme.CornerRadius.md
+                cornerRadius: AppTheme.CornerRadius.sm
             )
             .frame(width: 80, height: 80)
 
-            // Content
-            VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-                // Name and Favorite
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(item.cocktail.name)
-                            .font(AppTheme.Typography.headline)
-                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                            .lineLimit(2)
+            VStack(alignment: .leading, spacing: 0) {
+                // Name and favorite
+                HStack(spacing: AppTheme.Spacing.xs) {
+                    Text(item.cocktail.name)
+                        .font(.headline.weight(.bold))
+                        .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                        .lineLimit(1)
 
-                        Text(item.cocktail.category ?? "Unknown")
-                            .font(AppTheme.Typography.caption)
-                            .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
-                    }
-
-                    Spacer()
+                    Spacer(minLength: 0)
 
                     if let onToggleFavorite = onToggleFavorite {
                         Button(action: onToggleFavorite) {
-                            Image(systemName: "heart")
+                            Image(systemName: isFavorite ? "heart.fill" : "heart")
                                 .font(.title3)
-                                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                                .foregroundColor(isFavorite ? AppColors.secondary(isDarkMode: isDarkMode) : AppColors.gray)
+                                .contentTransition(.symbolEffect(.replace))
                                 .minimumHitTarget()
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .accessibilityLabel("Add to favorites")
+                        .accessibilityLabel(L(\.favorite_toggle_a11y))
+                        .accessibilityAddTraits(isFavorite ? .isSelected : [])
                         .accessibilityIdentifier("cart.favoriteButton")
                     }
                 }
 
-                // Price
-                Text(item.cocktail.price.asPrice)
-                    .font(AppTheme.Typography.headline)
-                    .fontWeight(.bold)
-                    .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                // Unit price
+                Text(item.cocktail.price.formatted())
+                    .font(.subheadline.weight(.bold))
+                    .foregroundColor(AppColors.primary(appearance))
 
-                Spacer()
+                if let alcoholic = item.cocktail.knownAlcoholic {
+                    Text(alcoholic)
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary(appearance))
+                        .padding(.top, AppTheme.Spacing.xs)
+                }
 
-                // Quantity Controls and Total
-                HStack {
-                    // Quantity Controls
-                    QuantityControlView(
-                        quantity: item.quantity,
-                        onIncrement: onIncrementQuantity,
-                        onDecrement: onDecrementQuantity
-                    )
+                // Stepper and line total on one row when it fits; otherwise
+                // (large Dynamic Type) the total and remove button wrap below
+                // the stepper instead of breaking across lines
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 0) {
+                        quantityControls
+                        Spacer(minLength: AppTheme.Spacing.xs)
+                        totalAndRemove
+                    }
 
-                    Spacer()
-
-                    // Item Total and Delete
-                    HStack(spacing: AppTheme.Spacing.sm) {
-                        Text((item.cocktail.price * Double(item.quantity)).asPrice)
-                            .font(AppTheme.Typography.headline)
-                            .fontWeight(.bold)
-                            .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-
-                        Button(action: onRemoveFromCart) {
-                            Image(systemName: "trash")
-                                .font(.callout)
-                                .foregroundColor(AppColors.error)
-                                .minimumHitTarget()
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .accessibilityLabel("Remove from cart")
-                        .accessibilityIdentifier("cart.removeButton")
+                    VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+                        quantityControls
+                        totalAndRemove
                     }
                 }
+                .padding(.top, AppTheme.Spacing.sm)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(AppTheme.Spacing.lg)
+        .padding(AppTheme.Spacing.md)
         .cardStyle()
+    }
+
+    private var quantityControls: some View {
+        QuantityControlView(
+            itemName: item.cocktail.name,
+            quantity: item.quantity,
+            onIncrement: onIncrementQuantity,
+            onDecrement: onDecrementQuantity
+        )
+    }
+
+    private var totalAndRemove: some View {
+        HStack(spacing: AppTheme.Spacing.xs) {
+            // 16 pt like Android's line total, so stepper, total and
+            // remove still fit one row with longer prices ("US$13.65")
+            Text(item.lineTotal.formatted())
+                .font(.callout.weight(.bold))
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                .lineLimit(1)
+                .fixedSize()
+
+            Button(action: onRemoveFromCart) {
+                Image(systemName: "trash.fill")
+                    .font(.body)
+                    .foregroundColor(AppColors.error)
+                    .minimumHitTarget()
+            }
+            .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel(L(\.cart_remove_item_a11y, item.cocktail.name))
+            .accessibilityIdentifier("cart.removeButton")
+        }
     }
 }
 
 struct QuantityControlView: View {
+    /// Names the item in the stepper's VoiceOver labels ("Increase
+    /// quantity of Margarita"), so rows in a list are distinguishable.
+    let itemName: String
     let quantity: Int32
     let onIncrement: () -> Void
     let onDecrement: () -> Void
     @Environment(\.isDarkMode) var isDarkMode
-    
+    @Environment(\.appearance) var appearance
+
     var body: some View {
-        HStack(spacing: AppTheme.Spacing.md) {
+        // The 44 pt hit targets pad the 36 pt circles by 4 pt; with the gap
+        // and the count's min width it sits about as far from each circle as
+        // on Android
+        HStack(spacing: AppTheme.Spacing.xs) {
             Button(action: onDecrement) {
                 Image(systemName: "minus")
                     .font(.callout.weight(.bold))
-                    .foregroundColor(.white)
-                    .frame(width: 32, height: 32)
-                    .background(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    // Fixed 36 pt circle (Android's size): keep the glyph
+                    // inside it at large text sizes
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                    .frame(width: 36, height: 36)
+                    .background(AppColors.neutralSubtle(isDarkMode: isDarkMode))
                     .clipShape(Circle())
                     .minimumHitTarget()
             }
             .buttonStyle(PlainButtonStyle())
-            .accessibilityLabel("Decrease quantity")
+            .accessibilityLabel(L(\.cart_decrease_quantity_a11y, itemName))
             .accessibilityIdentifier("cart.decrementButton")
 
             Text("\(quantity)")
                 .font(AppTheme.Typography.headline)
                 .fontWeight(.bold)
-                .frame(minWidth: 30)
+                .frame(minWidth: 28)
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-                .accessibilityLabel("Quantity: \(quantity)")
+                .accessibilityLabel(L(\.cart_quantity_label, quantity))
                 .accessibilityIdentifier("cart.quantityValue")
+                // Focus stays on the +/- button, so speak the new quantity
+                .onChange(of: quantity) { _, newValue in
+                    AccessibilityNotification.Announcement(L(\.cart_quantity_label, newValue)).post()
+                }
 
             Button(action: onIncrement) {
                 Image(systemName: "plus")
                     .font(.callout.weight(.bold))
-                    .foregroundColor(.white)
-                    .frame(width: 32, height: 32)
-                    .background(AppColors.primary(isDarkMode: isDarkMode))
+                    // Fixed 36 pt circle (Android's size): keep the glyph
+                    // inside it at large text sizes
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                    .foregroundColor(AppColors.onPrimary(isDarkMode: isDarkMode))
+                    .frame(width: 36, height: 36)
+                    .background(AppColors.primary(appearance))
                     .clipShape(Circle())
                     .minimumHitTarget()
             }
             .buttonStyle(PlainButtonStyle())
-            .accessibilityLabel("Increase quantity")
+            .accessibilityLabel(L(\.cart_increase_quantity_a11y, itemName))
             .accessibilityIdentifier("cart.incrementButton")
         }
     }
@@ -158,12 +196,13 @@ struct QuantityControlView: View {
                 imageAttribution: nil,
                 creativeCommonsConfirmed: nil,
                 dateModified: nil,
-                price: 12.99,
+                price: Money(cents: 1299),
                 inStock: true,
                 stockCount: 15,
                 rating: 4.8,
                 popularity: 95,
-                dateAdded: 1672531300000
+                dateAdded: 1672531300000,
+                hasFullDetails: true
             ),
             quantity: 2
         ),

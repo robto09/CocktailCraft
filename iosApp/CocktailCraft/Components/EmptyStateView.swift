@@ -17,10 +17,13 @@ struct EmptyStateView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 80, height: 80)
                 .foregroundColor(.gray)
+                .accessibilityHidden(true)
 
             Text(title)
                 .font(.title2)
                 .fontWeight(.semibold)
+                .multilineTextAlignment(.center)
+                .accessibilityAddTraits(.isHeader)
                 // Stable hook for UI tests, so they don't key on display copy
                 .accessibilityIdentifier("emptyState.title")
 
@@ -55,8 +58,9 @@ struct SearchEmptyStateView: View {
 
     @State private var appeared = false
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
-    private var primaryColor: Color { AppColors.primary(isDarkMode: isDarkMode) }
+    private var primaryColor: Color { AppColors.primary(appearance) }
     private var hasQuery: Bool { !searchQuery.isEmpty }
 
     var body: some View {
@@ -72,7 +76,8 @@ struct SearchEmptyStateView: View {
                     .foregroundColor(primaryColor)
             }
             .frame(width: 80, height: 80)
-            .accessibilityLabel("No results")
+            // Decorative: the title below says what happened
+            .accessibilityHidden(true)
 
             Spacer().frame(height: 24)
 
@@ -80,6 +85,7 @@ struct SearchEmptyStateView: View {
                 .font(.title3.weight(.bold))
                 .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
                 .multilineTextAlignment(.center)
+                .accessibilityAddTraits(.isHeader)
                 // Stable hook for UI tests, so they don't key on display copy
                 .accessibilityIdentifier("emptyState.title")
 
@@ -87,7 +93,7 @@ struct SearchEmptyStateView: View {
 
             Text(subtitle)
                 .font(.callout)
-                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                .foregroundColor(AppColors.textSecondary(appearance))
                 .multilineTextAlignment(.center)
 
             Spacer().frame(height: 32)
@@ -115,55 +121,55 @@ struct SearchEmptyStateView: View {
 
     private var title: String {
         if hasActiveFilters && hasQuery {
-            return String(localized: "No cocktails match \"\(searchQuery)\" with your active filters")
+            return L(\.search_no_results_query_filters, searchQuery)
         }
         if hasActiveFilters {
-            return String(localized: "No cocktails match your active filters")
+            return L(\.search_no_results_filters)
         }
         if let selectedCategory, hasQuery {
-            return String(localized: "No cocktails found matching \"\(searchQuery)\" in \"\(selectedCategory)\"")
+            return L(\.search_no_results_query_category, searchQuery, selectedCategory)
         }
         if let selectedCategory {
-            return String(localized: "No cocktails found in category \"\(selectedCategory)\"")
+            return L(\.search_no_results_category, selectedCategory)
         }
         if hasQuery {
-            return String(localized: "No cocktails found matching \"\(searchQuery)\"")
+            return L(\.search_no_results_query, searchQuery)
         }
-        return String(localized: "No cocktails found")
+        return L(\.search_no_results)
     }
 
     private var subtitle: String {
         if hasActiveFilters {
-            return String(localized: "Try adjusting or clearing your filters")
+            return L(\.search_suggestion_adjust_filters)
         }
         if selectedCategory != nil && hasQuery {
-            return String(localized: "Try a different search term or category")
+            return L(\.search_suggestion_different_term_or_category)
         }
         if selectedCategory != nil {
-            return String(localized: "This category doesn't have any cocktails yet")
+            return L(\.search_suggestion_empty_category)
         }
         if hasQuery {
-            return String(localized: "Try a different search term or check your spelling")
+            return L(\.search_suggestion_check_spelling)
         }
-        return String(localized: "We couldn't find any cocktails")
+        return L(\.search_suggestion_none_found)
     }
 
     @ViewBuilder
     private var actions: some View {
         if hasActiveFilters && hasQuery {
-            filledButton(String(localized: "Clear Search"), action: onClearSearch)
-            outlinedButton(String(localized: "Clear Filters"), action: onClearFilters)
+            filledButton(L(\.search_clear_search_button), action: onClearSearch)
+            outlinedButton(L(\.search_clear_filters_button), action: onClearFilters)
         } else if hasActiveFilters {
-            filledButton(String(localized: "Clear Filters"), action: onClearFilters)
+            filledButton(L(\.search_clear_filters_button), action: onClearFilters)
         } else if selectedCategory != nil && hasQuery {
-            filledButton(String(localized: "Clear Search"), action: onClearSearch)
-            outlinedButton(String(localized: "Clear Category Filter"), action: onClearCategory)
+            filledButton(L(\.search_clear_search_button), action: onClearSearch)
+            outlinedButton(L(\.filter_clear_category), action: onClearCategory)
         } else if selectedCategory != nil {
-            filledButton(String(localized: "Browse All Cocktails"), action: onClearCategory)
+            filledButton(L(\.search_browse_all_cocktails), action: onClearCategory)
         } else if hasQuery {
-            filledButton(String(localized: "Clear Search"), action: onClearSearch)
+            filledButton(L(\.search_clear_search_button), action: onClearSearch)
         } else {
-            filledButton(String(localized: "Refresh"), action: onRefresh)
+            filledButton(L(\.refresh), action: onRefresh)
         }
     }
 
@@ -171,9 +177,10 @@ struct SearchEmptyStateView: View {
         Button(action: action) {
             Text(title)
                 .font(.subheadline.weight(.medium))
-                .foregroundColor(.white)
+                .foregroundColor(AppColors.onPrimary(isDarkMode: isDarkMode))
                 .padding(.horizontal, 24)
                 .padding(.vertical, 10)
+                .frame(minHeight: 44)
                 .background(Capsule().fill(primaryColor))
         }
         .buttonStyle(.plain)
@@ -187,6 +194,7 @@ struct SearchEmptyStateView: View {
                 .foregroundColor(primaryColor)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 10)
+                .frame(minHeight: 44)
                 .background(Capsule().stroke(primaryColor, lineWidth: 1))
         }
         .buttonStyle(.plain)

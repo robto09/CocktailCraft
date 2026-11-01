@@ -18,20 +18,8 @@ final class SharedViewModelWrapperTests: TestSetup {
     }
 
     private func makeWrapper() -> SharedViewModelWrapper<ThemeUiState> {
-        SharedViewModelWrapper(uiState: sharedViewModel.uiState,
-                               errorFlow: sharedViewModel.error)
-    }
-
-    /// Polls on the main actor — each sleep suspends, so the wrapper's
-    /// observation tasks get to run between checks. Bounded at 2s.
-    private func waitUntil(timeout: TimeInterval = 2.0,
-                           _ condition: () -> Bool) async -> Bool {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if condition() { return true }
-            try? await Task.sleep(nanoseconds: 50_000_000)
-        }
-        return condition()
+        SharedViewModelWrapper(viewModel: sharedViewModel,
+                               uiState: sharedViewModel.uiState)
     }
 
     func testStateIsSeededSynchronously() {
@@ -49,14 +37,16 @@ final class SharedViewModelWrapperTests: TestSetup {
 
         let original = viewModel.uiState.value.fontSize
         let target = original == "small" ? "large" : "small"
-        // The theme VM is the app's Koin single and persists its settings —
-        // put the real value back whatever happens after this point
-        // (continueAfterFailure=false aborts the test body on failure).
-        addTeardownBlock {
-            try await viewModel.setFontSize(size: original)
+        // The theme VM is the app's Koin single, shared with every other
+        // test in this host: put the value back whatever happens after this
+        // point (continueAfterFailure=false aborts the test body on
+        // failure). The settings themselves are test mode's throwaway
+        // suite, never the simulator's real ones.
+        addTeardownBlock { @MainActor in
+            viewModel.setFontSize(size: original)
         }
 
-        try await viewModel.setFontSize(size: target)
+        viewModel.setFontSize(size: target)
 
         let mirrored = await waitUntil { wrapper.state.fontSize == target }
         XCTAssertTrue(mirrored,
@@ -85,7 +75,7 @@ final class SharedViewModelWrapperTests: TestSetup {
 
     func testWrapperDeinitsWhenReleased() async {
         var wrapper: SharedViewModelWrapper<ThemeUiState>? = makeWrapper()
-        weak var weakWrapper = wrapper
+        weak let weakWrapper = wrapper
         XCTAssertNotNil(weakWrapper)
 
         wrapper = nil

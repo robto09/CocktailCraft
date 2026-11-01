@@ -1,14 +1,19 @@
 package com.cocktailcraft.android.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.annotation.StringRes
-import com.cocktailcraft.android.R
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.cart
+import com.cocktailcraft.resources.favorites
+import com.cocktailcraft.resources.home
+import com.cocktailcraft.resources.orders
+import com.cocktailcraft.resources.profile
+import dev.icerock.moko.resources.StringResource
 
 /**
  * Bottom-navigation metadata. `route` is the type-safe route instance
@@ -19,15 +24,10 @@ import com.cocktailcraft.android.R
  * resource-id via testTagsAsResourceId) used by the baseline profile
  * generator and UI tests.
  */
-sealed class Screen(
-    val route: Any,
-    @StringRes val titleRes: Int,
-    val icon: ImageVector,
-    val tag: String
-) {
-    object Home : Screen(HomeRoute, R.string.home, Icons.Filled.Home, "nav_home")
-    object Cart : Screen(CartRoute, R.string.cart, Icons.Filled.ShoppingCart, "nav_cart")
-    object Profile : Screen(ProfileRoute, R.string.profile, Icons.Filled.Person, "nav_profile")
-    object Favorites : Screen(FavoritesRoute, R.string.favorites, Icons.Filled.Favorite, "nav_favorites")
-    object OrderList : Screen(OrderListRoute, R.string.orders, Icons.Filled.List, "nav_orders")
+sealed class Screen(val route: Any, val title: StringResource, val icon: ImageVector, val tag: String) {
+    object Home : Screen(HomeRoute, MR.strings.home, Icons.Filled.Home, "nav_home")
+    object Cart : Screen(CartRoute, MR.strings.cart, Icons.Filled.ShoppingCart, "nav_cart")
+    object Profile : Screen(ProfileRoute, MR.strings.profile, Icons.Filled.Person, "nav_profile")
+    object Favorites : Screen(FavoritesRoute, MR.strings.favorites, Icons.Filled.Favorite, "nav_favorites")
+    object OrderList : Screen(OrderListRoute, MR.strings.orders, Icons.AutoMirrored.Filled.List, "nav_orders")
 }

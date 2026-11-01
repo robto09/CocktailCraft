@@ -1,9 +1,9 @@
 package com.cocktailcraft.android.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -20,17 +21,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.cocktailcraft.android.R
 import com.cocktailcraft.android.navigation.NavigationManager
 import com.cocktailcraft.android.ui.components.EmptyStateComponent
-import com.cocktailcraft.android.ui.components.LoadingStateComponent
+import com.cocktailcraft.android.ui.components.ErrorStateView
+import com.cocktailcraft.android.ui.components.ErrorToastEffect
 import com.cocktailcraft.android.ui.components.OrderCard
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.components.OrderListLoadingShimmer
 import com.cocktailcraft.android.ui.theme.Spacing
+import com.cocktailcraft.android.util.refreshAccessibilityAction
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.browse_cocktails
+import com.cocktailcraft.resources.order_list_empty_message
+import com.cocktailcraft.resources.order_list_empty_title
+import com.cocktailcraft.resources.refresh
+import com.cocktailcraft.util.ErrorHandler
 import com.cocktailcraft.viewmodel.SharedOrderViewModel
+import com.cocktailcraft.viewmodel.state.OrderUiState
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,7 +49,6 @@ fun OrderListScreen(
     navigationManager: NavigationManager
 ) {
     val state by orderViewModel.uiState.collectAsStateWithLifecycle()
-    val isLoading = state.isLoading
     val error by orderViewModel.error.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
 
@@ -49,26 +57,57 @@ fun OrderListScreen(
         orderViewModel.loadOrders()
     }
 
+    // With orders on screen a failed reload is a toast, the list stays put;
+    // with none it stays for the full-screen error state
+    ErrorToastEffect(
+        error = error.takeIf { state.orders.isNotEmpty() },
+        onConsumed = { orderViewModel.clearError() }
+    )
+
+    OrderListContent(
+        state = state,
+        error = error,
+        onReload = { scope.launch { orderViewModel.loadOrders() } },
+        onBrowseCocktails = { navigationManager.navigateToHome() },
+        onOrderClick = { order -> navigationManager.navigateToOrderDetail(order.id) }
+    )
+}
+
+/**
+ * Stateless order-list content: renders [state] and reports every intent
+ * upward, so it can be previewed/screenshot-tested without a ViewModel.
+ * [error] is rendered full-screen only when there are no orders to show.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun OrderListContent(
+    state: OrderUiState,
+    error: ErrorHandler.UserFriendlyError?,
+    onReload: () -> Unit,
+    onBrowseCocktails: () -> Unit,
+    onOrderClick: (Order) -> Unit = {}
+) {
+    val isLoading = state.isLoading
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.Background)
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        LoadingStateComponent(isLoading = isLoading)
+        // Skeleton order cards while orders load
+        if (isLoading) {
+            OrderListLoadingShimmer()
+        }
 
-        if (!isLoading && error != null) {
-            EmptyStateComponent(
-                title = stringResource(R.string.error),
-                message = error?.message ?: stringResource(R.string.order_unknown_error),
-                actionButtonText = stringResource(R.string.cart_try_again),
-                onActionButtonClick = { scope.launch { orderViewModel.loadOrders() } }
-            )
+        // Retry reloads, and the reload clears the error when it starts
+        if (!isLoading && error != null && state.orders.isEmpty()) {
+            ErrorStateView(error = error, onRetry = onReload)
         } else if (!isLoading && state.orders.isEmpty()) {
             EmptyStateComponent(
-                title = stringResource(R.string.order_list_empty_title),
-                message = stringResource(R.string.order_list_empty_message),
-                actionButtonText = stringResource(R.string.browse_cocktails),
-                onActionButtonClick = { navigationManager.navigateToHome() },
+                title = stringResource(MR.strings.order_list_empty_title),
+                message = stringResource(MR.strings.order_list_empty_message),
+                actionButtonText = stringResource(MR.strings.browse_cocktails),
+                onActionButtonClick = onBrowseCocktails,
                 icon = Icons.AutoMirrored.Filled.List
             )
         } else if (!isLoading) {
@@ -76,16 +115,18 @@ fun OrderListScreen(
             val pullToRefreshState = rememberPullToRefreshState()
             PullToRefreshBox(
                 isRefreshing = isLoading,
-                onRefresh = { scope.launch { orderViewModel.loadOrders() } },
-                modifier = Modifier.fillMaxSize(),
+                onRefresh = onReload,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .refreshAccessibilityAction(stringResource(MR.strings.refresh), onReload),
                 state = pullToRefreshState,
                 indicator = {
                     PullToRefreshDefaults.Indicator(
                         state = pullToRefreshState,
                         isRefreshing = isLoading,
                         modifier = Modifier.align(Alignment.TopCenter),
-                        containerColor = Color.White,
-                        color = AppColors.Primary
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             ) {
@@ -97,7 +138,7 @@ fun OrderListScreen(
                     verticalArrangement = Arrangement.spacedBy(Spacing.lg)
                 ) {
                     items(state.orders, key = { it.id }) { order ->
-                        OrderCard(order = order)
+                        OrderCard(order = order, onClick = { onOrderClick(order) })
                     }
                 }
             }

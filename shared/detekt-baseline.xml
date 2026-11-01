@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>NewLineAtEndOfFile:AppModule.kt:com.cocktailcraft.di.AppModule.kt</ID>
+    <ID>TooManyFunctions:KoinIOS.kt:KoinHelper : KoinComponent</ID>
+    <ID>TopLevelPropertyNaming:IosTestMode.kt:private const val TEST_SECURE_SETTINGS_SUITE = "com.cocktailcraft.testmode.secure"</ID>
+    <ID>TopLevelPropertyNaming:IosTestMode.kt:private const val TEST_SETTINGS_SUITE = "com.cocktailcraft.testmode"</ID>
+  </CurrentIssues>
+</SmellBaseline>

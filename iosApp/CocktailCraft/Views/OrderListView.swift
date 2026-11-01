@@ -2,19 +2,25 @@ import SwiftUI
 import shared
 
 struct OrderListView: View {
-    @State private var viewModel = OrderViewModelSKIE()
+    // Built once via ViewModelHolder, not on every parent re-render
+    @State private var model = ViewModelHolder(OrderViewModelSKIE.init)
+    private var viewModel: OrderViewModelSKIE { model.wrapper }
     @State private var hasLoaded = false
+    // The order whose detail screen is pushed (nil on the list itself)
+    @State private var selectedOrder: OrderDetailRoute?
     // Tab switches route through the app-level router (same pattern as
     // CartView/ProfileView) so "Browse Cocktails" can land on Home.
     @Environment(AppRouter.self) private var router
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     var body: some View {
         // No nav container here: ContentView already wraps this tab in a
         // NavigationStack (the old inner NavigationView double-nested it).
         contentView
-            .navigationTitle("Orders")
-            .brandedNavigationBar()
+            // App background (not the system black/white) behind every state
+            .background(AppColors.background(isDarkMode: isDarkMode).ignoresSafeArea())
+            .brandedNavigationBar(title: L(\.orders))
             // Seed load once; afterwards the observed orders flow keeps the
             // list fresh. A load cancelled mid-flight (user leaves the tab)
             // leaves hasLoaded false, so the next visit retries.
@@ -23,7 +29,12 @@ struct OrderListView: View {
                 await viewModel.loadOrders()
                 if !Task.isCancelled { hasLoaded = true }
             }
-            .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
+            .navigationDestination(item: $selectedOrder) { route in
+                OrderDetailView(orderId: route.orderId)
+            }
+            // While a detail screen is pushed it alerts its own errors; the
+            // covered list keeps its own for when it is back on screen
+            .sharedErrorAlert(selectedOrder == nil ? viewModel.error : nil, clear: { viewModel.clearError() })
     }
 
     @ViewBuilder
@@ -38,7 +49,7 @@ struct OrderListView: View {
     }
 
     private var loadingView: some View {
-        LoadingStateView(message: "Loading orders...")
+        OrderListSkeleton()
     }
 
     // Mirrors Android's Orders empty state: icon/title/message plus a
@@ -46,20 +57,33 @@ struct OrderListView: View {
     private var emptyView: some View {
         EmptyStateView(
             icon: "list.bullet",
-            title: String(localized: "No orders yet"),
-            message: String(localized: "Your order history will appear here"),
-            actionTitle: String(localized: "Browse Cocktails"),
+            title: L(\.order_list_empty_title),
+            message: L(\.order_list_empty_message),
+            actionTitle: L(\.browse_cocktails),
             action: {
                 router.selectedTab = .home
             }
         )
     }
 
+    // Cards on the app background, spaced like Android's LazyColumn
+    // (16 around the list and between cards)
     private var ordersList: some View {
-        List {
-            ForEach(Array(viewModel.state.orders), id: \.id) { order in
-                orderRow(order: order)
+        ScrollView {
+            LazyVStack(spacing: AppTheme.Spacing.lg) {
+                ForEach(Array(viewModel.state.orders), id: \.id) { order in
+                    // The whole card opens the order's details
+                    Button {
+                        selectedOrder = OrderDetailRoute(orderId: order.id)
+                    } label: {
+                        orderCard(order: order)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(L(\.order_view_details_a11y))
+                    .accessibilityIdentifier("orders.card")
+                }
             }
+            .padding(AppTheme.Spacing.lg)
         }
         // Pull-to-refresh, parity with Android Orders
         .refreshable {
@@ -67,33 +91,57 @@ struct OrderListView: View {
         }
     }
 
-    private func orderRow(order: Order) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Order #\(order.id)")
-                .font(.headline)
-                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-            // Colored status indicator matching Android's OrderCard
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(statusColor(order.status))
-                    .frame(width: 8, height: 8)
-                Text(order.status)
+    /// Laid out like Android's OrderCard: order number and date, one row per
+    /// item, a divider, the total, then the colored status.
+    private func orderCard(order: Order) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                // Short number, as on Android ("Order #42052")
+                Text(L(\.order_number, String(order.id.suffix(5))))
+                    .font(.callout.weight(.bold))
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                Text(order.date)
                     .font(.subheadline)
-                    .foregroundColor(statusColor(order.status))
+                    .foregroundColor(AppColors.textSecondary(appearance))
             }
-            Text("Total: " + order.total.asPrice)
-                .font(.body)
-                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
-        }
-        .padding(.vertical, 4)
-    }
+            .padding(.bottom, AppTheme.Spacing.md)
 
-    private func statusColor(_ status: String) -> Color {
-        switch status {
-        case "Completed": return AppColors.success
-        case "In Progress": return AppColors.warning
-        default: return AppColors.gray
+            ForEach(Array(order.items.enumerated()), id: \.offset) { _, item in
+                HStack {
+                    Text(L(\.order_item_quantity_name, item.quantity, item.name))
+                        .font(.subheadline)
+                    Spacer()
+                    Text(item.lineTotal.formatted())
+                        .font(.subheadline.weight(.medium))
+                }
+                .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                .padding(.vertical, AppTheme.Spacing.xs)
+                .accessibilityElement(children: .combine)
+            }
+
+            Divider()
+                .overlay(AppColors.neutralSubtle(isDarkMode: isDarkMode))
+                .padding(.vertical, AppTheme.Spacing.md)
+
+            HStack {
+                Text(L(\.total))
+                    .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
+                Spacer()
+                Text(order.total.formatted())
+                    .foregroundColor(AppColors.primary(appearance))
+            }
+            .font(.callout.weight(.bold))
+            .accessibilityElement(children: .combine)
+
+            OrderStatusIndicator(status: order.status)
+                .padding(.top, AppTheme.Spacing.md)
+                .accessibilityElement(children: .combine)
         }
+        .padding(AppTheme.Spacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardStyle()
     }
 }
 

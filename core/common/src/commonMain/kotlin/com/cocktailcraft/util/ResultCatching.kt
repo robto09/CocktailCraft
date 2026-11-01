@@ -1,0 +1,56 @@
+package com.cocktailcraft.util
+
+import com.cocktailcraft.domain.util.DomainException
+import com.cocktailcraft.domain.util.Result
+import kotlinx.coroutines.CancellationException
+import kotlin.native.HiddenFromObjC
+
+/**
+ * Repository/use-case boundary helper for the typed error pipeline.
+ *
+ * Runs [block] — which builds its own Result.Success/Result.Error for
+ * legitimate business-rule early returns (e.g. auth lockout) — and, if it
+ * throws, converts the exception into a [Result.Error] carrying the
+ * [com.cocktailcraft.domain.util.ErrorCode] assigned by the shared type-based
+ * classifier ([ErrorClassifier]) instead of defaulting to
+ * ErrorCode.UNKNOWN. A thrown DomainException (from a nested getOrThrow())
+ * keeps its original code. Coroutine cancellation is rethrown, never turned
+ * into a user-facing error.
+ *
+ * The error's message is [defaultMessage] plus the exception's type, never
+ * the exception's own message: Result.Error messages end up in logs that
+ * release builds keep (Warn and up), and a Ktor message embeds the request
+ * URL with the user's search terms. The network layer debug-logs the detail.
+ *
+ * Lives in :core:common (was :core:data-internal) so the domain use cases
+ * share it instead of hand-rolling catch blocks that swallow cancellation.
+ */
+@HiddenFromObjC
+inline fun <T> runCatchingResult(defaultMessage: String, block: () -> Result<T>): Result<T> = try {
+    block()
+} catch (e: CancellationException) {
+    throw e
+} catch (e: DomainException) {
+    Result.Error(message = e.message ?: defaultMessage, code = e.code, retryAfterMs = e.retryAfterMs)
+} catch (e: Exception) {
+    Result.Error(
+        message = "$defaultMessage (${e::class.simpleName})",
+        code = ErrorClassifier.codeFor(e)
+    )
+}
+
+/**
+ * Runs [block], answering [onFailure] for any exception EXCEPT coroutine
+ * cancellation, which is rethrown. For best-effort steps that degrade to a
+ * fallback value (a cached copy, an empty list) instead of a Result.Error: a
+ * bare `catch (e: Exception)` there would also catch the CancellationException
+ * of a cancelled caller and keep running as if nothing happened.
+ */
+@HiddenFromObjC
+inline fun <T> runCatchingNonCancellation(onFailure: (Exception) -> T, block: () -> T): T = try {
+    block()
+} catch (e: CancellationException) {
+    throw e
+} catch (e: Exception) {
+    onFailure(e)
+}

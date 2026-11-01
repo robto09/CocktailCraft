@@ -4,22 +4,11 @@ import shared
 /**
  * iOS ViewModel wrapper for SharedCocktailDetailViewModel using pure SKIE integration.
  * State/error mirroring and observation-task lifecycle live in
- * SharedViewModelWrapper.
+ * SharedViewModelWrapper; views read `state.<field>` (including the derived
+ * `state.nutritionFacts` / `state.shareableText`). The helpers below are
+ * Swift-only presentation formatting over that state.
  */
 final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
-
-    // Computed properties
-    var hasRelatedCocktails: Bool {
-        !state.relatedCocktails.isEmpty
-    }
-
-    var shareableText: String {
-        sharedViewModel.getShareableText()
-    }
-
-    var nutritionFacts: NutritionFacts? {
-        sharedViewModel.getNutritionFacts()
-    }
 
     // Shared ViewModel instance
     private let sharedViewModel: SharedCocktailDetailViewModel
@@ -27,29 +16,26 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
     init() {
         let viewModel = getSharedKoinHelper().getSharedCocktailDetailViewModel()
         self.sharedViewModel = viewModel
-        super.init(uiState: viewModel.uiState, errorFlow: viewModel.error)
+        super.init(viewModel: viewModel, uiState: viewModel.uiState, ownsViewModel: true)
         #if DEBUG
-        // IO-13 instrumentation: @State evaluates its initializer on every
-        // parent re-render and discards the extra instances — each one spins
-        // up (and deinit immediately tears down) a fresh Koin factory VM with
-        // its own coroutine scope. Watch these logs on the detail flow; if
-        // create/teardown pairs are frequent, move to lazy resolution in
-        // .task or a lighter factory.
+        // Instance gauge: a plain `@State var viewModel = ...()` re-ran this
+        // initializer on every parent re-render, each time building (and
+        // immediately tearing down) a fresh Koin factory VM. Views now hold
+        // the wrapper through ViewModelHolder, so this should log exactly
+        // one "created" per pushed detail screen; more means a regression.
         Self.liveInstances += 1
         print("CocktailDetailViewModelSKIE: created (live: \(Self.liveInstances))")
         #endif
     }
 
+    // The wrapped Koin `factory` instance is owned (ownsViewModel), so the
+    // base deinit clears its scope; this one only feeds the instance gauge.
+    #if DEBUG
     deinit {
-        // This wraps a Koin `factory` instance owned by this wrapper, so its
-        // scope is cancelled here; the base deinit cancels observation tasks.
-        // (Singleton-backed wrappers must NOT call onCleared().)
-        sharedViewModel.onCleared()
-        #if DEBUG
         Self.liveInstances -= 1
         print("CocktailDetailViewModelSKIE: torn down (live: \(Self.liveInstances))")
-        #endif
     }
+    #endif
 
     #if DEBUG
     // Rough churn gauge. nonisolated(unsafe): deinit is nonisolated and must
@@ -63,91 +49,20 @@ final class CocktailDetailViewModelSKIE: SharedViewModelWrapper<DetailUiState> {
         await run { try await sharedViewModel.loadCocktail(cocktailId: cocktailId) }
     }
 
-    func toggleFavorite() async {
-        await run { try await sharedViewModel.toggleFavorite() }
+    func toggleFavorite() {
+        sharedViewModel.toggleFavorite()
     }
 
-    func addToCart(quantity: Int = 1) async {
-        await run { try await sharedViewModel.addToCart(quantity: Int32(quantity)) }
-    }
-
-    func updateCartQuantity(_ quantity: Int) async {
-        await run { try await sharedViewModel.updateCartQuantity(quantity: Int32(quantity)) }
-    }
-
-    func removeFromCart() async {
-        await run { try await sharedViewModel.removeFromCart() }
-    }
-
-    // MARK: - Synchronous Methods
-
-    func clearError() {
-        sharedViewModel.clearError()
-    }
-
-    func refresh() {
-        sharedViewModel.refresh()
+    /// Adds the shown cocktail to the cart. The outcome ("Added … to cart"
+    /// only on success, else the failure) arrives on the mirrored `event`.
+    func addToCart() {
+        sharedViewModel.addToCart()
     }
 
     // MARK: - Helper Methods for SwiftUI
 
-    func formatIngredients() -> String {
-        guard let cocktail = state.cocktail else { return "" }
-
-        return cocktail.ingredients.map { ingredient in
-            let measure = ingredient.measure.isEmpty ? "" : "\(ingredient.measure) "
-            return "• \(measure)\(ingredient.name)"
-        }.joined(separator: "\n")
-    }
-
-    func getIngredientsByType(_ type: String) -> [String] {
-        return state.ingredientsByType[type] ?? []
-    }
-
-    func getAllIngredientTypes() -> [String] {
-        return Array(state.ingredientsByType.keys).sorted()
-    }
-
     func formatPrice() -> String {
         guard let cocktail = state.cocktail else { return "$0.00" }
-        return cocktail.price.asPrice
-    }
-
-    func formatRating() -> String {
-        guard let cocktail = state.cocktail else { return "0.0" }
-        return String(format: "%.1f", cocktail.rating)
-    }
-
-    func getStockStatus() -> String {
-        guard let cocktail = state.cocktail else { return "Unknown" }
-
-        if !cocktail.inStock {
-            return "Out of Stock"
-        } else if cocktail.stockCount <= 5 {
-            return "Low Stock (\(cocktail.stockCount) left)"
-        } else {
-            return "In Stock"
-        }
-    }
-
-    func getStockStatusColor() -> Color {
-        guard let cocktail = state.cocktail else { return .gray }
-
-        if !cocktail.inStock {
-            return .red
-        } else if cocktail.stockCount <= 5 {
-            return .orange
-        } else {
-            return .green
-        }
-    }
-
-    func canAddToCart() -> Bool {
-        guard let cocktail = state.cocktail else { return false }
-        return cocktail.inStock && cocktail.stockCount > 0
-    }
-
-    func shareContent() -> String {
-        return shareableText
+        return cocktail.price.formatted()
     }
 }

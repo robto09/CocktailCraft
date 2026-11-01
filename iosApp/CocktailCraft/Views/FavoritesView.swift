@@ -3,71 +3,76 @@ import SwiftUI
 import shared
 
 struct FavoritesView: View {
-    @State private var viewModel = FavoritesViewModelSKIE()
+    // Built once via ViewModelHolder, not on every parent re-render
+    @State private var model = ViewModelHolder(FavoritesViewModelSKIE.init)
+    private var viewModel: FavoritesViewModelSKIE { model.wrapper }
     @Environment(CartViewModelSKIE.self) private var cartViewModel
+    @Environment(AppRouter.self) private var router
     /// Ids mid-unfavorite: their heart renders deselected for a beat before
     /// the card animates out, instead of the card vanishing on tap.
     @State private var removingIds: Set<String> = []
-    @State private var showingToast = false
-    @State private var toastMessage = ""
+    // The latest add-to-cart outcome, until its toast picks it up
+    @State private var addToCartOutcome: UiEvent?
+    @Environment(\.isDarkMode) private var isDarkMode
 
     var body: some View {
         Group {
             if viewModel.state.favorites.isEmpty {
                 emptyStateView
             } else {
-                favoritesGridView
+                favoritesList
             }
         }
-        .navigationTitle("Favorites")
-        .brandedNavigationBar()
+        // App background (not the system black/white) behind every state
+        .background(AppColors.background(isDarkMode: isDarkMode).ignoresSafeArea())
+        .brandedNavigationBar(title: L(\.favorites))
         .navigationDestination(for: String.self) { cocktailId in
             CocktailDetailView(cocktailId: cocktailId)
         }
         .task {
             await viewModel.loadFavorites()
         }
-        .toast(isShowing: $showingToast, message: toastMessage, type: .success, duration: 2)
+        // Add-to-cart outcomes: returned to this screen, which asked
+        .sharedEventToast(addToCartOutcome, clear: { addToCartOutcome = nil })
+        // "Removed … from favorites" with Undo — this screen's own events
+        .sharedEventToast(viewModel.event, clear: { viewModel.clearEvent() })
         .sharedErrorAlert(viewModel.error, clear: { viewModel.clearError() })
     }
     
+    /// "Browse Cocktails" goes to Home, as on Android.
     private var emptyStateView: some View {
         EmptyStateView(
             icon: "heart",
-            title: "No favorites yet",
-            message: "Start adding cocktails to your favorites"
+            title: L(\.no_favorites),
+            message: L(\.favorites_empty_message_ios),
+            actionTitle: L(\.browse_cocktails),
+            action: { router.selectedTab = .home }
         )
     }
     
-    private var favoritesGridView: some View {
+    /// One full-width card per row, the same card as Home and Android's
+    /// Favorites list (16 between cards, 16 around the list).
+    private var favoritesList: some View {
         ScrollView {
-            gridContent
-                .padding()
+            LazyVStack(spacing: 16) {
+                ForEach(viewModel.state.favorites, id: \.id) { cocktail in
+                    favoriteRow(cocktail)
+                }
+            }
+            // The favorites list changes via the shared flow (outside any
+            // SwiftUI animation transaction), so animate insert/remove off
+            // the id list — the counterpart of Android's .animateItem().
+            .animation(.default, value: viewModel.state.favorites.map(\.id))
+            .padding(16)
         }
         .refreshable {
             await viewModel.refreshFavorites()
         }
     }
-    
-    private var gridContent: some View {
-        LazyVGrid(columns: gridColumns, spacing: 16) {
-            ForEach(viewModel.state.favorites, id: \.id) { cocktail in
-                cocktailGridItem(cocktail)
-            }
-        }
-        // The favorites list changes via the shared flow (outside any SwiftUI
-        // animation transaction), so animate insert/remove off the id list —
-        // the counterpart of Android's .animateItem().
-        .animation(.default, value: viewModel.state.favorites.map(\.id))
-    }
-    
-    private var gridColumns: [GridItem] {
-        [GridItem(.flexible()), GridItem(.flexible())]
-    }
-    
-    private func cocktailGridItem(_ cocktail: Cocktail) -> some View {
+
+    private func favoriteRow(_ cocktail: Cocktail) -> some View {
         // Value-based link: the destination (and its factory-scoped detail
-        // ViewModel) is only built on push, not eagerly per grid item.
+        // ViewModel) is only built on push, not eagerly per row.
         NavigationLink(value: cocktail.id) {
             CocktailCard(
                 cocktail: cocktail,
@@ -78,30 +83,26 @@ struct FavoritesView: View {
                 // Add-to-cart with toast confirmation, matching Home and the
                 // Android Favorites list (which had this button all along)
                 onAddToCart: {
+                    // Only a real add is confirmed; a failed one says so instead
                     Task { @MainActor in
-                        await cartViewModel.addToCart(cocktail)
-                        toastMessage = String(localized: "Added \(cocktail.name) to cart")
-                        withAnimation {
-                            showingToast = true
-                        }
+                        addToCartOutcome = await cartViewModel.addToCart(cocktail)
                     }
-                },
-                layout: .vertical
+                }
             )
         }
         .buttonStyle(PlainButtonStyle())
     }
 
     /// Staged removal: deselect the heart immediately, give it a beat to
-    /// register, then toggle — the card animates out when the shared flow
-    /// re-emits. If the toggle fails (state rolls back), clearing the id
-    /// restores the filled heart.
+    /// register, then remove — the card animates out when the shared flow
+    /// re-emits, and an Undo toast offers it back. If the removal fails,
+    /// clearing the id restores the filled heart.
     private func unfavorite(_ cocktail: Cocktail) {
         guard !removingIds.contains(cocktail.id) else { return }
         removingIds.insert(cocktail.id)
         Task {
             try? await Task.sleep(for: .milliseconds(350))
-            await viewModel.toggleFavorite(cocktail)
+            await viewModel.removeFavorite(cocktail)
             removingIds.remove(cocktail.id)
         }
     }

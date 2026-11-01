@@ -1,0 +1,36 @@
+# Matches the existing code style: 4-space indents for code, 2 for YAML and
+# shell, tabs where Xcode writes them. ktlint (via detekt-formatting) reads
+# the [*.{kt,kts}] section; see README "Static analysis".
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+max_line_length = 120
+# IntelliJ's Kotlin style, which kotlin.code.style=official also selects
+ktlint_code_style = intellij_idea
+# Composables are PascalCase by convention
+ktlint_function_naming_ignore_when_annotated_with = Composable
+
+[*.swift]
+max_line_length = 120
+
+[*.{yml,yaml,sh}]
+indent_size = 2
+
+# Xcode writes these with tabs
+[*.{plist,pbxproj,entitlements}]
+indent_style = tab
+
+[*.md]
+# Two trailing spaces are a Markdown line break
+trim_trailing_whitespace = false
+
+[*.{bat,cmd}]
+end_of_line = crlf

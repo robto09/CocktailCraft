@@ -1,15 +1,5 @@
 package com.cocktailcraft.android.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -24,36 +14,33 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.domain.model.Cocktail
-import com.cocktailcraft.android.R
-import com.cocktailcraft.android.ui.animation.AnimationUtils
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import com.cocktailcraft.android.util.rememberHapticHandler
+import com.cocktailcraft.android.util.stringResource
+import com.cocktailcraft.domain.model.Cocktail
+import com.cocktailcraft.domain.model.CocktailRatingSummary
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.add_to_cart_item_a11y
+import com.cocktailcraft.resources.list_out_of_stock
+import com.cocktailcraft.resources.list_tap_to_view_ingredients
+import com.cocktailcraft.resources.list_view_details_label
 
 /**
  * An enhanced version of CocktailItem with animations
@@ -63,34 +50,21 @@ fun AnimatedCocktailItem(
     cocktail: Cocktail,
     onClick: () -> Unit,
     onAddToCart: (Cocktail) -> Unit,
+    modifier: Modifier = Modifier,
     isFavorite: Boolean = false,
     onToggleFavorite: (Cocktail) -> Unit = {},
-    modifier: Modifier = Modifier
+    reviewRating: CocktailRatingSummary? = null
 ) {
-    // Animation states
-    var isHovered by remember { mutableStateOf(false) }
-
-    // Scale animation for hover effect
-    val scale by animateFloatAsState(
-        targetValue = if (isHovered) 1.03f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "hover_scale"
-    )
-
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .scale(scale)
             .clickable(
                 onClick = onClick,
-                onClickLabel = stringResource(R.string.list_view_details_label, cocktail.name)
+                onClickLabel = stringResource(MR.strings.list_view_details_label, cocktail.name)
             ),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = AppColors.Surface
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp,
@@ -102,20 +76,24 @@ fun AnimatedCocktailItem(
             cocktail = cocktail,
             isFavorite = isFavorite,
             onAddToCart = onAddToCart,
-            onToggleFavorite = onToggleFavorite
+            onToggleFavorite = onToggleFavorite,
+            reviewRating = reviewRating
         )
     }
 }
 
 /**
- * Extracted content of the cocktail item to avoid duplication
+ * Extracted content of the cocktail item to avoid duplication.
+ * [reviewRating], when the user has reviewed the cocktail, shows their
+ * average under the ingredients (the API itself has no ratings to show).
  */
 @Composable
 fun CocktailItemContent(
     cocktail: Cocktail,
     isFavorite: Boolean,
     onAddToCart: (Cocktail) -> Unit,
-    onToggleFavorite: (Cocktail) -> Unit
+    onToggleFavorite: (Cocktail) -> Unit,
+    reviewRating: CocktailRatingSummary? = null
 ) {
     // Haptic feedback handler for favorite toggle
     val hapticHandler = rememberHapticHandler()
@@ -131,12 +109,13 @@ fun CocktailItemContent(
             modifier = Modifier
                 .size(100.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(AppColors.LightGray)
+                .background(CocktailCraftTheme.extendedColors.neutralSubtle)
         ) {
-            // Use our optimized image component
+            // Use our optimized image component (decorative: the name is
+            // read from the text beside it)
             OptimizedImage(
                 url = cocktail.imageUrl,
-                contentDescription = cocktail.name,
+                contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
                 targetSize = 200, // Target size for better memory usage
@@ -152,7 +131,7 @@ fun CocktailItemContent(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = stringResource(R.string.list_out_of_stock),
+                        text = stringResource(MR.strings.list_out_of_stock),
                         color = Color.White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -173,51 +152,51 @@ fun CocktailItemContent(
                 text = cocktail.name,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
-                color = AppColors.TextPrimary,
-                maxLines = 1,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Display alcoholic info with category info
+            // "Alcoholic • Cocktail"; an alcoholic value the list endpoint
+            // didn't supply is left out rather than shown as "Unknown"
             Text(
-                text = buildString {
-                    append(cocktail.alcoholic ?: stringResource(R.string.list_alcoholic_unknown))
-                    cocktail.category?.let {
-                        append(" • ")
-                        append(it)
-                    }
-                },
+                text = listOfNotNull(cocktail.knownAlcoholic, cocktail.category).joinToString(" • "),
                 fontSize = 14.sp,
-                color = AppColors.TextSecondary,
-                maxLines = 1,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Use safe call for ingredients that might be null or empty
+            // The first two ingredients; a partial record (from a list
+            // endpoint) has none yet, so point at the detail screen instead
             Text(
-                text = if (cocktail.ingredients.isNotEmpty()) {
-                    val firstIngredient = cocktail.ingredients.first().name
-                    // Check if it's a placeholder
-                    if (firstIngredient == "Tap to view ingredients") {
-                        firstIngredient
-                    } else {
-                        // Join first 2 ingredients with safe operators
-                        cocktail.ingredients.take(2).joinToString(", ") { it.name }
-                            .let { if (cocktail.ingredients.size > 2) "$it..." else it }
-                    }
+                text = if (cocktail.hasFullDetails && cocktail.ingredients.isNotEmpty()) {
+                    cocktail.ingredients.take(2).joinToString(", ") { it.name }
+                        .let { if (cocktail.ingredients.size > 2) "$it..." else it }
                 } else {
-                    stringResource(R.string.list_tap_to_view_ingredients)
+                    stringResource(MR.strings.list_tap_to_view_ingredients)
                 },
                 fontSize = 12.sp,
-                color = AppColors.TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontStyle = FontStyle.Italic,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+
+            if (reviewRating != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                RatingDisplay(
+                    rating = reviewRating.rating,
+                    reviewCount = reviewRating.count,
+                    starSize = 14,
+                    ratingTextSize = 12,
+                    reviewCountTextSize = 12
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -227,31 +206,36 @@ fun CocktailItemContent(
             ) {
                 // Price
                 Text(
-                    text = stringResource(R.string.list_price_format, cocktail.price),
+                    text = formatPrice(cocktail.price),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = AppColors.Primary
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Favorite button with animation and haptic feedback
-                AnimatedIconButton(
-                    onClick = {
+                // Favorite toggle with haptic feedback
+                FavoriteToggleButton(
+                    isFavorite = isFavorite,
+                    onToggle = {
                         hapticHandler.performToggleFavorite(isFavorite)
                         onToggleFavorite(cocktail)
                     },
-                    icon = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = if (isFavorite) stringResource(R.string.list_remove_from_favorites) else stringResource(R.string.list_add_to_favorites),
-                    tint = if (isFavorite) AppColors.Secondary else AppColors.Gray
+                    iconSize = 24.dp
                 )
 
                 // Add to cart button with animation
                 AnimatedIconButton(
                     onClick = { onAddToCart(cocktail) },
                     icon = Icons.Default.ShoppingCart,
-                    contentDescription = stringResource(R.string.add_to_cart),
-                    tint = if (cocktail.stockCount > 0) AppColors.Primary else AppColors.Gray,
+                    contentDescription = stringResource(MR.strings.add_to_cart_item_a11y, cocktail.name),
+                    tint = if (cocktail.stockCount >
+                        0
+                    ) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.outline
+                    },
                     enabled = cocktail.stockCount > 0
                 )
             }

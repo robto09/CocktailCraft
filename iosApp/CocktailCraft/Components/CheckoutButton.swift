@@ -6,9 +6,10 @@ struct CheckoutButton: View {
     let isLoading: Bool
     let action: () -> Void
     @Environment(\.isDarkMode) var isDarkMode
+    @Environment(\.appearance) var appearance
     
     init(
-        title: String = "Place Order",
+        title: String = L(\.cart_place_order),
         isEnabled: Bool = true,
         isLoading: Bool = false,
         action: @escaping () -> Void
@@ -29,24 +30,26 @@ struct CheckoutButton: View {
                 if isLoading {
                     ProgressView()
                         .scaleEffect(0.8)
-                        .tint(.white)
+                        .tint(AppColors.onPrimary(isDarkMode: isDarkMode))
                 } else {
                     Text(title)
                         .font(AppTheme.Typography.headline)
                         .fontWeight(.semibold)
                 }
             }
-            .foregroundColor(.white)
+            .foregroundColor(AppColors.onPrimary(isDarkMode: isDarkMode))
             .frame(maxWidth: .infinity)
             .padding(.vertical, AppTheme.Spacing.lg)
             .background(
                 isEnabled 
-                    ? AppColors.primary(isDarkMode: isDarkMode)
-                    : AppColors.textSecondary(isDarkMode: isDarkMode)
+                    ? AppColors.primary(appearance)
+                    : AppColors.textSecondary(appearance)
             )
             .cornerRadius(AppTheme.CornerRadius.md)
         }
         .disabled(!isEnabled || isLoading)
+        // Keeps its name while the spinner replaces the title
+        .accessibilityLabel(title)
         .accessibilityIdentifier("cart.placeOrderButton")
         .padding(.horizontal, AppTheme.Spacing.lg)
         .animation(AppTheme.Animation.quick, value: isLoading)
@@ -56,21 +59,21 @@ struct CheckoutButton: View {
 #Preview {
     VStack(spacing: 20) {
         CheckoutButton(
-            title: "Place Order",
+            title: L(\.cart_place_order),
             isEnabled: true,
             isLoading: false,
             action: {}
         )
         
         CheckoutButton(
-            title: "Processing...",
+            title: L(\.checkout_processing),
             isEnabled: false,
             isLoading: true,
             action: {}
         )
         
         CheckoutButton(
-            title: "Place Order",
+            title: L(\.cart_place_order),
             isEnabled: false,
             isLoading: false,
             action: {}

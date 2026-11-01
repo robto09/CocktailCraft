@@ -1,0 +1,68 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:CocktailDto.kt:CocktailDto$fun getIngredients: List&lt;CocktailIngredient&gt;</ID>
+    <ID>Filename:NetworkMonitor.kt:com.cocktailcraft.util.NetworkMonitor.kt</ID>
+    <ID>ForEachOnRange:CocktailDto.kt:CocktailDto$1..15</ID>
+    <ID>MagicNumber:AuthRepositoryImpl.kt:AuthRepositoryImpl.Companion$60</ID>
+    <ID>MagicNumber:CocktailDto.kt:CocktailDto$10</ID>
+    <ID>MagicNumber:CocktailDto.kt:CocktailDto$11</ID>
+    <ID>MagicNumber:CocktailDto.kt:CocktailDto$12</ID>
+    <ID>MagicNumber:CocktailDto.kt:CocktailDto$13</ID>
+    <ID>MagicNumber:CocktailDto.kt:CocktailDto$14</ID>
+    <ID>MagicNumber:CocktailDto.kt:CocktailDto$15</ID>
+    <ID>MagicNumber:CocktailDto.kt:CocktailDto$3</ID>
+    <ID>MagicNumber:CocktailDto.kt:CocktailDto$4</ID>
+    <ID>MagicNumber:CocktailDto.kt:CocktailDto$5</ID>
+    <ID>MagicNumber:CocktailDto.kt:CocktailDto$6</ID>
+    <ID>MagicNumber:CocktailDto.kt:CocktailDto$7</ID>
+    <ID>MagicNumber:CocktailDto.kt:CocktailDto$8</ID>
+    <ID>MagicNumber:CocktailDto.kt:CocktailDto$9</ID>
+    <ID>MagicNumber:CocktailRemoteDataSource.kt:CocktailRemoteDataSource$10.0f</ID>
+    <ID>MagicNumber:CocktailRemoteDataSource.kt:CocktailRemoteDataSource$100</ID>
+    <ID>MagicNumber:CocktailRemoteDataSource.kt:CocktailRemoteDataSource$21</ID>
+    <ID>MagicNumber:CocktailRemoteDataSource.kt:CocktailRemoteDataSource$3.0f</ID>
+    <ID>MagicNumber:NetworkModule.kt:429</ID>
+    <ID>MagicNumber:NetworkModule.kt:500</ID>
+    <ID>MagicNumber:NetworkModule.kt:599</ID>
+    <ID>MagicNumber:PasswordHasher.kt:PasswordHasher$16</ID>
+    <ID>MagicNumber:PasswordHasher.kt:PasswordHasher$4</ID>
+    <ID>MatchingDeclarationName:NetworkMonitor.kt:AndroidNetworkMonitor : BaseNetworkMonitorNetworkMonitor</ID>
+    <ID>MatchingDeclarationName:NetworkMonitor.kt:IOSNetworkMonitor : BaseNetworkMonitorNetworkMonitor</ID>
+    <ID>MaxLineLength:FakeCocktailApi.kt:FakeCocktailApi$/** When set, only filter.php?c= throws it — kept separate from [endpointError] so intersection tests can fail a later filter while category succeeds. */</ID>
+    <ID>MaxLineLength:NetworkMonitor.kt:IOSNetworkMonitor$@kotlin.native.HiddenFromObjC</ID>
+    <ID>NewLineAtEndOfFile:AppConfigImpl.kt:com.cocktailcraft.data.config.AppConfigImpl.kt</ID>
+    <ID>NewLineAtEndOfFile:DataPlatformModule.kt:com.cocktailcraft.di.DataPlatformModule.kt</ID>
+    <ID>NewLineAtEndOfFile:NetworkMonitor.kt:com.cocktailcraft.util.NetworkMonitor.kt</ID>
+    <ID>ReturnCount:AuthRepositoryImpl.kt:AuthRepositoryImpl$private fun verifyCredentials: Boolean</ID>
+    <ID>ReturnCount:CocktailSearchRepositoryImpl.kt:CocktailSearchRepositoryImpl$override suspend fun advancedSearch: Result&lt;List&lt;Cocktail&gt;&gt;</ID>
+    <ID>ReturnCount:Crypto.kt:private fun String.isWellFormedUtf16: Boolean</ID>
+    <ID>ReturnCount:PasswordHasher.kt:PasswordHasher$fun verify: Boolean</ID>
+    <ID>ReturnCount:PasswordHasher.kt:PasswordHasher$private fun String.hexToBytesOrNull: ByteArray?</ID>
+    <ID>SwallowedException:AuthRepositoryImpl.kt:AuthRepositoryImpl$e: Exception</ID>
+    <ID>SwallowedException:Crypto.kt:e: GeneralSecurityException</ID>
+    <ID>SwallowedException:NetworkMonitor.kt:AndroidNetworkMonitor$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:AuthRepositoryImpl.kt:AuthRepositoryImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:CocktailCache.kt:CocktailCache$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:CocktailFavoritesRepositoryImpl.kt:CocktailFavoritesRepositoryImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:LocalDatabase.kt:LocalDatabase$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:NetworkMonitor.kt:AndroidNetworkMonitor$e: Exception</ID>
+    <ID>TooManyFunctions:AuthRepositoryImpl.kt:AuthRepositoryImpl : AuthRepository</ID>
+    <ID>TooManyFunctions:CocktailCache.kt:CocktailCache</ID>
+    <ID>TooManyFunctions:CocktailRemoteDataSource.kt:CocktailRemoteDataSource</ID>
+    <ID>TooManyFunctions:LazySettings.kt:LazySettings : Settings</ID>
+    <ID>TopLevelPropertyNaming:Crypto.kt:private const val PLATFORM_PBKDF2 = "PBKDF2WithHmacSHA256"</ID>
+    <ID>TopLevelPropertyNaming:DataModule.kt:/** * File name of the app's SQLite database: the offline cocktail cache plus the * user's cart, orders, favorites and reviews. The name predates the user-data * tables; it stays so existing installs keep their database. */ internal const val COCKTAIL_DATABASE_NAME = "cocktailcraft_cache.db"</ID>
+    <ID>TopLevelPropertyNaming:DataPlatformModule.kt:// Lives in NSUserDefaults (wiped on uninstall) — its absence detects a fresh // install so stale Keychain auth data can be cleared. Not an auth key itself. private const val KEYCHAIN_INSTALL_MARKER = "keychain_install_marker"</ID>
+    <ID>TopLevelPropertyNaming:NetworkModule.kt:/** Upper bound for establishing a connection (TCP + TLS). */ internal const val CONNECT_TIMEOUT_MS = 5_000L</ID>
+    <ID>WildcardImport:CocktailApi.kt:import io.ktor.client.call.*</ID>
+    <ID>WildcardImport:CocktailApi.kt:import io.ktor.client.request.*</ID>
+    <ID>WildcardImport:CocktailApi.kt:import io.ktor.http.*</ID>
+    <ID>WildcardImport:NetworkModule.kt:import io.ktor.client.*</ID>
+    <ID>WildcardImport:NetworkModule.kt:import io.ktor.client.plugins.contentnegotiation.*</ID>
+    <ID>WildcardImport:NetworkModule.kt:import io.ktor.client.plugins.logging.*</ID>
+    <ID>WildcardImport:NetworkModule.kt:import io.ktor.serialization.kotlinx.json.*</ID>
+    <ID>WildcardImport:NetworkMonitor.kt:import platform.Network.*</ID>
+  </CurrentIssues>
+</SmellBaseline>

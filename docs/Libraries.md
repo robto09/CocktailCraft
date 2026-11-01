@@ -2,9 +2,11 @@
 
 This document lists the libraries used in the CocktailCraft application, with their versions and purposes.
 
-All versions are managed in a single version catalog: **`libraries.toml`** at the repository root, wired up as the `libs` catalog in `settings.gradle.kts` (`versionCatalogs { create("libs") { from(files("libraries.toml")) } }`). The build files (`shared/build.gradle.kts`, `androidApp/build.gradle.kts`, `baselineprofile/build.gradle.kts`) reference dependencies only through the catalog — update versions there, not in the build files.
+All versions are managed in a single version catalog: **`gradle/libs.versions.toml`**, which Gradle picks up as the `libs` catalog by convention (`build-logic/settings.gradle.kts` loads the same file explicitly). Dependabot reads that path and opens weekly update PRs (see `.github/dependabot.yml`). The build files (`shared/`, `presentation/` and `core/*/build.gradle.kts`, `androidApp/build.gradle.kts`, `baselineprofile/build.gradle.kts`) and the `build-logic` convention plugins reference dependencies and SDK/JVM levels only through the catalog — update versions there, not in the build files.
 
-## Shared Module (Kotlin Multiplatform)
+## Shared Modules (Kotlin Multiplatform)
+
+Used across `:shared` and the `:core:*`/`:presentation` modules it is split into (see README "Module Structure" for which module uses what).
 
 | Library | Version | Purpose |
 |---------|---------|---------|
@@ -14,11 +16,13 @@ All versions are managed in a single version catalog: **`libraries.toml`** at th
 | Kotlinx Serialization | 1.11.0 | JSON (de)serialization |
 | Kotlinx DateTime | 0.8.0 | Date and time handling |
 | Koin | 4.2.2 | Dependency injection (`koin-core`, `koin-core-viewmodel`; `koin-android`/`koin-androidx-compose` on Android) |
-| Multiplatform Settings | 1.3.0 | Cross-platform key-value storage |
-| Kermit | 2.1.0 | Multiplatform logging |
+| Multiplatform Settings | 1.3.0 | Cross-platform key-value storage (auth data, in the secure store: a Tink-encrypted file on Android, the Keychain on iOS) |
+| SQLDelight | 2.4.1 | SQLite storage for the cocktail catalog (`cached_cocktail`, `category_page`), recently viewed, cart, orders, favorites and reviews (`android-driver` on Android, `native-driver` on iOS; the iOS app links `sqlite3` itself via `OTHER_LDFLAGS` in `iosApp/project.yml`; `coroutines-extensions` for reactive `Query.asFlow()` reads) |
+| Kermit | 2.2.0 | Multiplatform logging |
+| moko-resources | 0.27.1 | Single source for the app's strings: generates `MR.strings`/`MR.plurals`, Android string resources and the iOS strings bundle from `core/resources/src/commonMain/moko-resources` (exported to Swift; see README "Localization") |
 | SKIE | 0.10.13 | Swift interop: Flow → AsyncSequence, suspend → async/await, enum/sealed-class bridging |
 | AndroidX Lifecycle ViewModel | 2.10.0 | Multiplatform `ViewModel` base for the shared ViewModels (exposed as `api` so consumers see the supertype) |
-| AndroidX Security Crypto | 1.1.0-alpha06 | Keystore-backed `EncryptedSharedPreferences` for the Android auth store |
+| Tink (`tink-android`) | 1.23.0 | Encrypts the Android auth store: AES-256-GCM over the whole store file, with the keyset wrapped by an Android Keystore key (`AuthStore.kt` in `:core:data`) |
 
 ## Android App
 
@@ -31,10 +35,24 @@ Compose library versions come from the **Compose BOM 2026.06.01** — the indivi
 | Navigation Compose | 2.9.8 | Type-safe navigation between screens |
 | Lifecycle (ViewModel/Runtime) | 2.10.0 | Lifecycle-aware ViewModel and runtime Compose integration |
 | Coil | 2.7.0 | Image loading and caching for Compose |
-| AppCompat | 1.6.1 | Base compatibility support |
-| Glance (appwidget, material3) | 1.1.1 | Home-screen widgets |
-| WorkManager | 2.9.0 | Background work (widget updates) |
+| placeholder-compose (RevenueCat) | 1.0.4 | Shimmering skeleton placeholders (`Modifier.placeholder`) while screens and images load; iOS draws matching skeletons with its own SwiftUI `.shimmering()` modifier |
+| AppCompat | 1.8.0 | Base compatibility support |
+| Glance (appwidget, material3) | 1.2.0 | Home-screen widgets |
+| WorkManager | 2.12.0 | Background work (widget updates) |
 | Koin (android, androidx-compose) | 4.2.2 | DI integration with Android and `koinViewModel()` |
+
+## iOS App (Swift Package Manager)
+
+Declared under `packages:` in `iosApp/project.yml` and pinned by the committed
+`Package.resolved`. The shared Kotlin code reaches Xcode as the `shared` framework built by the
+`:shared` umbrella module through Kotlin's direct integration
+(`:shared:embedAndSignAppleFrameworkForXcode`), not a package manager.
+
+| Library | Version | Purpose |
+|---------|---------|---------|
+| Kingfisher | 7.12.0 (up to next major) | Image loading with disk/memory caching |
+| DebugSwift | 1.7.13.1 (pinned by commit) | In-app QA debugging toolkit — Debug builds only (see [DebugSwift.md](DebugSwift.md)) |
+| swift-snapshot-testing | 1.19.6 (up to next major) | Snapshot tests — `CocktailCraftTests` target only (see README "Screenshot tests") |
 
 ## Testing
 
@@ -42,30 +60,37 @@ Compose library versions come from the **Compose BOM 2026.06.01** — the indivi
 |---------|---------|---------|
 | kotlin-test | 2.3.21 | Multiplatform test assertions (commonTest) |
 | JUnit 4 | 4.13.2 | Android unit test runner base |
-| JUnit Jupiter (JUnit 5) | 5.10.1 | Modern unit testing (API, engine, params; platform launcher 1.10.1) |
-| Mockk | 1.13.8 | Kotlin-friendly mocking (`mockk-android` for instrumented tests) |
+| JUnit Jupiter (JUnit 5) | 5.14.4 | Android app unit tests (API, engine, params, vintage engine for Robolectric; platform launcher 1.14.4) |
+| Mockk | 1.14.11 | Kotlin-friendly mocking (`mockk-android` for instrumented tests) |
 | Turbine | 1.2.1 | Flow emission testing |
 | Kotlinx Coroutines Test | 1.11.0 | Coroutine test dispatchers and scopes |
 | Ktor Client Mock | 3.5.1 | `MockEngine` for exercising the real Ktor pipeline in API tests |
 | Multiplatform Settings Test | 1.3.0 | In-memory `Settings` for shared tests |
+| SQLDelight SQLite (JDBC) driver | 2.4.1 | In-memory database for the cache and repository tests on the Android host (iOS tests use the native driver's in-memory mode) |
 | Koin Test | 4.2.2 | DI graph verification (`koin-test`, `koin-test-junit4`) |
-| Robolectric | 4.11.1 | JVM-hosted Android unit tests |
+| Robolectric | 4.17 | JVM-hosted Android unit tests |
+| Roborazzi (core, compose, accessibility-check) | 1.76.0 | Screenshot tests on Robolectric and Accessibility Test Framework checks (see README "Screenshot tests") |
 | Espresso | 3.7.0 | Instrumented UI testing |
 | Navigation Testing | 2.9.8 | Navigation component test utilities |
 | AndroidX Test (core/rules/runner) | 1.7.0 | Instrumentation test infrastructure (`ext-junit` 1.3.0) |
 | Arch Core Testing | 2.2.0 | `InstantTaskExecutorRule` for architecture components |
 | Compose UI Test (junit4, manifest) | BOM | Compose UI testing (versions from the Compose BOM) |
-| Benchmark (macro-junit4) | 1.5.0-alpha07 | Macrobenchmarks and baseline profile generation |
-| UIAutomator | 2.3.0 | Device-level UI automation for benchmarks |
+| Compose UI Test accessibility (`ui-test-junit4-accessibility`) | BOM | `enableAccessibilityChecks()` in instrumented Compose tests |
+| Benchmark (macro-junit4) | 1.5.0 | Macrobenchmarks and baseline profile generation |
+| UIAutomator | 2.4.0 | Device-level UI automation for benchmarks |
 | Profile Installer | 1.4.1 | Installs the generated baseline profile for AOT compilation |
 
 ## Build Plugins
 
 | Plugin | Version | Purpose |
 |--------|---------|---------|
-| Kotlin Multiplatform / JVM / Serialization | 2.3.21 | Kotlin compilation and serialization codegen |
+| Kotlin Multiplatform / Serialization | 2.3.21 | Kotlin compilation and serialization codegen |
 | Kotlin Compose (`org.jetbrains.kotlin.plugin.compose`) | 2.3.21 | Compose compiler — ships with Kotlin, no separately pinned compiler-extension version |
-| Android Gradle Plugin (application, library, kotlin-multiplatform-library) | 9.2.1 | Android builds; `compileSdk` (36) and `jvmTarget` (17) also live in the catalog |
-| Baseline Profile (`androidx.baselineprofile`) | 1.5.0-alpha07 | Baseline profile generation and consumption |
+| Android Gradle Plugin (application, test, kotlin-multiplatform-library) | 9.2.1 | Android builds; `compileSdk` (36) and `jvmTarget` (17) also live in the catalog |
+| Baseline Profile (`androidx.baselineprofile`) | 1.5.0 | Baseline profile generation and consumption |
 | SKIE (`co.touchlab.skie`) | 0.10.13 | Swift interop for the iOS framework |
-| Kotlin CocoaPods | 2.3.21 | Publishes the shared module as a CocoaPods framework |
+| SQLDelight (`app.cash.sqldelight`) | 2.4.1 | Generates the database API from the `.sq` files and verifies migrations (`verifySqlDelightMigration`) |
+| Roborazzi (`io.github.takahirom.roborazzi`) | 1.76.0 | Record/verify/compare tasks for the Android screenshot tests |
+| moko-resources (`dev.icerock.mobile.multiplatform-resources`) | 0.27.1 | Generates the shared strings (`MR`) for Android and iOS; `copyFrameworkResourcesToApp` copies the iOS bundle into the app |
+| detekt (`dev.detekt`, via build-logic) | 2.0.0-alpha.6 | Kotlin static analysis; pre-release because 1.23.x can't parse Kotlin 2.3. `detekt-rules-ktlint-wrapper` 2.0.0-alpha.6 wraps ktlint (check-only by default) — see README "Static analysis" |
+| Compose rules for detekt (`io.nlopez.compose.rules:detekt`) | 0.6.8 | Jetpack Compose lint rules (built against detekt 2.0.0-alpha.6) |

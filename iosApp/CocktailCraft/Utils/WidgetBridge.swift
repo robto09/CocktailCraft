@@ -1,9 +1,8 @@
 import Foundation
 
 // Compiled into BOTH the app target and the widget extension (see
-// project.yml) so the deep-link format, App Group id, snapshot schema, and
-// price formatting have exactly one definition. Keep this file
-// Foundation-only.
+// project.yml) so the deep-link format, App Group id and snapshot schema
+// have exactly one definition. Keep this file Foundation-only.
 
 /// WidgetKit kind strings, shared so the app can reload a specific widget's
 /// timelines without stringly-typed drift.
@@ -38,21 +37,41 @@ enum WidgetDeepLink {
         return components.url
     }
 
+    /// The cocktail id from a widget deep link, or nil when the URL is not
+    /// one. Any app or web page can open the custom scheme, so only
+    /// TheCocktailDB-style ids pass: 1-10 ASCII digits as the sole path
+    /// segment (matching Android's isValidCocktailId). Anything else is
+    /// ignored and the app stays where it is.
     static func cocktailId(from url: URL) -> String? {
         guard url.scheme == scheme, url.host == cocktailHost else { return nil }
-        let id = url.lastPathComponent
-        return id.isEmpty || id == "/" ? nil : id
+        let segments = url.pathComponents.filter { $0 != "/" }
+        guard segments.count == 1, let id = segments.first, isValidCocktailId(id) else { return nil }
+        return id
+    }
+
+    static func isValidCocktailId(_ id: String) -> Bool {
+        // ASCII 0-9 only: isNumber would also accept other scripts' digits,
+        // and a Character range would admit "1" plus a combining mark.
+        (1...10).contains(id.count) && id.allSatisfy { char in
+            char.asciiValue.map { (48...57).contains($0) } ?? false
+        }
     }
 }
 
 /// Minimal cocktail projection the widgets render — decoupled from the KMP
 /// `Cocktail` model on purpose: the widget extension does not link the
 /// shared framework.
+///
+/// `priceText` is the price already formatted by the app with the shared
+/// Money formatter, so prices have one formatter on every surface. Nil in a
+/// snapshot written before it existed (those held a Double `price`, which
+/// decoding ignores): the row then shows no price until the app rewrites
+/// the snapshot.
 struct WidgetCocktail: Codable, Identifiable {
     let id: String
     let name: String
     let imageUrl: String?
-    let price: Double
+    let priceText: String?
 }
 
 struct WidgetFavoritesSnapshot: Codable {
@@ -90,20 +109,63 @@ enum WidgetSnapshotStore {
     }
 }
 
-extension Double {
-    /// Canonical price string, shared by the app and the widget extension.
-    /// Prices are demo USD values, so the currency is fixed to USD while the
-    /// *rendering* follows the device locale — en_US shows "$12.50", fr_FR
-    /// shows "12,50 $US" — instead of hard-pinning an en_US string.
-    var asPrice: String {
-        Double.priceFormatter.string(from: NSNumber(value: self)) ?? "$" + String(format: "%.2f", self)
+/// One cocktail the Random Cocktail widget can show. The thumbnail travels
+/// with it (TheCocktailDB's ~100px preview, a few KB) because the widget
+/// extension does no networking of its own.
+struct WidgetRandomCocktail: Codable, Identifiable {
+    let id: String
+    let name: String
+    let category: String?
+    let thumbnail: Data?
+}
+
+/// The pool the Random Cocktail widget rotates through: a fresh random pick
+/// when the app was last online, then the user's recently viewed cocktails
+/// (so it stays populated offline, like Android's widget).
+struct WidgetRandomCocktailSnapshot: Codable {
+    let cocktails: [WidgetRandomCocktail]
+    let updatedAt: Date
+}
+
+/// Reads/writes the Random Cocktail pool in the shared App Group container,
+/// next to the favorites snapshot.
+enum WidgetRandomSnapshotStore {
+    private static let filename = "widget-random-snapshot.json"
+
+    private static var fileURL: URL? {
+        FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: WidgetSnapshotStore.appGroupId)?
+            .appendingPathComponent(filename)
     }
 
-    private static let priceFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.locale = Locale.current
-        return formatter
-    }()
+    static func write(_ snapshot: WidgetRandomCocktailSnapshot) {
+        guard let url = fileURL else { return }
+        do {
+            let data = try JSONEncoder().encode(snapshot)
+            try data.write(to: url, options: .atomic)
+        } catch {
+            #if DEBUG
+            print("WidgetRandomSnapshotStore: write failed: \(error)")
+            #endif
+        }
+    }
+
+    static func read() -> WidgetRandomCocktailSnapshot? {
+        guard let url = fileURL,
+              let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(WidgetRandomCocktailSnapshot.self, from: data)
+    }
+
+    /// The pool entry to show at `date`: the first (freshest) one when the
+    /// snapshot is new, then the next one every `rotation` (the widget's
+    /// refresh interval), so the widget keeps changing between app launches
+    /// without any network access.
+    static func cocktail(in snapshot: WidgetRandomCocktailSnapshot?,
+                         at date: Date,
+                         rotation: TimeInterval) -> WidgetRandomCocktail? {
+        guard let snapshot, !snapshot.cocktails.isEmpty, rotation > 0 else { return nil }
+        let slot = max(0, Int(date.timeIntervalSince(snapshot.updatedAt) / rotation))
+        return snapshot.cocktails[slot % snapshot.cocktails.count]
+    }
 }
+

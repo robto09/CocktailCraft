@@ -1,9 +1,10 @@
 package com.cocktailcraft.android.fakes
 
-import com.cocktailcraft.domain.model.Address
 import com.cocktailcraft.domain.model.Cocktail
 import com.cocktailcraft.domain.model.CocktailCartItem
+import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
+import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.model.SearchFilters
 import com.cocktailcraft.domain.model.User
 import com.cocktailcraft.domain.model.UserPreferences
@@ -14,7 +15,6 @@ import com.cocktailcraft.domain.repository.CocktailDetailRepository
 import com.cocktailcraft.domain.repository.CocktailFavoritesRepository
 import com.cocktailcraft.domain.repository.CocktailOfflineRepository
 import com.cocktailcraft.domain.repository.CocktailSearchRepository
-import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.util.Result
@@ -23,13 +23,32 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 
 /** Deterministic fixtures the fake repositories serve. */
 object TestCocktails {
-    val mojito = Cocktail(id = "1", name = "Test Mojito", category = "Cocktail", alcoholic = "Alcoholic", price = 8.50)
-    val negroni = Cocktail(id = "2", name = "Test Negroni", category = "Cocktail", alcoholic = "Alcoholic", price = 11.00)
-    val cola = Cocktail(id = "3", name = "Test Cola", category = "Soft Drink", alcoholic = "Non alcoholic", price = 3.25)
+    val mojito = Cocktail(
+        id = "1",
+        name = "Test Mojito",
+        category = "Cocktail",
+        alcoholic = "Alcoholic",
+        price = Money(850)
+    )
+    val negroni = Cocktail(
+        id = "2",
+        name = "Test Negroni",
+        category = "Cocktail",
+        alcoholic = "Alcoholic",
+        price = Money(1100)
+    )
+    val cola = Cocktail(
+        id = "3",
+        name = "Test Cola",
+        category = "Soft Drink",
+        alcoholic = "Non alcoholic",
+        price = Money(325)
+    )
     val all = listOf(mojito, negroni, cola)
 }
 
@@ -37,10 +56,12 @@ object TestCocktails {
  * One fake bound to all cocktail-facing repository interfaces, mirroring
  * production where a single impl backs the five focused interfaces.
  */
-class FakeCocktailRepository(
-    private val cocktails: List<Cocktail> = TestCocktails.all
-) : CocktailSearchRepository, CocktailCatalogRepository, CocktailDetailRepository,
-    CocktailFavoritesRepository, CocktailOfflineRepository {
+class FakeCocktailRepository(private val cocktails: List<Cocktail> = TestCocktails.all) :
+    CocktailSearchRepository,
+    CocktailCatalogRepository,
+    CocktailDetailRepository,
+    CocktailFavoritesRepository,
+    CocktailOfflineRepository {
 
     private val favorites = MutableStateFlow<List<Cocktail>>(emptyList())
 
@@ -61,8 +82,11 @@ class FakeCocktailRepository(
         filters.alcoholic?.let { alc ->
             result = result.filter {
                 val value = it.alcoholic?.replace('_', ' ')
-                if (alc) value.equals("Alcoholic", ignoreCase = true)
-                else value.equals("Non alcoholic", ignoreCase = true)
+                if (alc) {
+                    value.equals("Alcoholic", ignoreCase = true)
+                } else {
+                    value.equals("Non alcoholic", ignoreCase = true)
+                }
             }
         }
         return Result.Success(result)
@@ -77,14 +101,16 @@ class FakeCocktailRepository(
     override suspend fun getCategories(): Result<List<String>> =
         Result.Success(cocktails.mapNotNull { it.category }.distinct())
     override suspend fun getIngredients(): Result<List<String>> = Result.Success(emptyList())
-    override suspend fun getCocktailsSortedByNewest(): Result<List<Cocktail>> = Result.Success(cocktails)
+    override fun observeCategory(category: String): Flow<List<Cocktail>> =
+        flowOf(cocktails.filter { it.category == category })
+    override suspend fun refreshCategory(category: String, force: Boolean): Result<Unit> = Result.Success(Unit)
 
     // Detail
     override suspend fun getCocktailById(id: String): Result<Cocktail?> =
         Result.Success(cocktails.firstOrNull { it.id == id })
-    override suspend fun refreshCocktailById(id: String): Result<Cocktail?> = getCocktailById(id)
+    override fun observeCocktail(id: String): Flow<Cocktail?> = flowOf(cocktails.firstOrNull { it.id == id })
+    override suspend fun refreshCocktail(id: String, force: Boolean): Result<Unit> = Result.Success(Unit)
     override suspend fun getRandomCocktail(): Result<Cocktail?> = Result.Success(cocktails.firstOrNull())
-    override fun getCocktailImageUrl(cocktail: Cocktail): String = cocktail.imageUrl ?: ""
 
     // Favorites
     override fun observeFavorites(): Flow<List<Cocktail>> = favorites
@@ -123,10 +149,15 @@ class FakeCartRepository : CartRepository {
             val existing = list.firstOrNull { it.cocktail.id == cartItem.cocktail.id }
             if (existing != null) {
                 list.map {
-                    if (it.cocktail.id == cartItem.cocktail.id)
-                        it.copy(quantity = it.quantity + cartItem.quantity) else it
+                    if (it.cocktail.id == cartItem.cocktail.id) {
+                        it.copy(quantity = it.quantity + cartItem.quantity)
+                    } else {
+                        it
+                    }
                 }
-            } else list + cartItem
+            } else {
+                list + cartItem
+            }
         }
         return Result.Success(Unit)
     }
@@ -142,22 +173,23 @@ class FakeCartRepository : CartRepository {
         items.value = emptyList()
         return Result.Success(Unit)
     }
-    override suspend fun getCartTotal(): Result<Double> =
-        Result.Success(items.value.sumOf { it.cocktail.price * it.quantity })
 }
 
-class FakeOrderRepository : OrderRepository {
+class FakeOrderRepository(
+    // When given, checkout empties it like the real single-transaction checkout
+    private val cart: FakeCartRepository? = null
+) : OrderRepository {
     private val orders = MutableStateFlow<List<Order>>(emptyList())
 
     override fun observeOrders(): Flow<List<Order>> = orders
     override suspend fun getOrders(): Result<List<Order>> = Result.Success(orders.value)
-    override suspend fun placeOrder(order: Order): Result<Unit> {
+    override suspend fun placeOrderAndClearCart(order: Order): Result<Unit> {
         orders.update { it + order }
+        cart?.clearCart()
         return Result.Success(Unit)
     }
     override suspend fun getOrderById(id: String): Result<Order?> =
         Result.Success(orders.value.firstOrNull { it.id == id })
-    override suspend fun updateOrderStatus(id: String, status: String): Result<Unit> = Result.Success(Unit)
     override suspend fun deleteOrder(id: String): Result<Unit> {
         orders.update { list -> list.filterNot { it.id == id } }
         return Result.Success(Unit)
@@ -175,7 +207,7 @@ class FakeReviewRepository : ReviewRepository {
         return Result.Success(Unit)
     }
     override suspend fun updateReview(reviewId: String, rating: Float, comment: String, date: String): Result<Boolean> {
-        val exists = reviews.value.any { it.id == reviewId }
+        val exists = reviews.value.any { it.id == reviewId && it.isMine }
         if (exists) {
             reviews.update { list ->
                 list.map { if (it.id == reviewId) it.copy(rating = rating, comment = comment, date = date) else it }
@@ -184,8 +216,8 @@ class FakeReviewRepository : ReviewRepository {
         return Result.Success(exists)
     }
     override suspend fun deleteReview(reviewId: String): Result<Boolean> {
-        val exists = reviews.value.any { it.id == reviewId }
-        reviews.update { list -> list.filterNot { it.id == reviewId } }
+        val exists = reviews.value.any { it.id == reviewId && it.isMine }
+        if (exists) reviews.update { list -> list.filterNot { it.id == reviewId } }
         return Result.Success(exists)
     }
 }
@@ -210,8 +242,6 @@ class FakeAuthRepository : AuthRepository {
     override suspend fun isUserSignedIn(): Result<Boolean> = Result.Success(user != null)
     override suspend fun getCurrentUser(): Result<User?> = Result.Success(user)
     override suspend fun updateUserName(name: String): Result<Boolean> = Result.Success(true)
-    override suspend fun updateUserEmail(email: String, password: String): Result<Boolean> = Result.Success(true)
-    override suspend fun updateUserAddress(address: Address): Result<Boolean> = Result.Success(true)
     override suspend fun updateUserPreferences(preferences: UserPreferences): Result<Boolean> = Result.Success(true)
     override suspend fun getUserPreferences(): Result<UserPreferences> = Result.Success(UserPreferences())
 }

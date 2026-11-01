@@ -1,16 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Backup/transfer rules for API 31+. Keep in sync with backup_rules.xml (API 24-30).
-     cocktailcraft_prefs.xml holds credentials and PII (users, password hashes, orders
-     with addresses) and must never leave the device via backup or transfer.
-     cocktailcraft_secure_prefs.xml is Keystore-encrypted; its master key is not backed
-     up, so restored copies are unreadable and would only corrupt a fresh install. -->
+     The auth store (credentials, profile PII) is no_backup/cocktailcraft_auth_store,
+     encrypted with the Tink keyset in cocktailcraft_auth_keyset.xml, which is wrapped
+     by an Android Keystore key. That key is never backed up, so restored copies would
+     be unreadable and would only corrupt a fresh install. no_backup/ is already left
+     out by the OS; it is listed anyway so the rule survives the file moving.
+     cocktailcraft_cache.db holds the offline cocktail cache and the cart, orders,
+     favorites and reviews. SQLite keeps uncommitted and not-yet-checkpointed pages in
+     the -wal/-shm (WAL mode) or -journal (rollback mode) files beside it, which
+     carry the same data, so they are excluded with it. -->
 <data-extraction-rules>
     <cloud-backup>
-        <exclude domain="sharedpref" path="cocktailcraft_prefs.xml" />
-        <exclude domain="sharedpref" path="cocktailcraft_secure_prefs.xml" />
+        <exclude domain="sharedpref" path="cocktailcraft_auth_keyset.xml" />
+        <exclude domain="root" path="no_backup/cocktailcraft_auth_store" />
+        <exclude domain="database" path="cocktailcraft_cache.db" />
+        <exclude domain="database" path="cocktailcraft_cache.db-wal" />
+        <exclude domain="database" path="cocktailcraft_cache.db-shm" />
+        <exclude domain="database" path="cocktailcraft_cache.db-journal" />
     </cloud-backup>
     <device-transfer>
-        <exclude domain="sharedpref" path="cocktailcraft_prefs.xml" />
-        <exclude domain="sharedpref" path="cocktailcraft_secure_prefs.xml" />
+        <exclude domain="sharedpref" path="cocktailcraft_auth_keyset.xml" />
+        <exclude domain="root" path="no_backup/cocktailcraft_auth_store" />
+        <exclude domain="database" path="cocktailcraft_cache.db" />
+        <exclude domain="database" path="cocktailcraft_cache.db-wal" />
+        <exclude domain="database" path="cocktailcraft_cache.db-shm" />
+        <exclude domain="database" path="cocktailcraft_cache.db-journal" />
     </device-transfer>
 </data-extraction-rules>

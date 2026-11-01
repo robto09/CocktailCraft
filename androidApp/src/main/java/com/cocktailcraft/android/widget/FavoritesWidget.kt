@@ -15,8 +15,6 @@ import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
@@ -25,6 +23,7 @@ import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
 import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.background
 import androidx.glance.currentState
@@ -45,28 +44,55 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.cocktailcraft.android.MainActivity
-import com.cocktailcraft.android.R
+import com.cocktailcraft.android.util.getString
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.loading
+import com.cocktailcraft.resources.no_favorites
+import com.cocktailcraft.resources.tap_to_add_favorites
+import com.cocktailcraft.resources.widget_cocktail_glass_icon
+import com.cocktailcraft.resources.widget_error_icon
+import com.cocktailcraft.resources.widget_favorite_heart_icon
+import com.cocktailcraft.resources.widget_favorites_header
+import com.cocktailcraft.resources.widget_no_favorites_icon
+import com.cocktailcraft.resources.widget_refresh_icon
+import com.cocktailcraft.resources.widget_tap_refresh_to_retry
+import com.cocktailcraft.resources.widget_view_all_favorites
+import com.cocktailcraft.widget.WidgetDataSource
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 /**
  * Favorites Widget that displays the user's favorite cocktails.
  * Shows a scrollable list of favorites with quick access to the app.
  */
 class FavoritesWidget : GlanceAppWidget() {
-    
+
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
-    
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        // A widget with no list yet (just placed, or another instance of an
+        // already-placed widget) loads it now rather than waiting up to a
+        // full period for the periodic refresh.
+        val prefs = getAppWidgetState<Preferences>(context, id)
+        if (prefs[FavoritesWidgetKeys.FAVORITES_LIST] == null &&
+            prefs[FavoritesWidgetKeys.ERROR] != true &&
+            prefs[FavoritesWidgetKeys.IS_LOADING] != "true"
+        ) {
+            WidgetUpdateWorker.requestFavoritesRefresh(context)
+        }
         provideContent {
             CocktailWidgetTheme {
                 FavoritesContent()
             }
         }
     }
-    
+
     @Composable
     private fun FavoritesContent() {
         val prefs = currentState<Preferences>()
@@ -74,7 +100,7 @@ class FavoritesWidget : GlanceAppWidget() {
         val favoritesCount = prefs[FavoritesWidgetKeys.FAVORITES_COUNT]?.toIntOrNull() ?: 0
         val isLoading = prefs[FavoritesWidgetKeys.IS_LOADING] == "true"
         val hasError = prefs[FavoritesWidgetKeys.ERROR] == true
-        
+
         val favorites = try {
             if (favoritesJson != null) {
                 FavoriteItem.fromJsonArray(favoritesJson)
@@ -84,7 +110,7 @@ class FavoritesWidget : GlanceAppWidget() {
         } catch (e: Exception) {
             emptyList()
         }
-        
+
         Box(
             modifier = GlanceModifier
                 .fillMaxSize()
@@ -103,7 +129,7 @@ class FavoritesWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = LocalContext.current.getString(R.string.widget_favorites_header, favoritesCount),
+                        text = LocalContext.current.getString(MR.strings.widget_favorites_header, favoritesCount),
                         style = TextStyle(
                             color = GlanceTheme.colors.primary,
                             fontSize = 14.sp,
@@ -111,7 +137,7 @@ class FavoritesWidget : GlanceAppWidget() {
                         ),
                         modifier = GlanceModifier.defaultWeight()
                     )
-                    
+
                     // Refresh button
                     Box(
                         modifier = GlanceModifier
@@ -122,7 +148,7 @@ class FavoritesWidget : GlanceAppWidget() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = LocalContext.current.getString(R.string.widget_refresh_icon),
+                            text = LocalContext.current.getString(MR.strings.widget_refresh_icon),
                             style = TextStyle(
                                 color = GlanceTheme.colors.onPrimary,
                                 fontSize = 16.sp
@@ -130,9 +156,9 @@ class FavoritesWidget : GlanceAppWidget() {
                         )
                     }
                 }
-                
+
                 Spacer(modifier = GlanceModifier.height(8.dp))
-                
+
                 when {
                     isLoading -> LoadingContent()
                     hasError -> ErrorContent()
@@ -142,7 +168,7 @@ class FavoritesWidget : GlanceAppWidget() {
             }
         }
     }
-    
+
     @Composable
     private fun LoadingContent() {
         Box(
@@ -150,7 +176,7 @@ class FavoritesWidget : GlanceAppWidget() {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = LocalContext.current.getString(R.string.loading),
+                text = LocalContext.current.getString(MR.strings.loading),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 14.sp
@@ -158,7 +184,7 @@ class FavoritesWidget : GlanceAppWidget() {
             )
         }
     }
-    
+
     @Composable
     private fun ErrorContent() {
         Box(
@@ -167,12 +193,12 @@ class FavoritesWidget : GlanceAppWidget() {
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = LocalContext.current.getString(R.string.widget_error_icon),
+                    text = LocalContext.current.getString(MR.strings.widget_error_icon),
                     style = TextStyle(fontSize = 24.sp)
                 )
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 Text(
-                    text = LocalContext.current.getString(R.string.widget_tap_refresh_to_retry),
+                    text = LocalContext.current.getString(MR.strings.widget_tap_refresh_to_retry),
                     style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 12.sp)
                 )
             }
@@ -189,12 +215,12 @@ class FavoritesWidget : GlanceAppWidget() {
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = LocalContext.current.getString(R.string.widget_no_favorites_icon),
+                    text = LocalContext.current.getString(MR.strings.widget_no_favorites_icon),
                     style = TextStyle(fontSize = 32.sp)
                 )
                 Spacer(modifier = GlanceModifier.height(8.dp))
                 Text(
-                    text = LocalContext.current.getString(R.string.no_favorites),
+                    text = LocalContext.current.getString(MR.strings.no_favorites),
                     style = TextStyle(
                         color = GlanceTheme.colors.onSurface,
                         fontSize = 14.sp,
@@ -203,7 +229,7 @@ class FavoritesWidget : GlanceAppWidget() {
                 )
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 Text(
-                    text = LocalContext.current.getString(R.string.tap_to_add_favorites),
+                    text = LocalContext.current.getString(MR.strings.tap_to_add_favorites),
                     style = TextStyle(
                         color = GlanceTheme.colors.primary,
                         fontSize = 12.sp
@@ -233,7 +259,7 @@ class FavoritesWidget : GlanceAppWidget() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = LocalContext.current.getString(R.string.widget_view_all_favorites, favorites.size),
+                            text = LocalContext.current.getString(MR.strings.widget_view_all_favorites, favorites.size),
                             style = TextStyle(
                                 color = GlanceTheme.colors.primary,
                                 fontSize = 12.sp,
@@ -263,7 +289,7 @@ class FavoritesWidget : GlanceAppWidget() {
         ) {
             // Cocktail emoji
             Text(
-                text = context.getString(R.string.widget_cocktail_glass_icon),
+                text = context.getString(MR.strings.widget_cocktail_glass_icon),
                 style = TextStyle(fontSize = 24.sp)
             )
 
@@ -294,7 +320,7 @@ class FavoritesWidget : GlanceAppWidget() {
 
             // Heart icon
             Text(
-                text = context.getString(R.string.widget_favorite_heart_icon),
+                text = context.getString(MR.strings.widget_favorite_heart_icon),
                 style = TextStyle(fontSize = 16.sp)
             )
         }
@@ -305,40 +331,29 @@ class FavoritesWidget : GlanceAppWidget() {
  * Simple data class for favorite items in widget.
  * Uses Android's org.json for serialization to avoid kotlinx.serialization dependency.
  */
-data class FavoriteItem(
-    val id: String,
-    val name: String,
-    val category: String = "",
-    val imageUrl: String = ""
-) {
-    fun toJson(): JSONObject {
-        return JSONObject().apply {
-            put("id", id)
-            put("name", name)
-            put("category", category)
-            put("imageUrl", imageUrl)
-        }
+data class FavoriteItem(val id: String, val name: String, val category: String = "", val imageUrl: String = "") {
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("id", id)
+        put("name", name)
+        put("category", category)
+        put("imageUrl", imageUrl)
     }
 
     companion object {
-        fun fromJson(json: JSONObject): FavoriteItem {
-            return FavoriteItem(
-                id = json.optString("id", ""),
-                name = json.optString("name", ""),
-                category = json.optString("category", ""),
-                imageUrl = json.optString("imageUrl", "")
-            )
-        }
+        fun fromJson(json: JSONObject): FavoriteItem = FavoriteItem(
+            id = json.optString("id", ""),
+            name = json.optString("name", ""),
+            category = json.optString("category", ""),
+            imageUrl = json.optString("imageUrl", "")
+        )
 
-        fun fromJsonArray(jsonString: String): List<FavoriteItem> {
-            return try {
-                val jsonArray = JSONArray(jsonString)
-                (0 until jsonArray.length()).map { i ->
-                    fromJson(jsonArray.getJSONObject(i))
-                }
-            } catch (e: Exception) {
-                emptyList()
+        fun fromJsonArray(jsonString: String): List<FavoriteItem> = try {
+            val jsonArray = JSONArray(jsonString)
+            (0 until jsonArray.length()).map { i ->
+                fromJson(jsonArray.getJSONObject(i))
             }
+        } catch (e: Exception) {
+            emptyList()
         }
 
         fun toJsonArray(items: List<FavoriteItem>): String {
@@ -367,7 +382,11 @@ object FavoritesWidgetKeys {
 /**
  * Action callback to refresh favorites.
  */
-class RefreshFavoritesAction : ActionCallback {
+class RefreshFavoritesAction :
+    ActionCallback,
+    KoinComponent {
+    private val dataProvider: WidgetDataSource by inject()
+
     override suspend fun onAction(
         context: Context,
         glanceId: GlanceId,
@@ -380,38 +399,24 @@ class RefreshFavoritesAction : ActionCallback {
         }
         FavoritesWidget().update(context, glanceId)
 
-        // Fetch favorites
-        withContext(Dispatchers.IO) {
-            try {
-                val dataProvider = WidgetDataProvider.getInstance()
-                val favorites = dataProvider.getFavoriteCocktails()
-
-                val favoriteItems = favorites.map { cocktail ->
-                    FavoriteItem(
-                        id = cocktail.id,
-                        name = cocktail.name,
-                        category = cocktail.category ?: "",
-                        imageUrl = cocktail.imageUrl ?: ""
-                    )
-                }
-
-                val favoritesJson = FavoriteItem.toJsonArray(favoriteItems)
-
-                updateAppWidgetState(context, glanceId) { prefs ->
-                    prefs[FavoritesWidgetKeys.IS_LOADING] = "false"
-                    prefs[FavoritesWidgetKeys.FAVORITES_LIST] = favoritesJson
-                    prefs[FavoritesWidgetKeys.FAVORITES_COUNT] = favorites.size.toString()
-                    prefs.remove(FavoritesWidgetKeys.ERROR)
-                }
-            } catch (e: Exception) {
-                updateAppWidgetState(context, glanceId) { prefs ->
-                    prefs[FavoritesWidgetKeys.IS_LOADING] = "false"
-                    prefs[FavoritesWidgetKeys.ERROR] = true
-                }
+        // Same path as the background refresh; an explicit tap shows the
+        // error state when the favorites could not be read
+        try {
+            refreshFavoritesWidgets(
+                context,
+                dataProvider,
+                listOf(glanceId),
+                showErrorOnFailure = true
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            updateAppWidgetState(context, glanceId) { prefs ->
+                prefs[FavoritesWidgetKeys.IS_LOADING] = "false"
+                prefs[FavoritesWidgetKeys.ERROR] = true
             }
+            FavoritesWidget().update(context, glanceId)
         }
-
-        FavoritesWidget().update(context, glanceId)
     }
 }
 
@@ -421,12 +426,14 @@ class RefreshFavoritesAction : ActionCallback {
 class FavoritesWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = FavoritesWidget()
 
-    // Widget refresh lifecycle (AN-2): start the shared hourly worker when the
-    // first widget is placed; tear it down only when no widget of either type
-    // remains (both widgets share one worker).
+    // Widget refresh lifecycle: the first widget placed starts the
+    // shared periodic refresh and loads its content right away; the refresh
+    // is torn down only when no widget of either type remains (both widgets
+    // share it). The app itself never schedules widget work.
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
-        WidgetUpdateWorker.schedule(context)
+        WidgetUpdateWorker.schedulePeriodicRefresh(context)
+        WidgetUpdateWorker.requestFavoritesRefresh(context)
     }
 
     override fun onDisabled(context: Context) {
@@ -441,4 +448,3 @@ class FavoritesWidgetReceiver : GlanceAppWidgetReceiver() {
         }
     }
 }
-

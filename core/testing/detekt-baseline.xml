@@ -1,0 +1,8 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>BackingPropertyNaming:Fakes.kt:FakeNetworkMonitor$private val _online = MutableStateFlow(initiallyOnline)</ID>
+    <ID>ReturnCount:FakeOrderRepository.kt:FakeOrderRepository$override suspend fun cancelOrder: Result&lt;Boolean&gt;</ID>
+  </CurrentIssues>
+</SmellBaseline>

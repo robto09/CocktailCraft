@@ -1,30 +1,28 @@
 package com.cocktailcraft.android.widget
 
 import android.content.Context
-import android.content.Intent
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.LocalContext
 import androidx.glance.action.ActionParameters
-import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
-import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
@@ -37,36 +35,57 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
-import androidx.glance.layout.width
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import com.cocktailcraft.android.MainActivity
-import com.cocktailcraft.android.R
+import com.cocktailcraft.android.util.getString
+import com.cocktailcraft.resources.MR
+import com.cocktailcraft.resources.loading
+import com.cocktailcraft.resources.tap_to_view_details
+import com.cocktailcraft.resources.widget_cocktail_glass_icon
+import com.cocktailcraft.resources.widget_error_icon
+import com.cocktailcraft.resources.widget_random_cocktail_header
+import com.cocktailcraft.resources.widget_refresh_icon
+import com.cocktailcraft.resources.widget_tap_refresh_to_discover
+import com.cocktailcraft.resources.widget_tap_refresh_to_retry
+import com.cocktailcraft.resources.widget_tropical_drink_icon
+import com.cocktailcraft.widget.WidgetDataSource
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 /**
  * Random Cocktail Widget that displays a random cocktail from the API.
  * Supports manual refresh and opens app on tap.
  */
 class RandomCocktailWidget : GlanceAppWidget() {
-    
+
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
-    
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        // A widget with nothing loaded yet (just placed, or another instance
+        // of an already-placed widget) fetches now rather than waiting up to
+        // a full period for the periodic refresh.
+        val prefs = getAppWidgetState<Preferences>(context, id)
+        if (prefs[RandomCocktailKeys.ID] == null &&
+            prefs[RandomCocktailKeys.ERROR] != true &&
+            prefs[RandomCocktailKeys.IS_LOADING] != "true"
+        ) {
+            WidgetUpdateWorker.requestRandomCocktailRefresh(context)
+        }
         provideContent {
             CocktailWidgetTheme {
                 RandomCocktailContent()
             }
         }
     }
-    
+
     @Composable
     private fun RandomCocktailContent() {
         val prefs = currentState<Preferences>()
@@ -75,7 +94,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
         val cocktailId = prefs[RandomCocktailKeys.ID] ?: ""
         val isLoading = prefs[RandomCocktailKeys.IS_LOADING] == "true"
         val hasError = prefs[RandomCocktailKeys.ERROR] == true
-        
+
         // Deep-link to the shown cocktail's detail screen; fall back to a
         // plain app launch until a cocktail has been loaded
         val context = LocalContext.current
@@ -105,7 +124,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = context.getString(R.string.widget_random_cocktail_header),
+                        text = context.getString(MR.strings.widget_random_cocktail_header),
                         style = TextStyle(
                             color = GlanceTheme.colors.primary,
                             fontSize = 14.sp,
@@ -113,7 +132,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
                         ),
                         modifier = GlanceModifier.defaultWeight()
                     )
-                    
+
                     // Refresh button
                     Box(
                         modifier = GlanceModifier
@@ -124,7 +143,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = context.getString(R.string.widget_refresh_icon),
+                            text = context.getString(MR.strings.widget_refresh_icon),
                             style = TextStyle(
                                 color = GlanceTheme.colors.onPrimary,
                                 fontSize = 16.sp
@@ -139,12 +158,15 @@ class RandomCocktailWidget : GlanceAppWidget() {
                     isLoading -> {
                         LoadingContent()
                     }
+
                     hasError -> {
                         ErrorContent()
                     }
+
                     cocktailName == null -> {
                         EmptyContent()
                     }
+
                     else -> {
                         CocktailDisplayContent(
                             name = cocktailName,
@@ -155,7 +177,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
             }
         }
     }
-    
+
     @Composable
     private fun LoadingContent() {
         Column(
@@ -164,7 +186,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = LocalContext.current.getString(R.string.loading),
+                text = LocalContext.current.getString(MR.strings.loading),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 14.sp
@@ -181,12 +203,12 @@ class RandomCocktailWidget : GlanceAppWidget() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = LocalContext.current.getString(R.string.widget_error_icon),
+                text = LocalContext.current.getString(MR.strings.widget_error_icon),
                 style = TextStyle(fontSize = 24.sp)
             )
             Spacer(modifier = GlanceModifier.height(4.dp))
             Text(
-                text = LocalContext.current.getString(R.string.widget_tap_refresh_to_retry),
+                text = LocalContext.current.getString(MR.strings.widget_tap_refresh_to_retry),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 12.sp
@@ -203,12 +225,12 @@ class RandomCocktailWidget : GlanceAppWidget() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = LocalContext.current.getString(R.string.widget_cocktail_glass_icon),
+                text = LocalContext.current.getString(MR.strings.widget_cocktail_glass_icon),
                 style = TextStyle(fontSize = 32.sp)
             )
             Spacer(modifier = GlanceModifier.height(4.dp))
             Text(
-                text = LocalContext.current.getString(R.string.widget_tap_refresh_to_discover),
+                text = LocalContext.current.getString(MR.strings.widget_tap_refresh_to_discover),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurface,
                     fontSize = 12.sp
@@ -226,7 +248,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
         ) {
             // Cocktail emoji as placeholder
             Text(
-                text = LocalContext.current.getString(R.string.widget_tropical_drink_icon),
+                text = LocalContext.current.getString(MR.strings.widget_tropical_drink_icon),
                 style = TextStyle(fontSize = 48.sp)
             )
 
@@ -260,7 +282,7 @@ class RandomCocktailWidget : GlanceAppWidget() {
 
             // Tap hint
             Text(
-                text = LocalContext.current.getString(R.string.tap_to_view_details),
+                text = LocalContext.current.getString(MR.strings.tap_to_view_details),
                 style = TextStyle(
                     color = WidgetColorProviders.textSecondary,
                     fontSize = 10.sp
@@ -287,7 +309,11 @@ object RandomCocktailKeys {
 /**
  * Action callback to refresh the random cocktail.
  */
-class RefreshRandomCocktailAction : ActionCallback {
+class RefreshRandomCocktailAction :
+    ActionCallback,
+    KoinComponent {
+    private val dataProvider: WidgetDataSource by inject()
+
     override suspend fun onAction(
         context: Context,
         glanceId: GlanceId,
@@ -300,32 +326,24 @@ class RefreshRandomCocktailAction : ActionCallback {
         }
         RandomCocktailWidget().update(context, glanceId)
 
-        // Fetch new cocktail
-        withContext(Dispatchers.IO) {
-            try {
-                val dataProvider = WidgetDataProvider.getInstance()
-                val cocktail = dataProvider.getRandomCocktail()
-
-                updateAppWidgetState(context, glanceId) { prefs ->
-                    prefs[RandomCocktailKeys.IS_LOADING] = "false"
-                    if (cocktail != null) {
-                        prefs[RandomCocktailKeys.ID] = cocktail.id
-                        prefs[RandomCocktailKeys.NAME] = cocktail.name
-                        prefs[RandomCocktailKeys.CATEGORY] = cocktail.category ?: ""
-                        prefs.remove(RandomCocktailKeys.ERROR)
-                    } else {
-                        prefs[RandomCocktailKeys.ERROR] = true
-                    }
-                }
-            } catch (e: Exception) {
-                updateAppWidgetState(context, glanceId) { prefs ->
-                    prefs[RandomCocktailKeys.IS_LOADING] = "false"
-                    prefs[RandomCocktailKeys.ERROR] = true
-                }
+        // Same path as the background refresh; an explicit tap shows the
+        // error state when nothing could be loaded
+        try {
+            refreshRandomCocktailWidgets(
+                context,
+                dataProvider,
+                listOf(glanceId),
+                showErrorOnFailure = true
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            updateAppWidgetState(context, glanceId) { prefs ->
+                prefs[RandomCocktailKeys.IS_LOADING] = "false"
+                prefs[RandomCocktailKeys.ERROR] = true
             }
+            RandomCocktailWidget().update(context, glanceId)
         }
-
-        RandomCocktailWidget().update(context, glanceId)
     }
 }
 
@@ -335,12 +353,14 @@ class RefreshRandomCocktailAction : ActionCallback {
 class RandomCocktailWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = RandomCocktailWidget()
 
-    // Widget refresh lifecycle (AN-2): start the shared hourly worker when the
-    // first widget is placed; tear it down only when no widget of either type
-    // remains (both widgets share one worker).
+    // Widget refresh lifecycle: the first widget placed starts the
+    // shared periodic refresh and loads its content right away; the refresh
+    // is torn down only when no widget of either type remains (both widgets
+    // share it). The app itself never schedules widget work.
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
-        WidgetUpdateWorker.schedule(context)
+        WidgetUpdateWorker.schedulePeriodicRefresh(context)
+        WidgetUpdateWorker.requestRandomCocktailRefresh(context)
     }
 
     override fun onDisabled(context: Context) {
@@ -355,4 +375,3 @@ class RandomCocktailWidgetReceiver : GlanceAppWidgetReceiver() {
         }
     }
 }
-

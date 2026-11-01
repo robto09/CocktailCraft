@@ -1,0 +1,55 @@
+-- Schema changes need a migration: add src/commonMain/sqldelight/migrations/<N>.sqm
+-- (N = current version, starting at 1) and regenerate the snapshot with
+-- `./gradlew :core:data:generateCommonMainCocktailCraftDatabaseSchema`.
+--
+-- User reviews (ReviewRepositoryImpl), one row per Review.
+--
+--   owner_id  who wrote it: the signed-in user's id, or "guest" while signed
+--             out (see UserDataOwnership.kt; "" for rows not assigned yet
+--             after an upgrade). Every review is shown to everyone on the
+--             device; only its owner edits or deletes it. Added in version
+--             7 (migrations/6.sqm), as the last column, since SQLite
+--             appends added columns.
+--   date      the review's yyyy-MM-dd display date (Review.date)
+--   position  insertion order (1-based, increasing); reviews list in this
+--             order, and editing a review keeps it in place.
+CREATE TABLE cocktail_review (
+    id TEXT NOT NULL PRIMARY KEY,
+    cocktail_id TEXT NOT NULL,
+    user_name TEXT NOT NULL,
+    rating REAL NOT NULL,
+    comment TEXT NOT NULL,
+    date TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    owner_id TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX cocktail_review_owner ON cocktail_review(owner_id, position);
+
+-- Every owner's reviews; is_mine marks :ownerId's own.
+selectAll:
+SELECT id, cocktail_id, user_name, rating, comment, date, owner_id = :ownerId AS is_mine
+FROM cocktail_review
+ORDER BY position;
+
+exists:
+SELECT COUNT(*) FROM cocktail_review WHERE owner_id = :ownerId AND id = :id;
+
+insert:
+INSERT INTO cocktail_review(id, cocktail_id, user_name, rating, comment, date, position, owner_id)
+VALUES (:id, :cocktailId, :userName, :rating, :comment, :date, (SELECT COALESCE(MAX(position), 0) + 1 FROM cocktail_review), :ownerId);
+
+update:
+UPDATE cocktail_review SET rating = :rating, comment = :comment, date = :date
+WHERE owner_id = :ownerId AND id = :id;
+
+deleteById:
+DELETE FROM cocktail_review WHERE owner_id = :ownerId AND id = :id;
+
+-- Assigns reviews left unassigned by an upgrade (see UserDataOwnership.kt)
+reassign:
+UPDATE cocktail_review SET owner_id = :toOwnerId WHERE owner_id = :fromOwnerId;
+
+-- Every owner's reviews (the iOS Debug menu's reset; see deleteAllUserData)
+deleteEveryOwners:
+DELETE FROM cocktail_review;

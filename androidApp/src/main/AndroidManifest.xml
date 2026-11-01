@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.cocktailcraft.android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -27,16 +26,18 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Cocktail detail deep link: app://cocktailcraft/cocktail/{id}
-                 (COCKTAIL_DEEP_LINK_BASE_PATH in navigation/Routes.kt) -->
+            <!-- Cocktail detail deep link: cocktailcraft://cocktail/{id}, the
+                 same URL as iOS (CocktailDeepLink in
+                 navigation/CocktailDeepLink.kt). Not BROWSABLE: only the
+                 widgets (explicit intents) need it, so web pages cannot fire
+                 it. MainActivity passes Navigation only well-formed cocktail
+                 links (numeric ids), whatever else an intent carries. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:scheme="app"
-                    android:host="cocktailcraft"
-                    android:pathPrefix="/cocktail/" />
+                    android:scheme="cocktailcraft"
+                    android:host="cocktail" />
             </intent-filter>
         </activity>
 

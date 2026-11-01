@@ -16,6 +16,18 @@ class FavoritesScreenTests: UITestSetup {
                       "Favorites must show its empty state or the favorites grid — it showed neither")
     }
 
+    func testEmptyFavoritesBrowseGoesHome() {
+        // Test mode launches with an empty store, so the empty state is certain
+        XCTAssertTrue(waitForHomeScreen(), "Home screen should be loaded")
+        XCTAssertTrue(navigateToTab("Favorites"), "Should navigate to Favorites tab")
+        XCTAssertTrue(waitForElement(emptyStateTitle), "Fresh favorites should be empty")
+
+        app.buttons["emptyState.actionButton"].firstMatch.tap()
+
+        XCTAssertTrue(waitForHomeScreen(timeout: 5.0), "Browse Cocktails should switch to Home")
+        XCTAssertTrue(app.tabBars.buttons["Home"].isSelected, "Home tab should be selected")
+    }
+
     func testFavoritesStateIsStableAcrossTabSwitches() {
         XCTAssertTrue(waitForHomeScreen(), "Home screen should be loaded")
         XCTAssertTrue(navigateToTab("Favorites"), "Should navigate to Favorites tab")

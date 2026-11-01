@@ -8,11 +8,11 @@ private enum AlcoholicFilter: Hashable, CaseIterable {
     case alcoholic
     case nonAlcoholic
 
-    var label: LocalizedStringKey {
+    var label: String {
         switch self {
-        case .any: return "Any"
-        case .alcoholic: return "Alcoholic"
-        case .nonAlcoholic: return "Non-Alcoholic"
+        case .any: return L(\.filter_any)
+        case .alcoholic: return L(\.alcoholic)
+        case .nonAlcoholic: return L(\.non_alcoholic)
         }
     }
 
@@ -40,16 +40,17 @@ struct AdvancedSearchSheet: View {
     let viewModel: HomeViewModelSKIE
     @Environment(\.dismiss) private var dismiss
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     @State private var selectedCategory: String?
     @State private var selectedIngredient: String?
     @State private var alcoholic: AlcoholicFilter
     @State private var showingIngredientPicker = false
 
-    private var primaryColor: Color { AppColors.primary(isDarkMode: isDarkMode) }
+    private var primaryColor: Color { AppColors.primary(appearance) }
     private var surfaceColor: Color { AppColors.surface(isDarkMode: isDarkMode) }
     private var textPrimary: Color { AppColors.textPrimary(isDarkMode: isDarkMode) }
-    private var textSecondary: Color { AppColors.textSecondary(isDarkMode: isDarkMode) }
+    private var textSecondary: Color { AppColors.textSecondary(appearance) }
 
     init(viewModel: HomeViewModelSKIE) {
         self.viewModel = viewModel
@@ -66,15 +67,15 @@ struct AdvancedSearchSheet: View {
 
                 Spacer().frame(height: 8)
 
-                FilterSection(title: "Category") {
+                FilterSection(title: L(\.filter_category)) {
                     categorySelector
                 }
 
-                FilterSection(title: "Ingredient") {
+                FilterSection(title: L(\.filter_ingredient)) {
                     ingredientSelector
                 }
 
-                FilterSection(title: "Alcoholic") {
+                FilterSection(title: L(\.alcoholic)) {
                     alcoholicChips
                 }
 
@@ -94,9 +95,10 @@ struct AdvancedSearchSheet: View {
                 }
             )
         }
-        .task {
-            // Populate the option lists from the shared API-backed state.
-            await viewModel.loadFilterOptions()
+        .onAppear {
+            // Populate the option lists from the shared API-backed state
+            // (fetched once; reopening the sheet reuses them).
+            viewModel.loadFilterOptions()
         }
     }
 
@@ -104,7 +106,7 @@ struct AdvancedSearchSheet: View {
 
     private var header: some View {
         HStack {
-            Button("Clear") {
+            Button(L(\.filter_clear)) {
                 viewModel.clearSearchFilters()
                 dismiss()
             }
@@ -113,7 +115,7 @@ struct AdvancedSearchSheet: View {
 
             Spacer()
 
-            Text("Advanced Search")
+            Text(L(\.search_advanced_search))
                 .font(.headline.weight(.bold))
                 .foregroundColor(textPrimary)
 
@@ -129,13 +131,11 @@ struct AdvancedSearchSheet: View {
                 // Close immediately; the rate-limited search runs in
                 // the background and the list updates via shared state.
                 dismiss()
-                Task {
-                    await viewModel.applyFilters(filters)
-                }
+                viewModel.applyFilters(filters)
             } label: {
-                Text("Apply")
+                Text(L(\.filter_apply))
                     .font(.subheadline.weight(.medium))
-                    .foregroundColor(.white)
+                    .foregroundColor(AppColors.onPrimary(isDarkMode: isDarkMode))
                     .padding(.horizontal, 20)
                     .padding(.vertical, 8)
                     .background(Capsule().fill(primaryColor))
@@ -152,14 +152,14 @@ struct AdvancedSearchSheet: View {
             // An embedded Picker (rather than plain Buttons) so the open menu
             // checkmarks the current selection and reads as a picker to
             // VoiceOver, while keeping the custom outlined label.
-            Picker("Category", selection: $selectedCategory) {
-                Text("All Categories").tag(String?.none)
+            Picker(L(\.filter_category), selection: $selectedCategory) {
+                Text(L(\.filter_all_categories)).tag(String?.none)
                 ForEach(viewModel.state.filterCategories, id: \.self) { category in
                     Text(category).tag(String?.some(category))
                 }
             }
         } label: {
-            SelectorRow(selection: selectedCategory, placeholder: "Select a category")
+            SelectorRow(selection: selectedCategory, placeholder: L(\.filter_select_category))
         }
         .buttonStyle(.plain)
     }
@@ -168,7 +168,7 @@ struct AdvancedSearchSheet: View {
         Button {
             showingIngredientPicker = true
         } label: {
-            SelectorRow(selection: selectedIngredient, placeholder: "Select an ingredient")
+            SelectorRow(selection: selectedIngredient, placeholder: L(\.filter_select_an_ingredient))
         }
         .buttonStyle(.plain)
     }
@@ -181,7 +181,7 @@ struct AdvancedSearchSheet: View {
                 Button(action: { alcoholic = option }) {
                     Text(option.label)
                         .font(.subheadline.weight(alcoholic == option ? .bold : .medium))
-                        .foregroundColor(alcoholic == option ? .white : primaryColor)
+                        .foregroundColor(alcoholic == option ? AppColors.onPrimary(isDarkMode: isDarkMode) : primaryColor)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 6)
                         .background(alcoholic == option ? primaryColor : surfaceColor)
@@ -198,11 +198,12 @@ struct AdvancedSearchSheet: View {
 // MARK: - Filter section (collapsible title + divider, matching Android)
 
 private struct FilterSection<Content: View>: View {
-    let title: LocalizedStringKey
+    let title: String
     @ViewBuilder let content: Content
 
     @State private var expanded = true
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -218,13 +219,15 @@ private struct FilterSection<Content: View>: View {
 
                     Image(systemName: expanded ? "chevron.up" : "chevron.down")
                         .font(.footnote.weight(.semibold))
-                        .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.textSecondary(appearance))
                 }
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(title)
-            .accessibilityValue(expanded ? Text("Collapse") : Text("Expand"))
+            .accessibilityValue(expanded ? L(\.filter_section_expanded_a11y) : L(\.filter_section_collapsed_a11y))
+            .accessibilityHint(expanded ? L(\.filter_collapse) : L(\.filter_expand))
+            .accessibilityAddTraits(.isHeader)
 
             if expanded {
                 content
@@ -244,9 +247,10 @@ private struct FilterSection<Content: View>: View {
 
 private struct SelectorRow: View {
     let selection: String?
-    let placeholder: LocalizedStringKey
+    let placeholder: String
 
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     var body: some View {
         HStack {
@@ -255,21 +259,21 @@ private struct SelectorRow: View {
                     .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))
             } else {
                 Text(placeholder)
-                    .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                    .foregroundColor(AppColors.textSecondary(appearance))
             }
 
             Spacer()
 
             Image(systemName: "chevron.down")
                 .font(.footnote.weight(.semibold))
-                .foregroundColor(AppColors.textSecondary(isDarkMode: isDarkMode))
+                .foregroundColor(AppColors.textSecondary(appearance))
         }
         .font(.subheadline)
         .padding(16)
         .contentShape(Rectangle())
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(AppColors.lightGray, lineWidth: 1)
+                .stroke(AppColors.neutralSubtle(isDarkMode: isDarkMode), lineWidth: 1)
         )
     }
 }
@@ -288,6 +292,7 @@ private struct IngredientPickerSheet: View {
     @State private var searchQuery = ""
     @Environment(\.dismiss) private var dismiss
     @Environment(\.isDarkMode) private var isDarkMode
+    @Environment(\.appearance) private var appearance
 
     private var filteredIngredients: [String] {
         guard !searchQuery.isEmpty else { return ingredients }
@@ -305,13 +310,12 @@ private struct IngredientPickerSheet: View {
             .searchable(
                 text: $searchQuery,
                 placement: .navigationBarDrawer(displayMode: .always),
-                prompt: "Search ingredients"
+                prompt: L(\.search_ingredients_placeholder)
             )
-            .navigationTitle("Select Ingredient")
-            .brandedNavigationBar()
+            .brandedNavigationBar(title: L(\.filter_select_ingredient_title))
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Cancel") { dismiss() }
+                    Button(L(\.cancel)) { dismiss() }
                         .tint(.white)
                 }
             }
@@ -329,7 +333,7 @@ private struct IngredientPickerSheet: View {
                 if let label {
                     Text(label)
                 } else {
-                    Text("Any ingredient")
+                    Text(L(\.filter_any_ingredient))
                 }
 
                 Spacer()
@@ -337,7 +341,7 @@ private struct IngredientPickerSheet: View {
                 if isSelected {
                     Image(systemName: "checkmark")
                         .font(.body.weight(.semibold))
-                        .foregroundColor(AppColors.primary(isDarkMode: isDarkMode))
+                        .foregroundColor(AppColors.primary(appearance))
                 }
             }
             .foregroundColor(AppColors.textPrimary(isDarkMode: isDarkMode))

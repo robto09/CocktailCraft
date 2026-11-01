@@ -1,0 +1,76 @@
+# SwiftLint for the iOS app, widget extension and test targets. Run from
+# iosApp/ (see README "Static analysis"):
+#   swiftlint lint
+# SwiftLint's defaults stay on; the overrides below keep today's code free of
+# error-level findings, so warnings show what to clean up without failing.
+# Record a baseline (SwiftLint 0.55+) to see only new findings:
+#   swiftlint lint --write-baseline .swiftlint-baseline.json
+#   swiftlint lint --baseline .swiftlint-baseline.json
+
+included:
+  - CocktailCraft
+  - CocktailCraftWidgets
+  - CocktailCraftTests
+  - CocktailCraftUITests
+
+excluded:
+  - build
+  - DerivedData
+  - Pods
+  - CocktailCraft.xcodeproj
+  - "**/__Snapshots__"
+
+disabled_rules:
+  # TODO comments are allowed (as reminders in place; there is no tracker)
+  - todo
+  # Trailing commas are used freely in multi-line literals
+  - trailing_comma
+
+opt_in_rules:
+  - empty_count
+  - first_where
+  - sorted_first_last
+  - contains_over_first_not_nil
+  - redundant_nil_coalescing
+
+line_length:
+  warning: 140
+  error: 200
+  ignores_comments: true
+  ignores_urls: true
+
+identifier_name:
+  # Geometry (x, y) and color channels (r, g, b, a) read best short; L() is
+  # the localized-string helper in Utils/Strings.swift
+  min_length:
+    warning: 2
+    error: 1
+  excluded:
+    - L
+    - x
+    - y
+    - r
+    - g
+    - b
+    - a
+    - i
+    - id
+
+# SwiftUI `body` builders and test classes run long by nature
+function_body_length:
+  warning: 80
+  error: 200
+type_body_length:
+  warning: 300
+  error: 600
+file_length:
+  warning: 500
+  error: 1200
+cyclomatic_complexity:
+  warning: 15
+  error: 30
+function_parameter_count:
+  warning: 6
+  error: 10
+
+reporter: xcode

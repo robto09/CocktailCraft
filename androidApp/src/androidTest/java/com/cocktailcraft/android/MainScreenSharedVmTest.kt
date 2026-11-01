@@ -1,10 +1,11 @@
 package com.cocktailcraft.android
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -18,6 +19,7 @@ import com.cocktailcraft.android.fakes.FakeReviewRepository
 import com.cocktailcraft.android.fakes.TestCocktails
 import com.cocktailcraft.android.ui.main.MainScreen
 import com.cocktailcraft.di.domainModule
+import com.cocktailcraft.di.presentationModule
 import com.cocktailcraft.domain.repository.AuthRepository
 import com.cocktailcraft.domain.repository.CartRepository
 import com.cocktailcraft.domain.repository.CocktailCatalogRepository
@@ -28,6 +30,7 @@ import com.cocktailcraft.domain.repository.CocktailSearchRepository
 import com.cocktailcraft.domain.repository.OrderRepository
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.util.NetworkMonitor
+import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -60,17 +63,22 @@ class MainScreenSharedVmTest {
         startKoin {
             modules(
                 domainModule,
+                presentationModule,
                 module {
                     single<CocktailSearchRepository> { cocktailRepo }
                     single<CocktailCatalogRepository> { cocktailRepo }
                     single<CocktailDetailRepository> { cocktailRepo }
                     single<CocktailFavoritesRepository> { cocktailRepo }
                     single<CocktailOfflineRepository> { cocktailRepo }
-                    single<CartRepository> { FakeCartRepository() }
-                    single<OrderRepository> { FakeOrderRepository() }
+                    single { FakeCartRepository() }
+                    single<CartRepository> { get<FakeCartRepository>() }
+                    // Checkout empties the cart in the same transaction (placeOrderAndClearCart)
+                    single<OrderRepository> { FakeOrderRepository(cart = get()) }
                     single<AuthRepository> { FakeAuthRepository() }
                     single<ReviewRepository> { FakeReviewRepository() }
                     single<NetworkMonitor> { networkMonitor }
+                    // The app's Coil image loader is built over the shared client
+                    single { OkHttpClient() }
                 }
             )
         }
@@ -110,10 +118,10 @@ class MainScreenSharedVmTest {
     fun addToCartFromHome_showsItemInCartTab() {
         launchApp()
 
-        // The first "Add to Cart" button belongs to the first list item.
+        // Add-to-cart buttons are labeled per item ("Add <name> to cart").
         // Add-to-cart keeps the user on Home with a snackbar confirmation
         // (parity with iOS), so the Cart tab is opened explicitly.
-        composeTestRule.onAllNodesWithContentDescription("Add to Cart").onFirst().performClick()
+        composeTestRule.onNodeWithContentDescription("Add ${TestCocktails.mojito.name} to cart").performClick()
         // The snackbar confirmation only shows after the async add-to-cart
         // landed in shared state — without this sync the tab switch can race
         // the write and Cart renders empty.
@@ -140,7 +148,7 @@ class MainScreenSharedVmTest {
     fun favoriteFromHome_showsInFavoritesTab() {
         launchApp()
 
-        composeTestRule.onAllNodesWithContentDescription("Add to favorites").onFirst().performClick()
+        composeTestRule.onAllNodesWithContentDescription("Favorite").onFirst().performClick()
         composeTestRule.onNodeWithText("Favorites").performClick()
 
         waitForText("Test Mojito")
@@ -184,7 +192,7 @@ class MainScreenSharedVmTest {
     fun homeTab_afterAddToCart_returnsToHome() {
         launchApp()
 
-        composeTestRule.onAllNodesWithContentDescription("Add to Cart").onFirst().performClick()
+        composeTestRule.onNodeWithContentDescription("Add ${TestCocktails.mojito.name} to cart").performClick()
         // The snackbar confirmation only shows after the async add-to-cart
         // landed in shared state — without this sync the tab switch can race
         // the write and Cart renders empty.
@@ -203,7 +211,7 @@ class MainScreenSharedVmTest {
     fun startShopping_afterPlacingOrder_returnsToHome() {
         launchApp()
 
-        composeTestRule.onAllNodesWithContentDescription("Add to Cart").onFirst().performClick()
+        composeTestRule.onNodeWithContentDescription("Add ${TestCocktails.mojito.name} to cart").performClick()
         // The snackbar confirmation only shows after the async add-to-cart
         // landed in shared state — without this sync the tab switch can race
         // the write and Cart renders empty.
@@ -217,9 +225,9 @@ class MainScreenSharedVmTest {
         waitForText("Confirm")
         composeTestRule.onNodeWithText("Confirm").performClick()
         // Placing the order lands on the Orders list; the new OrderCard shows
-        // the placed order's "Processing" status (the old in-list "Your
-        // Orders" heading is gone — the top bar carries the title now).
-        waitForText("Processing")
+        // the placed order's localized PROCESSING status (the old in-list
+        // "Your Orders" heading is gone — the top bar carries the title now).
+        waitForText("Being Prepared")
 
         composeTestRule.onNodeWithTag("nav_cart").performClick()
         waitForText("Your cart is empty")

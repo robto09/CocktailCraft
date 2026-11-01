@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -12,7 +13,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocktailcraft.android.ui.theme.AppColors
+import com.cocktailcraft.android.ui.theme.CocktailCraftTheme
 import androidx.compose.material3.FilterChip as Material3FilterChip
 
 /**
@@ -26,12 +27,12 @@ fun FilterChip(
     selected: Boolean,
     onClick: () -> Unit,
     label: String,
-    selectedColor: Color = AppColors.Primary,
-    unselectedColor: Color = Color.White,
-    selectedTextColor: Color = Color.White,
-    unselectedTextColor: Color = AppColors.Primary,
+    selectedColor: Color = MaterialTheme.colorScheme.primary,
+    unselectedColor: Color = CocktailCraftTheme.extendedColors.surfaceRaised,
+    selectedTextColor: Color = MaterialTheme.colorScheme.onPrimary,
+    unselectedTextColor: Color = MaterialTheme.colorScheme.primary,
     trailingIcon: ImageVector? = null,
-    selectedIconColor: Color = Color.White
+    selectedIconColor: Color = MaterialTheme.colorScheme.onPrimary
 ) {
     Material3FilterChip(
         selected = selected,
