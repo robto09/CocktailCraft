@@ -6,7 +6,7 @@
 # (macrobenchmark requirement).
 compileSdk = "36"
 jvmTarget = "17"
-agp = "9.2.1"
+agp = "9.5.0"
 androidxBenchmark = "1.5.0"
 androidxProfileinstaller = "1.4.1"
 uiautomator = "2.4.0"
