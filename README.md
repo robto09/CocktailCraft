@@ -378,7 +378,7 @@ and `main`, in three jobs. No secrets are used; release builds are unsigned.
   `iosSimulatorArm64Test`; checks the committed Xcode
   project matches `xcodegen generate`; builds the app and runs the
   `CocktailCraftTests` unit and snapshot tests (snapshots are verified only on
-  an iPhone 16 Pro iOS 18.5 simulator, skipped otherwise); builds the Release
+  an iPhone 17 Pro iOS 26.5 simulator, which the runner has); builds the Release
   configuration and fails if it contains the Debug-only test mode or QA
   hooks; and runs the `CocktailCraftUITests` XCUITest flows in the app's test
   mode.
@@ -417,7 +417,7 @@ Run them with:
 ./gradlew :androidApp:connectedDebugAndroidTest  # Android instrumented tests (device/emulator)
 # iOS (from iosApp/, after xcodegen generate):
 xcodebuild test -project CocktailCraft.xcodeproj -scheme CocktailCraft \
-  -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5'
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5'
 ```
 
 ### Screenshot tests
@@ -452,18 +452,20 @@ compares them in its macOS job.
 (Swift package, `CocktailCraftTests` target only). Tests live in
 `iosApp/CocktailCraftTests/Snapshots`, references in its `__Snapshots__`
 folder. Renders use a fixed width, @3x, phone traits, pinned Dynamic Type and
-the scheme's `en`/`US` locale. **References must be recorded on the iPhone 16
-Pro simulator running iOS 18.5**; on any other iOS runtime the snapshot tests
-skip themselves (text rasterization differs between runtimes).
+the scheme's `en`/`US` locale. **References must be recorded on the iPhone 17
+Pro simulator running iOS 26.5**, the runtime CI verifies them on; on any other
+iOS runtime the snapshot tests skip themselves (text rasterization differs
+between runtimes). If Xcode lacks that runtime:
+`xcodebuild -downloadPlatform iOS -buildVersion 26.5`.
 
 ```bash
 # from iosApp/ — verify (missing references are recorded and fail once)
 xcodebuild test -project CocktailCraft.xcodeproj -scheme CocktailCraft \
-  -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' \
   -only-testing:CocktailCraftTests
 # re-record every reference (the run reports failures; re-run to verify)
 TEST_RUNNER_SNAPSHOT_TESTING_RECORD=all xcodebuild test -project CocktailCraft.xcodeproj \
-  -scheme CocktailCraft -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.5' \
+  -scheme CocktailCraft -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' \
   -only-testing:CocktailCraftTests
 ```
 

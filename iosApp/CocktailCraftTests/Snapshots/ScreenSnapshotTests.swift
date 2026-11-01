@@ -9,7 +9,7 @@ import shared
 /// through the components they are built from.
 final class ScreenSnapshotTests: SnapshotTestCase {
 
-    /// iPhone 16 Pro screen height in points
+    /// iPhone 17 Pro screen height in points
     private static let screenHeight: CGFloat = 874
 
     func testSignInView() {

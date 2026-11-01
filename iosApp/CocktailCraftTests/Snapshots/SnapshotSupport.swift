@@ -46,8 +46,9 @@ enum SnapshotAppearance: String {
 ///
 /// Every snapshot is rendered at a fixed width, @3x scale, phone idiom and a
 /// pinned Dynamic Type size, so output only depends on the iOS runtime's
-/// text rendering. Reference images were recorded on the iPhone 16 Pro
-/// simulator running iOS 18.5; on any other runtime the tests are reported
+/// text rendering. Reference images were recorded on the iPhone 17 Pro
+/// simulator running iOS 26.5, a runtime GitHub's macos-26 runners have, so
+/// CI verifies them; on any other runtime the tests are reported
 /// as skipped (XCTSkip, with the runtime mismatch as the reason) rather than
 /// failing on font-rasterization noise — or, with
 /// `TEST_RUNNER_SNAPSHOT_REQUIRE_REFERENCE_RUNTIME=1`, fail, for runs that
@@ -61,9 +62,9 @@ enum SnapshotAppearance: String {
 class SnapshotTestCase: XCTestCase {
 
     /// The runtime the committed reference images were recorded on.
-    static let referenceOSVersion = (major: 18, minor: 5)
+    static let referenceOSVersion = (major: 26, minor: 5)
 
-    /// iPhone 16 Pro point width — wide enough for every component.
+    /// iPhone 17 Pro point width — wide enough for every component.
     /// nonisolated: it is a default argument, evaluated outside the main actor.
     nonisolated static let defaultWidth: CGFloat = 402
 
@@ -74,7 +75,7 @@ class SnapshotTestCase: XCTestCase {
         guard os.majorVersion != reference.major || os.minorVersion != reference.minor else { return }
 
         let reason = "Snapshot test NOT run: references were recorded on iOS "
-            + "\(reference.major).\(reference.minor) (iPhone 16 Pro simulator), this runtime is "
+            + "\(reference.major).\(reference.minor) (iPhone 17 Pro simulator), this runtime is "
             + "iOS \(os.majorVersion).\(os.minorVersion). Run on an iOS \(reference.major).\(reference.minor) "
             + "simulator to verify snapshots."
         if ProcessInfo.processInfo.environment["SNAPSHOT_REQUIRE_REFERENCE_RUNTIME"] != nil {
