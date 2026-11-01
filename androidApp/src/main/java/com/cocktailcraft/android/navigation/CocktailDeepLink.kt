@@ -26,32 +26,16 @@ object CocktailDeepLink {
     /** navDeepLink base for [CocktailDetailRoute]; the id is the final path segment. */
     const val BASE_PATH = "$SCHEME://$HOST"
 
-    // Until 0.4.0 the link was app://cocktailcraft/cocktail/{id}. Widgets
-    // placed before the update keep PendingIntents with that URL until their
-    // next refresh, so it is still accepted (and rewritten to the current
-    // form) for the 0.4.x releases. Remove it in the release after.
-    private const val LEGACY_SCHEME = "app"
-    private const val LEGACY_HOST = "cocktailcraft"
-    private const val LEGACY_PATH_PREFIX = "cocktail"
-
     /** The deep link that opens [cocktailId]'s detail screen. */
     fun uriFor(cocktailId: String): Uri = "$BASE_PATH/${Uri.encode(cocktailId)}".toUri()
 
     /**
-     * The cocktail id of a cocktail deep link (current or legacy form) with a
-     * well-formed id as its only path segment, or null for any other URI.
+     * The cocktail id of a cocktail deep link with a well-formed id as its
+     * only path segment, or null for any other URI.
      */
     fun cocktailId(uri: Uri?): String? {
-        val segments = uri?.pathSegments ?: return null
-        val id = when {
-            uri.scheme == SCHEME && uri.host == HOST && segments.size == 1 -> segments[0]
-
-            uri.scheme == LEGACY_SCHEME && uri.host == LEGACY_HOST && segments.size == 2 &&
-                segments[0] == LEGACY_PATH_PREFIX -> segments[1]
-
-            else -> null
-        }
-        return id?.takeIf(::isValidCocktailId)
+        if (uri == null || uri.scheme != SCHEME || uri.host != HOST) return null
+        return uri.pathSegments.singleOrNull()?.takeIf(::isValidCocktailId)
     }
 
     /**
