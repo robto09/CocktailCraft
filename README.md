@@ -142,7 +142,7 @@ For detailed information about the dependency injection implementation, see:
 
 ## Libraries
 
-Every dependency, with its version and purpose, is listed in [docs/Libraries.md](docs/Libraries.md); versions live in the `libraries.toml` version catalog.
+Every dependency, with its version and purpose, is listed in [docs/Libraries.md](docs/Libraries.md); versions live in the `gradle/libs.versions.toml` version catalog.
 
 ## Package Structure
 
@@ -307,7 +307,7 @@ To build with your own key, set `cocktailDbApiKey` in one of these places (the f
 The key must be letters and digits only. `:core:data` compiles it into a generated constant, so it applies to both platforms. The iOS app's "Compile Kotlin Framework" build phase runs this same Gradle build, so `local.properties` works for Xcode builds too. The environment variable works for `xcodebuild` run from a shell, but not for the Xcode app. Never commit a real key. Anything compiled into an app can be extracted from it, so treat the key as identifying the app, not as a secret.
 
 ## Development Setup
-- **Android Studio**: a release that supports AGP 9.2 (the version in `libraries.toml`) — see the [AGP/Android Studio compatibility table](https://developer.android.com/build/releases/gradle-plugin#android_gradle_plugin_and_android_studio_compatibility)
+- **Android Studio**: a release that supports AGP 9.2 (the version in `gradle/libs.versions.toml`) — see the [AGP/Android Studio compatibility table](https://developer.android.com/build/releases/gradle-plugin#android_gradle_plugin_and_android_studio_compatibility)
 - **JDK**: Version 17 or higher
 - **Xcode**: Latest version (for iOS development), plus [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
 - **Mac**: Apple silicon for iOS work — the Kotlin framework is built for arm64 simulators and devices only (no Intel `x86_64` simulator)
@@ -318,7 +318,7 @@ The key must be letters and digits only. `:core:data` compiles it into a generat
 - **Build Issues**: Try cleaning and rebuilding the project
 - **KMP Plugin Issues**: Make sure the Kotlin Multiplatform plugin is up to date
 - **iOS Builds**: See [iOS Setup Instructions](iosApp/iOS_Setup_Instructions.md) and the [SKIE configuration](docs/Shared_ViewModel_Strategy.md#skie-configuration) for details
-- **Dependency Resolution**: Check Gradle settings and the `libraries.toml` version catalog
+- **Dependency Resolution**: Check Gradle settings and the `gradle/libs.versions.toml` version catalog
 
 ## Documentation
 

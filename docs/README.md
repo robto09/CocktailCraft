@@ -16,6 +16,6 @@ Technical documentation for CocktailCraft, a Kotlin Multiplatform cocktail order
 
 ## Build & Tooling
 
-- **[Libraries](Libraries.md)**: every dependency with its version and purpose (`libraries.toml`)
+- **[Libraries](Libraries.md)**: every dependency with its version and purpose (`gradle/libs.versions.toml`)
 - **[iOS Setup Instructions](../iosApp/iOS_Setup_Instructions.md)**: iOS development environment setup
 - **[DebugSwift](DebugSwift.md)**: the Debug-only iOS in-app debugging tool and how it is kept out of Release builds
