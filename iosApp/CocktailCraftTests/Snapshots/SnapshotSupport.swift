@@ -123,11 +123,11 @@ class SnapshotTestCase: XCTestCase {
             let host = UIHostingController(rootView: view)
             let size = height.map { CGSize(width: width, height: $0) }
                 ?? host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
-            Self.settle(host, size: size)
+            let image = Self.settledImage(of: host, size: size, appearance: appearance)
 
             assertSnapshot(
-                of: host,
-                as: .image(size: size, traits: Self.traits(for: appearance)),
+                of: image,
+                as: .image,
                 named: appearance.rawValue,
                 file: file,
                 testName: testName,
@@ -136,29 +136,65 @@ class SnapshotTestCase: XCTestCase {
         }
     }
 
-    /// Shows the host in a window for one run-loop pass so onAppear state
-    /// changes (e.g. SearchEmptyStateView's fade-in) are applied before the
-    /// capture; SnapshotTesting alone renders the very first frame.
-    private static func settle(_ host: UIViewController, size: CGSize) {
+    /// Renders the host in a window with the snapshot's traits until two
+    /// consecutive frames are identical, and returns that frame (@3x).
+    ///
+    /// The capture is taken here, from the settled window, rather than by
+    /// SnapshotTesting's view-controller strategy: that strategy moves the
+    /// host into a fresh window and captures its first frame, and whether a
+    /// NavigationStack's bar had finished updating by then (its title drawn,
+    /// or a hidden bar's space given back) depended on the machine's speed,
+    /// so the same view rendered differently from run to run. Settling also
+    /// lets onAppear state changes (e.g. SearchEmptyStateView's fade-in)
+    /// land. Capped at about one second.
+    private static func settledImage(of host: UIViewController, size: CGSize, appearance: SnapshotAppearance) -> UIImage {
+        host.traitOverrides.userInterfaceStyle = appearance.isDarkMode ? .dark : .light
+        host.traitOverrides.preferredContentSizeCategory = appearance.contentSizeCategory
+        host.traitOverrides.horizontalSizeClass = .compact
+        host.traitOverrides.verticalSizeClass = .regular
+        host.traitOverrides.layoutDirection = .leftToRight
+        host.traitOverrides.userInterfaceIdiom = .phone
+
         let window = UIWindow(frame: CGRect(origin: .zero, size: size))
         window.rootViewController = host
         window.isHidden = false
-        RunLoop.main.run(until: Date().addingTimeInterval(0.05))
-        window.rootViewController = nil
-        window.isHidden = true
+        defer {
+            window.rootViewController = nil
+            window.isHidden = true
+        }
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 3
+        format.opaque = false
+        let renderer = UIGraphicsImageRenderer(bounds: CGRect(origin: .zero, size: size), format: format)
+        func capture() -> UIImage {
+            renderer.image { context in host.view.layer.render(in: context.cgContext) }
+        }
+
+        // A window's root view controller still gets the status bar's inset
+        // (54 pt at the top); cancel what the host actually ends up with
+        host.view.layoutIfNeeded()
+        let insets = host.view.safeAreaInsets
+        host.additionalSafeAreaInsets = UIEdgeInsets(
+            top: -insets.top, left: -insets.left, bottom: -insets.bottom, right: -insets.right
+        )
+        host.view.layoutIfNeeded()
+        var frame = capture()
+        var previous = frame.pngData()
+        for _ in 0..<settleMaxPasses {
+            RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+            host.view.setNeedsLayout()
+            host.view.layoutIfNeeded()
+            frame = capture()
+            let data = frame.pngData()
+            if data == previous { break }
+            previous = data
+        }
+        return frame
     }
 
-    private static func traits(for appearance: SnapshotAppearance) -> UITraitCollection {
-        UITraitCollection { traits in
-            traits.userInterfaceStyle = appearance.isDarkMode ? .dark : .light
-            traits.displayScale = 3
-            traits.userInterfaceIdiom = .phone
-            traits.horizontalSizeClass = .compact
-            traits.verticalSizeClass = .regular
-            traits.layoutDirection = .leftToRight
-            traits.preferredContentSizeCategory = appearance.contentSizeCategory
-        }
-    }
+    /// 20 passes of 50 ms: the settle loop's one-second cap
+    private static let settleMaxPasses = 20
 }
 
 /// Fixed sample data for snapshots. Every image URL is nil, so
