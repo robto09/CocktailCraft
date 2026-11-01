@@ -70,7 +70,7 @@ fun AppTopBar(
                 }
             },
             actions = actions,
-            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = CocktailCraftTheme.extendedColors.topBar,
                 titleContentColor = Color.White,
                 navigationIconContentColor = Color.White,

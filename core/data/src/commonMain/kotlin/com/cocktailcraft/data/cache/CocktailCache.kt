@@ -7,16 +7,11 @@ import co.touchlab.kermit.Logger
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.local.CocktailCodec
 import com.cocktailcraft.data.local.CocktailDecodeMemo
-import com.cocktailcraft.data.local.CocktailEntity
 import com.cocktailcraft.data.local.CurrentOwner
 import com.cocktailcraft.data.local.FixedOwner
-import com.cocktailcraft.data.local.LegacyCocktailSerializer
-import com.cocktailcraft.data.local.OwnerIds
 import com.cocktailcraft.data.local.claimUnassignedUserData
-import com.cocktailcraft.data.local.toDomain
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.domain.model.Cocktail
-import com.russhwolf.settings.Settings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -33,23 +28,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlin.time.Clock
-
-/**
- * Entry format of the legacy Settings-backed cache: a cocktail plus the
- * epoch-millis timestamp of when it was cached. Only read during the one-time
- * import into the database. [cachedAtMs] has a serialization default so JSON
- * written before the field existed still deserializes.
- */
-@Serializable
-internal data class CachedCocktailEntry(
-    @Serializable(with = LegacyCocktailSerializer::class)
-    val cocktail: CocktailEntity,
-    val cachedAtMs: Long = 0L
-)
 
 /** A cached cocktail plus when its row was last written (epoch millis). */
 internal data class CachedCocktailRow(val cocktail: Cocktail, val cachedAtMs: Long)
@@ -92,13 +72,10 @@ private class StoredState(val category: String?, val payload: String, val hasFul
  * list belongs to [currentOwner] (see UserDataOwnership.kt).
  *
  * The database is opened lazily on first access, on [ioDispatcher] — a Koin
- * `single` must not block whichever thread first resolves it. That first
- * access also imports (once) any cache written by older app versions into
- * Settings; see [importLegacySettingsCache].
+ * `single` must not block whichever thread first resolves it.
  */
 internal class CocktailCache(
     private val database: Lazy<CocktailCraftDatabase>,
-    private val settings: Settings,
     private val json: Json,
     private val appConfig: AppConfig,
     private val currentOwner: CurrentOwner,
@@ -107,19 +84,14 @@ internal class CocktailCache(
 ) {
     constructor(
         database: CocktailCraftDatabase,
-        settings: Settings,
         json: Json,
         appConfig: AppConfig,
         ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
         offlineModePolicy: OfflineModePolicy? = null,
         currentOwner: CurrentOwner = FixedOwner()
-    ) : this(lazyOf(database), settings, json, appConfig, currentOwner, ioDispatcher, offlineModePolicy)
+    ) : this(lazyOf(database), json, appConfig, currentOwner, ioDispatcher, offlineModePolicy)
 
     companion object {
-        // Settings keys of the legacy JSON-blob cache. internal (not private)
-        // so tests can seed fixtures under the real keys.
-        internal const val ALL_COCKTAILS_KEY = "all_cached_cocktails"
-        internal const val RECENTLY_VIEWED_KEY = "recently_viewed_cocktails"
         internal const val MAX_RECENTLY_VIEWED = 20
 
         // Ids bound per `IN` query: below the 999-parameter limit of the
@@ -216,9 +188,9 @@ internal class CocktailCache(
                     db.cachedCocktailQueries.maxLastAccessed().executeAsOne().value_ ?: 0L,
                     db.recentlyViewedCocktailQueries.maxViewedAt().executeAsOne().value_ ?: 0L
                 )
-                importLegacySettingsCache(db)
-                // Recently viewed entries from that import or an upgrade
-                // belong to whoever is signed in (LocalDatabase does the same)
+                // Recently viewed entries without an owner (from a database
+                // upgrade) belong to whoever is signed in (LocalDatabase does
+                // the same)
                 db.claimUnassignedUserData(ownerId)
                 if (applyExpiry) {
                     db.cachedCocktailQueries.deleteCachedBefore(expiryCutoff())
@@ -233,105 +205,8 @@ internal class CocktailCache(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            // Log but don't crash - caching is not critical. Legacy Settings
-            // keys are only removed after a successful import, so the import
-            // is retried on the next launch.
+            // Log but don't crash - caching is not critical
             Logger.e(e) { "Failed to open the offline cocktail cache: ${e.message}" }
-        }
-    }
-
-    /**
-     * One-time import of the cache older app versions kept as JSON blobs in
-     * [Settings] ([ALL_COCKTAILS_KEY] and [RECENTLY_VIEWED_KEY]).
-     *
-     * Rows are written with INSERT OR IGNORE in a single transaction, and the
-     * keys are only removed once that transaction commits. If the app dies
-     * part-way the transaction rolls back and the next launch retries; if it
-     * dies between the commit and the key removal, re-importing is a no-op
-     * for rows that already exist, so nothing is duplicated or overwritten.
-     */
-    private fun importLegacySettingsCache(db: CocktailCraftDatabase) {
-        val cocktailsJson = settings.getStringOrNull(ALL_COCKTAILS_KEY)
-        val recentJson = settings.getStringOrNull(RECENTLY_VIEWED_KEY)
-        if (cocktailsJson == null && recentJson == null) return
-
-        val entries = cocktailsJson?.let(::decodeLegacyEntries).orEmpty()
-        val recent = recentJson?.let(::decodeLegacyRecentlyViewed).orEmpty()
-
-        db.transaction {
-            // Legacy lists are oldest-first, so ascending stamps keep both
-            // the LRU order and the recently viewed order.
-            entries.forEach { entry ->
-                db.insertLegacyCocktail(entry.cocktail.toDomain(), entry.cachedAtMs)
-            }
-            val now = nowMs()
-            recent.forEach { cocktail ->
-                // The cocktail itself, if the legacy cache had lost it
-                db.insertLegacyCocktail(cocktail, cachedAtMs = now)
-                db.recentlyViewedCocktailQueries.insertIfAbsent(
-                    owner_id = OwnerIds.UNASSIGNED,
-                    cocktail_id = cocktail.id,
-                    viewed_at = nextStamp()
-                )
-            }
-            db.recentlyViewedCocktailQueries.trimToCapacity(
-                ownerId = OwnerIds.UNASSIGNED,
-                capacity = MAX_RECENTLY_VIEWED.toLong()
-            )
-            db.trim()
-        }
-
-        settings.remove(ALL_COCKTAILS_KEY)
-        settings.remove(RECENTLY_VIEWED_KEY)
-        Logger.i {
-            "Imported ${entries.size} cached and ${recent.size} recently viewed cocktails from Settings"
-        }
-    }
-
-    /** Stores a legacy record unless the database has it already (full details win). */
-    private fun CocktailCraftDatabase.insertLegacyCocktail(cocktail: Cocktail, cachedAtMs: Long) {
-        val payload = codec.encode(cocktail)
-        val fullDetails = if (cocktail.hasFullDetails) 1L else 0L
-        cachedCocktailQueries.insertIfAbsent(
-            id = cocktail.id,
-            category = normalizedCategory(cocktail),
-            payload = payload,
-            full_details = fullDetails,
-            cached_at = cachedAtMs
-        )
-        if (cocktail.hasFullDetails) cachedCocktailQueries.upgradeToFull(payload = payload, id = cocktail.id)
-        cachedCocktailQueries.touchIfAbsent(id = cocktail.id, lastAccessed = nextStamp())
-    }
-
-    /**
-     * Decodes the legacy [ALL_COCKTAILS_KEY] blob: a list of
-     * [CachedCocktailEntry], or the even older pre-TTL plain list of
-     * cocktails, which is stamped "now" so an upgrade doesn't wipe it.
-     * Undecodable data is discarded (it could never be read anyway).
-     */
-    private fun decodeLegacyEntries(raw: String): List<CachedCocktailEntry> {
-        if (raw.isBlank()) return emptyList()
-        return try {
-            json.decodeFromString(ListSerializer(CachedCocktailEntry.serializer()), raw)
-        } catch (e: Exception) {
-            try {
-                val now = nowMs()
-                json.decodeFromString(ListSerializer(LegacyCocktailSerializer), raw)
-                    .map { CachedCocktailEntry(it, now) }
-            } catch (e: Exception) {
-                Logger.w(e) { "Discarding unreadable legacy cocktail cache" }
-                emptyList()
-            }
-        }
-    }
-
-    private fun decodeLegacyRecentlyViewed(raw: String): List<Cocktail> {
-        if (raw.isBlank()) return emptyList()
-        return try {
-            json.decodeFromString(ListSerializer(LegacyCocktailSerializer), raw).map { it.toDomain() }
-        } catch (e: Exception) {
-            Logger.w(e) { "Discarding unreadable legacy recently viewed list" }
-            emptyList()
         }
     }
 

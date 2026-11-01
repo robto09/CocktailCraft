@@ -33,6 +33,12 @@ class KmpLibraryConventionPlugin : Plugin<Project> {
                 languageSettings.optIn("kotlin.experimental.ExperimentalObjCRefinement")
                 // kotlin.time.Clock/Instant (kotlinx-datetime 0.7+) — stable in Kotlin 2.3
                 languageSettings.optIn("kotlin.time.ExperimentalTime")
+                // kotlinx-coroutines-test's virtual-time and dispatcher APIs
+                // (StandardTestDispatcher, advanceUntilIdle, ...) are still
+                // experimental; tests use them throughout
+                if (name.endsWith("Test")) {
+                    languageSettings.optIn("kotlinx.coroutines.ExperimentalCoroutinesApi")
+                }
             }
 
             extensions.configure<KotlinMultiplatformAndroidLibraryTarget>("android") {

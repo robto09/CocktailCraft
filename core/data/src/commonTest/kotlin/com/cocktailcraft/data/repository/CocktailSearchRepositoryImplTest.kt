@@ -15,8 +15,6 @@ import com.cocktailcraft.testutil.FakeCocktailApi
 import com.cocktailcraft.testutil.FakeNetworkMonitor
 import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.testCocktail
-import com.russhwolf.settings.MapSettings
-import com.russhwolf.settings.Settings
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -47,7 +45,6 @@ class CocktailSearchRepositoryImplTest {
     // time) runs the cache's and the remote source's work
     private fun TestScope.fixture(
         api: FakeCocktailApi = FakeCocktailApi(),
-        settings: Settings = MapSettings(),
         online: Boolean = true,
         dispatcher: CoroutineDispatcher? = null,
         appConfig: AppConfig = config
@@ -56,7 +53,6 @@ class CocktailSearchRepositoryImplTest {
         val policy = OfflineModePolicy(networkMonitor)
         val cache = CocktailCache(
             createTestDatabase(),
-            settings,
             Json { ignoreUnknownKeys = true },
             appConfig,
             ioDispatcher = dispatcher ?: Dispatchers.IO,
@@ -88,9 +84,8 @@ class CocktailSearchRepositoryImplTest {
 
     private fun TestScope.repository(
         api: FakeCocktailApi = FakeCocktailApi(),
-        settings: Settings = MapSettings(),
         online: Boolean = true
-    ): CocktailSearchRepositoryImpl = fixture(api, settings, online).search
+    ): CocktailSearchRepositoryImpl = fixture(api, online = online).search
 
     private fun margaritaDto() = CocktailDto(
         id = "11007",
@@ -381,8 +376,7 @@ class CocktailSearchRepositoryImplTest {
 
     @Test
     fun advancedSearchOfflineMatchesCachedNonAlcoholicDisplayString() = runTest {
-        val settings = MapSettings()
-        val fixture = fixture(api = FakeCocktailApi(drinks = sampleDrinks()), settings = settings)
+        val fixture = fixture(api = FakeCocktailApi(drinks = sampleDrinks()))
 
         // Online pass caches full records; id 3 stores "Non alcoholic" — the
         // API's display string, not the Non_Alcoholic URL token.

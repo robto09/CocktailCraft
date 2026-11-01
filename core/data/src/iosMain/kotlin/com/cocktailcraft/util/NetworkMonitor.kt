@@ -14,8 +14,8 @@ import platform.darwin.dispatch_queue_t
 class IOSNetworkMonitor :
     BaseNetworkMonitor(),
     NetworkMonitor {
-    private var monitor: nw_path_monitor_t? = null
-    private var queue: dispatch_queue_t? = null
+    private var monitor: nw_path_monitor_t = null
+    private var queue: dispatch_queue_t = null
 
     override fun startMonitoring() {
         // Idempotent: the monitor is a Koin single shared by several consumers;
@@ -33,7 +33,7 @@ class IOSNetworkMonitor :
                 // Set up path update handler. It also fires immediately after
                 // start with the CURRENT path, seeding BaseNetworkMonitor's
                 // optimistic default with the real status.
-                nw_path_monitor_set_update_handler(mon) { path: nw_path_t? ->
+                nw_path_monitor_set_update_handler(mon) { path: nw_path_t ->
                     val status = nw_path_get_status(path)
                     // Only `satisfied` is a usable connection. `satisfiable`
                     // means a connection *could* be established but no path is

@@ -8,6 +8,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.ContinuationInterceptor
 import kotlin.math.absoluteValue
 import kotlin.math.roundToLong
 import kotlin.test.Test
@@ -114,7 +115,7 @@ class CocktailRemoteDataSourceTest {
         var apiDispatcher: CoroutineDispatcher? = null
         val api = object : CocktailApi by FakeCocktailApi(drinks) {
             override suspend fun getCocktailById(id: String): CocktailDto? {
-                apiDispatcher = currentCoroutineContext()[CoroutineDispatcher]
+                apiDispatcher = currentCoroutineContext()[ContinuationInterceptor] as? CoroutineDispatcher
                 return drinks.find { it.id == id }
             }
         }

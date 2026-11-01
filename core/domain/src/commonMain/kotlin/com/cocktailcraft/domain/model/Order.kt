@@ -8,7 +8,7 @@ data class Order(
     val items: List<OrderItem>,
     /** Items plus the delivery fee charged at checkout. */
     val total: Money,
-    // Stored (database column, legacy Settings JSON) as the status's
+    // Stored (database column) as the status's
     // storageValue, e.g. "Processing" — the strings written before the enum
     val status: OrderStatus
 ) {
@@ -48,8 +48,8 @@ data class OrderItem(
 }
 
 /**
- * Lifecycle of an order. [storageValue] is what the database and the legacy
- * Settings JSON hold — the exact strings written back when status was a raw
+ * Lifecycle of an order. [storageValue] is what the database holds —
+ * the exact strings written back when status was a raw
  * String — so existing rows keep reading back as the same status.
  */
 enum class OrderStatus(val storageValue: String) {

@@ -25,11 +25,6 @@ upsert:
 INSERT OR REPLACE INTO recently_viewed_cocktail(owner_id, cocktail_id, viewed_at)
 VALUES (?, ?, ?);
 
--- One-time import from the old Settings cache: never overwrite newer rows.
-insertIfAbsent:
-INSERT OR IGNORE INTO recently_viewed_cocktail(owner_id, cocktail_id, viewed_at)
-VALUES (?, ?, ?);
-
 selectMostRecentFirst:
 SELECT recently_viewed_cocktail.cocktail_id, cached_cocktail.payload, cached_cocktail.full_details
 FROM recently_viewed_cocktail

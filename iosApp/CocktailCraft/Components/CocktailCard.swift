@@ -240,10 +240,10 @@ struct CocktailCard: View {
     }
 
     private func getIngredientsText() -> String {
-        // Try to get first 2 ingredients if available
-        if let ingredients = cocktail.ingredients as? [CocktailIngredient], !ingredients.isEmpty {
-            let firstTwo = Array(ingredients.prefix(2))
-            let ingredientNames = firstTwo.compactMap { $0.name }
+        // The first 2 ingredients, if there are any
+        let ingredients = cocktail.ingredients
+        if !ingredients.isEmpty {
+            let ingredientNames = ingredients.prefix(2).map { $0.name }
             // "..." marks that there are more, as on Android
             let more = ingredients.count > 2 ? "..." : ""
             return ingredientNames.joined(separator: ", ") + more

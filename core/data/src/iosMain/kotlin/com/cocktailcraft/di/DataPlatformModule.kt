@@ -7,7 +7,6 @@ import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.local.protectDatabaseFiles
 import com.cocktailcraft.data.security.LazySettings
-import com.cocktailcraft.data.security.migrateAuthStorage
 import com.cocktailcraft.domain.config.AppConfig
 import com.cocktailcraft.util.IOSNetworkMonitor
 import com.cocktailcraft.util.NetworkMonitor
@@ -31,8 +30,8 @@ actual fun dataPlatformModule() = module {
     // Keychain-backed store for credentials and profile PII — encrypted at
     // rest by the OS and absent from unencrypted backups, unlike the plist
     // behind NSUserDefaults.
-    // Opened lazily (LazySettings), as on Android: the Keychain reads and
-    // the migration run on first access — on AuthRepositoryImpl's io
+    // Opened lazily (LazySettings), as on Android: the Keychain reads run
+    // on first access — on AuthRepositoryImpl's io
     // dispatcher — not when the theme ViewModel's graph resolves at launch.
     single<Settings>(secureSettingsQualifier) {
         LazySettings {
@@ -46,10 +45,7 @@ actual fun dataPlatformModule() = module {
                 secure.clear()
                 defaults.putBoolean(KEYCHAIN_INSTALL_MARKER, true)
             }
-            secure.also {
-                // Move auth data written by older versions out of NSUserDefaults.
-                migrateAuthStorage(from = defaults, to = it)
-            }
+            secure
         }
     }
 

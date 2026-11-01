@@ -15,7 +15,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 /** Real Tink AES-256-GCM on the host JVM; only the Keystore wrapping is absent. */
 internal fun newTestAead(): Aead {
@@ -127,19 +126,5 @@ class EncryptedFileSettingsTest {
         assertEquals("old", settings.getStringOrNull("k"), "in-memory view unchanged")
         File(dir, "store.tmp").delete()
         assertEquals("old", EncryptedFileSettings(file, aead).getStringOrNull("k"), "file unchanged")
-    }
-
-    @Test
-    fun importLegacyCopiesSupportedValuesAndMarksTheStoreInOneWrite() {
-        val settings = EncryptedFileSettings(file, aead)
-        assertFalse(settings.isLegacyImported)
-
-        settings.importLegacy(mapOf("users" to "[]", "signin_attempts_x" to 3, "set" to setOf("a"), "nil" to null))
-
-        val reopened = EncryptedFileSettings(file, aead)
-        assertTrue(reopened.isLegacyImported)
-        assertEquals("[]", reopened.getStringOrNull("users"))
-        assertEquals(3, reopened.getIntOrNull("signin_attempts_x"))
-        assertEquals(setOf("users", "signin_attempts_x"), reopened.keys, "unsupported values are skipped")
     }
 }
