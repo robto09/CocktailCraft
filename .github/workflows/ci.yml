@@ -244,7 +244,10 @@ jobs:
 
       # XCUITest flows (home, cart, order, favorites, deep links, accessibility
       # audit). The app runs in its Kotlin test mode (COCKTAILCRAFT_TEST_MODE,
-      # see UITestSetup.swift), so no network is needed.
+      # see UITestSetup.swift), so no network is needed. On the shared runner
+      # an accessibility audit can hit XCUITest's "Timed out while evaluating
+      # UI query", so a failed test is retried once; a test that fails twice
+      # still fails the job.
       - name: Run Xcode UI tests (Debug)
         working-directory: iosApp
         run: |
@@ -254,7 +257,9 @@ jobs:
             -configuration Debug \
             -destination "id=${{ steps.simulator.outputs.udid }}" \
             -derivedDataPath "$DERIVED_DATA" \
-            -only-testing:CocktailCraftUITests
+            -only-testing:CocktailCraftUITests \
+            -retry-tests-on-failure \
+            -test-iterations 2
 
       # Release configuration for the simulator, unsigned (DEVELOPMENT_TEAM is
       # empty). Its "Strip DebugSwift from Release" phase fails the build if
