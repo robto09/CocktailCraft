@@ -363,13 +363,16 @@ cd iosApp && swiftlint lint # SwiftLint (brew install swiftlint)
 ### Continuous integration
 
 `.github/workflows/ci.yml` runs on every pull request and on pushes to `dev`
-and `main`, in two jobs. No secrets are used; release builds are unsigned.
+and `main`, in three jobs. No secrets are used; release builds are unsigned.
 
 - **Linux** (Android and shared Kotlin): `detekt`, `testAndroidHostTest`,
   `:androidApp:testDebugUnitTest` (unit and Robolectric; screenshots are not
   compared on Linux),
   `:core:data:verifySqlDelightMigration`, `:androidApp:lintRelease` and
   `:androidApp:assembleRelease`.
+- **Linux, emulator**: `:androidApp:connectedDebugAndroidTest` (the
+  instrumented Compose tests, against fake repositories) on an API 34 ATD
+  emulator.
 - **macOS** (Xcode 26 on `macos-26`): `:androidApp:verifyRoborazziDebug`
   (the Android screenshot references were recorded on macOS);
   `iosSimulatorArm64Test`; checks the committed Xcode
@@ -377,7 +380,8 @@ and `main`, in two jobs. No secrets are used; release builds are unsigned.
   `CocktailCraftTests` unit and snapshot tests (snapshots are verified only on
   an iPhone 16 Pro iOS 18.5 simulator, skipped otherwise); builds the Release
   configuration and fails if it contains the Debug-only test mode or QA
-  hooks. The UI tests run locally only.
+  hooks; and runs the `CocktailCraftUITests` XCUITest flows in the app's test
+  mode.
 
 ## Versioning
 
