@@ -6,29 +6,20 @@ import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
 import com.cocktailcraft.data.config.AppConfigImpl
 import com.cocktailcraft.data.repository.OrderRepositoryImpl
 import com.cocktailcraft.data.repository.ReviewRepositoryImpl
-import com.cocktailcraft.domain.model.CocktailCartItem
 import com.cocktailcraft.domain.model.Money
 import com.cocktailcraft.domain.model.Order
 import com.cocktailcraft.domain.model.OrderItem
 import com.cocktailcraft.domain.model.OrderStatus
-import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.util.getOrThrow
 import com.cocktailcraft.testutil.LegacySchema
 import com.cocktailcraft.testutil.createInMemorySqlDriver
-import com.cocktailcraft.testutil.createTestDatabase
 import com.cocktailcraft.testutil.createTestLocalDatabase
-import com.cocktailcraft.testutil.legacyCartJson
-import com.cocktailcraft.testutil.legacyCocktailsJson
-import com.cocktailcraft.testutil.legacyOrdersJson
 import com.cocktailcraft.testutil.testCartRepository
 import com.cocktailcraft.testutil.testCocktail
 import com.cocktailcraft.testutil.testJson
-import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.builtins.ListSerializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
  * Migration 6.sqm (version 6 -> 7) gives the cart, favorites, recently
@@ -89,7 +80,7 @@ class UserDataOwnerMigrationTest {
     private suspend fun dataOf(db: CocktailCraftDatabase, ownerId: String): List<List<String>> {
         val owner = FixedOwner(ownerId)
         val local = createTestLocalDatabase(db, owner = owner)
-        val cache = CocktailCache(db, MapSettings(), testJson, AppConfigImpl(), currentOwner = owner)
+        val cache = CocktailCache(db, testJson, AppConfigImpl(), currentOwner = owner)
         return listOf(
             testCartRepository(local).getCartItems().getOrThrow().map { it.cocktail.id },
             db.favoriteCocktailQueries.selectAll(ownerId).executeAsList().map { it.cocktail_id },
@@ -142,57 +133,5 @@ class UserDataOwnerMigrationTest {
             ),
             OrderRepositoryImpl(local).getOrderById("ORD-1").getOrThrow()
         )
-    }
-
-    @Test
-    fun legacySettingsDataGoesToTheUserSignedInAtTheFirstLaunch() = runTest {
-        // An upgrade from the version that kept the user's data in Settings
-        val db = createTestDatabase()
-        val settings = MapSettings().apply {
-            putString(LegacySettingsImport.CART_KEY, legacyCartJson(listOf(CocktailCartItem(testCocktail("1"), 2))))
-            putString(
-                LegacySettingsImport.ORDERS_KEY,
-                legacyOrdersJson(
-                    listOf(Order("ORD-1", "2026-06-01", emptyList(), Money(599), OrderStatus.DELIVERED))
-                )
-            )
-            putString(
-                LegacySettingsImport.REVIEWS_KEY,
-                testJson.encodeToString(
-                    ListSerializer(Review.serializer()),
-                    listOf(Review("r1", "1", "Ana", 4f, "Nice", "2026-06-01"))
-                )
-            )
-            putString(LegacySettingsImport.FAVORITES_KEY, "1")
-        }
-        val anas = createTestLocalDatabase(db, settings, owner = FixedOwner("ana"))
-
-        assertEquals(listOf("1"), testCartRepository(anas).getCartItems().getOrThrow().map { it.cocktail.id })
-        assertEquals(listOf("ORD-1"), OrderRepositoryImpl(anas).getOrders().getOrThrow().map { it.id })
-        val anasReviews = ReviewRepositoryImpl(anas).getReviews().getOrThrow()
-        assertEquals(listOf("r1" to true), anasReviews.map { it.id to it.isMine })
-        assertEquals(listOf("1"), db.favoriteCocktailQueries.selectAll("ana").executeAsList().map { it.cocktail_id })
-
-        val guests = createTestLocalDatabase(db, owner = FixedOwner(OwnerIds.GUEST))
-        assertTrue(testCartRepository(guests).getCartItems().getOrThrow().isEmpty())
-        assertTrue(OrderRepositoryImpl(guests).getOrders().getOrThrow().isEmpty())
-    }
-
-    @Test
-    fun legacyRecentlyViewedGoesToTheUserSignedInAtTheFirstLaunch() = runTest {
-        val db = createTestDatabase()
-        val settings = MapSettings().apply {
-            putString(
-                CocktailCache.RECENTLY_VIEWED_KEY,
-                legacyCocktailsJson(listOf(testCocktail("1")))
-            )
-        }
-
-        val anas = CocktailCache(db, settings, testJson, AppConfigImpl(), currentOwner = FixedOwner("ana"))
-        assertEquals(listOf("1"), anas.getRecentlyViewedCocktails().map { it.id })
-
-        val guest = FixedOwner(OwnerIds.GUEST)
-        val guests = CocktailCache(db, MapSettings(), testJson, AppConfigImpl(), currentOwner = guest)
-        assertTrue(guests.getRecentlyViewedCocktails().isEmpty())
     }
 }

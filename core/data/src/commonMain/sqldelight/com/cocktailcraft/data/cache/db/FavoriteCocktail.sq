@@ -9,8 +9,8 @@
 -- kept its own copy of the cocktail as JSON, which detail refreshes never
 -- updated.
 --
--- A favorite whose cocktail isn't stored (imported from the old id-only
--- Settings list) is resolved by the repository: cache first, then the API.
+-- A favorite whose cocktail isn't stored is resolved by the repository:
+-- cache first, then the API.
 --
 --   owner_id  whose favorite: the signed-in user's id, or "guest" while
 --             signed out (see UserDataOwnership.kt; "" for rows not assigned
@@ -36,8 +36,7 @@ ORDER BY favorite_cocktail.position;
 exists:
 SELECT COUNT(*) FROM favorite_cocktail WHERE owner_id = :ownerId AND cocktail_id = :cocktailId;
 
--- Appends a favorite; a no-op when the id is already a favorite. Also used
--- by the one-time import from Settings, where existing rows must win.
+-- Appends a favorite; a no-op when the id is already a favorite.
 insertIfAbsent:
 INSERT OR IGNORE INTO favorite_cocktail(owner_id, cocktail_id, position)
 VALUES (:ownerId, :cocktailId, (SELECT COALESCE(MAX(position), 0) + 1 FROM favorite_cocktail));

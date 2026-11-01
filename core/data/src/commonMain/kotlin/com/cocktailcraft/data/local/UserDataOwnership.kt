@@ -26,8 +26,8 @@ import org.koin.core.Koin
 //   lose them. Orders and reviews stay with the guest: they were placed and
 //   written under that identity (a review shows its author's name), and the
 //   guest still sees, and alone edits, them after signing out.
-// - Rows written before owners existed (database version 6 and earlier,
-//   or the Settings data of older versions) are assigned on the first open
+// - Rows written before owners existed (database version 6 and earlier)
+//   are assigned on the first open
 //   after the upgrade to whoever is signed in then, else the guest
 //   (claimUnassignedUserData). Nothing is dropped.
 
@@ -36,10 +36,7 @@ internal object OwnerIds {
     /** Owner of the data used while signed out. User ids are UUIDs, so it can't clash with one. */
     const val GUEST = "guest"
 
-    /**
-     * Rows not assigned yet: what migrations/6.sqm gives existing rows, and
-     * what the legacy Settings imports write.
-     */
+    /** Rows not assigned yet: what migrations/6.sqm gives existing rows. */
     const val UNASSIGNED = ""
 }
 
@@ -61,8 +58,8 @@ internal class FixedOwner(private val id: String = OwnerIds.GUEST) : CurrentOwne
 
 /**
  * Assigns every unassigned row ([OwnerIds.UNASSIGNED]) to [ownerId]. Runs on
- * every database open; only the first open after an upgrade (or a legacy
- * import) finds anything to assign.
+ * every database open; only the first open after an upgrade finds anything
+ * to assign.
  */
 internal fun CocktailCraftDatabase.claimUnassignedUserData(ownerId: String) {
     transaction {

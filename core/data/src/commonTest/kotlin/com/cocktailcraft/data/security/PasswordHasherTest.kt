@@ -14,7 +14,6 @@ class PasswordHasherTest {
         assertNotEquals("hunter2!", stored)
         assertFalse(stored.contains("hunter2!"))
         assertTrue(stored.startsWith("v2:"), "new hashes must use the PBKDF2 v2 format")
-        assertFalse(PasswordHasher.needsRehash(stored))
         assertTrue(PasswordHasher.verify("hunter2!", stored))
     }
 
@@ -39,15 +38,13 @@ class PasswordHasherTest {
     }
 
     @Test
-    fun legacyV1ValuesStillVerifyAndReportNeedsRehash() {
-        // Generated with the v1 algorithm (iterated SHA-256) before it was
-        // retired: password="secret123", 1000 iterations.
+    fun retiredV1ValuesNoLongerVerify() {
+        // The retired v1 format (iterated SHA-256): password="secret123",
+        // 1000 iterations. Only v2 values verify.
         val v1Stored =
             "v1:1000:000102030405060708090a0b0c0d0e0f:7537a36f9a26bf682b613d7421d583aadafca51b0fa3cd9e7352511c71963e8a"
 
-        assertTrue(PasswordHasher.needsRehash(v1Stored))
-        assertTrue(PasswordHasher.verify("secret123", v1Stored))
-        assertFalse(PasswordHasher.verify("wrong-password", v1Stored))
+        assertFalse(PasswordHasher.verify("secret123", v1Stored))
     }
 
     @Test

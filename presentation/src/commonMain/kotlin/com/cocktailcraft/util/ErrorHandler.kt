@@ -15,6 +15,8 @@ import com.cocktailcraft.resources.error_message_not_found
 import com.cocktailcraft.resources.error_message_server
 import com.cocktailcraft.resources.error_message_timeout
 import com.cocktailcraft.resources.error_message_too_many_requests
+import com.cocktailcraft.resources.error_sign_in_locked_out_minutes
+import com.cocktailcraft.resources.error_sign_in_locked_out_seconds
 import com.cocktailcraft.resources.error_suggestion_authentication
 import com.cocktailcraft.resources.error_suggestion_client
 import com.cocktailcraft.resources.error_suggestion_data
@@ -27,20 +29,16 @@ import com.cocktailcraft.resources.error_title_data
 import com.cocktailcraft.resources.error_title_network
 import com.cocktailcraft.resources.error_title_server
 import com.cocktailcraft.resources.error_title_timeout
+import dev.icerock.moko.resources.desc.PluralFormatted
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
-import io.ktor.client.network.sockets.ConnectTimeoutException
-import io.ktor.client.network.sockets.SocketTimeoutException
-import io.ktor.client.plugins.ClientRequestException
-import io.ktor.client.plugins.HttpRequestTimeoutException
-import io.ktor.client.plugins.ServerResponseException
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.io.IOException
-import kotlinx.serialization.SerializationException
 
 /**
- * Platform-agnostic error handling utilities for the CocktailCraft app.
- * This class provides common error handling logic that can be used across all platforms.
+ * Turns failures into user-facing errors: the one place display copy for a
+ * failure is chosen. Lives in :presentation so the layers below never build
+ * copy — they report a typed [ErrorCode] (plus facts such as
+ * [Result.Error.retryAfterMs]), and exceptions are classified by
+ * [ErrorClassifier] in :core:common.
  *
  * User-facing copy is a [StringDesc] — a shared string resource (MR.strings)
  * that each platform resolves for the current locale at the UI edge
@@ -116,21 +114,21 @@ object ErrorHandler {
     /**
      * The one mapping from a failed [Result] to user-facing copy, shared by
      * the getOrReport path and (through the [DomainException] a getOrThrow()
-     * raises) [getErrorFromException]: the producer's localized
-     * [displayMessage] wins; transport failures get the shared copy for
-     * their code; anything else gets [defaultMessage], the caller's
-     * localized "couldn't do X" copy. The raw [Result.Error.message] is
-     * never shown.
+     * raises) [getErrorFromException]: a sign-in lockout (FORBIDDEN with
+     * [retryAfterMs]) gets its countdown copy; transport failures get the
+     * shared copy for their code; anything else gets [defaultMessage], the
+     * caller's localized "couldn't do X" copy. The raw [Result.Error.message]
+     * is never shown.
      */
     fun errorFromResult(
         code: ErrorCode,
-        displayMessage: StringDesc?,
+        retryAfterMs: Long?,
         defaultMessage: StringDesc,
         recoveryAction: RecoveryAction? = null,
         originalException: Throwable? = null
     ): UserFriendlyError = errorFromCode(
         code = code,
-        message = displayMessage ?: transportMessage(code) ?: defaultMessage,
+        message = lockoutMessageFor(code, retryAfterMs) ?: transportMessage(code) ?: defaultMessage,
         recoveryAction = recoveryAction,
         originalException = originalException
     )
@@ -140,127 +138,90 @@ object ErrorHandler {
         error: Result.Error,
         defaultMessage: StringDesc,
         recoveryAction: RecoveryAction? = null
-    ): UserFriendlyError = errorFromResult(error.code, error.displayMessage, defaultMessage, recoveryAction)
+    ): UserFriendlyError = errorFromResult(error.code, error.retryAfterMs, defaultMessage, recoveryAction)
 
     /**
-     * Convert an exception to a user-friendly error message.
-     * Classification is by exception type first (Ktor network/HTTP exceptions,
-     * serialization failures, DomainException with its typed code); the legacy
-     * message string matching is only a last-resort fallback.
+     * Sign-in lockout copy; the remaining wait is rounded up to whole
+     * seconds, or whole minutes from one minute on.
+     */
+    fun lockoutMessage(remainingMs: Long): StringDesc {
+        val seconds = ((remainingMs + MS_PER_SECOND - 1) / MS_PER_SECOND).toInt()
+        return if (seconds < SECONDS_PER_MINUTE) {
+            StringDesc.PluralFormatted(MR.plurals.error_sign_in_locked_out_seconds, seconds, seconds)
+        } else {
+            val minutes = (seconds + SECONDS_PER_MINUTE - 1) / SECONDS_PER_MINUTE
+            StringDesc.PluralFormatted(MR.plurals.error_sign_in_locked_out_minutes, minutes, minutes)
+        }
+    }
+
+    private fun lockoutMessageFor(code: ErrorCode, retryAfterMs: Long?): StringDesc? =
+        if (code == ErrorCode.FORBIDDEN && retryAfterMs != null) lockoutMessage(retryAfterMs) else null
+
+    /**
+     * Convert an exception to a user-friendly error message. A
+     * DomainException maps by its typed code; anything else by the
+     * [ErrorClassifier] kind of its type.
      */
     fun getErrorFromException(
         exception: Throwable,
         defaultMessage: StringDesc = MR.strings.error_generic.desc(),
         recoveryAction: RecoveryAction? = null
-    ): UserFriendlyError = when {
-        // Errors that already carry a typed domain code: the same
-        // mapping as a reported Result.Error
-        exception is DomainException -> errorFromResult(
-            code = exception.code,
-            displayMessage = exception.displayMessage,
-            defaultMessage = defaultMessage,
-            recoveryAction = recoveryAction,
-            originalException = exception
-        )
-
-        // Timeout errors
-        exception is TimeoutCancellationException ||
-            exception is HttpRequestTimeoutException ||
-            exception is ConnectTimeoutException ||
-            exception is SocketTimeoutException -> UserFriendlyError(
-            title = MR.strings.error_title_timeout.desc(),
-            message = MR.strings.error_message_timeout.desc(),
-            category = ErrorCategory.NETWORK,
-            recoveryAction = recoveryAction,
-            originalException = exception,
-            errorCode = ErrorCode.TIMEOUT
-        )
-
-        // HTTP 4xx — authorization, missing resources, other client errors
-        exception is ClientRequestException -> {
-            val status = exception.response.status.value
-            val code = when (status) {
-                401 -> ErrorCode.UNAUTHORIZED
-                403 -> ErrorCode.FORBIDDEN
-                404 -> ErrorCode.NOT_FOUND
-                else -> ErrorCode.CLIENT_ERROR
-            }
-            val message = when (status) {
-                401, 403 -> MR.strings.error_message_forbidden.desc()
-                404 -> MR.strings.error_message_not_found.desc()
-                429 -> MR.strings.error_message_too_many_requests.desc()
-                else -> defaultMessage
-            }
-            errorFromCode(code, message, recoveryAction, exception)
+    ): UserFriendlyError {
+        // Errors that already carry a typed domain code: the same mapping
+        // as a reported Result.Error
+        if (exception is DomainException) {
+            return errorFromResult(
+                code = exception.code,
+                retryAfterMs = exception.retryAfterMs,
+                defaultMessage = defaultMessage,
+                recoveryAction = recoveryAction,
+                originalException = exception
+            )
         }
 
-        // HTTP 5xx
-        exception is ServerResponseException -> UserFriendlyError(
-            title = MR.strings.error_title_server.desc(),
-            message = MR.strings.error_message_server.desc(),
-            category = ErrorCategory.SERVER,
-            recoveryAction = recoveryAction,
-            originalException = exception,
-            errorCode = ErrorCode.SERVER_ERROR
-        )
+        val kind = ErrorClassifier.classify(exception)
+        val (title, message) = when (kind) {
+            ErrorClassifier.Kind.TIMEOUT -> MR.strings.error_title_timeout.desc() to
+                MR.strings.error_message_timeout.desc()
 
-        // Connectivity failures below the HTTP layer
-        exception is IOException -> UserFriendlyError(
-            title = MR.strings.error_title_network.desc(),
-            message = MR.strings.error_message_network.desc(),
-            category = ErrorCategory.NETWORK,
-            recoveryAction = recoveryAction,
-            originalException = exception,
-            errorCode = ErrorCode.NETWORK
-        )
+            ErrorClassifier.Kind.UNAUTHORIZED, ErrorClassifier.Kind.FORBIDDEN ->
+                null to MR.strings.error_message_forbidden.desc()
 
-        // Malformed payloads
-        exception is SerializationException -> UserFriendlyError(
-            title = MR.strings.error_title_data.desc(),
-            message = MR.strings.error_message_invalid_payload.desc(),
-            category = ErrorCategory.DATA,
-            recoveryAction = recoveryAction,
-            originalException = exception,
-            errorCode = ErrorCode.INVALID_DATA
-        )
+            ErrorClassifier.Kind.NOT_FOUND -> null to MR.strings.error_message_not_found.desc()
 
-        // Authentication errors
-        // Note: SecurityException is JVM-specific, so we check by exception message instead
-        (
-            exception.message?.contains("security", ignoreCase = true) == true ||
-                exception.message?.contains("permission", ignoreCase = true) == true
-            ) -> UserFriendlyError(
-            title = MR.strings.error_title_authentication.desc(),
-            message = MR.strings.error_message_authentication.desc(),
-            category = ErrorCategory.AUTHENTICATION,
-            recoveryAction = recoveryAction,
-            originalException = exception,
-            errorCode = ErrorCode.UNAUTHORIZED
-        )
+            ErrorClassifier.Kind.TOO_MANY_REQUESTS -> null to MR.strings.error_message_too_many_requests.desc()
 
-        // Data errors. Their message is a developer's require()/check()
-        // text, never user-facing copy.
-        exception is IllegalArgumentException ||
-            exception is IllegalStateException -> UserFriendlyError(
-            title = MR.strings.error_title_data.desc(),
-            message = MR.strings.error_message_invalid_data.desc(),
-            category = ErrorCategory.DATA,
-            recoveryAction = recoveryAction,
-            originalException = exception,
-            errorCode = ErrorCode.INVALID_DATA
-        )
+            ErrorClassifier.Kind.CLIENT_ERROR -> null to defaultMessage
 
-        // Default for unknown errors — repositories attach a typed
-        // ErrorCode at the boundary, so anything reaching here has
-        // no better classification available: no message-substring
-        // guessing (locale/format-fragile), just a generic error.
-        else -> UserFriendlyError(
-            title = getCategoryTitle(ErrorCategory.UNKNOWN),
-            message = defaultMessage,
-            category = ErrorCategory.UNKNOWN,
+            ErrorClassifier.Kind.SERVER_ERROR -> MR.strings.error_title_server.desc() to
+                MR.strings.error_message_server.desc()
+
+            ErrorClassifier.Kind.NETWORK -> MR.strings.error_title_network.desc() to
+                MR.strings.error_message_network.desc()
+
+            ErrorClassifier.Kind.INVALID_PAYLOAD -> MR.strings.error_title_data.desc() to
+                MR.strings.error_message_invalid_payload.desc()
+
+            ErrorClassifier.Kind.SECURITY -> MR.strings.error_title_authentication.desc() to
+                MR.strings.error_message_authentication.desc()
+
+            // Their message is a developer's require()/check() text, never
+            // user-facing copy
+            ErrorClassifier.Kind.INVALID_DATA -> MR.strings.error_title_data.desc() to
+                MR.strings.error_message_invalid_data.desc()
+
+            // Repositories attach a typed ErrorCode at the boundary, so
+            // anything reaching here has no better classification available
+            ErrorClassifier.Kind.UNKNOWN -> null to defaultMessage
+        }
+        val category = categoryFor(kind.code)
+        return UserFriendlyError(
+            title = title ?: getCategoryTitle(category),
+            message = message,
+            category = category,
             recoveryAction = recoveryAction,
             originalException = exception,
-            errorCode = ErrorCode.UNKNOWN
+            errorCode = kind.code
         )
     }
 
@@ -298,4 +259,7 @@ object ErrorHandler {
         ErrorCategory.DATA -> MR.strings.error_suggestion_data
         ErrorCategory.UNKNOWN -> MR.strings.error_suggestion_unknown
     }.desc()
+
+    private const val MS_PER_SECOND = 1000L
+    private const val SECONDS_PER_MINUTE = 60
 }

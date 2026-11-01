@@ -3,7 +3,6 @@ package com.cocktailcraft.di
 import app.cash.sqldelight.db.SqlDriver
 import com.cocktailcraft.data.cache.CocktailCache
 import com.cocktailcraft.data.cache.db.CocktailCraftDatabase
-import com.cocktailcraft.data.local.LegacySettingsImport
 import com.cocktailcraft.data.local.LocalDatabase
 import com.cocktailcraft.data.local.UserSession
 import com.cocktailcraft.data.remote.ApiRateLimiter
@@ -81,12 +80,9 @@ val dataModule = module {
 
     // Cache. The database is injected lazily so resolving this single never
     // touches disk; the cache opens it on first use, on the io dispatcher.
-    // Settings is still needed to import (once) the cache older versions
-    // kept there.
     single {
         CocktailCache(
             database = inject<CocktailCraftDatabase>(),
-            settings = get(),
             json = get(),
             appConfig = get(),
             currentOwner = get<UserSession>(),
@@ -97,12 +93,10 @@ val dataModule = module {
 
     // Database access for the cart, orders, favorites and reviews
     // repositories. Like the cache, it opens the database lazily on the io
-    // dispatcher; the first open imports (once) the data older versions kept
-    // as JSON in Settings, then deletes those keys.
+    // dispatcher.
     single {
         LocalDatabase(
             database = inject<CocktailCraftDatabase>(),
-            legacyImport = LegacySettingsImport(settings = get(), json = get()),
             owner = get<UserSession>(),
             ioDispatcher = get(named("ioDispatcher"))
         )

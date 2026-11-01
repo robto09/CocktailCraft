@@ -2,11 +2,8 @@ package com.cocktailcraft.data.security
 
 /**
  * PBKDF2-HMAC-SHA256 hashing for the local account store.
- * Stored format: `v2:<iterations>:<saltHex>:<digestHex>`.
- *
- * Legacy `v1` values (salted, iterated SHA-256) still verify so existing
- * accounts keep working; callers should re-hash them via [needsRehash] on the
- * next successful verification.
+ * Stored format: `v2:<iterations>:<saltHex>:<digestHex>`. Any other
+ * format (including the retired `v1`, iterated SHA-256) fails verification.
  *
  * Credentials kept in device Settings can never be secret from the device
  * owner; hashing keeps them out of plaintext preference files and backups.
@@ -14,7 +11,6 @@ package com.cocktailcraft.data.security
  */
 internal object PasswordHasher {
 
-    private const val VERSION_V1 = "v1"
     private const val VERSION_V2 = "v2"
 
     // OWASP-recommended floor for PBKDF2-HMAC-SHA256.
@@ -34,22 +30,9 @@ internal object PasswordHasher {
         val iterations = parts[1].toIntOrNull()?.takeIf { it > 0 } ?: return false
         val salt = parts[2].hexToBytesOrNull() ?: return false
         val expected = parts[3].hexToBytesOrNull() ?: return false
-        val computed = when (parts[0]) {
-            VERSION_V2 -> pbkdf2Sha256(password, salt, iterations, expected.size)
-            VERSION_V1 -> legacyDigest(password, salt, iterations)
-            else -> return false
-        }
+        if (parts[0] != VERSION_V2) return false
+        val computed = pbkdf2Sha256(password, salt, iterations, expected.size)
         return constantTimeEquals(computed, expected)
-    }
-
-    /** True when [stored] predates the current KDF and should be re-hashed on use. */
-    fun needsRehash(stored: String): Boolean = !stored.startsWith("$VERSION_V2:")
-
-    /** The v1 KDF (salted, iterated SHA-256), kept only to verify old values. */
-    private fun legacyDigest(password: String, salt: ByteArray, iterations: Int): ByteArray {
-        var d = sha256(salt + password.encodeToByteArray())
-        repeat(iterations - 1) { d = sha256(salt + d) }
-        return d
     }
 
     private fun constantTimeEquals(a: ByteArray, b: ByteArray): Boolean {

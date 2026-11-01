@@ -4,15 +4,14 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.cocktailcraft.domain.model.OrderStatus
-import com.cocktailcraft.domain.repository.ReviewRepository
-import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
+import com.cocktailcraft.domain.model.ReviewValidationError
 import com.cocktailcraft.format.deliveryEstimate
+import com.cocktailcraft.format.message
 import com.cocktailcraft.util.ErrorHandler
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
 import dev.icerock.moko.resources.format
-import io.ktor.utils.io.errors.IOException
-import io.mockk.mockk
+import kotlinx.io.IOException
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -56,10 +55,9 @@ class SharedStringsTest {
 
     @Test
     fun sharedCodeMessagesResolveToTheirCopy() {
-        val validator = ManageReviewsUseCase(mockk<ReviewRepository>())
         assertEquals(
             "Review comment must be at least 10 characters long",
-            validator.validateReview(3.0f, "Too short")?.text()
+            ReviewValidationError.COMMENT_TOO_SHORT.message.text()
         )
         assertEquals(
             "Unable to connect to the server. Please check your internet connection.",

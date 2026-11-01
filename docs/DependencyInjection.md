@@ -80,10 +80,9 @@ val dataModule = module {
     single { CocktailCraftDatabase(get<SqlDriver>()) }    // over the platform's driver
 
     // The local cocktail catalog (cached_cocktail, cocktail_access, category_page)
-    single { CocktailCache(/* database (lazy), settings, json, appConfig, currentOwner = UserSession, ioDispatcher, offlineModePolicy */) }
-    // The user's data tables, scoped to the current owner; the first open
-    // imports (once) what older versions kept as JSON in Settings
-    single { LocalDatabase(/* database (lazy), LegacySettingsImport(settings, json), owner = UserSession, ioDispatcher */) }
+    single { CocktailCache(/* database (lazy), json, appConfig, currentOwner = UserSession, ioDispatcher, offlineModePolicy */) }
+    // The user's data tables, scoped to the current owner
+    single { LocalDatabase(/* database (lazy), owner = UserSession, ioDispatcher */) }
 
     single { ApiRateLimiter() }  // the API's min-interval throttle
     single { CocktailRemoteDataSource(api = get(), rateLimiter = get(), defaultDispatcher = get(named("defaultDispatcher"))) }
@@ -171,7 +170,7 @@ val presentationModule = module {
 
 ### 7. Platform Module (`platformModule()`)
 
-- `expect fun dataPlatformModule(): Module` in `:core:data`'s commonMain; the Android and iOS actuals provide the platform-specific bindings (Settings instances including the secure/encrypted one, `NetworkMonitor`, the SQLDelight `SqlDriver`, the debug-aware `AppConfig`). They are all data-layer adapters, so they live in `core/data/src/androidMain/.../di/DataPlatformModule.kt` and `core/data/src/iosMain/.../di/DataPlatformModule.kt` (named apart from `:shared`'s `PlatformModule.kt`: same package, so equal file names would clash as JVM classes in the app).
+- `expect fun dataPlatformModule(): Module` in `:core:data`'s commonMain; the Android and iOS actuals provide the platform-specific bindings (the secure/encrypted `Settings` store — plus, on iOS, the plain `NSUserDefaults` store holding the fresh-install marker — `NetworkMonitor`, the SQLDelight `SqlDriver`, the debug-aware `AppConfig`). They are all data-layer adapters, so they live in `core/data/src/androidMain/.../di/DataPlatformModule.kt` and `core/data/src/iosMain/.../di/DataPlatformModule.kt` (named apart from `:shared`'s `PlatformModule.kt`: same package, so equal file names would clash as JVM classes in the app).
 - `:shared` re-exposes it as `platformModule()` (`shared/src/commonMain/.../di/PlatformModule.kt`) — the name androidApp and `initKoin()` use, since neither app can see `:core:data`.
 
 ## Data layer
@@ -205,8 +204,11 @@ Everything except auth lives in one SQLite database (`cocktailcraft_cache.db`, s
 
 Accounts are device-local: accounts, the session, sign-in throttling and guest preferences stay out of the database, in the platform's encrypted `Settings` store (`secureSettingsQualifier`, registered by the platform module and opened lazily through `LazySettings`):
 
-- **Android**: an encrypted file store (`EncryptedFileSettings` in `no_backup/`), encrypted with a Tink AES-256-GCM keyset that is itself wrapped by an Android Keystore key (`AuthStore.kt`). The `EncryptedSharedPreferences` file earlier versions used is read once on first open to migrate its data (`LegacySecurePrefs.kt`), then deleted. Neither the store nor the keyset is backed up.
-- **iOS**: the Keychain (`KeychainSettings`).
+- **Android**: an encrypted file store (`EncryptedFileSettings` in `no_backup/`), encrypted with a Tink AES-256-GCM keyset that is itself wrapped by an Android Keystore key (`AuthStore.kt`). Neither the store nor the keyset is backed up.
+- **iOS**: the Keychain (`KeychainSettings`). Keychain items survive an uninstall, so a marker in `NSUserDefaults` (which doesn't) detects a fresh install and clears them.
+- Passwords are stored as PBKDF2-HMAC-SHA256 hashes (`PasswordHasher`, format `v2`).
+
+The app keeps no code for importing data from versions before these stores and the SQLite database existed.
 
 ## ViewModel Dependency Injection
 

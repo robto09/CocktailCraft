@@ -8,17 +8,19 @@ import com.cocktailcraft.resources.common_retry
 import com.cocktailcraft.resources.error
 import com.cocktailcraft.resources.error_generic
 import com.cocktailcraft.resources.error_load_cocktails_failed
-import com.cocktailcraft.resources.error_message_forbidden
 import com.cocktailcraft.resources.error_message_invalid_data
 import com.cocktailcraft.resources.error_message_invalid_payload
 import com.cocktailcraft.resources.error_message_network
 import com.cocktailcraft.resources.error_message_server
 import com.cocktailcraft.resources.error_message_timeout
+import com.cocktailcraft.resources.error_sign_in_locked_out_minutes
+import com.cocktailcraft.resources.error_sign_in_locked_out_seconds
 import com.cocktailcraft.resources.error_suggestion_network
 import com.cocktailcraft.resources.error_title_data
 import com.cocktailcraft.resources.error_title_network
 import com.cocktailcraft.resources.error_title_server
 import com.cocktailcraft.resources.error_title_timeout
+import dev.icerock.moko.resources.desc.PluralFormatted
 import dev.icerock.moko.resources.desc.Raw
 import dev.icerock.moko.resources.desc.StringDesc
 import dev.icerock.moko.resources.desc.desc
@@ -93,9 +95,8 @@ class ErrorHandlerTest {
     @Test
     fun resultErrorMapsLikeTheDomainExceptionItBecomes() {
         val fallback = MR.strings.error_load_cocktails_failed.desc()
-        val localized = MR.strings.error_message_forbidden.desc()
         val cases = listOf(
-            Result.Error("raw", ErrorCode.FORBIDDEN, displayMessage = localized),
+            Result.Error("raw", ErrorCode.FORBIDDEN, retryAfterMs = 30_000),
             Result.Error("raw [url=https://example.com]", ErrorCode.TIMEOUT),
             Result.Error("Failed to update favorites", ErrorCode.UNKNOWN)
         )
@@ -103,13 +104,13 @@ class ErrorHandlerTest {
         cases.forEach { result ->
             val reported = ErrorHandler.errorFromResult(result, fallback)
             val thrown = ErrorHandler.getErrorFromException(
-                DomainException(result.code, result.message, result.displayMessage),
+                DomainException(result.code, result.message, result.retryAfterMs),
                 defaultMessage = fallback
             )
             assertEquals(thrown.message, reported.message)
             assertEquals(thrown.errorCode, reported.errorCode)
         }
-        assertEquals(localized, ErrorHandler.errorFromResult(cases[0], fallback).message)
+        assertEquals(ErrorHandler.lockoutMessage(30_000), ErrorHandler.errorFromResult(cases[0], fallback).message)
         assertEquals(MR.strings.error_message_timeout.desc(), ErrorHandler.errorFromResult(cases[1], fallback).message)
         assertEquals(fallback, ErrorHandler.errorFromResult(cases[2], fallback).message)
     }
@@ -135,15 +136,35 @@ class ErrorHandlerTest {
     }
 
     @Test
-    fun domainExceptionDisplayMessageWinsOverItsRawMessage() {
-        val localized = MR.strings.error_load_cocktails_failed.desc()
-
+    fun lockedOutDomainExceptionShowsTheLockoutNotItsRawMessage() {
         val error = ErrorHandler.getErrorFromException(
-            DomainException(ErrorCode.FORBIDDEN, "raw log text", displayMessage = localized)
+            DomainException(ErrorCode.FORBIDDEN, "raw log text", retryAfterMs = 30_000)
         )
 
         assertEquals(ErrorCode.FORBIDDEN, error.errorCode)
-        assertEquals(localized, error.message)
+        assertEquals(ErrorHandler.lockoutMessage(30_000), error.message)
+    }
+
+    @Test
+    fun retryAfterOnlyWordsALockoutForForbidden() {
+        val fallback = MR.strings.error_load_cocktails_failed.desc()
+
+        val error = ErrorHandler.errorFromResult(
+            Result.Error("raw", ErrorCode.UNKNOWN, retryAfterMs = 30_000),
+            fallback
+        )
+
+        assertEquals(fallback, error.message)
+    }
+
+    @Test
+    fun lockoutMessageRoundsUpToSecondsThenMinutes() {
+        val seconds = MR.plurals.error_sign_in_locked_out_seconds
+        val minutes = MR.plurals.error_sign_in_locked_out_minutes
+        assertEquals(StringDesc.PluralFormatted(seconds, 1, 1), ErrorHandler.lockoutMessage(1))
+        assertEquals(StringDesc.PluralFormatted(seconds, 30, 30), ErrorHandler.lockoutMessage(29_001))
+        assertEquals(StringDesc.PluralFormatted(minutes, 1, 1), ErrorHandler.lockoutMessage(60_000))
+        assertEquals(StringDesc.PluralFormatted(minutes, 2, 2), ErrorHandler.lockoutMessage(60_001))
     }
 
     @Test

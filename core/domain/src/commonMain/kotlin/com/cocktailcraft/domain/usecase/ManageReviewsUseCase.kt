@@ -2,16 +2,9 @@ package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.CocktailRatingSummary
 import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.domain.model.ReviewValidationError
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.util.Result
-import com.cocktailcraft.resources.MR
-import com.cocktailcraft.resources.review_error_comment_required
-import com.cocktailcraft.resources.review_error_comment_too_long
-import com.cocktailcraft.resources.review_error_comment_too_short
-import com.cocktailcraft.resources.review_error_rating_range
-import dev.icerock.moko.resources.desc.StringDesc
-import dev.icerock.moko.resources.desc.desc
-import dev.icerock.moko.resources.format
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.TimeZone
@@ -71,22 +64,21 @@ class ManageReviewsUseCase(private val repository: ReviewRepository) {
         0.0f
     }
 
-    /** The validation failure to show, or null when the review is valid. */
-    fun validateReview(rating: Float, comment: String): StringDesc? = when {
-        rating < 1.0f || rating > 5.0f -> MR.strings.review_error_rating_range.desc()
-
-        comment.isBlank() -> MR.strings.review_error_comment_required.desc()
-
-        comment.length < MIN_COMMENT_LENGTH ->
-            MR.strings.review_error_comment_too_short.format(MIN_COMMENT_LENGTH)
-
-        comment.length > MAX_COMMENT_LENGTH ->
-            MR.strings.review_error_comment_too_long.format(MAX_COMMENT_LENGTH)
-
+    /**
+     * The rule the review breaks, or null when it is valid. The
+     * presentation layer words it.
+     */
+    fun validateReview(rating: Float, comment: String): ReviewValidationError? = when {
+        rating < MIN_RATING || rating > MAX_RATING -> ReviewValidationError.RATING_OUT_OF_RANGE
+        comment.isBlank() -> ReviewValidationError.COMMENT_REQUIRED
+        comment.length < MIN_COMMENT_LENGTH -> ReviewValidationError.COMMENT_TOO_SHORT
+        comment.length > MAX_COMMENT_LENGTH -> ReviewValidationError.COMMENT_TOO_LONG
         else -> null
     }
 
-    private companion object {
+    companion object {
+        const val MIN_RATING = 1.0f
+        const val MAX_RATING = 5.0f
         const val MIN_COMMENT_LENGTH = 10
         const val MAX_COMMENT_LENGTH = 500
     }

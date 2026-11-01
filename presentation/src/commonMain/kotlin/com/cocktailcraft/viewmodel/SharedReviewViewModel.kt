@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.cocktailcraft.domain.model.Review
 import com.cocktailcraft.domain.usecase.ManageReviewsUseCase
 import com.cocktailcraft.domain.util.getOrThrow
+import com.cocktailcraft.format.message
 import com.cocktailcraft.resources.MR
 import com.cocktailcraft.resources.error_delete_review_failed
 import com.cocktailcraft.resources.error_invalid_user_title
@@ -135,11 +136,11 @@ class SharedReviewViewModel internal constructor(private val manageReviewsUseCas
      * Validate review input.
      */
     fun validateReview(rating: Float, comment: String): Boolean {
-        val errorMessage = manageReviewsUseCase.validateReview(rating, comment)
-        if (errorMessage != null) {
+        val broken = manageReviewsUseCase.validateReview(rating, comment)
+        if (broken != null) {
             setError(
                 MR.strings.error_validation_title,
-                errorMessage,
+                broken.message,
                 ErrorHandler.ErrorCategory.DATA
             )
             return false

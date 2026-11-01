@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Mirrors the cross-platform design tokens in
-    shared/designsystem/DesignTokens.kt (ColorTokens), the single source of
+    core/designsystem/.../DesignTokens.kt (ColorTokens), the single source of
     truth for both platforms. These values only cover the pre-Compose window
     (cold start, status bar) and the home-screen widget assets — if the shared
-    tokens change, update the matching entry here.
+    tokens change, update the matching entry here. BrandColorParityTest
+    (androidApp unit tests) fails if an entry drifts.
 -->
 <resources>
     <!-- ColorTokens.primaryLight / primaryDark (coral) -->

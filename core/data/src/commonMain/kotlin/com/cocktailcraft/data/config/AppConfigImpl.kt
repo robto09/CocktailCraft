@@ -16,9 +16,17 @@ class AppConfigImpl(
     // Injected per-platform from the DI modules: debug builds get
     // verbose wire logging automatically; release builds stay quiet. The
     // default keeps test fixtures terse.
-    override val verboseNetworkLogging: Boolean = false
+    override val verboseNetworkLogging: Boolean = false,
+    // TheCocktailDB key for this build: the cocktailDbApiKey build input
+    // (see core/data/build.gradle.kts), "1" — the public test key — unless
+    // one is configured. A parameter so tests can pin it.
+    apiKey: String = BuildApiConfig.COCKTAILDB_API_KEY
 ) : AppConfig {
-    override val apiBaseUrl: String = "https://www.thecocktaildb.com/api/json/v1/1"
+    init {
+        require(API_KEY_PATTERN.matches(apiKey)) { "TheCocktailDB API key must be letters and digits only" }
+    }
+
+    override val apiBaseUrl: String = "$API_ROOT/$apiKey"
 
     // Budget for a whole request, retries included, and for each socket
     // read. NetworkModule caps the connect phase lower (CONNECT_TIMEOUT_MS,
@@ -37,4 +45,11 @@ class AppConfigImpl(
     // Maximum number of cocktails to cache. A single category can return ~100
     // drinks, so this leaves room for several browsed categories offline.
     override val maxOfflineCocktails: Int = 500
+
+    private companion object {
+        const val API_ROOT = "https://www.thecocktaildb.com/api/json/v1"
+
+        // The key is a URL path segment
+        val API_KEY_PATTERN = Regex("[A-Za-z0-9]+")
+    }
 }

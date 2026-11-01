@@ -21,9 +21,6 @@ import java.security.ProviderException
  * is backed up: the Keystore key never leaves the device, so a restored
  * copy could not be decrypted.
  *
- * Runs the one-time move out of the legacy EncryptedSharedPreferences file
- * ([importLegacySecurePrefs]) before returning.
- *
  * Keystore-backed storage has a documented corruption class (key
  * invalidated by an OTA/vendor bug, keyset/data desync after a partial
  * restore) where opening throws on every launch. Failing soft — wiping the
@@ -31,8 +28,8 @@ import java.security.ProviderException
  * accounts in that rare case but beats an unrecoverable crash loop the user
  * can only escape via Clear Data.
  */
-internal fun openAuthStore(context: Context): EncryptedFileSettings {
-    val store = try {
+internal fun openAuthStore(context: Context): EncryptedFileSettings =
+    try {
         buildAuthStore(context)
     } catch (e: GeneralSecurityException) {
         recreateAuthStore(context, e)
@@ -41,9 +38,6 @@ internal fun openAuthStore(context: Context): EncryptedFileSettings {
     } catch (e: ProviderException) {
         recreateAuthStore(context, e)
     }
-    importLegacySecurePrefs(store, LegacySecurePrefs(context))
-    return store
-}
 
 private fun recreateAuthStore(context: Context, cause: Exception): EncryptedFileSettings {
     Logger.withTag(LogTag).e(cause) { "Auth store unreadable; starting a fresh one" }
@@ -67,7 +61,7 @@ private fun buildAuthStore(context: Context): EncryptedFileSettings {
         .build()
     if (!keysetManager.isUsingKeystore) {
         // Tink falls back to an unwrapped keyset when the device has no
-        // usable Keystore, as EncryptedSharedPreferences did; the file
+        // usable Keystore; the file
         // still never leaves the device (no_backup/, backup rules).
         Logger.withTag(LogTag).w { "Android Keystore unavailable; auth keyset is not hardware-wrapped" }
     }
