@@ -4,7 +4,7 @@ This document describes the Advanced Search and Filtering functionality in Cockt
 
 ## Overview
 
-Advanced search lets users narrow the cocktail list by combining several criteria at once. The filter set is deliberately limited to **four dimensions TheCocktailDB free tier (`v1/1`) actually supports**:
+Advanced search lets users narrow the cocktail list by combining several criteria at once. The filter set is deliberately limited to **four dimensions TheCocktailDB's free API (the default test key `1`; see README → "TheCocktailDB API key") actually supports**:
 
 | Filter | Endpoint | Notes |
 |---|---|---|
@@ -23,12 +23,12 @@ TheCocktailDB's `filter.php` accepts only **one parameter per request** and cann
 
 1. **Offline** — filter every stored cocktail (the SQLDelight `cached_cocktail` table, read via `CocktailCache.getAllCachedCocktails()`) on the four real fields.
 2. **Nothing active** — return the default listing (`filterByCategory("Cocktail")`).
-3. Otherwise, make **one API call per active filter**, in priority order (query → category → ingredient → alcoholic), each spaced by the shared `ApiRateLimiter` in `CocktailRemoteDataSource`. The category filter goes through `CocktailCategoryFetcher`: it refreshes the database-backed `category_page` when stale and reads the stored page, so it usually costs no call at all.
+3. Otherwise, make **one API call per active filter**, listed in priority order (query → category → ingredient → alcoholic) and run concurrently; the shared `ApiRateLimiter` in `CocktailRemoteDataSource` still spaces the `filter.php` calls. The category filter goes through `CocktailCategoryFetcher`: it refreshes the database-backed `category_page` when stale and reads the stored page, so it usually costs no call at all.
 4. The **base list** is the first active result (query wins, so full records are preferred over slim ones).
 5. The **result** keeps only the cocktails whose id appears in *every* other active set.
-6. If any active filter call fails, the whole search returns `Result.Error` — a filter is never silently dropped.
+6. If any active filter call fails, the whole search returns `Result.Error` (the other calls are cancelled) — a filter is never silently dropped.
 
-This is accurate (every id comes from the server), needs no per-drink hydration, and invents no data. Cost is one sequential call per active filter; typical usage is one or two filters. Slim results render with the same "tap to view" placeholder cards used elsewhere for category browsing, and the detail view hydrates on tap.
+This is accurate (every id comes from the server), needs no per-drink hydration, and invents no data. Cost is one call per active filter; typical usage is one or two filters. Slim results render with the same "tap to view" placeholder cards used elsewhere for category browsing, and the detail view hydrates on tap.
 
 The implementation lives in `CocktailSearchRepositoryImpl.advancedSearch(filters)` (`core/data/src/commonMain/kotlin/com/cocktailcraft/data/repository/CocktailSearchRepositoryImpl.kt`), reached through `SearchCocktailsUseCase.search(filters)`.
 
@@ -39,7 +39,7 @@ The implementation lives in `CocktailSearchRepositoryImpl.advancedSearch(filters
 - **`applyFilters(filters: SearchFilters)`** — stores `filters` in `uiState.searchFilters` (so the active-filter chips reflect them) and loads the intersected results.
 - **`clearSearchFilters()`** — resets to an empty `SearchFilters()` and reloads the default list.
 - **`searchCocktails(query)`** — composes the query with any active filters (`searchFilters.copy(query = query)`), so the search bar and the advanced filters work together rather than overriding each other.
-- **`loadFilterOptions()`** — populates the API-backed option lists `uiState.filterCategories` / `filterIngredients` via `list.php` (`?c/i=list`) through `CocktailCatalogRepository`. Both platforms consume the same lists.
+- **`loadFilterOptions()`** — populates the API-backed option lists `uiState.filterCategories` / `filterIngredients` via `list.php` (`?c/i=list`) through `CocktailCatalogRepository`, once (`FilterOptionsLoader` in `HomeListing.kt`; only a failed load is tried again). `toggleAdvancedSearchMode(true)` calls it too. Both platforms consume the same lists.
 
 `SearchFilters` (`core/domain/src/commonMain/kotlin/com/cocktailcraft/domain/model/SearchFilters.kt`) is a four-field data class with a single `hasActiveFilters()` helper:
 
@@ -60,17 +60,17 @@ Both platforms drive the same shared ViewModel; the filter options and active-fi
 
 - `AdvancedSearchBottomSheet` (`androidApp/.../ui/components/AdvancedSearchBottomSheet.kt`) is a modal bottom sheet mirroring the iOS sheet, with three sections: **Category** (exposed dropdown), **Ingredient** (single-select full-screen searchable picker — Material's pattern for long lists, the counterpart of iOS's searchable list sheet), **Alcoholic** (Any / Alcoholic / Non-Alcoholic). Apply forwards the whole `SearchFilters` to `viewModel.applyFilters(...)` and closes the sheet; Clear calls `viewModel.clearSearchFilters()` and closes the sheet.
 - `SearchFilterChips` (`androidApp/.../ui/components/SearchFilterChips.kt`) renders the active filters from `state.searchFilters`; dismissing a chip re-applies the reduced set.
-- `HomeScreen` reads the option lists from `state.filterCategories/filterIngredients` and calls `loadFilterOptions()` when advanced search opens.
+- `HomeScreen` reads the option lists from `state.filterCategories/filterIngredients`; opening the sheet calls `toggleAdvancedSearchMode(true)`, which loads them (`loadFilterOptions()`). The sheet itself is shown by `HomeAdvancedSearchSheet` in `androidApp/.../screens/home/HomeSearchSections.kt`.
 
 ### iOS — filter sheet
 
 - `AdvancedSearchSheet` (`iosApp/CocktailCraft/Components/AdvancedSearchSheet.swift`) is a custom bottom sheet styled identically to the Android one: a surface-colored sheet with a Clear / title / Apply header row and three collapsible sections — Category (dropdown menu), Ingredient, Alcoholic (tri-state chips). The ingredient picker follows the iOS platform convention instead of mirroring Android's dialog: a nested sheet with a searchable `List` and a checkmark on the selected row. The sheet calls `loadFilterOptions()` on appear, Apply calls `applyFilters(...)`, Clear calls `clearSearchFilters()`.
 - The active-filter chip row in `HomeViewSKIE` is derived from `state.searchFilters` (no local filter state).
-- `HomeViewModelSKIE` (`iosApp/CocktailCraft/ViewModels/HomeViewModelSKIE.swift`) exposes `applyFilters`, `loadFilterOptions` (async, via SKIE) and `clearSearchFilters` (sync). The Kotlin `Boolean?` alcoholic value bridges to Swift as `KotlinBoolean?` (nil = any).
+- `HomeViewModelSKIE` (`iosApp/CocktailCraft/ViewModels/HomeViewModelSKIE.swift`) exposes `applyFilters`, `loadFilterOptions` and `clearSearchFilters`, all plain (non-async) forwarders. The Kotlin `Boolean?` alcoholic value bridges to Swift as `KotlinBoolean?` (nil = any).
 
 ## Data flow
 
-1. User opens advanced search (Android bottom sheet / iOS sheet); the option lists load via `loadFilterOptions()`.
+1. User opens advanced search (Android bottom sheet / iOS sheet); the option lists load via `loadFilterOptions()` (Android through `toggleAdvancedSearchMode(true)`).
 2. User selects filters and taps Apply; a `SearchFilters` is built and passed to `applyFilters(filters)`.
 3. The ViewModel stores the filters in state and calls `SearchCocktailsUseCase.search(filters)`.
 4. `advancedSearch` performs one call per active filter and intersects the ID sets.
@@ -83,14 +83,15 @@ client-side pick from the same category, since the free API has no
 recommendation endpoint.
 
 - **`GetCocktailDetailUseCase.getRelatedCocktails(cocktail, limit = 3)`**
-  (`core/domain/.../usecase/GetCocktailDetailUseCase.kt`) calls
-  `CocktailSearchRepository.filterByCategory(...)` for the cocktail's category
-  (or the default one), drops the cocktail itself and returns a random sample.
+  (`core/domain/.../usecase/GetCocktailDetailUseCase.kt`) reads the stored
+  page of the cocktail's category (or the default one) through
+  `CocktailCatalogRepository.observeCategory(...)`, refreshing it first when
+  nothing is stored, drops the cocktail itself and returns a random sample.
   The work runs in `runCatchingNonCancellation`, so a failure degrades to an
   empty list without swallowing cancellation.
-- `filterByCategory` reads the database-backed category page through
-  `CocktailCategoryFetcher`, so the row usually costs no extra API call and
-  works offline for any category already stored.
+- The category page is the database-backed one category browsing uses, so
+  the row usually costs no extra API call and works offline for any category
+  already stored.
 - `SharedCocktailDetailViewModel` exposes the result as `relatedCocktails` in
   the shared detail state.
 - UI: `DetailRecommendationsSection`
