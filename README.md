@@ -8,8 +8,8 @@ CocktailCraft is a Kotlin Multiplatform project for a feature-rich cocktail orde
 - **iOS**: ✅ Fully functional — SwiftUI on the shared ViewModels, bridged to Swift async/await by SKIE
 
 <p align="center">
-  <img src="docs/images/Screenshot_20250419_014459.png" alt="Android home screen" width="45%">
-  <img src="docs/images/ios-home-v0.3.png" alt="iOS home screen" width="45%">
+  <img src="docs/images/android-home-v0.4.png" alt="Android home screen" width="45%">
+  <img src="docs/images/ios-home-v0.4.png" alt="iOS home screen" width="45%">
 </p>
 
 ## Features
