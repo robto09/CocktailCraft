@@ -2,6 +2,7 @@ package com.cocktailcraft.domain.usecase
 
 import com.cocktailcraft.domain.model.CocktailRatingSummary
 import com.cocktailcraft.domain.model.Review
+import com.cocktailcraft.domain.model.ReviewRules
 import com.cocktailcraft.domain.model.ReviewValidationError
 import com.cocktailcraft.domain.repository.ReviewRepository
 import com.cocktailcraft.domain.util.Result
@@ -69,18 +70,11 @@ class ManageReviewsUseCase(private val repository: ReviewRepository) {
      * presentation layer words it.
      */
     fun validateReview(rating: Float, comment: String): ReviewValidationError? = when {
-        rating < MIN_RATING || rating > MAX_RATING -> ReviewValidationError.RATING_OUT_OF_RANGE
+        rating < ReviewRules.MIN_RATING || rating > ReviewRules.MAX_RATING -> ReviewValidationError.RATING_OUT_OF_RANGE
         comment.isBlank() -> ReviewValidationError.COMMENT_REQUIRED
-        comment.length < MIN_COMMENT_LENGTH -> ReviewValidationError.COMMENT_TOO_SHORT
-        comment.length > MAX_COMMENT_LENGTH -> ReviewValidationError.COMMENT_TOO_LONG
+        comment.length < ReviewRules.MIN_COMMENT_LENGTH -> ReviewValidationError.COMMENT_TOO_SHORT
+        comment.length > ReviewRules.MAX_COMMENT_LENGTH -> ReviewValidationError.COMMENT_TOO_LONG
         else -> null
-    }
-
-    companion object {
-        const val MIN_RATING = 1.0f
-        const val MAX_RATING = 5.0f
-        const val MIN_COMMENT_LENGTH = 10
-        const val MAX_COMMENT_LENGTH = 500
     }
 
     private fun getCurrentDate(): String {
