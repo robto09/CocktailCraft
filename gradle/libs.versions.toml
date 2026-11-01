@@ -49,7 +49,7 @@ roborazzi = "1.76.0"
 skie = "0.10.13"
 sqldelight = "2.4.1"
 # Android auth store encryption (AES-256-GCM, Keystore-wrapped keyset)
-tink = "1.23.0"
+tink = "1.24.0"
 turbine = "1.2.1"
 
 [libraries]
